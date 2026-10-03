@@ -1,0 +1,199 @@
+<title>딥 포켓 8볼</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: the table fills the screen under one overhead lamp; controls hug the edges
+   (pull-bar left and dial right in landscape, one bar along the bottom in portrait). */
+:root{
+  color-scheme:dark;
+  --room:#06080b;
+  --panel:rgba(11,15,20,.82);
+  --panel-solid:#0e141a;
+  --line:rgba(239,230,210,.14);
+  --ivory:#efe6d2;
+  --dim:#93a0aa;
+  --brass:#d9ab52;
+  --chalk:#5cb8da;
+  --foul:#f0604f;
+  --felt:#0d6577;
+  --display:'Big Shoulders Display','Black Han Sans','Arial Narrow',system-ui,sans-serif;
+  --title:'Black Han Sans','Big Shoulders Display','Apple SD Gothic Neo',system-ui,sans-serif;
+  --body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
+  --hud-h:52px;
+}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--room);color:var(--ivory);font-family:var(--body);font-size:14px;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
+#app{position:relative;height:100%;overflow:hidden;background:var(--room)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* ---------- top bar ---------- */
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;
+  padding-inline:10px;background:linear-gradient(var(--panel),rgba(11,15,20,.55));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#menuBtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;background:rgba(255,255,255,.03)}
+#menuBtn span{display:block;width:16px;height:2px;background:var(--ivory);box-shadow:0 5px 0 var(--ivory),0 -5px 0 var(--ivory);border-radius:2px}
+.pl{display:flex;align-items:center;gap:10px;min-width:0;justify-self:start;max-width:100%;padding:5px 10px;border-radius:12px;border:1px solid transparent;transition:border-color .25s,background .25s}
+.pl.r{flex-direction:row-reverse;text-align:right;justify-self:end}
+.pl.on{border-color:rgba(217,171,82,.55);background:rgba(217,171,82,.09)}
+.pl .who{min-width:0;flex:none}
+.pl .nm{font-weight:600;font-size:13px;line-height:1.15;white-space:nowrap}
+.pl .grp{font-size:10.5px;color:var(--dim);letter-spacing:.02em;white-space:nowrap}
+.pl.on .grp{color:var(--brass)}
+.tray{display:flex;gap:3px;flex-wrap:nowrap;min-width:0}
+.mb{flex:none;width:15px;height:15px;border-radius:50%;background:var(--c,#333);
+  box-shadow:inset -2px -3px 4px rgba(0,0,0,.45),inset 2px 2px 3px rgba(255,255,255,.35)}
+.mb.st{background:linear-gradient(#f3ecdc 0 24%,var(--c) 24% 76%,#f3ecdc 76%)}
+.mb.slot{background:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.mb.e8{background:#111;box-shadow:inset -2px -3px 4px rgba(0,0,0,.6),inset 2px 2px 3px rgba(255,255,255,.3),0 0 0 1.5px var(--brass)}
+#status{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);white-space:nowrap;padding-inline:6px}
+
+/* ---------- toast ---------- */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 12px);transform:translate(-50%,-8px);max-width:min(88%,460px);
+  padding:9px 16px;border-radius:999px;background:var(--panel-solid);border:1px solid var(--line);
+  font-size:13px;font-weight:500;text-align:center;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;text-wrap:balance}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.foul{border-color:rgba(240,96,79,.7);color:#ffd9d3}
+#toast.good{border-color:rgba(217,171,82,.7)}
+
+/* ---------- controls ---------- */
+#power,#fine{position:absolute;touch-action:none;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+#power{left:8px;top:calc(var(--hud-h) + 10px);bottom:10px;width:46px;overflow:hidden}
+#powerFill{position:absolute;left:0;right:0;top:0;height:0;background:linear-gradient(180deg,var(--chalk),var(--brass) 55%,var(--foul))}
+#powerCue{position:absolute;left:50%;top:0;width:10px;height:100%;transform:translate(-50%,calc(-100% + 30px));
+  background:linear-gradient(180deg,#3a2418 0 55%,#d9b98a 55% 96%,#f4efe2 96% 98.5%,var(--chalk) 98.5%);border-radius:5px;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+#powerNum{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--display);font-weight:800;font-size:18px;
+  font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000}
+#powerLab{position:absolute;left:0;right:0;bottom:28px;text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.04em}
+#fine{right:8px;top:calc(var(--hud-h) + 10px);bottom:78px;width:46px;
+  background-image:repeating-linear-gradient(180deg,transparent 0 9px,var(--line) 9px 10px);background-color:rgba(11,15,20,.82);background-position:0 0}
+#fine::after{content:"";position:absolute;left:6px;right:6px;top:50%;height:2px;background:var(--brass);border-radius:2px}
+#fineLab{position:absolute;left:0;right:0;top:6px;text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.04em}
+#spinBtn{position:absolute;right:8px;bottom:10px;width:58px;height:58px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4px var(--panel),0 0 0 5px var(--line)}
+#spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:#d6231f;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+#app.busy #power,#app.busy #fine,#app.busy #spinBtn{opacity:.35;pointer-events:none}
+#power,#fine,#spinBtn{transition:opacity .2s}
+
+.portrait #power{left:78px;right:8px;top:auto;bottom:10px;width:auto;height:44px}
+.portrait #powerFill{top:0;bottom:0;right:auto;width:0;height:auto;background:linear-gradient(90deg,var(--chalk),var(--brass) 55%,var(--foul))}
+.portrait #powerCue{left:0;top:50%;width:100%;height:10px;transform:translate(calc(-100% + 34px),-50%);
+  background:linear-gradient(90deg,#3a2418 0 55%,#d9b98a 55% 96%,#f4efe2 96% 98.5%,var(--chalk) 98.5%)}
+.portrait #powerNum{left:auto;right:10px;bottom:0;top:0;display:grid;place-items:center}
+.portrait #powerLab{left:auto;right:44px;top:0;bottom:0;display:grid;place-items:center}
+.portrait #fine{left:78px;right:8px;top:auto;bottom:60px;width:auto;height:30px;
+  background-image:repeating-linear-gradient(90deg,transparent 0 9px,var(--line) 9px 10px)}
+.portrait #fine::after{left:50%;right:auto;top:5px;bottom:5px;width:2px;height:auto}
+.portrait #fineLab{left:8px;right:auto;top:0;bottom:0;display:grid;place-items:center}
+.portrait #spinBtn{left:10px;right:auto;bottom:22px}
+
+/* ---------- sheets ---------- */
+.scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(4,6,9,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow:auto}
+.sheet{width:min(100%,420px);background:var(--panel-solid);border:1px solid var(--line);border-radius:22px;padding:22px 20px 20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:16px}
+.brand{display:flex;align-items:flex-end;gap:12px}
+.brand .eight{flex:none;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#5b5b5b,#0b0b0b 60%);display:grid;place-items:center;
+  box-shadow:inset -4px -6px 10px rgba(0,0,0,.7)}
+.brand .eight b{width:26px;height:26px;border-radius:50%;background:#f3ecdc;color:#111;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:19px}
+h1{margin:0;font-family:var(--title);font-weight:400;font-size:34px;line-height:1;letter-spacing:.01em;text-wrap:balance}
+.lede{margin:4px 0 0;color:var(--dim);font-size:13px;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:7px}
+.field>span{font-size:11px;color:var(--dim);letter-spacing:.06em}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+.seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-weight:500;font-size:14px}
+.seg button[aria-pressed="true"]{background:rgba(92,184,218,.16);border-color:var(--chalk);color:#dff4fc}
+.go{padding:14px;border-radius:14px;background:var(--brass);color:#1b1305;font-weight:600;font-size:16px}
+.go:active{transform:translateY(1px)}
+.ghost{padding:12px;border-radius:14px;border:1px solid var(--line);font-weight:500}
+.how{margin:0;padding:0;list-style:none;display:grid;gap:5px;font-size:12.5px;color:var(--dim);line-height:1.45}
+.how b{color:var(--ivory);font-weight:600}
+#overTitle{font-family:var(--title);font-size:40px;line-height:1;margin:0}
+#overWhy{margin:0;color:var(--dim);line-height:1.5}
+
+#spinSheet .sheet{width:auto;align-items:center;gap:14px}
+#spinPad{position:relative;width:min(56vw,56vh,220px);aspect-ratio:1;border-radius:50%;touch-action:none;
+  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+#spinPad::before{content:"";position:absolute;inset:14%;border-radius:50%;border:1px dashed rgba(0,0,0,.28)}
+#spinPad .sdot{width:22px;height:22px;margin:-11px}
+#spinNote{font-size:12.5px;color:var(--dim);text-align:center;margin:0}
+.row{display:flex;gap:8px;align-self:stretch}
+.row>*{flex:1}
+#nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--dim);line-height:1.6}
+
+@media (max-height:430px){
+  .sheet{padding:14px 16px;gap:10px}
+  h1{font-size:26px}.brand .eight{width:40px;height:40px}.brand .eight b{width:20px;height:20px;font-size:15px}
+  .how{display:none}
+  .seg button{padding:8px 6px}.go{padding:10px}
+}
+@media (max-width:520px){
+  #status{display:none}
+  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px;padding-inline:6px}
+  .pl{gap:6px;padding:4px 6px}
+  .mb{width:11px;height:11px}.tray{gap:2px}
+  .pl .nm{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <canvas id="gl"></canvas>
+
+  <header id="hud">
+    <button id="menuBtn" aria-label="메뉴 열기"><span></span></button>
+    <div class="pl" id="p0"><div class="who"><div class="nm"></div><div class="grp"></div></div><div class="tray"></div></div>
+    <div id="status"></div>
+    <div class="pl r" id="p1"><div class="who"><div class="nm"></div><div class="grp"></div></div><div class="tray"></div></div>
+  </header>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <div id="power" aria-label="샷 세기">
+    <div id="powerFill"></div><div id="powerCue"></div>
+    <div id="powerLab">당기기</div><div id="powerNum">0</div>
+  </div>
+  <div id="fine" aria-label="미세 조준"><div id="fineLab">미세</div></div>
+  <button id="spinBtn" aria-label="회전 넣기"><i id="spinDot"></i></button>
+
+  <div class="scrim" id="spinSheet" hidden>
+    <div class="sheet">
+      <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
+      <p id="spinNote">큐볼에서 칠 곳을 고르세요. 위는 밀어치기, 아래는 끌어치기, 좌우는 옆 회전입니다.</p>
+      <div class="row"><button class="ghost" id="spinReset">가운데로</button><button class="go" id="spinOk">확인</button></div>
+    </div>
+  </div>
+
+  <div class="scrim" id="menu">
+    <div class="sheet">
+      <div class="brand">
+        <div class="eight"><b>8</b></div>
+        <div><h1>딥 포켓 8볼</h1><p class="lede">9피트 테이블, 공 16개. 위에서 내려다보는 3D 당구.</p></div>
+      </div>
+      <div class="field"><span>상대</span>
+        <div class="seg" id="segMode"><button data-v="ai">컴퓨터</button><button data-v="pvp">둘이서 한 기기로</button></div>
+      </div>
+      <div class="field" id="lvlField"><span>컴퓨터 실력</span>
+        <div class="seg" id="segLvl"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button></div>
+      </div>
+      <div class="field"><span>소리</span>
+        <div class="seg" id="segSnd"><button data-v="1">켬</button><button data-v="0">끔</button></div>
+      </div>
+      <ul class="how">
+        <li><b>조준</b> 테이블을 끌어서 큐를 돌리고, 눈금 다이얼로 미세하게 맞춥니다.</li>
+        <li><b>샷</b> 큐 막대를 당겼다가 놓으면 그 세기로 칩니다.</li>
+        <li><b>회전</b> 흰 공 버튼에서 칠 곳을 정합니다.</li>
+      </ul>
+      <div class="row"><button class="ghost" id="resumeBtn" hidden>이어서 하기</button><button class="go" id="startBtn">게임 시작</button></div>
+    </div>
+  </div>
+
+  <div class="scrim" id="over" hidden>
+    <div class="sheet">
+      <p id="overTitle"></p><p id="overWhy"></p>
+      <div class="row"><button class="ghost" id="overMenu">설정</button><button class="go" id="againBtn">한 판 더</button></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
