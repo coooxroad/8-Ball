@@ -15,7 +15,7 @@ body{margin:0}
 </style>
 </head>
 <body>
-<title>딥 포켓 8볼</title>
+<title>브레이크타임</title>
 <style>
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
@@ -82,9 +82,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
 .logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
-.logo .word{font-size:22px;font-weight:var(--w-title);letter-spacing:-.02em}
+.logo .word{font-size:22px;font-weight:var(--w-title);letter-spacing:-.02em;white-space:nowrap}
 .logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
 [data-theme="light"] .logo .en{display:none}
+@media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
 .h-actions{margin-left:auto;display:flex;gap:8px}
 .h-left,.h-right{display:flex;flex-direction:column;gap:10px;min-height:0}
 #modeList{display:flex;flex-direction:column;gap:10px}
@@ -265,7 +266,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
   <section id="home">
     <header class="h-top">
-      <div class="logo"><span class="mark"><i>8</i></span><span class="word">딥 포켓</span><span class="en">DEEP POCKET</span></div>
+      <div class="logo"><span class="mark"><i>8</i></span><span class="word">브레이크타임</span><span class="en">BREAK TIME</span></div>
       <div class="h-actions">
         <button class="btn" id="recBtn">전적</button>
         <button class="btn icon" id="setBtn" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
