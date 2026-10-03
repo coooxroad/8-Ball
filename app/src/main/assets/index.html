@@ -7,218 +7,327 @@
 html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 body{margin:0}
 [hidden]{display:none!important}
-@font-face{font-family:'Big Shoulders Display';font-weight:600;font-display:swap;src:url(fonts/big-shoulders-display-latin-600-normal.woff2) format('woff2')}
-@font-face{font-family:'Big Shoulders Display';font-weight:800;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:'Jua';font-display:swap;src:url(fonts/Jua-Regular.woff2) format('woff2')}
+@font-face{font-family:'Black Han Sans';font-display:swap;src:url(fonts/BlackHanSans-Regular.woff2) format('woff2')}
+@font-face{font-family:'Lilita One';font-display:swap;src:url(fonts/LilitaOne-Regular.woff2) format('woff2')}
 </style>
 </head>
 <body>
 <title>딥 포켓 8볼</title>
 <style>
-/* Layout: the table fills the screen under one overhead lamp; controls hug the edges
-   (pull-bar left and dial right in landscape, one bar along the bottom in portrait). */
+/* Layout: a live 3D table in the middle of an arcade-blue stage. Home screen docks chunky panels left and right of it;
+   in play the panels leave and only a slim scoreboard and the edge controls remain. */
 :root{
   color-scheme:dark;
-  --room:#06080b;
-  --panel:rgba(11,15,20,.82);
-  --panel-solid:#0e141a;
-  --line:rgba(239,230,210,.14);
-  --ivory:#efe6d2;
-  --dim:#93a0aa;
-  --brass:#d9ab52;
-  --chalk:#5cb8da;
-  --foul:#f0604f;
-  --felt:#0d6577;
-  --display:'Big Shoulders Display','Black Han Sans','Arial Narrow',system-ui,sans-serif;
-  --title:'Black Han Sans','Big Shoulders Display','Apple SD Gothic Neo',system-ui,sans-serif;
-  --body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
-  --hud-h:52px;
+  --blue:#2037c9; --band:#2b46e0; --navy:#16268f; --navy-d:#0e1a66;
+  --yellow:#ffd21f; --yellow-d:#c99a00;
+  --p1:#ff5a3c; --p1-d:#b9341d; --p2:#12b886; --p2-d:#0b7d5b;
+  --card:#ffffff; --card-d:#b8c0e6; --ink:#1a1f4d; --mute:#cfd8ff; --red:#e63d1f;
+  --disp:'Black Han Sans','Jua','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --body:'Jua','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
+  --num:'Lilita One','Black Han Sans','Arial Black',system-ui,sans-serif;
+  --hud-h:60px;
 }
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-body{background:var(--room);color:var(--ivory);font-family:var(--body);font-size:14px;
+body{background:var(--blue);color:#fff;font-family:var(--body);font-size:16px;line-height:1.25;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
-button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
-button:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
-#app{position:relative;height:100%;overflow:hidden;background:var(--room)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+#app{position:relative;height:100%;overflow:hidden;background:var(--blue)}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
-/* ---------- top bar ---------- */
-#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;
-  grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;
-  padding-inline:10px;background:linear-gradient(var(--panel),rgba(11,15,20,.55));
-  border-bottom:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-#menuBtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;background:rgba(255,255,255,.03)}
-#menuBtn span{display:block;width:16px;height:2px;background:var(--ivory);box-shadow:0 5px 0 var(--ivory),0 -5px 0 var(--ivory);border-radius:2px}
-.pl{display:flex;align-items:center;gap:10px;min-width:0;justify-self:start;max-width:100%;padding:5px 10px;border-radius:12px;border:1px solid transparent;transition:border-color .25s,background .25s}
-.pl.r{flex-direction:row-reverse;text-align:right;justify-self:end}
-.pl.on{border-color:rgba(217,171,82,.55);background:rgba(217,171,82,.09)}
-.pl .who{min-width:0;flex:none}
-.pl .nm{font-weight:600;font-size:13px;line-height:1.15;white-space:nowrap}
-.pl .grp{font-size:10.5px;color:var(--dim);letter-spacing:.02em;white-space:nowrap}
-.pl.on .grp{color:var(--brass)}
-.tray{display:flex;gap:3px;flex-wrap:nowrap;min-width:0}
-.mb{flex:none;width:15px;height:15px;border-radius:50%;background:var(--c,#333);
-  box-shadow:inset -2px -3px 4px rgba(0,0,0,.45),inset 2px 2px 3px rgba(255,255,255,.35)}
+/* ---------- buttons: every pressable thing has a hard bottom edge and sinks when pressed ---------- */
+.btn{--bg:var(--navy);--edge:var(--navy-d);--fg:#fff;background:var(--bg);color:var(--fg);border-radius:16px;
+  box-shadow:0 5px 0 var(--edge);padding:10px 18px;min-height:46px;font-size:19px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .06s,box-shadow .06s;white-space:nowrap}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--edge)}
+.btn.icon{width:50px;padding:0}
+.btn.yellow{--bg:var(--yellow);--edge:var(--yellow-d);--fg:var(--ink)}
+.btn.white{--bg:var(--card);--edge:var(--card-d);--fg:var(--ink)}
+.btn.big{font-family:var(--disp);font-size:40px;line-height:1;border-radius:24px;padding:16px 24px;box-shadow:0 8px 0 var(--edge)}
+.btn.big:active{transform:translateY(5px);box-shadow:0 3px 0 var(--edge)}
+.lab{font-size:18px;color:var(--mute)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+.seg .btn{padding:8px 6px;font-size:18px;min-height:44px}
+.seg .btn[aria-pressed="true"]{--bg:var(--yellow);--edge:var(--yellow-d);--fg:var(--ink)}
+
+/* ---------- home ---------- */
+#home{position:absolute;inset:0;display:grid;grid-template-columns:300px minmax(0,1fr) 300px;grid-template-rows:auto minmax(0,1fr);
+  gap:16px 26px;padding:20px 30px 26px;pointer-events:none}
+#home>*{pointer-events:auto}
+.h-top{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:baseline;gap:10px;transform:skewX(-8deg)}
+.logo span{font-family:var(--disp);font-size:44px;line-height:1}
+.logo b{font-family:var(--num);font-weight:400;font-size:50px;line-height:1;color:var(--yellow)}
+.h-actions{margin-left:auto;display:flex;gap:12px}
+.h-left,.h-right{display:flex;flex-direction:column;gap:12px;min-height:0}
+#modeList{display:flex;flex-direction:column;gap:12px}
+.gcard{--bg:var(--card);--edge:var(--card-d);background:var(--bg);color:var(--ink);border-radius:20px;box-shadow:0 7px 0 var(--edge);
+  padding:13px 16px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .06s,box-shadow .06s}
+.gcard:active{transform:translateY(4px);box-shadow:0 3px 0 var(--edge)}
+.gcard[aria-pressed="true"]{--bg:var(--yellow);--edge:var(--yellow-d)}
+.gcard .ic{flex:none;width:46px;height:46px;display:grid;place-items:center}
+.gcard .nm{display:block;font-size:27px;line-height:1.1}
+.gcard .bl{display:block;font-size:15px;opacity:.86}
+.ball{display:grid;place-items:center;border-radius:50%;background:var(--c,#111);width:46px;height:46px;
+  box-shadow:inset -4px -5px 8px rgba(0,0,0,.35),inset 3px 3px 5px rgba(255,255,255,.35)}
+.ball i{display:grid;place-items:center;width:52%;height:52%;border-radius:50%;background:#fff;color:#111;font-family:var(--num);font-style:normal;font-size:17px}
+.four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;width:46px;height:46px}
+.four i{border-radius:50%;background:var(--c);box-shadow:inset -2px -3px 4px rgba(0,0,0,.3),inset 2px 2px 3px rgba(255,255,255,.35)}
+.h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0}
+.h-chips{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
+.chip-sw{width:22px;height:22px;border-radius:7px;border:2px solid #fff;box-sizing:border-box;background:var(--c)}
+.chip-cue{width:34px;height:7px;border-radius:4px;background:var(--c)}
+.pcard{--bg:var(--p1);--edge:var(--p1-d);background:var(--bg);border-radius:20px;box-shadow:0 7px 0 var(--edge);padding:12px 16px;
+  display:flex;align-items:center;gap:14px;text-align:left;transition:transform .06s,box-shadow .06s;min-width:0}
+.pcard:active{transform:translateY(4px);box-shadow:0 3px 0 var(--edge)}
+.pcard.two{--bg:var(--p2);--edge:var(--p2-d)}
+.av{flex:none;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#fff;color:var(--bg);font-family:var(--num);font-style:normal;font-size:30px}
+.pcard.two .av{color:var(--p2-d)}
+.pcard .who{min-width:0;display:flex;flex-direction:column}
+.pcard .nm{font-size:26px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .rc{font-size:16px}
+.vs{align-self:center;font-family:var(--num);font-size:36px;line-height:1;color:var(--yellow);transform:skewX(-8deg)}
+#startBtn{margin-top:auto}
+
+/* compact home: phones. The panels take the whole screen and scroll. */
+.compact #home{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:max-content max-content max-content;align-content:start;overflow:auto;pointer-events:auto;
+  background:var(--blue) linear-gradient(108deg,transparent 0 18%,var(--band) 18% 46%,transparent 46%);gap:14px 18px;padding:14px 16px 20px}
+.compact .h-mid{grid-column:1/-1;order:3}
+.compact .logo span{font-size:32px}.compact .logo b{font-size:36px}
+.compact.portrait #home{grid-template-columns:minmax(0,1fr)}
+.compact #startBtn{margin-top:6px}
+
+/* ---------- in-game scoreboard ---------- */
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;gap:10px;padding:6px 10px 0}
+#hud .btn.icon{width:46px;min-height:42px}
+.pill{--bg:var(--navy);--edge:var(--navy-d);justify-self:start;max-width:100%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--bg);
+  border-radius:16px;box-shadow:0 4px 0 var(--edge);padding:5px 14px 5px 6px;transition:background .2s,box-shadow .2s}
+.pill.r{justify-self:end;flex-direction:row-reverse;padding:5px 6px 5px 14px;text-align:right}
+.pill.on{--bg:var(--p1);--edge:var(--p1-d)}
+.pill.r.on{--bg:var(--p2);--edge:var(--p2-d)}
+.pill .av{width:36px;height:36px;font-size:21px;color:var(--p1)}
+.pill.r .av{color:var(--p2-d)}
+.pill .who{min-width:0;display:flex;flex-direction:column}
+.pill .nm{font-size:17px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .sub{font-size:12.5px;line-height:1.1;color:var(--mute);white-space:nowrap}
+.pill.on .sub{color:#fff}
+.tray{display:flex;gap:3px;min-width:0}
+.mb{flex:none;width:17px;height:17px;border-radius:50%;background:var(--c,#333);
+  box-shadow:inset -2px -3px 4px rgba(0,0,0,.4),inset 2px 2px 3px rgba(255,255,255,.4)}
 .mb.st{background:linear-gradient(#f3ecdc 0 24%,var(--c) 24% 76%,#f3ecdc 76%)}
-.mb.slot{background:none;box-shadow:inset 0 0 0 1.5px var(--line)}
-.mb.e8{background:#111;box-shadow:inset -2px -3px 4px rgba(0,0,0,.6),inset 2px 2px 3px rgba(255,255,255,.3),0 0 0 1.5px var(--brass)}
-#status{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);white-space:nowrap;padding-inline:6px}
+.mb.slot{background:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.mb.e8{background:#111;box-shadow:inset -2px -3px 4px rgba(0,0,0,.6),inset 2px 2px 3px rgba(255,255,255,.3),0 0 0 2px var(--yellow)}
+.pts{font-family:var(--num);font-size:30px;line-height:1;min-width:26px;text-align:center}
+#badge{display:flex;align-items:center;gap:8px;background:var(--navy-d);border-radius:999px;padding:6px 14px;font-size:15px;white-space:nowrap}
+#badge b{font-family:var(--num);font-weight:400;font-size:17px;color:var(--yellow);letter-spacing:.04em}
 
-/* ---------- toast ---------- */
-#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 12px);transform:translate(-50%,-8px);max-width:min(88%,460px);
-  padding:9px 16px;border-radius:999px;background:var(--panel-solid);border:1px solid var(--line);
-  font-size:13px;font-weight:500;text-align:center;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;text-wrap:balance}
-#toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.foul{border-color:rgba(240,96,79,.7);color:#ffd9d3}
-#toast.good{border-color:rgba(217,171,82,.7)}
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 14px);transform:translate(-50%,-10px) scale(.96);max-width:min(88%,520px);
+  padding:10px 20px;border-radius:999px;background:var(--card);color:var(--ink);box-shadow:0 5px 0 var(--card-d);
+  font-size:clamp(14px,2.1vw,18px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-wrap:balance}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#toast.foul{background:var(--p1);color:#fff;box-shadow:0 5px 0 var(--p1-d)}
+#toast.good{background:var(--yellow);box-shadow:0 5px 0 var(--yellow-d)}
+#fps{position:absolute;left:8px;bottom:6px;font-family:var(--num);font-size:13px;color:#fff;background:rgba(14,26,102,.8);border-radius:8px;padding:2px 8px;pointer-events:none}
 
-/* ---------- controls ---------- */
-#power,#fine{position:absolute;touch-action:none;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
-#power{left:8px;top:calc(var(--hud-h) + 10px);bottom:10px;width:46px;overflow:hidden}
-#powerFill{position:absolute;left:0;right:0;top:0;height:0;background:linear-gradient(180deg,var(--chalk),var(--brass) 55%,var(--foul))}
-#powerCue{position:absolute;left:50%;top:0;width:10px;height:100%;transform:translate(-50%,calc(-100% + 30px));
-  background:linear-gradient(180deg,#3a2418 0 55%,#d9b98a 55% 96%,#f4efe2 96% 98.5%,var(--chalk) 98.5%);border-radius:5px;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
-#powerNum{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--display);font-weight:800;font-size:18px;
-  font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000}
-#powerLab{position:absolute;left:0;right:0;bottom:28px;text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.04em}
-#fine{right:8px;top:calc(var(--hud-h) + 10px);bottom:78px;width:46px;
-  background-image:repeating-linear-gradient(180deg,transparent 0 9px,var(--line) 9px 10px);background-color:rgba(11,15,20,.82);background-position:0 0}
-#fine::after{content:"";position:absolute;left:6px;right:6px;top:50%;height:2px;background:var(--brass);border-radius:2px}
-#fineLab{position:absolute;left:0;right:0;top:6px;text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.04em}
-#spinBtn{position:absolute;right:8px;bottom:10px;width:58px;height:58px;border-radius:50%;
-  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 4px var(--panel),0 0 0 5px var(--line)}
-#spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:#d6231f;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
-#app.busy #power,#app.busy #fine,#app.busy #spinBtn{opacity:.35;pointer-events:none}
+/* ---------- controls: same places and behaviour as before, new skin ---------- */
+#power,#fine{position:absolute;touch-action:none;border-radius:18px;background:var(--navy);box-shadow:0 5px 0 var(--navy-d)}
+#power{left:8px;top:calc(var(--hud-h) + 12px);bottom:14px;width:48px;overflow:hidden}
+#powerFill{position:absolute;left:0;right:0;top:0;height:0;background:linear-gradient(180deg,var(--yellow) 0 45%,#ff9a2e 45% 75%,var(--p1) 75%)}
+#powerCue{position:absolute;left:50%;top:0;width:11px;height:100%;transform:translate(-50%,calc(-100% + 30px));
+  background:linear-gradient(180deg,#2a1710 0 55%,#e2c592 55% 96%,#f4efe2 96% 98.5%,#4aa3c7 98.5%);border-radius:6px;box-shadow:0 0 0 2px rgba(14,26,102,.55)}
+#powerNum{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--num);font-size:21px;text-shadow:0 2px 0 var(--navy-d)}
+#powerLab{position:absolute;left:0;right:0;bottom:32px;text-align:center;font-size:12px;color:var(--mute)}
+#fine{right:8px;top:calc(var(--hud-h) + 12px);bottom:88px;width:48px;
+  background-image:repeating-linear-gradient(180deg,transparent 0 9px,rgba(255,255,255,.22) 9px 11px);background-color:var(--navy)}
+#fine::after{content:"";position:absolute;left:5px;right:5px;top:50%;height:4px;margin-top:-2px;background:var(--yellow);border-radius:2px}
+#fineLab{position:absolute;left:0;right:0;top:7px;text-align:center;font-size:12px;color:var(--mute)}
+#spinBtn{position:absolute;right:8px;bottom:14px;width:60px;height:60px;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a);box-shadow:0 0 0 5px var(--navy),0 5px 0 5px var(--navy-d)}
+#spinDot,.sdot{position:absolute;left:50%;top:50%;width:13px;height:13px;margin:-6.5px;border-radius:50%;background:#d6231f;box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+#spinPop{position:absolute;right:82px;bottom:14px;background:var(--navy);border-radius:22px;box-shadow:0 6px 0 var(--navy-d);padding:14px;
+  display:flex;flex-direction:column;align-items:center;gap:8px}
+#spinPad{position:relative;width:150px;height:150px;border-radius:50%;touch-action:none;
+  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a)}
+#spinPad::before{content:"";position:absolute;inset:14%;border-radius:50%;border:2px dashed rgba(26,31,77,.3)}
+#spinPad .sdot{width:22px;height:22px;margin:-11px}
+#spinHint{font-size:13px;color:var(--mute);text-align:center;max-width:170px}
+#app.busy #power,#app.busy #fine,#app.busy #spinBtn{opacity:.4;pointer-events:none}
 #power,#fine,#spinBtn{transition:opacity .2s}
 
-.portrait #power{left:78px;right:8px;top:auto;bottom:10px;width:auto;height:44px}
-.portrait #powerFill{top:0;bottom:0;right:auto;width:0;height:auto;background:linear-gradient(90deg,var(--chalk),var(--brass) 55%,var(--foul))}
-.portrait #powerCue{left:0;top:50%;width:100%;height:10px;transform:translate(calc(-100% + 34px),-50%);
-  background:linear-gradient(90deg,#3a2418 0 55%,#d9b98a 55% 96%,#f4efe2 96% 98.5%,var(--chalk) 98.5%)}
-.portrait #powerNum{left:auto;right:10px;bottom:0;top:0;display:grid;place-items:center}
-.portrait #powerLab{left:auto;right:44px;top:0;bottom:0;display:grid;place-items:center}
-.portrait #fine{left:78px;right:8px;top:auto;bottom:60px;width:auto;height:30px;
-  background-image:repeating-linear-gradient(90deg,transparent 0 9px,var(--line) 9px 10px)}
-.portrait #fine::after{left:50%;right:auto;top:5px;bottom:5px;width:2px;height:auto}
-.portrait #fineLab{left:8px;right:auto;top:0;bottom:0;display:grid;place-items:center}
-.portrait #spinBtn{left:10px;right:auto;bottom:22px}
+.portrait #power{left:84px;right:8px;top:auto;bottom:14px;width:auto;height:46px}
+.portrait #powerFill{top:0;bottom:0;right:auto;width:0;height:auto;background:linear-gradient(90deg,var(--yellow) 0 45%,#ff9a2e 45% 75%,var(--p1) 75%)}
+.portrait #powerCue{left:0;top:50%;width:100%;height:11px;transform:translate(calc(-100% + 34px),-50%);
+  background:linear-gradient(90deg,#2a1710 0 55%,#e2c592 55% 96%,#f4efe2 96% 98.5%,#4aa3c7 98.5%)}
+.portrait #powerNum{left:auto;right:12px;bottom:0;top:0;display:grid;place-items:center}
+.portrait #powerLab{left:auto;right:50px;top:0;bottom:0;display:grid;place-items:center}
+.portrait #fine{left:84px;right:8px;top:auto;bottom:70px;width:auto;height:32px;
+  background-image:repeating-linear-gradient(90deg,transparent 0 9px,rgba(255,255,255,.22) 9px 11px)}
+.portrait #fine::after{left:50%;right:auto;top:5px;bottom:5px;width:4px;height:auto;margin:0 0 0 -2px}
+.portrait #fineLab{left:10px;right:auto;top:0;bottom:0;display:grid;place-items:center}
+.portrait #spinBtn{left:12px;right:auto;bottom:26px}
+.portrait #spinPop{left:8px;right:auto;bottom:112px}
 
 /* ---------- sheets ---------- */
-.scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(4,6,9,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);overflow:auto}
-.sheet{width:min(100%,420px);background:var(--panel-solid);border:1px solid var(--line);border-radius:22px;padding:22px 20px 20px;
-  box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:16px}
-.brand{display:flex;align-items:flex-end;gap:12px}
-.brand .eight{flex:none;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#5b5b5b,#0b0b0b 60%);display:grid;place-items:center;
-  box-shadow:inset -4px -6px 10px rgba(0,0,0,.7)}
-.brand .eight b{width:26px;height:26px;border-radius:50%;background:#f3ecdc;color:#111;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:19px}
-h1{margin:0;font-family:var(--title);font-weight:400;font-size:34px;line-height:1;letter-spacing:.01em;text-wrap:balance}
-.lede{margin:4px 0 0;color:var(--dim);font-size:13px;line-height:1.5}
-.field{display:flex;flex-direction:column;gap:7px}
-.field>span{font-size:11px;color:var(--dim);letter-spacing:.06em}
-.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
-.seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-weight:500;font-size:14px}
-.seg button[aria-pressed="true"]{background:rgba(92,184,218,.16);border-color:var(--chalk);color:#dff4fc}
-.go{padding:14px;border-radius:14px;background:var(--brass);color:#1b1305;font-weight:600;font-size:16px}
-.go:active{transform:translateY(1px)}
-.ghost{padding:12px;border-radius:14px;border:1px solid var(--line);font-weight:500}
-.how{margin:0;padding:0;list-style:none;display:grid;gap:5px;font-size:12.5px;color:var(--dim);line-height:1.45}
-.how b{color:var(--ivory);font-weight:600}
-#overTitle{font-family:var(--title);font-size:40px;line-height:1;margin:0}
-#overWhy{margin:0;color:var(--dim);line-height:1.5}
+.scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(10,16,70,.62);overflow:auto}
+.sheet{width:min(100%,520px);background:var(--navy);border-radius:26px;box-shadow:0 8px 0 var(--navy-d);padding:20px;display:flex;flex-direction:column;gap:16px;
+  animation:pop .16s ease-out}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet h2{margin:0;font-family:var(--disp);font-weight:400;font-size:30px;line-height:1}
+#sheetBody{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:8px}
+.opt{--bg:var(--card);--edge:var(--card-d);background:var(--bg);color:var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--edge);padding:12px 16px;
+  display:flex;align-items:center;gap:14px;text-align:left;transition:transform .06s,box-shadow .06s}
+.opt:active{transform:translateY(3px);box-shadow:0 3px 0 var(--edge)}
+.opt[aria-pressed="true"]{--bg:var(--yellow);--edge:var(--yellow-d)}
+.opt .t{display:block;font-size:22px;line-height:1.15}
+.opt .d{display:block;font-size:15px;opacity:.86}
+.sw{flex:none;width:64px;height:40px;border-radius:9px;background:var(--c);border:5px solid var(--w);box-sizing:border-box}
+.cuepic{flex:none;width:150px;height:12px;border-radius:6px;background:var(--c)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.txt{font:inherit;font-size:26px;color:var(--ink);background:#fff;border:0;border-radius:16px;padding:12px 16px;box-shadow:inset 0 4px 0 var(--card-d);width:100%;box-sizing:border-box;
+  -webkit-user-select:text;user-select:text}
+.rec{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px 72px;gap:6px 10px;align-items:center;font-size:19px}
+.rec .hd{font-size:14px;color:var(--mute)}
+.rec .n{font-family:var(--num);text-align:center;font-size:22px}
+.note{font-size:15px;color:var(--mute);margin:0;line-height:1.4}
+.row{display:flex;gap:12px}.row>*{flex:1}
 
-#spinSheet .sheet{width:auto;align-items:center;gap:14px}
-#spinPad{position:relative;width:min(56vw,56vh,220px);aspect-ratio:1;border-radius:50%;touch-action:none;
-  background:radial-gradient(circle at 36% 30%,#fffdf6,#e9e0cb 55%,#a99f8a);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
-#spinPad::before{content:"";position:absolute;inset:14%;border-radius:50%;border:1px dashed rgba(0,0,0,.28)}
-#spinPad .sdot{width:22px;height:22px;margin:-11px}
-#spinNote{font-size:12.5px;color:var(--dim);text-align:center;margin:0}
-.row{display:flex;gap:8px;align-self:stretch}
-.row>*{flex:1}
-#nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--dim);line-height:1.6}
+/* ---------- result ---------- */
+#result{position:absolute;inset:0;overflow:auto;background:var(--blue) linear-gradient(108deg,transparent 0 22%,var(--band) 22% 64%,transparent 64%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3vh,28px);padding:24px clamp(16px,5vw,60px)}
+.win-badge{background:var(--yellow);color:var(--ink);padding:6px 34px 10px;border-radius:20px;box-shadow:0 8px 0 var(--yellow-d);
+  font-family:var(--disp);font-size:clamp(44px,8vw,72px);line-height:1;transform:rotate(-3deg);animation:pop .25s ease-out}
+.r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(12px,3vw,30px);flex-wrap:wrap}
+.r-win{--bg:var(--p1);--edge:var(--p1-d);background:var(--bg);box-shadow:0 8px 0 var(--edge);border-radius:24px;padding:16px 26px;display:flex;align-items:center;gap:16px;min-width:0}
+.r-win.two{--bg:var(--p2);--edge:var(--p2-d)}
+.r-win .av{width:78px;height:78px;font-size:42px}
+.r-win.two .av{color:var(--p2-d)}
+.r-win .nm{font-size:clamp(28px,4.4vw,44px);line-height:1.05}
+.r-win .rc{font-size:20px}
+.r-score{font-family:var(--num);font-size:clamp(56px,9vw,96px);line-height:1;transform:skewX(-8deg);white-space:nowrap}
+.r-score b{font-weight:400;color:var(--yellow)}
+.r-lose{background:var(--navy);box-shadow:0 8px 0 var(--navy-d);border-radius:24px;padding:12px 20px;display:flex;align-items:center;gap:12px;color:var(--mute);font-size:26px}
+.r-lose .av{width:54px;height:54px;font-size:28px;background:var(--mute);color:var(--navy)}
+#rStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;width:100%;max-width:1040px}
+.stat{background:var(--card);color:var(--ink);box-shadow:0 7px 0 var(--card-d);border-radius:20px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.stat .k{font-size:18px}
+.stat .v{font-family:var(--num);font-size:46px;line-height:1;white-space:nowrap}
+.stat .v b{font-weight:400;color:var(--red)}
+.stat .v span{font-size:26px;color:#5b638f;margin-left:6px}
+#rWhy{font-size:20px;color:var(--mute);margin:0;text-align:center}
+.r-btns{margin-top:8px;display:flex;gap:14px;width:100%;max-width:1040px}
+.r-btns .btn{flex:1}.r-btns .btn.big{flex:2}
+.r-btns .btn.navy{font-size:26px;border-radius:22px;box-shadow:0 7px 0 var(--edge)}
+#nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:20px;line-height:1.6;background:var(--blue)}
 
-@media (max-height:430px){
-  .sheet{padding:14px 16px;gap:10px}
-  h1{font-size:26px}.brand .eight{width:40px;height:40px}.brand .eight b{width:20px;height:20px;font-size:15px}
-  .how{display:none}
-  .seg button{padding:8px 6px}.go{padding:10px}
+@media (max-height:520px){
+  :root{--hud-h:50px}
+  .pill .av{width:30px;height:30px;font-size:18px}.pill .nm{font-size:15px}.mb{width:14px;height:14px}
+  #result{gap:12px;padding-block:16px}
+  .r-win .av{width:54px;height:54px;font-size:30px}.r-win{padding:10px 18px}
+  .stat .v{font-size:32px}.stat{padding:8px}
 }
-@media (max-width:520px){
-  #status{display:none}
-  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:4px;padding-inline:6px}
-  .pl{gap:6px;padding:4px 6px}
-  .mb{width:11px;height:11px}.tray{gap:2px}
-  .pl .nm{font-size:12px}
+@media (max-width:640px){
+  #badge{display:none}
+  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:6px;padding-inline:6px}
+  .pill{gap:6px;padding-right:8px}.pill.r{padding-left:8px}
+  .mb{width:12px;height:12px}.tray{gap:2px}
+  #rStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2{grid-template-columns:minmax(0,1fr)}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
-<div id="app">
+<div id="app" class="busy">
   <canvas id="gl"></canvas>
 
-  <header id="hud">
-    <button id="menuBtn" aria-label="메뉴 열기"><span></span></button>
-    <div class="pl" id="p0"><div class="who"><div class="nm"></div><div class="grp"></div></div><div class="tray"></div></div>
-    <div id="status"></div>
-    <div class="pl r" id="p1"><div class="who"><div class="nm"></div><div class="grp"></div></div><div class="tray"></div></div>
+  <section id="home">
+    <header class="h-top">
+      <div class="logo"><span>딥 포켓</span><b>8</b></div>
+      <div class="h-actions">
+        <button class="btn" id="recBtn">전적</button>
+        <button class="btn icon" id="setBtn" aria-label="설정"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+      </div>
+    </header>
+    <div class="h-left">
+      <div class="lab">게임 고르기</div>
+      <div id="modeList"></div>
+    </div>
+    <div class="h-mid">
+      <div class="h-chips">
+        <button class="btn" id="clothBtn"><i class="chip-sw" id="clothSw"></i>테이블 색</button>
+        <button class="btn" id="cueBtn"><i class="chip-cue" id="cueSw"></i>큐 고르기</button>
+        <button class="btn" id="guideBtn">조준선 <span id="guideVal"></span></button>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="lab">오늘의 대결</div>
+      <button class="pcard" id="pc0"><i class="av">1</i><span class="who"><span class="nm"></span><span class="rc"></span></span></button>
+      <div class="vs">VS</div>
+      <button class="pcard two" id="pc1"><i class="av">2</i><span class="who"><span class="nm"></span><span class="rc"></span></span></button>
+      <div class="seg" id="segOpp"><button class="btn" data-v="0">친구와</button><button class="btn" data-v="1">컴퓨터와</button></div>
+      <div class="seg" id="segLvl"><button class="btn" data-v="0">쉬움</button><button class="btn" data-v="1">보통</button><button class="btn" data-v="2">어려움</button></div>
+      <div class="seg" id="segTarget"><button class="btn" data-v="5">5점</button><button class="btn" data-v="10">10점</button><button class="btn" data-v="15">15점</button></div>
+      <button class="btn yellow big" id="startBtn">시작</button>
+    </div>
+  </section>
+
+  <header id="hud" hidden>
+    <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+    <div class="pill" id="p0"><i class="av">1</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
+    <div id="badge"></div>
+    <div class="pill r" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>
+  <div id="fps" hidden></div>
 
-  <div id="power" aria-label="샷 세기">
+  <div id="power" aria-label="샷 세기" hidden>
     <div id="powerFill"></div><div id="powerCue"></div>
     <div id="powerLab">당기기</div><div id="powerNum">0</div>
   </div>
-  <div id="fine" aria-label="미세 조준"><div id="fineLab">미세</div></div>
-  <button id="spinBtn" aria-label="회전 넣기"><i id="spinDot"></i></button>
+  <div id="fine" aria-label="미세 조준" hidden><div id="fineLab">미세</div></div>
+  <button id="spinBtn" aria-label="큐볼의 칠 곳 정하기" hidden><i id="spinDot"></i></button>
+  <div id="spinPop" hidden>
+    <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
+    <div id="spinHint"></div>
+    <button class="btn white" id="spinReset">가운데로</button>
+  </div>
 
-  <div class="scrim" id="spinSheet" hidden>
+  <div class="scrim" id="sheet" hidden>
     <div class="sheet">
-      <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
-      <p id="spinNote">큐볼에서 칠 곳을 고르세요. 위는 밀어치기, 아래는 끌어치기, 좌우는 옆 회전입니다.</p>
-      <div class="row"><button class="ghost" id="spinReset">가운데로</button><button class="go" id="spinOk">확인</button></div>
+      <div class="sheet-h"><h2 id="sheetTitle"></h2><button class="btn white" id="sheetX">닫기</button></div>
+      <div id="sheetBody"></div>
     </div>
   </div>
 
-  <div class="scrim" id="menu">
-    <div class="sheet">
-      <div class="brand">
-        <div class="eight"><b>8</b></div>
-        <div><h1>딥 포켓 8볼</h1><p class="lede">9피트 테이블, 공 16개. 위에서 내려다보는 3D 당구.</p></div>
-      </div>
-      <div class="field"><span>상대</span>
-        <div class="seg" id="segMode"><button data-v="ai">컴퓨터</button><button data-v="pvp">둘이서 한 기기로</button></div>
-      </div>
-      <div class="field" id="lvlField"><span>컴퓨터 실력</span>
-        <div class="seg" id="segLvl"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button></div>
-      </div>
-      <div class="field"><span>소리</span>
-        <div class="seg" id="segSnd"><button data-v="1">켬</button><button data-v="0">끔</button></div>
-      </div>
-      <ul class="how">
-        <li><b>조준</b> 테이블을 끌어서 큐를 돌리고, 눈금 다이얼로 미세하게 맞춥니다.</li>
-        <li><b>샷</b> 큐 막대를 당겼다가 놓으면 그 세기로 칩니다.</li>
-        <li><b>회전</b> 흰 공 버튼에서 칠 곳을 정합니다.</li>
-      </ul>
-      <div class="row"><button class="ghost" id="resumeBtn" hidden>이어서 하기</button><button class="go" id="startBtn">게임 시작</button></div>
+  <section id="result" hidden>
+    <div class="win-badge">승리!</div>
+    <div class="r-vs">
+      <div class="r-win" id="rWin"><i class="av"></i><div><div class="nm"></div><div class="rc"></div></div></div>
+      <div class="r-score" id="rScore"></div>
+      <div class="r-lose" id="rLose"><i class="av"></i><span class="nm"></span></div>
     </div>
-  </div>
-
-  <div class="scrim" id="over" hidden>
-    <div class="sheet">
-      <p id="overTitle"></p><p id="overWhy"></p>
-      <div class="row"><button class="ghost" id="overMenu">설정</button><button class="go" id="againBtn">한 판 더</button></div>
-    </div>
-  </div>
+    <div id="rStats"></div>
+    <p id="rWhy"></p>
+    <div class="r-btns"><button class="btn navy" id="homeBtn">처음으로</button><button class="btn yellow big" id="againBtn">한 판 더</button></div>
+  </section>
 </div>
 <script src="three.min.js"></script>
 <script>
-/* 8-ball physics: 2D table plane, full 3D spin. Units are metres and seconds. */
-const PHYS = (() => {
-  const R = 0.028575, HL = 1.27, HW = 0.635, G = 9.8;
-  const MU_S = 0.2, MU_R = 0.016, MU_SP = 0.04, E_BALL = 0.95, MU_CUSH = 0.16;
+/* Cue-sports physics: 2D table plane, full 3D spin. Units are metres and seconds.
+   createPhysics({ R, pockets }) builds one table: a pool table with six pockets, or a carom table with none. */
+function createPhysics(cfg) {
+  const R = cfg.R, POCKETED = !!cfg.pockets;
+  const HL = 1.27, HW = 0.635, G = 9.8;
+  const MU_S = 0.2, MU_R = 0.016, MU_SP = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
   const GC = 0.088, GS = 0.07, CW = 0.05, PO = 0.03, SO = 0.05;
   const D = Math.SQRT1_2;
 
-  const POCKETS = [
+  const POCKETS = !POCKETED ? [] : [
     { x: -HL - PO, y: HW + PO, r: 0.068, sink: 0.062, ax: -HL + 0.03, ay: HW - 0.03, nx: -D, ny: D, corner: true },
     { x: 0, y: HW + SO, r: 0.062, sink: 0.05, ax: 0, ay: HW, nx: 0, ny: 1, corner: false },
     { x: HL + PO, y: HW + PO, r: 0.068, sink: 0.062, ax: HL - 0.03, ay: HW - 0.03, nx: D, ny: D, corner: true },
@@ -227,11 +336,12 @@ const PHYS = (() => {
     { x: -HL - PO, y: -HW - PO, r: 0.068, sink: 0.062, ax: -HL + 0.03, ay: -HW + 0.03, nx: -D, ny: -D, corner: true },
   ];
 
-  // Cushions: a nose line plus an angled jaw facing at each end.
+  // Cushions: a nose line plus (on a pool table) an angled jaw facing at each end.
   const CUSHIONS = [], SEGS = [];
   (function build() {
     const C38 = Math.cos(38 * Math.PI / 180), S38 = Math.sin(38 * Math.PI / 180);
     const C75 = Math.cos(75 * Math.PI / 180), S75 = Math.sin(75 * Math.PI / 180);
+    const seg = (p, q) => { const l = Math.hypot(q[0] - p[0], q[1] - p[1]); SEGS.push({ ax: p[0], ay: p[1], bx: q[0], by: q[1], len: l, tx: (q[0] - p[0]) / l, ty: (q[1] - p[1]) / l }); };
     function add(ax, ay, bx, by, ox, oy, aCorner, bCorner) {
       const len = Math.hypot(bx - ax, by - ay), tx = (bx - ax) / len, ty = (by - ay) / len;
       const ja = aCorner ? [C38, S38, 0.065] : [C75, S75, 0.05];
@@ -241,66 +351,52 @@ const PHYS = (() => {
         ja: [ax + (-tx * ja[0] + ox * ja[1]) * ja[2], ay + (-ty * ja[0] + oy * ja[1]) * ja[2]],
         jb: [bx + (tx * jb[0] + ox * jb[1]) * jb[2], by + (ty * jb[0] + oy * jb[1]) * jb[2]],
       };
-      CUSHIONS.push(c);
-      for (const [p, q] of [[c.ja, c.a], [c.a, c.b], [c.b, c.jb]]) {
-        const l = Math.hypot(q[0] - p[0], q[1] - p[1]);
-        SEGS.push({ ax: p[0], ay: p[1], bx: q[0], by: q[1], len: l, tx: (q[0] - p[0]) / l, ty: (q[1] - p[1]) / l });
-      }
+      CUSHIONS.push(c); seg(c.ja, c.a); seg(c.a, c.b); seg(c.b, c.jb);
     }
-    add(-HL + GC, HW, -GS, HW, 0, 1, true, false);
-    add(GS, HW, HL - GC, HW, 0, 1, false, true);
-    add(-HL + GC, -HW, -GS, -HW, 0, -1, true, false);
-    add(GS, -HW, HL - GC, -HW, 0, -1, false, true);
-    add(-HL, -HW + GC, -HL, HW - GC, -1, 0, true, true);
-    add(HL, -HW + GC, HL, HW - GC, 1, 0, true, true);
+    function plain(ax, ay, bx, by, ox, oy) {
+      // mitred into the corner: the back edge reaches the corner of the rail
+      const c = { a: [ax, ay], b: [bx, by], o: [ox, oy] };
+      c.ja = [ax + (ox !== 0 ? ox * CW : -Math.sign(bx - ax) * CW), ay + (oy !== 0 ? oy * CW : -Math.sign(by - ay) * CW)];
+      c.jb = [bx + (ox !== 0 ? ox * CW : Math.sign(bx - ax) * CW), by + (oy !== 0 ? oy * CW : Math.sign(by - ay) * CW)];
+      CUSHIONS.push(c); seg(c.a, c.b);
+    }
+    if (POCKETED) {
+      add(-HL + GC, HW, -GS, HW, 0, 1, true, false);
+      add(GS, HW, HL - GC, HW, 0, 1, false, true);
+      add(-HL + GC, -HW, -GS, -HW, 0, -1, true, false);
+      add(GS, -HW, HL - GC, -HW, 0, -1, false, true);
+      add(-HL, -HW + GC, -HL, HW - GC, -1, 0, true, true);
+      add(HL, -HW + GC, HL, HW - GC, 1, 0, true, true);
+    } else {
+      plain(-HL, HW, HL, HW, 0, 1); plain(-HL, -HW, HL, -HW, 0, -1);
+      plain(-HL, -HW, -HL, HW, -1, 0); plain(HL, -HW, HL, HW, 1, 0);
+    }
   })();
 
-  function newEv() { return { firstHit: null, rail: false, pocketed: [] }; }
+  function newEv() { return { firstHit: null, hits: [], rail: false, pocketed: [] }; }
 
-  function makeWorld() {
+  function makeWorld(n) {
     const balls = [];
-    for (let i = 0; i < 16; i++) balls.push({ id: i, x: 0, y: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false };
+    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, on: true, q: [0, 0, 0, 1] });
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0 };
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, wx: b.wx, wy: b.wy, wz: b.wz, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue };
   }
 
-  function rack(w, rnd) {
-    rnd = rnd || Math.random;
-    const order = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
-    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    // back corners: one solid, one stripe
-    const si = order.findIndex(n => n < 8), ti = order.findIndex(n => n > 8);
-    const solid = order[si], stripe = order[ti];
-    const rest = order.filter(n => n !== solid && n !== stripe);
-    const slots = [];
-    for (let r = 0; r < 5; r++) for (let k = 0; k <= r; k++) slots.push([r, k]);
-    let ri = 0;
-    for (const [r, k] of slots) {
-      let id;
-      if (r === 2 && k === 1) id = 8;
-      else if (r === 4 && k === 0) id = solid;
-      else if (r === 4 && k === 4) id = stripe;
-      else id = rest[ri++];
-      const b = w.balls[id];
-      b.x = HL / 2 + r * Math.sqrt(3) * R * 1.003 + (rnd() - 0.5) * 1e-4;
-      b.y = (k - r / 2) * 2 * R * 1.003 + (rnd() - 0.5) * 1e-4;
-    }
-    for (const b of w.balls) {
-      b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.on = true;
+  function place(w, id, x, y, rnd) {
+    const b = w.balls[id];
+    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.on = true;
+    if (rnd) {
       const a = rnd() * Math.PI * 2, tl = (rnd() - 0.5) * 0.9;
-      // number faces up, turned at random and tipped a little
       const cz = Math.cos(a / 2), sz = Math.sin(a / 2), cx = Math.cos(tl / 2), sx = Math.sin(tl / 2);
       b.q = [cz * sx, sz * sx, sz * cx, cz * cx];
     }
-    w.balls[0].x = -HL / 2; w.balls[0].y = 0;
-    w.ev = newEv();
   }
 
   function strike(w, ang, V, a, bb) {
-    const c = w.balls[0], dx = Math.cos(ang), dy = Math.sin(ang);
+    const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
     c.vx = V * dx; c.vy = V * dy;
     const k = 2.5 * V * bb / R;
     c.wx = -dy * k; c.wy = dx * k; c.wz = 2.5 * V * a / R;
@@ -351,8 +447,9 @@ const PHYS = (() => {
     b.x = cx + nx * R; b.y = cy + ny * R;
     const vn = b.vx * nx + b.vy * ny;
     if (vn >= 0) return;
-    const e = Math.max(0.62, 0.86 - 0.035 * -vn);
+    const e = Math.max(0.62, 0.87 - 0.035 * -vn);
     const tx = -ny, ty = nx;
+    // side spin grips the cushion and bends the rebound
     const slip = b.vx * tx + b.vy * ty - R * b.wz;
     const lim = MU_CUSH * (1 + e) * -vn;
     let dvt = -(2 / 7) * slip;
@@ -360,13 +457,17 @@ const PHYS = (() => {
     b.vx += -(1 + e) * vn * nx + dvt * tx;
     b.vy += -(1 + e) * vn * ny + dvt * ty;
     b.wz -= (2.5 / R) * dvt;
-    b.wx *= 0.7; b.wy *= 0.7;
+    // the nose sits above centre: roll into the rail is mostly killed and slightly reversed,
+    // roll along the rail survives
+    const wn = b.wx * nx + b.wy * ny, wt = b.wx * tx + b.wy * ty;
+    const wn2 = wn * 0.9, wt2 = wt * -0.15;
+    b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn });
   }
 
   function sub(w, h) {
-    const bs = w.balls, n = bs.length;
+    const bs = w.balls, n = bs.length, cue = w.cue;
     for (let i = 0; i < n; i++) if (bs[i].on) motion(w, bs[i], h);
     for (let i = 0; i < n; i++) {
       const a = bs[i]; if (!a.on) continue;
@@ -380,7 +481,11 @@ const PHYS = (() => {
         if (rel >= 0) continue;
         const jn = -(1 + E_BALL) / 2 * rel;
         a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
-        if (i === 0 && w.ev.firstHit == null) w.ev.firstHit = j;
+        if (i === cue || j === cue) {
+          const o = i === cue ? j : i;
+          if (w.ev.firstHit == null) w.ev.firstHit = o;
+          if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
+        }
         if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel });
       }
     }
@@ -388,6 +493,7 @@ const PHYS = (() => {
       const b = bs[i]; if (!b.on) continue;
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
         if (b.vx !== 0 || b.vy !== 0) for (let k = 0; k < SEGS.length; k++) hitSeg(w, b, SEGS[k]);
+        if (!POCKETED) continue;
         let pk = -1;
         for (let k = 0; k < 6; k++) {
           const p = POCKETS[k], dx = b.x - p.x, dy = b.y - p.y;
@@ -400,7 +506,7 @@ const PHYS = (() => {
         if (pk >= 0) {
           b.on = false;
           w.ev.pocketed.push({ id: b.id, pocket: pk });
-          if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: pk, v: Math.hypot(b.vx, b.vy) });
+          if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: pk, x: b.x, y: b.y });
           b.vx = b.vy = b.wx = b.wy = b.wz = 0;
         }
       }
@@ -409,7 +515,7 @@ const PHYS = (() => {
 
   function step(w, dt) {
     let vmax = 0;
-    for (const b of w.balls) if (b.on) { const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
+    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
@@ -435,13 +541,12 @@ const PHYS = (() => {
     return t > 1e-6 ? t : Infinity;
   }
 
-  // First thing the cue ball meets along a direction: a ball, a cushion or a pocket.
-  function predict(w, ang) {
-    const c = w.balls[0], dx = Math.cos(ang), dy = Math.sin(ang);
+  // First thing a ball meets when rolled from (ox,oy) along (dx,dy): another ball, a cushion or a pocket.
+  function cast(w, ox, oy, dx, dy, skip) {
     let best = { t: 6, type: 'none' };
     for (const b of w.balls) {
-      if (!b.on || b.id === 0) continue;
-      const t = rayCircle(c.x, c.y, dx, dy, b.x, b.y, 2 * R);
+      if (!b.on || b.id === skip) continue;
+      const t = rayCircle(ox, oy, dx, dy, b.x, b.y, 2 * R);
       if (t < best.t) best = { t, type: 'ball', ball: b.id };
     }
     for (const s of SEGS) {
@@ -449,28 +554,46 @@ const PHYS = (() => {
         const px = s.ax - s.ty * R * sg, py = s.ay + s.tx * R * sg;
         const den = dx * s.ty - dy * s.tx;
         if (Math.abs(den) < 1e-9) continue;
-        const t = ((px - c.x) * s.ty - (py - c.y) * s.tx) / den;
+        const t = ((px - ox) * s.ty - (py - oy) * s.tx) / den;
         if (t <= 1e-6 || t >= best.t) continue;
-        const u = (c.x + dx * t - px) * s.tx + (c.y + dy * t - py) * s.ty;
+        const u = (ox + dx * t - px) * s.tx + (oy + dy * t - py) * s.ty;
         if (u < 0 || u > s.len) continue;
         best = { t, type: 'rail', nx: -s.ty * sg, ny: s.tx * sg };
       }
       for (const [ex, ey] of [[s.ax, s.ay], [s.bx, s.by]]) {
-        const t = rayCircle(c.x, c.y, dx, dy, ex, ey, R);
-        if (t < best.t) { const gx = c.x + dx * t, gy = c.y + dy * t; best = { t, type: 'rail', nx: (gx - ex) / R, ny: (gy - ey) / R }; }
+        const t = rayCircle(ox, oy, dx, dy, ex, ey, R);
+        if (t < best.t) { const gx = ox + dx * t, gy = oy + dy * t; best = { t, type: 'rail', nx: (gx - ex) / R, ny: (gy - ey) / R }; }
       }
     }
     for (const p of POCKETS) {
-      const t = rayCircle(c.x, c.y, dx, dy, p.x, p.y, p.sink);
+      const t = rayCircle(ox, oy, dx, dy, p.x, p.y, p.sink);
       if (t < best.t) best = { t, type: 'pocket' };
     }
-    best.gx = c.x + dx * best.t; best.gy = c.y + dy * best.t;
+    best.gx = ox + dx * best.t; best.gy = oy + dy * best.t;
     if (best.type === 'ball') {
       const b = w.balls[best.ball];
       best.nx = (b.x - best.gx) / (2 * R); best.ny = (b.y - best.gy) / (2 * R);
       best.cut = Math.acos(Math.max(-1, Math.min(1, dx * best.nx + dy * best.ny)));
     }
     return best;
+  }
+
+  function predict(w, ang) {
+    const c = w.balls[w.cue];
+    return cast(w, c.x, c.y, Math.cos(ang), Math.sin(ang), w.cue);
+  }
+
+  // Where the cue ball travels after its first contact, for the long aiming guide.
+  function cuePath(w, ang, V, a, bb, maxT) {
+    const w2 = clone(w); strike(w2, ang, V, a, bb);
+    const c = w2.balls[w2.cue], pts = [];
+    let t = 0, started = false;
+    while (t < (maxT || 2.2) && c.on) {
+      step(w2, 1 / 120); t += 1 / 120;
+      if (!started && (w2.ev.firstHit != null)) started = true;
+      if (started) { pts.push(c.x, c.y); if (c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break; }
+    }
+    return pts;
   }
 
   function pathClear(w, x0, y0, x1, y1, skip, rad) {
@@ -503,32 +626,747 @@ const PHYS = (() => {
     return [x, y];
   }
 
-  return { R, HL, HW, CW, PO, SO, POCKETS, CUSHIONS, SEGS, makeWorld, clone, rack, strike, step, rest, run, predict, pathClear, isFree, findFree, newEv };
-})();
+  return { R, HL, HW, CW, PO, SO, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
+}
+/* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball and four-ball carom. No DOM in here. */
+function createGame(PH) {
+  const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
+  const GROUP_KO = { solid: '단색', stripe: '줄무늬' };
+  const SQ3 = Math.sqrt(3);
+
+  function shuffle(a, rnd) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const jit = rnd => (rnd() - 0.5) * 6e-5;
+
+  const MODES = {
+    eight: {
+      id: 'eight', name: '8볼', blurb: '내 공 7개 넣고 8번', table: 'pool', n: 16, ballInHand: true,
+      setup(g, rnd) {
+        const P = g.P, { R, HL } = P, w = g.world;
+        const order = shuffle([1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], rnd);
+        const solid = order.find(n => n < 8), stripe = order.find(n => n > 8);
+        const rest = order.filter(n => n !== solid && n !== stripe);
+        let ri = 0;
+        for (let r = 0; r < 5; r++) for (let k = 0; k <= r; k++) {
+          const id = r === 2 && k === 1 ? 8 : r === 4 && k === 0 ? solid : r === 4 && k === 4 ? stripe : rest[ri++];
+          P.place(w, id, HL / 2 + r * SQ3 * R * 1.0006 + jit(rnd), (k - r / 2) * 2 * R * 1.0006 + jit(rnd), rnd);
+        }
+        P.place(w, 0, -HL / 2, 0, rnd);
+        g.placing = 'kitchen'; g.isBreak = true;
+      },
+      remaining(g, pi) {
+        const grp = g.players[pi].group; if (!grp) return null;
+        return (grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => g.world.balls[i].on);
+      },
+      legal(g, pi) {
+        const rem = this.remaining(g, pi);
+        if (!rem) return g.world.balls.filter(b => b.on && b.id !== 0 && b.id !== 8).map(b => b.id);
+        return rem.length ? rem : [8];
+      },
+      ctx(g) { return { turn: g.turn, groups: g.players.map(p => p.group), isBreak: g.isBreak, rem: [0, 1].map(i => { const r = this.remaining(g, i); return r ? r.length : 7; }) }; },
+      evaluate(ev, c) {
+        const me = c.turn, grp = c.groups[me], open = !grp;
+        const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), eight = potted.includes(8);
+        const obj = potted.filter(i => i !== 0 && i !== 8);
+        let foul = null;
+        if (ev.firstHit == null) foul = '공을 하나도 맞히지 못했습니다';
+        else if (open) { if (ev.firstHit === 8 && !c.isBreak) foul = '8번 공을 먼저 맞혔습니다'; }
+        else {
+          const need = c.rem[me] > 0 ? grp : 'eight', ft = typeOf(ev.firstHit);
+          if (ft !== need) foul = need === 'eight' ? '8번 공을 먼저 맞혀야 합니다' : ft === 'eight' ? '8번 공을 먼저 맞혔습니다' : '상대 공을 먼저 맞혔습니다';
+        }
+        if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
+        if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
+        const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
+        if (eight) {
+          if (c.isBreak) r.respot.push(8);
+          else if (foul) { r.win = 1 - me; r.why = '8번 공을 넣으면서 파울이 났습니다.'; }
+          else if (open || c.rem[me] > 0) { r.win = 1 - me; r.why = '자기 공이 남았는데 8번 공이 들어갔습니다.'; }
+          else { r.win = me; r.why = '자기 공을 모두 넣고 8번 공까지 넣었습니다.'; }
+        }
+        if (r.win != null) return r;
+        if (open && !c.isBreak && !foul && obj.length) r.assign = typeOf(obj[0]);
+        const gr = grp || r.assign;
+        if (!foul) { if (c.isBreak) r.keep = obj.length > 0; else if (gr) r.keep = obj.some(i => typeOf(i) === gr); }
+        return r;
+      },
+    },
+
+    nine: {
+      id: 'nine', name: '9볼', blurb: '번호 낮은 공부터, 9번 넣으면 승리', table: 'pool', n: 10, ballInHand: true,
+      setup(g, rnd) {
+        const P = g.P, { R, HL } = P, w = g.world;
+        const rest = shuffle([2, 3, 4, 5, 6, 7, 8], rnd);
+        const rows = [[0], [-1, 1], [-2, 0, 2], [-1, 1], [0]];
+        let ri = 0;
+        rows.forEach((row, r) => row.forEach(k => {
+          const id = r === 0 ? 1 : r === 2 && k === 0 ? 9 : rest[ri++];
+          P.place(w, id, HL / 2 + r * SQ3 * R * 1.0006 + jit(rnd), k * R * 1.0006 + jit(rnd), rnd);
+        }));
+        P.place(w, 0, -HL / 2, 0, rnd);
+        g.placing = 'kitchen'; g.isBreak = true;
+      },
+      lowest(g) { for (let i = 1; i <= 9; i++) if (g.world.balls[i].on) return i; return 9; },
+      legal(g) { return [this.lowest(g)]; },
+      ctx(g) { return { turn: g.turn, isBreak: g.isBreak, lowest: this.lowest(g) }; },
+      evaluate(ev, c) {
+        const me = c.turn, potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), nine = potted.includes(9);
+        const obj = potted.filter(i => i !== 0);
+        let foul = null;
+        if (ev.firstHit == null) foul = '공을 하나도 맞히지 못했습니다';
+        else if (ev.firstHit !== c.lowest) foul = `${c.lowest}번 공을 먼저 맞혀야 합니다`;
+        if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
+        if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
+        const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
+        if (nine) { if (foul) r.respot.push(9); else { r.win = me; r.why = '9번 공을 넣었습니다.'; return r; } }
+        r.keep = !foul && obj.length > 0;
+        return r;
+      },
+    },
+
+    four: {
+      id: 'four', name: '4구', blurb: '빨간 공 두 개를 다 맞히면 1점', table: 'carom', n: 4, ballInHand: false, target: true,
+      setup(g, rnd) {
+        const P = g.P, { HL } = P, w = g.world;
+        P.place(w, 2, HL / 2, 0, rnd); P.place(w, 3, -HL / 2, 0, rnd);
+        P.place(w, 1, -HL * 0.78, 0, rnd); P.place(w, 0, -HL * 0.78, -0.17, rnd);
+        g.placing = null; g.isBreak = false;
+      },
+      legal() { return [2, 3]; },
+      ctx(g) { return { turn: g.turn }; },
+      evaluate(ev, c) {
+        const me = c.turn, hitOpp = ev.hits.includes(1 - me);
+        const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
+        const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
+        const pts = foul ? -1 : reds === 2 ? 1 : 0;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts };
+      },
+    },
+  };
+
+  const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0 });
+  const g = {
+    MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
+    players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, level: 1, _ctx: null,
+  };
+
+  g.start = function (modeId, names, ai, opts) {
+    opts = opts || {};
+    g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.table];
+    g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
+    g.players = [mkP(names[0], false), mkP(names[1], ai)];
+    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level;
+    g.mode.setup(g, opts.rnd || Math.random);
+    g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
+  };
+  g.cueBall = () => g.world.balls[g.world.cue];
+  g.legal = () => g.mode.legal(g, g.turn);
+  g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.22 : 1);
+  g.powerOf = V => Math.pow(Math.max(0.0001, (V / (g.isBreak && g.mode.table === 'pool' ? 1.22 : 1) - 0.35) / 7.4), 1 / 1.35);
+  g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };
+
+  // Called once every ball has stopped. Applies the result and says what happened.
+  g.resolve = function () {
+    const m = g.mode, P = g.P, w = g.world, me = g.turn, p = g.players[me];
+    const r = m.evaluate(w.ev, g._ctx, g), out = { r, msg: '', kind: '', dur: 1600 };
+    for (const b of w.balls) b.wz = 0;
+    for (const id of r.respot) { const [x, y] = P.findFree(w, P.HL / 2, 0, id); P.place(w, id, x, y); }
+    if (r.scratch) { const [x, y] = P.findFree(w, -P.HL / 2, 0, 0); P.place(w, 0, x, y); }
+    g.isBreak = false;
+    p.shots++;
+    if (r.foul) p.fouls++;
+    if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
+    if (r.pts) p.score = Math.max(0, p.score + r.pts);
+    if (m.target && p.score >= g.target) { r.win = me; r.why = `먼저 ${g.target}점을 냈습니다.`; }
+    if (r.win != null) { g.over = { winner: r.win, why: r.why }; return out; }
+    if (r.assign) {
+      p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
+      out.msg = `${p.name}: ${GROUP_KO[r.assign]} 공`; out.kind = 'good'; out.dur = 2400;
+    }
+    if (r.foul) {
+      g.turn = 1 - me; const nx = g.players[g.turn].name;
+      if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul}. ${nx} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
+      else out.msg = `파울 · ${r.foul}. 1점 감점, ${nx} 차례.`;
+      out.kind = 'foul'; out.dur = 3400;
+    } else if (!r.keep) {
+      g.turn = 1 - me; if (!out.msg) out.msg = `${g.players[g.turn].name} 차례`;
+    } else if (r.pts > 0) {
+      out.msg = `${p.name} 1점!`; out.kind = 'good';
+    } else if (m.id === 'eight' && !r.assign) {
+      const rem = m.remaining(g, me);
+      if (rem && !rem.length) { out.msg = '이제 8번 공을 넣으면 이깁니다.'; out.kind = 'good'; out.dur = 2400; }
+    }
+    if (m.table === 'carom') w.cue = g.turn;
+    return out;
+  };
+
+  /* ---------- computer player ---------- */
+  function gauss() { let u = 0; for (let i = 0; i < 6; i++) u += Math.random(); return (u - 3) / Math.sqrt(0.5); }
+  function simShot(angle, V, pos) {
+    const w2 = g.P.clone(g.world);
+    if (pos) { const c = w2.balls[w2.cue]; c.x = pos[0]; c.y = pos[1]; }
+    g.P.strike(w2, angle, V, 0, 0);
+    return g.P.run(w2, 20);
+  }
+
+  function aiPool() {
+    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.level, me = g.turn;
+    const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016][lvl];
+    if (g.isBreak) {
+      const y = (Math.random() - 0.5) * 0.3, pos = [-HL / 2 - 0.1, y];
+      return { pos, angle: Math.atan2(-y * 0.92, HL / 2 - pos[0]) + gauss() * 0.003, V: g.vOf(0.94 + Math.random() * 0.06) };
+    }
+    const verdict = (a, V, pos) => g.mode.evaluate(simShot(a, V, pos), ctx, g);
+    const good = r => !r.foul && (r.win == null ? r.keep : r.win === me);
+    const safe = r => !r.foul && (r.win == null || r.win === me);
+    const targets = g.mode.legal(g, me), cands = [];
+    for (const t of targets) for (const p of POCKETS) {
+      const T = w.balls[t]; let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
+      if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55)) continue;
+      if (!P.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
+      const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R;
+      if (Math.abs(gx) > HL - R || Math.abs(gy) > HW - R) continue;
+      const spots = [];
+      if (g.placing) {
+        for (const dist of [0.32, 0.5, 0.75]) for (const da of [0, 0.3, -0.3, 0.55, -0.55]) {
+          const ca = Math.cos(da), sa = Math.sin(da), px = gx - (dx * ca - dy * sa) * dist, py = gy - (dx * sa + dy * ca) * dist;
+          if (P.isFree(w, px, py, 0)) spots.push([px, py]);
+        }
+      } else spots.push([c.x, c.y]);
+      for (const s of spots) {
+        let cx = gx - s[0], cy = gy - s[1]; const dCG = Math.hypot(cx, cy); if (dCG < 1e-4) continue; cx /= dCG; cy /= dCG;
+        const cosc = cx * dx + cy * dy; if (cosc < 0.3) continue;
+        if (!P.pathClear(w, s[0], s[1], gx, gy, [0, t])) continue;
+        cands.push({ pos: g.placing ? s : null, angle: Math.atan2(cy, cx), cosc, dCG, dTP, score: (dCG * 0.6 + 0.3) * (dTP + 0.25) / (cosc * cosc) * (p.corner ? 1 : 1.15) });
+      }
+    }
+    cands.sort((a, b) => a.score - b.score);
+    const speed = k => Math.min(6.4, Math.max(1.3, (1.0 + 1.5 * Math.sqrt(k.dTP)) / Math.max(0.4, k.cosc) + 0.9 * Math.sqrt(k.dCG)));
+    if (cands.length) {
+      let pick = null;
+      if (lvl === 0) { const k = cands[Math.min(cands.length - 1, Math.floor(Math.random() * 2))]; pick = { pos: k.pos, angle: k.angle, V: speed(k) }; }
+      else {
+        const top = cands.slice(0, lvl === 2 ? 10 : 5);
+        outer: for (const k of top) for (const m of [1, 0.78, 1.3]) for (const da of [0, 0.003, -0.003]) {
+          const V = Math.min(6.6, speed(k) * m);
+          if (good(verdict(k.angle + da, V, k.pos))) { pick = { pos: k.pos, angle: k.angle + da, V }; break outer; }
+        }
+      }
+      if (pick) return { pos: pick.pos, angle: pick.angle + gauss() * noise, V: pick.V };
+    }
+    // No clean pot: play any legal contact, taking a winning or turn-keeping one when it turns up.
+    const order = targets.map(t => w.balls[t]).sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y)).slice(0, 4);
+    let firstSafe = null;
+    for (const T of order) {
+      const spots = [];
+      if (g.placing) {
+        for (const [ox, oy] of [[-0.3, 0], [0.3, 0], [0, -0.3], [0, 0.3]]) if (P.isFree(w, T.x + ox, T.y + oy, 0)) { spots.push([T.x + ox, T.y + oy]); if (spots.length === 2) break; }
+        if (!spots.length) spots.push(P.findFree(w, T.x - 0.3, T.y, 0));
+      } else spots.push(null);
+      for (const pos of spots) {
+        const fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y, d = Math.hypot(T.x - fx, T.y - fy);
+        const base = Math.atan2(T.y - fy, T.x - fx), half = Math.asin(Math.min(1, 2 * R / Math.max(d, 2 * R))) * 0.9;
+        for (const f of [0, 0.35, -0.35, 0.7, -0.7]) for (const V of [2.4, 3.6]) {
+          const tr = { pos, angle: base + f * half, V }, r = verdict(tr.angle, V, pos);
+          if (good(r)) return { pos, angle: tr.angle + gauss() * noise * 0.5, V };
+          if (!firstSafe && safe(r)) firstSafe = tr;
+        }
+      }
+    }
+    if (firstSafe) return { pos: firstSafe.pos, angle: firstSafe.angle + gauss() * noise * 0.5, V: firstSafe.V };
+    const pos = g.placing ? P.findFree(w, -HL / 2, 0, 0) : null;
+    for (let i = 0; i < 120; i++) { const a = i * Math.PI / 60; if (safe(verdict(a, 3, pos))) return { pos, angle: a, V: 3 }; }
+    const T = order[0], fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y;
+    return { pos, angle: Math.atan2(T.y - fy, T.x - fx), V: 2.6 };
+  }
+
+  function aiCarom() {
+    const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
+    const nA = [72, 96, 144][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0]][lvl], noise = [0.02, 0.009, 0.003][lvl];
+    const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
+    for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) {
+      const a = phase + i * 2 * Math.PI / nA, r = g.mode.evaluate(simShot(a, Vs[vi]), ctx, g);
+      if (r.pts > 0) hit[vi][i] = true; else if (!r.foul) okay.push({ angle: a, V: Vs[vi] });
+    }
+    let best = null, bs = -1;
+    for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) if (hit[vi][i]) {
+      let run = 1; for (let k = 1; k < 6 && hit[vi][(i + k) % nA] && hit[vi][(i - k + nA) % nA]; k++) run += 2;
+      const s = run + Math.random() * (lvl === 0 ? 3 : 0.5);
+      if (s > bs) { bs = s; best = { angle: phase + i * 2 * Math.PI / nA, V: Vs[vi] }; }
+    }
+    if (!best) {
+      // nothing scores: at least hit a red squarely rather than give a point away
+      const reds = [w.balls[2], w.balls[3]].sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
+      for (const T of reds) {
+        const a = Math.atan2(T.y - c.y, T.x - c.x), h = g.P.cast(w, c.x, c.y, Math.cos(a), Math.sin(a), w.cue);
+        if (h.type === 'ball' && h.ball === T.id) { best = { angle: a, V: 2.2 }; break; }
+      }
+    }
+    if (!best && okay.length) best = okay[Math.floor(Math.random() * okay.length)];
+    if (!best) { const T = w.balls[2]; best = { angle: Math.atan2(T.y - c.y, T.x - c.x), V: 2.8 }; }
+    return { pos: null, angle: best.angle + gauss() * noise, V: best.V };
+  }
+  g.aiPlan = () => g.mode.table === 'carom' ? aiCarom() : aiPool();
+
+  g.serialize = () => ({
+    v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
+    turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level,
+  });
+  g.restore = function (d) {
+    if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
+    g.modeId = d.modeId; g.mode = MODES[d.modeId]; g.P = PH[g.mode.table];
+    g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
+    d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
+    g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
+    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.over = null;
+    return true;
+  };
+  return g;
+}
+/* three.js scene: tables, balls, cue, aiming guide. Built for a steady frame rate on tablets:
+   everything that never moves (backdrop, table, its shadows) is drawn once into a texture and reused as the
+   background of every frame, so a frame only draws the balls, the cue and the guide. Ball shadows are sprites,
+   and the canvas resolution is fixed up front. */
+const CLOTHS = [
+  { id: 'teal', name: '딥 틸', felt: 0x0e8ba3, wood: 0x6a3a20 },
+  { id: 'green', name: '클래식 그린', felt: 0x17894e, wood: 0x5a2f1a },
+  { id: 'blue', name: '토너먼트 블루', felt: 0x2a78d2, wood: 0x15171c },
+  { id: 'wine', name: '버건디', felt: 0x9a2536, wood: 0xa9743f },
+  { id: 'charcoal', name: '차콜', felt: 0x4b5562, wood: 0x15171c },
+];
+const CUES = [
+  { id: 'maple', name: '메이플 클래식', note: '단풍나무 상대에 흑단 하대, 네 갈래 포인트', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710 },
+  { id: 'carbon', name: '블랙 카본', note: '검은 카본 상대, 무광 하대에 붉은 링', shaft: 0x1c1e22, ferrule: 0x1c1e22, tip: 0x3c6fd0, joint: 0xe2392b, fore: 0x121316, points: null, wrap: 0x2b2e34, sleeve: 0x121316 },
+  { id: 'rose', name: '로즈우드 인레이', note: '붉은 장미목 하대, 금색 포인트와 흰 리넨 그립', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c },
+  { id: 'house', name: '하우스 큐', note: '당구장 벽에 걸린 통짜 나무 큐', shaft: 0xdcb87c, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xc79556, fore: 0xc79556, points: null, wrap: 0xb5793f, sleeve: 0x8a5a2c },
+  { id: 'sport', name: '스포츠 그립', note: '흰 상대, 남색 하대에 노란 고무 그립', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d },
+];
+const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
+const ballHex = n => BALL_HEX[n === 0 ? 0 : n <= 8 ? n : n - 8];
+const ballCss = n => '#' + ballHex(n).toString(16).padStart(6, '0');
+
+function createScene(canvas, app, PH) {
+  if (!window.THREE) return null;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
+  const RW = 0.095, RAIL_Z = 0.04, FOV = 24;
+  const { HL, HW, CW } = PH.pool;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.autoClear = false;
+  const sScene = new THREE.Scene(), scene = new THREE.Scene();   // static layer, moving layer
+  sScene.background = new THREE.Color(0x2037c9).convertSRGBToLinear();
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.5, 30);
+  const col = h => new THREE.Color(h).convertSRGBToLinear();
+  const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const tex = (c, rep) => {
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = aniso;
+    if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); }
+    return t;
+  };
+
+  /* reflections for the balls: a dim room with three lamp panels overhead */
+  (function env() {
+    const es = new THREE.Scene(); es.background = new THREE.Color(0x10162c);
+    const panel = (w, h, x, y, z, hex, k) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+      m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m);
+    };
+    panel(0.9, 0.5, -1.0, 0.25, 2.2, 0xfff4e2, 5); panel(0.9, 0.5, 0, 0.25, 2.3, 0xfff4e2, 5); panel(0.9, 0.5, 1.0, 0.25, 2.2, 0xfff4e2, 5);
+    panel(6, 2.5, 0, 5, 1.2, 0x4058d8, 0.6); panel(6, 2.5, 0, -5, 1.2, 0x4058d8, 0.5);
+    const pm = new THREE.PMREMGenerator(renderer);
+    scene.environment = sScene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
+  })();
+
+  for (const sc of [sScene, scene]) {
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x3a4470, 0.5); hemi.position.set(0, 0, 1); sc.add(hemi);
+    const key = new THREE.DirectionalLight(0xfff3e2, 0.95); key.position.set(-0.9, 1.0, 2.6);
+    if (sc === sScene) {
+      key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+      const c = key.shadow.camera; c.left = -1.8; c.right = 1.8; c.top = 1.2; c.bottom = -1.2; c.near = 0.5; c.far = 6;
+      key.shadow.bias = -0.0004; key.shadow.normalBias = 0.004;
+    }
+    sc.add(key, key.target);
+  }
+  // the static layer and the full-screen quad that shows it
+  let rt = null, staticDirty = true;
+  const quadMat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
+  const quadScene = new THREE.Scene(), quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), quadMat));
+
+  /* backdrop: flat arcade blue with slanted bands, and the table's own soft shadow */
+  (function backdrop() {
+    const c = mkCanvas(512, 512), g = c.getContext('2d');
+    g.fillStyle = '#2037c9'; g.fillRect(0, 0, 512, 512);
+    g.fillStyle = '#2b46e0'; g.save(); g.translate(256, 256); g.rotate(-0.32);
+    for (let x = -700; x < 700; x += 256) g.fillRect(x, -700, 110, 1400);
+    g.restore();
+    const t = tex(c, 3); const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), new THREE.MeshBasicMaterial({ map: t, toneMapped: false }));
+    m.position.z = -0.8; sScene.add(m);
+    const s = mkCanvas(512, 320), sg = s.getContext('2d');
+    sg.shadowColor = 'rgba(6,10,50,0.75)'; sg.shadowBlur = 46; sg.fillStyle = 'rgba(6,10,50,0.75)';
+    const rr = (x, y, w, h, r) => { sg.beginPath(); sg.moveTo(x + r, y); sg.arcTo(x + w, y, x + w, y + h, r); sg.arcTo(x + w, y + h, x, y + h, r); sg.arcTo(x, y + h, x, y, r); sg.arcTo(x, y, x + w, y, r); sg.fill(); };
+    rr(70, 60, 372, 200, 26);
+    const sm = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 2.69), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, depthWrite: false, toneMapped: false }));
+    sm.position.set(0.14, -0.16, -0.79); sScene.add(sm);
+  })();
+
+  /* shared table materials */
+  const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
+  const fid = fg.createImageData(256, 256);
+  for (let i = 0; i < fid.data.length; i += 4) { const v = 226 + (Math.random() * 30 - 15); fid.data[i] = fid.data[i + 1] = fid.data[i + 2] = v; fid.data[i + 3] = 255; }
+  fg.putImageData(fid, 0, 0);
+  const feltTex = tex(fc, 9);
+  const feltMat = new THREE.MeshLambertMaterial({ map: feltTex });
+  const cushMat = new THREE.MeshLambertMaterial({ map: feltTex, side: THREE.DoubleSide });
+  const wc = mkCanvas(512, 512), wg = wc.getContext('2d');
+  wg.fillStyle = '#c9a27c'; wg.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 420; i++) {
+    const y = Math.random() * 512, a = 0.05 + Math.random() * 0.16;
+    wg.strokeStyle = Math.random() < 0.6 ? `rgba(40,20,8,${a})` : `rgba(255,220,170,${a * 0.6})`;
+    wg.lineWidth = 0.6 + Math.random() * 2.2; wg.beginPath(); wg.moveTo(0, y);
+    wg.bezierCurveTo(170, y + (Math.random() - 0.5) * 16, 340, y + (Math.random() - 0.5) * 16, 512, y); wg.stroke();
+  }
+  const woodMat = new THREE.MeshStandardMaterial({ map: tex(wc, 1.4), roughness: 0.5, metalness: 0, envMapIntensity: 0.35 });
+  const pearl = new THREE.MeshStandardMaterial({ color: col(0xf6efdc), roughness: 0.3, metalness: 0, envMapIntensity: 0.8 });
+  const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false });
+
+  function buildTable(P) {
+    const grp = new THREE.Group(), { POCKETS, CUSHIONS } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.004;
+    // cloth bed
+    const bx = HL + 0.105, by = HW + 0.118;
+    const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
+    for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
+    const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
+    // markings
+    const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
+    dot(HL / 2, 0); dot(-HL / 2, 0);
+    if (P.POCKETED) { const line = new THREE.Mesh(new THREE.PlaneGeometry(0.003, HW * 2), markMat); line.position.set(-HL / 2, 0, 0.0004); grp.add(line); } else dot(0, 0);
+    // pocket pits
+    const pit = new THREE.MeshBasicMaterial({ color: 0x050505, side: THREE.BackSide }), pitB = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    for (const p of POCKETS) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.86, 0.16, 36, 1, true), pit);
+      w.rotation.x = Math.PI / 2; w.position.set(p.x, p.y, -0.08); grp.add(w);
+      const b = new THREE.Mesh(new THREE.CircleGeometry(p.r, 28), pitB); b.position.set(p.x, p.y, -0.16); grp.add(b);
+    }
+    // rails
+    const rail = new THREE.Shape();
+    rail.moveTo(-ox + rr, -oy); rail.lineTo(ox - rr, -oy); rail.absarc(ox - rr, -oy + rr, rr, -Math.PI / 2, 0, false);
+    rail.lineTo(ox, oy - rr); rail.absarc(ox - rr, oy - rr, rr, 0, Math.PI / 2, false);
+    rail.lineTo(-ox + rr, oy); rail.absarc(-ox + rr, oy - rr, rr, Math.PI / 2, Math.PI, false);
+    rail.lineTo(-ox, -oy + rr); rail.absarc(-ox + rr, -oy + rr, rr, Math.PI, Math.PI * 1.5, false);
+    const hole = new THREE.Path();
+    if (P.POCKETED) {
+      const arcs = POCKETS.map(p => {
+        if (!p.corner) { const sy = Math.sign(p.y); return { p, e: [-sy * p.r, sy * Yb], x: [sy * p.r, sy * Yb] }; }
+        const sx = Math.sign(p.x), sy = Math.sign(p.y), s = Math.sqrt(p.r * p.r - (CW - P.PO) ** 2);
+        const pv = [sx * Xb, p.y - sy * s], ph = [p.x - sx * s, sy * Yb];
+        return sx * sy < 0 ? { p, e: pv, x: ph } : { p, e: ph, x: pv };
+      });
+      for (const a of arcs) { a.a0 = Math.atan2(a.e[1] - a.p.y, a.e[0] - a.p.x); a.a1 = Math.atan2(a.x[1] - a.p.y, a.x[0] - a.p.x); }
+      hole.moveTo(arcs[0].x[0], arcs[0].x[1]);
+      for (const i of [1, 2, 3, 4, 5, 0]) { const a = arcs[i]; hole.lineTo(a.e[0], a.e[1]); hole.absarc(a.p.x, a.p.y, a.p.r, a.a0, a.a1, true); }
+      const liner = new THREE.MeshStandardMaterial({ color: col(0x0d0b0a), roughness: 0.8, metalness: 0, envMapIntensity: 0.3 });
+      for (const a of arcs) {
+        let len = a.a0 - a.a1; while (len < 0) len += Math.PI * 2;
+        const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev, a.p.r + 0.017, 36, 1, a.a1, len), liner);
+        m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); grp.add(m);
+      }
+    } else { hole.moveTo(-Xb, -Yb); hole.lineTo(-Xb, Yb); hole.lineTo(Xb, Yb); hole.lineTo(Xb, -Yb); hole.closePath(); }
+    rail.holes.push(hole);
+    const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 20 });
+    rg.translate(0, 0, RAIL_Z - 0.12 - bev);
+    const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
+    // sights
+    const dg = new THREE.CircleGeometry(0.0095, 4);
+    const sight = (x, y, turn) => { const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m); };
+    for (const k of P.POCKETED ? [-3, -2, -1, 1, 2, 3] : [-3, -2, -1, 0, 1, 2, 3]) for (const sy of [-1, 1]) sight(k * HL / 4, sy * (Yb + RW * 0.52));
+    for (const k of [-1, 0, 1]) for (const sx of [-1, 1]) sight(sx * (Xb + RW * 0.52), k * HW / 2, true);
+    // cushions
+    for (const cu of CUSHIONS) {
+      const back = pt => cu.o[0] !== 0 ? [cu.o[0] * Xb, pt[1]] : [pt[0], cu.o[1] * Yb];
+      const top = [[...cu.ja, 0.038], [...cu.a, 0.0355], [...cu.b, 0.0355], [...cu.jb, 0.038], [...back(cu.jb), RAIL_Z], [...back(cu.ja), RAIL_Z]];
+      const v = [], uv = [];
+      const tri = (a, b, c) => { for (const p of [a, b, c]) { v.push(p[0], p[1], p[2]); uv.push(p[0], p[1]); } };
+      for (let i = 1; i < 5; i++) tri(top[0], top[i], top[i + 1]);
+      for (let i = 0; i < 3; i++) { const a = top[i], b = top[i + 1], a0 = [a[0], a[1], 0], b0 = [b[0], b[1], 0]; tri(a, a0, b); tri(b, a0, b0); }
+      const g2 = new THREE.BufferGeometry();
+      g2.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g2.computeVertexNormals();
+      const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.receiveShadow = true; grp.add(m);
+    }
+    grp.visible = false; sScene.add(grp);
+    return grp;
+  }
+  const tables = { pool: buildTable(PH.pool), carom: buildTable(PH.carom) };
+  let tableKind = null;
+  function setTable(kind) {
+    if (tableKind === kind) return;
+    tableKind = kind; tables.pool.visible = kind === 'pool'; tables.carom.visible = kind === 'carom';
+    for (const m of sets.pool.mesh) m.visible = false; for (const m of sets.pool.blob) m.visible = false;
+    for (const m of sets.carom.mesh) m.visible = false; for (const m of sets.carom.blob) m.visible = false;
+    falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
+  function setCloth(i) {
+    const c = CLOTHS[i] || CLOTHS[0];
+    feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(1.5);
+    staticDirty = true; dirty = 3;
+  }
+
+  /* balls */
+  const sphere = new THREE.SphereGeometry(1, 40, 28);
+  const bc = mkCanvas(128, 128), bg = bc.getContext('2d');
+  const gr = bg.createRadialGradient(64, 64, 10, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,.6)'); gr.addColorStop(0.5, 'rgba(0,0,0,.36)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  bg.fillStyle = gr; bg.fillRect(0, 0, 128, 128);
+  const blobMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false });
+  const unitPlane = new THREE.PlaneGeometry(1, 1);
+  function ballTexture(kind, n) {
+    const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = '#f4efe2';
+    const dots = (bgc, dc, rad) => {
+      g.fillStyle = bgc; g.fillRect(0, 0, W, H); g.fillStyle = dc;
+      for (const u of [0, 0.25, 0.5, 0.75, 1]) { g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill(); }
+      g.fillRect(0, 0, W, rad); g.fillRect(0, H - rad, W, rad);
+    };
+    if (kind === 'carom') {
+      if (n === 0) dots(ivory, '#c8201b', 0.11 / Math.PI * H);
+      else if (n === 1) dots('#f4c20d', '#b3261e', 0.11 / Math.PI * H);
+      else dots('#d3241c', '#9c1712', 0.2 / Math.PI * H);
+    } else if (n === 0) dots(ivory, '#c8201b', 0.13 / Math.PI * H);
+    else {
+      const stripe = n > 8;
+      g.fillStyle = stripe ? ivory : ballCss(n); g.fillRect(0, 0, W, H);
+      if (stripe) { g.fillStyle = ballCss(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
+      const rad = 0.5 / Math.PI * H;
+      for (const u of [0.25, 0.75]) {
+        g.fillStyle = ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
+        g.fillStyle = '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(String(n), u * W, H / 2 + 6);
+        if (n === 6 || n === 9) g.fillRect(u * W - 22, H / 2 + 46, 44, 7);
+      }
+    }
+    return tex(c);
+  }
+  function ballSet(kind, n, R) {
+    const mesh = [], blob = [];
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(sphere, new THREE.MeshStandardMaterial({ map: ballTexture(kind, i), roughness: 0.16, metalness: 0, envMapIntensity: 0.6 }));
+      m.scale.setScalar(R); m.visible = false; scene.add(m); mesh.push(m);
+      const s = new THREE.Mesh(unitPlane, blobMat); s.scale.set(R * 3.5, R * 3.5, 1); s.position.z = 0.0009; s.renderOrder = 1; s.visible = false; scene.add(s); blob.push(s);
+    }
+    return { mesh, blob, R };
+  }
+  const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
+
+  /* cue stick */
+  const cue = new THREE.Group(); cue.rotation.order = 'ZYX'; scene.add(cue);
+  const cueShadow = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
+  cueShadow.renderOrder = 1; scene.add(cueShadow);
+  function setCue(i) {
+    const d = CUES[i] || CUES[0];
+    while (cue.children.length) { const m = cue.children.pop(); m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
+    const part = (x0, x1, r0, r1, mat) => {
+      const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
+      cue.add(new THREE.Mesh(g, mat));
+    };
+    const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
+    part(0, 0.012, 0.006, 0.0062, std(d.tip, 0.9));
+    part(0.012, 0.04, 0.0062, 0.0064, std(d.ferrule, 0.4));
+    part(0.04, 0.74, 0.0064, 0.0104, std(d.shaft, 0.42));
+    part(0.74, 0.756, 0.0107, 0.0108, std(d.joint, 0.3, 0.6));
+    let fore = std(d.fore, 0.36);
+    if (d.points != null) {
+      const c = mkCanvas(128, 256), g = c.getContext('2d');
+      g.fillStyle = '#' + d.fore.toString(16).padStart(6, '0'); g.fillRect(0, 0, 128, 256);
+      g.fillStyle = '#' + d.points.toString(16).padStart(6, '0');
+      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 256); g.lineTo(k * 32 + 28, 256); g.lineTo(k * 32 + 16, 36); g.fill(); }
+      fore = new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.36, metalness: 0, envMapIntensity: 0.5 });
+    }
+    part(0.756, 1.03, 0.0106, 0.0122, fore);
+    part(1.03, 1.3, 0.0122, 0.0136, std(d.wrap, 0.85));
+    part(1.3, 1.45, 0.0136, 0.0146, std(d.sleeve, 0.36));
+    part(1.45, 1.47, 0.0146, 0.0142, std(0x0d0d0d, 0.9));
+    dirty = 3;
+  }
+
+  /* aiming guide, drawn at ball-centre height so it lines up under perspective */
+  const guide = new THREE.Group(); scene.add(guide);
+  const gMat = o => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: o, depthTest: false, depthWrite: false, toneMapped: false });
+  const gLine = new THREE.Mesh(unitPlane, gMat(0.95)), gObj = new THREE.Mesh(unitPlane, gMat(0.9)), gCue = new THREE.Mesh(unitPlane, gMat(0.55)), gBank = new THREE.Mesh(unitPlane, gMat(0.6));
+  const gRing = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 40), gMat(0.95));
+  const gHand = new THREE.Mesh(new THREE.RingGeometry(1.55, 1.78, 40), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false }));
+  const dotGeo = new THREE.CircleGeometry(1, 14), dotMat = gMat(0.95), gDots = [];
+  dotMat.color.copy(col(0xffd21f));
+  for (let i = 0; i < 44; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
+  for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
+  let ppm = 200, guideKey = '', pathPts = [];
+  function setLine(m, x0, y0, x1, y1, px, z) {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 1e-4) { m.visible = false; return; }
+    m.visible = true; m.position.set((x0 + x1) / 2, (y0 + y1) / 2, z); m.rotation.z = Math.atan2(y1 - y0, x1 - x0); m.scale.set(len, px / ppm, 1);
+  }
+
+  /* layout: the table is fitted inside the insets; the insets ease when the screen changes */
+  let portrait = false, dirty = 3, quality = 'auto', W = 0, H = 0;
+  const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
+  function applyCamera() {
+    if (!W || !H) return;
+    const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
+    const TW = 2 * (HL + CW + RW) + 0.03, TH = 2 * (HW + CW + RW) + 0.03;
+    ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
+    const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
+    camera.aspect = fw / fh; camera.position.set(0, 0, fh / (2 * ppm * Math.tan(FOV * Math.PI / 360)));
+    camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); camera.lookAt(0, 0, 0);
+    camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
+    guideKey = ''; staticDirty = true; dirty = 3;
+  }
+  function resize() {
+    W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
+    portrait = H > W;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
+    renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
+    renderer.setSize(W, H, false);
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+    if (!rt || rt.width !== size.x || rt.height !== size.y) {
+      if (rt) rt.dispose();
+      rt = renderer.capabilities.isWebGL2 ? new THREE.WebGLMultisampleRenderTarget(size.x, size.y) : new THREE.WebGLRenderTarget(size.x, size.y);
+      rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
+      quadMat.map = rt.texture; quadMat.needsUpdate = true; staticDirty = true;
+    }
+    applyCamera();
+  }
+  function setInsets(t, instant) {
+    Object.assign(insTo, t);
+    if (instant) { Object.assign(ins, t); applyCamera(); }
+    dirty = 3;
+  }
+  function setQuality(q) { quality = q; resize(); }
+
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function toTable(e, R) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const o = ray.ray.origin, d = ray.ray.direction, t = (R - o.z) / d.z;
+    return { x: o.x + d.x * t, y: o.y + d.y * t };
+  }
+
+  const falls = [];
+  function fall(P, id, x, y, pocket) { const p = P.POCKETS[pocket]; falls.push({ id, t: 0, x0: x, y0: y, x1: p.x, y1: p.y }); }
+
+  /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
+  function frame(v, dt) {
+    let moved = false;
+    for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
+    if (moved) applyCamera();
+    if (falls.length || v.animating) dirty = 3;
+    if (dirty <= 0) return false; dirty--;
+    const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    for (let i = 0; i < set.mesh.length; i++) {
+      const b = w.balls[i], m = set.mesh[i], s = set.blob[i];
+      const on = !!b && b.on; s.visible = on;
+      if (on) {
+        const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a;
+        m.visible = true; m.scale.setScalar(R); m.position.set(x, y, R);
+        const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
+        m.quaternion.set(q[0], q[1], q[2], q[3]); s.position.x = x + R * 0.34; s.position.y = y - R * 0.38;
+      } else if (!falls.some(f => f.id === i)) m.visible = false;
+    }
+    for (let i = falls.length - 1; i >= 0; i--) {
+      const f = falls[i], m = set.mesh[f.id]; f.t += dt; const k = Math.min(1, f.t / 0.22);
+      // no depth against the baked table, so a dropping ball shrinks into the pocket instead of sinking behind the rail
+      if (m) { m.visible = k < 1; m.position.set(f.x0 + (f.x1 - f.x0) * k, f.y0 + (f.y1 - f.y0) * k, R); m.scale.setScalar(R * (1 - 0.5 * k * k)); }
+      if (k >= 1) falls.splice(i, 1);
+    }
+    const c = w.balls[w.cue];
+    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
+    if (cue.visible) {
+      const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
+      const tx = c.x - dx * (R + v.pull), ty = c.y - dy * (R + v.pull);
+      cue.position.set(tx, ty, R + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI);
+      const sx = tx - dx * 0.735 + 0.012, sy = ty - dy * 0.735 - 0.014;
+      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47, 0.022, 1);
+    }
+    if (guide.visible) {
+      const dx = Math.cos(v.aim), dy = Math.sin(v.aim), lv = v.level;
+      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev].join('|');
+      if (key !== guideKey) {
+        guideKey = key;
+        const pr = P.cast(w, c.x, c.y, dx, dy, w.cue);
+        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
+        for (const d of gDots) d.visible = false;
+        if (lv >= 1) {
+          setLine(gLine, c.x + dx * R, c.y + dy * R, pr.gx - dx * R * 0.9, pr.gy - dy * R * 0.9, 1.7, R);
+          gRing.visible = pr.type !== 'none' && pr.type !== 'pocket'; gRing.position.set(pr.gx, pr.gy, R); gRing.scale.setScalar(R);
+          const legal = pr.type !== 'ball' || v.legalIds.indexOf(pr.ball) >= 0, tint = legal ? 0xffffff : 0xff6a58;
+          gRing.material.color.set(tint); gObj.material.color.set(tint);
+        }
+        if (lv >= 2 && pr.type === 'ball') {
+          const b = w.balls[pr.ball], co = Math.cos(pr.cut);
+          let l1 = 0.06 + 0.26 * co;
+          if (lv >= 3) { const h = P.cast(w, b.x, b.y, pr.nx, pr.ny, pr.ball); l1 = Math.max(0.02, h.t - R * 0.2); }
+          setLine(gObj, b.x + pr.nx * R, b.y + pr.ny * R, b.x + pr.nx * (R + l1), b.y + pr.ny * (R + l1), 2.1, R);
+          if (lv === 2) {
+            let tx = dx - co * pr.nx, ty = dy - co * pr.ny; const tl = Math.hypot(tx, ty);
+            if (tl > 0.02) { tx /= tl; ty /= tl; const l2 = 0.3 * tl; setLine(gCue, pr.gx + tx * R, pr.gy + ty * R, pr.gx + tx * (R + l2), pr.gy + ty * (R + l2), 1.5, R); }
+          }
+        }
+        if (lv >= 2 && pr.type === 'rail') {
+          const dn = dx * pr.nx + dy * pr.ny, rx = dx - 2 * dn * pr.nx, ry = dy - 2 * dn * pr.ny;
+          let l = 0.22;
+          if (lv >= 3) { const h = P.cast(w, pr.gx + rx * 0.001, pr.gy + ry * 0.001, rx, ry, w.cue); l = Math.min(h.t, 2.6); }
+          setLine(gBank, pr.gx, pr.gy, pr.gx + rx * l, pr.gy + ry * l, 1.5, R);
+        }
+        if (lv >= 3 && pr.type === 'ball') {
+          // where the cue ball goes afterwards, with the chosen spin
+          pathPts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, 2.4);
+          let acc = 0, n = 0, lx = pathPts[0], ly = pathPts[1];
+          for (let i = 2; i < pathPts.length && n < gDots.length; i += 2) {
+            const x = pathPts[i], y = pathPts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
+            if (acc >= 0.042) { acc = 0; const d = gDots[n++]; d.visible = true; d.position.set(x, y, R); d.scale.setScalar(Math.max(0.004, 3.1 / ppm)); }
+          }
+        }
+      }
+      gHand.visible = !!v.hand; gHand.position.set(c.x, c.y, R); gHand.scale.setScalar(R);
+    }
+    if (staticDirty && rt) { staticDirty = false; renderer.setRenderTarget(rt); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null); }
+    renderer.clear(); renderer.render(quadScene, quadCam); renderer.clearDepth(); renderer.render(scene, camera);
+    return true;
+  }
+
+  return {
+    setTable, setCloth, setCue, setInsets, setQuality, resize, toTable, frame, fall,
+    invalidate() { dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; },
+    get pixelRatio() { return renderer.getPixelRatio(); },
+  };
+}
+/* App shell: screens, input, turn flow on screen, saving. */
 (() => {
 'use strict';
-const { R, HL, HW, CW, POCKETS, CUSHIONS } = PHYS;
+const PH = { pool: createPhysics({ R: 0.028575, pockets: true }), carom: createPhysics({ R: 0.03275, pockets: false }) };
+const game = createGame(PH);
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
-const RW = 0.095, RAIL_Z = 0.04, TICK = 1 / 120;
-const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
-const hexOf = n => BALL_HEX[n === 0 ? 0 : n <= 8 ? n : n - 8];
-const css = n => '#' + hexOf(n).toString(16).padStart(6, '0');
-const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
-const GROUP_KO = { solid: '단색 1–7', stripe: '줄무늬 9–15' };
+const TICK = 1 / 120;
+const GUIDE = [['끔', '조준선 없이 감으로 칩니다'], ['짧게', '큐볼이 처음 닿는 곳까지만'], ['보통', '맞은 공과 큐볼이 꺾이는 방향까지'], ['길게', '쿠션에 튕긴 뒤와 큐볼이 굴러갈 길까지']];
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem('dp8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('dp8.' + k, JSON.stringify(v)); } catch (e) {} },
 };
+const prefs = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
+if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
+const savePrefs = () => store.set('prefs', prefs);
+let rec = store.get('rec', {});
+const recOf = n => rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 });
+const series = { key: '', s: [0, 0] };
+const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
-const game = {
-  mode: store.get('mode', 'ai'), level: store.get('level', 1), sound: store.get('sound', true),
-  world: PHYS.makeWorld(), turn: 0, players: [{ name: '나', group: null, ai: false }, { name: '컴퓨터', group: null, ai: true }],
-  phase: 'menu', isBreak: true, placing: null, aim: 0, power: 0, spin: { x: 0, y: 0 }, started: false, ctx: null, ai: null, cueAnim: null,
-};
-game.world.track = true; game.world.snd = [];
-PHYS.rack(game.world);
+const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, ai: null, rev: 0, lastLoser: null, settle: 0 };
 
 /* ================= sound ================= */
 const SND = (() => {
@@ -542,16 +1380,16 @@ const SND = (() => {
     } catch (e) { ac = null; }
   }
   function burst(freq, q, dur, gain, type) {
-    if (!ac || !game.sound) return;
+    if (!ac || !prefs.sound) return;
     const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = noise; f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
     g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f); f.connect(g); g.connect(ac.destination); s.start(t); s.stop(t + dur + 0.02);
   }
-  function tone(freq, dur, gain) {
-    if (!ac || !game.sound) return;
+  function tone(freq, dur, gain, to) {
+    if (!ac || !prefs.sound) return;
     const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
-    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 0.6, t + dur);
+    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
     g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
   }
@@ -561,675 +1399,429 @@ const SND = (() => {
     rail(v) { burst(240, 0.7, 0.09, Math.min(0.7, 0.08 + v * 0.14), 'lowpass'); },
     pocket() { tone(120, 0.24, 0.5); burst(600, 0.8, 0.2, 0.22); },
     cue(v) { burst(1500, 1.1, 0.03, Math.min(0.9, 0.25 + v * 0.09)); tone(260, 0.05, 0.3); },
+    tap() { tone(520, 0.05, 0.12, 1.5); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.16, 0.22, 1), i * 110)); },
   };
 })();
 
-/* ================= three.js scene ================= */
-if (!window.THREE) { fail(); return; }
-let renderer;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
-catch (e) { fail(); return; }
-function fail() {
+const scene = createScene(canvas, app, PH);
+if (!scene) {
   const d = document.createElement('div'); d.id = 'nogl';
   d.textContent = '이 기기에서 3D 그래픽을 켤 수 없어 게임을 띄우지 못했습니다. 인터넷 연결을 확인한 뒤 다시 열어 주세요.';
-  app.appendChild(d); $('#menu').hidden = true;
+  app.textContent = ''; app.appendChild(d); return;
 }
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x030405);
-const FOV = 24;
-const camera = new THREE.PerspectiveCamera(FOV, 1, 0.5, 30);
-const col = h => new THREE.Color(h).convertSRGBToLinear();
-const aniso = renderer.capabilities.getMaxAnisotropy();
-function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-function tex(c, rep) {
-  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = aniso;
-  if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); }
-  return t;
+scene.setCloth(prefs.cloth); scene.setCue(prefs.cue); scene.setQuality(prefs.quality);
+
+/* ================= small DOM helpers ================= */
+function el(tag, attrs, kids) {
+  const n = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === 'class') n.className = attrs[k]; else if (k === 'text') n.textContent = attrs[k];
+    else if (k === 'style') n.style.cssText = attrs[k]; else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), attrs[k]); else n.setAttribute(k, attrs[k]);
+  }
+  if (kids) for (const c of [].concat(kids)) if (c) n.appendChild(c);
+  return n;
 }
-
-// reflections: a dark room with three lamp panels overhead
-(function env() {
-  const es = new THREE.Scene(); es.background = new THREE.Color(0x05070a);
-  const panel = (w, h, x, y, z, hex, k) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
-    m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m);
-  };
-  panel(0.9, 0.5, -1.0, 0.25, 2.2, 0xfff0d8, 5); panel(0.9, 0.5, 0, 0.25, 2.3, 0xfff0d8, 5); panel(0.9, 0.5, 1.0, 0.25, 2.2, 0xfff0d8, 5);
-  panel(6, 2.5, 0, 5, 1.2, 0x30455a, 0.5); panel(6, 2.5, 0, -5, 1.2, 0x4a3524, 0.4);
-  panel(2.5, 2.5, 5, 0, 1.2, 0x2a3644, 0.4); panel(2.5, 2.5, -5, 0, 1.2, 0x2a3644, 0.4);
-  const pm = new THREE.PMREMGenerator(renderer);
-  scene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
-})();
-
-// lights
-(function lights() {
-  const hemi = new THREE.HemisphereLight(0xc4d6e6, 0x1c120a, 0.22); hemi.position.set(0, 0, 1); scene.add(hemi);
-  const key = new THREE.SpotLight(0xfff0dc, 1.25, 0, 0.82, 0.55, 1);
-  key.position.set(-0.75, 0.85, 2.5); key.target.position.set(0, 0, 0);
-  key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.camera.near = 1; key.shadow.camera.far = 5;
-  key.shadow.bias = -0.0003; key.shadow.normalBias = 0.004;
-  scene.add(key, key.target);
-  const fill = new THREE.SpotLight(0xdfe9ff, 0.4, 0, 0.9, 0.7, 1); fill.position.set(1.1, -0.7, 2.3); scene.add(fill, fill.target);
-})();
-
-// floor far below the table: gives the top-down view real depth
-(function floor() {
-  const c = mkCanvas(256, 256), g = c.getContext('2d');
-  g.fillStyle = '#6c6258'; g.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 5000; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? 0 : 255},${Math.random() < 0.5 ? 0 : 255},${Math.random() * 255 | 0},0.06)`; g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ color: col(0x23262d), map: tex(c, 18), roughness: 1, metalness: 0, envMapIntensity: 0 }));
-  m.position.z = -0.8; m.receiveShadow = true; scene.add(m);
-})();
-
-const feltCol = col(0x0a5f73);
-(function table() {
-  // cloth
-  const c = mkCanvas(256, 256), g = c.getContext('2d');
-  g.fillStyle = '#e4e4e4'; g.fillRect(0, 0, 256, 256);
-  const id = g.getImageData(0, 0, 256, 256);
-  for (let i = 0; i < id.data.length; i += 4) { const v = 222 + (Math.random() * 34 - 17); id.data[i] = id.data[i + 1] = id.data[i + 2] = v; }
-  g.putImageData(id, 0, 0);
-  const feltMat = new THREE.MeshStandardMaterial({ color: feltCol, map: tex(c, 9), roughness: 0.96, metalness: 0, envMapIntensity: 0.12 });
-  const bx = HL + 0.105, by = HW + 0.118;
-  const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
-  for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
-  const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; scene.add(bedMesh);
-
-  // markings
-  const mark = new THREE.MeshBasicMaterial({ color: col(0x9fd7e6), transparent: true, opacity: 0.22, depthWrite: false });
-  const line = new THREE.Mesh(new THREE.PlaneGeometry(0.003, HW * 2), mark); line.position.set(-HL / 2, 0, 0.0004); scene.add(line);
-  for (const sx of [-1, 1]) { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), mark); d.position.set(sx * HL / 2, 0, 0.0005); scene.add(d); }
-
-  // pocket pits
-  const pit = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1, metalness: 0, side: THREE.BackSide, envMapIntensity: 0 });
-  const pitB = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  for (const p of POCKETS) {
-    const w = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.86, 0.16, 40, 1, true), pit);
-    w.rotation.x = Math.PI / 2; w.position.set(p.x, p.y, -0.08); scene.add(w);
-    const b = new THREE.Mesh(new THREE.CircleGeometry(p.r, 32), pitB); b.position.set(p.x, p.y, -0.16); scene.add(b);
-  }
-
-  // wooden rails with the pocket cut-outs
-  const wc = mkCanvas(512, 512), wg = wc.getContext('2d');
-  wg.fillStyle = '#b98a62'; wg.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 420; i++) {
-    const y = Math.random() * 512, a = 0.04 + Math.random() * 0.14;
-    wg.strokeStyle = Math.random() < 0.6 ? `rgba(30,14,6,${a})` : `rgba(190,130,80,${a * 0.7})`;
-    wg.lineWidth = 0.6 + Math.random() * 2.2; wg.beginPath(); wg.moveTo(0, y);
-    wg.bezierCurveTo(170, y + (Math.random() - 0.5) * 16, 340, y + (Math.random() - 0.5) * 16, 512, y); wg.stroke();
-  }
-  const wood = new THREE.MeshStandardMaterial({ color: col(0x5a2f1a), map: tex(wc, 1.4), roughness: 0.62, metalness: 0, envMapIntensity: 0.22 });
-  const Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1;
-  const rail = new THREE.Shape();
-  rail.moveTo(-ox + rr, -oy); rail.lineTo(ox - rr, -oy); rail.absarc(ox - rr, -oy + rr, rr, -Math.PI / 2, 0, false);
-  rail.lineTo(ox, oy - rr); rail.absarc(ox - rr, oy - rr, rr, 0, Math.PI / 2, false);
-  rail.lineTo(-ox + rr, oy); rail.absarc(-ox + rr, oy - rr, rr, Math.PI / 2, Math.PI, false);
-  rail.lineTo(-ox, -oy + rr); rail.absarc(-ox + rr, -oy + rr, rr, Math.PI, Math.PI * 1.5, false);
-  const arcs = POCKETS.map(p => {
-    if (!p.corner) { const sy = Math.sign(p.y); return { p, e: [-sy * p.r, sy * Yb], x: [sy * p.r, sy * Yb] }; }
-    const sx = Math.sign(p.x), sy = Math.sign(p.y), s = Math.sqrt(p.r * p.r - (CW - PHYS.PO) ** 2);
-    const pv = [sx * Xb, p.y - sy * s], ph = [p.x - sx * s, sy * Yb];
-    return sx * sy < 0 ? { p, e: pv, x: ph } : { p, e: ph, x: pv };
-  });
-  for (const a of arcs) { a.a0 = Math.atan2(a.e[1] - a.p.y, a.e[0] - a.p.x); a.a1 = Math.atan2(a.x[1] - a.p.y, a.x[0] - a.p.x); }
-  const hole = new THREE.Path();
-  hole.moveTo(arcs[0].x[0], arcs[0].x[1]);
-  for (const i of [1, 2, 3, 4, 5, 0]) { const a = arcs[i]; hole.lineTo(a.e[0], a.e[1]); hole.absarc(a.p.x, a.p.y, a.p.r, a.a0, a.a1, true); }
-  rail.holes.push(hole);
-  const bev = 0.004;
-  const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 28 });
-  rg.translate(0, 0, RAIL_Z - 0.12 - bev);
-  const railMesh = new THREE.Mesh(rg, wood); railMesh.castShadow = true; railMesh.receiveShadow = true; scene.add(railMesh);
-
-  // pocket liners + sights
-  const liner = new THREE.MeshStandardMaterial({ color: col(0x0d0b0a), roughness: 0.8, metalness: 0, envMapIntensity: 0.3 });
-  for (const a of arcs) {
-    let len = a.a0 - a.a1; while (len < 0) len += Math.PI * 2;
-    const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev, a.p.r + 0.017, 40, 1, a.a1, len), liner);
-    m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); m.receiveShadow = true; scene.add(m);
-  }
-  const pearl = new THREE.MeshStandardMaterial({ color: col(0xf1e7cf), roughness: 0.25, metalness: 0.1, envMapIntensity: 1.2 });
-  const dg = new THREE.CircleGeometry(0.0095, 4);
-  const sight = (x, y) => { const m = new THREE.Mesh(dg, pearl); m.position.set(x, y, RAIL_Z + 0.0006); scene.add(m); };
-  for (const k of [-3, -2, -1, 1, 2, 3]) for (const sy of [-1, 1]) sight(k * HL / 4, sy * (Yb + RW * 0.52));
-  for (const k of [-1, 0, 1]) for (const sx of [-1, 1]) { const m = new THREE.Mesh(dg, pearl); m.rotation.z = Math.PI / 2; m.position.set(sx * (Xb + RW * 0.52), k * HW / 2, RAIL_Z + 0.0006); scene.add(m); }
-
-  // cushions
-  const cushMat = new THREE.MeshStandardMaterial({ color: col(0x095467), map: feltMat.map, roughness: 0.96, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.12 });
-  for (const cu of CUSHIONS) {
-    const back = pt => cu.o[0] !== 0 ? [cu.o[0] * Xb, pt[1]] : [pt[0], cu.o[1] * Yb];
-    const top = [[...cu.ja, 0.038], [...cu.a, 0.0355], [...cu.b, 0.0355], [...cu.jb, 0.038], [...back(cu.jb), RAIL_Z], [...back(cu.ja), RAIL_Z]];
-    const v = [], uv = [];
-    const tri = (a, b, c) => { for (const p of [a, b, c]) { v.push(p[0], p[1], p[2]); uv.push(p[0], p[1]); } };
-    for (let i = 1; i < 5; i++) tri(top[0], top[i], top[i + 1]);
-    for (let i = 0; i < 3; i++) { const a = top[i], b = top[i + 1], a0 = [a[0], a[1], 0], b0 = [b[0], b[1], 0]; tri(a, a0, b); tri(b, a0, b0); }
-    const g2 = new THREE.BufferGeometry();
-    g2.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    g2.computeVertexNormals();
-    const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.receiveShadow = true; scene.add(m);
-  }
-})();
-
-// balls
-const ballMesh = [], blobMesh = [];
-(function balls() {
-  const geo = new THREE.SphereGeometry(R, 56, 40);
-  const bc = mkCanvas(128, 128), bg = bc.getContext('2d');
-  const gr = bg.createRadialGradient(64, 64, 14, 64, 64, 64);
-  gr.addColorStop(0, 'rgba(0,0,0,.62)'); gr.addColorStop(0.55, 'rgba(0,0,0,.34)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  bg.fillStyle = gr; bg.fillRect(0, 0, 128, 128);
-  const blobMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, depthWrite: false });
-  const blobGeo = new THREE.PlaneGeometry(R * 3.3, R * 3.3);
-  for (let n = 0; n < 16; n++) {
-    const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = '#f4efe2';
-    if (n === 0) {
-      g.fillStyle = ivory; g.fillRect(0, 0, W, H); g.fillStyle = '#c8201b';
-      const rad = 0.13 / Math.PI * H;
-      for (const u of [0, 0.25, 0.5, 0.75, 1]) { g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill(); }
-      g.fillRect(0, 0, W, rad); g.fillRect(0, H - rad, W, rad);
-    } else {
-      const stripe = n > 8;
-      g.fillStyle = stripe ? ivory : css(n); g.fillRect(0, 0, W, H);
-      if (stripe) { g.fillStyle = css(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
-      const rad = 0.5 / Math.PI * H;
-      for (const u of [0.25, 0.75]) {
-        g.fillStyle = ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
-        g.fillStyle = '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText(String(n), u * W, H / 2 + 6);
-        if (n === 6 || n === 9) g.fillRect(u * W - 22, H / 2 + 46, 44, 7);
-      }
-    }
-    const mat = new THREE.MeshPhysicalMaterial({ map: tex(c), roughness: 0.14, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.55 });
-    const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; scene.add(m); ballMesh.push(m);
-    const s = new THREE.Mesh(blobGeo, blobMat); s.position.z = 0.0009; s.renderOrder = 1; scene.add(s); blobMesh.push(s);
-  }
-})();
-
-// cue stick
-const cue = new THREE.Group(); cue.rotation.order = 'ZYX';
-(function stick() {
-  const part = (x0, x1, r0, r1, mat) => {
-    const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
-    const m = new THREE.Mesh(g, mat); m.castShadow = true; cue.add(m);
-  };
-  const std = (h, ro) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: 0 });
-  part(0, 0.012, 0.006, 0.0062, std(0x3f9ac0, 0.9));
-  part(0.012, 0.04, 0.0062, 0.0064, std(0xf2ecdd, 0.4));
-  part(0.04, 0.76, 0.0064, 0.0105, std(0xd9b782, 0.45));
-  part(0.76, 0.775, 0.0108, 0.0109, new THREE.MeshStandardMaterial({ color: col(0xd9ab52), roughness: 0.25, metalness: 0.9 }));
-  part(0.775, 1.47, 0.0106, 0.0146, std(0x2a1710, 0.35));
-  scene.add(cue);
-})();
-
-// aim guide (drawn at ball-centre height so it lines up under perspective)
-const guide = new THREE.Group(); scene.add(guide);
-const gMat = (o) => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: o, depthTest: false, depthWrite: false });
-const unit = new THREE.PlaneGeometry(1, 1);
-const gLine = new THREE.Mesh(unit, gMat(0.9)), gObj = new THREE.Mesh(unit, gMat(0.85)), gCue = new THREE.Mesh(unit, gMat(0.5));
-const gRing = new THREE.Mesh(new THREE.RingGeometry(R * 0.86, R, 48), gMat(0.9));
-const gHand = new THREE.Mesh(new THREE.RingGeometry(R * 1.55, R * 1.75, 48), new THREE.MeshBasicMaterial({ color: col(0xd9ab52), transparent: true, opacity: 0.9, depthTest: false, depthWrite: false }));
-for (const m of [gLine, gObj, gCue, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
-let ppm = 200;
-function setLine(m, x0, y0, x1, y1, px) {
-  const len = Math.hypot(x1 - x0, y1 - y0);
-  if (len < 1e-4) { m.visible = false; return; }
-  m.visible = true; m.position.set((x0 + x1) / 2, (y0 + y1) / 2, R); m.rotation.z = Math.atan2(y1 - y0, x1 - x0); m.scale.set(len, px / ppm, 1);
+const hex = n => '#' + n.toString(16).padStart(6, '0');
+function seg(id, get, set) {
+  const box = $(id), paint = () => { for (const b of box.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get()))); };
+  box.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; SND.init(); SND.tap(); set(b.dataset.v); paint(); });
+  paint(); return paint;
+}
+let toastTimer = 0;
+function toast(msg, kind, ms) {
+  const t = $('#toast'); if (!msg) return;
+  t.textContent = msg; t.className = 'show ' + (kind || '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 1800);
 }
 
 /* ================= layout ================= */
-let portrait = false, dirty = 3, quality = 1, slow = 0;
-const invalidate = () => { dirty = 3; };
+let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
-  portrait = H > W; app.classList.toggle('portrait', portrait);
-  const hud = H < 430 ? 44 : 52; app.style.setProperty('--hud-h', hud + 'px');
-  const ins = portrait ? { t: hud + 6, l: 6, r: 6, b: 102 } : { t: hud + 4, l: 62, r: 70, b: 6 };
-  const sw = W - ins.l - ins.r, sh = H - ins.t - ins.b, cx = ins.l + sw / 2, cy = ins.t + sh / 2;
-  const TW = 2 * (HL + CW + RW) + 0.03, TH = 2 * (HW + CW + RW) + 0.03;
-  ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
-  const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
-  const dist = fh / (2 * ppm * Math.tan(FOV * Math.PI / 360));
-  camera.aspect = fw / fh; camera.position.set(0, 0, dist);
-  camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); camera.lookAt(0, 0, 0);
-  camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
-  renderer.setPixelRatio(Math.max(1, Math.min(window.devicePixelRatio || 1, 3) * quality));
-  renderer.setSize(W, H, false);
-  setPowerUI(game.power); invalidate();
+  const portrait = H > W; wide = W >= 900 && H >= 560;
+  app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
+  const hud = H <= 520 ? 50 : 60;
+  scene.resize();
+  if (st.phase === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
+  setPowerUI(st.power);
 }
 window.addEventListener('resize', layout);
 if (window.ResizeObserver) new ResizeObserver(layout).observe(app);
 
-const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-function toTable(e) {
-  const r = canvas.getBoundingClientRect();
-  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ndc, camera);
-  const o = ray.ray.origin, d = ray.ray.direction, t = (R - o.z) / d.z;
-  return { x: o.x + d.x * t, y: o.y + d.y * t };
+/* ================= home ================= */
+const MODE_ICON = {
+  eight: () => el('span', { class: 'ball', style: '--c:#111' }, el('i', { text: '8' })),
+  nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
+  four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
+};
+function buildModes() {
+  const box = $('#modeList'); box.textContent = '';
+  for (const id of ['eight', 'nine', 'four']) {
+    const m = game.MODES[id];
+    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); preview(); } },
+      [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })])]));
+  }
+}
+function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
+function paintHome() {
+  $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
+  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
+  $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
+  $('#cueSw').style.setProperty('--c', cueCss(CUES[prefs.cue]));
+  $('#guideVal').textContent = GUIDE[prefs.guide][0];
+}
+function cueCss(d) { return `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`; }
+function preview() {
+  game.start(prefs.mode, [prefs.names[0], oppName()], false, {});
+  scene.setTable(game.mode.table); st.aim = 0; st.power = 0; st.rev++; scene.invalidate();
+}
+function goHome() {
+  st.phase = 'home'; st.ai = null; st.cueAnim = null; closeSheet(); $('#spinPop').hidden = true;
+  $('#result').hidden = true; $('#home').hidden = false; $('#hud').hidden = true;
+  for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true;
+  app.classList.add('busy'); store.set('save', null);
+  buildModes(); paintHome(); preview(); layout();
 }
 
-/* ================= HUD ================= */
-let toastTimer = 0;
-function toast(msg, kind, ms) {
-  const t = $('#toast'); t.textContent = msg; t.className = 'show ' + (kind || '');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 2600);
+/* ================= sheets ================= */
+function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b = $('#sheetBody'); b.textContent = ''; for (const k of [].concat(kids)) if (k) b.appendChild(k); $('#sheet').hidden = false; }
+function closeSheet() { $('#sheet').hidden = true; }
+$('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
+$('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
+const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: () => { SND.tap(); fn(); } }, kids);
+const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
+const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
+  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { class: 'btn', 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+
+function sheetCloth() {
+  openSheet('테이블 색', el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
+    [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetCloth(); }))));
 }
-function remaining(pi) {
-  const g = game.players[pi].group; if (!g) return null;
-  const ids = g === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15];
-  return ids.filter(i => game.world.balls[i].on);
+function sheetCue() {
+  openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
+    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
 }
-function hud() {
-  for (let i = 0; i < 2; i++) {
-    const el = $('#p' + i), p = game.players[i], rem = remaining(i);
-    el.classList.toggle('on', game.turn === i && game.phase !== 'menu' && game.phase !== 'over');
-    el.querySelector('.nm').textContent = p.name;
-    el.querySelector('.grp').textContent = p.group ? GROUP_KO[p.group] : '공 미정';
-    const tray = el.querySelector('.tray'); tray.textContent = '';
-    if (!rem) for (let k = 0; k < 7; k++) { const s = document.createElement('i'); s.className = 'mb slot'; tray.appendChild(s); }
-    else if (!rem.length) { const s = document.createElement('i'); s.className = 'mb e8'; tray.appendChild(s); }
-    else for (const id of rem) { const s = document.createElement('i'); s.className = 'mb' + (id > 8 ? ' st' : ''); s.style.setProperty('--c', css(id)); tray.appendChild(s); }
+function sheetGuide() {
+  openSheet('조준선 길이', GUIDE.map((gd, i) => optBtn(prefs.guide === i, optText(gd[0], gd[1]), () => { prefs.guide = i; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); })));
+}
+function sheetSettings() {
+  openSheet('설정', [
+    segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
+    segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
+    el('p', { class: 'note', text: '화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.' }),
+  ]);
+}
+function sheetRecords() {
+  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w);
+  const grid = el('div', { class: 'rec' }, [el('span', { class: 'hd', text: '이름' }), el('span', { class: 'hd n', text: '승' }), el('span', { class: 'hd n', text: '패' }), el('span', { class: 'hd n', text: '최다 연승' })]);
+  for (const n of names) { const r = rec[n]; grid.append(el('span', { text: n }), el('span', { class: 'n', text: r.w }), el('span', { class: 'n', text: r.l }), el('span', { class: 'n', text: r.best })); }
+  openSheet('전적', [names.length ? grid : el('p', { class: 'note', text: '아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 승패가 쌓입니다.' }),
+    names.length ? el('button', { class: 'btn white', text: '전적 모두 지우기', onclick: () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); } }) : null]);
+}
+function sheetName(i) {
+  if (i === 1 && prefs.vsAI) return;
+  const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
+  const save = () => { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) { prefs.names[i] = v; savePrefs(); } closeSheet(); paintHome(); };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  openSheet(`${i + 1}번 선수 이름`, [input, el('p', { class: 'note', text: '전적은 이름별로 따로 쌓입니다. 열 글자까지.' }), el('button', { class: 'btn yellow', text: '저장', onclick: save })]);
+  setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
+}
+function sheetPause() {
+  openSheet('잠깐 멈춤', [
+    el('button', { class: 'btn yellow', text: '이어서 하기', onclick: closeSheet }),
+    el('div', { class: 'row' }, [el('button', { class: 'btn white', text: '조준선 ' + GUIDE[prefs.guide][0], onclick: sheetGuide }), el('button', { class: 'btn white', text: '설정', onclick: sheetSettings })]),
+    el('div', { class: 'row' }, [el('button', { class: 'btn', style: '--bg:#0e1a66;--edge:#08104a', text: '다시 시작', onclick: () => { closeSheet(); startMatch(game.turn); } }),
+      el('button', { class: 'btn', style: '--bg:#0e1a66;--edge:#08104a', text: '처음으로', onclick: goHome })]),
+  ]);
+}
+$('#clothBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetCloth(); });
+$('#cueBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetCue(); });
+$('#guideBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetGuide(); });
+$('#setBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetSettings(); });
+$('#recBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetRecords(); });
+$('#pc0').addEventListener('click', () => { SND.init(); SND.tap(); sheetName(0); });
+$('#pc1').addEventListener('click', () => { SND.init(); SND.tap(); sheetName(1); });
+$('#menuBtn').addEventListener('click', () => { SND.tap(); sheetPause(); });
+seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
+seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
+seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
+$('#startBtn').addEventListener('click', () => { SND.init(); SND.tap(); startMatch(0); });
+$('#againBtn').addEventListener('click', () => { SND.init(); SND.tap(); startMatch(st.lastLoser == null ? 0 : st.lastLoser); });
+$('#homeBtn').addEventListener('click', () => { SND.tap(); goHome(); });
+
+/* ================= match flow ================= */
+function startMatch(first) {
+  const names = [prefs.names[0], oppName()], key = names.join('\u0001') + prefs.mode;
+  if (series.key !== key) { series.key = key; series.s = [0, 0]; }
+  game.start(prefs.mode, names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: first || 0 });
+  enterGame();
+  toast(game.mode.id === 'four' ? `${game.players[game.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.` : `${game.players[game.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`, '', 3600);
+}
+function enterGame() {
+  scene.setTable(game.mode.table);
+  $('#home').hidden = true; $('#result').hidden = true; $('#hud').hidden = false; closeSheet();
+  for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = false;
+  st.aim = 0; st.ai = null; st.cueAnim = null; st.rev++;
+  st.phase = 'aim'; layout(); beginTurn(true);
+}
+function beginTurn(first) {
+  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; setPowerUI(0); setSpinUI(); $('#spinPop').hidden = true;
+  const p = game.players[game.turn], c = game.cueBall();
+  if (p.ai) { st.phase = 'ai'; st.ai = { t: 0, plan: null, from: st.aim }; }
+  else if (!first || game.mode.table === 'carom') {
+    let best = null, bd = 1e9;
+    for (const id of game.legal()) { const b = game.world.balls[id], d = Math.hypot(b.x - c.x, b.y - c.y); if (d < bd) { bd = d; best = b; } }
+    if (best) st.aim = Math.atan2(best.y - c.y, best.x - c.x);
   }
-  const st = $('#status');
-  st.textContent = game.phase === 'over' ? 'GAME OVER' : game.isBreak ? 'BREAK' : game.players.every(p => !p.group) ? 'OPEN TABLE' : '8-BALL';
-  app.classList.toggle('busy', !(game.phase === 'aim' && !game.players[game.turn].ai));
+  hud(); scene.invalidate(); snapshot();
+}
+function shoot(V, a, b) {
+  game.beginShot(); st.phase = 'strike'; $('#spinPop').hidden = true;
+  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
+  hud();
+}
+function endShot() {
+  const out = game.resolve(); st.rev++;
+  if (game.over) return finish();
+  toast(out.msg, out.kind, out.dur);
+  beginTurn(false);
+}
+function finish() {
+  st.phase = 'over';
+  const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
+  const rw = recOf(pw.name), rl = recOf(pl.name);
+  rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0; store.set('rec', rec);
+  series.s[w]++; st.lastLoser = l; store.set('save', null);
+  const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
+  win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
+  win.querySelector('.rc').textContent = `${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
+  $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name;
+  const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
+  const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
+  const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
+  if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
+  const box = $('#rStats'); box.textContent = '';
+  for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
+  $('#rWhy').textContent = game.over.why;
+  $('#hud').hidden = true; for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true; $('#spinPop').hidden = true;
+  $('#result').hidden = false; app.classList.add('busy'); SND.win();
+}
+
+/* ================= scoreboard ================= */
+function hud() {
+  const m = game.mode;
+  for (let i = 0; i < 2; i++) {
+    const box = $('#p' + i), p = game.players[i], tray = box.querySelector('.tray'), pts = box.querySelector('.pts');
+    box.classList.toggle('on', game.turn === i && st.phase !== 'over');
+    box.querySelector('.nm').textContent = p.name; tray.textContent = ''; pts.textContent = '';
+    let sub = '';
+    if (m.id === 'eight') {
+      const rem = m.remaining(game, i); sub = p.group ? game.GROUP_KO[p.group] + ' 공' : '공 미정';
+      if (!rem) for (let k = 0; k < 7; k++) tray.appendChild(el('i', { class: 'mb slot' }));
+      else if (!rem.length) tray.appendChild(el('i', { class: 'mb e8' }));
+      else for (const id of rem) tray.appendChild(el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: '--c:' + ballCss(id) }));
+    } else if (m.id === 'nine') { sub = game.turn === i ? `다음 ${m.lowest(game)}번 공` : `성공 ${p.made}`; }
+    else { sub = `목표 ${game.target}점`; pts.textContent = p.score; }
+    box.querySelector('.sub').textContent = sub;
+  }
+  const badge = $('#badge'); badge.textContent = '';
+  badge.appendChild(el('b', { text: m.name }));
+  if (m.id === 'nine') {
+    badge.appendChild(document.createTextNode('다음'));
+    const low = m.lowest(game); for (let id = 1; id <= 9; id++) if (game.world.balls[id].on) badge.appendChild(el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (id === low ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55') }));
+  } else if (m.id === 'eight') badge.appendChild(document.createTextNode(game.isBreak ? '브레이크' : game.players.every(p => !p.group) ? '아직 공 미정' : '8번은 마지막에'));
+  else badge.appendChild(document.createTextNode('빨간 공 두 개 맞히면 1점'));
+  app.classList.toggle('busy', !(st.phase === 'aim' && !game.players[game.turn].ai));
 }
 function setPowerUI(p) {
   const tr = $('#power'), fill = $('#powerFill'), c = $('#powerCue');
   $('#powerNum').textContent = Math.round(p * 100);
-  if (portrait) {
-    fill.style.height = ''; fill.style.width = (p * 100) + '%';
-    c.style.transform = `translate(calc(-100% + 34px + ${p * (tr.clientWidth - 34)}px),-50%)`;
-  } else {
-    fill.style.width = ''; fill.style.height = (p * 100) + '%';
-    c.style.transform = `translate(-50%,calc(-100% + 30px + ${p * (tr.clientHeight - 30)}px))`;
-  }
+  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 34px + ${p * (tr.clientWidth - 34)}px),-50%)`; }
+  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 30px + ${p * (tr.clientHeight - 30)}px))`; }
 }
 function setSpinUI() {
-  const s = game.spin, k = 0.36;
-  $('#spinDot').style.transform = `translate(${s.x * k * 58}px,${-s.y * k * 58}px)`;
-  const pad = $('#spinPad'), w = pad.clientWidth || 200;
-  $('#spinPadDot').style.transform = `translate(${s.x * k * w}px,${-s.y * k * w}px)`;
+  const s = st.spin, k = 0.36;
+  $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
+  $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
 }
 
-/* ================= rules ================= */
-function evaluate(ev, ctx) {
-  const me = ctx.turn, grp = ctx.groups[me], open = !grp;
-  const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), eight = potted.includes(8);
-  const obj = potted.filter(i => i !== 0 && i !== 8);
-  let foul = null;
-  if (ev.firstHit == null) foul = '공을 하나도 맞히지 못했습니다';
-  else if (open) { if (ev.firstHit === 8 && !ctx.isBreak) foul = '8번 공을 먼저 맞혔습니다'; }
-  else {
-    const need = ctx.remBefore[me] > 0 ? grp : 'eight', ft = typeOf(ev.firstHit);
-    if (ft !== need) foul = need === 'eight' ? '8번 공을 먼저 맞혀야 합니다' : ft === 'eight' ? '8번 공을 먼저 맞혔습니다' : '상대 공을 먼저 맞혔습니다';
-  }
-  if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
-  if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
-  const r = { foul, scratch, eight, respot8: false, win: null, why: '', assign: null, keep: false, obj };
-  if (eight) {
-    if (ctx.isBreak) r.respot8 = true;
-    else if (foul) { r.win = 1 - me; r.why = '8번 공을 넣으면서 파울이 났습니다.'; }
-    else if (open || ctx.remBefore[me] > 0) { r.win = 1 - me; r.why = '자기 공이 남았는데 8번 공이 들어갔습니다.'; }
-    else { r.win = me; r.why = '자기 공을 모두 넣고 8번 공까지 넣었습니다.'; }
-  }
-  if (r.win != null) return r;
-  if (open && !ctx.isBreak && !foul && obj.length) r.assign = typeOf(obj[0]);
-  const g = grp || r.assign;
-  if (!foul) { if (ctx.isBreak) r.keep = obj.length > 0; else if (g) r.keep = obj.some(i => typeOf(i) === g); }
-  return r;
-}
-function ctxNow() {
-  return { turn: game.turn, groups: game.players.map(p => p.group), isBreak: game.isBreak, remBefore: [0, 1].map(i => { const r = remaining(i); return r ? r.length : 7; }) };
-}
-function legalTargets(pi) {
-  const b = game.world.balls, p = game.players[pi];
-  if (!p.group) return b.filter(x => x.on && x.id !== 0 && x.id !== 8).map(x => x.id);
-  const rem = remaining(pi); return rem.length ? rem : [8];
-}
-
-/* ================= flow ================= */
-function newGame() {
-  const pvp = game.mode === 'pvp';
-  game.players = [{ name: pvp ? '플레이어 1' : '나', group: null, ai: false }, { name: pvp ? '플레이어 2' : '컴퓨터', group: null, ai: !pvp }];
-  PHYS.rack(game.world); game.world.snd = [];
-  game.turn = 0; game.isBreak = true; game.placing = 'kitchen'; game.aim = 0; game.power = 0; game.spin = { x: 0, y: 0 };
-  game.started = true; game.ai = null; game.cueAnim = null; falls.length = 0;
-  for (let i = 0; i < 16; i++) { ballMesh[i].visible = true; ballMesh[i].scale.setScalar(1); }
-  $('#menu').hidden = true; $('#over').hidden = true;
-  beginTurn(true);
-  toast('브레이크. 테이블을 끌어 조준하고, 큐 막대를 당겼다 놓으세요.', '', 4200);
-}
-function beginTurn(first) {
-  game.phase = 'aim'; game.power = 0; game.spin = { x: 0, y: 0 }; setPowerUI(0); setSpinUI();
-  const p = game.players[game.turn], c = game.world.balls[0];
-  if (p.ai) { game.phase = 'ai'; game.ai = { t: 0, plan: null, from: game.aim }; }
-  else if (!first) {
-    // point the cue at the nearest legal ball
-    let best = null, bd = 1e9;
-    for (const id of legalTargets(game.turn)) { const b = game.world.balls[id], d = Math.hypot(b.x - c.x, b.y - c.y); if (d < bd) { bd = d; best = b; } }
-    if (best) game.aim = Math.atan2(best.y - c.y, best.x - c.x);
-  }
-  hud(); invalidate(); snapshot();
-}
-function shoot(power, opt) {
-  const V = 0.35 + 7.4 * Math.pow(power, 1.35);
-  game.ctx = ctxNow(); game.phase = 'strike'; game.placing = null;
-  game.cueAnim = { t: 0, from: 0.03 + power * 0.2, V, a: (opt ? opt.a : game.spin.x * 0.5), b: (opt ? opt.b : game.spin.y * 0.5) };
-  hud();
-}
-function endShot() {
-  const w = game.world, ev = w.ev, r = evaluate(ev, game.ctx), me = game.turn;
-  for (const b of w.balls) b.wz = 0;
-  const cueB = w.balls[0];
-  if (r.respot8) { const b = w.balls[8]; const [x, y] = PHYS.findFree(w, HL / 2, 0, 8); b.x = x; b.y = y; b.on = true; revive(8); }
-  if (r.scratch) { const [x, y] = PHYS.findFree(w, -HL / 2, 0, 0); cueB.x = x; cueB.y = y; cueB.on = true; revive(0); }
-  game.isBreak = false;
-  if (r.win != null) return gameOver(r.win, r.why);
-  if (r.assign) {
-    game.players[me].group = r.assign; game.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
-    toast(`${game.players[me].name}: ${GROUP_KO[r.assign]}`, 'good');
-  }
-  if (r.foul) {
-    game.turn = 1 - me; game.placing = 'any';
-    toast(`파울 · ${r.foul}. ${game.players[game.turn].name} 차례, 큐볼을 원하는 곳에 놓습니다.`, 'foul', 3600);
-  } else if (!r.keep) {
-    game.turn = 1 - me;
-    if (!r.assign) toast(`${game.players[game.turn].name} 차례`, '', 1500);
-  } else if (!r.assign) {
-    const rem = remaining(me);
-    if (rem && !rem.length) toast('이제 8번 공을 넣으면 이깁니다.', 'good');
-  }
-  beginTurn(false);
-}
-function gameOver(winner, why) {
-  game.phase = 'over'; game.started = false;
-  const p = game.players[winner];
-  $('#overTitle').textContent = game.mode === 'ai' ? (winner === 0 ? '이겼습니다' : '졌습니다') : `${p.name} 승리`;
-  $('#overWhy').textContent = why;
-  $('#over').hidden = false; hud(); snapshot();
-}
-function revive(id) { const m = ballMesh[id]; m.visible = true; m.scale.setScalar(1); for (let i = falls.length - 1; i >= 0; i--) if (falls[i].id === id) falls.splice(i, 1); }
-
-/* ================= computer player ================= */
-function gauss() { let u = 0; for (let i = 0; i < 6; i++) u += Math.random(); return (u - 3) / Math.sqrt(0.5); }
-function simShot(angle, V, cpos) {
-  const w2 = PHYS.clone(game.world);
-  if (cpos) { w2.balls[0].x = cpos[0]; w2.balls[0].y = cpos[1]; }
-  PHYS.strike(w2, angle, V, 0, 0);
-  return PHYS.run(w2, 20);
-}
-function aiPlan() {
-  const w = game.world, c = w.balls[0], lvl = game.level, ctx = ctxNow();
-  if (game.isBreak) {
-    const y = (Math.random() - 0.5) * 0.36, pos = [-HL / 2 - 0.1, y];
-    return { pos, angle: Math.atan2(-y * 0.9, HL / 2 - pos[0]) + gauss() * 0.004, power: 0.93 + Math.random() * 0.07 };
-  }
-  const targets = legalTargets(game.turn), cands = [];
-  for (const t of targets) for (const p of POCKETS) {
-    const T = w.balls[t]; let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
-    if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55)) continue;
-    if (!PHYS.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
-    const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R;
-    if (Math.abs(gx) > HL - R || Math.abs(gy) > HW - R) continue;
-    const spots = [];
-    if (game.placing) {
-      for (const dist of [0.32, 0.5, 0.75]) for (const da of [0, 0.3, -0.3, 0.55, -0.55]) {
-        const ca = Math.cos(da), sa = Math.sin(da), px = gx - (dx * ca - dy * sa) * dist, py = gy - (dx * sa + dy * ca) * dist;
-        if (PHYS.isFree(w, px, py, 0)) spots.push([px, py]);
-      }
-    } else spots.push([c.x, c.y]);
-    for (const s of spots) {
-      let cx = gx - s[0], cy = gy - s[1]; const dCG = Math.hypot(cx, cy); if (dCG < 1e-4) continue; cx /= dCG; cy /= dCG;
-      const cosc = cx * dx + cy * dy; if (cosc < 0.3) continue;
-      if (!PHYS.pathClear(w, s[0], s[1], gx, gy, [0, t])) continue;
-      cands.push({ t, pos: game.placing ? s : null, angle: Math.atan2(cy, cx), cosc, dCG, dTP, score: (dCG * 0.6 + 0.3) * (dTP + 0.25) / (cosc * cosc) * (p.corner ? 1 : 1.15) });
-    }
-  }
-  cands.sort((a, b) => a.score - b.score);
-  const noise = [0.014, 0.0055, 0.0016][lvl];
-  const speed = k => Math.min(6.4, Math.max(1.3, (1.0 + 1.5 * Math.sqrt(k.dTP)) / Math.max(0.4, k.cosc) + 0.9 * Math.sqrt(k.dCG)));
-  const toPower = V => Math.pow(Math.max(0.01, (V - 0.35) / 7.4), 1 / 1.35);
-  const good = ev => { const r = evaluate(ev, ctx); return !r.foul && (r.win == null || r.win === game.turn) && (r.keep || r.win === game.turn); };
-  let pick = null;
-  if (cands.length) {
-    if (lvl === 0) { const k = cands[Math.min(cands.length - 1, Math.floor(Math.random() * 2))]; pick = { k, angle: k.angle, V: speed(k) }; }
-    else {
-      const top = cands.slice(0, lvl === 2 ? 10 : 5);
-      outer: for (const k of top) for (const m of [1, 0.78, 1.3]) for (const da of [0, 0.003, -0.003]) {
-        const V = Math.min(6.6, speed(k) * m);
-        if (good(simShot(k.angle + da, V, k.pos))) { pick = { k, angle: k.angle + da, V }; break outer; }
-      }
-      if (!pick) { const k = cands[0]; pick = { k, angle: k.angle, V: speed(k) }; }
-    }
-    return { pos: pick.k.pos, angle: pick.angle + gauss() * noise, power: toPower(pick.V) };
-  }
-  // no clear pot: find any legal contact, preferring one that leaves no foul
-  let pos = null;
-  if (game.placing) { const T = w.balls[targets[0]]; pos = PHYS.findFree(w, T.x - 0.3 * Math.sign(T.x || 1), T.y, 0); }
-  let fallback = null;
-  for (let i = 0; i < 90; i++) {
-    const a = i * Math.PI / 45, r = evaluate(simShot(a, 2.6, pos), ctx);
-    if (!r.foul && r.win == null) return { pos, angle: a + gauss() * noise, power: toPower(2.6) };
-    if (!fallback && !r.scratch && r.win == null) fallback = a;
-  }
-  return { pos, angle: fallback != null ? fallback : Math.random() * 6.28, power: toPower(2.4) };
-}
+/* ================= computer turn ================= */
 function aiTick(dt) {
-  const a = game.ai; a.t += dt;
+  const a = st.ai; a.t += dt;
   if (!a.plan) {
-    if (a.t < 0.55) return;
-    a.plan = aiPlan(); a.t0 = a.t;
-    if (a.plan.pos) { const c = game.world.balls[0]; c.x = a.plan.pos[0]; c.y = a.plan.pos[1]; game.placing = null; }
+    if (a.t < 0.5) return;
+    a.plan = game.aiPlan(); a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
+    if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
-  game.aim = a.from + a.delta * e(t / 0.8);
-  game.power = a.plan.power * e((t - 0.95) / 0.5); setPowerUI(game.power);
-  if (t > 1.6) { game.aim = a.plan.angle; game.ai = null; shoot(a.plan.power, { a: 0, b: 0 }); }
+  st.aim = a.from + a.delta * e(t / 0.75);
+  st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
+  if (t > 1.45) { st.aim = a.plan.angle; st.ai = null; shoot(a.plan.V, 0, 0); }
 }
 
 /* ================= input ================= */
 let drag = null;
-function humanAiming() { return game.phase === 'aim' && !game.players[game.turn].ai; }
+const humanAiming = () => st.phase === 'aim' && !game.players[game.turn].ai && $('#sheet').hidden;
 function tryPlace(p) {
-  const w = game.world, c = w.balls[0];
+  const P = game.P, { R, HL, HW } = P, w = game.world, c = game.cueBall();
   let x = Math.max(-HL + R, Math.min(HL - R, p.x)), y = Math.max(-HW + R, Math.min(HW - R, p.y));
   if (game.placing === 'kitchen') x = Math.min(x, -HL / 2);
-  if (PHYS.isFree(w, x, y, 0)) { c.x = x; c.y = y; return; }
+  if (P.isFree(w, x, y, c.id)) { c.x = c.px = x; c.y = c.py = y; return; }
   for (const b of w.balls) {
-    if (!b.on || b.id === 0) continue;
+    if (!b.on || b.id === c.id) continue;
     const d = Math.hypot(x - b.x, y - b.y);
-    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (PHYS.isFree(w, nx, ny, 0) && (game.placing !== 'kitchen' || nx <= -HL / 2)) { c.x = nx; c.y = ny; } return; }
+    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (game.placing !== 'kitchen' || nx <= -HL / 2)) { c.x = c.px = nx; c.y = c.py = ny; } return; }
   }
 }
 canvas.addEventListener('pointerdown', e => {
   SND.init(); if (!humanAiming()) return;
-  const p = toTable(e), c = game.world.balls[0], d = Math.hypot(p.x - c.x, p.y - c.y);
+  const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-  if (game.placing && d < Math.max(0.075, 26 / ppm)) drag = { kind: 'cue', id: e.pointerId };
+  if (game.placing && d < Math.max(0.075, 26 / scene.ppm)) drag = { kind: 'cue', id: e.pointerId };
   else drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 0 };
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', e => {
   if (!drag || drag.id !== e.pointerId || !humanAiming()) return;
-  const p = toTable(e), c = game.world.balls[0];
+  const p = scene.toTable(e, game.P.R), c = game.cueBall();
   if (drag.kind === 'cue') tryPlace(p);
   else {
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     const a = Math.atan2(p.y - c.y, p.x - c.x);
     if (Math.hypot(p.x - c.x, p.y - c.y) > 0.07 && drag.moved > 6) {
       let da = a - drag.last; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
-      game.aim += da;
+      st.aim += da;
     }
     drag.last = a;
   }
-  invalidate();
+  scene.invalidate();
 });
 const endDrag = e => {
   if (!drag || drag.id !== e.pointerId) return;
-  if (drag.kind === 'aim' && drag.moved <= 6 && humanAiming()) { const p = toTable(e), c = game.world.balls[0]; if (Math.hypot(p.x - c.x, p.y - c.y) > R) game.aim = Math.atan2(p.y - c.y, p.x - c.x); }
-  drag = null; invalidate(); snapshot();
+  if (drag.kind === 'aim' && drag.moved <= 6 && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
+  drag = null; scene.invalidate(); snapshot();
 };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
 (function powerCtl() {
-  const el = $('#power'); let id = null;
-  const read = e => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); };
-  el.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; try { el.setPointerCapture(id); } catch (err) {} game.power = read(e); setPowerUI(game.power); invalidate(); e.preventDefault(); });
-  el.addEventListener('pointermove', e => { if (id !== e.pointerId) return; game.power = read(e); setPowerUI(game.power); invalidate(); });
+  const box = $('#power'); let id = null;
+  const read = e => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); };
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
+  box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); scene.invalidate(); });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null;
-    const p = game.power;
-    if (!cancel && p > 0.03 && humanAiming()) shoot(p); else { game.power = 0; setPowerUI(0); }
-    invalidate();
+    const p = st.power;
+    if (!cancel && p > 0.03 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5); else { st.power = 0; setPowerUI(0); }
+    scene.invalidate();
   };
-  el.addEventListener('pointerup', e => up(e, false)); el.addEventListener('pointercancel', e => up(e, true));
+  box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
 })();
 (function fineCtl() {
-  const el = $('#fine'); let id = null, last = 0, off = 0;
-  const pos = e => portrait ? e.clientX : e.clientY;
-  el.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; last = pos(e); try { el.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
-  el.addEventListener('pointermove', e => {
+  const box = $('#fine'); let id = null, last = 0, off = 0;
+  const pos = e => scene.portrait ? e.clientX : e.clientY;
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; last = pos(e); try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
+  box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    game.aim += d * 0.0009 * (portrait ? -1 : 1); off += d;
-    el.style.backgroundPosition = portrait ? `${off}px 0` : `0 ${off}px`; invalidate();
+    st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
+    box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; scene.invalidate();
   });
   const up = e => { if (id === e.pointerId) id = null; };
-  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
 })();
 (function spinCtl() {
-  const sheet = $('#spinSheet'), pad = $('#spinPad');
-  $('#spinBtn').addEventListener('click', () => { if (!humanAiming()) return; sheet.hidden = false; setSpinUI(); });
+  const pop = $('#spinPop'), pad = $('#spinPad');
+  $('#spinBtn').addEventListener('click', () => {
+    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI();
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (prefs.guide >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
+  });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
     x /= 0.72; y /= 0.72; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
-    game.spin = { x, y }; setSpinUI();
+    st.spin = { x, y }; setSpinUI(); scene.invalidate();
   };
   let id = null;
   pad.addEventListener('pointerdown', e => { id = e.pointerId; try { pad.setPointerCapture(id); } catch (err) {} set(e); e.preventDefault(); });
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
   pad.addEventListener('pointerup', () => { id = null; }); pad.addEventListener('pointercancel', () => { id = null; });
-  $('#spinReset').addEventListener('click', () => { game.spin = { x: 0, y: 0 }; setSpinUI(); });
-  $('#spinOk').addEventListener('click', () => { sheet.hidden = true; });
-  sheet.addEventListener('click', e => { if (e.target === sheet) sheet.hidden = true; });
-})();
-(function menuCtl() {
-  const seg = (id, get, set) => {
-    const el = $(id), paint = () => { for (const b of el.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get()))); };
-    el.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; set(b.dataset.v); paint(); }); paint();
-  };
-  const lvl = () => { $('#lvlField').hidden = game.mode !== 'ai'; };
-  seg('#segMode', () => game.mode, v => { game.mode = v; store.set('mode', v); lvl(); });
-  seg('#segLvl', () => game.level, v => { game.level = +v; store.set('level', +v); });
-  seg('#segSnd', () => game.sound ? 1 : 0, v => { game.sound = v === '1'; store.set('sound', game.sound); if (game.sound) SND.init(); });
-  lvl();
-  let prev = 'aim';
-  const open = () => { prev = game.phase; $('#resumeBtn').hidden = !game.started; $('#startBtn').textContent = game.started ? '새 게임' : '게임 시작'; $('#menu').hidden = false; };
-  $('#menuBtn').addEventListener('click', open);
-  $('#resumeBtn').addEventListener('click', () => { $('#menu').hidden = true; });
-  $('#startBtn').addEventListener('click', () => { SND.init(); newGame(); });
-  $('#againBtn').addEventListener('click', () => { SND.init(); newGame(); });
-  $('#overMenu').addEventListener('click', () => { $('#over').hidden = true; open(); });
+  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; setSpinUI(); scene.invalidate(); });
 })();
 document.addEventListener('contextmenu', e => e.preventDefault());
 
+// Android back button: close whatever is on top; false means "nothing left, leave the app".
+window.__back = function () {
+  if (!$('#sheet').hidden) { closeSheet(); return true; }
+  if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
+  if (st.phase === 'over') { goHome(); return true; }
+  if (st.phase !== 'home') { sheetPause(); return true; }
+  return false;
+};
+
 /* ================= frame loop ================= */
-const falls = [];
-let lastT = 0, acc = 0;
+let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
 function drain() {
   const s = game.world.snd; if (!s.length) return;
   for (const e of s) {
     if (e.t === 'ball') SND.ball(e.v); else if (e.t === 'rail') SND.rail(e.v);
-    else if (e.t === 'pocket') { SND.pocket(); const b = game.world.balls[e.id], p = POCKETS[e.pocket]; falls.push({ id: e.id, t: 0, x0: b.x, y0: b.y, x1: p.x, y1: p.y }); }
+    else if (e.t === 'pocket') { SND.pocket(); scene.fall(game.P, e.id, e.x, e.y, e.pocket); }
   }
   s.length = 0;
 }
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
-  const w = game.world, menuUp = !$('#menu').hidden;
-  if (game.phase === 'ai' && !menuUp) { aiTick(dt); dirty = 3; }
-  if (game.phase === 'strike') {
-    const ca = game.cueAnim; ca.t += dt; dirty = 3;
-    if (ca.t >= 0.1) { PHYS.strike(w, game.aim, ca.V, ca.a, ca.b); SND.cue(ca.V); game.phase = 'sim'; acc = 0; game.power = 0; setPowerUI(0); }
+  const w = game.world, P = game.P, paused = !$('#sheet').hidden;
+  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2;
+  if (st.phase === 'ai' && !paused) { aiTick(dt); animating = true; }
+  if (st.phase === 'strike' && !paused) {
+    const ca = st.cueAnim; ca.t += dt; animating = true;
+    const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
+    if (ca.t >= 0.1) { P.strike(w, st.aim, ca.V, ca.a, ca.b); SND.cue(ca.V); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
   }
-  if (game.phase === 'sim') {
-    acc += dt; let n = 0;
-    while (acc >= TICK && n < 14) { PHYS.step(w, TICK); acc -= TICK; n++; }
-    drain(); dirty = 3;
-    if (PHYS.rest(w) && !falls.length) endShot();
+  if (st.phase === 'sim' && !paused) {
+    // once everything is crawling, run the clock faster so nobody waits on the last roll
+    let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
+    acc += dt * (vmax < 0.4 ? 2.1 : 1.12);
+    let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
+    if (n === 30) acc = 0;
+    alpha = acc / TICK; drain(); animating = true;
+    if (P.rest(w)) { st.settle += dt; if (st.settle > 0.24) endShot(); }
   }
-  if (falls.length) dirty = 3;
-  if (dirty <= 0) return; dirty--;
-
-  for (let i = 0; i < 16; i++) {
-    const b = w.balls[i], m = ballMesh[i], s = blobMesh[i];
-    s.visible = b.on;
-    if (b.on) {
-      m.visible = true; m.position.set(b.x, b.y, R);
-      const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
-      m.quaternion.set(q[0], q[1], q[2], q[3]); s.position.x = b.x; s.position.y = b.y;
-    }
+  const aiming = st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan) || st.phase === 'strike' || st.phase === 'home';
+  const drew = scene.frame({
+    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
+    showCue: aiming, showGuide: (st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan)), level: prefs.guide,
+    legalIds: st.phase === 'home' ? [] : game.legal(), hand: !!game.placing && st.phase === 'aim',
+  }, dt);
+  if (prefs.fps) {
+    fpsN++; fpsT += dt;
+    if (fpsT >= 0.5) { $('#fps').textContent = `${Math.round(fpsN / fpsT)} FPS · ${scene.pixelRatio.toFixed(2)}x` + (drew ? '' : ' · 대기'); fpsN = 0; fpsT = 0; }
   }
-  for (let i = falls.length - 1; i >= 0; i--) {
-    const f = falls[i], m = ballMesh[f.id]; f.t += dt; const k = Math.min(1, f.t / 0.22);
-    m.position.set(f.x0 + (f.x1 - f.x0) * k, f.y0 + (f.y1 - f.y0) * k, R - k * k * 0.13);
-    if (k >= 1) { m.visible = false; falls.splice(i, 1); if (game.phase !== 'sim') hud(); }
-  }
-  // cue + guide
-  const c = w.balls[0], showAim = (game.phase === 'aim' || (game.phase === 'ai' && game.ai && game.ai.plan) || game.phase === 'strike') && c.on;
-  cue.visible = showAim; guide.visible = showAim && game.phase !== 'strike';
-  if (showAim) {
-    const dx = Math.cos(game.aim), dy = Math.sin(game.aim);
-    let pull = 0.03 + game.power * 0.2;
-    if (game.phase === 'strike') { const k = Math.min(1, game.cueAnim.t / 0.1); pull = game.cueAnim.from * (1 - k * k) - 0.004 * k; }
-    cue.position.set(c.x - dx * (R + pull), c.y - dy * (R + pull), R + 0.002);
-    cue.rotation.set(0, -0.085, game.aim + Math.PI);
-    const pr = PHYS.predict(w, game.aim);
-    setLine(gLine, c.x + dx * R, c.y + dy * R, pr.gx - dx * R * 0.9, pr.gy - dy * R * 0.9, 1.6);
-    gRing.visible = pr.type !== 'none' && pr.type !== 'pocket'; gRing.position.set(pr.gx, pr.gy, R);
-    if (pr.type === 'ball') {
-      const b = w.balls[pr.ball], co = Math.cos(pr.cut), l1 = 0.06 + 0.26 * co;
-      setLine(gObj, b.x + pr.nx * R, b.y + pr.ny * R, b.x + pr.nx * (R + l1), b.y + pr.ny * (R + l1), 2);
-      let tx = dx - co * pr.nx, ty = dy - co * pr.ny; const tl = Math.hypot(tx, ty);
-      if (tl > 0.02) { tx /= tl; ty /= tl; const l2 = 0.3 * tl; setLine(gCue, pr.gx + tx * R, pr.gy + ty * R, pr.gx + tx * (R + l2), pr.gy + ty * (R + l2), 1.4); } else gCue.visible = false;
-      const legal = legalTargets(game.turn).includes(pr.ball);
-      gRing.material.color.set(legal ? 0xffffff : 0xff6a58); gObj.material.color.set(legal ? 0xffffff : 0xff6a58);
-    } else if (pr.type === 'rail') {
-      const dn = dx * pr.nx + dy * pr.ny, rx = dx - 2 * dn * pr.nx, ry = dy - 2 * dn * pr.ny;
-      setLine(gObj, pr.gx, pr.gy, pr.gx + rx * 0.22, pr.gy + ry * 0.22, 1.4); gObj.material.color.set(0xffffff); gRing.material.color.set(0xffffff); gCue.visible = false;
-    } else { gObj.visible = false; gCue.visible = false; }
-    gHand.visible = !!game.placing && game.phase === 'aim'; gHand.position.set(c.x, c.y, R);
-  }
-  renderer.render(scene, camera);
-  // drop resolution a notch if this device can't keep up
-  if (dt > 0.034 && dt < 0.1) { if (++slow > 45 && quality > 0.4) { quality *= 0.8; slow = 0; layout(); } } else if (slow > 0) slow--;
 }
 
-/* ================= keep the game across a live update ================= */
-function serialize() {
-  const w = game.world;
-  return { v: 1, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), turn: game.turn, players: game.players, isBreak: game.isBreak, placing: game.placing, aim: game.aim, started: game.started, mode: game.mode, level: game.level };
+/* ================= saving ================= */
+function snapshot() {
+  if (st.phase === 'home' || st.phase === 'over') return;
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series };
+  store.set('save', d);
+  try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
-function snapshot() { const d = serialize(); store.set('save', d); try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {} }
 function start(data) {
-  layout(); setSpinUI();
-  if (!(data && data.v === 1)) data = store.get('save', null);
-  if (data && data.v === 1 && data.started && Array.isArray(data.balls) && data.balls.length === 16) {
-    data.balls.forEach((s, i) => { const b = game.world.balls[i]; b.x = s[0]; b.y = s[1]; b.on = !!s[2]; b.q = s[3]; ballMesh[i].visible = b.on; });
-    game.players = data.players; game.turn = data.turn; game.isBreak = data.isBreak; game.placing = data.placing; game.aim = data.aim; game.mode = data.mode; game.level = data.level;
-    game.started = true; $('#menu').hidden = true; beginTurn(true);
-  } else hud();
+  if (!(data && data.v === 2)) data = store.get('save', null);
+  $('#fps').hidden = !prefs.fps;
+  if (data && data.v === 2 && game.restore(data.game)) {
+    if (data.series) { series.key = data.series.key; series.s = data.series.s; }
+    prefs.mode = game.modeId; st.aim = data.aim || 0;
+    enterGame();
+  } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, newGame, evaluate, aiPlan, shoot, endShot, ctxNow, remaining };
+window.__dp8 = { game, st, prefs, scene, startMatch, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

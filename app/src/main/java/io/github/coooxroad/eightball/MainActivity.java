@@ -17,10 +17,9 @@ import android.webkit.WebViewClient;
 /** Full-screen shell around the game page bundled in assets/. Works offline; needs no permissions. */
 public class MainActivity extends Activity {
     private static final String PAGE = "file:///android_asset/index.html";
-    // Back opens the in-game menu first; a second Back (menu already open) leaves the app.
-    private static final String OPEN_MENU =
-            "(function(){var m=document.getElementById('menu'),b=document.getElementById('menuBtn');"
-                    + "if(m&&b&&m.hidden){b.click();return 1}return 0})()";
+    // Back first closes whatever the page has on top (a sheet, the result screen, a match in progress);
+    // the page answers 0 only on the home screen, and then Back leaves the app.
+    private static final String PAGE_BACK = "(function(){return window.__back&&window.__back()?1:0})()";
 
     private WebView web;
 
@@ -82,7 +81,7 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
-        web.evaluateJavascript(OPEN_MENU, result -> {
+        web.evaluateJavascript(PAGE_BACK, result -> {
             if (!"1".equals(result)) finish();
         });
     }
