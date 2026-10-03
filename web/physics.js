@@ -56,7 +56,7 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, pocketed: [] }; }
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [] }; }
 
   function makeWorld(n) {
     const balls = [];
@@ -148,6 +148,7 @@ function createPhysics(cfg) {
     const wn2 = wn * 0.9, wt2 = wt * -0.15;
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
+    if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn });
   }
 

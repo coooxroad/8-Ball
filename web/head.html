@@ -31,6 +31,7 @@
   --r-card:18px;--r-pill:999px;--r-ctl:24px;--r-chip:999px;--r-cta:999px;
   --num:'Outfit','Gothic A1',sans-serif;--num-w:500;--w-title:700;--w-text:300;--w-name:500;
 }
+[hidden]{display:none!important}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{background:#101216;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -98,6 +99,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .prow .rc{font-size:13.5px;color:var(--sub)}
 .prow svg{flex:none;color:var(--sub);opacity:.7}
 #startBtn{margin-top:auto}
+#vsBox{display:flex;flex-direction:column;gap:10px}
+#pracList{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;flex:1 1 0;padding-right:2px}
+#pracList .opt{padding:10px 14px;flex:none}
+#pracList .opt .t{font-size:15.5px}
+#pracList .opt .d{font-size:12.5px;margin-top:1px}
+.compact #pracList{flex:none;max-height:none;overflow:visible}
+.target{width:40px;height:40px;border-radius:50%;border:3px solid var(--acc);display:grid;place-items:center;box-sizing:border-box}
+.target i{width:14px;height:14px;border-radius:50%;background:var(--acc)}
 
 .compact #home{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:max-content max-content max-content;align-content:start;overflow:auto;pointer-events:auto;
   background:var(--bg);gap:14px 16px;padding:14px 16px 20px}
@@ -108,6 +117,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* ---------- in-game scoreboard ---------- */
 #hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);
   align-items:center;gap:8px;padding:6px 10px 0}
+#pracBar{justify-self:end;display:flex;gap:6px;min-width:0}
+#pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
+#pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
 #menuBtn{width:46px;height:46px;border-radius:var(--r-pill)}
 [data-theme="light"] #menuBtn{border-radius:13px}
 .pill{justify-self:start;max-width:100%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);
@@ -237,6 +249,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-width:640px){
   #badge{display:none}
   #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:6px;padding-inline:6px}
+  #pracBar{gap:4px}#pracBar .btn{padding:0 10px;font-size:13px;height:42px}
   .pill{gap:6px;padding-right:9px}.pill.r{padding-left:9px}
   .mb{width:11px;height:11px}.tray{gap:2px}
   #rStats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -268,7 +281,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       </div>
     </div>
     <div class="h-right">
-      <div class="lab">대결</div>
+      <div class="lab" id="rightLab">대결</div>
+      <div id="pracList" hidden></div>
+      <div id="vsBox">
       <div class="panel plist">
         <button class="prow" id="pc0"><i class="av">1</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="prow two" id="pc1"><i class="av">2</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
@@ -276,6 +291,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="seg" id="segOpp"><button data-v="0">친구와</button><button data-v="1">컴퓨터와</button></div>
       <div class="seg" id="segLvl"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button></div>
       <div class="seg" id="segTarget"><button data-v="5">5점</button><button data-v="10">10점</button><button data-v="15">15점</button></div>
+      </div>
       <button class="btn cta" id="startBtn">시작</button>
     </div>
   </section>
@@ -285,6 +301,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <div class="pill" id="p0"><i class="av">1</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="badge"></div>
     <div class="pill r two" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
+    <div id="pracBar" hidden></div>
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>

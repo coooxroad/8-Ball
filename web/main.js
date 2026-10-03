@@ -10,7 +10,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('dp8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('dp8.' + k, JSON.stringify(v)); } catch (e) {} },
 };
-const prefs = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
+const prefs = Object.assign({ drill: 'free', mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
 
 // Pool table sizes. Real regulation numbers: playing surface, ball diameter, pocket openings.
 const TABLES = [
@@ -20,6 +20,8 @@ const TABLES = [
   { id: 'pub', name: '영국식 6피트', short: '6피트', d: '183×91cm · 공 51mm. 작은 공에 좁은 포켓.', cfg: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 } },
 ];
 if (!TABLES.some(t => t.id === prefs.table)) prefs.table = 'bar';
+// each player has their own guide length (a simple handicap)
+if (!Array.isArray(prefs.guides) || prefs.guides.length !== 2) prefs.guides = [prefs.guide, prefs.guide];
 const poolCache = {};
 const poolOf = id => poolCache[id] || (poolCache[id] = createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg)));
 const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pockets: false }) };
@@ -30,64 +32,83 @@ let rec = store.get('rec', {});
 const recOf = n => rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 });
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
+const isPrac = () => game.modeId === 'practice';
+const guideNow = () => { const p = game.players[game.turn]; return p && p.ai ? 2 : prefs.guides[isPrac() ? 0 : game.turn] ; };
 
 const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, ai: null, rev: 0, lastLoser: null, settle: 0 };
 
 /* ================= sound ================= */
+// Every hit is built once as a short waveform, the way the real thing is made: one very short push
+// (balls touch for about 0.2 ms, a leather tip for about 1 ms, a rubber cushion for several ms) that sets a few
+// quickly dying resonances ringing. A small "room" is added on the output so the hits do not sound dry.
 const SND = (() => {
-  let ac = null, noise = null, out = null, lastBall = 0, lastRail = 0;
+  let ac = null, out = null, buf = null, lastBall = 0, lastRail = 0;
+  // parts: [frequency Hz, decay time s, level]; push: length of the contact in seconds
+  function make(dur, push, parts, noise) {
+    const sr = ac.sampleRate, n = Math.floor(dur * sr), b = ac.createBuffer(1, n, sr), d = b.getChannelData(0), pn = Math.max(2, Math.floor(push * sr));
+    for (let i = 0; i < pn; i++) d[i] += Math.sin(Math.PI * i / pn) ** 2;                       // the push itself
+    for (const [f, tau, amp] of parts) { const w = 2 * Math.PI * f / sr, k = 1 / (tau * sr), ph = Math.random() * 0.6; for (let i = 0; i < n; i++) d[i] += amp * Math.exp(-i * k) * Math.sin(w * i + ph) * Math.min(1, i / pn); }
+    if (noise) { let lp = 0; for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * noise[1]; d[i] += lp * noise[0] * Math.exp(-i / (noise[2] * sr)); } }
+    let mx = 0; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(d[i]));
+    const fade = Math.floor(0.004 * sr); for (let i = 0; i < n; i++) d[i] = d[i] / mx * (i > n - fade ? (n - i) / fade : 1);
+    return b;
+  }
+  const jit = (parts, k) => parts.map(([f, t, a]) => [f * (1 + (Math.random() - 0.5) * k), t, a]);
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      const n = Math.floor(ac.sampleRate * 0.3); noise = ac.createBuffer(1, n, ac.sampleRate);
-      const d = noise.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-      // one limiter for everything, so a break with fifteen clicks at once does not crackle
-      const lim = ac.createDynamicsCompressor(); lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.001; lim.release.value = 0.08;
-      lim.connect(ac.destination); out = lim;
+      const sr = ac.sampleRate;
+      const lim = ac.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.001; lim.release.value = 0.08;
+      lim.connect(ac.destination);
+      out = ac.createGain(); out.connect(lim);
+      // the room: a few early reflections off the table and walls, then a short dull tail
+      const rn = Math.floor(0.32 * sr), ir = ac.createBuffer(2, rn, sr);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch); let lp = 0;
+        for (let i = 0; i < rn; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.35; d[i] = lp * Math.exp(-i / (0.055 * sr)) * 0.5; }
+        for (const [ms, a] of [[3.1, 0.55], [7.4, 0.42], [12.6, 0.3], [19, 0.22], [27, 0.14]]) d[Math.floor((ms + ch * 0.7) * sr / 1000)] += a;
+      }
+      const conv = ac.createConvolver(); conv.buffer = ir; const wet = ac.createGain(); wet.gain.value = 0.2;
+      out.connect(conv); conv.connect(wet); wet.connect(lim);
+      // phenolic ball on ball: hard click, energy in the upper mids, almost no bass
+      const ball = [[1480, 0.0042, 0.34], [2650, 0.0030, 0.6], [3900, 0.0021, 0.5], [5600, 0.0014, 0.34], [7900, 0.0009, 0.2], [760, 0.008, 0.16]];
+      // leather tip on the cue ball: duller and lower, with the shaft knocking under it
+      const cue = [[540, 0.011, 0.5], [980, 0.007, 0.42], [1750, 0.0038, 0.3], [2900, 0.002, 0.16], [300, 0.02, 0.2]];
+      // rubber cushion: a soft thump
+      const rail = [[290, 0.02, 0.5], [450, 0.014, 0.42], [720, 0.008, 0.22], [1150, 0.004, 0.1]];
+      // pocket: the ball knocks the liner and drops
+      const pock = [[330, 0.03, 0.5], [520, 0.02, 0.4], [860, 0.011, 0.25], [1500, 0.005, 0.12]];
+      buf = {
+        ball: [0, 1, 2, 3].map(() => make(0.06, 0.00022, jit(ball, 0.08))),
+        cue: [0, 1].map(() => make(0.1, 0.0011, jit(cue, 0.06))),
+        rail: [0, 1, 2].map(() => make(0.13, 0.004, jit(rail, 0.1), [0.25, 0.08, 0.02])),
+        pock: [0, 1].map(() => make(0.2, 0.003, jit(pock, 0.08), [0.3, 0.12, 0.05])),
+        roll: [make(0.28, 0.02, [[190, 0.09, 0.3]], [0.9, 0.05, 0.11])],
+      };
     } catch (e) { ac = null; }
   }
-  // filtered noise: the "crack" part of a hit
-  function burst(freq, q, dur, gain, type, at) {
-    if (!ac || !prefs.sound) return;
-    const t = ac.currentTime + (at || 0), s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-    s.buffer = noise; f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.2); s.stop(t + dur + 0.02);
+  // play one prepared hit: softer hits are also duller, as the contact lasts longer
+  function hit(name, gain, bright, at, rate) {
+    if (!ac || !buf || !prefs.sound) return;
+    const list = buf[name], s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + (at || 0);
+    s.buffer = list[Math.floor(Math.random() * list.length)]; s.playbackRate.value = (rate || 1) * (0.97 + Math.random() * 0.06);
+    f.type = 'lowpass'; f.frequency.value = bright; f.Q.value = 0.5; g.gain.value = gain;
+    s.connect(f); f.connect(g); g.connect(out); s.start(t);
   }
-  // falling sine: the "body" of a hit
-  function tone(freq, dur, gain, to, at, type) {
+  function tone(freq, dur, gain, to, at) {
     if (!ac || !prefs.sound) return;
     const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
-    if (type) o.type = type;
     o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
   }
   return {
     init,
-    // ball on ball: a hard, short clack with a woody knock under it
-    ball(v) {
-      const n = performance.now(); if (n - lastBall < 14) return; lastBall = n;
-      const g = Math.min(1, 0.05 + v * 0.26);
-      burst(2500, 0.9, 0.014, g * 0.9); tone(1320, 0.03, g * 0.5, 0.72); tone(460, 0.05, g * 0.42, 0.66, 0, 'triangle');
-    },
-    // cushion: a soft rubber thud, pitched where a tablet speaker can still play it
-    rail(v) {
-      const n = performance.now(); if (n - lastRail < 30) return; lastRail = n;
-      const g = Math.min(0.75, 0.1 + v * 0.2);
-      tone(340, 0.085, g, 0.55, 0, 'triangle'); burst(560, 0.8, 0.06, g * 0.7);
-    },
-    // pocket: the drop, then the ball landing in the cup
-    pocket() {
-      tone(300, 0.14, 0.5, 0.5, 0, 'triangle'); burst(850, 0.8, 0.09, 0.3);
-      tone(230, 0.1, 0.3, 0.6, 0.11, 'triangle'); burst(1400, 1.2, 0.03, 0.16, 'bandpass', 0.11);
-    },
-    // cue tip on the cue ball: a dull leather tock with a short click on top
-    cue(v) {
-      const g = Math.min(1, 0.3 + v * 0.07);
-      tone(520, 0.06, g * 0.6, 0.6, 0, 'triangle'); burst(950, 0.8, 0.022, g * 0.7); burst(2600, 1.2, 0.008, g * 0.3);
-    },
+    ball(v) { const n = performance.now(); if (n - lastBall < 9) return; lastBall = n; const k = Math.min(1, v / 5); hit('ball', 0.1 + 0.9 * Math.pow(k, 0.7), 2600 + 9000 * Math.pow(k, 0.6)); },
+    rail(v) { const n = performance.now(); if (n - lastRail < 25) return; lastRail = n; const k = Math.min(1, v / 4); hit('rail', 0.14 + 0.7 * Math.pow(k, 0.8), 900 + 2200 * k); },
+    pocket() { hit('pock', 0.75, 3200); hit('roll', 0.3, 1400, 0.03); hit('ball', 0.22, 3000, 0.16, 0.8); },
+    cue(v) { const k = Math.min(1, v / 9); hit('cue', 0.4 + 0.6 * k, 1800 + 4200 * k); },
     tap() { tone(520, 0.05, 0.12, 1.5); },
     win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
   };
@@ -157,6 +178,7 @@ const MODE_ICON = {
   eight: () => el('span', { class: 'ball', style: '--c:#111' }, el('i', { text: '8' })),
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
   four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
+  practice: () => el('span', { class: 'target' }, el('i')),
 };
 function check() {
   const s = el('span', { class: 'ck' });
@@ -165,7 +187,7 @@ function check() {
 }
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'four']) {
+  for (const id of ['eight', 'nine', 'four', 'practice']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); preview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
@@ -175,19 +197,25 @@ function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 �
 function paintHome() {
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
   $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
+  const prac = prefs.mode === 'practice';
+  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#rightLab').textContent = prac ? '연습 고르기' : '대결';
+  if (prac) {
+    const box = $('#pracList'); box.textContent = '';
+    for (const d of DRILLS) box.appendChild(optBtn(prefs.drill === d.id, optText(d.name, d.d), () => { prefs.drill = d.id; savePrefs(); paintHome(); }));
+  }
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = CUES[prefs.cue].name;
-  $('#guideVal').textContent = GUIDE[prefs.guide][0];
+  const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }
 function cueCss(d) { return `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`; }
 function preview() {
-  game.start(prefs.mode, [prefs.names[0], oppName()], false, {});
+  game.start(prefs.mode === 'practice' ? 'eight' : prefs.mode, [prefs.names[0], oppName()], false, {});
   scene.setTable(game.P); st.aim = 0; st.power = 0; st.rev++; scene.invalidate();
 }
 function goHome() {
-  st.phase = 'home'; st.ai = null; st.cueAnim = null; closeSheet(); $('#spinPop').hidden = true;
+  st.phase = 'home'; prac.on = false; scene.setZone(null); $('#pracBar').hidden = true; $('#p1').hidden = false; st.ai = null; st.cueAnim = null; closeSheet(); $('#spinPop').hidden = true;
   $('#result').hidden = true; $('#home').hidden = false; $('#hud').hidden = true;
   for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true;
   app.classList.add('busy'); store.set('save', null);
@@ -217,7 +245,11 @@ function sheetCue() {
     [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
 }
 function sheetGuide() {
-  openSheet('조준선 길이', GUIDE.map((gd, i) => optBtn(prefs.guide === i, optText(gd[0], gd[1]), () => { prefs.guide = i; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); })));
+  const solo = prefs.vsAI || prefs.mode === 'practice' || isPrac();
+  const row = i => segRow(solo ? '조준선' : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
+  openSheet('조준선 길이', [row(0), solo ? null : row(1),
+    el('p', { class: 'note', text: GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ') }),
+    solo ? null : el('p', { class: 'note', text: '실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.' })]);
 }
 function sheetSettings() {
   openSheet('설정', [
@@ -246,8 +278,8 @@ function sheetName(i) {
 function sheetPause() {
   openSheet('잠깐 멈춤', [
     el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
-    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '조준선 ' + GUIDE[prefs.guide][0], onclick: sheetGuide }), el('button', { class: 'btn flat', text: '설정', onclick: sheetSettings })]),
-    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '다시 시작', onclick: () => { closeSheet(); startMatch(game.turn); } }),
+    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '조준선', onclick: sheetGuide }), el('button', { class: 'btn flat', text: '설정', onclick: sheetSettings })]),
+    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '다시 시작', onclick: () => { closeSheet(); if (isPrac()) startPractice(); else startMatch(game.turn); } }),
       el('button', { class: 'btn flat', text: '처음으로', onclick: goHome })]),
   ]);
 }
@@ -262,7 +294,7 @@ $('#menuBtn').addEventListener('click', () => { SND.tap(); sheetPause(); });
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
-$('#startBtn').addEventListener('click', () => { SND.init(); SND.tap(); startMatch(0); });
+$('#startBtn').addEventListener('click', () => { SND.init(); SND.tap(); if (prefs.mode === 'practice') startPractice(); else startMatch(0); });
 $('#againBtn').addEventListener('click', () => { SND.init(); SND.tap(); startMatch(st.lastLoser == null ? 0 : st.lastLoser); });
 $('#homeBtn').addEventListener('click', () => { SND.tap(); goHome(); });
 
@@ -294,11 +326,17 @@ function beginTurn(first) {
   hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
+  if (isPrac()) { prac.before = game.world.balls.map(x => [x.x, x.y, x.on]); prac.beforeAim = st.aim; }
   game.beginShot(); st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
   hud();
 }
 function endShot() {
+  if (isPrac()) {
+    const j = pracJudge(); game.resolve(); st.rev++;
+    if (!j) return beginTurn(false);
+    toast(j.msg, j.kind, 1700); SND.tap(); st.phase = 'hold'; st.holdT = 1.5; hud(); return;   // leave the result on the table for a moment
+  }
   const out = game.resolve(); st.rev++;
   if (game.over) return finish();
   toast(out.msg, out.kind, out.dur);
@@ -325,9 +363,136 @@ function finish() {
   $('#result').hidden = false; app.classList.add('busy'); SND.win();
 }
 
+/* ================= practice ================= */
+// A drill puts balls on the table and says what counts as success. Positions are fractions of the table, so every size works.
+const prac = { on: false, drill: null, tries: 0, ok: 0, before: null, zone: null, need: null, edit: false, tip: '' };
+const DRILLS = (() => {
+  const corner = P => P.POCKETS.reduce((a, p) => (p.x + p.y > a.x + a.y ? p : a));
+  const side = P => P.POCKETS.reduce((a, p) => (p.y - Math.abs(p.x) * 4 > a.y - Math.abs(a.x) * 4 ? p : a));
+  const unit = (ax, ay, bx, by) => { const l = Math.hypot(bx - ax, by - ay); return [(bx - ax) / l, (by - ay) / l]; };
+  const rot = (u, deg) => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [u[0] * c - u[1] * s, u[0] * s + u[1] * c]; };
+  // object ball O going to pocket K, cue ball `dist` behind the contact point and `cut` degrees off the straight line
+  function shotTo(P, O, K, dist, cut) {
+    const u = unit(O[0], O[1], K.x, K.y), G = [O[0] - u[0] * 2 * P.R, O[1] - u[1] * 2 * P.R], back = rot([-u[0], -u[1]], cut || 0);
+    return { u, G, cue: [G[0] + back[0] * dist, G[1] + back[1] * dist] };
+  }
+  return [
+    { id: 'free', name: '자유 연습', d: '규칙 없이 마음대로. 공을 옮기고 한 수 되돌릴 수 있습니다.' },
+    { id: 'straight', name: '똑바로 넣기', d: '일직선으로 놓인 공을 넣습니다.', tip: '공 가운데를 겨누고 중간 세기로. 너무 세면 큐볼도 따라 들어갑니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.42, P.HW * 0.2], s = shotTo(P, O, K, 0.5, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
+    { id: 'stop', name: '스톱 샷', d: '공을 넣고 큐볼을 그 자리에 세웁니다.', tip: '큐볼 가운데보다 살짝 아래를 조금 세게. 큐볼이 원 안에 서야 합니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.3, P.HW * 0.05], s = shotTo(P, O, K, 0.38, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: s.G[0], y: s.G[1], r: 0.1 } }; } },
+    { id: 'follow', name: '밀어치기', d: '공을 넣고 큐볼을 앞으로 보냅니다.', tip: '큐볼 위쪽을 칩니다. 맞힌 뒤 큐볼이 따라가 원 안에 서야 합니다.',
+      build(P) { const K = corner(P), O = [-P.HL * 0.1, -P.HW * 0.25], s = shotTo(P, O, K, 0.36, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: O[0] + s.u[0] * 0.34, y: O[1] + s.u[1] * 0.34, r: 0.15 } }; } },
+    { id: 'draw', name: '끌어치기', d: '공을 넣고 큐볼을 뒤로 당겨 옵니다.', tip: '큐볼 맨 아래를 세게. 맞힌 뒤 큐볼이 되돌아와 원 안에 서야 합니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.25, 0], s = shotTo(P, O, K, 0.3, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: O[0] - s.u[0] * 0.62, y: O[1] - s.u[1] * 0.62, r: 0.17 } }; } },
+    { id: 'cut', name: '비껴 넣기', d: '비스듬히 놓인 공을 넣습니다.', tip: '공 가운데가 아니라, 포켓 반대쪽 옆구리를 겨눕니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.5, P.HW * 0.3], s = shotTo(P, O, K, 0.45, 30); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
+    { id: 'thin', name: '얇게 치기', d: '많이 비껴 놓인 공을 살짝 스쳐 넣습니다.', tip: '공 가장자리만 스치게. 얇을수록 공은 느리게 가니 조금 세게 칩니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.55, P.HW * 0.45], s = shotTo(P, O, K, 0.42, -55); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
+    { id: 'side', name: '사이드 포켓', d: '가운데 포켓은 입구가 각도에 따라 좁아집니다.', tip: '포켓 정면에 가까울수록 쉽습니다. 턱에 맞지 않게 가운데로.',
+      build(P) { const K = side(P), O = [K.x - 0.2, K.y - 0.34], s = shotTo(P, O, K, 0.45, 22); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
+    { id: 'bank', name: '뱅크 샷', d: '공을 쿠션에 한 번 튕겨 넣습니다.', tip: '반대쪽 쿠션에 튕겨 가운데 포켓으로. 포켓을 쿠션 건너편에 비춘 자리를 겨눈다고 생각하세요.',
+      build(P) {
+        const K = side(P), O = [P.HL * 0.3, -P.HW * 0.35], my = -2 * (P.HW - P.R) - K.y, u = unit(O[0], O[1], K.x, my);
+        return { cue: [O[0] - u[0] * 0.4, O[1] - u[1] * 0.4], balls: [[1, O]], need: { pot: 1, bank: 1 } };
+      } },
+    { id: 'spin', name: '옆 회전', d: '쿠션에 수직으로 쳐도 회전을 주면 옆으로 꺾입니다.', tip: '쿠션을 똑바로 겨눈 채 큐볼 오른쪽을 칩니다. 튕겨 나온 큐볼이 원 안에 서야 합니다.',
+      build(P) { return { cue: [0, -P.HW * 0.2], balls: [], aim: Math.PI / 2, need: {}, nominal: { power: 0.42, a: 0.4, b: 0, r: 0.17 } }; } },
+    { id: 'position', name: '다음 공 자리 잡기', d: '1번을 넣고, 2번을 치기 좋은 곳에 큐볼을 세웁니다.', tip: '세기만 맞추면 됩니다. 1번을 넣은 큐볼이 원 안에 서야 합니다.',
+      build(P) { const K = corner(P), O = [P.HL * 0.55, P.HW * 0.35], s = shotTo(P, O, K, 0.45, 32); return { cue: s.cue, balls: [[1, O], [2, [-P.HL * 0.45, P.HW * 0.55]]], need: { pot: 1 }, nominal: { at: s.G, power: 0.4, a: 0, b: 0, r: 0.24 } }; } },
+    { id: 'break', name: '브레이크', d: '공을 깨서 하나 이상 넣습니다.', tip: '맨 앞 공을 정면으로, 가장 세게. 큐볼이 빠지면 실패입니다.',
+      build() { return { rack: true, need: { any: 1 } }; } },
+  ];
+})();
+if (!DRILLS.some(d => d.id === prefs.drill)) prefs.drill = 'free';
+function loadDrill() {
+  const d = prac.drill, P = game.P, w = game.world;
+  game.MODES.practice.setup(game, Math.random); prac.zone = null; prac.need = null; prac.before = null; st.aim = 0;
+  if (d.id === 'free') { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; }
+  else {
+    const b = d.build(P); prac.need = b.need;
+    if (b.rack) { game.MODES.eight.setup(game, Math.random); game.placing = null; }
+    else {
+      P.place(w, 0, b.cue[0], b.cue[1], Math.random);
+      for (const [id, o] of b.balls) P.place(w, id, o[0], o[1], Math.random);
+      const first = b.balls[0]; st.aim = b.aim != null ? b.aim : Math.atan2(first[1][1] - b.cue[1], first[1][0] - b.cue[0]);
+    }
+    if (b.zone) prac.zone = b.zone;
+    if (b.nominal) {                               // the target is where a sensible shot leaves the cue ball
+      const n = b.nominal, w2 = P.clone(w), ang = n.at ? Math.atan2(n.at[1] - b.cue[1], n.at[0] - b.cue[0]) : st.aim;
+      P.strike(w2, ang, game.vOf(n.power), n.a, n.b); P.run(w2, 20);
+      prac.zone = { x: w2.balls[0].x, y: w2.balls[0].y, r: n.r };
+    }
+  }
+  scene.setZone(prac.zone); st.rev++;
+  beginTurn(true);
+}
+function startPractice(id) {
+  PH.pool = poolOf(prefs.table);
+  if (id) { prefs.drill = id; savePrefs(); }
+  prac.on = true; prac.drill = DRILLS.find(d => d.id === prefs.drill) || DRILLS[0]; prac.tries = 0; prac.ok = 0; prac.edit = false;
+  game.start('practice', [prefs.names[0], ''], false, {});
+  enterGame(); loadDrill(); pracBar();
+  toast(prac.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
+}
+function pracBar() {
+  const box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
+  const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
+  if (prac.drill.id === 'free') {
+    btn('되돌리기', pracUndo);
+    btn('옮기기', () => { prac.edit = !prac.edit; pracBar(); if (prac.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, prac.edit);
+    btn('공 놓기', sheetRack);
+  } else {
+    btn('다시', () => { if (st.phase === 'aim') loadDrill(); });
+    btn('설명', () => toast(prac.drill.tip, '', 5200));
+    btn('다음', () => { const i = DRILLS.indexOf(prac.drill); startPractice(DRILLS[i + 1 < DRILLS.length ? i + 1 : 1].id); });
+  }
+}
+function pracUndo() {
+  if (st.phase !== 'aim' || !prac.before) return toast('되돌릴 샷이 없습니다.', '', 1400);
+  prac.before.forEach((s, i) => { const b = game.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = s[2]; b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
+  st.aim = prac.beforeAim; st.rev++; hud(); scene.invalidate();
+}
+function sheetRack() {
+  const P = game.P, w = game.world, done = () => { closeSheet(); st.rev++; hud(); scene.invalidate(); };
+  const clear = () => { for (let i = 1; i < 16; i++) { w.balls[i].on = false; w.balls[i].x = w.balls[i].px = 9 + i; } };
+  openSheet('공 놓기', [
+    el('button', { class: 'btn flat', text: '8볼 모양으로 15개', onclick: () => { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; done(); } }),
+    el('button', { class: 'btn flat', text: '9볼 모양으로 9개', onclick: () => { clear(); const g2 = { P, world: w }; game.MODES.nine.setup(g2, Math.random); done(); } }),
+    el('button', { class: 'btn flat', text: '공 하나 더 놓기', onclick: () => {
+      const b = w.balls.find(x => x.id > 0 && !x.on); if (!b) return toast('공 15개가 모두 올라와 있습니다.', '', 1600);
+      const [x, y] = P.findFree(w, P.HL * 0.3, 0, b.id); P.place(w, b.id, x, y, Math.random); done();
+    } }),
+    el('button', { class: 'btn flat', text: '큐볼만 남기고 치우기', onclick: () => { clear(); done(); } }),
+    el('p', { class: 'note', text: '놓은 뒤 "옮기기"를 켜고 원하는 자리로 끌어 옮기세요.' }),
+  ]);
+}
+// called when the balls have stopped, before the rules tidy the table
+function pracJudge() {
+  const d = prac.drill, ev = game.world.ev, c = game.world.balls[0], need = prac.need;
+  if (d.id === 'free') return null;
+  const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0);
+  let why = '';
+  if (scratch) why = '큐볼이 포켓에 빠졌습니다';
+  else if (need.pot && !potted.includes(need.pot)) why = `${need.pot}번 공이 들어가지 않았습니다`;
+  else if (need.any && potted.length < need.any) why = '들어간 공이 없습니다';
+  else if (need.bank && !ev.railed.includes(need.bank)) why = '쿠션에 튕기지 않고 들어갔습니다';
+  else if (prac.zone && Math.hypot(c.x - prac.zone.x, c.y - prac.zone.y) > prac.zone.r) why = '큐볼이 원 밖에 섰습니다';
+  prac.tries++; if (!why) prac.ok++;
+  return why ? { msg: '실패 · ' + why, kind: 'foul' } : { msg: `성공! ${prac.ok}번째`, kind: 'good' };
+}
+
 /* ================= scoreboard ================= */
 function hud() {
   const m = game.mode;
+  if (m.id === 'practice') {
+    const box = $('#p0'), free = prac.drill.id === 'free';
+    box.classList.add('on'); box.querySelector('.nm').textContent = prac.drill.name; box.querySelector('.tray').textContent = ''; box.querySelector('.pts').textContent = '';
+    box.querySelector('.sub').textContent = free ? '규칙 없음' : `성공 ${prac.ok} / ${prac.tries}`;
+    const badge = $('#badge'); badge.textContent = ''; badge.appendChild(el('b', { text: '연습' })); badge.appendChild(document.createTextNode(free ? '자유롭게' : prac.drill.d));
+    app.classList.toggle('busy', st.phase !== 'aim'); return;
+  }
   for (let i = 0; i < 2; i++) {
     const box = $('#p' + i), p = game.players[i], tray = box.querySelector('.tray'), pts = box.querySelector('.pts');
     box.classList.toggle('on', game.turn === i && st.phase !== 'over');
@@ -382,8 +547,8 @@ function aiTick(dt) {
 /* ================= input ================= */
 let drag = null;
 const humanAiming = () => st.phase === 'aim' && !game.players[game.turn].ai && $('#sheet').hidden;
-function tryPlace(p) {
-  const P = game.P, { R, HL, HW } = P, w = game.world, c = game.cueBall();
+function tryPlace(p, ball) {
+  const P = game.P, { R, HL, HW } = P, w = game.world, c = ball || game.cueBall();
   let x = Math.max(-HL + R, Math.min(HL - R, p.x)), y = Math.max(-HW + R, Math.min(HW - R, p.y));
   if (game.placing === 'kitchen') x = Math.min(x, -HL / 2);
   if (P.isFree(w, x, y, c.id)) { c.x = c.px = x; c.y = c.py = y; return; }
@@ -397,7 +562,10 @@ canvas.addEventListener('pointerdown', e => {
   SND.init(); if (!humanAiming()) return;
   const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-  if (game.placing && d < Math.max(0.075, 26 / scene.ppm)) drag = { kind: 'cue', id: e.pointerId };
+  const near = Math.max(0.075, 26 / scene.ppm);
+  let pick = null; if (isPrac() && prac.edit) { let bd = near; for (const b of game.world.balls) if (b.on) { const q = Math.hypot(p.x - b.x, p.y - b.y); if (q < bd) { bd = q; pick = b; } } }
+  if (pick) drag = { kind: 'ball', id: e.pointerId, ball: pick };
+  else if (game.placing && d < near) drag = { kind: 'cue', id: e.pointerId };
   else drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 0 };
   e.preventDefault();
 });
@@ -405,7 +573,11 @@ canvas.addEventListener('pointermove', e => {
   if (!drag || drag.id !== e.pointerId || !humanAiming()) return;
   const p = scene.toTable(e, game.P.R), c = game.cueBall();
   if (drag.kind === 'cue') tryPlace(p);
-  else {
+  else if (drag.kind === 'ball') {
+    const b = drag.ball, P = game.P, out = Math.abs(p.x) > P.HL + 4 * P.R || Math.abs(p.y) > P.HW + 4 * P.R;
+    if (out && b.id !== 0) { b.on = false; b.x = b.px = 9 + b.id; drag = null; st.rev++; hud(); scene.invalidate(); return; }
+    tryPlace(p, b); st.rev++;
+  } else {
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     const a = Math.atan2(p.y - c.y, p.x - c.x);
     if (Math.hypot(p.x - c.x, p.y - c.y) > 0.07 && drag.moved > 6) {
@@ -452,7 +624,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (prefs.guide >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (guideNow() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
@@ -497,6 +669,7 @@ function frame(now) {
     const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
     if (ca.t >= 0.1) { P.strike(w, st.aim, ca.V, ca.a, ca.b); SND.cue(ca.V); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
   }
+  if (st.phase === 'hold' && !paused) { st.holdT -= dt; animating = true; if (st.holdT <= 0) loadDrill(); }
   if (st.phase === 'sim' && !paused) {
     // once everything is crawling, run the clock faster so nobody waits on the last roll
     let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
@@ -509,7 +682,7 @@ function frame(now) {
   const aiming = st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan) || st.phase === 'strike' || st.phase === 'home';
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
-    showCue: aiming, showGuide: (st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan)), level: prefs.guide,
+    showCue: aiming, showGuide: (st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan)), level: guideNow(),
     legalIds: st.phase === 'home' ? [] : game.legal(), hand: !!game.placing && st.phase === 'aim',
   }, dt);
   if (prefs.fps) {
@@ -520,7 +693,7 @@ function frame(now) {
 
 /* ================= saving ================= */
 function snapshot() {
-  if (st.phase === 'home' || st.phase === 'over') return;
+  if (st.phase === 'home' || st.phase === 'over' || isPrac()) return;
   const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table };
   store.set('save', d);
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
@@ -536,7 +709,7 @@ function start(data) {
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, startMatch, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, startMatch, startPractice, goHome, shoot, endShot, prac, DRILLS };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

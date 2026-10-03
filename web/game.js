@@ -113,6 +113,19 @@ function createGame(PH) {
     },
   };
 
+  // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
+  MODES.practice = {
+    id: 'practice', name: '연습', blurb: '자유 연습과 기술 훈련', table: 'pool', n: 16, ballInHand: false, solo: true,
+    setup(g, rnd) {
+      const P = g.P, w = g.world;
+      for (let i = 1; i < 16; i++) { const b = w.balls[i]; P.place(w, i, 9 + i, 9, rnd); b.on = false; }
+      P.place(w, 0, -P.HL / 2, 0, rnd); g.placing = null; g.isBreak = false;
+    },
+    legal(g) { return g.world.balls.filter(b => b.on && b.id !== 0).map(b => b.id); },
+    ctx(g) { return { turn: g.turn }; },
+    evaluate(ev) { return { foul: null, scratch: ev.pocketed.some(p => p.id === 0), respot: [], win: null, why: '', assign: null, keep: true, pts: 0 }; },
+  };
+
   const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0 });
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,

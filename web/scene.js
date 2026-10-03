@@ -311,6 +311,12 @@ function createScene(canvas, app, PH) {
   dotMat.color.copy(col(0xffd21f));
   for (let i = 0; i < 44; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
   for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
+  // practice target: where the cue ball should come to rest
+  const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
+  zone.add(new THREE.Mesh(new THREE.CircleGeometry(1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false })));
+  zone.add(new THREE.Mesh(new THREE.RingGeometry(0.955, 1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false })));
+  zone.children.forEach(m => { m.renderOrder = 2; });
+  function setZone(z) { zone.visible = !!z; if (z) { zone.position.set(z.x, z.y, 0.0012); zone.scale.set(z.r, z.r, 1); } dirty = 3; }
   let ppm = 200, guideKey = '', pathPts = [];
   function setLine(m, x0, y0, x1, y1, px, z) {
     const len = Math.hypot(x1 - x0, y1 - y0);
@@ -485,7 +491,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
