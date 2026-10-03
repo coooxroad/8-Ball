@@ -77,7 +77,14 @@ function createScene(canvas, app, PH) {
   let rt = null, staticDirty = true;
   const quadMat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
   const quadScene = new THREE.Scene(), quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), quadMat));
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), quadMat); quadScene.add(quad);
+  // While the table slides or zooms on screen the baked picture is only moved and scaled; it is redrawn once, when the motion ends.
+  let stale = false; const bakeA = new THREE.Vector3(), bakeB = new THREE.Vector3(), nowA = new THREE.Vector3(), nowB = new THREE.Vector3();
+  const clearCol = new THREE.Color(0x101216);
+  function corners(a, b) {
+    camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    a.set(-cur.HL, -cur.HW, 0).project(camera); b.set(cur.HL, cur.HW, 0).project(camera);
+  }
   // every frame the table is also drawn into the depth buffer only, so a ball dropping into a pocket goes behind the rail
   const depthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
   const unmask = () => { const b = renderer.state.buffers; b.color.setMask(true); b.depth.setMask(true); };
@@ -94,7 +101,7 @@ function createScene(canvas, app, PH) {
     const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
     sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
   })();
-  function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); staticDirty = true; dirty = 3; }
+  function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }
 
   /* shared table materials */
   const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
@@ -314,7 +321,7 @@ function createScene(canvas, app, PH) {
   /* layout: the table is fitted inside the insets; the insets ease when the screen changes */
   let portrait = false, dirty = 3, quality = 'auto', W = 0, H = 0;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
-  function applyCamera() {
+  function applyCamera(soft) {
     if (!W || !H) return;
     const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
     const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
@@ -323,7 +330,8 @@ function createScene(canvas, app, PH) {
     camera.aspect = fw / fh; camera.position.set(0, 0, fh / (2 * ppm * Math.tan(FOV * Math.PI / 360)));
     camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); camera.lookAt(0, 0, 0);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
-    guideKey = ''; staticDirty = true; dirty = 3;
+    guideKey = ''; dirty = 3;
+    if (soft && rt && !staticDirty) stale = true; else staticDirty = true;
   }
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
@@ -370,7 +378,7 @@ function createScene(canvas, app, PH) {
   function frame(v, dt) {
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
-    if (moved) applyCamera();
+    if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }
     if (falls.length || v.animating) dirty = 3;
     if (dirty <= 0) return false; dirty--;
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
@@ -461,7 +469,14 @@ function createScene(canvas, app, PH) {
       staticDirty = false; camera.layers.enable(1);
       renderer.setRenderTarget(rt); unmask(); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null);
       camera.layers.disable(1);
+      corners(bakeA, bakeB); stale = false;
     }
+    if (stale) {
+      corners(nowA, nowB);
+      const sx = (nowB.x - nowA.x) / (bakeB.x - bakeA.x), sy = (nowB.y - nowA.y) / (bakeB.y - bakeA.y);
+      quad.scale.set(sx, sy, 1); quad.position.set(nowA.x - bakeA.x * sx, nowA.y - bakeA.y * sy, 0);
+    } else { quad.scale.set(1, 1, 1); quad.position.set(0, 0, 0); }
+    renderer.setClearColor(clearCol, 1);
     unmask(); renderer.clear(); renderer.render(quadScene, quadCam);
     const bgc = sScene.background; sScene.background = null; sScene.overrideMaterial = depthMat;   // (a colour background would wipe the picture)
     renderer.render(sScene, camera); sScene.overrideMaterial = null; sScene.background = bgc;

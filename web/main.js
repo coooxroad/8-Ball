@@ -35,37 +35,61 @@ const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: nul
 
 /* ================= sound ================= */
 const SND = (() => {
-  let ac = null, noise = null, last = 0;
+  let ac = null, noise = null, out = null, lastBall = 0, lastRail = 0;
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)();
       const n = Math.floor(ac.sampleRate * 0.3); noise = ac.createBuffer(1, n, ac.sampleRate);
       const d = noise.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      // one limiter for everything, so a break with fifteen clicks at once does not crackle
+      const lim = ac.createDynamicsCompressor(); lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.001; lim.release.value = 0.08;
+      lim.connect(ac.destination); out = lim;
     } catch (e) { ac = null; }
   }
-  function burst(freq, q, dur, gain, type) {
+  // filtered noise: the "crack" part of a hit
+  function burst(freq, q, dur, gain, type, at) {
     if (!ac || !prefs.sound) return;
-    const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    const t = ac.currentTime + (at || 0), s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = noise; f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
     g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(ac.destination); s.start(t); s.stop(t + dur + 0.02);
+    s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.2); s.stop(t + dur + 0.02);
   }
-  function tone(freq, dur, gain, to) {
+  // falling sine: the "body" of a hit
+  function tone(freq, dur, gain, to, at, type) {
     if (!ac || !prefs.sound) return;
-    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
+    if (type) o.type = type;
     o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.02);
   }
   return {
     init,
-    ball(v) { const n = performance.now(); if (n - last < 12) return; last = n; const g = Math.min(0.8, 0.06 + v * 0.2); burst(3400, 1.4, 0.03, g); tone(2100, 0.018, g * 0.5); },
-    rail(v) { burst(240, 0.7, 0.09, Math.min(0.7, 0.08 + v * 0.14), 'lowpass'); },
-    pocket() { tone(120, 0.24, 0.5); burst(600, 0.8, 0.2, 0.22); },
-    cue(v) { burst(1500, 1.1, 0.03, Math.min(0.9, 0.25 + v * 0.09)); tone(260, 0.05, 0.3); },
+    // ball on ball: a hard, short clack with a woody knock under it
+    ball(v) {
+      const n = performance.now(); if (n - lastBall < 14) return; lastBall = n;
+      const g = Math.min(1, 0.05 + v * 0.26);
+      burst(2500, 0.9, 0.014, g * 0.9); tone(1320, 0.03, g * 0.5, 0.72); tone(460, 0.05, g * 0.42, 0.66, 0, 'triangle');
+    },
+    // cushion: a soft rubber thud, pitched where a tablet speaker can still play it
+    rail(v) {
+      const n = performance.now(); if (n - lastRail < 30) return; lastRail = n;
+      const g = Math.min(0.75, 0.1 + v * 0.2);
+      tone(340, 0.085, g, 0.55, 0, 'triangle'); burst(560, 0.8, 0.06, g * 0.7);
+    },
+    // pocket: the drop, then the ball landing in the cup
+    pocket() {
+      tone(300, 0.14, 0.5, 0.5, 0, 'triangle'); burst(850, 0.8, 0.09, 0.3);
+      tone(230, 0.1, 0.3, 0.6, 0.11, 'triangle'); burst(1400, 1.2, 0.03, 0.16, 'bandpass', 0.11);
+    },
+    // cue tip on the cue ball: a dull leather tock with a short click on top
+    cue(v) {
+      const g = Math.min(1, 0.3 + v * 0.07);
+      tone(520, 0.06, g * 0.6, 0.6, 0, 'triangle'); burst(950, 0.8, 0.022, g * 0.7); burst(2600, 1.2, 0.008, g * 0.3);
+    },
     tap() { tone(520, 0.05, 0.12, 1.5); },
-    win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.16, 0.22, 1), i * 110)); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
   };
 })();
 
@@ -119,8 +143,14 @@ function layout() {
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   setPowerUI(st.power);
 }
-window.addEventListener('resize', layout);
-if (window.ResizeObserver) new ResizeObserver(layout).observe(app);
+// Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
+let layoutT = 0;
+function layoutSoon() {
+  clearTimeout(layoutT);
+  layoutT = setTimeout(() => { const a = document.activeElement; if (a && a.tagName === 'INPUT') return; layout(); }, 120);
+}
+window.addEventListener('resize', layoutSoon);
+if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
 
 /* ================= home ================= */
 const MODE_ICON = {
