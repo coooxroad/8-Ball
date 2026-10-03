@@ -26,7 +26,8 @@ function createScene(canvas, app, PH) {
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
   const RW = 0.095, RAIL_Z = 0.04, FOV = 34;
   const LAMPS = [[-0.78, 0, 1.05], [0, 0, 1.05], [0.78, 0, 1.05]];   // three shades hanging over the long axis
-  const { HL, HW, CW } = PH.pool;
+  const CW = PH.pool.CW;
+  let cur = PH.pool;                                                  // the table being shown
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -59,6 +60,7 @@ function createScene(canvas, app, PH) {
     scene.environment = sScene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
   })();
 
+  const lampObjs = [];
   for (const sc of [sScene, scene]) {
     const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi);
     for (const [x, y, z] of LAMPS) {
@@ -68,7 +70,7 @@ function createScene(canvas, app, PH) {
         lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048);
         lamp.shadow.camera.near = 0.2; lamp.shadow.camera.far = 3; lamp.shadow.bias = -0.0006; lamp.shadow.normalBias = 0.003;
       }
-      sc.add(lamp, lamp.target);
+      sc.add(lamp, lamp.target); lampObjs.push(lamp);
     }
   }
   // the static layer and the full-screen quad that shows it
@@ -76,17 +78,21 @@ function createScene(canvas, app, PH) {
   const quadMat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
   const quadScene = new THREE.Scene(), quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), quadMat));
+  // every frame the table is also drawn into the depth buffer only, so a ball dropping into a pocket goes behind the rail
+  const depthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
+  const unmask = () => { const b = renderer.state.buffers; b.color.setMask(true); b.depth.setMask(true); };
 
   /* floor under the table: one flat colour chosen by the UI theme, plus the table's own soft shadow */
   const floorMat = new THREE.MeshBasicMaterial({ color: col(0x101216), toneMapped: false });
+  let tableShadow = null;
   (function backdrop() {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; sScene.add(m);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; m.layers.set(1); sScene.add(m);
     const s = mkCanvas(512, 320), sg = s.getContext('2d');
     sg.shadowColor = 'rgba(0,0,0,0.8)'; sg.shadowBlur = 52; sg.fillStyle = 'rgba(0,0,0,0.8)';
     const rr = (x, y, w, h, r) => { sg.beginPath(); sg.moveTo(x + r, y); sg.arcTo(x + w, y, x + w, y + h, r); sg.arcTo(x + w, y + h, x, y + h, r); sg.arcTo(x, y + h, x, y, r); sg.arcTo(x, y, x + w, y, r); sg.fill(); };
     rr(70, 60, 372, 200, 26);
-    const sm = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 2.81), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
-    sm.position.set(0, -0.05, -0.79); sScene.add(sm);
+    const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
+    sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
   })();
   function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); staticDirty = true; dirty = 3; }
 
@@ -119,7 +125,7 @@ function createScene(canvas, app, PH) {
   const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false });
 
   function buildTable(P) {
-    const grp = new THREE.Group(), { POCKETS, CUSHIONS } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.007;
+    const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.007;
     // cloth bed
     const bx = HL + 0.105, by = HW + 0.118;
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
@@ -146,7 +152,7 @@ function createScene(canvas, app, PH) {
     const hole = new THREE.Path();
     if (P.POCKETED) {
       const arcs = POCKETS.map(p => {
-        if (!p.corner) { const sy = Math.sign(p.y); return { p, e: [-sy * p.r, sy * Yb], x: [sy * p.r, sy * Yb] }; }
+        if (!p.corner) { const sy = Math.sign(p.y), s2 = Math.sqrt(p.r * p.r - (CW - P.SO) ** 2); return { p, e: [-sy * s2, sy * Yb], x: [sy * s2, sy * Yb] }; }
         const sx = Math.sign(p.x), sy = Math.sign(p.y), s = Math.sqrt(p.r * p.r - (CW - P.PO) ** 2);
         const pv = [sx * Xb, p.y - sy * s], ph = [p.x - sx * s, sy * Yb];
         return sx * sy < 0 ? { p, e: pv, x: ph } : { p, e: ph, x: pv };
@@ -185,14 +191,22 @@ function createScene(canvas, app, PH) {
     grp.visible = false; sScene.add(grp);
     return grp;
   }
-  const tables = { pool: buildTable(PH.pool), carom: buildTable(PH.carom) };
-  let tableKind = null;
-  function setTable(kind) {
-    if (tableKind === kind) return;
-    tableKind = kind; tables.pool.visible = kind === 'pool'; tables.carom.visible = kind === 'carom';
-    for (const m of sets.pool.mesh) m.visible = false; for (const m of sets.pool.blob) m.visible = false;
-    for (const m of sets.carom.mesh) m.visible = false; for (const m of sets.carom.blob) m.visible = false;
-    falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  // one table mesh per physics table (each size is built the first time it is shown)
+  const tables = new Map();
+  function setTable(P) {
+    if (cur === P && tables.has(P) && tables.get(P).visible) return;
+    cur = P;
+    if (!tables.has(P)) tables.set(P, buildTable(P));
+    for (const [k, grp] of tables) grp.visible = k === P;
+    for (const set of [sets.pool, sets.carom]) { for (const m of set.mesh) m.visible = false; for (const m of set.blob) m.visible = false; }
+    const set = sets[P.POCKETED ? 'pool' : 'carom'];
+    for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
+    // the lamps hang over this table's long axis
+    [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * P.HL; });
+    lampObjs.forEach((l, i) => { const x = LAMPS[i % 3][0]; l.position.x = x; l.target.position.x = x; l.target.updateMatrixWorld(); });
+    const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
+    tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
+    falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
   }
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0];
@@ -303,7 +317,7 @@ function createScene(canvas, app, PH) {
   function applyCamera() {
     if (!W || !H) return;
     const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
-    const TW = 2 * (HL + CW + RW) + 0.03, TH = 2 * (HW + CW + RW) + 0.03;
+    const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
     ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
     const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
     camera.aspect = fw / fh; camera.position.set(0, 0, fh / (2 * ppm * Math.tan(FOV * Math.PI / 360)));
@@ -343,7 +357,14 @@ function createScene(canvas, app, PH) {
   }
 
   const falls = [];
-  function fall(P, id, x, y, pocket) { const p = P.POCKETS[pocket]; falls.push({ id, t: 0, x0: x, y0: y, x1: p.x, y1: p.y }); }
+  // A pocketed ball keeps rolling over the lip, drops under gravity and rattles down inside the pocket.
+  const fallAxis = new THREE.Vector3();
+  function fall(P, e) {
+    const p = P.POCKETS[e.pocket];
+    let vx = e.vx || 0, vy = e.vy || 0; const sp = Math.hypot(vx, vy), cap = 1.5;
+    if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
+    falls.push({ id: e.id, x: e.x, y: e.y, z: P.R, vx, vy, vz: 0, p });
+  }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   function frame(v, dt) {
@@ -353,12 +374,13 @@ function createScene(canvas, app, PH) {
     if (falls.length || v.animating) dirty = 3;
     if (dirty <= 0) return false; dirty--;
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    if (P !== cur || !tables.has(P)) setTable(P);
     for (let i = 0; i < set.mesh.length; i++) {
       const b = w.balls[i], m = set.mesh[i], s = set.blob[i];
       const on = !!b && b.on; s.visible = on;
       if (on) {
         const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a;
-        m.visible = true; m.scale.setScalar(R); m.position.set(x, y, R);
+        m.visible = true; m.scale.setScalar(R); m.position.set(x, y, R); m.material.color.setScalar(1);
         const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
         m.quaternion.set(q[0], q[1], q[2], q[3]);
         s.children[0].position.x = x; s.children[0].position.y = y;
@@ -366,10 +388,23 @@ function createScene(canvas, app, PH) {
       } else if (!falls.some(f => f.id === i)) m.visible = false;
     }
     for (let i = falls.length - 1; i >= 0; i--) {
-      const f = falls[i], m = set.mesh[f.id]; f.t += dt; const k = Math.min(1, f.t / 0.22);
-      // no depth against the baked table, so a dropping ball shrinks into the pocket instead of sinking behind the rail
-      if (m) { m.visible = k < 1; m.position.set(f.x0 + (f.x1 - f.x0) * k, f.y0 + (f.y1 - f.y0) * k, R); m.scale.setScalar(R * (1 - 0.5 * k * k)); }
-      if (k >= 1) falls.splice(i, 1);
+      const f = falls[i], m = set.mesh[f.id], p = f.p;
+      let left = Math.min(dt, 0.05);
+      while (left > 1e-5) {
+        const h = Math.min(left, 0.004); left -= h;
+        f.vx += (p.x - f.x) * 60 * h; f.vy += (p.y - f.y) * 60 * h;      // the cup funnels it towards the middle
+        f.vz -= 9.8 * h; f.x += f.vx * h; f.y += f.vy * h; f.z += f.vz * h;
+        const dx = f.x - p.x, dy = f.y - p.y, d = Math.hypot(dx, dy), lim = p.r - R * 0.8;
+        if (f.z < R * 0.5 && d > lim) {                                    // knocks against the pocket wall
+          const nx = dx / d, ny = dy / d, vn = f.vx * nx + f.vy * ny;
+          f.x = p.x + nx * lim; f.y = p.y + ny * lim;
+          if (vn > 0) { f.vx -= 1.35 * vn * nx; f.vy -= 1.35 * vn * ny; }
+        }
+        const sp = Math.hypot(f.vx, f.vy);
+        if (m && sp > 1e-3) { fallAxis.set(-f.vy / sp, f.vx / sp, 0); m.rotateOnWorldAxis(fallAxis, sp * h / R); }
+      }
+      if (m) { m.visible = f.z > -0.11; m.scale.setScalar(R); m.position.set(f.x, f.y, f.z); m.material.color.setScalar(Math.max(0.12, Math.min(1, 1 + f.z * 9))); }
+      if (f.z <= -0.11) falls.splice(i, 1);
     }
     const c = w.balls[w.cue];
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
@@ -422,14 +457,21 @@ function createScene(canvas, app, PH) {
       }
       gHand.visible = !!v.hand; gHand.position.set(c.x, c.y, R); gHand.scale.setScalar(R);
     }
-    if (staticDirty && rt) { staticDirty = false; renderer.setRenderTarget(rt); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null); }
-    renderer.clear(); renderer.render(quadScene, quadCam); renderer.clearDepth(); renderer.render(scene, camera);
+    if (staticDirty && rt) {
+      staticDirty = false; camera.layers.enable(1);
+      renderer.setRenderTarget(rt); unmask(); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null);
+      camera.layers.disable(1);
+    }
+    unmask(); renderer.clear(); renderer.render(quadScene, quadCam);
+    const bgc = sScene.background; sScene.background = null; sScene.overrideMaterial = depthMat;   // (a colour background would wipe the picture)
+    renderer.render(sScene, camera); sScene.overrideMaterial = null; sScene.background = bgc;
+    renderer.render(scene, camera);
     return true;
   }
 
   return {
     setTable, setCloth, setCue, setBackdrop, setInsets, setQuality, resize, toTable, frame, fall,
-    invalidate() { dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; },
+    invalidate() { dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
 }

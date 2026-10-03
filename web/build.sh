@@ -21,9 +21,11 @@ script() { echo '<script>'; sed '$d' physics.js; sed '$d' game.js; cat scene.js 
 html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 body{margin:0}
 [hidden]{display:none!important}
-@font-face{font-family:'Jua';font-display:swap;src:url(fonts/Jua-Regular.woff2) format('woff2')}
-@font-face{font-family:'Black Han Sans';font-display:swap;src:url(fonts/BlackHanSans-Regular.woff2) format('woff2')}
-@font-face{font-family:'Lilita One';font-display:swap;src:url(fonts/LilitaOne-Regular.woff2) format('woff2')}
+@font-face{font-family:'Gothic A1';font-weight:300;font-display:swap;src:url(fonts/GothicA1-Light.woff2) format('woff2')}
+@font-face{font-family:'Gothic A1';font-weight:500;font-display:swap;src:url(fonts/GothicA1-Medium.woff2) format('woff2')}
+@font-face{font-family:'Gothic A1';font-weight:700;font-display:swap;src:url(fonts/GothicA1-Bold.woff2) format('woff2')}
+@font-face{font-family:'Gothic A1';font-weight:800;font-display:swap;src:url(fonts/GothicA1-ExtraBold.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-weight:100 900;font-display:swap;src:url(fonts/Outfit.woff2) format('woff2')}
 </style>
 </head>
 <body>

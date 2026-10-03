@@ -1,8 +1,6 @@
 /* App shell: screens, input, turn flow on screen, saving. */
 (() => {
 'use strict';
-const PH = { pool: createPhysics({ R: 0.028575, pockets: true }), carom: createPhysics({ R: 0.03275, pockets: false }) };
-const game = createGame(PH);
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
@@ -12,7 +10,20 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('dp8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('dp8.' + k, JSON.stringify(v)); } catch (e) {} },
 };
-const prefs = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
+const prefs = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
+
+// Pool table sizes. Real regulation numbers: playing surface, ball diameter, pocket openings.
+const TABLES = [
+  { id: 'bar', name: '당구장 7피트', short: '7피트', d: '198×99cm · 공 57mm. 공이 크게 보이고 가장 쉽습니다.', cfg: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 } },
+  { id: 'club', name: '클럽 8피트', short: '8피트', d: '224×112cm · 공 57mm. 동호인이 많이 쓰는 중간 크기.', cfg: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 } },
+  { id: 'pro', name: '대회 9피트', short: '9피트', d: '254×127cm · 공 57mm. 프로 대회 규격, 가장 넓고 어렵습니다.', cfg: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 } },
+  { id: 'pub', name: '영국식 6피트', short: '6피트', d: '183×91cm · 공 51mm. 작은 공에 좁은 포켓.', cfg: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 } },
+];
+if (!TABLES.some(t => t.id === prefs.table)) prefs.table = 'bar';
+const poolCache = {};
+const poolOf = id => poolCache[id] || (poolCache[id] = createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg)));
+const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pockets: false }) };
+const game = createGame(PH);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 const savePrefs = () => store.set('prefs', prefs);
 let rec = store.get('rec', {});
@@ -65,6 +76,13 @@ if (!scene) {
   app.textContent = ''; app.appendChild(d); return;
 }
 scene.setCloth(prefs.cloth); scene.setCue(prefs.cue); scene.setQuality(prefs.quality);
+function applyTheme() {
+  const light = prefs.theme === 'light';
+  app.dataset.theme = light ? 'light' : 'dark';
+  document.body.style.background = light ? '#eef0f3' : '#101216';
+  scene.setBackdrop(light ? 0xeef0f3 : 0x101216);
+}
+applyTheme();
 
 /* ================= small DOM helpers ================= */
 function el(tag, attrs, kids) {
@@ -110,12 +128,17 @@ const MODE_ICON = {
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
   four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
 };
+function check() {
+  const s = el('span', { class: 'ck' });
+  s.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  return s;
+}
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
   for (const id of ['eight', 'nine', 'four']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); preview(); } },
-      [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })])]));
+      [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
   }
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
@@ -124,13 +147,14 @@ function paintHome() {
   $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
-  $('#cueSw').style.setProperty('--c', cueCss(CUES[prefs.cue]));
+  $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
+  $('#cueVal').textContent = CUES[prefs.cue].name;
   $('#guideVal').textContent = GUIDE[prefs.guide][0];
 }
 function cueCss(d) { return `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`; }
 function preview() {
   game.start(prefs.mode, [prefs.names[0], oppName()], false, {});
-  scene.setTable(game.mode.table); st.aim = 0; st.power = 0; st.rev++; scene.invalidate();
+  scene.setTable(game.P); st.aim = 0; st.power = 0; st.rev++; scene.invalidate();
 }
 function goHome() {
   st.phase = 'home'; st.ai = null; st.cueAnim = null; closeSheet(); $('#spinPop').hidden = true;
@@ -148,11 +172,15 @@ $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) close
 const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: () => { SND.tap(); fn(); } }, kids);
 const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
 const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
-  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { class: 'btn', 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
 
-function sheetCloth() {
-  openSheet('테이블 색', el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
-    [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetCloth(); }))));
+function sheetTable() {
+  const four = prefs.mode === 'four';
+  const sizes = four ? [el('p', { class: 'note', text: '4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.' })]
+    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); preview(); sheetTable(); }));
+  openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
+    el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
+      [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
 }
 function sheetCue() {
   openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
@@ -163,6 +191,7 @@ function sheetGuide() {
 }
 function sheetSettings() {
   openSheet('설정', [
+    segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
@@ -174,25 +203,25 @@ function sheetRecords() {
   const grid = el('div', { class: 'rec' }, [el('span', { class: 'hd', text: '이름' }), el('span', { class: 'hd n', text: '승' }), el('span', { class: 'hd n', text: '패' }), el('span', { class: 'hd n', text: '최다 연승' })]);
   for (const n of names) { const r = rec[n]; grid.append(el('span', { text: n }), el('span', { class: 'n', text: r.w }), el('span', { class: 'n', text: r.l }), el('span', { class: 'n', text: r.best })); }
   openSheet('전적', [names.length ? grid : el('p', { class: 'note', text: '아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 승패가 쌓입니다.' }),
-    names.length ? el('button', { class: 'btn white', text: '전적 모두 지우기', onclick: () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); } }) : null]);
+    names.length ? el('button', { class: 'btn flat', text: '전적 모두 지우기', onclick: () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); } }) : null]);
 }
 function sheetName(i) {
   if (i === 1 && prefs.vsAI) return;
   const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
   const save = () => { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) { prefs.names[i] = v; savePrefs(); } closeSheet(); paintHome(); };
   input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
-  openSheet(`${i + 1}번 선수 이름`, [input, el('p', { class: 'note', text: '전적은 이름별로 따로 쌓입니다. 열 글자까지.' }), el('button', { class: 'btn yellow', text: '저장', onclick: save })]);
+  openSheet(`${i + 1}번 선수 이름`, [input, el('p', { class: 'note', text: '전적은 이름별로 따로 쌓입니다. 열 글자까지.' }), el('button', { class: 'btn cta', text: '저장', onclick: save })]);
   setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
 }
 function sheetPause() {
   openSheet('잠깐 멈춤', [
-    el('button', { class: 'btn yellow', text: '이어서 하기', onclick: closeSheet }),
-    el('div', { class: 'row' }, [el('button', { class: 'btn white', text: '조준선 ' + GUIDE[prefs.guide][0], onclick: sheetGuide }), el('button', { class: 'btn white', text: '설정', onclick: sheetSettings })]),
-    el('div', { class: 'row' }, [el('button', { class: 'btn', style: '--bg:#0e1a66;--edge:#08104a', text: '다시 시작', onclick: () => { closeSheet(); startMatch(game.turn); } }),
-      el('button', { class: 'btn', style: '--bg:#0e1a66;--edge:#08104a', text: '처음으로', onclick: goHome })]),
+    el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
+    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '조준선 ' + GUIDE[prefs.guide][0], onclick: sheetGuide }), el('button', { class: 'btn flat', text: '설정', onclick: sheetSettings })]),
+    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '다시 시작', onclick: () => { closeSheet(); startMatch(game.turn); } }),
+      el('button', { class: 'btn flat', text: '처음으로', onclick: goHome })]),
   ]);
 }
-$('#clothBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetCloth(); });
+$('#tableBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetTable(); });
 $('#cueBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetCue(); });
 $('#guideBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetGuide(); });
 $('#setBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetSettings(); });
@@ -209,6 +238,7 @@ $('#homeBtn').addEventListener('click', () => { SND.tap(); goHome(); });
 
 /* ================= match flow ================= */
 function startMatch(first) {
+  PH.pool = poolOf(prefs.table);
   const names = [prefs.names[0], oppName()], key = names.join('\u0001') + prefs.mode;
   if (series.key !== key) { series.key = key; series.s = [0, 0]; }
   game.start(prefs.mode, names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: first || 0 });
@@ -216,7 +246,7 @@ function startMatch(first) {
   toast(game.mode.id === 'four' ? `${game.players[game.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.` : `${game.players[game.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`, '', 3600);
 }
 function enterGame() {
-  scene.setTable(game.mode.table);
+  scene.setTable(game.P);
   $('#home').hidden = true; $('#result').hidden = true; $('#hud').hidden = false; closeSheet();
   for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = false;
   st.aim = 0; st.ai = null; st.cueAnim = null; st.rev++;
@@ -259,7 +289,7 @@ function finish() {
   const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
   if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
   const box = $('#rStats'); box.textContent = '';
-  for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
+  for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat panel' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
   $('#rWhy').textContent = game.over.why;
   $('#hud').hidden = true; for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true; $('#spinPop').hidden = true;
   $('#result').hidden = false; app.classList.add('busy'); SND.win();
@@ -294,8 +324,8 @@ function hud() {
 function setPowerUI(p) {
   const tr = $('#power'), fill = $('#powerFill'), c = $('#powerCue');
   $('#powerNum').textContent = Math.round(p * 100);
-  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 34px + ${p * (tr.clientWidth - 34)}px),-50%)`; }
-  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 30px + ${p * (tr.clientHeight - 30)}px))`; }
+  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 30px + ${p * (tr.clientWidth - 30)}px),-50%)`; }
+  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 26px + ${p * (tr.clientHeight - 26)}px))`; }
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
@@ -422,7 +452,7 @@ function drain() {
   const s = game.world.snd; if (!s.length) return;
   for (const e of s) {
     if (e.t === 'ball') SND.ball(e.v); else if (e.t === 'rail') SND.rail(e.v);
-    else if (e.t === 'pocket') { SND.pocket(); scene.fall(game.P, e.id, e.x, e.y, e.pocket); }
+    else if (e.t === 'pocket') { SND.pocket(); scene.fall(game.P, e); }
   }
   s.length = 0;
 }
@@ -444,7 +474,7 @@ function frame(now) {
     let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
     if (n === 30) acc = 0;
     alpha = acc / TICK; drain(); animating = true;
-    if (P.rest(w)) { st.settle += dt; if (st.settle > 0.24) endShot(); }
+    if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
   }
   const aiming = st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan) || st.phase === 'strike' || st.phase === 'home';
   const drew = scene.frame({
@@ -461,13 +491,14 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.phase === 'home' || st.phase === 'over') return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table };
   store.set('save', d);
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
 function start(data) {
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
+  if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
   if (data && data.v === 2 && game.restore(data.game)) {
     if (data.series) { series.key = data.series.key; series.s = data.series.s; }
     prefs.mode = game.modeId; st.aim = data.aim || 0;

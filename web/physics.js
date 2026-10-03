@@ -1,19 +1,22 @@
 /* Cue-sports physics: 2D table plane, full 3D spin. Units are metres and seconds.
-   createPhysics({ R, pockets }) builds one table: a pool table with six pockets, or a carom table with none. */
+   createPhysics({ R, pockets, HL, HW, cornerMouth, sideMouth }) builds one table: a pool table with six pockets
+   in any regulation size, or a carom table with none. */
 function createPhysics(cfg) {
   const R = cfg.R, POCKETED = !!cfg.pockets;
-  const HL = 1.27, HW = 0.635, G = 9.8;
+  const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
   const MU_S = 0.2, MU_R = 0.016, MU_SP = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
-  const GC = 0.088, GS = 0.07, CW = 0.05, PO = 0.03, SO = 0.05;
+  const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
+  const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
+  const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
   const D = Math.SQRT1_2;
 
   const POCKETS = !POCKETED ? [] : [
-    { x: -HL - PO, y: HW + PO, r: 0.068, sink: 0.062, ax: -HL + 0.03, ay: HW - 0.03, nx: -D, ny: D, corner: true },
-    { x: 0, y: HW + SO, r: 0.062, sink: 0.05, ax: 0, ay: HW, nx: 0, ny: 1, corner: false },
-    { x: HL + PO, y: HW + PO, r: 0.068, sink: 0.062, ax: HL - 0.03, ay: HW - 0.03, nx: D, ny: D, corner: true },
-    { x: HL + PO, y: -HW - PO, r: 0.068, sink: 0.062, ax: HL - 0.03, ay: -HW + 0.03, nx: D, ny: -D, corner: true },
-    { x: 0, y: -HW - SO, r: 0.062, sink: 0.05, ax: 0, ay: -HW, nx: 0, ny: -1, corner: false },
-    { x: -HL - PO, y: -HW - PO, r: 0.068, sink: 0.062, ax: -HL + 0.03, ay: -HW + 0.03, nx: -D, ny: -D, corner: true },
+    { x: -HL - PO, y: HW + PO, r: RC, sink: SC, ax: -HL + AI, ay: HW - AI, nx: -D, ny: D, corner: true },
+    { x: 0, y: HW + SO, r: RS, sink: SS, ax: 0, ay: HW, nx: 0, ny: 1, corner: false },
+    { x: HL + PO, y: HW + PO, r: RC, sink: SC, ax: HL - AI, ay: HW - AI, nx: D, ny: D, corner: true },
+    { x: HL + PO, y: -HW - PO, r: RC, sink: SC, ax: HL - AI, ay: -HW + AI, nx: D, ny: -D, corner: true },
+    { x: 0, y: -HW - SO, r: RS, sink: SS, ax: 0, ay: -HW, nx: 0, ny: -1, corner: false },
+    { x: -HL - PO, y: -HW - PO, r: RC, sink: SC, ax: -HL + AI, ay: -HW + AI, nx: -D, ny: -D, corner: true },
   ];
 
   // Cushions: a nose line plus (on a pool table) an angled jaw facing at each end.
@@ -24,8 +27,8 @@ function createPhysics(cfg) {
     const seg = (p, q) => { const l = Math.hypot(q[0] - p[0], q[1] - p[1]); SEGS.push({ ax: p[0], ay: p[1], bx: q[0], by: q[1], len: l, tx: (q[0] - p[0]) / l, ty: (q[1] - p[1]) / l }); };
     function add(ax, ay, bx, by, ox, oy, aCorner, bCorner) {
       const len = Math.hypot(bx - ax, by - ay), tx = (bx - ax) / len, ty = (by - ay) / len;
-      const ja = aCorner ? [C38, S38, 0.065] : [C75, S75, 0.05];
-      const jb = bCorner ? [C38, S38, 0.065] : [C75, S75, 0.05];
+      const ja = aCorner ? [C38, S38, 0.065 * kc] : [C75, S75, 0.05 * ks];
+      const jb = bCorner ? [C38, S38, 0.065 * kc] : [C75, S75, 0.05 * ks];
       const c = {
         a: [ax, ay], b: [bx, by], o: [ox, oy],
         ja: [ax + (-tx * ja[0] + ox * ja[1]) * ja[2], ay + (-ty * ja[0] + oy * ja[1]) * ja[2]],
@@ -57,17 +60,17 @@ function createPhysics(cfg) {
 
   function makeWorld(n) {
     const balls = [];
-    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, on: true, q: [0, 0, 0, 1] });
+    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
     return { balls, ev: newEv(), snd: null, track: false, cue: 0 };
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: 0, spit: 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue };
   }
 
   function place(w, id, x, y, rnd) {
     const b = w.balls[id];
-    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.on = true;
+    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.hot = 0; b.spit = 0; b.on = true;
     if (rnd) {
       const a = rnd() * Math.PI * 2, tl = (rnd() - 0.5) * 0.9;
       const cz = Math.cos(a / 2), sz = Math.sin(a / 2), cx = Math.cos(tl / 2), sx = Math.sin(tl / 2);
@@ -103,6 +106,8 @@ function createPhysics(cfg) {
     const dz = (2.5 * MU_SP * G / R) * h;
     if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
     b.x += b.vx * h; b.y += b.vy * h;
+    const spd = Math.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
+    if (b.spit > 0) b.spit -= h;
     if (w.track) {
       const wm = Math.hypot(b.wx, b.wy, b.wz);
       if (wm > 1e-6) {
@@ -174,19 +179,41 @@ function createPhysics(cfg) {
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
         if (b.vx !== 0 || b.vy !== 0) for (let k = 0; k < SEGS.length; k++) hitSeg(w, b, SEGS[k]);
         if (!POCKETED) continue;
+        // A ball drops once its centre is far enough over the hole. A fast ball has to get deeper before it drops,
+        // so a hard shot that is not centred hits the back of the pocket and can rattle out again.
+        // b.hot remembers how hard the ball was travelling a moment ago, so slowing down on a jaw does not rescue it
+        const tight = 1 - 0.55 * Math.min(1, Math.max(0, (b.hot - 2.5) / 4.5));
+        const outside = Math.abs(b.x) > HL || Math.abs(b.y) > HW;
         let pk = -1;
         for (let k = 0; k < 6; k++) {
-          const p = POCKETS[k], dx = b.x - p.x, dy = b.y - p.y;
-          if (dx * dx + dy * dy < p.sink * p.sink) { pk = k; break; }
+          const p = POCKETS[k], dx = b.x - p.x, dy = b.y - p.y, d2 = dx * dx + dy * dy, se = p.sink * tight;
+          if (d2 < se * se && b.spit <= 0) { pk = k; break; }
+          const lim = p.r - R * 0.35;
+          if (outside && d2 > lim * lim && d2 < (p.r + R) * (p.r + R)) {
+            const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny;
+            b.x = p.x + nx * lim; b.y = p.y + ny * lim;
+            if (vn > 0) {
+              // the pocket back is dead for a gentle ball and springy for a hard one
+              const e = 0.35 + 0.5 * Math.min(1, Math.max(0, (b.hot - 2.5) / 4.5));
+              if (b.hot > 3.8) b.spit = 0.22;   // too hard and off-centre: the pocket spits it back out
+              b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; b.vx *= 0.88; b.vy *= 0.88; b.wx *= 0.5; b.wy *= 0.5;
+              if (b.hot > 3.8) {
+                // thrown back towards the table, keeping a little of the angle it bounced at
+                const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = 0.4 * b.hot;
+                b.vx = ox / ol * out; b.vy = oy / ol * out;
+              }
+              if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6 });
+            }
+          }
         }
-        if (pk < 0 && (Math.abs(b.x) > HL + 0.012 || Math.abs(b.y) > HW + 0.012)) {
+        if (pk < 0 && (Math.abs(b.x) > HL + 0.09 || Math.abs(b.y) > HW + 0.11)) {
           let best = 1e9;
           for (let k = 0; k < 6; k++) { const p = POCKETS[k], dd = (b.x - p.x) ** 2 + (b.y - p.y) ** 2; if (dd < best) { best = dd; pk = k; } }
         }
         if (pk >= 0) {
           b.on = false;
           w.ev.pocketed.push({ id: b.id, pocket: pk });
-          if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: pk, x: b.x, y: b.y });
+          if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: pk, x: b.x, y: b.y, vx: b.vx, vy: b.vy });
           b.vx = b.vy = b.wx = b.wy = b.wz = 0;
         }
       }
@@ -246,7 +273,7 @@ function createPhysics(cfg) {
       }
     }
     for (const p of POCKETS) {
-      const t = rayCircle(ox, oy, dx, dy, p.x, p.y, p.sink);
+      const t = rayCircle(ox, oy, dx, dy, p.x, p.y, p.sink * 0.8);
       if (t < best.t) best = { t, type: 'pocket' };
     }
     best.gx = ox + dx * best.t; best.gy = oy + dy * best.t;
@@ -306,6 +333,6 @@ function createPhysics(cfg) {
     return [x, y];
   }
 
-  return { R, HL, HW, CW, PO, SO, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
+  return { R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

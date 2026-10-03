@@ -130,8 +130,8 @@ function createGame(PH) {
   };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
-  g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.22 : 1);
-  g.powerOf = V => Math.pow(Math.max(0.0001, (V / (g.isBreak && g.mode.table === 'pool' ? 1.22 : 1) - 0.35) / 7.4), 1 / 1.35);
+  g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
+  g.powerOf = V => Math.pow(Math.max(0.0001, (V / (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1) - 0.35) / 7.4), 1 / 1.35);
   g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };
 
   // Called once every ball has stopped. Applies the result and says what happened.
