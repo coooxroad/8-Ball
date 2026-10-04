@@ -72,6 +72,8 @@ function applyTheme() {
   scene.setBackdrop(light ? 0xeef0f3 : 0x101216);
 }
 applyTheme();
+// the power control shows the cue that is in use
+function paintPowerCue() { const d = CUES[prefs.cue] || CUES[0]; $('#power').style.setProperty('--cue-v', cueCss(d, 180)); $('#power').style.setProperty('--cue-h', cueCss(d, 90)); }
 
 /* ================= small DOM helpers ================= */
 function el(tag, attrs, kids) {
@@ -100,7 +102,11 @@ function toast(msg, kind, ms) {
 // where on the screen a table position is, left (-1) to right (1), kept gentle
 const panOf = (x, y) => 0.45 * Math.max(-1, Math.min(1, scene.portrait ? -y / game.P.HW : x / game.P.HL));
 // a short tap in the hand: only for the player's own shots, never for the computer's or a demo
-const buzz = ms => { if (prefs.haptics && st.human && flow && !flow.quiet && navigator.vibrate) { try { navigator.vibrate(Math.round(ms)); } catch (e) {} } };
+// The Android app offers its own vibrator (it can also say whether the device has a motor at all); a browser only has navigator.vibrate.
+const device = window.CueDevice || null;
+const canBuzz = (() => { try { return device ? !!device.hasVibrator() : !!navigator.vibrate; } catch (e) { return false; } })();
+const vibrate = ms => { try { if (device) device.vibrate(Math.round(ms)); else if (navigator.vibrate) navigator.vibrate(Math.round(ms)); } catch (e) {} };
+const buzz = ms => { if (prefs.haptics && canBuzz && st.human && flow && !flow.quiet) vibrate(ms); };
 const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
 
 /* ================= screens and layout ================= */
@@ -134,10 +140,11 @@ window.addEventListener('resize', layoutSoon);
 if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
 
 function setPowerUI(p) {
-  const tr = $('#power'), fill = $('#powerFill'), c = $('#powerCue');
+  // the cue sits against the ball at 0 and is drawn back along the track as the power rises
+  const tr = $('#power'), c = $('#powerCue'), REST = 34, END = 96;
   $('#powerNum').textContent = Math.round(p * 100);
-  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 30px + ${p * (tr.clientWidth - 30)}px),-50%)`; }
-  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 26px + ${p * (tr.clientHeight - 26)}px))`; }
+  if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
+  else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
@@ -164,10 +171,10 @@ function sheetTable() {
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
       [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
 }
-const cueCss = d => `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`;
+const cueCss = (d, deg) => `linear-gradient(${deg || 90}deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`;
 function sheetCue() {
   openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
-    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
+    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintPowerCue(); paintHome(); sheetCue(); })));
 }
 // one guide length per player (a handicap); a single row when only one person is aiming
 function sheetGuide() {
@@ -180,7 +187,7 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
-    segRow('진동', [[true, '켬'], [false, '끔']], prefs.haptics, v => { prefs.haptics = v; savePrefs(); if (v && navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } sheetSettings(); }),
+    canBuzz ? segRow('진동', [[true, '켬'], [false, '끔']], prefs.haptics, v => { prefs.haptics = v; savePrefs(); if (v) vibrate(25); sheetSettings(); }) : note('진동: 이 기기에는 진동 모터가 없어 쓸 수 없습니다.'),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.'),
@@ -664,7 +671,7 @@ let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
 function drain() {
   const s = game.world.snd, quiet = flow.quiet;
   for (const e of s) {
-    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); buzz(14); } }
+    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); buzz(18); } }
     else if (!quiet) { if (e.t === 'ball') SND.ball(e.v, panOf(e.x, e.y)); else SND.rail(e.v, panOf(e.x, e.y)); }
   }
   s.length = 0;
@@ -697,7 +704,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); buzz(7 + ca.V * 1.6); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); buzz(12 + ca.V * 2); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
@@ -724,6 +731,7 @@ function snapshot() {
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
 function start(data) {
+  paintPowerCue();
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }

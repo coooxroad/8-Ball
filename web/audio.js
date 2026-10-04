@@ -145,7 +145,7 @@ function createAudio(isOn) {
     rolling(amount) {
       if (!ac || !roll) return;
       const k = isOn() ? Math.min(1, amount / 6) : 0, t = ac.currentTime;
-      roll.g.gain.setTargetAtTime(0.05 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
+      roll.g.gain.setTargetAtTime(0.0375 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
     },
     tap() { uiHit('tick', 0.22, 5000, 0, 1); },
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },

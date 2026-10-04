@@ -161,19 +161,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* ---------- controls: same places and behaviour as before ---------- */
 #power,#fine{position:absolute;touch-action:none;border-radius:var(--r-ctl);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);box-sizing:border-box}
 #power{left:10px;top:calc(var(--hud-h) + 12px);bottom:14px;width:48px;overflow:hidden}
-#powerFill{position:absolute;left:0;right:0;top:0;height:0;background:var(--fill)}
-#powerCue{position:absolute;left:50%;top:0;width:8px;height:100%;transform:translate(-50%,calc(-100% + 26px));background:var(--acc);border-radius:0 0 4px 4px}
-#powerNum{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg)}
-#powerLab{position:absolute;left:0;right:0;bottom:31px;text-align:center;font-size:10.5px;color:var(--sub)}
+/* the power control is a cue ball with the chosen cue behind it: drag the cue away from the ball, let go to strike */
+#power{background-image:repeating-linear-gradient(180deg,transparent 0 23px,var(--tick) 23px 24px)}
+#powerBall,#spinBtn,#spinPad{background:radial-gradient(circle at 36% 30%,#ffffff 0,#f6f1e4 34%,#d9d2c0 72%,#aaa28f 100%)}
+#powerBall{position:absolute;left:50%;top:8px;width:24px;height:24px;margin-left:-12px;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.35)}
+#powerCue{position:absolute;left:50%;top:0;width:13px;height:100%;transform:translate(-50%,34px);background:var(--cue-v,#d9b98a);
+  clip-path:polygon(22% 0,78% 0,100% 100%,0 100%);filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+#powerCue::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(255,255,255,.22) 38%,rgba(0,0,0,0) 55%,rgba(0,0,0,.32))}
+#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px}
+[data-theme="light"] #powerNum{--chip-bg:#f2f4f6}
+#powerLab{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10.5px;color:var(--sub);z-index:1}
 #fine{right:10px;top:calc(var(--hud-h) + 12px);bottom:90px;width:48px;overflow:hidden;
   background-image:repeating-linear-gradient(180deg,transparent 0 10px,var(--tick) 10px 11.5px)}
 #fine::after{content:"";position:absolute;left:7px;right:7px;top:50%;height:3px;margin-top:-1.5px;background:var(--acc);border-radius:2px}
 #fineLab{position:absolute;left:0;right:0;top:0;padding:7px 0 5px;text-align:center;font-size:10.5px;color:var(--sub);background:var(--panel)}
-#spinBtn{position:absolute;right:10px;bottom:14px;width:60px;height:60px;border-radius:50%;background:#f1ecdf;border:1px solid rgba(255,255,255,.4);box-shadow:0 1px 2px rgba(0,0,0,.1),0 6px 16px rgba(0,0,0,.16)}
-#spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:#d8352c}
+#spinBtn{position:absolute;right:10px;bottom:14px;width:60px;height:60px;border-radius:50%;border:0;box-shadow:0 2px 4px rgba(0,0,0,.2),0 8px 18px rgba(0,0,0,.28),inset 0 -3px 6px rgba(0,0,0,.12)}
+#spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#ff7a6e,#d8352c 55%,#a61f18);box-shadow:0 1px 2px rgba(0,0,0,.3)}
 #spinPop{position:absolute;right:82px;bottom:14px;background:var(--sheet);border:1px solid var(--bd);border-radius:22px;box-shadow:0 12px 32px rgba(0,0,0,.24);padding:14px;
   display:flex;flex-direction:column;align-items:center;gap:10px}
-#spinPad{position:relative;width:150px;height:150px;border-radius:50%;touch-action:none;background:#f1ecdf;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+#spinPad{position:relative;width:150px;height:150px;border-radius:50%;touch-action:none;box-shadow:0 4px 12px rgba(0,0,0,.25),inset 0 -8px 16px rgba(0,0,0,.14)}
+#spinPad::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(rgba(25,31,40,.16),rgba(25,31,40,.16)) center/1px 72% no-repeat,linear-gradient(rgba(25,31,40,.16),rgba(25,31,40,.16)) center/72% 1px no-repeat;pointer-events:none}
 #spinPad::before{content:"";position:absolute;inset:14%;border-radius:50%;border:1.5px dashed rgba(25,31,40,.25)}
 #spinPad .sdot{width:22px;height:22px;margin:-11px}
 #spinHint{font-size:12.5px;color:var(--sub);text-align:center;max-width:180px;line-height:1.45}
@@ -181,10 +188,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #power,#fine,#spinBtn{transition:opacity .2s}
 
 .portrait #power{left:84px;right:10px;top:auto;bottom:14px;width:auto;height:46px}
-.portrait #powerFill{top:0;bottom:0;right:auto;width:0;height:auto}
-.portrait #powerCue{left:0;top:50%;width:100%;height:8px;transform:translate(calc(-100% + 30px),-50%);border-radius:0 4px 4px 0}
-.portrait #powerNum{left:auto;right:14px;bottom:0;top:0;display:grid;place-items:center}
-.portrait #powerLab{left:auto;right:50px;top:0;bottom:0;display:grid;place-items:center}
+.portrait #power{background-image:repeating-linear-gradient(90deg,transparent 0 23px,var(--tick) 23px 24px)}
+.portrait #powerBall{left:8px;top:50%;margin:-12px 0 0}
+.portrait #powerCue{left:0;top:50%;width:100%;height:13px;transform:translate(34px,-50%);background:var(--cue-h,#d9b98a);clip-path:polygon(0 22%,100% 0,100% 100%,0 78%)}
+.portrait #powerCue::after{background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(255,255,255,.22) 38%,rgba(0,0,0,0) 55%,rgba(0,0,0,.32))}
+.portrait #powerNum{left:auto;right:5px;top:5px;bottom:5px;padding:0 12px 0 40px;display:grid;place-items:center}
+.portrait #powerLab{left:auto;right:42px;top:0;bottom:0;display:grid;place-items:center}
 .portrait #fine{left:84px;right:10px;top:auto;bottom:70px;width:auto;height:32px;
   background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--tick) 10px 11.5px)}
 .portrait #fine::after{left:50%;right:auto;top:6px;bottom:6px;width:3px;height:auto;margin:0 0 0 -1.5px}
@@ -347,7 +356,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   <div id="fps" hidden></div>
 
   <div id="power" aria-label="샷 세기" hidden>
-    <div id="powerFill"></div><div id="powerCue"></div>
+    <div id="powerBall"></div><div id="powerCue"></div>
     <div id="powerLab">세기</div><div id="powerNum">0</div>
   </div>
   <div id="fine" aria-label="미세 조준" hidden><div id="fineLab">미세</div></div>

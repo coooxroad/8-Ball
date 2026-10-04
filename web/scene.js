@@ -6,7 +6,7 @@ function createScene(canvas, app, PH) {
   if (!window.THREE) return null;
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
-  const RW = 0.095, RAIL_Z = 0.04, FOV = 34;
+  const RW = 0.095, RAIL_Z = 0.04, FOV = 40;
   const LAMPS = [[-0.78, 0, 1.05], [0, 0, 1.05], [0.78, 0, 1.05]];   // three shades hanging over the long axis
   const CW = PH.pool.CW;
   let cur = PH.pool;                                                  // the table being shown
@@ -93,16 +93,49 @@ function createScene(canvas, app, PH) {
   const feltTex = tex(fc, 9);
   const feltMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1 });
   const cushMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1, side: THREE.DoubleSide });
-  const wc = mkCanvas(512, 512), wg = wc.getContext('2d');
-  wg.fillStyle = '#c9a27c'; wg.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 420; i++) {
-    const y = Math.random() * 512, a = 0.05 + Math.random() * 0.16;
-    wg.strokeStyle = Math.random() < 0.6 ? `rgba(40,20,8,${a})` : `rgba(255,220,170,${a * 0.6})`;
-    wg.lineWidth = 0.6 + Math.random() * 2.2; wg.beginPath(); wg.moveTo(0, y);
-    wg.bezierCurveTo(170, y + (Math.random() - 0.5) * 16, 340, y + (Math.random() - 0.5) * 16, 512, y); wg.stroke();
-  }
-  const woodMat = new THREE.MeshPhysicalMaterial({ map: tex(wc, 1.4), roughness: 0.42, metalness: 0, clearcoat: 0.9, clearcoatRoughness: 0.12, envMapIntensity: 0.45 });
-  const metalMat = new THREE.MeshStandardMaterial({ color: col(0xb08d4a), roughness: 0.34, metalness: 1, envMapIntensity: 0.9 });
+  /* Wood. The picture is a plank seen along the grain: growth rings stretched into long wavy bands, fine pores,
+     a few darker streaks. The material then lays it along each rail and joins the rails at 45 degrees. */
+  const wc = mkCanvas(1024, 512), wg = wc.getContext('2d');
+  (function wood() {
+    const W = 1024, H = 512, id = wg.createImageData(W, H), d = id.data;
+    // smooth repeatable noise (value noise on a lattice that wraps, so the texture tiles)
+    const N = 64, lat = new Float32Array(N * N); for (let i = 0; i < N * N; i++) lat[i] = Math.random();
+    const sm = t => t * t * (3 - 2 * t);
+    const noise = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), a = ((xi % N) + N) % N, b = ((yi % N) + N) % N, a1 = (a + 1) % N, b1 = (b + 1) % N;
+      return (lat[b * N + a] * (1 - fx) + lat[b * N + a1] * fx) * (1 - fy) + (lat[b1 * N + a] * (1 - fx) + lat[b1 * N + a1] * fx) * fy;
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = x / W * N, v = y / H * N;                                    // lattice coordinates; whole periods keep it seamless
+      const warp = noise(u * 0.125, v * 0.25) * 1.5 + noise(u * 0.375, v * 0.75) * 0.35;        // the rings wander slowly along the plank
+      const ring = v * 0.42 + warp, f = ring - Math.floor(ring);
+      const late = Math.pow(f, 5);                                                   // each ring ends in a thin dark line
+      const band = noise(u * 0.125, v * 0.25);                                       // broad lighter and darker planks
+      const pore = noise(u * 2, v * 16) * noise(u * 4, v * 24);                      // short dark flecks along the grain
+      const fibre = noise(u * 1.5, v * 32);
+      let t = 0.82 - 0.26 * late - 0.18 * band - 0.34 * pore * pore + 0.06 * (fibre - 0.5);
+      t = Math.max(0.25, Math.min(1, t));
+      const k = (y * W + x) * 4;
+      d[k] = 255 * t; d[k + 1] = 255 * (0.8 * t + 0.01); d[k + 2] = 255 * (0.62 * t * t + 0.04); d[k + 3] = 255;   // warm: red stays, blue falls away in the dark parts
+    }
+    wg.putImageData(id, 0, 0);
+  })();
+  const woodTex = tex(wc, 1);
+  const woodU = { uOuter: { value: new THREE.Vector2(1, 1) } };                      // outer half-size of the table currently shown
+  const woodMat = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: 0.36, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
+  woodMat.onBeforeCompile = sh => {
+    sh.uniforms.uOuter = woodU.uOuter;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocal = position;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;\nuniform vec2 uOuter;').replace('#include <map_fragment>', `
+      float dxe = uOuter.x - abs(vLocal.x), dye = uOuter.y - abs(vLocal.y);
+      bool endRail = dxe < dye;                                                      // nearer a short end than a long side
+      vec2 wuv = endRail ? vec2(vLocal.y + 0.31, vLocal.x * sign(vLocal.x) + 0.17) : vec2(vLocal.x, vLocal.y * sign(vLocal.y));
+      wuv.y += vLocal.z * 0.9;                                                       // the grain carries on down the side faces
+      vec4 texelColor = mapTexelToLinear(texture2D(map, wuv * vec2(0.62, 2.3)));
+      texelColor.rgb *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.0016, abs(dxe - dye)));  // the joint where two rails meet
+      diffuseColor *= texelColor;`);
+  };
+  const metalMat = new THREE.MeshStandardMaterial({ color: col(0x9c8a66), roughness: 0.3, metalness: 1, envMapIntensity: 1.3 });   // brushed brass, not paint-yellow
   // soft darkening where the cloth meets the cushions: one continuous inner shadow, no seams at the pockets
   const aoC = mkCanvas(1024, 512), aoG = aoC.getContext('2d');
   aoG.fillStyle = 'rgba(0,0,0,0.42)'; aoG.fillRect(0, 0, 1024, 512);
@@ -110,11 +143,13 @@ function createScene(canvas, app, PH) {
   aoG.filter = 'none'; aoG.globalCompositeOperation = 'source-over';
   const aoMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aoC), transparent: true, depthWrite: false });
 
+  const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
+  const linerMat = new THREE.MeshStandardMaterial({ color: col(0x1d1815), roughness: 0.7, metalness: 0, envMapIntensity: 0.3, side: THREE.DoubleSide });
   const pearl = new THREE.MeshStandardMaterial({ color: col(0xf6efdc), roughness: 0.3, metalness: 0, envMapIntensity: 0.8 });
   const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false });
 
   function buildTable(P) {
-    const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.007;
+    const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
     // cloth bed
     const bx = HL + 0.105, by = HW + 0.118;
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
@@ -126,7 +161,7 @@ function createScene(canvas, app, PH) {
     dot(HL / 2, 0); dot(-HL / 2, 0);
     if (P.POCKETED) { const line = new THREE.Mesh(new THREE.PlaneGeometry(0.003, HW * 2), markMat); line.position.set(-HL / 2, 0, 0.0004); grp.add(line); } else dot(0, 0);
     // pocket pits
-    const pit = new THREE.MeshBasicMaterial({ color: 0x0b0908, side: THREE.BackSide }), pitB = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const pit = new THREE.MeshStandardMaterial({ color: col(0x1a1613), roughness: 0.75, metalness: 0, envMapIntensity: 0.25, side: THREE.BackSide }), pitB = new THREE.MeshBasicMaterial({ color: 0x000000 });
     for (const p of POCKETS) {
       const w = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.86, 0.16, 36, 1, true), pit);
       w.rotation.x = Math.PI / 2; w.position.set(p.x, p.y, -0.08); grp.add(w);
@@ -151,12 +186,23 @@ function createScene(canvas, app, PH) {
       for (const i of [1, 2, 3, 4, 5, 0]) { const a = arcs[i]; hole.lineTo(a.e[0], a.e[1]); hole.absarc(a.p.x, a.p.y, a.p.r, a.a0, a.a1, true); }
             for (const a of arcs) {
         let len = a.a0 - a.a1; while (len < 0) len += Math.PI * 2;
-        const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev, a.p.r + 0.019, 40, 1, a.a1, len), metalMat);
+        // a brass plate let into the rail, a black rubber lip standing on its inner edge, and a leather liner down the cut
+        const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.002, a.p.r + bev + 0.012, 48, 1, a.a1, len), metalMat);
         m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); grp.add(m);
+        const lip = new THREE.Mesh(new THREE.TorusGeometry(a.p.r + 0.0035, 0.006, 10, 48, len), lipMat);
+        lip.rotation.z = a.a1; lip.position.set(a.p.x, a.p.y, RAIL_Z - 0.001); lip.castShadow = true; grp.add(lip);
+        const lv = [], ln = [], seg = 32;
+        for (let k = 0; k < seg; k++) {
+          const t0 = a.a1 + len * k / seg, t1 = a.a1 + len * (k + 1) / seg, r = a.p.r - 0.0012;
+          const q = (t, z) => { lv.push(a.p.x + Math.cos(t) * r, a.p.y + Math.sin(t) * r, z); ln.push(-Math.cos(t), -Math.sin(t), 0); };
+          q(t0, RAIL_Z); q(t0, -0.02); q(t1, RAIL_Z); q(t1, RAIL_Z); q(t0, -0.02); q(t1, -0.02);
+        }
+        const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lv, 3)); lg.setAttribute('normal', new THREE.Float32BufferAttribute(ln, 3));
+        const liner = new THREE.Mesh(lg, linerMat); liner.receiveShadow = true; grp.add(liner);
       }
     } else { hole.moveTo(-Xb, -Yb); hole.lineTo(-Xb, Yb); hole.lineTo(Xb, Yb); hole.lineTo(Xb, -Yb); hole.closePath(); }
     rail.holes.push(hole);
-    const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 4, curveSegments: 24 });
+    const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
     rg.translate(0, 0, RAIL_Z - 0.12 - bev);
     const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
     // sights
@@ -169,13 +215,14 @@ function createScene(canvas, app, PH) {
       const back = pt => cu.o[0] !== 0 ? [cu.o[0] * Xb, pt[1]] : [pt[0], cu.o[1] * Yb];
       const top = [[...cu.ja, 0.038], [...cu.a, 0.0355], [...cu.b, 0.0355], [...cu.jb, 0.038], [...back(cu.jb), RAIL_Z], [...back(cu.ja), RAIL_Z]];
       const v = [], uv = [];
-      const tri = (a, b, c) => { for (const p of [a, b, c]) { v.push(p[0], p[1], p[2]); uv.push(p[0], p[1]); } };
+      // wall: the steep faces get plain cloth colour, because a texture seen that edge-on only shimmers
+      const tri = (a, b, c, wall) => { for (const p of [a, b, c]) { v.push(p[0], p[1], p[2]); if (wall) uv.push(0.5, 0.5); else uv.push(p[0], p[1]); } };
       for (let i = 1; i < 5; i++) tri(top[0], top[i], top[i + 1]);
-      for (let i = 0; i < 3; i++) { const a = top[i], b = top[i + 1], a0 = [a[0], a[1], 0], b0 = [b[0], b[1], 0]; tri(a, a0, b); tri(b, a0, b0); }
+      for (let i = 0; i < 3; i++) { const a = top[i], b = top[i + 1], a0 = [a[0], a[1], 0], b0 = [b[0], b[1], 0]; tri(a, a0, b, true); tri(b, a0, b0, true); }
       const g2 = new THREE.BufferGeometry();
       g2.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g2.computeVertexNormals();
-      const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.receiveShadow = true; grp.add(m);
+      const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; grp.add(m);   // no shadows on it: at these slopes they only band
     }
     grp.visible = false; sScene.add(grp);
     return grp;
@@ -192,6 +239,7 @@ function createScene(canvas, app, PH) {
     for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
     // the lamps hang over this table's long axis
     [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * P.HL; });
+    woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     lampObjs.forEach((l, i) => { const x = LAMPS[i % 3][0]; l.position.x = x; l.target.position.x = x; l.target.updateMatrixWorld(); });
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
@@ -199,7 +247,7 @@ function createScene(canvas, app, PH) {
   }
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0];
-    feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(1.5);
+    feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
     staticDirty = true; dirty = 3;
   }
 
