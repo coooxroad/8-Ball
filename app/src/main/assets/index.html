@@ -15,7 +15,7 @@ body{margin:0}
 </style>
 </head>
 <body>
-<title>브레이크타임</title>
+<title>CUE</title>
 <style>
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
@@ -83,7 +83,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
 .logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
-.logo .word{font-size:22px;font-weight:var(--w-title);letter-spacing:-.02em;white-space:nowrap}
+.logo .word{font-family:'Outfit',sans-serif;font-size:24px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
 .logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
 [data-theme="light"] .logo .en{display:none}
 @media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
@@ -234,6 +234,42 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
+/* ---------- league ---------- */
+#league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
+.lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
+.lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
+#lgTabs{min-width:230px}
+#lgTabs button{height:38px;font-size:14px}
+#lgBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.lt{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r-card);box-shadow:var(--sh);overflow:hidden}
+.ltr{display:grid;grid-template-columns:var(--cols);align-items:center;gap:6px;padding:11px 18px 11px 16px;font-size:15.5px;position:relative;color:var(--fg)}
+.ltr+.ltr,.fx+.fx{border-top:1px solid var(--hair)}
+.ltr.hd{font-size:11.5px;color:var(--sub);padding-block:9px}
+.ltr.hd span{font-family:inherit!important;font-weight:inherit!important}
+.ltr.top::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
+.ltr .pos{font-family:var(--num);color:var(--sub);font-size:14px}
+.ltr .nm{font-weight:var(--w-name);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltr .n{font-family:var(--num);font-weight:var(--num-w);text-align:center}
+.ltr .pts{font-weight:700}
+.ltr .fc{text-align:right}
+.form{display:flex;gap:4px;justify-content:flex-end}
+.form i{width:20px;height:20px;border-radius:50%;font-style:normal;font-size:10.5px;font-weight:700;display:grid;place-items:center;color:#fff}
+.form .w{background:#1f9d6b}.form .l{background:var(--foul)}
+.rd{font-size:12px;color:var(--sub);padding:8px 4px 0}
+.fx{display:grid;grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);align-items:center;gap:14px;padding:9px 18px;font-size:16px}
+.fx .a{text-align:right}.fx .a,.fx .b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx .sc{font-family:var(--num);font-weight:var(--num-w);font-size:18px;text-align:center}
+.fx .win{font-weight:700}.fx .lose{color:var(--sub)}
+.fx .btn{height:36px;padding:0;font-size:14px}.fx .btn.cta{height:36px;font-size:14px}
+.champ{display:flex;align-items:baseline;gap:12px;padding:16px 20px}
+.champ b{font-size:24px;font-weight:var(--w-title)}.champ .k{font-size:13px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chipn{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:7px 7px 7px 15px;font-size:15px}
+.chipn button{width:26px;height:26px;border-radius:50%;background:var(--opt);color:var(--sub);font-size:16px;line-height:1}
+.addrow .txt{flex:3;font-size:17px;padding:9px 14px}.addrow .btn{flex:1}
+#league .btn.cta{margin-top:4px}
+@media (max-width:560px){.ltr .fc,.ltr .xs{display:none}.ltr{grid-template-columns:26px minmax(0,1fr) 34px 34px 34px 44px!important}.lg-top{flex-wrap:wrap}.lg-top h1{order:-1;flex-basis:100%}#lgTabs{flex:1}}
+
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
 .r-title{font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
@@ -282,9 +318,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
   <section id="home">
     <header class="h-top">
-      <div class="logo"><span class="mark"><i>8</i></span><span class="word">브레이크타임</span><span class="en">BREAK TIME</span></div>
+      <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
       <div class="h-actions">
-        <button class="btn" id="recBtn">전적</button>
+        <button class="btn" id="recBtn">리그</button>
         <button class="btn icon" id="setBtn" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
       </div>
     </header>
@@ -344,6 +380,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div id="sheetBody"></div>
     </div>
   </div>
+
+  <section id="league" hidden>
+    <header class="lg-top">
+      <button class="btn" id="lgBack">처음으로</button>
+      <h1>리그</h1>
+      <div class="seg" id="lgTabs"><button data-v="league">리그전</button><button data-v="all">전체 전적</button></div>
+    </header>
+    <div id="lgBody"></div>
+  </section>
 
   <section id="result" hidden>
     <div class="r-title">WINNER</div>
@@ -510,7 +555,7 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
-    if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn });
+    if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y });
   }
 
   function sub(w, h) {
@@ -533,7 +578,7 @@ function createPhysics(cfg) {
           if (w.ev.firstHit == null) w.ev.firstHit = o;
           if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
         }
-        if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel });
+        if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
       }
     }
     for (let i = 0; i < n; i++) {
@@ -564,7 +609,7 @@ function createPhysics(cfg) {
                 const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = 0.4 * b.hot;
                 b.vx = ox / ol * out; b.vy = oy / ol * out;
               }
-              if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6 });
+              if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6, x: b.x, y: b.y });
             }
           }
         }
@@ -1216,6 +1261,44 @@ function createDrills() {
   }
   return { list, LEVELS, byId, make, judge, hint };
 }
+/* League: everyone plays everyone, results make a table. Plain data in, plain data out; no DOM in here.
+   league = { mode, target, names: [...], fx: [{ r: round, a, b, w: null | 0 | 1, sa, sb }] }   (a, b: indexes into names; w: which of the two won) */
+function createLeague() {
+  const WIN_PTS = 3;
+  // Round-robin by the circle method: one player stays put, the rest rotate. An odd count gets a rest slot.
+  function fixtures(n, legs) {
+    const ids = []; for (let i = 0; i < n; i++) ids.push(i);
+    if (n % 2) ids.push(-1);
+    const m = ids.length, out = [];
+    for (let leg = 0; leg < (legs || 1); leg++) for (let r = 0; r < m - 1; r++) {
+      for (let k = 0; k < m / 2; k++) {
+        const x = ids[k], y = ids[m - 1 - k]; if (x < 0 || y < 0) continue;
+        const swap = (r + k + leg) % 2 === 1;                    // alternate who breaks
+        out.push({ r: leg * (m - 1) + r + 1, a: swap ? y : x, b: swap ? x : y, w: null, sa: 0, sb: 0 });
+      }
+      ids.splice(1, 0, ids.pop());
+    }
+    return out;
+  }
+  function create(names, mode, target, legs) { return { mode, target: target || 10, names: names.slice(), fx: fixtures(names.length, legs) }; }
+  // rows of the table, best first: points, then wins, then the result between the two, then fewer games played
+  function standings(lg) {
+    const rows = lg.names.map((name, i) => ({ i, name, p: 0, w: 0, l: 0, pts: 0, form: [] }));
+    for (const f of lg.fx) {
+      if (f.w == null) continue;
+      const win = rows[f.w === 0 ? f.a : f.b], lose = rows[f.w === 0 ? f.b : f.a];
+      win.p++; win.w++; win.pts += WIN_PTS; win.form.push('W'); lose.p++; lose.l++; lose.form.push('L');
+    }
+    const beat = (x, y) => lg.fx.some(f => f.w != null && ((f.a === x && f.b === y && f.w === 0) || (f.a === y && f.b === x && f.w === 1)));
+    rows.sort((x, y) => y.pts - x.pts || y.w - x.w || (beat(x.i, y.i) ? -1 : beat(y.i, x.i) ? 1 : 0) || x.l - y.l || x.i - y.i);
+    rows.forEach((r, k) => { r.pos = k + 1; r.form = r.form.slice(-5); });
+    return rows;
+  }
+  const next = lg => lg.fx.findIndex(f => f.w == null);            // -1 when every game has been played
+  const done = lg => lg.fx.every(f => f.w != null);
+  function record(lg, i, winner, sa, sb) { const f = lg.fx[i]; f.w = winner; f.sa = sa || 0; f.sb = sb || 0; }
+  return { create, fixtures, standings, next, done, record, WIN_PTS };
+}
 /* How things look: cloth colours, cue designs, ball colours. Plain data, shared by the 3D scene and the menus. */
 const CLOTHS = [
   { id: 'teal', name: '딥 틸', felt: 0x0e8ba3, wood: 0x6a3a20 },
@@ -1588,7 +1671,7 @@ function createScene(canvas, app, PH) {
     return { x: o.x + d.x * t, y: o.y + d.y * t };
   }
 
-  const falls = [];
+  const falls = [], fallEvents = [];   // fallEvents: what a dropping ball just did (hit the pocket wall, landed), for the sound
   // A pocketed ball keeps rolling over the lip, drops under gravity and rattles down inside the pocket.
   const fallAxis = new THREE.Vector3();
   function fall(P, e) {
@@ -1630,13 +1713,13 @@ function createScene(canvas, app, PH) {
         if (f.z < R * 0.5 && d > lim) {                                    // knocks against the pocket wall
           const nx = dx / d, ny = dy / d, vn = f.vx * nx + f.vy * ny;
           f.x = p.x + nx * lim; f.y = p.y + ny * lim;
-          if (vn > 0) { f.vx -= 1.35 * vn * nx; f.vy -= 1.35 * vn * ny; }
+          if (vn > 0) { f.vx -= 1.35 * vn * nx; f.vy -= 1.35 * vn * ny; if (vn > 0.12) fallEvents.push({ t: 'wall', v: vn, x: f.x, y: f.y }); }
         }
         const sp = Math.hypot(f.vx, f.vy);
         if (m && sp > 1e-3) { fallAxis.set(-f.vy / sp, f.vx / sp, 0); m.rotateOnWorldAxis(fallAxis, sp * h / R); }
       }
       if (m) { m.visible = f.z > -0.11; m.scale.setScalar(R); m.position.set(f.x, f.y, f.z); m.material.color.setScalar(Math.max(0.12, Math.min(1, 1 + f.z * 9))); }
-      if (f.z <= -0.11) falls.splice(i, 1);
+      if (f.z <= -0.11) { fallEvents.push({ t: 'land', v: Math.hypot(f.vx, f.vy, f.vz), x: f.x, y: f.y }); falls.splice(i, 1); }
     }
     const c = w.balls[w.cue];
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
@@ -1710,7 +1793,7 @@ function createScene(canvas, app, PH) {
 
   return {
     setTable, setCloth, setCue, setBackdrop, setZone, setInsets, setQuality, resize, toTable, frame, fall,
-    invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
+    invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
 }
@@ -1744,10 +1827,12 @@ function createBilliardsSamples(ac) {
   }
   return result;
 }
-/* Sound. Ball and cue hits are short recordings (sounds.js); cushion and pocket are built from a few damped
-   resonances. Everything goes through one small "room" and one limiter. The game only says what happened and how hard. */
+/* Sound. Ball and cue hits are short recordings (sounds.js); cushion, pocket and interface sounds are built from
+   a few damped resonances. Table sounds go through one small "room"; interface sounds stay dry.
+   The game only reports what happened, how hard, and where on the table (pan, -1 left .. 1 right):
+   nothing here runs on a timer, so what is heard is what is seen. */
 function createAudio(isOn) {
-  let ac = null, out = null, buf = null;
+  let ac = null, out = null, ui = null, buf = null, roll = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
 
@@ -1801,6 +1886,7 @@ function createAudio(isOn) {
       const master = ac.createGain(); master.gain.value = 0.85;
       out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
       const rm = room(); out.connect(rm.input); rm.output.connect(lim);
+      ui = ac.createGain(); ui.gain.value = 0.9; ui.connect(master);
       const recorded = createBilliardsSamples(ac);
       const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
       const pock = [[310, 0.026, 0.5], [490, 0.017, 0.4], [830, 0.008, 0.22]];
@@ -1808,17 +1894,27 @@ function createAudio(isOn) {
         ball: recorded.ball, cue: recorded.cue,
         rail: [make(0.12, 0.003, rail, [0.15, 0.1, 0.014])],
         pock: [make(0.18, 0.002, pock, [0.2, 0.12, 0.035])],
-        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],
+        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],                                 // the ball settling at the bottom of the pocket
+        tick: [make(0.05, 0.0005, [[1250, 0.005, 0.5], [2600, 0.0025, 0.25], [620, 0.009, 0.2]])],           // a fingernail on wood
+        note: [make(0.6, 0.001, [[523.25, 0.16, 0.6], [1046.5, 0.07, 0.22], [2093, 0.03, 0.08]])],           // one soft mallet note (C5)
       };
+      // balls rolling on cloth: a low murmur that follows how much is moving
+      const rn = Math.floor(ac.sampleRate * 1.5), rb = ac.createBuffer(1, rn, ac.sampleRate), rd = rb.getChannelData(0);
+      let lp = 0; for (let i = 0; i < rn; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.06; rd[i] = lp * 3; }
+      for (let i = 0; i < 2000; i++) { const k = i / 2000; rd[i] = rd[i] * k + rd[rn - 2000 + i] * (1 - k); }   // the loop point is cross-faded
+      const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = rb; src.loop = true; src.loopEnd = (rn - 2000) / ac.sampleRate; bp.type = 'bandpass'; bp.frequency.value = 260; bp.Q.value = 0.6; g.gain.value = 0;
+      src.connect(bp); bp.connect(g); g.connect(out); src.start();
+      roll = { bp, g };
       resume();
     } catch (e) {
       if (ac) ac.close().catch(() => {});
-      ac = null; out = null; buf = null;
+      ac = null; out = null; ui = null; buf = null; roll = null;
     }
   }
   const ready = () => ac && buf && isOn();
 
-  function hit(name, gain, bright, at = 0, rate = 1, layer = -1) {
+  function hit(name, gain, bright, at = 0, rate = 1, layer = -1, pan = 0, bus = out) {
     if (!ready() || gain <= 0 || voices.size >= 48) return;
     const list = buf[name];
     // do not play the identical recording twice in a row
@@ -1828,13 +1924,16 @@ function createAudio(isOn) {
     const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
     s.buffer = list[index]; s.playbackRate.value = rate;
     f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
-    s.connect(f); f.connect(g); g.connect(out); voices.add(s);
-    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
+    s.connect(f); f.connect(g);
+    const p = pan && ac.createStereoPanner ? ac.createStereoPanner() : null;
+    if (p) { p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); p.connect(bus); } else g.connect(bus);
+    voices.add(s);
+    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); if (p) p.disconnect(); voices.delete(s); };
     s.start(t);
   }
   // Several contacts in the same instant (a break) are all kept, slightly staggered and capped, so they neither
   // collapse into one click nor overload the device.
-  function impact(name, v, scale, level, low, high, max) {
+  function impact(name, v, scale, level, low, high, max, pan) {
     if (!ready() || !Number.isFinite(v) || v <= 0) return;
     const burst = bursts[name], now = ac.currentTime;
     if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
@@ -1847,38 +1946,47 @@ function createAudio(isOn) {
       if (voices.size > 46) return;
       const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
       const a = Math.min(1, Math.floor(position)), u = position - a, mix = u * u * (3 - 2 * u);
-      hit(name, gain * (1 - mix), bright, at, rate, a);
-      hit(name, gain * mix, bright, at, rate, a + 1);
-    } else hit(name, gain, bright, at, rate);
+      hit(name, gain * (1 - mix), bright, at, rate, a, pan);
+      hit(name, gain * mix, bright, at, rate, a + 1, pan);
+    } else hit(name, gain, bright, at, rate, -1, pan);
   }
-  // interface blips stay dry: they are not in the room
-  function tone(freq, dur, gain, to, at) {
-    if (!ac || !isOn()) return;
-    const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
-    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(ac.destination); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t); o.stop(t + dur + 0.02);
-  }
+  // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
+  const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
   return {
     init,
-    ball(v) { impact('ball', v, 5, 0.95, 2200, 6300, 6); },
-    rail(v) { impact('rail', v, 4, 0.48, 750, 1700, 3); },
-    pocket() { hit('pock', 0.48, 2400); hit('roll', 0.13, 1100, 0.035); hit('pock', 0.17, 1500, 0.115, 0.87); },
-    cue(v) {
+    ball(v, pan) { impact('ball', v, 5, 0.95, 2200, 6300, 6, pan); },
+    rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },
+    cue(v, pan) {
       if (!Number.isFinite(v) || v <= 0) return;
       const k = Math.min(1, v / 9);
-      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k);
+      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k, -1, pan);
     },
-    tap() { tone(520, 0.05, 0.12, 1.5); },
-    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
-    good() { tone(660, 0.09, 0.16, 1.5); tone(990, 0.14, 0.14, 1, 0.08); },
-    bad() { tone(240, 0.16, 0.14, 0.7); },
+    // A ball going down, reported stage by stage by the animation itself:
+    //   lip  - it tips over the edge (speed it arrived with)      wall - it knocks the inside of the pocket
+    //   land - it reaches the bottom
+    drop(stage, v, pan) {
+      if (!ready() || !Number.isFinite(v)) return;
+      if (stage === 'lip') { const k = Math.min(1, v / 3); hit('rail', 0.1 + 0.22 * k, 900 + 1400 * k, 0, 1.25, -1, pan); }
+      else if (stage === 'wall') { const k = Math.min(1, v / 1.5); hit('pock', 0.12 + 0.34 * k, 1400 + 1800 * k, 0, 1.12 + Math.random() * 0.06, -1, pan); }
+      else { const k = Math.min(1, v / 2.6); hit('pock', 0.3 + 0.3 * k, 1700 + 900 * k, 0, 0.92, -1, pan); hit('roll', 0.1 + 0.08 * k, 1000, 0.01, 1, -1, pan); }
+    },
+    // how much is rolling right now (sum of ball speeds, m/s); 0 when the table is still
+    rolling(amount) {
+      if (!ac || !roll) return;
+      const k = isOn() ? Math.min(1, amount / 6) : 0, t = ac.currentTime;
+      roll.g.gain.setTargetAtTime(0.05 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
+    },
+    tap() { uiHit('tick', 0.22, 5000, 0, 1); },
+    good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
+    bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
+    win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }
 /* App shell. It owns the screens, the input and the frame loop, and nothing else:
      physics.js  how balls move            game.js    rules, turns, computer player
      drills.js   practice layouts          scene.js   drawing
      audio.js    sound                     look.js    colours and designs (data)
+     league.js   fixtures and tables
    What happens around a shot depends on what is being played, so that part lives in three small "flows"
    (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
@@ -1903,7 +2011,7 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, quality: 'auto', fps: false }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, haptics: true, quality: 'auto', fps: false }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -1918,17 +2026,20 @@ const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pocke
 const game = createGame(PH);
 const drills = createDrills();
 const SND = createAudio(() => prefs.sound);
+const league = createLeague();
+let lg = store.get('league', null);                       // the league in progress, if any
+const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
-const recOf = n => rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 });
+const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result
+   screen: home | play | result | league
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { human: false, screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -1970,15 +2081,19 @@ function toast(msg, kind, ms) {
   t.textContent = msg; t.className = 'show ' + (kind || '');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 1800);
 }
+// where on the screen a table position is, left (-1) to right (1), kept gentle
+const panOf = (x, y) => 0.45 * Math.max(-1, Math.min(1, scene.portrait ? -y / game.P.HW : x / game.P.HL));
+// a short tap in the hand: only for the player's own shots, never for the computer's or a demo
+const buzz = ms => { if (prefs.haptics && st.human && flow && !flow.quiet && navigator.vibrate) { try { navigator.vibrate(Math.round(ms)); } catch (e) {} } };
 const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
 
 /* ================= screens and layout ================= */
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  $('#home').hidden = screen !== 'home'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result';
+  $('#home').hidden = screen !== 'home'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
-  $('#spinPop').hidden = true; closeSheet();
+  $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   layout();
 }
@@ -2041,7 +2156,7 @@ function sheetCue() {
 // one guide length per player (a handicap); a single row when only one person is aiming
 function sheetGuide() {
   const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' : flow !== match);
-  const row = i => segRow(solo ? '조준선' : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
+  const row = i => segRow(solo ? '조준선' : st.screen === 'play' ? game.players[i].name : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
   openSheet('조준선 길이', [row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
 }
@@ -2049,17 +2164,11 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    segRow('진동', [[true, '켬'], [false, '끔']], prefs.haptics, v => { prefs.haptics = v; savePrefs(); if (v && navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.'),
   ]);
-}
-function sheetRecords() {
-  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w);
-  const grid = el('div', { class: 'rec' }, [el('span', { class: 'hd', text: '이름' }), el('span', { class: 'hd n', text: '승' }), el('span', { class: 'hd n', text: '패' }), el('span', { class: 'hd n', text: '최다 연승' })]);
-  for (const n of names) { const r = rec[n]; grid.append(el('span', { text: n }), el('span', { class: 'n', text: r.w }), el('span', { class: 'n', text: r.l }), el('span', { class: 'n', text: r.best })); }
-  openSheet('전적', [names.length ? grid : note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 승패가 쌓입니다.'),
-    names.length ? flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); }) : null]);
 }
 function sheetName(i) {
   if (i === 1 && prefs.vsAI) return;
@@ -2149,6 +2258,7 @@ function beginTurn(first) {
   flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
+  st.human = st.phase === 'aim';
   flow.beforeShot(); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
@@ -2194,15 +2304,17 @@ const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.
 /* ================= flow: a match between two players (or one and the computer) ================= */
 const match = {
   quiet: false, save: true,
-  start(first) {
+  ctx: null,                                              // who is playing what; fix: the league game this is, if any
+  start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
-    const names = [prefs.names[0], oppName()], key = names.join('\u0001') + prefs.mode;
+    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
+    const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(prefs.mode, names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: first || 0 });
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 });
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
-  restart() { match.start(game.turn); },
+  restart() { match.start(game.turn, match.ctx); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: 0, b: 0, pos: p.pos }; } } : null,
   beforeShot() {},
@@ -2219,7 +2331,11 @@ const match = {
   finish() {
     const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
     const rw = recOf(pw.name), rl = recOf(pl.name);
-    rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0; store.set('rec', rec);
+    rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
+    rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
+    const fix = match.ctx ? match.ctx.fix : null, target = !!game.mode.target;
+    if (fix != null && lg && lg.fx[fix]) { league.record(lg, fix, w, target ? game.players[0].score : w === 0 ? 1 : 0, target ? game.players[1].score : w === 1 ? 1 : 0); saveLeague(); }
+    $('#againBtn').textContent = fix != null ? '리그로' : '한 판 더';
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
     const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
     win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
@@ -2348,13 +2464,74 @@ function playDemo(shot, opts) {
   beginTurn(true);
 }
 
+/* ================= league and records (laid out like a football league table) ================= */
+let lgTab = 'league', lgDraft = null;
+const cell = (cls, text) => el('span', { class: cls, text: String(text) });
+const formChips = form => el('span', { class: 'form fc' }, (form || []).map(f => el('i', { class: f === 'W' ? 'w' : 'l', text: f === 'W' ? '승' : '패' })));
+// head: [[label, class]], rows: arrays of cells (text, or a ready element)
+function leagueTable(cols, head, rows, topCount) {
+  const mk = (cells, cls) => el('div', { class: 'ltr ' + cls, style: '--cols:' + cols }, cells.map((c, k) => c instanceof Node ? c : cell(head[k][1], c)));
+  return el('div', { class: 'lt' }, [mk(head.map(h => h[0]), 'hd')].concat(rows.map((r, k) => mk(r, k < (topCount || 0) ? 'top' : ''))));
+}
+function showLeague() { show('league'); st.phase = 'idle'; flow = null; paintLeague(); $('#league').scrollTop = 0; }
+function paintLeague() {
+  for (const b of $('#lgTabs').children) b.setAttribute('aria-pressed', String(b.dataset.v === lgTab));
+  const body = $('#lgBody'); body.textContent = '';
+  const add = (...kids) => { for (const k of kids) if (k) body.appendChild(k); };
+  if (lgTab === 'all') {
+    const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
+    if (!names.length) return add(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.'));
+    add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 56px 124px 52px',
+      [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승률', 'n'], ['최근 5경기', 'fc'], ['연승', 'n xs']],
+      names.map((n, k) => { const r = recOf(n); return [k + 1, n, r.w + r.l, r.w, r.l, Math.round(r.w / (r.w + r.l) * 100) + '%', formChips(r.form), r.best]; }), 1),
+      flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintLeague(); }));
+    return;
+  }
+  if (!lg) return leagueSetup(add);
+  const rows = league.standings(lg), over = league.done(lg), nextUp = league.next(lg);
+  if (over) add(el('div', { class: 'champ panel' }, [el('span', { class: 'k', text: '우승' }), el('b', { text: rows[0].name }), el('span', { class: 'k', text: `${rows[0].w}승 ${rows[0].l}패` })]));
+  add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 52px 124px',
+    [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승점', 'n pts'], ['최근 5경기', 'fc']],
+    rows.map(r => [r.pos, r.name, r.p, r.w, r.l, r.pts, formChips(r.form)]), 1));
+  let round = 0, box = null;
+  lg.fx.forEach((f, i) => {
+    if (f.r !== round) { round = f.r; add(el('div', { class: 'rd', text: `${round}라운드` })); box = el('div', { class: 'lt' }); add(box); }
+    const played = f.w != null;
+    const mid = played ? el('span', { class: 'sc', text: `${f.sa} : ${f.sb}` })
+      : el('button', { class: 'btn' + (i === nextUp ? ' cta' : ' flat'), text: '시작', onclick: () => { SND.init(); SND.tap(); match.start(0, { names: [lg.names[f.a], lg.names[f.b]], mode: lg.mode, ai: false, target: lg.target, fix: i }); } });
+    box.appendChild(el('div', { class: 'fx' }, [cell('a ' + (played ? f.w === 0 ? 'win' : 'lose' : ''), lg.names[f.a]), mid, cell('b ' + (played ? f.w === 1 ? 'win' : 'lose' : ''), lg.names[f.b])]));
+  });
+  add(flatBtn(over ? '새 리그 만들기' : '리그 끝내기', () => openSheet(over ? '새 리그' : '리그 끝내기', [note(over ? '이 리그의 순위표는 지워지고 새 리그를 만듭니다. 전체 전적은 그대로 남습니다.' : '남은 경기와 순위표가 지워집니다. 전체 전적은 그대로 남습니다.'),
+    el('button', { class: 'btn cta', text: '지우기', onclick: () => { lg = null; saveLeague(); closeSheet(); paintLeague(); } })])));
+}
+function leagueSetup(add) {
+  const d = lgDraft || (lgDraft = { names: prefs.names.slice(), mode: prefs.mode === 'practice' ? 'eight' : prefs.mode, legs: 1 });
+  const input = el('input', { class: 'txt', maxlength: '10', placeholder: '이름', 'aria-label': '참가자 이름', autocomplete: 'off' });
+  const addName = () => {
+    const v = input.value.trim().slice(0, 10); if (!v) return;
+    if (d.names.includes(v)) return toast('같은 이름이 이미 있습니다.', '', 1500);
+    if (d.names.length >= 12) return toast('열두 명까지 넣을 수 있습니다.', '', 1500);
+    d.names.push(v); paintLeague(); setTimeout(() => { const f = $('#lgBody input'); if (f) f.focus(); }, 30);
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addName(); });
+  const n = d.names.length, games = n * (n - 1) / 2 * d.legs;
+  add(el('div', { class: 'lab', text: '참가자' }),
+    el('div', { class: 'chips' }, d.names.map((name, i) => el('span', { class: 'chipn' }, [document.createTextNode(name), el('button', { 'aria-label': name + ' 빼기', text: '×', onclick: () => { d.names.splice(i, 1); paintLeague(); } })]))),
+    el('div', { class: 'row addrow' }, [input, el('button', { class: 'btn flat', text: '추가', onclick: () => { SND.tap(); addName(); } })]),
+    segRow('게임', ['eight', 'nine', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
+    segRow('방식', [[1, '한 번씩'], [2, '두 번씩']], d.legs, v => { d.legs = v; paintLeague(); }),
+    note(n < 2 ? '두 명 이상 넣어 주세요.' : `${n}명이 서로 ${d.legs === 1 ? '한 번씩' : '두 번씩'}, 모두 ${games}경기. 이기면 승점 ${league.WIN_PTS}점.`),
+    el('button', { class: 'btn cta', text: '리그 시작', onclick: () => { if (d.names.length < 2) return toast('두 명 이상 넣어 주세요.', '', 1500); SND.tap(); lg = league.create(d.names, d.mode, prefs.target, d.legs); saveLeague(); lgDraft = null; paintLeague(); } }));
+}
+seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
+
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-press('#setBtn', sheetSettings); press('#recBtn', sheetRecords);
+press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
-press('#againBtn', () => match.start(st.lastLoser == null ? 0 : st.lastLoser));
+press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
@@ -2469,12 +2646,17 @@ window.__back = function () {
 let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
 // what the physics reported since the last frame: sounds to play, balls to drop into pockets
 function drain() {
-  const s = game.world.snd; if (!s.length) return;
-  const quiet = flow.quiet;
+  const s = game.world.snd, quiet = flow.quiet;
   for (const e of s) {
-    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) SND.pocket(); }
-    else if (!quiet) { if (e.t === 'ball') SND.ball(e.v); else if (e.t === 'rail') SND.rail(e.v); }
+    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); buzz(14); } }
+    else if (!quiet) { if (e.t === 'ball') SND.ball(e.v, panOf(e.x, e.y)); else SND.rail(e.v, panOf(e.x, e.y)); }
   }
+  s.length = 0;
+}
+// the pocket animation says when the ball knocks the inside wall and when it lands
+function drainFalls() {
+  const s = scene.fallEvents; if (!s.length) return;
+  if (flow && !flow.quiet) for (const e of s) SND.drop(e.t, e.v, panOf(e.x, e.y));
   s.length = 0;
 }
 function stepSim(dt) {
@@ -2485,7 +2667,7 @@ function stepSim(dt) {
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
-  drain();
+  drain(); SND.rolling(flow.quiet ? 0 : Math.min(8, vmax));
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
   return alpha;
 }
@@ -2499,9 +2681,9 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); buzz(7 + ca.V * 1.6); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
-    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; }
+    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
@@ -2510,6 +2692,8 @@ function frame(now) {
     showCue: lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
     legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
   }, dt);
+  drainFalls();
+  if (paused && st.phase === 'sim') SND.rolling(0);
   if (prefs.fps) {
     fpsN++; fpsT += dt;
     if (fpsT >= 0.5) { $('#fps').textContent = `${Math.round(fpsN / fpsT)} FPS · ${scene.pixelRatio.toFixed(2)}x` + (drew ? '' : ' · 대기'); fpsN = 0; fpsT = 0; }
@@ -2519,7 +2703,7 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, fix: match.ctx ? match.ctx.fix : null };
   store.set('save', d);
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
@@ -2529,11 +2713,13 @@ function start(data) {
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
   if (data && data.v === 2 && data.game && data.game.modeId !== 'practice' && game.restore(data.game)) {
     if (data.series) { series.key = data.series.key; series.s = data.series.s; }
-    prefs.mode = game.modeId; st.aim = data.aim || 0; match.enter();
+    match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target, fix: data.fix == null ? null : data.fix };
+    if (match.ctx.fix == null) prefs.mode = game.modeId;
+    st.aim = data.aim || 0; match.enter();
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, match, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, drills, practice, match, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

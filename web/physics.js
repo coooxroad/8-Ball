@@ -149,7 +149,7 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
-    if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn });
+    if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y });
   }
 
   function sub(w, h) {
@@ -172,7 +172,7 @@ function createPhysics(cfg) {
           if (w.ev.firstHit == null) w.ev.firstHit = o;
           if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
         }
-        if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel });
+        if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
       }
     }
     for (let i = 0; i < n; i++) {
@@ -203,7 +203,7 @@ function createPhysics(cfg) {
                 const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = 0.4 * b.hot;
                 b.vx = ox / ol * out; b.vy = oy / ol * out;
               }
-              if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6 });
+              if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6, x: b.x, y: b.y });
             }
           }
         }

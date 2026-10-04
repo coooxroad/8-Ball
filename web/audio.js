@@ -1,7 +1,9 @@
-/* Sound. Ball and cue hits are short recordings (sounds.js); cushion and pocket are built from a few damped
-   resonances. Everything goes through one small "room" and one limiter. The game only says what happened and how hard. */
+/* Sound. Ball and cue hits are short recordings (sounds.js); cushion, pocket and interface sounds are built from
+   a few damped resonances. Table sounds go through one small "room"; interface sounds stay dry.
+   The game only reports what happened, how hard, and where on the table (pan, -1 left .. 1 right):
+   nothing here runs on a timer, so what is heard is what is seen. */
 function createAudio(isOn) {
-  let ac = null, out = null, buf = null;
+  let ac = null, out = null, ui = null, buf = null, roll = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
 
@@ -55,6 +57,7 @@ function createAudio(isOn) {
       const master = ac.createGain(); master.gain.value = 0.85;
       out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
       const rm = room(); out.connect(rm.input); rm.output.connect(lim);
+      ui = ac.createGain(); ui.gain.value = 0.9; ui.connect(master);
       const recorded = createBilliardsSamples(ac);
       const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
       const pock = [[310, 0.026, 0.5], [490, 0.017, 0.4], [830, 0.008, 0.22]];
@@ -62,17 +65,27 @@ function createAudio(isOn) {
         ball: recorded.ball, cue: recorded.cue,
         rail: [make(0.12, 0.003, rail, [0.15, 0.1, 0.014])],
         pock: [make(0.18, 0.002, pock, [0.2, 0.12, 0.035])],
-        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],
+        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],                                 // the ball settling at the bottom of the pocket
+        tick: [make(0.05, 0.0005, [[1250, 0.005, 0.5], [2600, 0.0025, 0.25], [620, 0.009, 0.2]])],           // a fingernail on wood
+        note: [make(0.6, 0.001, [[523.25, 0.16, 0.6], [1046.5, 0.07, 0.22], [2093, 0.03, 0.08]])],           // one soft mallet note (C5)
       };
+      // balls rolling on cloth: a low murmur that follows how much is moving
+      const rn = Math.floor(ac.sampleRate * 1.5), rb = ac.createBuffer(1, rn, ac.sampleRate), rd = rb.getChannelData(0);
+      let lp = 0; for (let i = 0; i < rn; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.06; rd[i] = lp * 3; }
+      for (let i = 0; i < 2000; i++) { const k = i / 2000; rd[i] = rd[i] * k + rd[rn - 2000 + i] * (1 - k); }   // the loop point is cross-faded
+      const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = rb; src.loop = true; src.loopEnd = (rn - 2000) / ac.sampleRate; bp.type = 'bandpass'; bp.frequency.value = 260; bp.Q.value = 0.6; g.gain.value = 0;
+      src.connect(bp); bp.connect(g); g.connect(out); src.start();
+      roll = { bp, g };
       resume();
     } catch (e) {
       if (ac) ac.close().catch(() => {});
-      ac = null; out = null; buf = null;
+      ac = null; out = null; ui = null; buf = null; roll = null;
     }
   }
   const ready = () => ac && buf && isOn();
 
-  function hit(name, gain, bright, at = 0, rate = 1, layer = -1) {
+  function hit(name, gain, bright, at = 0, rate = 1, layer = -1, pan = 0, bus = out) {
     if (!ready() || gain <= 0 || voices.size >= 48) return;
     const list = buf[name];
     // do not play the identical recording twice in a row
@@ -82,13 +95,16 @@ function createAudio(isOn) {
     const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
     s.buffer = list[index]; s.playbackRate.value = rate;
     f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
-    s.connect(f); f.connect(g); g.connect(out); voices.add(s);
-    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
+    s.connect(f); f.connect(g);
+    const p = pan && ac.createStereoPanner ? ac.createStereoPanner() : null;
+    if (p) { p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); p.connect(bus); } else g.connect(bus);
+    voices.add(s);
+    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); if (p) p.disconnect(); voices.delete(s); };
     s.start(t);
   }
   // Several contacts in the same instant (a break) are all kept, slightly staggered and capped, so they neither
   // collapse into one click nor overload the device.
-  function impact(name, v, scale, level, low, high, max) {
+  function impact(name, v, scale, level, low, high, max, pan) {
     if (!ready() || !Number.isFinite(v) || v <= 0) return;
     const burst = bursts[name], now = ac.currentTime;
     if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
@@ -101,31 +117,39 @@ function createAudio(isOn) {
       if (voices.size > 46) return;
       const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
       const a = Math.min(1, Math.floor(position)), u = position - a, mix = u * u * (3 - 2 * u);
-      hit(name, gain * (1 - mix), bright, at, rate, a);
-      hit(name, gain * mix, bright, at, rate, a + 1);
-    } else hit(name, gain, bright, at, rate);
+      hit(name, gain * (1 - mix), bright, at, rate, a, pan);
+      hit(name, gain * mix, bright, at, rate, a + 1, pan);
+    } else hit(name, gain, bright, at, rate, -1, pan);
   }
-  // interface blips stay dry: they are not in the room
-  function tone(freq, dur, gain, to, at) {
-    if (!ac || !isOn()) return;
-    const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
-    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(ac.destination); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t); o.stop(t + dur + 0.02);
-  }
+  // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
+  const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
   return {
     init,
-    ball(v) { impact('ball', v, 5, 0.95, 2200, 6300, 6); },
-    rail(v) { impact('rail', v, 4, 0.48, 750, 1700, 3); },
-    pocket() { hit('pock', 0.48, 2400); hit('roll', 0.13, 1100, 0.035); hit('pock', 0.17, 1500, 0.115, 0.87); },
-    cue(v) {
+    ball(v, pan) { impact('ball', v, 5, 0.95, 2200, 6300, 6, pan); },
+    rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },
+    cue(v, pan) {
       if (!Number.isFinite(v) || v <= 0) return;
       const k = Math.min(1, v / 9);
-      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k);
+      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k, -1, pan);
     },
-    tap() { tone(520, 0.05, 0.12, 1.5); },
-    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
-    good() { tone(660, 0.09, 0.16, 1.5); tone(990, 0.14, 0.14, 1, 0.08); },
-    bad() { tone(240, 0.16, 0.14, 0.7); },
+    // A ball going down, reported stage by stage by the animation itself:
+    //   lip  - it tips over the edge (speed it arrived with)      wall - it knocks the inside of the pocket
+    //   land - it reaches the bottom
+    drop(stage, v, pan) {
+      if (!ready() || !Number.isFinite(v)) return;
+      if (stage === 'lip') { const k = Math.min(1, v / 3); hit('rail', 0.1 + 0.22 * k, 900 + 1400 * k, 0, 1.25, -1, pan); }
+      else if (stage === 'wall') { const k = Math.min(1, v / 1.5); hit('pock', 0.12 + 0.34 * k, 1400 + 1800 * k, 0, 1.12 + Math.random() * 0.06, -1, pan); }
+      else { const k = Math.min(1, v / 2.6); hit('pock', 0.3 + 0.3 * k, 1700 + 900 * k, 0, 0.92, -1, pan); hit('roll', 0.1 + 0.08 * k, 1000, 0.01, 1, -1, pan); }
+    },
+    // how much is rolling right now (sum of ball speeds, m/s); 0 when the table is still
+    rolling(amount) {
+      if (!ac || !roll) return;
+      const k = isOn() ? Math.min(1, amount / 6) : 0, t = ac.currentTime;
+      roll.g.gain.setTargetAtTime(0.05 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
+    },
+    tap() { uiHit('tick', 0.22, 5000, 0, 1); },
+    good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
+    bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
+    win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }

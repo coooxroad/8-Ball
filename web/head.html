@@ -1,4 +1,4 @@
-<title>브레이크타임</title>
+<title>CUE</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;500;700;800&family=Outfit:wght@400;500;600&display=swap">
 <style>
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
@@ -67,7 +67,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
 .logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
-.logo .word{font-size:22px;font-weight:var(--w-title);letter-spacing:-.02em;white-space:nowrap}
+.logo .word{font-family:'Outfit',sans-serif;font-size:24px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
 .logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
 [data-theme="light"] .logo .en{display:none}
 @media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
@@ -218,6 +218,42 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
+/* ---------- league ---------- */
+#league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
+.lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
+.lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
+#lgTabs{min-width:230px}
+#lgTabs button{height:38px;font-size:14px}
+#lgBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.lt{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r-card);box-shadow:var(--sh);overflow:hidden}
+.ltr{display:grid;grid-template-columns:var(--cols);align-items:center;gap:6px;padding:11px 18px 11px 16px;font-size:15.5px;position:relative;color:var(--fg)}
+.ltr+.ltr,.fx+.fx{border-top:1px solid var(--hair)}
+.ltr.hd{font-size:11.5px;color:var(--sub);padding-block:9px}
+.ltr.hd span{font-family:inherit!important;font-weight:inherit!important}
+.ltr.top::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
+.ltr .pos{font-family:var(--num);color:var(--sub);font-size:14px}
+.ltr .nm{font-weight:var(--w-name);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltr .n{font-family:var(--num);font-weight:var(--num-w);text-align:center}
+.ltr .pts{font-weight:700}
+.ltr .fc{text-align:right}
+.form{display:flex;gap:4px;justify-content:flex-end}
+.form i{width:20px;height:20px;border-radius:50%;font-style:normal;font-size:10.5px;font-weight:700;display:grid;place-items:center;color:#fff}
+.form .w{background:#1f9d6b}.form .l{background:var(--foul)}
+.rd{font-size:12px;color:var(--sub);padding:8px 4px 0}
+.fx{display:grid;grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);align-items:center;gap:14px;padding:9px 18px;font-size:16px}
+.fx .a{text-align:right}.fx .a,.fx .b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx .sc{font-family:var(--num);font-weight:var(--num-w);font-size:18px;text-align:center}
+.fx .win{font-weight:700}.fx .lose{color:var(--sub)}
+.fx .btn{height:36px;padding:0;font-size:14px}.fx .btn.cta{height:36px;font-size:14px}
+.champ{display:flex;align-items:baseline;gap:12px;padding:16px 20px}
+.champ b{font-size:24px;font-weight:var(--w-title)}.champ .k{font-size:13px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chipn{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:7px 7px 7px 15px;font-size:15px}
+.chipn button{width:26px;height:26px;border-radius:50%;background:var(--opt);color:var(--sub);font-size:16px;line-height:1}
+.addrow .txt{flex:3;font-size:17px;padding:9px 14px}.addrow .btn{flex:1}
+#league .btn.cta{margin-top:4px}
+@media (max-width:560px){.ltr .fc,.ltr .xs{display:none}.ltr{grid-template-columns:26px minmax(0,1fr) 34px 34px 34px 44px!important}.lg-top{flex-wrap:wrap}.lg-top h1{order:-1;flex-basis:100%}#lgTabs{flex:1}}
+
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
 .r-title{font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
@@ -266,9 +302,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
   <section id="home">
     <header class="h-top">
-      <div class="logo"><span class="mark"><i>8</i></span><span class="word">브레이크타임</span><span class="en">BREAK TIME</span></div>
+      <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
       <div class="h-actions">
-        <button class="btn" id="recBtn">전적</button>
+        <button class="btn" id="recBtn">리그</button>
         <button class="btn icon" id="setBtn" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
       </div>
     </header>
@@ -328,6 +364,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div id="sheetBody"></div>
     </div>
   </div>
+
+  <section id="league" hidden>
+    <header class="lg-top">
+      <button class="btn" id="lgBack">처음으로</button>
+      <h1>리그</h1>
+      <div class="seg" id="lgTabs"><button data-v="league">리그전</button><button data-v="all">전체 전적</button></div>
+    </header>
+    <div id="lgBody"></div>
+  </section>
 
   <section id="result" hidden>
     <div class="r-title">WINNER</div>

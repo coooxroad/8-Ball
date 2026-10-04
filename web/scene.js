@@ -352,7 +352,7 @@ function createScene(canvas, app, PH) {
     return { x: o.x + d.x * t, y: o.y + d.y * t };
   }
 
-  const falls = [];
+  const falls = [], fallEvents = [];   // fallEvents: what a dropping ball just did (hit the pocket wall, landed), for the sound
   // A pocketed ball keeps rolling over the lip, drops under gravity and rattles down inside the pocket.
   const fallAxis = new THREE.Vector3();
   function fall(P, e) {
@@ -394,13 +394,13 @@ function createScene(canvas, app, PH) {
         if (f.z < R * 0.5 && d > lim) {                                    // knocks against the pocket wall
           const nx = dx / d, ny = dy / d, vn = f.vx * nx + f.vy * ny;
           f.x = p.x + nx * lim; f.y = p.y + ny * lim;
-          if (vn > 0) { f.vx -= 1.35 * vn * nx; f.vy -= 1.35 * vn * ny; }
+          if (vn > 0) { f.vx -= 1.35 * vn * nx; f.vy -= 1.35 * vn * ny; if (vn > 0.12) fallEvents.push({ t: 'wall', v: vn, x: f.x, y: f.y }); }
         }
         const sp = Math.hypot(f.vx, f.vy);
         if (m && sp > 1e-3) { fallAxis.set(-f.vy / sp, f.vx / sp, 0); m.rotateOnWorldAxis(fallAxis, sp * h / R); }
       }
       if (m) { m.visible = f.z > -0.11; m.scale.setScalar(R); m.position.set(f.x, f.y, f.z); m.material.color.setScalar(Math.max(0.12, Math.min(1, 1 + f.z * 9))); }
-      if (f.z <= -0.11) falls.splice(i, 1);
+      if (f.z <= -0.11) { fallEvents.push({ t: 'land', v: Math.hypot(f.vx, f.vy, f.vz), x: f.x, y: f.y }); falls.splice(i, 1); }
     }
     const c = w.balls[w.cue];
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
@@ -474,7 +474,7 @@ function createScene(canvas, app, PH) {
 
   return {
     setTable, setCloth, setCue, setBackdrop, setZone, setInsets, setQuality, resize, toTable, frame, fall,
-    invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; dirty = 3; }, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
+    invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
 }
