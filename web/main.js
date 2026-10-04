@@ -120,7 +120,7 @@ function seg(id, get, set) {
 let toastTimer = 0;
 function toast(msg, kind, ms) {
   const t = $('#toast'); if (!msg) return;
-  t.textContent = msg; t.className = 'show ' + (kind || '');
+  t.textContent = msg; t.dataset.t = msg; t.className = 'show ' + (kind || '');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 1800);
 }
 // where on the screen a table position is, left (-1) to right (1), kept gentle
@@ -213,12 +213,31 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    flatBtn('하이라이트 음악' + (SND.song.info ? ' · ' + SND.song.info.name : ''), sheetSong),
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
   ]);
 }
+// the song for the best-shot reel: picked from this device and kept on it
+const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+function sheetSong(busy) {
+  const info = SND.song.info;
+  openSheet('하이라이트 음악', [
+    note(info ? `${info.name} · 드롭 ${mmss(info.drop)} · ${Math.round(info.bpm)} BPM` : '최고의 샷 다시 보기에 깔 노래를 이 기기에서 고릅니다. 노래는 기기 안에만 저장되고, 드롭 앞뒤 30초만 씁니다.'),
+    busy ? note('노래를 읽는 중입니다…') : flatBtn(info ? '다른 노래 고르기' : '노래 고르기', () => $('#songFile').click()),
+    info ? el('div', { class: 'row' }, [flatBtn('드롭 0.1초 앞으로', async () => { await SND.song.nudge(-0.1); sheetSong(); }), flatBtn('드롭 0.1초 뒤로', async () => { await SND.song.nudge(0.1); sheetSong(); })]) : null,
+    info ? el('div', { class: 'row' }, [flatBtn('드롭 들어보기', () => { SND.init(); SND.song.play(2); setTimeout(() => SND.boom(), 2000); setTimeout(() => SND.song.stop(), 6000); }), flatBtn('지우기', async () => { await SND.song.clear(); sheetSong(); })]) : null,
+    info ? note('드롭은 자동으로 찾습니다. "드롭 들어보기"를 누르면 2초 뒤 쿵 소리와 드롭이 겹쳐야 맞는 것이고, 어긋나면 앞뒤로 옮기세요.') : null,
+  ]);
+}
+$('#songFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  sheetSong(true);
+  try { await SND.song.take(f); } catch (err) { toast('이 파일은 읽을 수 없습니다. mp3나 m4a, wav 파일로 해 보세요.', 'foul', 3200); }
+  sheetSong();
+});
 function sheetName(i) {
   if (i === 1 && prefs.vsAI) return;
   const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
@@ -813,6 +832,7 @@ function snapshot() {
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
 function start(data) {
+  SND.song.load();
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }

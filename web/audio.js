@@ -124,68 +124,76 @@ function createAudio(isOn) {
   }
   // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
   const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
-  /* ---------- highlight-reel music: a short phonk-style beat, written for this game and played by small synths ----------
-     Cowbell melody, distorted 808 bass, kick, clap and fast hats at 142 BPM. It idles on a build-up until drop() is
-     called, then plays the full pattern from that instant, so the drop lands exactly on the moment being shown. */
-  const BEAT = 60 / 142, STEP = BEAT / 4;
-  const G4 = 392, Bb4 = 466.16, C5 = 523.25, D5 = 587.33, Eb5 = 622.25;
-  const MELODY = [[0, G4], [2, G4], [3, Bb4], [6, G4], [8, D5], [10, C5], [12, Bb4], [14, G4], [16, G4], [18, G4], [19, Bb4], [22, G4], [24, Eb5], [26, D5], [28, C5], [30, Bb4]];
-  const BASS = [[0, 49], [6, 49], [10, 58.27], [16, 49], [22, 49], [26, 43.65], [29, 46.25]];
-  function phonk() {
-    const bus = ac.createGain(), drive = ac.createWaveShaper(), n = 512, curve = new Float32Array(n);
-    for (let i = 0; i < n; i++) curve[i] = Math.tanh((i / (n - 1) * 2 - 1) * 2.4);
-    drive.curve = curve; bus.gain.value = 0.0001; bus.connect(drive); drive.connect(sink);
-    const live = [];                                            // sources scheduled but not finished, so a drop can cut the build-up off
-    const keep = (src, t, stop) => { live.push({ src, t }); src.start(t); src.stop(stop); src.onended = () => { const i = live.findIndex(x => x.src === src); if (i >= 0) live.splice(i, 1); }; };
-    const env = (t, peak, dur) => { const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); g.connect(bus); return g; };
-    const kick = t => { const o = ac.createOscillator(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.11); o.connect(env(t, 1, 0.24)); keep(o, t, t + 0.26); };
-    const bass = (t, f, dur) => { const o = ac.createOscillator(); o.frequency.setValueAtTime(f * 2.2, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); o.connect(env(t, 0.9, dur)); keep(o, t, t + dur + 0.02); };
-    const cow = (t, f, vol) => {
-      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 1.3; bp.Q.value = 2.2; bp.connect(env(t, vol, 0.26));
-      for (const k of [1, 1.504]) { const o = ac.createOscillator(); o.type = 'square'; o.frequency.value = f * k; o.connect(bp); keep(o, t, t + 0.28); }
-    };
-    const noise = (t, type, freq, q, vol, dur) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(); s.buffer = white; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f); f.connect(env(t, vol, dur)); keep(s, t, t + dur + 0.02); return f; };
-    const hat = (t, vol) => noise(t, 'highpass', 7200, 0.7, vol, 0.035);
-    const clap = t => noise(t, 'bandpass', 1500, 0.8, 0.55, 0.15);
-    let mode = 'build', next = ac.currentTime + 0.05, step = 0, timer = 0;
-    bus.gain.exponentialRampToValueAtTime(0.42, ac.currentTime + 0.3);
-    function schedule() {
-      while (next < ac.currentTime + 0.25) {
-        const t = next, s = step % 32;
-        if (mode === 'build') {                                 // tension: ticking hats, a pulse, a cowbell that keeps asking
-          if (s % 2 === 0) hat(t, 0.12 + 0.012 * Math.min(16, step));
-          if (s % 8 === 0) cow(t, G4, 0.22);
-          if (s % 4 === 0) kick(t);
-          if (step > 8 && s % 2 === 1) hat(t, 0.1);
-        } else {
-          if (s % 16 === 0 || s % 16 === 6 || s % 16 === 10) kick(t);
-          if (s % 16 === 4 || s % 16 === 12) clap(t);
-          hat(t, s % 2 ? 0.1 : 0.2); if (s % 16 >= 14) hat(t + STEP / 2, 0.14);
-          for (const [k, f] of MELODY) if (k === s) cow(t, f, 0.5);
-          for (const [k, f] of BASS) if (k === s) bass(t, f, STEP * 3.4);
-        }
-        next += STEP; step++;
-      }
-    }
-    timer = setInterval(schedule, 60); schedule();
-    return {
-      drop() {
-        if (mode === 'drop') return; mode = 'drop';
-        const now = ac.currentTime;
-        for (const x of live.slice()) if (x.t > now) { try { x.src.stop(); } catch (e) {} }
-        next = now + 0.01; step = 0; schedule();
-      },
-      stop() { clearInterval(timer); const t = ac.currentTime; bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(Math.max(0.0001, bus.gain.value), t); bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); setTimeout(() => { for (const x of live.slice()) { try { x.src.stop(); } catch (e) {} } try { drive.disconnect(); } catch (e) {} }, 650); },
-    };
+  /* ---------- the player's own song for the highlight reel ----------
+     The song never leaves the device: it is picked from the device's files, the half minute around its drop is kept
+     in the browser's own storage, and the reel starts it so that the drop lands on the moment being shown. */
+  const DB = 'cue-song';
+  const idb = (mode, fn) => new Promise((res, rej) => {
+    let rq; try { rq = indexedDB.open(DB, 1); } catch (e) { return rej(e); }
+    rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+    rq.onerror = () => rej(rq.error);
+    rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), out = fn(tx.objectStore('kv')); tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error); };
+  });
+  let song = null, playing = null;                              // song: { name, sr, data: [Int16Array per channel], drop, bpm, buffer? }
+  // where the drop is: the moment the bass comes in hardest and stays (most low-end energy in the 4 s after, least in the 2 s before)
+  function findDrop(mono, sr) {
+    const hop = Math.floor(sr * 0.05), n = Math.floor(mono.length / hop), low = new Float32Array(n);
+    let lp = 0; const k = 2 * Math.PI * 140 / sr;
+    for (let i = 0; i < n; i++) { let e = 0; for (let j = i * hop, end = j + hop; j < end; j++) { lp += (mono[j] - lp) * k; e += lp * lp; } low[i] = Math.sqrt(e / hop); }
+    const cum = new Float64Array(n + 1); for (let i = 0; i < n; i++) cum[i + 1] = cum[i] + low[i];
+    const mean = (a, b) => (cum[Math.min(n, b)] - cum[Math.max(0, a)]) / Math.max(1, Math.min(n, b) - Math.max(0, a));
+    let best = 0, at = Math.min(n - 1, Math.floor(8 / 0.05));
+    for (let i = Math.floor(6 / 0.05); i < n - Math.floor(6 / 0.05); i++) { const v = mean(i, i + 80) - mean(i - 40, i); if (v > best) { best = v; at = i; } }
+    // step to the exact hit: the loudest low-end rise within a quarter second either side
+    let fine = at, rise = 0; for (let i = Math.max(1, at - 5); i < Math.min(n, at + 6); i++) { const d = low[i] - low[i - 1]; if (d > rise) { rise = d; fine = i; } }
+    return fine * 0.05;
   }
+  // tempo: how often the loudness jumps, measured over the part after the drop
+  function findBpm(mono, sr, from) {
+    const hop = 512, start = Math.floor(from * sr), n = Math.min(Math.floor((mono.length - start) / hop), Math.floor(16 * sr / hop)); if (n < 200) return 140;
+    const env = new Float32Array(n); let prev = 0;
+    for (let i = 0; i < n; i++) { let e = 0; for (let j = start + i * hop, end = j + hop; j < end; j++) e += mono[j] * mono[j]; e = Math.sqrt(e / hop); env[i] = Math.max(0, e - prev); prev = e; }
+    let best = 0, bpm = 140;
+    for (let b = 80; b <= 180; b += 0.5) { const lag = 60 / b * sr / hop; let s = 0; for (let i = 0; i + lag * 2 < n; i++) { const j = Math.round(i + lag), j2 = Math.round(i + lag * 2); s += env[i] * (env[j] + 0.5 * env[j2]); } if (s > best) { best = s; bpm = b; } }
+    return bpm < 100 ? bpm * 2 : bpm;
+  }
+  const toBuffer = sg => { const b = ac.createBuffer(sg.data.length, sg.data[0].length, sg.sr); sg.data.forEach((d, c) => { const out = b.getChannelData(c); for (let i = 0; i < d.length; i++) out[i] = d[i] / 32768; }); return b; };
+  const songApi = {
+    get info() { return song && { name: song.name, drop: song.drop, bpm: song.bpm }; },
+    async load() { try { song = await idb('readonly', st => st.get('song')) || null; } catch (e) { song = null; } return songApi.info; },
+    // take a file the player picked: find its drop and tempo, keep 14 s before and 18 s after
+    async take(file) {
+      init(); if (!ac) throw new Error('audio');
+      const full = await ac.decodeAudioData(await file.arrayBuffer()), sr = full.sampleRate, len = full.length;
+      const mono = new Float32Array(len); for (let c = 0; c < full.numberOfChannels; c++) { const d = full.getChannelData(c); for (let i = 0; i < len; i++) mono[i] += d[i] / full.numberOfChannels; }
+      const drop = findDrop(mono, sr), bpm = findBpm(mono, sr, drop);
+      const a = Math.max(0, Math.floor((drop - 14) * sr)), b = Math.min(len, Math.floor((drop + 18) * sr));
+      const data = []; for (let c = 0; c < Math.min(2, full.numberOfChannels); c++) { const src = full.getChannelData(c), out = new Int16Array(b - a); for (let i = a; i < b; i++) out[i - a] = Math.max(-32768, Math.min(32767, Math.round(src[i] * 32767))); data.push(out); }
+      song = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40), sr, data, drop: drop - a / sr, bpm };
+      try { await idb('readwrite', st => st.put(song, 'song')); } catch (e) {}
+      return songApi.info;
+    },
+    async nudge(sec) { if (!song) return null; song.drop = Math.max(0.5, Math.min(song.data[0].length / song.sr - 2, song.drop + sec)); try { await idb('readwrite', st => st.put({ name: song.name, sr: song.sr, data: song.data, drop: song.drop, bpm: song.bpm }, 'song')); } catch (e) {} return songApi.info; },
+    async clear() { songApi.stop(); song = null; try { await idb('readwrite', st => st.delete('song')); } catch (e) {} },
+    // start so that the drop arrives `lead` seconds from now; returns false when there is no song (or sound is off)
+    play(lead) {
+      if (!song || !ready()) return false; songApi.stop();
+      if (!song.buffer) song.buffer = toBuffer(song);
+      const src = ac.createBufferSource(), g = ac.createGain(), now = ac.currentTime, off = song.drop - lead;
+      src.buffer = song.buffer; src.connect(g); g.connect(sink);
+      g.gain.setValueAtTime(0.0001, now + Math.max(0, -off)); g.gain.exponentialRampToValueAtTime(0.85, now + Math.max(0, -off) + 0.5);
+      src.start(now + Math.max(0, -off), Math.max(0, off));
+      playing = { src, g, dropAt: now + lead };
+      return true;
+    },
+    // seconds since the drop (negative before it); null when nothing is playing
+    time() { return playing ? ac.currentTime - playing.dropAt : null; },
+    stop() { if (!playing) return; const p = playing, t = ac.currentTime; playing = null; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(Math.max(0.0001, p.g.gain.value), t); p.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); try { p.src.stop(t + 0.55); } catch (e) {} },
+  };
 
   return {
     init,
-    music: {
-      start() { if (!ready()) return; if (music) music.stop(); music = phonk(); },
-      drop() { if (music) music.drop(); },
-      stop() { if (music) { music.stop(); music = null; } },
-    },
+    song: songApi,
     // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
     boom() {
       if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();

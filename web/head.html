@@ -151,13 +151,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 [data-theme="dark"] #badge{background:none;border:0;padding:0}
 [data-theme="dark"] #badge b{font-family:'Outfit',sans-serif;font-weight:500;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub)}
 
-/* messages that pop up over the table: chunky rounded letters with a black outline, the one playful note in the interface */
-#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);max-width:min(90%,680px);
-  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;color:#fff;
-  text-shadow:3px 0px 0 #15171c,-3px 0px 0 #15171c,0px 3px 0 #15171c,0px -3px 0 #15171c,2px 2px 0 #15171c,-2px 2px 0 #15171c,2px -2px 0 #15171c,-2px -2px 0 #15171c,3px 1px 0 #15171c,-3px 1px 0 #15171c,1px 3px 0 #15171c,-1px 3px 0 #15171c,3px -1px 0 #15171c,-3px -1px 0 #15171c,1px -3px 0 #15171c,-1px -3px 0 #15171c,0 6px 0 rgba(21,23,28,.9);text-align:center;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1);text-wrap:balance}
+/* messages that pop up over the table: chunky rounded letters with one black outline.
+   The element itself is drawn as a thick black stroke; an exact copy of the text sits on top in the fill colour. */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);width:max-content;max-width:min(90%,680px);
+  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;text-align:center;
+  color:#15171c;-webkit-text-stroke:7px #15171c;--fill:#fff;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1)}
+#toast::after{content:attr(data-t);position:absolute;inset:0;color:var(--fill);-webkit-text-stroke:0}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
-#toast.foul{color:#ff6259}
-#toast.good{color:#ffe04a}
+#toast.foul{--fill:#ff6259}
+#toast.good{--fill:#ffe04a}
 #fps{position:absolute;left:8px;bottom:6px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--fg);background:var(--panel);border-radius:8px;padding:2px 8px;pointer-events:none}
 
 /* ---------- controls: same places and behaviour as before ---------- */
@@ -226,31 +228,28 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* ---------- best-shot reel ---------- */
 #reel{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000}
+#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000;z-index:3}
 #reel .lb.t{top:0}#reel .lb.b{bottom:0}
-#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45));transition:opacity .2s;opacity:.55}
-.slow #reel::after{opacity:1}
-#reelTag{position:absolute;left:22px;top:calc(9% + 14px);display:flex;flex-direction:column;gap:2px;z-index:2}
-#reelTag b{font-family:'Outfit',sans-serif;font-weight:600;font-style:italic;font-size:clamp(22px,3.4vw,38px);letter-spacing:.06em;color:#fff;text-shadow:2px 0 #15171c,-2px 0 #15171c,0 2px #15171c,0 -2px #15171c,1.5px 1.5px #15171c,-1.5px 1.5px #15171c,1.5px -1.5px #15171c,-1.5px -1.5px #15171c,0 4px 0 #15171c}
-#reelWho{font-family:'Jua','Gothic A1',sans-serif;font-size:17px;color:#fff;text-shadow:1.5px 0 #15171c,-1.5px 0 #15171c,0 1.5px #15171c,0 -1.5px #15171c,1px 1px #15171c,-1px 1px #15171c,1px -1px #15171c,-1px -1px #15171c}
-#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:3;height:40px;font-size:14px}
+#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.6));transition:opacity .25s;opacity:.75}
+.colour #reel::after{opacity:.45}
+.hold #reel::after{opacity:1}
+#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:4;height:40px;font-size:14px;opacity:.85}
 #reelFx{position:absolute;inset:0;z-index:2}
-.fx{position:absolute;font-style:normal;font-size:44px;line-height:1;margin:-22px 0 0 -22px;will-change:transform,opacity}
-.fx.small{font-size:28px;margin:-14px 0 0 -14px}
-.fx.pop{animation:fxpop .7s ease-out forwards}
-.fx.rise{font-size:54px;animation:fxrise 1.3s ease-out forwards}
-@keyframes fxpop{0%{transform:scale(.2);opacity:0}25%{transform:scale(1.5) rotate(var(--rot));opacity:1}100%{transform:scale(1) translateY(-26px) rotate(var(--rot));opacity:0}}
-@keyframes fxrise{0%{transform:translateY(30px) scale(.4);opacity:0}20%{opacity:1;transform:translateY(0) scale(1.2) rotate(var(--rot))}100%{transform:translate(var(--dx),-170px) scale(1) rotate(var(--rot));opacity:0}}
-#reelCap{position:absolute;left:0;right:0;top:36%;text-align:center;z-index:2;font-family:'Jua','Gothic A1',sans-serif;font-size:clamp(44px,9vw,104px);color:#ffe04a;opacity:0;
-  text-shadow:6px 0px 0 #15171c,-6px 0px 0 #15171c,0px 6px 0 #15171c,0px -6px 0 #15171c,4px 4px 0 #15171c,-4px 4px 0 #15171c,4px -4px 0 #15171c,-4px -4px 0 #15171c,6px 2px 0 #15171c,-6px 2px 0 #15171c,2px 6px 0 #15171c,-2px 6px 0 #15171c,6px -2px 0 #15171c,-6px -2px 0 #15171c,2px -6px 0 #15171c,-2px -6px 0 #15171c,0 12px 0 rgba(21,23,28,.9)}
-#reelCap.go{animation:capin 2.4s ease-out forwards}
-@keyframes capin{0%{transform:scale(2.4) rotate(-8deg);opacity:0}9%{transform:scale(.92) rotate(-4deg);opacity:1}14%{transform:scale(1.04) rotate(-4deg)}80%{transform:scale(1) rotate(-4deg);opacity:1}100%{transform:scale(1.1) rotate(-4deg);opacity:0}}
+.rfx{position:absolute;font-style:normal;font-size:52px;line-height:1;margin:-26px 0 0 -26px;animation:rfx 1.4s ease-out forwards}
+@keyframes rfx{0%{transform:translateY(30px) scale(.4);opacity:0}18%{opacity:1;transform:translateY(0) scale(1.25) rotate(var(--rot))}100%{transform:translate(var(--dx),-190px) scale(1) rotate(var(--rot));opacity:0}}
 #reelFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1}
-#reelFlash.go{animation:flash .45s ease-out}
-@keyframes flash{0%{opacity:.85}100%{opacity:0}}
-.reeling #gl{filter:contrast(1.1) saturate(1.28)}
-.punch #gl{animation:punch .22s ease-out}
-@keyframes punch{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+#reelFlash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+#reelFade{position:absolute;inset:0;background:#000;opacity:0;z-index:3;transition:opacity .5s}
+#reelFade.go{opacity:1}
+/* the grade: drained before the drop, rich after it; one or two frames of negative on the hit itself */
+.reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
+.reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
+.reeling.impact #gl{filter:invert(1) contrast(1.5);transition:none}
+.hit #gl{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
+.beat #gl{animation:beat .2s ease-out}
+@keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
+@keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
 
 /* ---------- league ---------- */
 #league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
@@ -416,12 +415,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
   <div id="reel" hidden>
     <div class="lb t"></div><div class="lb b"></div>
-    <div id="reelTag"><b>BEST SHOT</b><span id="reelWho"></span></div>
     <div id="reelFx"></div>
-    <div id="reelCap"></div>
     <div id="reelFlash"></div>
+    <div id="reelFade"></div>
     <button class="btn" id="reelSkip">건너뛰기</button>
   </div>
+  <input type="file" id="songFile" accept="audio/*" hidden>
 
   <section id="league" hidden>
     <header class="lg-top">

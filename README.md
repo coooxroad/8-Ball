@@ -65,4 +65,4 @@ base64 -w0 release.jks
 
 ## 라이선스 표기
 
-three.js r128 (MIT). 글꼴 Gothic A1, Outfit, Jua (SIL OFL 1.1). 하이라이트 음악과 효과음은 이 프로젝트에서 직접 합성한 것으로, 외부 음원을 쓰지 않습니다.
+three.js r128 (MIT). 글꼴 Gothic A1, Outfit, Jua (SIL OFL 1.1). 하이라이트 음악은 앱에 들어 있지 않습니다. 설정에서 기기 안의 노래를 고르면 그 기기에만 저장되어 쓰입니다.

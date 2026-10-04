@@ -2,7 +2,9 @@ package io.github.coooxroad.eightball;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -10,6 +12,8 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -21,7 +25,10 @@ public class MainActivity extends Activity {
     // the page answers 0 only on the home screen, and then Back leaves the app.
     private static final String PAGE_BACK = "(function(){return window.__back&&window.__back()?1:0})()";
 
+    private static final int PICK_FILE = 41;
+
     private WebView web;
+    private ValueCallback<Uri[]> filePick;   // the page is waiting for a file (the song for the highlight reel)
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -47,6 +54,24 @@ public class MainActivity extends Activity {
         settings.setTextZoom(100);
 
         web.setWebViewClient(new WebViewClient());
+        // <input type="file"> in the page opens the system's file picker
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (filePick != null) filePick.onReceiveValue(null);
+                filePick = callback;
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("audio/*");
+                try {
+                    startActivityForResult(Intent.createChooser(intent, "노래 고르기"), PICK_FILE);
+                } catch (RuntimeException e) {
+                    filePick = null;
+                    callback.onReceiveValue(null);
+                }
+                return true;
+            }
+        });
         setContentView(web);
         web.loadUrl(PAGE);
         hideSystemBars();
@@ -76,6 +101,16 @@ public class MainActivity extends Activity {
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_FILE || filePick == null) return;
+        Uri[] picked = null;
+        if (resultCode == RESULT_OK && data != null && data.getData() != null) picked = new Uri[] { data.getData() };
+        filePick.onReceiveValue(picked);
+        filePick = null;
     }
 
     @SuppressWarnings("deprecation")

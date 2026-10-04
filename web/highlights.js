@@ -35,17 +35,23 @@ function createHighlights() {
     return { score, tag, key: main.id };
   }
 
-  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red is hit).
+  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red
+  // is hit), where on the table that is, and which way the ball was travelling as it got there.
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
     P.strike(w, shot.aim, shot.V, shot.a, shot.b);
-    const T = 1 / 120; let t = 0, tHit = -1, tKey = -1;
+    const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
+      const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
       P.step(w, T); t += T;
       if (tHit < 0 && w.ev.firstHit != null) tHit = t;
-      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) tKey = t;
+      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) {
+        tKey = t; if (sp > 1e-3) { ux = vx / sp; uy = vy / sp; }
+        const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
+        kx = pk ? pk.x : x0; ky = pk ? pk.y : y0;
+      }
     }
-    return { tHit, tKey, dur: t };
+    return { tHit, tKey, dur: t, kx, ky, ux, uy };
   }
   return { snapshot, restore, rate, plan };
 }

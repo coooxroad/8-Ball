@@ -168,13 +168,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 [data-theme="dark"] #badge{background:none;border:0;padding:0}
 [data-theme="dark"] #badge b{font-family:'Outfit',sans-serif;font-weight:500;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub)}
 
-/* messages that pop up over the table: chunky rounded letters with a black outline, the one playful note in the interface */
-#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);max-width:min(90%,680px);
-  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;color:#fff;
-  text-shadow:3px 0px 0 #15171c,-3px 0px 0 #15171c,0px 3px 0 #15171c,0px -3px 0 #15171c,2px 2px 0 #15171c,-2px 2px 0 #15171c,2px -2px 0 #15171c,-2px -2px 0 #15171c,3px 1px 0 #15171c,-3px 1px 0 #15171c,1px 3px 0 #15171c,-1px 3px 0 #15171c,3px -1px 0 #15171c,-3px -1px 0 #15171c,1px -3px 0 #15171c,-1px -3px 0 #15171c,0 6px 0 rgba(21,23,28,.9);text-align:center;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1);text-wrap:balance}
+/* messages that pop up over the table: chunky rounded letters with one black outline.
+   The element itself is drawn as a thick black stroke; an exact copy of the text sits on top in the fill colour. */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);width:max-content;max-width:min(90%,680px);
+  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;text-align:center;
+  color:#15171c;-webkit-text-stroke:7px #15171c;--fill:#fff;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1)}
+#toast::after{content:attr(data-t);position:absolute;inset:0;color:var(--fill);-webkit-text-stroke:0}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
-#toast.foul{color:#ff6259}
-#toast.good{color:#ffe04a}
+#toast.foul{--fill:#ff6259}
+#toast.good{--fill:#ffe04a}
 #fps{position:absolute;left:8px;bottom:6px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--fg);background:var(--panel);border-radius:8px;padding:2px 8px;pointer-events:none}
 
 /* ---------- controls: same places and behaviour as before ---------- */
@@ -243,31 +245,28 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* ---------- best-shot reel ---------- */
 #reel{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000}
+#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000;z-index:3}
 #reel .lb.t{top:0}#reel .lb.b{bottom:0}
-#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45));transition:opacity .2s;opacity:.55}
-.slow #reel::after{opacity:1}
-#reelTag{position:absolute;left:22px;top:calc(9% + 14px);display:flex;flex-direction:column;gap:2px;z-index:2}
-#reelTag b{font-family:'Outfit',sans-serif;font-weight:600;font-style:italic;font-size:clamp(22px,3.4vw,38px);letter-spacing:.06em;color:#fff;text-shadow:2px 0 #15171c,-2px 0 #15171c,0 2px #15171c,0 -2px #15171c,1.5px 1.5px #15171c,-1.5px 1.5px #15171c,1.5px -1.5px #15171c,-1.5px -1.5px #15171c,0 4px 0 #15171c}
-#reelWho{font-family:'Jua','Gothic A1',sans-serif;font-size:17px;color:#fff;text-shadow:1.5px 0 #15171c,-1.5px 0 #15171c,0 1.5px #15171c,0 -1.5px #15171c,1px 1px #15171c,-1px 1px #15171c,1px -1px #15171c,-1px -1px #15171c}
-#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:3;height:40px;font-size:14px}
+#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.6));transition:opacity .25s;opacity:.75}
+.colour #reel::after{opacity:.45}
+.hold #reel::after{opacity:1}
+#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:4;height:40px;font-size:14px;opacity:.85}
 #reelFx{position:absolute;inset:0;z-index:2}
-.fx{position:absolute;font-style:normal;font-size:44px;line-height:1;margin:-22px 0 0 -22px;will-change:transform,opacity}
-.fx.small{font-size:28px;margin:-14px 0 0 -14px}
-.fx.pop{animation:fxpop .7s ease-out forwards}
-.fx.rise{font-size:54px;animation:fxrise 1.3s ease-out forwards}
-@keyframes fxpop{0%{transform:scale(.2);opacity:0}25%{transform:scale(1.5) rotate(var(--rot));opacity:1}100%{transform:scale(1) translateY(-26px) rotate(var(--rot));opacity:0}}
-@keyframes fxrise{0%{transform:translateY(30px) scale(.4);opacity:0}20%{opacity:1;transform:translateY(0) scale(1.2) rotate(var(--rot))}100%{transform:translate(var(--dx),-170px) scale(1) rotate(var(--rot));opacity:0}}
-#reelCap{position:absolute;left:0;right:0;top:36%;text-align:center;z-index:2;font-family:'Jua','Gothic A1',sans-serif;font-size:clamp(44px,9vw,104px);color:#ffe04a;opacity:0;
-  text-shadow:6px 0px 0 #15171c,-6px 0px 0 #15171c,0px 6px 0 #15171c,0px -6px 0 #15171c,4px 4px 0 #15171c,-4px 4px 0 #15171c,4px -4px 0 #15171c,-4px -4px 0 #15171c,6px 2px 0 #15171c,-6px 2px 0 #15171c,2px 6px 0 #15171c,-2px 6px 0 #15171c,6px -2px 0 #15171c,-6px -2px 0 #15171c,2px -6px 0 #15171c,-2px -6px 0 #15171c,0 12px 0 rgba(21,23,28,.9)}
-#reelCap.go{animation:capin 2.4s ease-out forwards}
-@keyframes capin{0%{transform:scale(2.4) rotate(-8deg);opacity:0}9%{transform:scale(.92) rotate(-4deg);opacity:1}14%{transform:scale(1.04) rotate(-4deg)}80%{transform:scale(1) rotate(-4deg);opacity:1}100%{transform:scale(1.1) rotate(-4deg);opacity:0}}
+.rfx{position:absolute;font-style:normal;font-size:52px;line-height:1;margin:-26px 0 0 -26px;animation:rfx 1.4s ease-out forwards}
+@keyframes rfx{0%{transform:translateY(30px) scale(.4);opacity:0}18%{opacity:1;transform:translateY(0) scale(1.25) rotate(var(--rot))}100%{transform:translate(var(--dx),-190px) scale(1) rotate(var(--rot));opacity:0}}
 #reelFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1}
-#reelFlash.go{animation:flash .45s ease-out}
-@keyframes flash{0%{opacity:.85}100%{opacity:0}}
-.reeling #gl{filter:contrast(1.1) saturate(1.28)}
-.punch #gl{animation:punch .22s ease-out}
-@keyframes punch{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+#reelFlash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+#reelFade{position:absolute;inset:0;background:#000;opacity:0;z-index:3;transition:opacity .5s}
+#reelFade.go{opacity:1}
+/* the grade: drained before the drop, rich after it; one or two frames of negative on the hit itself */
+.reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
+.reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
+.reeling.impact #gl{filter:invert(1) contrast(1.5);transition:none}
+.hit #gl{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
+.beat #gl{animation:beat .2s ease-out}
+@keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
+@keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
 
 /* ---------- league ---------- */
 #league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
@@ -433,12 +432,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
   <div id="reel" hidden>
     <div class="lb t"></div><div class="lb b"></div>
-    <div id="reelTag"><b>BEST SHOT</b><span id="reelWho"></span></div>
     <div id="reelFx"></div>
-    <div id="reelCap"></div>
     <div id="reelFlash"></div>
+    <div id="reelFade"></div>
     <button class="btn" id="reelSkip">건너뛰기</button>
   </div>
+  <input type="file" id="songFile" accept="audio/*" hidden>
 
   <section id="league" hidden>
     <header class="lg-top">
@@ -1396,17 +1395,23 @@ function createHighlights() {
     return { score, tag, key: main.id };
   }
 
-  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red is hit).
+  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red
+  // is hit), where on the table that is, and which way the ball was travelling as it got there.
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
     P.strike(w, shot.aim, shot.V, shot.a, shot.b);
-    const T = 1 / 120; let t = 0, tHit = -1, tKey = -1;
+    const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
+      const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
       P.step(w, T); t += T;
       if (tHit < 0 && w.ev.firstHit != null) tHit = t;
-      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) tKey = t;
+      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) {
+        tKey = t; if (sp > 1e-3) { ux = vx / sp; uy = vy / sp; }
+        const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
+        kx = pk ? pk.x : x0; ky = pk ? pk.y : y0;
+      }
     }
-    return { tHit, tKey, dur: t };
+    return { tHit, tKey, dur: t, kx, ky, ux, uy };
   }
   return { snapshot, restore, rate, plan };
 }
@@ -2183,68 +2188,76 @@ function createAudio(isOn) {
   }
   // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
   const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
-  /* ---------- highlight-reel music: a short phonk-style beat, written for this game and played by small synths ----------
-     Cowbell melody, distorted 808 bass, kick, clap and fast hats at 142 BPM. It idles on a build-up until drop() is
-     called, then plays the full pattern from that instant, so the drop lands exactly on the moment being shown. */
-  const BEAT = 60 / 142, STEP = BEAT / 4;
-  const G4 = 392, Bb4 = 466.16, C5 = 523.25, D5 = 587.33, Eb5 = 622.25;
-  const MELODY = [[0, G4], [2, G4], [3, Bb4], [6, G4], [8, D5], [10, C5], [12, Bb4], [14, G4], [16, G4], [18, G4], [19, Bb4], [22, G4], [24, Eb5], [26, D5], [28, C5], [30, Bb4]];
-  const BASS = [[0, 49], [6, 49], [10, 58.27], [16, 49], [22, 49], [26, 43.65], [29, 46.25]];
-  function phonk() {
-    const bus = ac.createGain(), drive = ac.createWaveShaper(), n = 512, curve = new Float32Array(n);
-    for (let i = 0; i < n; i++) curve[i] = Math.tanh((i / (n - 1) * 2 - 1) * 2.4);
-    drive.curve = curve; bus.gain.value = 0.0001; bus.connect(drive); drive.connect(sink);
-    const live = [];                                            // sources scheduled but not finished, so a drop can cut the build-up off
-    const keep = (src, t, stop) => { live.push({ src, t }); src.start(t); src.stop(stop); src.onended = () => { const i = live.findIndex(x => x.src === src); if (i >= 0) live.splice(i, 1); }; };
-    const env = (t, peak, dur) => { const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); g.connect(bus); return g; };
-    const kick = t => { const o = ac.createOscillator(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.11); o.connect(env(t, 1, 0.24)); keep(o, t, t + 0.26); };
-    const bass = (t, f, dur) => { const o = ac.createOscillator(); o.frequency.setValueAtTime(f * 2.2, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); o.connect(env(t, 0.9, dur)); keep(o, t, t + dur + 0.02); };
-    const cow = (t, f, vol) => {
-      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 1.3; bp.Q.value = 2.2; bp.connect(env(t, vol, 0.26));
-      for (const k of [1, 1.504]) { const o = ac.createOscillator(); o.type = 'square'; o.frequency.value = f * k; o.connect(bp); keep(o, t, t + 0.28); }
-    };
-    const noise = (t, type, freq, q, vol, dur) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(); s.buffer = white; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f); f.connect(env(t, vol, dur)); keep(s, t, t + dur + 0.02); return f; };
-    const hat = (t, vol) => noise(t, 'highpass', 7200, 0.7, vol, 0.035);
-    const clap = t => noise(t, 'bandpass', 1500, 0.8, 0.55, 0.15);
-    let mode = 'build', next = ac.currentTime + 0.05, step = 0, timer = 0;
-    bus.gain.exponentialRampToValueAtTime(0.42, ac.currentTime + 0.3);
-    function schedule() {
-      while (next < ac.currentTime + 0.25) {
-        const t = next, s = step % 32;
-        if (mode === 'build') {                                 // tension: ticking hats, a pulse, a cowbell that keeps asking
-          if (s % 2 === 0) hat(t, 0.12 + 0.012 * Math.min(16, step));
-          if (s % 8 === 0) cow(t, G4, 0.22);
-          if (s % 4 === 0) kick(t);
-          if (step > 8 && s % 2 === 1) hat(t, 0.1);
-        } else {
-          if (s % 16 === 0 || s % 16 === 6 || s % 16 === 10) kick(t);
-          if (s % 16 === 4 || s % 16 === 12) clap(t);
-          hat(t, s % 2 ? 0.1 : 0.2); if (s % 16 >= 14) hat(t + STEP / 2, 0.14);
-          for (const [k, f] of MELODY) if (k === s) cow(t, f, 0.5);
-          for (const [k, f] of BASS) if (k === s) bass(t, f, STEP * 3.4);
-        }
-        next += STEP; step++;
-      }
-    }
-    timer = setInterval(schedule, 60); schedule();
-    return {
-      drop() {
-        if (mode === 'drop') return; mode = 'drop';
-        const now = ac.currentTime;
-        for (const x of live.slice()) if (x.t > now) { try { x.src.stop(); } catch (e) {} }
-        next = now + 0.01; step = 0; schedule();
-      },
-      stop() { clearInterval(timer); const t = ac.currentTime; bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(Math.max(0.0001, bus.gain.value), t); bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); setTimeout(() => { for (const x of live.slice()) { try { x.src.stop(); } catch (e) {} } try { drive.disconnect(); } catch (e) {} }, 650); },
-    };
+  /* ---------- the player's own song for the highlight reel ----------
+     The song never leaves the device: it is picked from the device's files, the half minute around its drop is kept
+     in the browser's own storage, and the reel starts it so that the drop lands on the moment being shown. */
+  const DB = 'cue-song';
+  const idb = (mode, fn) => new Promise((res, rej) => {
+    let rq; try { rq = indexedDB.open(DB, 1); } catch (e) { return rej(e); }
+    rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+    rq.onerror = () => rej(rq.error);
+    rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), out = fn(tx.objectStore('kv')); tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error); };
+  });
+  let song = null, playing = null;                              // song: { name, sr, data: [Int16Array per channel], drop, bpm, buffer? }
+  // where the drop is: the moment the bass comes in hardest and stays (most low-end energy in the 4 s after, least in the 2 s before)
+  function findDrop(mono, sr) {
+    const hop = Math.floor(sr * 0.05), n = Math.floor(mono.length / hop), low = new Float32Array(n);
+    let lp = 0; const k = 2 * Math.PI * 140 / sr;
+    for (let i = 0; i < n; i++) { let e = 0; for (let j = i * hop, end = j + hop; j < end; j++) { lp += (mono[j] - lp) * k; e += lp * lp; } low[i] = Math.sqrt(e / hop); }
+    const cum = new Float64Array(n + 1); for (let i = 0; i < n; i++) cum[i + 1] = cum[i] + low[i];
+    const mean = (a, b) => (cum[Math.min(n, b)] - cum[Math.max(0, a)]) / Math.max(1, Math.min(n, b) - Math.max(0, a));
+    let best = 0, at = Math.min(n - 1, Math.floor(8 / 0.05));
+    for (let i = Math.floor(6 / 0.05); i < n - Math.floor(6 / 0.05); i++) { const v = mean(i, i + 80) - mean(i - 40, i); if (v > best) { best = v; at = i; } }
+    // step to the exact hit: the loudest low-end rise within a quarter second either side
+    let fine = at, rise = 0; for (let i = Math.max(1, at - 5); i < Math.min(n, at + 6); i++) { const d = low[i] - low[i - 1]; if (d > rise) { rise = d; fine = i; } }
+    return fine * 0.05;
   }
+  // tempo: how often the loudness jumps, measured over the part after the drop
+  function findBpm(mono, sr, from) {
+    const hop = 512, start = Math.floor(from * sr), n = Math.min(Math.floor((mono.length - start) / hop), Math.floor(16 * sr / hop)); if (n < 200) return 140;
+    const env = new Float32Array(n); let prev = 0;
+    for (let i = 0; i < n; i++) { let e = 0; for (let j = start + i * hop, end = j + hop; j < end; j++) e += mono[j] * mono[j]; e = Math.sqrt(e / hop); env[i] = Math.max(0, e - prev); prev = e; }
+    let best = 0, bpm = 140;
+    for (let b = 80; b <= 180; b += 0.5) { const lag = 60 / b * sr / hop; let s = 0; for (let i = 0; i + lag * 2 < n; i++) { const j = Math.round(i + lag), j2 = Math.round(i + lag * 2); s += env[i] * (env[j] + 0.5 * env[j2]); } if (s > best) { best = s; bpm = b; } }
+    return bpm < 100 ? bpm * 2 : bpm;
+  }
+  const toBuffer = sg => { const b = ac.createBuffer(sg.data.length, sg.data[0].length, sg.sr); sg.data.forEach((d, c) => { const out = b.getChannelData(c); for (let i = 0; i < d.length; i++) out[i] = d[i] / 32768; }); return b; };
+  const songApi = {
+    get info() { return song && { name: song.name, drop: song.drop, bpm: song.bpm }; },
+    async load() { try { song = await idb('readonly', st => st.get('song')) || null; } catch (e) { song = null; } return songApi.info; },
+    // take a file the player picked: find its drop and tempo, keep 14 s before and 18 s after
+    async take(file) {
+      init(); if (!ac) throw new Error('audio');
+      const full = await ac.decodeAudioData(await file.arrayBuffer()), sr = full.sampleRate, len = full.length;
+      const mono = new Float32Array(len); for (let c = 0; c < full.numberOfChannels; c++) { const d = full.getChannelData(c); for (let i = 0; i < len; i++) mono[i] += d[i] / full.numberOfChannels; }
+      const drop = findDrop(mono, sr), bpm = findBpm(mono, sr, drop);
+      const a = Math.max(0, Math.floor((drop - 14) * sr)), b = Math.min(len, Math.floor((drop + 18) * sr));
+      const data = []; for (let c = 0; c < Math.min(2, full.numberOfChannels); c++) { const src = full.getChannelData(c), out = new Int16Array(b - a); for (let i = a; i < b; i++) out[i - a] = Math.max(-32768, Math.min(32767, Math.round(src[i] * 32767))); data.push(out); }
+      song = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40), sr, data, drop: drop - a / sr, bpm };
+      try { await idb('readwrite', st => st.put(song, 'song')); } catch (e) {}
+      return songApi.info;
+    },
+    async nudge(sec) { if (!song) return null; song.drop = Math.max(0.5, Math.min(song.data[0].length / song.sr - 2, song.drop + sec)); try { await idb('readwrite', st => st.put({ name: song.name, sr: song.sr, data: song.data, drop: song.drop, bpm: song.bpm }, 'song')); } catch (e) {} return songApi.info; },
+    async clear() { songApi.stop(); song = null; try { await idb('readwrite', st => st.delete('song')); } catch (e) {} },
+    // start so that the drop arrives `lead` seconds from now; returns false when there is no song (or sound is off)
+    play(lead) {
+      if (!song || !ready()) return false; songApi.stop();
+      if (!song.buffer) song.buffer = toBuffer(song);
+      const src = ac.createBufferSource(), g = ac.createGain(), now = ac.currentTime, off = song.drop - lead;
+      src.buffer = song.buffer; src.connect(g); g.connect(sink);
+      g.gain.setValueAtTime(0.0001, now + Math.max(0, -off)); g.gain.exponentialRampToValueAtTime(0.85, now + Math.max(0, -off) + 0.5);
+      src.start(now + Math.max(0, -off), Math.max(0, off));
+      playing = { src, g, dropAt: now + lead };
+      return true;
+    },
+    // seconds since the drop (negative before it); null when nothing is playing
+    time() { return playing ? ac.currentTime - playing.dropAt : null; },
+    stop() { if (!playing) return; const p = playing, t = ac.currentTime; playing = null; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(Math.max(0.0001, p.g.gain.value), t); p.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); try { p.src.stop(t + 0.55); } catch (e) {} },
+  };
 
   return {
     init,
-    music: {
-      start() { if (!ready()) return; if (music) music.stop(); music = phonk(); },
-      drop() { if (music) music.drop(); },
-      stop() { if (music) { music.stop(); music = null; } },
-    },
+    song: songApi,
     // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
     boom() {
       if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
@@ -2286,87 +2299,141 @@ function createAudio(isOn) {
     win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }
-/* The best-shot reel: the chosen shot is played again as a little edited clip.
-   The camera drops in behind the cue, follows the ball, slows down just before it falls, and the beat drops on the
-   moment itself. Everything is driven by the real physics running again from the saved position, so it is the shot
-   that was played, not a recording.
-   d: { game, scene, SND, highlights, st, $, el, app, panOf, onEnd } */
+/* The best-shot reel: the chosen shot, cut like a short edit.
+
+   Build-up   drained of colour; the camera sinks from a wide view to behind the cue, the shot is played slowly, and
+              just before the ball drops everything nearly stops while the camera pushes in on the pocket.
+   Drop       on the song's drop (or, with no song, after that held breath) colour snaps back, the picture kicks, and
+              the ball goes in at full speed.
+   Cuts       the same moment again from three more cameras, one cut every two beats, each landing on the beat.
+   Out        a slow turn round the whole table, then black.
+
+   Nothing is recorded: the balls are put back where they were and the same shot is struck again, as often as a new
+   camera needs it. d: { game, scene, SND, highlights, st, $, el, app, panOf, onEnd } */
 function createReel(d) {
   const { game, scene, SND, highlights, st, $, el, app } = d, TICK = 1 / 120;
-  const CAPS = ['미쳤다', '이게 들어가네', 'ㄹㅇ 실화냐', '쉬는시간 MVP', '깔끔', '폼 미쳤다'];
-  const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
+  const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x), lerp = (a, b, k) => a + (b - a) * k;
+  const INTRO = 2.2, HOLD = 0.1, PRE = 0.32, POST = 0.14;     // seconds: camera move-in; sim time held back before the drop; sim window of a cut
   let r = null;
 
-  /* ---- overlay effects ---- */
-  function emoji(ch, x, y, cls) {
-    const n = el('i', { class: 'fx ' + (cls || ''), text: ch, style: `left:${x}px;top:${y}px;--dx:${(Math.random() - 0.5) * 120}px;--rot:${(Math.random() - 0.5) * 50}deg` });
-    $('#reelFx').appendChild(n); setTimeout(() => n.remove(), 1400);
-  }
-  const at = (x, y) => { const p = scene.toScreen(x, y, game.P.R), b = app.getBoundingClientRect(); return [p.x - b.left, p.y - b.top]; };
-  function punch() { app.classList.remove('punch'); void app.offsetWidth; app.classList.add('punch'); }
-  function bigMoment() {
-    r.done = true; r.endAt = r.t + 3.0;
-    SND.music.drop(); SND.boom(); punch();
+  /* ---- picture effects (all on the page, none in the 3D scene) ---- */
+  const kick = cls => { app.classList.remove('hit', 'beat'); void app.offsetWidth; app.classList.add(cls); };
+  function impact() {                                          // two frames of negative, then a white flash
+    app.classList.add('impact'); setTimeout(() => app.classList.remove('impact'), 70);
     const f = $('#reelFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
-    const cap = $('#reelCap'); cap.textContent = CAPS[Math.floor(Math.random() * CAPS.length)]; cap.classList.remove('go'); void cap.offsetWidth; cap.classList.add('go');
-    const w = app.clientWidth, h = app.clientHeight;
-    ['🔥', '🔥', '💀', '🗿', '😭', '🔥'].forEach((ch, i) => setTimeout(() => { if (r) emoji(ch, w * (0.15 + 0.7 * Math.random()), h * (0.55 + 0.3 * Math.random()), 'rise'); }, i * 110));
+  }
+  function emoji(ch, x, y) {
+    const n = el('i', { class: 'rfx', text: ch, style: `left:${x}px;top:${y}px;--dx:${(Math.random() - 0.5) * 140}px;--rot:${(Math.random() - 0.5) * 50}deg` });
+    $('#reelFx').appendChild(n); setTimeout(() => n.remove(), 1500);
+  }
+
+  /* ---- the shot, from the start up to a given moment ---- */
+  function rewind(t) {
+    const P = game.P, w = game.world, b = r.best;
+    highlights.restore(w, b.snap); scene.clearFalls();
+    r.simT = 0; r.acc = 0; r.struck = t > 0;
+    if (t > 0) { P.strike(w, b.aim, b.V, b.a, b.b); const n = Math.floor(t / TICK); for (let i = 0; i < n; i++) P.step(w, TICK); r.simT = n * TICK; }
+    w.snd.length = 0;
+  }
+  // advance the physics by `sim` seconds, with the sounds and pocket drops that come with it
+  function advance(sim) {
+    const P = game.P, w = game.world;
+    r.acc += sim; let n = 0;
+    while (r.acc >= TICK && n < 24) { P.step(w, TICK); r.acc -= TICK; r.simT += TICK; n++; }
+    let vmax = 0; for (const x of w.balls) if (x.on) vmax = Math.max(vmax, Math.abs(x.vx) + Math.abs(x.vy));
+    SND.rolling(Math.min(8, vmax));
+    for (const e of w.snd) {
+      if (e.t === 'pocket') { scene.fall(P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), d.panOf(e.x, e.y)); }
+      else if (e.t === 'ball') { SND.ball(e.v, d.panOf(e.x, e.y)); if (e.v > 0.8) kick('beat'); }
+      else SND.rail(e.v, d.panOf(e.x, e.y));
+    }
+    w.snd.length = 0;
+    return r.acc / TICK;
+  }
+
+  /* ---- cameras for the cuts: [name, how it is set up for this shot] ---- */
+  function cutCam(k) {
+    const p = r.plan, away = Math.atan2(p.ux, -p.uy);          // the compass direction that puts the camera beyond the pocket, looking back
+    if (k === 0) return { az: away, el: 0.3, zoom: 0.25, tx: p.kx - p.ux * 0.16, ty: p.ky - p.uy * 0.16, spin: 0.1 };       // from behind the pocket, low
+    if (k === 1) return { az: away + Math.PI, el: 1.42, zoom: 0.2, tx: p.kx - p.ux * 0.1, ty: p.ky - p.uy * 0.1, spin: 0.35 }; // straight down, tight
+    return { az: away + Math.PI / 2, el: 0.22, zoom: 0.3, tx: p.kx - p.ux * 0.2, ty: p.ky - p.uy * 0.2, spin: -0.25 };        // from the side, at cloth level
   }
 
   function play(best) {
     const w = game.world;
-    highlights.restore(w, best.snap); w.snd.length = 0; scene.clearFalls();
+    r = { best, t: 0, stage: 'build', simT: 0, acc: 0, struck: false, cut: -1, cutAt: 0, plan: null, cam: null, fired: false };
+    rewind(0);
+    const p = r.plan = highlights.plan(game.P, w.balls.length, best), c = w.balls[w.cue];
     st.aim = best.aim; st.power = Math.min(1, game.powerOf(best.V)); st.spin = { x: best.a / 0.5, y: best.b / 0.5 };
-    const c = w.balls[w.cue];
-    r = { best, t: 0, simT: 0, acc: 0, stage: 'intro', plan: highlights.plan(game.P, w.balls.length, best), done: false, endAt: 1e9, hits: 0,
-      cam: { az: best.aim - Math.PI / 2 + 0.6, el: 0.62, zoom: 0.5, tx: c.x, ty: c.y } };
-    $('#reelWho').textContent = `${best.who} · ${best.tag}`; $('#reelCap').className = ''; $('#reelFx').textContent = '';
-    $('#reel').hidden = false; app.classList.add('reeling');
-    SND.music.start(); scene.setCam(r.cam);
+    // build-up pace: slow, but never longer than about four seconds of rolling
+    const roll = Math.max(0, p.tKey - HOLD); r.slow = Math.max(0.42, roll / 4.2);
+    r.lead = INTRO + roll / r.slow + 0.7;                      // real seconds from now to the drop
+    const info = SND.song.info; r.beat = 60 / (info ? info.bpm : 140); r.song = SND.song.play(r.lead);
+    r.cam = { az: best.aim - Math.PI / 2 + 1.0, el: 1.15, zoom: 1, tx: 0, ty: 0 }; r.from = Object.assign({}, r.cam); r.cue0 = [c.x, c.y];
+    $('#reelFx').textContent = ''; $('#reel').hidden = false; $('#reelFade').classList.remove('go');
+    app.classList.remove('colour'); app.classList.add('reeling');
+    scene.setCam(r.cam);
   }
   function stop() {
     if (!r) return; r = null;
-    SND.music.stop(); SND.rolling(0); scene.clearFalls();
-    $('#reel').hidden = true; app.classList.remove('reeling', 'punch', 'slow');
+    SND.song.stop(); SND.rolling(0); scene.clearFalls();
+    $('#reel').hidden = true; app.classList.remove('reeling', 'colour', 'hit', 'beat', 'impact', 'hold');
     scene.setOrbit(false); d.onEnd();
   }
 
-  // one frame of the reel; returns what the scene should show
+  // one frame; returns what the scene should show, or null once the reel is over
   function tick(dt) {
-    const P = game.P, w = game.world, b = r.best, cam = r.cam, cue = w.balls[w.cue];
+    const w = game.world, b = r.best, p = r.plan, cam = r.cam;
     r.t += dt;
-    let pull = 0.03, alpha = 1, focus = cue;
-    if (r.stage === 'intro') {
-      const k = ease(r.t / 1.1); pull = 0.03 + 0.22 * st.power * k;
-      cam.az = b.aim - Math.PI / 2 + 0.6 * (1 - ease(r.t / 1.4)) + 0.12;
-      if (r.t >= 1.4) { P.strike(w, b.aim, b.V, b.a, b.b); SND.cue(b.V, 0); punch(); r.stage = 'roll'; }
-    } else {
-      // slow right down for the last moment before it drops, then let go
-      const left = r.plan.tKey - r.simT, slow = !r.done && left > 0 && left < 0.3;
-      app.classList.toggle('slow', slow);
-      r.acc += dt * (slow ? 0.16 : r.done ? 0.9 : 0.6);
-      let n = 0; while (r.acc >= TICK && n < 20) { P.step(w, TICK); r.acc -= TICK; r.simT += TICK; n++; }
-      alpha = r.acc / TICK;
-      let vmax = 0; for (const x of w.balls) if (x.on) vmax = Math.max(vmax, Math.abs(x.vx) + Math.abs(x.vy));
-      SND.rolling(Math.min(8, vmax));
-      for (const e of w.snd) {
-        if (e.t === 'pocket') { scene.fall(P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), d.panOf(e.x, e.y)); if (!r.done && e.id === b.key) bigMoment(); }
-        else if (e.t === 'ball') { SND.ball(e.v, d.panOf(e.x, e.y)); if (e.v > 0.5 && r.hits < 5) { r.hits++; emoji('💥', ...at(e.x, e.y), 'pop'); punch(); } }
-        else { SND.rail(e.v, d.panOf(e.x, e.y)); if (e.v > 0.6) { SND.blip(); emoji('‼️', ...at(e.x, e.y), 'pop small'); } }
+    const song = r.song ? SND.song.time() : null, rel = song != null ? song : r.t - r.lead;   // seconds since the drop (negative before)
+    let pull = 0.03, alpha = 1, showCue = false;
+    const key = b.key >= 0 ? w.balls[b.key] : w.balls[w.cue], cue = w.balls[w.cue];
+    const follow = (o, k) => { const x = o.px != null ? o.px + (o.x - o.px) * alpha : o.x, y = o.py != null ? o.py + (o.y - o.py) * alpha : o.y; cam.tx += (x - cam.tx) * k; cam.ty += (y - cam.ty) * k; };
+
+    if (r.stage === 'build') {
+      const since = rel + r.lead;                              // seconds into the reel
+      if (!r.struck) {
+        // the camera comes down from a wide view to just behind the cue while the cue is drawn back
+        const k = ease(since / INTRO); showCue = true; pull = 0.03 + 0.24 * st.power * ease((since - 0.5) / (INTRO - 0.7));
+        cam.az = lerp(r.from.az, b.aim - Math.PI / 2 + 0.16, k); cam.el = lerp(r.from.el, 0.46, k); cam.zoom = lerp(1, 0.44, k);
+        cam.tx = lerp(0, r.cue0[0], k); cam.ty = lerp(0, r.cue0[1], k);
+        if (since >= INTRO) { game.P.strike(w, b.aim, b.V, b.a, b.b); r.struck = true; SND.cue(b.V, 0); kick('beat'); }
+      } else {
+        const held = r.simT >= p.tKey - HOLD;                  // the breath before the drop: almost frozen, pushing in on the pocket
+        app.classList.toggle('hold', held);
+        alpha = advance(dt * (held ? 0.025 : r.slow));
+        if (held) { cam.tx += (p.kx - p.ux * 0.12 - cam.tx) * Math.min(1, dt * 3); cam.ty += (p.ky - p.uy * 0.12 - cam.ty) * Math.min(1, dt * 3); cam.zoom += (0.24 - cam.zoom) * Math.min(1, dt * 1.6); cam.el += (0.5 - cam.el) * Math.min(1, dt * 2); }
+        else { follow(w.ev.firstHit != null && key.on ? key : cue, Math.min(1, dt * 5)); cam.az += dt * 0.16; cam.zoom += (0.46 - cam.zoom) * Math.min(1, dt * 2); }
+        if ((held && rel >= 0) || (!held && rel >= 1.5)) {     // the drop
+          r.stage = 'drop'; r.cutAt = Math.max(rel, 0) + 2 * r.beat; app.classList.remove('hold'); app.classList.add('colour');
+          impact(); kick('hit'); SND.boom();
+          const W = app.clientWidth, H = app.clientHeight; ['🔥', '💀', '🔥', '🗿', '🔥'].forEach((ch, i) => setTimeout(() => { if (r) emoji(ch, W * (0.2 + 0.6 * Math.random()), H * (0.6 + 0.2 * Math.random())); }, i * 90));
+        }
       }
-      w.snd.length = 0;
-      if (!r.done && b.key < 0 && w.ev.hits.includes(2) && w.ev.hits.includes(3)) bigMoment();          // carom: the second red is the moment
-      if (!r.done && P.rest(w)) { r.done = true; r.endAt = r.t + 0.8; }
-      // what to look at: the cue ball until it hits something, then the ball this shot is about
-      const key = b.key >= 0 ? w.balls[b.key] : null;
-      if (w.ev.firstHit != null && key && key.on) focus = key; else if (w.ev.firstHit != null && key) focus = null;
-      if (!r.done) { cam.az += dt * 0.2; cam.el += (0.58 - cam.el) * Math.min(1, dt * 2); cam.zoom += ((slow ? 0.36 : 0.52) - cam.zoom) * Math.min(1, dt * 3); }
-      else { cam.az += dt * 0.85; cam.el += (0.78 - cam.el) * Math.min(1, dt * 1.6); cam.zoom += (1 - cam.zoom) * Math.min(1, dt * 1.4); focus = { x: 0, y: 0 }; }
+    } else if (r.stage === 'drop' || r.stage === 'cuts') {
+      if (rel >= r.cutAt) {                                    // next camera, on the beat
+        r.cut++; r.cutAt += 2 * r.beat; kick('hit');
+        if (r.cut >= 3) { r.stage = 'out'; r.outAt = rel; }
+        else { r.stage = 'cuts'; rewind(Math.max(0, p.tKey - PRE)); Object.assign(cam, cutCam(r.cut)); r.cutT = 0; }
+      }
+      if (r.stage === 'drop') { alpha = advance(dt); cam.zoom += (0.3 - cam.zoom) * Math.min(1, dt * 4); cam.az += dt * 0.5; }
+      else if (r.stage === 'cuts') {
+        // each cut runs the last third of a second again: quick up to the pocket so the ball drops on the next beat's off-beat, then slower
+        r.cutT += dt; const L = 2 * r.beat, u = r.cutT / L;
+        alpha = advance(dt * (u < 0.55 ? PRE / (0.55 * L) : POST / (0.45 * L)));
+        cam.az += dt * (cam.spin || 0); cam.zoom *= 1 - dt * 0.12;                     // every camera creeps in
+        if (!r.fired && u >= 0.55) { r.fired = true; kick('beat'); }
+        if (u < 0.55) r.fired = false;
+      }
     }
-    if (focus) { const k = Math.min(1, dt * (r.done ? 1.5 : 5)), x = focus.px != null ? focus.px + (focus.x - focus.px) * alpha : focus.x, y = focus.py != null ? focus.py + (focus.y - focus.py) * alpha : focus.y; cam.tx += (x - cam.tx) * k; cam.ty += (y - cam.ty) * k; }
+    if (r.stage === 'out') {
+      const u = rel - r.outAt; alpha = advance(dt * 0.8);
+      cam.az += dt * 0.55; cam.el += (0.8 - cam.el) * Math.min(1, dt * 1.5); cam.zoom += (1.02 - cam.zoom) * Math.min(1, dt * 1.6); cam.tx += (0 - cam.tx) * Math.min(1, dt * 2); cam.ty += (0 - cam.ty) * Math.min(1, dt * 2);
+      if (u > 4 * r.beat) $('#reelFade').classList.add('go');
+      if (u > 4 * r.beat + 0.55) { stop(); return null; }
+    }
     scene.setCam(cam);
-    if (r.t > r.endAt) { stop(); return null; }
-    return { alpha, pull, cue: r.stage === 'intro' };
+    return { alpha, pull, cue: showCue };
   }
   return { play, tick, skip: stop, get playing() { return !!r; } };
 }
@@ -2492,7 +2559,7 @@ function seg(id, get, set) {
 let toastTimer = 0;
 function toast(msg, kind, ms) {
   const t = $('#toast'); if (!msg) return;
-  t.textContent = msg; t.className = 'show ' + (kind || '');
+  t.textContent = msg; t.dataset.t = msg; t.className = 'show ' + (kind || '');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 1800);
 }
 // where on the screen a table position is, left (-1) to right (1), kept gentle
@@ -2585,12 +2652,31 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    flatBtn('하이라이트 음악' + (SND.song.info ? ' · ' + SND.song.info.name : ''), sheetSong),
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
   ]);
 }
+// the song for the best-shot reel: picked from this device and kept on it
+const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+function sheetSong(busy) {
+  const info = SND.song.info;
+  openSheet('하이라이트 음악', [
+    note(info ? `${info.name} · 드롭 ${mmss(info.drop)} · ${Math.round(info.bpm)} BPM` : '최고의 샷 다시 보기에 깔 노래를 이 기기에서 고릅니다. 노래는 기기 안에만 저장되고, 드롭 앞뒤 30초만 씁니다.'),
+    busy ? note('노래를 읽는 중입니다…') : flatBtn(info ? '다른 노래 고르기' : '노래 고르기', () => $('#songFile').click()),
+    info ? el('div', { class: 'row' }, [flatBtn('드롭 0.1초 앞으로', async () => { await SND.song.nudge(-0.1); sheetSong(); }), flatBtn('드롭 0.1초 뒤로', async () => { await SND.song.nudge(0.1); sheetSong(); })]) : null,
+    info ? el('div', { class: 'row' }, [flatBtn('드롭 들어보기', () => { SND.init(); SND.song.play(2); setTimeout(() => SND.boom(), 2000); setTimeout(() => SND.song.stop(), 6000); }), flatBtn('지우기', async () => { await SND.song.clear(); sheetSong(); })]) : null,
+    info ? note('드롭은 자동으로 찾습니다. "드롭 들어보기"를 누르면 2초 뒤 쿵 소리와 드롭이 겹쳐야 맞는 것이고, 어긋나면 앞뒤로 옮기세요.') : null,
+  ]);
+}
+$('#songFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  sheetSong(true);
+  try { await SND.song.take(f); } catch (err) { toast('이 파일은 읽을 수 없습니다. mp3나 m4a, wav 파일로 해 보세요.', 'foul', 3200); }
+  sheetSong();
+});
 function sheetName(i) {
   if (i === 1 && prefs.vsAI) return;
   const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
@@ -3185,6 +3271,7 @@ function snapshot() {
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
 function start(data) {
+  SND.song.load();
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
