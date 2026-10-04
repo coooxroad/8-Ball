@@ -65,7 +65,7 @@ function createPhysics(cfg) {
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: 0, spit: 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue };
   }
 
   function place(w, id, x, y, rnd) {

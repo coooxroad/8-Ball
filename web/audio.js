@@ -236,6 +236,31 @@ function createAudio(isOn) {
       o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.9, t + 0.07);
       g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11); o.connect(g); g.connect(ui); o.start(t); o.stop(t + 0.12);
     },
+    // a soft low knock: a heartbeat while time is stopped
+    thump() {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(78, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.16);
+      g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.25);
+    },
+    // The sound for a bad shot. A buzzing low note whose pitch wanders and sags, chopped into flutters, through a mouth-shaped
+    // filter. kind: 0 plain, 1 short and squeaky, 2 long and low, 3 the big one that sputters out.
+    fart(kind) {
+      if (!ready()) return;
+      const v = [[0.55, 96, 0.72, 30], [0.32, 165, 1.35, 44], [0.9, 76, 0.66, 24], [1.7, 68, 0.55, 19]][Math.max(0, Math.min(3, kind | 0))], dur = v[0], f0 = v[1], t = ac.currentTime;
+      const o = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), bp = ac.createBiquadFilter(), am = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain(), env = ac.createGain(), n = ac.createBufferSource(), ng = ac.createGain();
+      o.type = 'sawtooth'; o2.type = 'square'; o.frequency.setValueAtTime(f0 * 1.3, t); o.frequency.linearRampToValueAtTime(f0, t + 0.06);
+      for (let x = 0.1; x < dur - 0.05; x += 0.045) o.frequency.linearRampToValueAtTime(f0 * (0.86 + Math.random() * 0.28) * (1 - 0.3 * x / dur), t + x);
+      o.frequency.linearRampToValueAtTime(f0 * v[2], t + dur);
+      o2.frequency.setValueAtTime(f0 * 0.5, t); o2.frequency.linearRampToValueAtTime(f0 * 0.5 * v[2], t + dur);
+      // the flutter slows down as it runs out of breath
+      lfo.type = 'square'; lfo.frequency.setValueAtTime(v[3] * 1.3, t); lfo.frequency.linearRampToValueAtTime(v[3] * 0.6, t + dur); lg.gain.value = 0.42; am.gain.value = 0.58; lfo.connect(lg); lg.connect(am.gain);
+      lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(380, t + dur); lp.Q.value = 4;
+      bp.type = 'peaking'; bp.frequency.value = 260; bp.Q.value = 1.4; bp.gain.value = 9;
+      n.buffer = white; n.loop = true; ng.gain.value = 0.05;
+      env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(0.62, t + 0.025); env.gain.setValueAtTime(0.62, t + dur * 0.7); env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(am); o2.connect(am); n.connect(ng); ng.connect(am); am.connect(lp); lp.connect(bp); bp.connect(env); env.connect(out);
+      for (const x of [o, o2, lfo, n]) { x.start(t); x.stop(t + dur + 0.05); }
+    },
     // tape running backwards: a wobbling whine that climbs for as long as the rewind lasts
     rewind(dur) {
       if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), l = ac.createOscillator(), lg = ac.createGain(), g = ac.createGain(), f = ac.createBiquadFilter();

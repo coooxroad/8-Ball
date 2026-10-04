@@ -395,7 +395,7 @@ function createScene(canvas, app, PH) {
     return { x: (scr.x + 1) / 2 * W, y: (1 - scr.y) / 2 * H, front: scr.z < 1 };
   }
   // the same, for many points in a row: call begin() once, then at(), which says whether the point is in front of the camera
-  const proj = { begin() { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); }, at(x, y, z, out) { scr.set(x, y, z || 0).project(camera); out[0] = (scr.x + 1) / 2 * W; out[1] = (1 - scr.y) / 2 * H; return scr.z < 1; } };
+  const proj = { begin() { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); }, at(x, y, z, out) { scr.set(x, y, z || 0).project(camera); out[0] = (scr.x + 1) / 2 * W; out[1] = (1 - scr.y) / 2 * H; return scr.z < 1 && scr.z > -1; } };
   // f > 1 moves the camera away, f < 1 brings it in
   function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
   function applyCamera(soft) {
@@ -422,9 +422,10 @@ function createScene(canvas, app, PH) {
         }
         d *= 1 + (k * 1.03 - 1) * 0.9;
       }
-      if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); }
-      else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); }
-    } else { fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
+      // a scripted camera may come in very close, so what it can see starts nearer to it
+      if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); camera.near = Math.max(0.05, Math.min(0.5, d * cam.zoom * 0.3)); }
+      else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
+    } else { camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;

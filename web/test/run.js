@@ -31,25 +31,25 @@ for (const name in TABLES) {
   console.log(`drills on ${name}: ${n} layouts checked`);
 }
 
-// the top level against the level below it: it has to finish its games, think in reasonable time, and win more than it loses
+// the top level: whenever it takes the table it has to keep it (a pot or a point on every shot), and so win from there
 {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
   for (const mode of ['eight', 'nine', 'four']) {
-    const N = 6, wins = [0, 0]; let worst = 0, shots = 0;
+    const N = 10; let worst = 0, shots = 0, missed = 0, turns = 0, sum = 0;
     for (let i = 0; i < N; i++) {
-      const top = i % 2;                                             // which seat the top level sits in; seats alternate so the break is shared
-      g.start(mode, ['A', 'B'], true, { level: 2, target: 5, rnd }); g.players[0].ai = true;
+      g.start(mode, ['A', 'B'], true, { level: 3, target: 10, rnd }); g.players[0].ai = true;
       let n = 0;
       while (!g.over && n < 400) {
-        g.level = g.turn === top ? 3 : 2;
-        const t0 = Date.now(), pl = g.aiPlan(); worst = Math.max(worst, Date.now() - t0);
+        const who = g.turn, wasBreak = g.isBreak, t0 = Date.now(), pl = g.aiPlan(), ms = Date.now() - t0; worst = Math.max(worst, ms); sum += ms;
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
         g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        if (!wasBreak) { turns++; if (!g.over && g.turn !== who) missed++; else if (g.over && g.over.winner !== who) missed++; }
       }
-      if (!g.over) fail(`top level, ${mode}: game did not finish in 400 shots`); else wins[g.over.winner === top ? 0 : 1]++;
+      if (!g.over) fail(`top level, ${mode}: game did not finish in 400 shots`);
       shots += n;
     }
-    console.log(`top level v level below, ${mode}: ${wins[0]}-${wins[1]}, ${Math.round(shots / N)} shots a game, slowest plan ${worst} ms`);
+    console.log(`top level, ${mode}: gave the table away ${missed} times in ${turns} shots, ${Math.round(shots / N)} shots a game, plans ${Math.round(sum / Math.max(1, shots))} ms on average, ${worst} ms at worst`);
+    if (missed > turns * 0.1) fail(`top level, ${mode}: gave the table away ${missed} times in ${turns} shots`);
   }
 }
 

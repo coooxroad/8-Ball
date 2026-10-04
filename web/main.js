@@ -242,7 +242,7 @@ function sheetSong(busy) {
   openSheet('하이라이트', [
     el('div', { class: 'lab', text: '편집' }),
     el('div', { class: 'pickrow' }, [['random', '랜덤']].concat(reel.STYLES).map(([id, name]) => el('button', { text: name, 'aria-pressed': String(prefs.edit === id), onclick: () => { SND.tap(); prefs.edit = id; savePrefs(); again(); } }))),
-    note('랜덤은 일곱 가지 편집이 한 번씩 돌아가며 나옵니다.'),
+    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 두 가지 편집이 번갈아 나옵니다.`),
     el('div', { class: 'lab', text: `노래 ${songs.length}/${SND.song.MAX}` }),
     songs.length ? el('div', null, songs.map(m => el('div', { class: 'song' + (m.on ? ' on' : ''), onclick: async () => { SND.tap(); await SND.song.toggle(m.id); again(); } }, [
       el('span', { class: 'chk', text: '✓' }),
@@ -393,13 +393,13 @@ const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
-  pending: null, best: null,                              // the shot in progress, and the best one of the match so far
+  pending: null, best: null, worst: null,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null; match.worst = null;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -409,7 +409,11 @@ const match = {
   beforeShot(V, a, b) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, out = game.resolve();
-    if (shot) { const r = highlights.rate(game.P, game.mode, shot, ev, out.r); if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign(shot, r); }
+    if (shot) {
+      const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
+      if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r);
+      if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad);
+    }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
   },
@@ -444,6 +448,8 @@ const match = {
     }
     const best = match.best; $('#bestBtn').hidden = !best;
     if (best) { $('#bestWho').textContent = best.who; $('#bestTag').textContent = best.tag; }
+    const worst = match.worst; $('#worstBtn').hidden = !worst;
+    if (worst) { $('#worstWho').textContent = worst.who; $('#worstTag').textContent = worst.tag; }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
   },
@@ -639,14 +645,19 @@ press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague();
 press('#homeBtn', goHome);
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
+const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
 async function playBest(style) {
   if (!match.best || st.screen === 'reel') return;
   await SND.song.prepare();
   if (st.screen !== 'result') return;
-  show('reel'); flow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
-  st.phase = 'reel'; reel.play(match.best, typeof style === 'string' ? style : prefs.edit);
+  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.best, typeof style === 'string' ? style : prefs.edit);
 }
-press('#bestBtn', () => playBest()); press('#reelSkip', () => reel.skip());
+// the worst shot of the match, played for laughs: no song
+function playWorst(style) {
+  if (!match.worst || st.screen !== 'result') return;
+  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.worst, style);
+}
+press('#bestBtn', () => playBest()); press('#worstBtn', () => playWorst()); press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
@@ -867,7 +878,7 @@ function start(data) {
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, match, reel, playBest, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, drills, practice, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

@@ -204,9 +204,128 @@ function createGame(PH) {
     return g.P.run(w2, 20);
   }
 
+  /* The top level does not miss. Every shot it thinks of is played out in full first, on a copy of the table, and only one
+     that was seen to work is taken - struck exactly as it was tried. Given the choice it shows off: off a cushion into the
+     ball, the ball off a cushion into the pocket, one ball into another. It still prefers a shot that leaves it another. */
+  function aiShow(cands, targets, speed, good, ctx) {
+    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], me = g.turn, found = [];
+    let sims = 0;
+    // is there a plain pot on for the same player, at a ball it will be allowed to hit, once the balls have stopped?
+    const leaveOf = w2 => {
+      const c2 = w2.balls[w2.cue]; if (!c2.on) return 0;
+      let next = targets.filter(t => w2.balls[t].on);
+      if (g.modeId === 'nine') { const low = w2.balls.find(b => b.on && b.id !== w2.cue); next = low ? [low.id] : []; }
+      else if (!next.length && g.modeId === 'eight') next = [8];
+      for (const t of next) { const T = w2.balls[t]; if (!T.on) continue;
+        for (const p of POCKETS) {
+          let dx = p.ax - T.x, dy = p.ay - T.y; const dl = Math.hypot(dx, dy); dx /= dl; dy /= dl;
+          const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R, cx = gx - c2.x, cy = gy - c2.y, cl = Math.hypot(cx, cy);
+          if (cl < 1e-4 || (cx * dx + cy * dy) / cl < 0.5) continue;
+          if (P.pathClear(w2, T.x, T.y, p.ax, p.ay, [0, T.id]) && P.pathClear(w2, c2.x, c2.y, gx, gy, [0, T.id])) return 1;
+        } }
+      return 0;
+    };
+    const tryShot = (angle, V, pos, flair) => {
+      sims++; const w2 = P.clone(w);
+      if (pos) { const c2 = w2.balls[w2.cue]; c2.x = c2.px = pos[0]; c2.y = c2.py = pos[1]; }
+      P.strike(w2, angle, V, 0, 0);
+      const r = g.mode.evaluate(P.run(w2, 20), ctx, g); if (!good(r)) return false;
+      const pots = w2.ev.pocketed.length;
+      found.push({ pos: pos || null, angle, V, flair, score: (r.win === me ? 100 : 0) + flair + 1.5 * (pots - 1) + 6 * leaveOf(w2) + Math.random() * 0.8 });
+      return true;
+    };
+    // plain pots, easiest first
+    let plain = 0;
+    for (const k of cands.slice(0, 14)) {
+      let ok = false;
+      for (const m of [1, 0.78, 1.3, 0.62]) { for (const da of [0, 0.002, -0.002, 0.005, -0.005]) if (tryShot(k.angle + da, Math.min(6.6, speed(k) * m), k.pos, 0)) { ok = true; break; } if (ok) break; }
+      if (ok && ++plain >= (targets.length <= 2 ? 9 : 4)) break;
+    }
+    if (!g.placing) {
+      // the showy ones, worked out with mirrors and then tried a little to either side, because a real cushion is not a mirror
+      const rails = [['y', HW - R], ['y', -(HW - R)], ['x', HL - R], ['x', -(HL - R)]], tricks = [];
+      const mirror = (x, y, rl) => rl[0] === 'y' ? [x, 2 * rl[1] - y] : [2 * rl[1] - x, y];
+      const bounce = (x0, y0, mx, my, rl) => {
+        if (rl[0] === 'y') { const t = (rl[1] - y0) / (my - y0); if (!(t > 0.02 && t < 0.98)) return null; const x = x0 + (mx - x0) * t; return Math.abs(x) > HL - 0.17 || Math.abs(x) < 0.14 ? null : [x, rl[1]]; }
+        const t = (rl[1] - x0) / (mx - x0); if (!(t > 0.02 && t < 0.98)) return null; const y = y0 + (my - y0) * t; return Math.abs(y) > HW - 0.17 ? null : [rl[1], y];
+      };
+      const inside = (x, y) => Math.abs(x) < HL - R && Math.abs(y) < HW - R;
+      const others = w.balls.filter(b => b.on && b.id !== w.cue).map(b => b.id);
+      for (const t of targets) { const T = w.balls[t];
+        for (const p of POCKETS) {
+          // the ball off a cushion and in
+          for (const rl of rails) {
+            const m = mirror(p.ax, p.ay, rl), B = bounce(T.x, T.y, m[0], m[1], rl); if (!B) continue;
+            let dx = m[0] - T.x, dy = m[1] - T.y; const dl = Math.hypot(dx, dy); dx /= dl; dy /= dl;
+            const ix = p.ax - B[0], iy = p.ay - B[1], il = Math.hypot(ix, iy); if ((ix * p.nx + iy * p.ny) / il < 0.45) continue;
+            const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R; if (!inside(gx, gy)) continue;
+            let cx = gx - c.x, cy = gy - c.y; const cl = Math.hypot(cx, cy); if (cl < 1e-4) continue; cx /= cl; cy /= cl;
+            if (cx * dx + cy * dy < 0.45) continue;
+            if (!P.pathClear(w, T.x, T.y, B[0], B[1], [0, t]) || !P.pathClear(w, B[0], B[1], p.ax, p.ay, [0, t]) || !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) continue;
+            tricks.push({ angle: Math.atan2(cy, cx), len: cl + dl, flair: 3, Vs: [3.2, 4.4], step: 0.005 });
+          }
+          let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
+          if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55) || !P.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
+          const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R; if (!inside(gx, gy)) continue;
+          // the cue ball off a cushion first
+          for (const rl of rails) {
+            const m = mirror(gx, gy, rl), B = bounce(c.x, c.y, m[0], m[1], rl); if (!B) continue;
+            const ix = gx - B[0], iy = gy - B[1], il = Math.hypot(ix, iy); if (il < 0.05 || (ix * dx + iy * dy) / il < 0.5) continue;
+            if (!P.pathClear(w, c.x, c.y, B[0], B[1], [0]) || !P.pathClear(w, B[0], B[1], gx, gy, [0, t])) continue;
+            tricks.push({ angle: Math.atan2(m[1] - c.y, m[0] - c.x), len: Math.hypot(m[0] - c.x, m[1] - c.y) + dTP, flair: 3, Vs: [3.0, 4.2], step: 0.005 });
+          }
+        }
+        // through another ball: the cue ball sends this one into that one, and that one goes in
+        for (const o of others) { if (o === t) continue; const O = w.balls[o];
+          for (const p of POCKETS) {
+            let dx = p.ax - O.x, dy = p.ay - O.y; const dOP = Math.hypot(dx, dy); dx /= dOP; dy /= dOP;
+            if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55) || !P.pathClear(w, O.x, O.y, p.ax, p.ay, [0, o])) continue;
+            const hx = O.x - dx * 2 * R, hy = O.y - dy * 2 * R; let ex = hx - T.x, ey = hy - T.y; const el = Math.hypot(ex, ey); if (el < 1e-4) continue; ex /= el; ey /= el;
+            if (ex * dx + ey * dy < 0.7 || !P.pathClear(w, T.x, T.y, hx, hy, [0, t, o])) continue;
+            const gx = T.x - ex * 2 * R, gy = T.y - ey * 2 * R; if (!inside(gx, gy)) continue;
+            let cx = gx - c.x, cy = gy - c.y; const cl = Math.hypot(cx, cy); if (cl < 1e-4) continue; cx /= cl; cy /= cl;
+            if (cx * ex + cy * ey < 0.7 || !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) continue;
+            tricks.push({ angle: Math.atan2(cy, cx), len: cl + el + dOP, flair: 2.5, Vs: [3.4, 4.8], step: 0.002 });
+          } }
+      }
+      tricks.sort((a, b) => a.len - b.len);
+      let shown = 0;
+      for (const k of tricks) {
+        if (sims > 620 || shown >= 3) break;
+        let ok = false;
+        for (let i = 0; i <= 14 && !ok; i++) { const da = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * k.step; for (const V of k.Vs) if (tryShot(k.angle + da, V, null, k.flair)) { ok = true; break; } }
+        if (ok) shown++;
+      }
+    }
+    if (!found.length) {
+      // nothing obvious: sweep finely across every ball it may hit (from a few places, with the ball in hand), then round the whole clock
+      const spots = g.placing ? [[-HL / 2, 0], [0, 0], [HL / 2, 0], [0, HW / 2], [0, -HW / 2]].map(q => P.isFree(w, q[0], q[1], 0) ? q : P.findFree(w, q[0], q[1], 0)) : [null];
+      const order = targets.map(t => w.balls[t]);
+      sweep: for (const pos of spots) {
+        const fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y;
+        order.sort((p, q) => Math.hypot(p.x - fx, p.y - fy) - Math.hypot(q.x - fx, q.y - fy));
+        for (const T of order) {
+          const dd = Math.hypot(T.x - fx, T.y - fy), base = Math.atan2(T.y - fy, T.x - fx), half = Math.asin(Math.min(1, 2 * R / Math.max(dd, 2 * R))) * 0.98;
+          for (let i = 0; i <= 44; i++) { const f = (i % 2 ? 1 : -1) * Math.ceil(i / 2) / 22; for (const V of [2.6, 4.2]) if (tryShot(base + f * half, V, pos, 1)) break sweep; }
+        }
+      }
+      if (!found.length && !g.placing) {
+        // still nothing: come at each ball off every cushion, sweeping wide because the cushion will not send it quite where a mirror says
+        kick: for (const T of order) for (const [ax, v] of [['y', HW - R], ['y', -(HW - R)], ['x', HL - R], ['x', -(HL - R)]]) {
+          const mx = ax === 'y' ? T.x : 2 * v - T.x, my = ax === 'y' ? 2 * v - T.y : T.y, base = Math.atan2(my - c.y, mx - c.x);
+          for (let i = 0; i <= 40; i++) { const da = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.004; for (const V of [2.6, 3.8, 5]) if (tryShot(base + da, V, null, 3)) break kick; }
+        }
+      }
+      if (!found.length) { const pos = spots[0], ph = Math.random() * 6.283; clock: for (let i = 0; i < 480; i++) for (const V of [3, 4.6]) if (tryShot(ph + i * Math.PI / 240, V, pos, 1)) break clock; }
+    }
+    if (!found.length) return null;
+    found.sort((a, b) => b.score - a.score);
+    return { pos: found[0].pos, angle: found[0].angle, V: found[0].V, flair: found[0].flair };
+  }
+
   function aiPool() {
     const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.level, me = g.turn;
-    const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016, 0.0003][lvl];
+    const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016, 0][lvl];
     if (g.isBreak) {
       const y = (Math.random() - 0.5) * 0.3, pos = [-HL / 2 - 0.1, y];
       return { pos, angle: Math.atan2(-y * 0.92, HL / 2 - pos[0]) + gauss() * 0.003, V: g.vOf(0.94 + Math.random() * 0.06) };
@@ -237,29 +356,11 @@ function createGame(PH) {
     }
     cands.sort((a, b) => a.score - b.score);
     const speed = k => Math.min(6.4, Math.max(1.3, (1.0 + 1.5 * Math.sqrt(k.dTP)) / Math.max(0.4, k.cosc) + 0.9 * Math.sqrt(k.dCG)));
+    if (lvl >= 3) { const show = aiShow(cands, targets, speed, good, ctx); if (show) return show; }
     if (cands.length) {
       let pick = null;
       if (lvl === 0) { const k = cands[Math.min(cands.length - 1, Math.floor(Math.random() * 2))]; pick = { pos: k.pos, angle: k.angle, V: speed(k) }; }
-      else if (lvl >= 3) {
-        // the top level tries more ways of playing each pot and keeps the one that leaves the cue ball with the most to shoot at next
-        let found = 0, bestLeave = -1;
-        outer3: for (const k of cands.slice(0, 14)) for (const m of [1, 0.78, 1.3, 0.62]) for (const da of [0, 0.002, -0.002, 0.004, -0.004]) {
-          const V = Math.min(6.6, speed(k) * m), w2 = P.clone(w);
-          if (k.pos) { const c2 = w2.balls[w2.cue]; c2.x = k.pos[0]; c2.y = k.pos[1]; }
-          P.strike(w2, k.angle + da, V, 0, 0);
-          if (!good(g.mode.evaluate(P.run(w2, 20), ctx, g))) continue;
-          const c2 = w2.balls[w2.cue]; let leave = 0;
-          for (const t of targets) { const T = w2.balls[t]; if (!T.on) continue;
-            for (const p of POCKETS) {
-              let dx = p.ax - T.x, dy = p.ay - T.y; const dl = Math.hypot(dx, dy); dx /= dl; dy /= dl;
-              const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R, cx = gx - c2.x, cy = gy - c2.y, cl = Math.hypot(cx, cy);
-              if (cl < 1e-4 || (cx * dx + cy * dy) / cl < 0.5) continue;
-              if (P.pathClear(w2, T.x, T.y, p.ax, p.ay, [0, t]) && P.pathClear(w2, c2.x, c2.y, gx, gy, [0, t])) { leave += 1 / (0.4 + cl + dl); break; }
-            } }
-          if (leave > bestLeave) { bestLeave = leave; pick = { pos: k.pos, angle: k.angle + da, V }; }
-          if (++found >= 10) break outer3;
-        }
-      } else {
+      else {
         const top = cands.slice(0, lvl === 2 ? 10 : 5);
         outer: for (const k of top) for (const m of [1, 0.78, 1.3]) for (const da of [0, 0.003, -0.003]) {
           const V = Math.min(6.6, speed(k) * m);
@@ -296,12 +397,29 @@ function createGame(PH) {
 
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
-    const nA = [72, 96, 144, 180][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]][lvl], noise = [0.02, 0.009, 0.003, 0.0008][lvl];
+    const nA = [72, 96, 144, 360][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]][lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
-    for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) {
+    const flair = [];                                         // top level: scoring shots it saw, and whether the cue ball went round the cushions to do it
+    if (lvl >= 3) {
+      const all = []; for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) all.push([phase + i * 2 * Math.PI / nA, Vs[vi]]);
+      for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)), x = all[i]; all[i] = all[j]; all[j] = x; }
+      let fancy = 0;
+      for (let i = 0; i < all.length && fancy < 2 && !(i > 400 && flair.length); i++) {
+        const w2 = g.P.clone(w); g.P.strike(w2, all[i][0], all[i][1], 0, 0);
+        const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g), railed = w2.ev.railed.includes(w2.cue);
+        if (r.pts > 0) { flair.push({ angle: all[i][0], V: all[i][1], s: (railed ? 3 : 0) + Math.random() }); if (railed) fancy++; }
+      }
+      // nothing yet: look again between the angles already tried, at other speeds
+      if (!flair.length) again: for (const V of [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
+        const a = phase + (i + 0.5) * Math.PI / 360;
+        if (g.mode.evaluate(simShot(a, V), ctx, g).pts > 0) { flair.push({ angle: a, V, s: 0 }); break again; }
+      }
+    } else for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) {
       const a = phase + i * 2 * Math.PI / nA, r = g.mode.evaluate(simShot(a, Vs[vi]), ctx, g);
       if (r.pts > 0) hit[vi][i] = true; else if (!r.foul) okay.push({ angle: a, V: Vs[vi] });
     }
+    // the top level takes a shot it has seen score, exactly as it saw it - by way of the cushions when it can
+    if (flair.length) { flair.sort((p, q) => q.s - p.s); return { pos: null, angle: flair[0].angle, V: flair[0].V }; }
     let best = null, bs = -1;
     for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) if (hit[vi][i]) {
       let run = 1; for (let k = 1; k < 6 && hit[vi][(i + k) % nA] && hit[vi][(i - k + nA) % nA]; k++) run += 2;

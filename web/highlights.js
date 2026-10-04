@@ -35,6 +35,27 @@ function createHighlights() {
     return { score, tag, key: main.id };
   }
 
+  // And how bad was that? 0 for a shot nobody would laugh at. `kind` says what went wrong and `ball` which ball did it:
+  //   lost - the game thrown away   scratch - the cue ball in a pocket   air - nothing hit at all
+  //   wrong - the wrong ball first   miss - a pot that was on and did not go
+  function rateWorst(P, mode, shot, ev, res) {
+    if (shot.isBreak) return { score: 0 };
+    const cueId = shot.snap.cue, cue = shot.snap.balls[cueId], first = ev.firstHit, scratch = ev.pocketed.some(p => p.id === cueId);
+    if (mode.table !== 'carom' && res.win != null && res.win !== shot.turn) {
+      const last = ev.pocketed.filter(p => p.id !== cueId).pop();
+      return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
+    }
+    if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
+    if (first == null) return { score: 50, tag: '아무것도 못 맞힘', kind: 'air', ball: cueId };
+    if (res.foul) return { score: 30, tag: '엉뚱한 공부터', kind: 'wrong', ball: first };
+    if (mode.table === 'carom') return res.pts > 0 ? { score: 0 } : { score: 12 + 6 / (0.3 + dist(cue, shot.snap.balls[first])), tag: '빗나간 샷', kind: 'miss', ball: cueId };
+    if (res.keep || ev.pocketed.length) return { score: 0 };
+    // a miss is funnier the easier the pot was: short, and close to a pocket
+    const b = shot.snap.balls[first]; let dp = 9; for (const p of P.POCKETS) dp = Math.min(dp, dist(b, [p.x, p.y]));
+    const ease = 1 / (0.25 + dist(cue, b) + dp);
+    return { score: 10 + 14 * ease, tag: ease > 1.1 ? '이걸 놓침' : '빗나간 샷', kind: 'miss', ball: first };
+  }
+
   // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red
   // is hit), where on the table that is, and which way the ball was travelling as it got there.
   function plan(P, n, shot) {
@@ -67,7 +88,26 @@ function createHighlights() {
     while (!P.rest(w) && count < 30 * 120) { P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put(); }
     if (tape.tKey < 0) tape.tKey = Math.min((count - 1) * TICK, 1);
     if (tape.tHit < 0) tape.tHit = tape.tKey;
-    return Object.assign(tape, { nb, count, data, events, dur: (count - 1) * TICK, cue: shot.snap.cue });
+    Object.assign(tape, { nb, count, data, events, dur: (count - 1) * TICK, cue: shot.snap.cue });
+    if (shot.kind) blunder(P, tape, shot);
+    return tape;
+  }
+  // For a bad shot the moment worth showing is the moment it went wrong: the ball dropping that should not have, the wrong
+  // ball being hit, the nearest the ball came to the pocket it missed, or the cue ball rolling to a stop having hit nothing.
+  function blunder(P, tape, shot) {
+    const id = shot.ball, a = [0, 0], b = [0, 0]; let t = tape.dur;
+    const drop = tape.events.find(e => e.t === 'pocket' && e.id === id);
+    if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
+    else {
+      if (shot.kind === 'wrong') t = tape.tHit;
+      else if (shot.kind === 'miss' && P.POCKETS.length) {
+        let best = 9; for (let i = Math.round(tape.tHit / TICK); i < tape.count; i += 2) { if (!at(tape, id, i * TICK, a)) break; for (const p of P.POCKETS) { const d = Math.hypot(a[0] - p.x, a[1] - p.y); if (d < best) { best = d; t = i * TICK; } } }
+      }
+      at(tape, id, t, a); tape.kx = a[0]; tape.ky = a[1];
+    }
+    at(tape, id, Math.max(0, t - 0.06), a); at(tape, id, Math.max(0, t - 0.01), b);
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l > 1e-5) { tape.ux = (b[0] - a[0]) / l; tape.uy = (b[1] - a[1]) / l; }
+    tape.tKey = Math.max(0.05, t); if (tape.tHit > tape.tKey) tape.tHit = tape.tKey;
   }
   // put the balls of a world where the tape has them at time t; returns the speed of the fastest ball (m/s)
   function seek(w, tape, t) {
@@ -106,6 +146,6 @@ function createHighlights() {
     if (pts[pts.length - 1] !== pt) pts.push(px, py, pt);
     return new Float32Array(pts);
   }
-  return { snapshot, restore, rate, plan, record, seek, at, path };
+  return { snapshot, restore, rate, rateWorst, plan, record, seek, at, path };
 }
 if (typeof module !== 'undefined') module.exports = createHighlights;

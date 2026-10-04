@@ -265,16 +265,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #reelBig{position:absolute;left:50%;top:50%;z-index:2;font-size:min(36vh,34vw);line-height:1;font-style:normal;white-space:nowrap;transform:translate(-50%,-50%) scale(0);opacity:0}
 #reelBig.skull,#reelBig.gone{top:31%;font-size:min(27vh,24vw)}
 #reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards;filter:drop-shadow(0 0 40px rgba(0,0,0,.8))}
+#reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards,wob .5s .45s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:translate(-50%,-50%) rotate(-5deg) scale(1)}50%{transform:translate(-50%,-50%) rotate(5deg) scale(1.06)}}
 #reelBig.gone{animation:gone .22s ease-in forwards}
+#reelBig.num3{font:italic 800 min(36vh,32vw)/1 'Outfit',sans-serif;color:#fff;-webkit-text-stroke:14px #0b0d12;paint-order:stroke fill;text-shadow:8px 0 #ff2d55,-8px 0 #19e3ff;animation:num3 .42s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes num3{0%{transform:translate(-50%,-50%) scale(2.8);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.92}}
 @keyframes skull{0%{transform:translate(-50%,-50%) scale(3);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 @keyframes gone{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(3.4);opacity:0}}
-#reelBig.count{left:auto;right:6%;top:20%;transform:none;opacity:1;font:italic 800 clamp(48px,10vw,120px)/1 'Outfit',sans-serif;color:#fff;-webkit-text-stroke:10px #0b0d12;paint-order:stroke fill;transform-origin:100% 50%}
+#reelBig.count{left:auto;right:6%;top:20%;transform:none;opacity:1;font:italic 800 clamp(48px,10vw,120px)/1 'Outfit',sans-serif;color:hsl(calc(48 - 48*var(--hot,0)) 100% calc(100% - 42%*var(--hot,0)));text-shadow:0 0 calc(40px*var(--hot,0)) #ff7a1a;-webkit-text-stroke:10px #0b0d12;paint-order:stroke fill;transform-origin:100% 50%}
 #reelBig.count.pop{animation:cpop .22s cubic-bezier(.2,1.6,.4,1)}
 #reelBig.count.last{color:#ffe04a;animation:cpop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes cpop{0%{transform:scale(1.7) rotate(-6deg)}100%{transform:scale(1)}}
 /* tape running backwards */
-#reel .rw{position:absolute;right:22px;top:calc(9% + 14px);z-index:2;font:800 30px/1 'Outfit',sans-serif;color:#fff;letter-spacing:-.12em;display:none;animation:blink .24s steps(2) infinite}
-.rew #reel .rw{display:block}
+#reelTag{position:absolute;right:22px;top:calc(9% + 14px);z-index:2;font:800 20px/1 'Outfit','Gothic A1',sans-serif;color:#fff;letter-spacing:.04em;text-shadow:0 0 6px rgba(0,0,0,.8),2px 0 #ff2d55,-2px 0 #19e3ff;animation:blink .5s steps(2) infinite}
 .rew #reel::before{content:"";position:absolute;inset:-6px 0;z-index:1;background:repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 2px,transparent 2px 6px),linear-gradient(0deg,transparent 0 62%,rgba(255,255,255,.16) 64%,transparent 70%);animation:vhs .13s steps(3) infinite}
 @keyframes vhs{0%{transform:translateY(-6px)}100%{transform:translateY(6px)}}
 @keyframes blink{0%{opacity:1}100%{opacity:.25}}
@@ -288,7 +291,24 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* the grade: drained before the drop, rich after it; one or two frames of negative on the hit itself */
 .reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
 .reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
+/* three looks a cut can take: rich, bleached, and black-and-white with the contrast up (none of them changes which colour a ball is) */
+.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)}
+.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)}
+.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)}
 .reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)}
+.reeling.rew #gl{animation:trk .16s steps(2) infinite}
+@keyframes trk{0%{transform:skewX(-.5deg) translateX(-4px)}100%{transform:skewX(.4deg) translateX(3px)}}
+/* a streak of light across the picture on the drop, a softer flash for cuts, the frame glowing in the ball's colour on each beat */
+#reelStreak{position:absolute;left:-10%;right:-10%;top:50%;height:10px;margin-top:-5px;z-index:2;opacity:0;border-radius:50%;background:radial-gradient(ellipse at center,#fff 0,rgba(255,255,255,.85) 18%,var(--kc,#fff) 45%,transparent 72%);filter:blur(1.5px);mix-blend-mode:screen}
+#reelStreak.go{animation:streak .55s cubic-bezier(.1,.8,.2,1)}
+@keyframes streak{0%{opacity:1;transform:scale(.1,3.2)}30%{opacity:.95;transform:scale(1,1.4)}100%{opacity:0;transform:scale(1.25,.2)}}
+#reelFlash.soft{animation:flashS .22s ease-out}
+@keyframes flashS{0%{opacity:.34}100%{opacity:0}}
+#reel .glowE{position:absolute;left:0;right:0;top:9%;bottom:9%;z-index:1;opacity:0;box-shadow:inset 0 0 90px 14px var(--kc,#fff);mix-blend-mode:screen}
+.pulse #reel .glowE{animation:glowE .42s ease-out}
+@keyframes glowE{0%{opacity:.75}100%{opacity:0}}
+.rfx.fall{animation:rfall 2.4s cubic-bezier(.4,0,.8,.6) forwards;font-size:44px}
+@keyframes rfall{0%{transform:translateY(-60px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),105vh) rotate(calc(var(--rot)*8));opacity:0}}
 .reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05);transition:none}
 .reeling.impact #gl{filter:invert(1) contrast(1.5);transition:none}
 .hit #gl,.hit #reelCv{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
@@ -355,11 +375,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .srow .bar.l{justify-content:flex-end}
 .srow .bar i{display:block;height:100%;width:var(--w);border-radius:3px;background:var(--win)}
 .srow .bar.r i{background:var(--sub);opacity:.6}
-#bestBtn{width:100%;max-width:720px;display:flex;align-items:center;gap:14px;padding:14px 20px;text-align:left}
-#bestBtn .k{font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;color:var(--sub)}
-#bestBtn b{font-size:18px;font-weight:var(--w-name);color:var(--fg)}
-#bestBtn .tg{font-size:14px;color:var(--sub);flex:1}
-#bestBtn .go{font-weight:700;color:var(--win);white-space:nowrap}
+.r-shots{width:100%;max-width:720px;display:flex;gap:12px;flex-wrap:wrap}
+.r-shots:not(:has(.shotBtn:not([hidden]))){display:none}
+.shotBtn{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:12px;padding:14px 18px;text-align:left}
+.shotBtn .k{font-family:'Outfit',sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:var(--sub);white-space:nowrap}
+.shotBtn b{font-size:17px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
+.shotBtn .tg{font-size:13.5px;color:var(--sub);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shotBtn .go{font-weight:700;color:var(--win);white-space:nowrap}
+.shotBtn.worst .go,.shotBtn.worst .k{color:#e5484d}
 .stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .stat .k{font-size:13px;color:var(--sub)}
 .stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
@@ -462,7 +485,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <canvas id="reelCv"></canvas>
     <div class="lb t"></div><div class="lb b"></div>
     <div id="reelFx"></div>
-    <i id="reelBig"></i><b class="rw">◀◀</b>
+    <div class="glowE"></div><div id="reelStreak"></div>
+    <i id="reelBig"></i><b id="reelTag" hidden></b>
     <div id="reelFlash"></div>
     <div id="reelFade"></div>
     <button class="btn" id="reelSkip">건너뛰기</button>
@@ -486,7 +510,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="r-lose" id="rLose"><i class="av"></i><span class="nm"></span></div>
     </div>
     <div id="rStats" class="panel"></div>
-    <button class="panel" id="bestBtn" hidden><span class="k">BEST SHOT</span><b id="bestWho"></b><span class="tg" id="bestTag"></span><span class="go">▶ 다시 보기</span></button>
+    <div class="r-shots">
+      <button class="panel shotBtn" id="bestBtn" hidden><span class="k">BEST SHOT</span><b id="bestWho"></b><span class="tg" id="bestTag"></span><span class="go">▶</span></button>
+      <button class="panel shotBtn worst" id="worstBtn" hidden><span class="k">WORST SHOT</span><b id="worstWho"></b><span class="tg" id="worstTag"></span><span class="go">▶</span></button>
+    </div>
     <p id="rWhy"></p>
     <div class="r-btns"><button class="btn" id="homeBtn">처음으로</button><button class="btn cta" id="againBtn">한 판 더</button></div>
   </section>
