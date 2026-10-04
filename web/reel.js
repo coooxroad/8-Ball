@@ -569,7 +569,9 @@ function createReel(d) {
         Object.assign(cam, { az: topAz() + 0.28, el: 1.05, zoom: 0.95, tx: 0, ty: 0 }); r.w = 1;
         // where each ball leaves a copy of itself: every couple of ball-widths along its line
         const a = [0, 0], gap = game.P.R * 2.5;
-        for (const p of r.paths) { p.gh = []; let lx = p.pts[0], ly = p.pts[1]; for (let t = 0; t <= p.pts[p.pts.length - 1]; t += 1 / 120) { if (!HL.at(tp, p.id, t, a)) break; if (Math.hypot(a[0] - lx, a[1] - ly) >= gap) { p.gh.push(a[0], a[1], t); lx = a[0]; ly = a[1]; } } }
+        // (when many balls fly, as on a break, only the two the shot is about leave copies: the rest just draw thin lines)
+        const few = r.paths.length <= 5;
+        for (const p of r.paths) { p.gh = []; if (!few && p.id !== tp.cue && p.id !== r.key) continue; let lx = p.pts[0], ly = p.pts[1]; for (let t = 0; t <= p.pts[p.pts.length - 1]; t += 1 / 120) { if (!HL.at(tp, p.id, t, a)) break; if (Math.hypot(a[0] - lx, a[1] - ly) >= gap) { p.gh.push(a[0], a[1], t); lx = a[0]; ly = a[1]; } } }
         return 1.5 + buildPlan(tp.tKey - HOLD, 0.5, 5);
       },
       step(dt, since, rel) {

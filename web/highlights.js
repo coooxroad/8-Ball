@@ -48,9 +48,15 @@ function createHighlights() {
       return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
     }
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
-    if (first == null) return { score: 50, tag: '아무것도 못 맞힘', kind: 'air', ball: cueId };
-    if (res.foul) return { score: 30, tag: '엉뚱한 공부터', kind: 'wrong', ball: first };
-    if (mode.table === 'carom') return res.pts > 0 ? { score: 0 } : { score: 12 + 6 / (0.3 + dist(cue, shot.snap.balls[first])), tag: '빗나간 샷', kind: 'miss', ball: cueId };
+    if (first == null) return { score: 50, tag: '아무것도 못 맞힘', kind: 'air', ball: cueId, near: -1 };
+    // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
+    if (res.foul) { const wrong = /먼저|상대 공/.test(res.foul); return { score: wrong ? 30 : 14, tag: wrong ? '엉뚱한 공부터' : '맞히고도 파울', kind: 'wrong', ball: first }; }
+    if (mode.table === 'carom') {
+      if (res.pts > 0) return { score: 0 };
+      // which ball it failed to reach: the moment to show is the cue ball going past it
+      const near = caromTargets(shot.snap.balls.length, cueId).find(i => !ev.hits.includes(i));
+      return { score: 12 + 6 / (0.3 + dist(cue, shot.snap.balls[first])), tag: '빗나간 샷', kind: 'miss', ball: cueId, near };
+    }
     if (res.keep || ev.pocketed.length) return { score: 0 };
     // a miss is funnier the easier the pot was: short, and close to a pocket
     const b = shot.snap.balls[first]; let dp = 9; for (const p of P.POCKETS) dp = Math.min(dp, dist(b, [p.x, p.y]));
@@ -103,7 +109,10 @@ function createHighlights() {
     if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
     else {
       if (shot.kind === 'wrong') t = tape.tHit;
-      else if (shot.kind === 'miss' && P.POCKETS.length) {
+      else if (shot.near != null) {
+        // the cue ball sailing past: the nearest it came to the ball it should have hit (or, having hit nothing, to any ball)
+        let best = 9; for (let i = 1; i < tape.count; i += 2) { if (!at(tape, id, i * TICK, a)) break; for (let j = 0; j < tape.nb; j++) { if (j === id || (shot.near >= 0 && j !== shot.near) || !at(tape, j, i * TICK, b)) continue; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (d < best) { best = d; t = i * TICK; } } }
+      } else if (shot.kind === 'miss' && P.POCKETS.length) {
         let best = 9; for (let i = Math.round(tape.tHit / TICK); i < tape.count; i += 2) { if (!at(tape, id, i * TICK, a)) break; for (const p of P.POCKETS) { const d = Math.hypot(a[0] - p.x, a[1] - p.y); if (d < best) { best = d; t = i * TICK; } } }
       }
       at(tape, id, t, a); tape.kx = a[0]; tape.ky = a[1];
@@ -116,7 +125,7 @@ function createHighlights() {
   function seek(w, tape, t) {
     const d = tape.data, S = tape.nb * F, f = Math.max(0, Math.min(tape.count - 1, t / TICK)), i = Math.min(tape.count - 2, Math.floor(f)), k = f - i; let vmax = 0;
     for (let j = 0; j < tape.nb; j++) {
-      const b = w.balls[j], o = Math.max(0, i) * S + j * F, o2 = tape.count > 1 ? o + S : o, both = d[o + 2] && d[o2 + 2], u = both ? k : 0;
+      const b = w.balls[j], o = Math.max(0, i) * S + j * F, o2 = tape.count > 1 ? o + S : o, both = !!(d[o + 2] && d[o2 + 2]), u = both ? k : 0;
       b.on = !!d[o + 2] && (both || k < 0.5);
       b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u;
       const sg = d[o + 3] * d[o2 + 3] + d[o + 4] * d[o2 + 4] + d[o + 5] * d[o2 + 5] + d[o + 6] * d[o2 + 6] < 0 ? -1 : 1;

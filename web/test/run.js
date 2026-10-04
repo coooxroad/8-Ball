@@ -72,5 +72,39 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`${mode} on ${name}: ${N} games, ${Math.round(shots / N)} shots each`);
   }
 }
+// highlights: every shot of a few games, in every mode, can be rated both ways, written down as a tape, and the tape ends
+// where the real shot ended (so a reel shows what actually happened)
+{
+  const createHighlights = require(path.join(W, 'highlights.js')), H = createHighlights();
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  for (const mode of ['eight', 'nine', 'four', 'three']) {
+    let tapes = 0, off = 0, bests = 0, worsts = 0;
+    for (let i = 0; i < 3; i++) {
+      g.start(mode, ['A', 'B'], true, { level: i, target: 3, rnd, cushions: 1 }); g.players[0].ai = true;
+      let n = 0;
+      while (!g.over && n < 60) {
+        const pl = g.aiPlan();
+        if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
+        g.beginShot();
+        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: 0, b: 0, turn: g.turn, isBreak: g.isBreak };
+        g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0;
+        const ev = g.world.ev, end = g.world.balls.map(b => [b.x, b.y, b.on]), out = g.resolve(); n++;
+        try {
+          const good = H.rate(g.P, g.mode, shot, ev, out.r), bad = H.rateWorst(g.P, g.mode, shot, ev, out.r);
+          for (const r of [good, bad]) {
+            if (!(r.score > 0)) continue; if (r === good) bests++; else worsts++;
+            const tape = H.record(g.P, g.world.balls.length, Object.assign({}, shot, r)); tapes++;
+            if (!(tape.tKey >= 0 && tape.tKey <= tape.dur + 1e-6) || !Number.isFinite(tape.kx + tape.ky + tape.ux + tape.uy)) fail(`${mode}: tape has no usable key moment (${r.tag})`);
+            const w2 = g.P.makeWorld(g.world.balls.length); H.seek(w2, tape, tape.dur);
+            end.forEach((e, k) => { const b = w2.balls[k]; if (b.on !== e[2] || (e[2] && Math.hypot(b.x - e[0], b.y - e[1]) > 1e-3)) off++; });
+            for (let k = 0; k < tape.nb; k++) H.path(tape, k);
+          }
+        } catch (e) { fail(`${mode}: highlights threw: ${e.message}`); }
+      }
+    }
+    if (off) fail(`${mode}: ${off} ball(s) ended somewhere else on the tape than in the game`);
+    console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
+  }
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

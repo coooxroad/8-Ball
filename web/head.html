@@ -142,7 +142,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   background:var(--bg);gap:14px 16px;padding:14px 16px 20px}
 .compact .h-mid{grid-column:1/-1;order:3}
 .compact.portrait #home{grid-template-columns:minmax(0,1fr)}
-.compact #startBtn{margin-top:6px}
+.compact #startBtn{margin-top:6px;position:sticky;bottom:10px;z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.22)}   /* always in reach, however long the options above it get */
 
 /* ---------- in-game scoreboard ---------- */
 #hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
