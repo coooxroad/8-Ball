@@ -1,5 +1,5 @@
 <title>CUE</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;500;700;800&family=Outfit:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;500;700;800&family=Outfit:wght@400;500;600&family=Jua&display=swap">
 <style>
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
@@ -118,12 +118,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .compact #startBtn{margin-top:6px}
 
 /* ---------- in-game scoreboard ---------- */
-#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
   align-items:center;gap:8px;padding:6px 10px 0}
 #pracBar{justify-self:end;display:flex;gap:6px;min-width:0}
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
-.hud-l{display:flex;gap:6px}
 #menuBtn,#viewBtn{width:46px;height:46px;border-radius:var(--r-pill)}
 [data-theme="light"] #menuBtn,[data-theme="light"] #viewBtn{border-radius:13px}
 #viewBtn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
@@ -152,12 +151,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 [data-theme="dark"] #badge{background:none;border:0;padding:0}
 [data-theme="dark"] #badge b{font-family:'Outfit',sans-serif;font-weight:500;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub)}
 
-#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 14px);transform:translate(-50%,-8px);max-width:min(88%,520px);
-  padding:10px 18px;border-radius:999px;background:var(--sheet);color:var(--fg);border:1px solid var(--bd);box-shadow:0 8px 24px rgba(0,0,0,.18);
-  font-size:clamp(13px,1.9vw,15px);font-weight:700;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-wrap:balance}
-#toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.foul{background:var(--foul);color:#fff;border-color:transparent}
-#toast.good{background:var(--acc);color:var(--acc-fg);border-color:transparent}
+/* messages that pop up over the table: chunky rounded letters with a black outline, the one playful note in the interface */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);max-width:min(90%,680px);
+  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;color:#fff;
+  text-shadow:3px 0px 0 #15171c,-3px 0px 0 #15171c,0px 3px 0 #15171c,0px -3px 0 #15171c,2px 2px 0 #15171c,-2px 2px 0 #15171c,2px -2px 0 #15171c,-2px -2px 0 #15171c,3px 1px 0 #15171c,-3px 1px 0 #15171c,1px 3px 0 #15171c,-1px 3px 0 #15171c,3px -1px 0 #15171c,-3px -1px 0 #15171c,1px -3px 0 #15171c,-1px -3px 0 #15171c,0 6px 0 rgba(21,23,28,.9);text-align:center;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1);text-wrap:balance}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#toast.foul{color:#ff6259}
+#toast.good{color:#ffe04a}
 #fps{position:absolute;left:8px;bottom:6px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--fg);background:var(--panel);border-radius:8px;padding:2px 8px;pointer-events:none}
 
 /* ---------- controls: same places and behaviour as before ---------- */
@@ -224,6 +224,34 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
+/* ---------- best-shot reel ---------- */
+#reel{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000}
+#reel .lb.t{top:0}#reel .lb.b{bottom:0}
+#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45));transition:opacity .2s;opacity:.55}
+.slow #reel::after{opacity:1}
+#reelTag{position:absolute;left:22px;top:calc(9% + 14px);display:flex;flex-direction:column;gap:2px;z-index:2}
+#reelTag b{font-family:'Outfit',sans-serif;font-weight:600;font-style:italic;font-size:clamp(22px,3.4vw,38px);letter-spacing:.06em;color:#fff;text-shadow:2px 0 #15171c,-2px 0 #15171c,0 2px #15171c,0 -2px #15171c,1.5px 1.5px #15171c,-1.5px 1.5px #15171c,1.5px -1.5px #15171c,-1.5px -1.5px #15171c,0 4px 0 #15171c}
+#reelWho{font-family:'Jua','Gothic A1',sans-serif;font-size:17px;color:#fff;text-shadow:1.5px 0 #15171c,-1.5px 0 #15171c,0 1.5px #15171c,0 -1.5px #15171c,1px 1px #15171c,-1px 1px #15171c,1px -1px #15171c,-1px -1px #15171c}
+#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:3;height:40px;font-size:14px}
+#reelFx{position:absolute;inset:0;z-index:2}
+.fx{position:absolute;font-style:normal;font-size:44px;line-height:1;margin:-22px 0 0 -22px;will-change:transform,opacity}
+.fx.small{font-size:28px;margin:-14px 0 0 -14px}
+.fx.pop{animation:fxpop .7s ease-out forwards}
+.fx.rise{font-size:54px;animation:fxrise 1.3s ease-out forwards}
+@keyframes fxpop{0%{transform:scale(.2);opacity:0}25%{transform:scale(1.5) rotate(var(--rot));opacity:1}100%{transform:scale(1) translateY(-26px) rotate(var(--rot));opacity:0}}
+@keyframes fxrise{0%{transform:translateY(30px) scale(.4);opacity:0}20%{opacity:1;transform:translateY(0) scale(1.2) rotate(var(--rot))}100%{transform:translate(var(--dx),-170px) scale(1) rotate(var(--rot));opacity:0}}
+#reelCap{position:absolute;left:0;right:0;top:36%;text-align:center;z-index:2;font-family:'Jua','Gothic A1',sans-serif;font-size:clamp(44px,9vw,104px);color:#ffe04a;opacity:0;
+  text-shadow:6px 0px 0 #15171c,-6px 0px 0 #15171c,0px 6px 0 #15171c,0px -6px 0 #15171c,4px 4px 0 #15171c,-4px 4px 0 #15171c,4px -4px 0 #15171c,-4px -4px 0 #15171c,6px 2px 0 #15171c,-6px 2px 0 #15171c,2px 6px 0 #15171c,-2px 6px 0 #15171c,6px -2px 0 #15171c,-6px -2px 0 #15171c,2px -6px 0 #15171c,-2px -6px 0 #15171c,0 12px 0 rgba(21,23,28,.9)}
+#reelCap.go{animation:capin 2.4s ease-out forwards}
+@keyframes capin{0%{transform:scale(2.4) rotate(-8deg);opacity:0}9%{transform:scale(.92) rotate(-4deg);opacity:1}14%{transform:scale(1.04) rotate(-4deg)}80%{transform:scale(1) rotate(-4deg);opacity:1}100%{transform:scale(1.1) rotate(-4deg);opacity:0}}
+#reelFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1}
+#reelFlash.go{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+.reeling #gl{filter:contrast(1.1) saturate(1.28)}
+.punch #gl{animation:punch .22s ease-out}
+@keyframes punch{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+
 /* ---------- league ---------- */
 #league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
 .lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
@@ -273,13 +301,27 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .r-score b{font-weight:inherit;color:var(--win)}
 .r-lose{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:20px}
 .r-lose .av{width:40px;height:40px}
-#rStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:100%;max-width:920px}
+#rStats{width:100%;max-width:720px;padding:6px 22px}
+.srow{display:grid;grid-template-columns:64px minmax(0,1fr) 96px minmax(0,1fr) 64px;align-items:center;gap:12px;padding:11px 0}
+.srow+.srow{border-top:1px solid var(--hair)}
+.srow .k{font-size:13px;color:var(--sub);text-align:center}
+.srow b,.srow span.n{font-family:var(--num);font-weight:var(--num-w);font-size:24px;color:var(--fg)}
+.srow span.n{color:var(--sub);text-align:right}
+.srow .bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;display:flex}
+.srow .bar.l{justify-content:flex-end}
+.srow .bar i{display:block;height:100%;width:var(--w);border-radius:3px;background:var(--win)}
+.srow .bar.r i{background:var(--sub);opacity:.6}
+#bestBtn{width:100%;max-width:720px;display:flex;align-items:center;gap:14px;padding:14px 20px;text-align:left}
+#bestBtn .k{font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;color:var(--sub)}
+#bestBtn b{font-size:18px;font-weight:var(--w-name);color:var(--fg)}
+#bestBtn .tg{font-size:14px;color:var(--sub);flex:1}
+#bestBtn .go{font-weight:700;color:var(--win);white-space:nowrap}
 .stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .stat .k{font-size:13px;color:var(--sub)}
 .stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
 .stat .v span{font-size:20px;color:var(--sub);margin-left:8px}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
-.r-btns{display:flex;gap:12px;width:100%;max-width:920px;margin-top:4px}
+.r-btns{display:flex;gap:12px;width:100%;max-width:720px;margin-top:4px}
 .r-btns .btn{flex:1;height:60px;font-size:17px}.r-btns .btn.cta{flex:2}
 #nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:17px;line-height:1.6;background:#101216;color:#f3f5f7}
 
@@ -288,17 +330,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   .pill .av{width:30px;height:30px;font-size:14px}
   #menuBtn,#viewBtn{width:40px;height:40px}
   #result{gap:10px;padding-block:14px}
-  .stat{padding:10px 8px}.stat .v{font-size:28px}
+  .srow{padding:7px 0}
   .r-win .av{width:48px;height:48px;font-size:22px}
 }
-@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto}}
 @media (max-width:640px){
   #badge{display:none}
-  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:6px;padding-inline:6px}
+  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto;gap:6px;padding-inline:6px}
   #pracBar{gap:4px}#pracBar .btn{padding:0 10px;font-size:13px;height:42px}
   .pill{gap:6px;padding-right:9px}.pill.r{padding-left:9px}
   .mb{width:11px;height:11px}.tray{gap:2px}
-  #rStats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid2{grid-template-columns:minmax(0,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -343,14 +384,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </section>
 
   <header id="hud" hidden>
-    <div class="hud-l">
-      <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-      <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
-    </div>
+    <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
     <div class="pill" id="p0"><i class="av">1</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="badge"></div>
     <div class="pill r two" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="pracBar" hidden></div>
+    <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>
@@ -375,6 +414,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     </div>
   </div>
 
+  <div id="reel" hidden>
+    <div class="lb t"></div><div class="lb b"></div>
+    <div id="reelTag"><b>BEST SHOT</b><span id="reelWho"></span></div>
+    <div id="reelFx"></div>
+    <div id="reelCap"></div>
+    <div id="reelFlash"></div>
+    <button class="btn" id="reelSkip">건너뛰기</button>
+  </div>
+
   <section id="league" hidden>
     <header class="lg-top">
       <button class="btn" id="lgBack">처음으로</button>
@@ -391,7 +439,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="r-score" id="rScore"></div>
       <div class="r-lose" id="rLose"><i class="av"></i><span class="nm"></span></div>
     </div>
-    <div id="rStats"></div>
+    <div id="rStats" class="panel"></div>
+    <button class="panel" id="bestBtn" hidden><span class="k">BEST SHOT</span><b id="bestWho"></b><span class="tg" id="bestTag"></span><span class="go">▶ 다시 보기</span></button>
     <p id="rWhy"></p>
     <div class="r-btns"><button class="btn" id="homeBtn">처음으로</button><button class="btn cta" id="againBtn">한 판 더</button></div>
   </section>

@@ -3,7 +3,7 @@
    The game only reports what happened, how hard, and where on the table (pan, -1 left .. 1 right):
    nothing here runs on a timer, so what is heard is what is seen. */
 function createAudio(isOn) {
-  let ac = null, out = null, ui = null, buf = null, roll = null;
+  let ac = null, out = null, ui = null, buf = null, roll = null, sink = null, white = null, music = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
 
@@ -56,7 +56,8 @@ function createAudio(isOn) {
       lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 4; lim.attack.value = 0.003; lim.release.value = 0.16;
       const master = ac.createGain(); master.gain.value = 0.85;
       out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
-      const rm = room(); out.connect(rm.input); rm.output.connect(lim);
+      const rm = room(); out.connect(rm.input); rm.output.connect(lim); sink = lim;
+      white = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); { const d = white.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       ui = ac.createGain(); ui.gain.value = 0.9; ui.connect(master);
       const recorded = createBilliardsSamples(ac);
       const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
@@ -80,7 +81,7 @@ function createAudio(isOn) {
       resume();
     } catch (e) {
       if (ac) ac.close().catch(() => {});
-      ac = null; out = null; ui = null; buf = null; roll = null;
+      ac = null; out = null; ui = null; buf = null; roll = null; sink = null; white = null;
     }
   }
   const ready = () => ac && buf && isOn();
@@ -123,8 +124,79 @@ function createAudio(isOn) {
   }
   // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
   const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
+  /* ---------- highlight-reel music: a short phonk-style beat, written for this game and played by small synths ----------
+     Cowbell melody, distorted 808 bass, kick, clap and fast hats at 142 BPM. It idles on a build-up until drop() is
+     called, then plays the full pattern from that instant, so the drop lands exactly on the moment being shown. */
+  const BEAT = 60 / 142, STEP = BEAT / 4;
+  const G4 = 392, Bb4 = 466.16, C5 = 523.25, D5 = 587.33, Eb5 = 622.25;
+  const MELODY = [[0, G4], [2, G4], [3, Bb4], [6, G4], [8, D5], [10, C5], [12, Bb4], [14, G4], [16, G4], [18, G4], [19, Bb4], [22, G4], [24, Eb5], [26, D5], [28, C5], [30, Bb4]];
+  const BASS = [[0, 49], [6, 49], [10, 58.27], [16, 49], [22, 49], [26, 43.65], [29, 46.25]];
+  function phonk() {
+    const bus = ac.createGain(), drive = ac.createWaveShaper(), n = 512, curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) curve[i] = Math.tanh((i / (n - 1) * 2 - 1) * 2.4);
+    drive.curve = curve; bus.gain.value = 0.0001; bus.connect(drive); drive.connect(sink);
+    const live = [];                                            // sources scheduled but not finished, so a drop can cut the build-up off
+    const keep = (src, t, stop) => { live.push({ src, t }); src.start(t); src.stop(stop); src.onended = () => { const i = live.findIndex(x => x.src === src); if (i >= 0) live.splice(i, 1); }; };
+    const env = (t, peak, dur) => { const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); g.connect(bus); return g; };
+    const kick = t => { const o = ac.createOscillator(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.11); o.connect(env(t, 1, 0.24)); keep(o, t, t + 0.26); };
+    const bass = (t, f, dur) => { const o = ac.createOscillator(); o.frequency.setValueAtTime(f * 2.2, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); o.connect(env(t, 0.9, dur)); keep(o, t, t + dur + 0.02); };
+    const cow = (t, f, vol) => {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 1.3; bp.Q.value = 2.2; bp.connect(env(t, vol, 0.26));
+      for (const k of [1, 1.504]) { const o = ac.createOscillator(); o.type = 'square'; o.frequency.value = f * k; o.connect(bp); keep(o, t, t + 0.28); }
+    };
+    const noise = (t, type, freq, q, vol, dur) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(); s.buffer = white; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f); f.connect(env(t, vol, dur)); keep(s, t, t + dur + 0.02); return f; };
+    const hat = (t, vol) => noise(t, 'highpass', 7200, 0.7, vol, 0.035);
+    const clap = t => noise(t, 'bandpass', 1500, 0.8, 0.55, 0.15);
+    let mode = 'build', next = ac.currentTime + 0.05, step = 0, timer = 0;
+    bus.gain.exponentialRampToValueAtTime(0.42, ac.currentTime + 0.3);
+    function schedule() {
+      while (next < ac.currentTime + 0.25) {
+        const t = next, s = step % 32;
+        if (mode === 'build') {                                 // tension: ticking hats, a pulse, a cowbell that keeps asking
+          if (s % 2 === 0) hat(t, 0.12 + 0.012 * Math.min(16, step));
+          if (s % 8 === 0) cow(t, G4, 0.22);
+          if (s % 4 === 0) kick(t);
+          if (step > 8 && s % 2 === 1) hat(t, 0.1);
+        } else {
+          if (s % 16 === 0 || s % 16 === 6 || s % 16 === 10) kick(t);
+          if (s % 16 === 4 || s % 16 === 12) clap(t);
+          hat(t, s % 2 ? 0.1 : 0.2); if (s % 16 >= 14) hat(t + STEP / 2, 0.14);
+          for (const [k, f] of MELODY) if (k === s) cow(t, f, 0.5);
+          for (const [k, f] of BASS) if (k === s) bass(t, f, STEP * 3.4);
+        }
+        next += STEP; step++;
+      }
+    }
+    timer = setInterval(schedule, 60); schedule();
+    return {
+      drop() {
+        if (mode === 'drop') return; mode = 'drop';
+        const now = ac.currentTime;
+        for (const x of live.slice()) if (x.t > now) { try { x.src.stop(); } catch (e) {} }
+        next = now + 0.01; step = 0; schedule();
+      },
+      stop() { clearInterval(timer); const t = ac.currentTime; bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(Math.max(0.0001, bus.gain.value), t); bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); setTimeout(() => { for (const x of live.slice()) { try { x.src.stop(); } catch (e) {} } try { drive.disconnect(); } catch (e) {} }, 650); },
+    };
+  }
+
   return {
     init,
+    music: {
+      start() { if (!ready()) return; if (music) music.stop(); music = phonk(); },
+      drop() { if (music) music.drop(); },
+      stop() { if (music) { music.stop(); music = null; } },
+    },
+    // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
+    boom() {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
+      g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.75);
+    },
+    blip() {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(620, t); o.frequency.exponentialRampToValueAtTime(1240, t + 0.07);
+      g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09); o.connect(g); g.connect(ui); o.start(t); o.stop(t + 0.1);
+    },
     ball(v, pan) { impact('ball', v, 5, 0.95, 2200, 6300, 6, pan); },
     rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },
     cue(v, pan) {

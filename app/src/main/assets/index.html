@@ -12,6 +12,7 @@ body{margin:0}
 @font-face{font-family:'Gothic A1';font-weight:700;font-display:swap;src:url(fonts/GothicA1-Bold.woff2) format('woff2')}
 @font-face{font-family:'Gothic A1';font-weight:800;font-display:swap;src:url(fonts/GothicA1-ExtraBold.woff2) format('woff2')}
 @font-face{font-family:'Outfit';font-weight:100 900;font-display:swap;src:url(fonts/Outfit.woff2) format('woff2')}
+@font-face{font-family:'Jua';font-weight:400;font-display:swap;src:url(fonts/Jua-Regular.woff2) format('woff2')}
 </style>
 </head>
 <body>
@@ -134,12 +135,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .compact #startBtn{margin-top:6px}
 
 /* ---------- in-game scoreboard ---------- */
-#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
   align-items:center;gap:8px;padding:6px 10px 0}
 #pracBar{justify-self:end;display:flex;gap:6px;min-width:0}
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
-.hud-l{display:flex;gap:6px}
 #menuBtn,#viewBtn{width:46px;height:46px;border-radius:var(--r-pill)}
 [data-theme="light"] #menuBtn,[data-theme="light"] #viewBtn{border-radius:13px}
 #viewBtn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
@@ -168,12 +168,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 [data-theme="dark"] #badge{background:none;border:0;padding:0}
 [data-theme="dark"] #badge b{font-family:'Outfit',sans-serif;font-weight:500;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub)}
 
-#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 14px);transform:translate(-50%,-8px);max-width:min(88%,520px);
-  padding:10px 18px;border-radius:999px;background:var(--sheet);color:var(--fg);border:1px solid var(--bd);box-shadow:0 8px 24px rgba(0,0,0,.18);
-  font-size:clamp(13px,1.9vw,15px);font-weight:700;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-wrap:balance}
-#toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.foul{background:var(--foul);color:#fff;border-color:transparent}
-#toast.good{background:var(--acc);color:var(--acc-fg);border-color:transparent}
+/* messages that pop up over the table: chunky rounded letters with a black outline, the one playful note in the interface */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);max-width:min(90%,680px);
+  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;color:#fff;
+  text-shadow:3px 0px 0 #15171c,-3px 0px 0 #15171c,0px 3px 0 #15171c,0px -3px 0 #15171c,2px 2px 0 #15171c,-2px 2px 0 #15171c,2px -2px 0 #15171c,-2px -2px 0 #15171c,3px 1px 0 #15171c,-3px 1px 0 #15171c,1px 3px 0 #15171c,-1px 3px 0 #15171c,3px -1px 0 #15171c,-3px -1px 0 #15171c,1px -3px 0 #15171c,-1px -3px 0 #15171c,0 6px 0 rgba(21,23,28,.9);text-align:center;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1);text-wrap:balance}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#toast.foul{color:#ff6259}
+#toast.good{color:#ffe04a}
 #fps{position:absolute;left:8px;bottom:6px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--fg);background:var(--panel);border-radius:8px;padding:2px 8px;pointer-events:none}
 
 /* ---------- controls: same places and behaviour as before ---------- */
@@ -240,6 +241,34 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
+/* ---------- best-shot reel ---------- */
+#reel{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000}
+#reel .lb.t{top:0}#reel .lb.b{bottom:0}
+#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45));transition:opacity .2s;opacity:.55}
+.slow #reel::after{opacity:1}
+#reelTag{position:absolute;left:22px;top:calc(9% + 14px);display:flex;flex-direction:column;gap:2px;z-index:2}
+#reelTag b{font-family:'Outfit',sans-serif;font-weight:600;font-style:italic;font-size:clamp(22px,3.4vw,38px);letter-spacing:.06em;color:#fff;text-shadow:2px 0 #15171c,-2px 0 #15171c,0 2px #15171c,0 -2px #15171c,1.5px 1.5px #15171c,-1.5px 1.5px #15171c,1.5px -1.5px #15171c,-1.5px -1.5px #15171c,0 4px 0 #15171c}
+#reelWho{font-family:'Jua','Gothic A1',sans-serif;font-size:17px;color:#fff;text-shadow:1.5px 0 #15171c,-1.5px 0 #15171c,0 1.5px #15171c,0 -1.5px #15171c,1px 1px #15171c,-1px 1px #15171c,1px -1px #15171c,-1px -1px #15171c}
+#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:3;height:40px;font-size:14px}
+#reelFx{position:absolute;inset:0;z-index:2}
+.fx{position:absolute;font-style:normal;font-size:44px;line-height:1;margin:-22px 0 0 -22px;will-change:transform,opacity}
+.fx.small{font-size:28px;margin:-14px 0 0 -14px}
+.fx.pop{animation:fxpop .7s ease-out forwards}
+.fx.rise{font-size:54px;animation:fxrise 1.3s ease-out forwards}
+@keyframes fxpop{0%{transform:scale(.2);opacity:0}25%{transform:scale(1.5) rotate(var(--rot));opacity:1}100%{transform:scale(1) translateY(-26px) rotate(var(--rot));opacity:0}}
+@keyframes fxrise{0%{transform:translateY(30px) scale(.4);opacity:0}20%{opacity:1;transform:translateY(0) scale(1.2) rotate(var(--rot))}100%{transform:translate(var(--dx),-170px) scale(1) rotate(var(--rot));opacity:0}}
+#reelCap{position:absolute;left:0;right:0;top:36%;text-align:center;z-index:2;font-family:'Jua','Gothic A1',sans-serif;font-size:clamp(44px,9vw,104px);color:#ffe04a;opacity:0;
+  text-shadow:6px 0px 0 #15171c,-6px 0px 0 #15171c,0px 6px 0 #15171c,0px -6px 0 #15171c,4px 4px 0 #15171c,-4px 4px 0 #15171c,4px -4px 0 #15171c,-4px -4px 0 #15171c,6px 2px 0 #15171c,-6px 2px 0 #15171c,2px 6px 0 #15171c,-2px 6px 0 #15171c,6px -2px 0 #15171c,-6px -2px 0 #15171c,2px -6px 0 #15171c,-2px -6px 0 #15171c,0 12px 0 rgba(21,23,28,.9)}
+#reelCap.go{animation:capin 2.4s ease-out forwards}
+@keyframes capin{0%{transform:scale(2.4) rotate(-8deg);opacity:0}9%{transform:scale(.92) rotate(-4deg);opacity:1}14%{transform:scale(1.04) rotate(-4deg)}80%{transform:scale(1) rotate(-4deg);opacity:1}100%{transform:scale(1.1) rotate(-4deg);opacity:0}}
+#reelFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1}
+#reelFlash.go{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+.reeling #gl{filter:contrast(1.1) saturate(1.28)}
+.punch #gl{animation:punch .22s ease-out}
+@keyframes punch{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+
 /* ---------- league ---------- */
 #league{position:absolute;inset:0;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
 .lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
@@ -289,13 +318,27 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .r-score b{font-weight:inherit;color:var(--win)}
 .r-lose{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:20px}
 .r-lose .av{width:40px;height:40px}
-#rStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:100%;max-width:920px}
+#rStats{width:100%;max-width:720px;padding:6px 22px}
+.srow{display:grid;grid-template-columns:64px minmax(0,1fr) 96px minmax(0,1fr) 64px;align-items:center;gap:12px;padding:11px 0}
+.srow+.srow{border-top:1px solid var(--hair)}
+.srow .k{font-size:13px;color:var(--sub);text-align:center}
+.srow b,.srow span.n{font-family:var(--num);font-weight:var(--num-w);font-size:24px;color:var(--fg)}
+.srow span.n{color:var(--sub);text-align:right}
+.srow .bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;display:flex}
+.srow .bar.l{justify-content:flex-end}
+.srow .bar i{display:block;height:100%;width:var(--w);border-radius:3px;background:var(--win)}
+.srow .bar.r i{background:var(--sub);opacity:.6}
+#bestBtn{width:100%;max-width:720px;display:flex;align-items:center;gap:14px;padding:14px 20px;text-align:left}
+#bestBtn .k{font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;color:var(--sub)}
+#bestBtn b{font-size:18px;font-weight:var(--w-name);color:var(--fg)}
+#bestBtn .tg{font-size:14px;color:var(--sub);flex:1}
+#bestBtn .go{font-weight:700;color:var(--win);white-space:nowrap}
 .stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .stat .k{font-size:13px;color:var(--sub)}
 .stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
 .stat .v span{font-size:20px;color:var(--sub);margin-left:8px}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
-.r-btns{display:flex;gap:12px;width:100%;max-width:920px;margin-top:4px}
+.r-btns{display:flex;gap:12px;width:100%;max-width:720px;margin-top:4px}
 .r-btns .btn{flex:1;height:60px;font-size:17px}.r-btns .btn.cta{flex:2}
 #nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:17px;line-height:1.6;background:#101216;color:#f3f5f7}
 
@@ -304,17 +347,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   .pill .av{width:30px;height:30px;font-size:14px}
   #menuBtn,#viewBtn{width:40px;height:40px}
   #result{gap:10px;padding-block:14px}
-  .stat{padding:10px 8px}.stat .v{font-size:28px}
+  .srow{padding:7px 0}
   .r-win .av{width:48px;height:48px;font-size:22px}
 }
-@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto}}
 @media (max-width:640px){
   #badge{display:none}
-  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:6px;padding-inline:6px}
+  #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto;gap:6px;padding-inline:6px}
   #pracBar{gap:4px}#pracBar .btn{padding:0 10px;font-size:13px;height:42px}
   .pill{gap:6px;padding-right:9px}.pill.r{padding-left:9px}
   .mb{width:11px;height:11px}.tray{gap:2px}
-  #rStats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid2{grid-template-columns:minmax(0,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -359,14 +401,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </section>
 
   <header id="hud" hidden>
-    <div class="hud-l">
-      <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-      <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
-    </div>
+    <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
     <div class="pill" id="p0"><i class="av">1</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="badge"></div>
     <div class="pill r two" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="pracBar" hidden></div>
+    <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>
@@ -391,6 +431,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     </div>
   </div>
 
+  <div id="reel" hidden>
+    <div class="lb t"></div><div class="lb b"></div>
+    <div id="reelTag"><b>BEST SHOT</b><span id="reelWho"></span></div>
+    <div id="reelFx"></div>
+    <div id="reelCap"></div>
+    <div id="reelFlash"></div>
+    <button class="btn" id="reelSkip">건너뛰기</button>
+  </div>
+
   <section id="league" hidden>
     <header class="lg-top">
       <button class="btn" id="lgBack">처음으로</button>
@@ -407,7 +456,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="r-score" id="rScore"></div>
       <div class="r-lose" id="rLose"><i class="av"></i><span class="nm"></span></div>
     </div>
-    <div id="rStats"></div>
+    <div id="rStats" class="panel"></div>
+    <button class="panel" id="bestBtn" hidden><span class="k">BEST SHOT</span><b id="bestWho"></b><span class="tg" id="bestTag"></span><span class="go">▶ 다시 보기</span></button>
     <p id="rWhy"></p>
     <div class="r-btns"><button class="btn" id="homeBtn">처음으로</button><button class="btn cta" id="againBtn">한 판 더</button></div>
   </section>
@@ -1309,6 +1359,57 @@ function createLeague() {
   function record(lg, i, winner, sa, sb) { const f = lg.fx[i]; f.w = winner; f.sa = sa || 0; f.sb = sb || 0; }
   return { create, fixtures, standings, next, done, record, WIN_PTS };
 }
+/* Picking the best shot of a match and preparing it for a replay. A shot is replayed by putting the balls back
+   exactly as they were and striking again: the physics is deterministic, so nothing else needs to be stored.
+   No DOM in here. */
+function createHighlights() {
+  // everything the physics depends on, for every ball
+  function snapshot(w) { return { cue: w.cue, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
+  function restore(w, s) {
+    w.cue = s.cue;
+    s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
+  }
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+  // How good was that? 0 for a foul or a shot that did not score. `shot`: { snap, turn, isBreak }; `res`: the rules' verdict.
+  function rate(P, mode, shot, ev, res) {
+    if (res.foul) return { score: 0 };
+    const cue = shot.snap.balls[shot.snap.cue], first = ev.firstHit;
+    if (mode.table === 'carom') {
+      if (!(res.pts > 0)) return { score: 0 };
+      const viaRail = ev.railed.includes(shot.snap.cue), reds = dist(shot.snap.balls[2], shot.snap.balls[3]);
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8, tag: viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
+    }
+    const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
+    if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
+    const main = potted.find(p => p.id === first) || potted[0], ball = shot.snap.balls[main.id], pocket = P.POCKETS[main.pocket];
+    const d1 = first == null ? 0 : dist(cue, shot.snap.balls[first]), d2 = dist(ball, [pocket.x, pocket.y]);
+    let cut = 0;
+    if (main.id === first && d1 > 1e-6 && d2 > 1e-6) {
+      const c = ((ball[0] - cue[0]) * (pocket.x - ball[0]) + (ball[1] - cue[1]) * (pocket.y - ball[1])) / (d1 * d2);
+      cut = Math.acos(Math.max(-1, Math.min(1, c))) * 180 / Math.PI;
+    }
+    const bank = ev.railed.includes(main.id), combo = main.id !== first, many = potted.length;
+    let score = 10 * many + 6 * (d1 + d2) + cut / 5 + (bank ? 14 : 0) + (combo ? 12 : 0) + (res.win === shot.turn ? 6 : 0);
+    if (shot.isBreak) score *= 0.35;                                   // a break is mostly luck
+    const tag = bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
+    return { score, tag, key: main.id };
+  }
+
+  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red is hit).
+  function plan(P, n, shot) {
+    const w = P.makeWorld(n); restore(w, shot.snap);
+    P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    const T = 1 / 120; let t = 0, tHit = -1, tKey = -1;
+    while (!P.rest(w) && t < 30) {
+      P.step(w, T); t += T;
+      if (tHit < 0 && w.ev.firstHit != null) tHit = t;
+      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) tKey = t;
+    }
+    return { tHit, tKey, dur: t };
+  }
+  return { snapshot, restore, rate, plan };
+}
 /* How things look: cloth colours, cue designs, ball colours. Plain data, shared by the 3D scene and the menus. */
 const CLOTHS = [
   { id: 'teal', name: '딥 틸', felt: 0x0e8ba3, wood: 0x6a3a20 },
@@ -1703,15 +1804,23 @@ function createScene(canvas, app, PH) {
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
-  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0 }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
+  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0, cam: null }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
   function setOrbit(on) {
-    orbit.on = on;
+    orbit.on = on; orbit.cam = null;
     if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.zoom = 1; orbit.live = 4; }
     applyCamera();
   }
   function orbitBy(dx, dy) {
     if (!orbit.on) return;
     orbit.az -= dx * 0.0034; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.0028)); orbit.live = 4; applyCamera();
+  }
+  // A camera placed by a script (the highlight reel): az is the compass direction the camera sits in, el its height angle,
+  // zoom < 1 is closer than "whole table in view", and it looks at the table point (tx, ty).
+  function setCam(c) { orbit.on = true; orbit.cam = c; orbit.el = orbit.elTo = c.el; orbit.live = 4; applyCamera(); }
+  const scr = new THREE.Vector3();
+  function toScreen(x, y, z) {
+    scr.set(x, y, z || 0).project(camera); const r = canvas.getBoundingClientRect();
+    return { x: r.left + (scr.x + 1) / 2 * r.width, y: r.top + (1 - scr.y) / 2 * r.height };
   }
   // f > 1 moves the camera away, f < 1 brings it in
   function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
@@ -1725,7 +1834,7 @@ function createScene(canvas, app, PH) {
     camera.aspect = fw / fh;
     if (orbit.on) {
       // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
-      const az = orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
+      const cam = orbit.cam, az = cam ? cam.az : orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
       const dir = fitV.set(ce * Math.sin(az), -ce * Math.cos(az), Math.sin(orbit.el));
       // step back until the whole table is inside the free part of the screen, whichever way it is turned
       const tan = Math.tan(FOV * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
@@ -1739,9 +1848,10 @@ function createScene(canvas, app, PH) {
         }
         d *= 1 + (k * 1.03 - 1) * 0.9;
       }
-      camera.position.copy(dir).multiplyScalar(d * orbit.zoom);
-    } else { camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
-    camera.lookAt(0, 0, 0);
+      if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); }
+      else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); }
+    } else { fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
+    camera.lookAt(fitP);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
@@ -1912,7 +2022,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
@@ -1952,7 +2062,7 @@ function createBilliardsSamples(ac) {
    The game only reports what happened, how hard, and where on the table (pan, -1 left .. 1 right):
    nothing here runs on a timer, so what is heard is what is seen. */
 function createAudio(isOn) {
-  let ac = null, out = null, ui = null, buf = null, roll = null;
+  let ac = null, out = null, ui = null, buf = null, roll = null, sink = null, white = null, music = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
 
@@ -2005,7 +2115,8 @@ function createAudio(isOn) {
       lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 4; lim.attack.value = 0.003; lim.release.value = 0.16;
       const master = ac.createGain(); master.gain.value = 0.85;
       out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
-      const rm = room(); out.connect(rm.input); rm.output.connect(lim);
+      const rm = room(); out.connect(rm.input); rm.output.connect(lim); sink = lim;
+      white = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); { const d = white.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       ui = ac.createGain(); ui.gain.value = 0.9; ui.connect(master);
       const recorded = createBilliardsSamples(ac);
       const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
@@ -2029,7 +2140,7 @@ function createAudio(isOn) {
       resume();
     } catch (e) {
       if (ac) ac.close().catch(() => {});
-      ac = null; out = null; ui = null; buf = null; roll = null;
+      ac = null; out = null; ui = null; buf = null; roll = null; sink = null; white = null;
     }
   }
   const ready = () => ac && buf && isOn();
@@ -2072,8 +2183,79 @@ function createAudio(isOn) {
   }
   // interface sounds: dry, quiet, and made of the same wood-and-mallet material as the table sounds
   const uiHit = (name, gain, bright, at, rate) => hit(name, gain, bright, at, rate, -1, 0, ui);
+  /* ---------- highlight-reel music: a short phonk-style beat, written for this game and played by small synths ----------
+     Cowbell melody, distorted 808 bass, kick, clap and fast hats at 142 BPM. It idles on a build-up until drop() is
+     called, then plays the full pattern from that instant, so the drop lands exactly on the moment being shown. */
+  const BEAT = 60 / 142, STEP = BEAT / 4;
+  const G4 = 392, Bb4 = 466.16, C5 = 523.25, D5 = 587.33, Eb5 = 622.25;
+  const MELODY = [[0, G4], [2, G4], [3, Bb4], [6, G4], [8, D5], [10, C5], [12, Bb4], [14, G4], [16, G4], [18, G4], [19, Bb4], [22, G4], [24, Eb5], [26, D5], [28, C5], [30, Bb4]];
+  const BASS = [[0, 49], [6, 49], [10, 58.27], [16, 49], [22, 49], [26, 43.65], [29, 46.25]];
+  function phonk() {
+    const bus = ac.createGain(), drive = ac.createWaveShaper(), n = 512, curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) curve[i] = Math.tanh((i / (n - 1) * 2 - 1) * 2.4);
+    drive.curve = curve; bus.gain.value = 0.0001; bus.connect(drive); drive.connect(sink);
+    const live = [];                                            // sources scheduled but not finished, so a drop can cut the build-up off
+    const keep = (src, t, stop) => { live.push({ src, t }); src.start(t); src.stop(stop); src.onended = () => { const i = live.findIndex(x => x.src === src); if (i >= 0) live.splice(i, 1); }; };
+    const env = (t, peak, dur) => { const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); g.connect(bus); return g; };
+    const kick = t => { const o = ac.createOscillator(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.11); o.connect(env(t, 1, 0.24)); keep(o, t, t + 0.26); };
+    const bass = (t, f, dur) => { const o = ac.createOscillator(); o.frequency.setValueAtTime(f * 2.2, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05); o.connect(env(t, 0.9, dur)); keep(o, t, t + dur + 0.02); };
+    const cow = (t, f, vol) => {
+      const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 1.3; bp.Q.value = 2.2; bp.connect(env(t, vol, 0.26));
+      for (const k of [1, 1.504]) { const o = ac.createOscillator(); o.type = 'square'; o.frequency.value = f * k; o.connect(bp); keep(o, t, t + 0.28); }
+    };
+    const noise = (t, type, freq, q, vol, dur) => { const s = ac.createBufferSource(), f = ac.createBiquadFilter(); s.buffer = white; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q; s.connect(f); f.connect(env(t, vol, dur)); keep(s, t, t + dur + 0.02); return f; };
+    const hat = (t, vol) => noise(t, 'highpass', 7200, 0.7, vol, 0.035);
+    const clap = t => noise(t, 'bandpass', 1500, 0.8, 0.55, 0.15);
+    let mode = 'build', next = ac.currentTime + 0.05, step = 0, timer = 0;
+    bus.gain.exponentialRampToValueAtTime(0.42, ac.currentTime + 0.3);
+    function schedule() {
+      while (next < ac.currentTime + 0.25) {
+        const t = next, s = step % 32;
+        if (mode === 'build') {                                 // tension: ticking hats, a pulse, a cowbell that keeps asking
+          if (s % 2 === 0) hat(t, 0.12 + 0.012 * Math.min(16, step));
+          if (s % 8 === 0) cow(t, G4, 0.22);
+          if (s % 4 === 0) kick(t);
+          if (step > 8 && s % 2 === 1) hat(t, 0.1);
+        } else {
+          if (s % 16 === 0 || s % 16 === 6 || s % 16 === 10) kick(t);
+          if (s % 16 === 4 || s % 16 === 12) clap(t);
+          hat(t, s % 2 ? 0.1 : 0.2); if (s % 16 >= 14) hat(t + STEP / 2, 0.14);
+          for (const [k, f] of MELODY) if (k === s) cow(t, f, 0.5);
+          for (const [k, f] of BASS) if (k === s) bass(t, f, STEP * 3.4);
+        }
+        next += STEP; step++;
+      }
+    }
+    timer = setInterval(schedule, 60); schedule();
+    return {
+      drop() {
+        if (mode === 'drop') return; mode = 'drop';
+        const now = ac.currentTime;
+        for (const x of live.slice()) if (x.t > now) { try { x.src.stop(); } catch (e) {} }
+        next = now + 0.01; step = 0; schedule();
+      },
+      stop() { clearInterval(timer); const t = ac.currentTime; bus.gain.cancelScheduledValues(t); bus.gain.setValueAtTime(Math.max(0.0001, bus.gain.value), t); bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); setTimeout(() => { for (const x of live.slice()) { try { x.src.stop(); } catch (e) {} } try { drive.disconnect(); } catch (e) {} }, 650); },
+    };
+  }
+
   return {
     init,
+    music: {
+      start() { if (!ready()) return; if (music) music.stop(); music = phonk(); },
+      drop() { if (music) music.drop(); },
+      stop() { if (music) { music.stop(); music = null; } },
+    },
+    // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
+    boom() {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
+      g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.75);
+    },
+    blip() {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(620, t); o.frequency.exponentialRampToValueAtTime(1240, t + 0.07);
+      g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09); o.connect(g); g.connect(ui); o.start(t); o.stop(t + 0.1);
+    },
     ball(v, pan) { impact('ball', v, 5, 0.95, 2200, 6300, 6, pan); },
     rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },
     cue(v, pan) {
@@ -2104,11 +2286,95 @@ function createAudio(isOn) {
     win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }
+/* The best-shot reel: the chosen shot is played again as a little edited clip.
+   The camera drops in behind the cue, follows the ball, slows down just before it falls, and the beat drops on the
+   moment itself. Everything is driven by the real physics running again from the saved position, so it is the shot
+   that was played, not a recording.
+   d: { game, scene, SND, highlights, st, $, el, app, panOf, onEnd } */
+function createReel(d) {
+  const { game, scene, SND, highlights, st, $, el, app } = d, TICK = 1 / 120;
+  const CAPS = ['미쳤다', '이게 들어가네', 'ㄹㅇ 실화냐', '쉬는시간 MVP', '깔끔', '폼 미쳤다'];
+  const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
+  let r = null;
+
+  /* ---- overlay effects ---- */
+  function emoji(ch, x, y, cls) {
+    const n = el('i', { class: 'fx ' + (cls || ''), text: ch, style: `left:${x}px;top:${y}px;--dx:${(Math.random() - 0.5) * 120}px;--rot:${(Math.random() - 0.5) * 50}deg` });
+    $('#reelFx').appendChild(n); setTimeout(() => n.remove(), 1400);
+  }
+  const at = (x, y) => { const p = scene.toScreen(x, y, game.P.R), b = app.getBoundingClientRect(); return [p.x - b.left, p.y - b.top]; };
+  function punch() { app.classList.remove('punch'); void app.offsetWidth; app.classList.add('punch'); }
+  function bigMoment() {
+    r.done = true; r.endAt = r.t + 3.0;
+    SND.music.drop(); SND.boom(); punch();
+    const f = $('#reelFlash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    const cap = $('#reelCap'); cap.textContent = CAPS[Math.floor(Math.random() * CAPS.length)]; cap.classList.remove('go'); void cap.offsetWidth; cap.classList.add('go');
+    const w = app.clientWidth, h = app.clientHeight;
+    ['🔥', '🔥', '💀', '🗿', '😭', '🔥'].forEach((ch, i) => setTimeout(() => { if (r) emoji(ch, w * (0.15 + 0.7 * Math.random()), h * (0.55 + 0.3 * Math.random()), 'rise'); }, i * 110));
+  }
+
+  function play(best) {
+    const w = game.world;
+    highlights.restore(w, best.snap); w.snd.length = 0; scene.clearFalls();
+    st.aim = best.aim; st.power = Math.min(1, game.powerOf(best.V)); st.spin = { x: best.a / 0.5, y: best.b / 0.5 };
+    const c = w.balls[w.cue];
+    r = { best, t: 0, simT: 0, acc: 0, stage: 'intro', plan: highlights.plan(game.P, w.balls.length, best), done: false, endAt: 1e9, hits: 0,
+      cam: { az: best.aim - Math.PI / 2 + 0.6, el: 0.62, zoom: 0.5, tx: c.x, ty: c.y } };
+    $('#reelWho').textContent = `${best.who} · ${best.tag}`; $('#reelCap').className = ''; $('#reelFx').textContent = '';
+    $('#reel').hidden = false; app.classList.add('reeling');
+    SND.music.start(); scene.setCam(r.cam);
+  }
+  function stop() {
+    if (!r) return; r = null;
+    SND.music.stop(); SND.rolling(0); scene.clearFalls();
+    $('#reel').hidden = true; app.classList.remove('reeling', 'punch', 'slow');
+    scene.setOrbit(false); d.onEnd();
+  }
+
+  // one frame of the reel; returns what the scene should show
+  function tick(dt) {
+    const P = game.P, w = game.world, b = r.best, cam = r.cam, cue = w.balls[w.cue];
+    r.t += dt;
+    let pull = 0.03, alpha = 1, focus = cue;
+    if (r.stage === 'intro') {
+      const k = ease(r.t / 1.1); pull = 0.03 + 0.22 * st.power * k;
+      cam.az = b.aim - Math.PI / 2 + 0.6 * (1 - ease(r.t / 1.4)) + 0.12;
+      if (r.t >= 1.4) { P.strike(w, b.aim, b.V, b.a, b.b); SND.cue(b.V, 0); punch(); r.stage = 'roll'; }
+    } else {
+      // slow right down for the last moment before it drops, then let go
+      const left = r.plan.tKey - r.simT, slow = !r.done && left > 0 && left < 0.3;
+      app.classList.toggle('slow', slow);
+      r.acc += dt * (slow ? 0.16 : r.done ? 0.9 : 0.6);
+      let n = 0; while (r.acc >= TICK && n < 20) { P.step(w, TICK); r.acc -= TICK; r.simT += TICK; n++; }
+      alpha = r.acc / TICK;
+      let vmax = 0; for (const x of w.balls) if (x.on) vmax = Math.max(vmax, Math.abs(x.vx) + Math.abs(x.vy));
+      SND.rolling(Math.min(8, vmax));
+      for (const e of w.snd) {
+        if (e.t === 'pocket') { scene.fall(P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), d.panOf(e.x, e.y)); if (!r.done && e.id === b.key) bigMoment(); }
+        else if (e.t === 'ball') { SND.ball(e.v, d.panOf(e.x, e.y)); if (e.v > 0.5 && r.hits < 5) { r.hits++; emoji('💥', ...at(e.x, e.y), 'pop'); punch(); } }
+        else { SND.rail(e.v, d.panOf(e.x, e.y)); if (e.v > 0.6) { SND.blip(); emoji('‼️', ...at(e.x, e.y), 'pop small'); } }
+      }
+      w.snd.length = 0;
+      if (!r.done && b.key < 0 && w.ev.hits.includes(2) && w.ev.hits.includes(3)) bigMoment();          // carom: the second red is the moment
+      if (!r.done && P.rest(w)) { r.done = true; r.endAt = r.t + 0.8; }
+      // what to look at: the cue ball until it hits something, then the ball this shot is about
+      const key = b.key >= 0 ? w.balls[b.key] : null;
+      if (w.ev.firstHit != null && key && key.on) focus = key; else if (w.ev.firstHit != null && key) focus = null;
+      if (!r.done) { cam.az += dt * 0.2; cam.el += (0.58 - cam.el) * Math.min(1, dt * 2); cam.zoom += ((slow ? 0.36 : 0.52) - cam.zoom) * Math.min(1, dt * 3); }
+      else { cam.az += dt * 0.85; cam.el += (0.78 - cam.el) * Math.min(1, dt * 1.6); cam.zoom += (1 - cam.zoom) * Math.min(1, dt * 1.4); focus = { x: 0, y: 0 }; }
+    }
+    if (focus) { const k = Math.min(1, dt * (r.done ? 1.5 : 5)), x = focus.px != null ? focus.px + (focus.x - focus.px) * alpha : focus.x, y = focus.py != null ? focus.py + (focus.y - focus.py) * alpha : focus.y; cam.tx += (x - cam.tx) * k; cam.ty += (y - cam.ty) * k; }
+    scene.setCam(cam);
+    if (r.t > r.endAt) { stop(); return null; }
+    return { alpha, pull, cue: r.stage === 'intro' };
+  }
+  return { play, tick, skip: stop, get playing() { return !!r; } };
+}
 /* App shell. It owns the screens, the input and the frame loop, and nothing else:
      physics.js  how balls move            game.js    rules, turns, computer player
      drills.js   practice layouts          scene.js   drawing
      audio.js    sound                     look.js    colours and designs (data)
-     league.js   fixtures and tables
+     league.js   fixtures and tables        highlights.js, reel.js   best shot of a match and its replay
    What happens around a shot depends on what is being played, so that part lives in three small "flows"
    (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
@@ -2149,6 +2415,7 @@ const game = createGame(PH);
 const drills = createDrills();
 const SND = createAudio(() => prefs.sound);
 const league = createLeague();
+const highlights = createHighlights();
 let lg = store.get('league', null);                       // the league in progress, if any
 const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
@@ -2159,7 +2426,7 @@ const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result | league
+   screen: home | play | result | league | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
 const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
@@ -2251,6 +2518,7 @@ function layout() {
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
   if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   if (st.screen === 'play') paintPowerCue();
   setPowerUI(st.power);
@@ -2411,7 +2679,7 @@ function beginTurn(first) {
   flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
-  flow.beforeShot(); game.beginShot();
+  flow.beforeShot(V, a, b); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
   flow.hud();
@@ -2457,21 +2725,23 @@ const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
+  pending: null, best: null,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 });
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
   restart() { match.start(game.turn, match.ctx); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: 0, b: 0, pos: p.pos }; } } : null,
-  beforeShot() {},
+  beforeShot(V, a, b) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
   afterShot() {
-    const out = game.resolve();
+    const shot = match.pending, ev = game.world.ev, out = game.resolve();
+    if (shot) { const r = highlights.rate(game.P, game.mode, shot, ev, out.r); if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign(shot, r); }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
   },
@@ -2497,8 +2767,15 @@ const match = {
     const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
     const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
     if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
+    // winner on the left, loser on the right, a bar each way showing the share
     const box = $('#rStats'); box.textContent = '';
-    for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat panel' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
+    for (const [k, a, b] of rows) {
+      const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
+      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+        el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
+    }
+    const best = match.best; $('#bestBtn').hidden = !best;
+    if (best) { $('#bestWho').textContent = best.who; $('#bestTag').textContent = best.tag; }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
   },
@@ -2692,6 +2969,14 @@ press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
+// the best shot of the match, played again as an edited clip
+const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
+function playBest() {
+  if (!match.best) return;
+  show('reel'); flow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
+  st.phase = 'reel'; reel.play(match.best);
+}
+press('#bestBtn', playBest); press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
@@ -2721,7 +3006,7 @@ const orbitPts = new Map();                                // fingers currently 
 function ballUnder(p, reach) { let best = null, bd = reach; for (const b of game.world.balls) if (b.on) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < bd) { bd = d; best = b; } } return best; }
 canvas.addEventListener('pointerdown', e => {
   SND.init();
-  if (scene.orbiting) {
+  if (scene.orbiting && st.screen === 'play') {
     // in the 3D view: taking hold of the cue aims, one finger anywhere else turns the view, two fingers zoom
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault();
     if (!orbitPts.size && humanAiming()) {
@@ -2824,6 +3109,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
+  if (st.screen === 'reel') { reel.skip(); return true; }
   if (st.screen === 'result') { goHome(); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
@@ -2865,7 +3151,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
   const paused = !$('#sheet').hidden;
-  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2;
+  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
     if (st.phase === 'strike') {
@@ -2874,12 +3160,13 @@ function frame(now) {
       if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
+    else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
-    showCue: lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
+    showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
@@ -2909,7 +3196,7 @@ function start(data) {
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, match, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, drills, practice, match, reel, playBest, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

@@ -374,15 +374,23 @@ function createScene(canvas, app, PH) {
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
-  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0 }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
+  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0, cam: null }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
   function setOrbit(on) {
-    orbit.on = on;
+    orbit.on = on; orbit.cam = null;
     if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.zoom = 1; orbit.live = 4; }
     applyCamera();
   }
   function orbitBy(dx, dy) {
     if (!orbit.on) return;
     orbit.az -= dx * 0.0034; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.0028)); orbit.live = 4; applyCamera();
+  }
+  // A camera placed by a script (the highlight reel): az is the compass direction the camera sits in, el its height angle,
+  // zoom < 1 is closer than "whole table in view", and it looks at the table point (tx, ty).
+  function setCam(c) { orbit.on = true; orbit.cam = c; orbit.el = orbit.elTo = c.el; orbit.live = 4; applyCamera(); }
+  const scr = new THREE.Vector3();
+  function toScreen(x, y, z) {
+    scr.set(x, y, z || 0).project(camera); const r = canvas.getBoundingClientRect();
+    return { x: r.left + (scr.x + 1) / 2 * r.width, y: r.top + (1 - scr.y) / 2 * r.height };
   }
   // f > 1 moves the camera away, f < 1 brings it in
   function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
@@ -396,7 +404,7 @@ function createScene(canvas, app, PH) {
     camera.aspect = fw / fh;
     if (orbit.on) {
       // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
-      const az = orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
+      const cam = orbit.cam, az = cam ? cam.az : orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
       const dir = fitV.set(ce * Math.sin(az), -ce * Math.cos(az), Math.sin(orbit.el));
       // step back until the whole table is inside the free part of the screen, whichever way it is turned
       const tan = Math.tan(FOV * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
@@ -410,9 +418,10 @@ function createScene(canvas, app, PH) {
         }
         d *= 1 + (k * 1.03 - 1) * 0.9;
       }
-      camera.position.copy(dir).multiplyScalar(d * orbit.zoom);
-    } else { camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
-    camera.lookAt(0, 0, 0);
+      if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); }
+      else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); }
+    } else { fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
+    camera.lookAt(fitP);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
@@ -583,7 +592,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

@@ -2,7 +2,7 @@
      physics.js  how balls move            game.js    rules, turns, computer player
      drills.js   practice layouts          scene.js   drawing
      audio.js    sound                     look.js    colours and designs (data)
-     league.js   fixtures and tables
+     league.js   fixtures and tables        highlights.js, reel.js   best shot of a match and its replay
    What happens around a shot depends on what is being played, so that part lives in three small "flows"
    (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
@@ -43,6 +43,7 @@ const game = createGame(PH);
 const drills = createDrills();
 const SND = createAudio(() => prefs.sound);
 const league = createLeague();
+const highlights = createHighlights();
 let lg = store.get('league', null);                       // the league in progress, if any
 const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
@@ -53,7 +54,7 @@ const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result | league
+   screen: home | play | result | league | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
 const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
@@ -145,6 +146,7 @@ function layout() {
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
   if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   if (st.screen === 'play') paintPowerCue();
   setPowerUI(st.power);
@@ -305,7 +307,7 @@ function beginTurn(first) {
   flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
-  flow.beforeShot(); game.beginShot();
+  flow.beforeShot(V, a, b); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
   flow.hud();
@@ -351,21 +353,23 @@ const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
+  pending: null, best: null,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 });
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
   restart() { match.start(game.turn, match.ctx); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: 0, b: 0, pos: p.pos }; } } : null,
-  beforeShot() {},
+  beforeShot(V, a, b) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
   afterShot() {
-    const out = game.resolve();
+    const shot = match.pending, ev = game.world.ev, out = game.resolve();
+    if (shot) { const r = highlights.rate(game.P, game.mode, shot, ev, out.r); if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign(shot, r); }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
   },
@@ -391,8 +395,15 @@ const match = {
     const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
     const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
     if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
+    // winner on the left, loser on the right, a bar each way showing the share
     const box = $('#rStats'); box.textContent = '';
-    for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat panel' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
+    for (const [k, a, b] of rows) {
+      const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
+      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+        el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
+    }
+    const best = match.best; $('#bestBtn').hidden = !best;
+    if (best) { $('#bestWho').textContent = best.who; $('#bestTag').textContent = best.tag; }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
   },
@@ -586,6 +597,14 @@ press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
+// the best shot of the match, played again as an edited clip
+const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
+function playBest() {
+  if (!match.best) return;
+  show('reel'); flow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
+  st.phase = 'reel'; reel.play(match.best);
+}
+press('#bestBtn', playBest); press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
@@ -615,7 +634,7 @@ const orbitPts = new Map();                                // fingers currently 
 function ballUnder(p, reach) { let best = null, bd = reach; for (const b of game.world.balls) if (b.on) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < bd) { bd = d; best = b; } } return best; }
 canvas.addEventListener('pointerdown', e => {
   SND.init();
-  if (scene.orbiting) {
+  if (scene.orbiting && st.screen === 'play') {
     // in the 3D view: taking hold of the cue aims, one finger anywhere else turns the view, two fingers zoom
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault();
     if (!orbitPts.size && humanAiming()) {
@@ -718,6 +737,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
+  if (st.screen === 'reel') { reel.skip(); return true; }
   if (st.screen === 'result') { goHome(); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
@@ -759,7 +779,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
   const paused = !$('#sheet').hidden;
-  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2;
+  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
     if (st.phase === 'strike') {
@@ -768,12 +788,13 @@ function frame(now) {
       if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
+    else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
-    showCue: lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
+    showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
@@ -803,7 +824,7 @@ function start(data) {
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, match, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, drills, practice, match, reel, playBest, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

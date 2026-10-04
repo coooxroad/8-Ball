@@ -31,6 +31,7 @@
 | `web/game.js` | 게임별 규칙, 차례 진행, 점수판에 보일 내용, 기록, 컴퓨터 상대 |
 | `web/drills.js` | 연습 배치 생성과 성공 판정. 배치마다 기준 샷을 시뮬레이션으로 검증 |
 | `web/league.js` | 리그 대진(모두 한 번씩)과 순위표 계산 |
+| `web/highlights.js`, `web/reel.js` | 한 판의 최고의 샷 고르기와 편집된 다시 보기 |
 | `web/look.js` | 천 색, 큐 디자인, 공 색 (데이터) |
 | `web/scene.js` | three.js 장면. 움직이지 않는 배경·테이블은 한 번만 그려 텍스처로 재사용 |
 | `web/sounds.js`, `web/audio.js` | 녹음된 타구음 데이터, 재생과 방 울림 |
@@ -64,4 +65,4 @@ base64 -w0 release.jks
 
 ## 라이선스 표기
 
-three.js r128 (MIT). 글꼴 Gothic A1, Outfit (SIL OFL 1.1)
+three.js r128 (MIT). 글꼴 Gothic A1, Outfit, Jua (SIL OFL 1.1). 하이라이트 음악과 효과음은 이 프로젝트에서 직접 합성한 것으로, 외부 음원을 쓰지 않습니다.
