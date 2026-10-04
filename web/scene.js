@@ -374,16 +374,18 @@ function createScene(canvas, app, PH) {
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
-  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, live: 0 }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
+  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0 }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
   function setOrbit(on) {
     orbit.on = on;
-    if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.live = 4; }
+    if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.zoom = 1; orbit.live = 4; }
     applyCamera();
   }
   function orbitBy(dx, dy) {
     if (!orbit.on) return;
-    orbit.az -= dx * 0.006; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.005)); orbit.live = 4; applyCamera();
+    orbit.az -= dx * 0.0034; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.0028)); orbit.live = 4; applyCamera();
   }
+  // f > 1 moves the camera away, f < 1 brings it in
+  function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
   function applyCamera(soft) {
     if (!W || !H) return;
     const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
@@ -408,7 +410,7 @@ function createScene(canvas, app, PH) {
         }
         d *= 1 + (k * 1.03 - 1) * 0.9;
       }
-      camera.position.copy(dir).multiplyScalar(d);
+      camera.position.copy(dir).multiplyScalar(d * orbit.zoom);
     } else { camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(0, 0, 0);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
@@ -570,14 +572,18 @@ function createScene(canvas, app, PH) {
     } else { quad.scale.set(1, 1, 1); quad.position.set(0, 0, 0); }
     renderer.setClearColor(clearCol, 1);
     unmask(); renderer.clear(); renderer.render(quadScene, quadCam);
-    const bgc = sScene.background; sScene.background = null; sScene.overrideMaterial = depthMat;   // (a colour background would wipe the picture)
-    renderer.render(sScene, camera); sScene.overrideMaterial = null; sScene.background = bgc;
+    // The table is drawn into the depth buffer only when something can go behind part of it: a ball dropping into a
+    // pocket, or any ball once the view is tilted. Seen from straight above with every ball on the cloth, nothing can.
+    if (falls.length || orbit.on) {
+      const bgc = sScene.background; sScene.background = null; sScene.overrideMaterial = depthMat;   // (a colour background would wipe the picture)
+      renderer.render(sScene, camera); sScene.overrideMaterial = null; sScene.background = bgc;
+    }
     renderer.render(scene, camera);
     return true;
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, orbitBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

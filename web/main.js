@@ -579,8 +579,8 @@ press('#menuBtn', sheetPause);
 // look round in 3D and back: while it is on, dragging the table turns the view instead of aiming
 function setView3D(on) {
   if (scene.orbiting === on) return;
-  scene.setOrbit(on); $('#viewBtn').setAttribute('aria-pressed', String(on)); drag = null;
-  if (on) toast('드래그해서 둘러보세요. 조준은 옆의 미세 조준 바로 할 수 있고, 버튼을 다시 누르면 위에서 보는 화면으로 돌아옵니다.', '', 4200);
+  scene.setOrbit(on); $('#viewBtn').setAttribute('aria-pressed', String(on)); drag = null; orbitPts.clear();
+  if (on) toast('큐를 잡고 끌면 조준, 빈 곳을 끌면 시점 회전, 두 손가락으로 확대·축소. 버튼을 다시 누르면 위에서 보는 화면으로 돌아옵니다.', '', 4800);
 }
 press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
@@ -605,10 +605,25 @@ function tryPlace(p, ball) {
     if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (!kitchen || nx <= -HL / 2)) { c.x = c.px = nx; c.y = c.py = ny; } return; }
   }
 }
+// is this table position on the cue (or the cue ball it points at)?
+function onCue(p) {
+  const c = game.cueBall(), dx = p.x - c.x, dy = p.y - c.y, ca = Math.cos(st.aim), sa = Math.sin(st.aim);
+  const back = -(dx * ca + dy * sa), side = Math.abs(dy * ca - dx * sa);
+  return back > -0.05 && back < 1.6 && side < Math.max(0.07, 34 / scene.ppm);
+}
+const orbitPts = new Map();                                // fingers currently turning or zooming the 3D view
 function ballUnder(p, reach) { let best = null, bd = reach; for (const b of game.world.balls) if (b.on) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < bd) { bd = d; best = b; } } return best; }
 canvas.addEventListener('pointerdown', e => {
   SND.init();
-  if (scene.orbiting) { drag = { kind: 'orbit', id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); return; }
+  if (scene.orbiting) {
+    // in the 3D view: taking hold of the cue aims, one finger anywhere else turns the view, two fingers zoom
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault();
+    if (!orbitPts.size && humanAiming()) {
+      const p = scene.toTable(e, game.P.R), c = game.cueBall();
+      if (onCue(p)) { drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 99, noTap: true }; return; }
+    }
+    orbitPts.set(e.pointerId, { x: e.clientX, y: e.clientY }); return;
+  }
   if (!humanAiming()) return;
   const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y), reach = Math.max(0.075, 26 / scene.ppm);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
@@ -619,7 +634,16 @@ canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', e => {
-  if (drag && drag.kind === 'orbit' && drag.id === e.pointerId) { scene.orbitBy(e.clientX - drag.x, e.clientY - drag.y); drag.x = e.clientX; drag.y = e.clientY; return; }
+  const op = orbitPts.get(e.pointerId);
+  if (op) {
+    if (orbitPts.size === 1) scene.orbitBy(e.clientX - op.x, e.clientY - op.y);
+    else if (orbitPts.size === 2) {
+      let other = null; for (const [id, q] of orbitPts) if (id !== e.pointerId) other = q;
+      const before = Math.hypot(op.x - other.x, op.y - other.y), after = Math.hypot(e.clientX - other.x, e.clientY - other.y);
+      if (before > 10 && after > 10) scene.zoomBy(Math.pow(before / after, 0.6));        // gentler than the fingers
+    }
+    op.x = e.clientX; op.y = e.clientY; return;
+  }
   if (!drag || drag.id !== e.pointerId || !humanAiming()) return;
   const P = game.P, p = scene.toTable(e, P.R), c = game.cueBall();
   if (drag.kind === 'cue') tryPlace(p);
@@ -639,9 +663,9 @@ canvas.addEventListener('pointermove', e => {
   scene.invalidate();
 });
 const endDrag = e => {
+  if (orbitPts.delete(e.pointerId)) return;
   if (!drag || drag.id !== e.pointerId) return;
-  if (drag.kind === 'orbit') { drag = null; return; }
-  if (drag.kind === 'aim' && drag.moved <= 6 && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
+  if (drag.kind === 'aim' && drag.moved <= 6 && !drag.noTap && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
   drag = null; scene.invalidate(); snapshot();
 };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
@@ -701,6 +725,9 @@ window.__back = function () {
 
 /* ================= frame loop ================= */
 let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
+// which balls may be hit: recomputed when the table changes (st.rev), not on every frame
+const NONE = [], legal = { rev: -1, turn: -1, ids: NONE };
+function legalNow() { if (legal.rev !== st.rev || legal.turn !== game.turn) { legal.rev = st.rev; legal.turn = game.turn; legal.ids = game.legal(); } return legal.ids; }
 // what the physics reported since the last frame: sounds to play, balls to drop into pockets
 function drain() {
   const s = game.world.snd, quiet = flow.quiet;
@@ -747,7 +774,7 @@ function frame(now) {
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
     showCue: lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
-    legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
+    legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
   if (paused && st.phase === 'sim') SND.rolling(0);

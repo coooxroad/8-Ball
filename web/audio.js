@@ -76,7 +76,7 @@ function createAudio(isOn) {
       const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
       src.buffer = rb; src.loop = true; src.loopEnd = (rn - 2000) / ac.sampleRate; bp.type = 'bandpass'; bp.frequency.value = 260; bp.Q.value = 0.6; g.gain.value = 0;
       src.connect(bp); bp.connect(g); g.connect(out); src.start();
-      roll = { bp, g };
+      roll = { bp, g, k: 0 };
       resume();
     } catch (e) {
       if (ac) ac.close().catch(() => {});
@@ -145,6 +145,8 @@ function createAudio(isOn) {
     rolling(amount) {
       if (!ac || !roll) return;
       const k = isOn() ? Math.min(1, amount / 6) : 0, t = ac.currentTime;
+      if (Math.abs(k - roll.k) < 0.04 && !(k === 0 && roll.k !== 0)) return;                 // only re-aim the volume when it has really changed
+      roll.k = k;
       roll.g.gain.setTargetAtTime(0.0375 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
     },
     tap() { uiHit('tick', 0.22, 5000, 0, 1); },
