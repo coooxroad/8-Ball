@@ -1,4 +1,9 @@
-/* App shell: screens, input, turn flow on screen, saving. */
+/* App shell. It owns the screens, the input and the frame loop, and nothing else:
+     physics.js  how balls move            game.js    rules, turns, computer player
+     drills.js   practice layouts          scene.js   drawing
+     audio.js    sound                     look.js    colours and designs (data)
+   What happens around a shot depends on what is being played, so that part lives in three small "flows"
+   (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
@@ -6,12 +11,11 @@ const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
 const GUIDE = [['끔', '조준선 없이 감으로 칩니다'], ['짧게', '큐볼이 처음 닿는 곳까지만'], ['보통', '맞은 공과 큐볼이 꺾이는 방향까지'], ['길게', '쿠션에 튕긴 뒤와 큐볼이 굴러갈 길까지']];
 
+/* ================= settings and saved data ================= */
 const store = {
   get(k, d) { try { const v = localStorage.getItem('dp8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('dp8.' + k, JSON.stringify(v)); } catch (e) {} },
 };
-const prefs = Object.assign({ drill: 'free', mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0, guide: 2, sound: true, quality: 'auto', fps: false }, store.get('prefs', {}));
-
 // Pool table sizes. Real regulation numbers: playing surface, ball diameter, pocket openings.
 const TABLES = [
   { id: 'bar', name: '당구장 7피트', short: '7피트', d: '198×99cm · 공 57mm. 공이 크게 보이고 가장 쉽습니다.', cfg: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 } },
@@ -19,130 +23,36 @@ const TABLES = [
   { id: 'pro', name: '대회 9피트', short: '9피트', d: '254×127cm · 공 57mm. 프로 대회 규격, 가장 넓고 어렵습니다.', cfg: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 } },
   { id: 'pub', name: '영국식 6피트', short: '6피트', d: '183×91cm · 공 51mm. 작은 공에 좁은 포켓.', cfg: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 } },
 ];
-if (!TABLES.some(t => t.id === prefs.table)) prefs.table = 'bar';
-// each player has their own guide length (a simple handicap)
-if (!Array.isArray(prefs.guides) || prefs.guides.length !== 2) prefs.guides = [prefs.guide, prefs.guide];
+const prefs = (() => {
+  const saved = store.get('prefs', {});
+  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0,
+    guides: null, drill: 'free', drillLv: {}, sound: true, quality: 'auto', fps: false }, saved);
+  if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
+  delete p.guide;
+  if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
+  if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
+  return p;
+})();
+const savePrefs = () => store.set('prefs', prefs);
+
 const poolCache = {};
 const poolOf = id => poolCache[id] || (poolCache[id] = createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg)));
 const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pockets: false }) };
 const game = createGame(PH);
+const drills = createDrills();
+const SND = createAudio(() => prefs.sound);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
-const savePrefs = () => store.set('prefs', prefs);
+if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
 const recOf = n => rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 });
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
-const isPrac = () => game.modeId === 'practice';
-const guideNow = () => { const p = game.players[game.turn]; return p && p.ai ? 2 : prefs.guides[isPrac() ? 0 : game.turn] ; };
 
-const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, ai: null, rev: 0, lastLoser: null, settle: 0 };
-
-/* ================= sound ================= */
-// Velocity layers retain each recording's natural decay instead of reusing short clicks.
-// Rubber and pocket lining use damped, low resonances. No extra reverb on the recordings.
-const SND = (() => {
-  let ac = null, out = null, buf = null;
-  const voices = new Set(), previous = {};
-  const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
-  function make(dur, push, parts, noise) {
-    const sr = ac.sampleRate, n = Math.floor(dur * sr), b = ac.createBuffer(1, n, sr), d = b.getChannelData(0), pn = Math.max(2, Math.floor(push * sr));
-    for (let i = 0; i < pn; i++) d[i] += 0.35 * Math.sin(Math.PI * i / pn) ** 2;
-    for (const [f, tau, amp] of parts) {
-      const w = 2 * Math.PI * f / sr, k = 1 / (tau * sr);
-      for (let i = 0; i < n; i++) d[i] += amp * Math.exp(-i * k) * Math.sin(w * i) * Math.min(1, i / pn);
-    }
-    if (noise) {
-      let lp = 0;
-      for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * noise[1]; d[i] += lp * noise[0] * Math.exp(-i / (noise[2] * sr)) * Math.min(1, i / pn); }
-    }
-    let mx = 0; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(d[i]));
-    const fade = Math.floor(0.012 * sr);
-    for (let i = 0; i < n; i++) d[i] = d[i] / Math.max(mx, 0.001) * 0.75 * Math.min(1, (n - 1 - i) / fade);
-    return b;
-  }
-  function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
-  function init() {
-    if (ac) { resume(); return; }
-    try {
-      ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-      const lim = ac.createDynamicsCompressor();
-      lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 4; lim.attack.value = 0.003; lim.release.value = 0.16;
-      const master = ac.createGain(); master.gain.value = 0.85;
-      out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
-      const recorded = createBilliardsSamples(ac);
-      const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
-      const pock = [[310, 0.026, 0.5], [490, 0.017, 0.4], [830, 0.008, 0.22]];
-      buf = {
-        ball: recorded.ball,
-        cue: recorded.cue,
-        rail: [make(0.12, 0.003, rail, [0.15, 0.1, 0.014])],
-        pock: [make(0.18, 0.002, pock, [0.2, 0.12, 0.035])],
-        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],
-      };
-      resume();
-    } catch (e) {
-      if (ac) ac.close().catch(() => {});
-      ac = null; out = null; buf = null;
-    }
-  }
-  function hit(name, gain, bright, at = 0, rate = 1, layer = -1) {
-    if (!ac || !buf || !prefs.sound || gain <= 0 || voices.size >= 48) return;
-    const list = buf[name];
-    // Avoid playing the identical recording twice in a row.
-    let index = layer >= 0 ? layer : Math.floor(Math.random() * list.length);
-    if (layer < 0 && list.length > 1 && index === previous[name]) index = (index + 1) % list.length;
-    previous[name] = index;
-    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
-    s.buffer = list[index]; s.playbackRate.value = rate;
-    f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
-    s.connect(f); f.connect(g); g.connect(out); voices.add(s);
-    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
-    s.start(t);
-  }
-  // Keep several contacts in the same physics batch: a break must not collapse to one click.
-  // A tiny stagger avoids phase buildup; a bounded burst avoids overload on mobile.
-  function impact(name, v, scale, level, low, high, max) {
-    if (!ac || !buf || !prefs.sound || !Number.isFinite(v) || v <= 0) return;
-    const burst = bursts[name], now = ac.currentTime;
-    if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
-    if (burst.count >= max) return;
-    const slot = burst.count++, k = Math.min(1, v / scale);
-    const gain = level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3);
-    const bright = low + high * Math.sqrt(k), at = slot * 0.0018;
-    // Small variation only; the actual recorded contact changes with impact speed.
-    const rate = 0.995 + Math.random() * 0.01;
-    if (name === 'ball') {
-      // Blend adjacent soft / medium / hard recordings without abrupt timbre steps.
-      // Reserve both voices so the voice cap cannot leave a partial, quieter blend.
-      if (voices.size > 46) return;
-      const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
-      const a = Math.min(1, Math.floor(position)), u = position - a;
-      const mix = u * u * (3 - 2 * u);
-      hit(name, gain * (1 - mix), bright, at, rate, a);
-      hit(name, gain * mix, bright, at, rate, a + 1);
-    } else hit(name, gain, bright, at, rate);
-  }
-  function tone(freq, dur, gain, to, at) {
-    if (!ac || !prefs.sound) return;
-    const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
-    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(ac.destination); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t); o.stop(t + dur + 0.02);
-  }
-  return {
-    init,
-    ball(v) { impact('ball', v, 5, 0.95, 2200, 6300, 6); },
-    rail(v) { impact('rail', v, 4, 0.48, 750, 1700, 3); },
-    pocket() { hit('pock', 0.48, 2400); hit('roll', 0.13, 1100, 0.035); hit('pock', 0.17, 1500, 0.115, 0.87); },
-    cue(v) {
-      if (!Number.isFinite(v) || v <= 0) return;
-      const k = Math.min(1, v / 9);
-      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k);
-    },
-    tap() { tone(520, 0.05, 0.12, 1.5); },
-    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
-  };
-})();
+/* What is on screen and where the current shot is.
+   screen: home | play | result
+   phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+let flow = null;
 
 const scene = createScene(canvas, app, PH);
 if (!scene) {
@@ -170,6 +80,8 @@ function el(tag, attrs, kids) {
   return n;
 }
 const hex = n => '#' + n.toString(16).padStart(6, '0');
+// every button press: wake the audio (browsers only allow that inside a tap), click, then act
+const press = (id, fn) => $(id).addEventListener('click', () => { SND.init(); SND.tap(); fn(); });
 function seg(id, get, set) {
   const box = $(id), paint = () => { for (const b of box.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get()))); };
   box.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; SND.init(); SND.tap(); set(b.dataset.v); paint(); });
@@ -181,8 +93,18 @@ function toast(msg, kind, ms) {
   t.textContent = msg; t.className = 'show ' + (kind || '');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = kind || ''; }, ms || 1800);
 }
+const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
 
-/* ================= layout ================= */
+/* ================= screens and layout ================= */
+const CONTROLS = ['#power', '#fine', '#spinBtn'];
+function show(screen) {
+  st.screen = screen;
+  $('#home').hidden = screen !== 'home'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result';
+  for (const id of CONTROLS) $(id).hidden = screen !== 'play';
+  $('#spinPop').hidden = true; closeSheet();
+  if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
+  layout();
+}
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
@@ -190,7 +112,7 @@ function layout() {
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  if (st.phase === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   setPowerUI(st.power);
 }
@@ -202,6 +124,81 @@ function layoutSoon() {
 }
 window.addEventListener('resize', layoutSoon);
 if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
+
+function setPowerUI(p) {
+  const tr = $('#power'), fill = $('#powerFill'), c = $('#powerCue');
+  $('#powerNum').textContent = Math.round(p * 100);
+  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 30px + ${p * (tr.clientWidth - 30)}px),-50%)`; }
+  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 26px + ${p * (tr.clientHeight - 26)}px))`; }
+}
+function setSpinUI() {
+  const s = st.spin, k = 0.36;
+  $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
+  $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
+}
+
+/* ================= sheets ================= */
+function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b = $('#sheetBody'); b.textContent = ''; for (const k of [].concat(kids)) if (k) b.appendChild(k); $('#sheet').hidden = false; }
+function closeSheet() { $('#sheet').hidden = true; }
+$('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
+$('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
+const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: () => { SND.init(); SND.tap(); fn(); } }, kids);
+const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
+const flatBtn = (text, fn) => el('button', { class: 'btn flat', text, onclick: () => { SND.tap(); fn(); } });
+const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
+  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+const note = text => el('p', { class: 'note', text });
+
+function sheetTable() {
+  const sizes = prefs.mode === 'four' ? [note('4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
+    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); homePreview(); sheetTable(); }));
+  openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
+    el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
+      [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
+}
+const cueCss = d => `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`;
+function sheetCue() {
+  openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
+    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
+}
+// one guide length per player (a handicap); a single row when only one person is aiming
+function sheetGuide() {
+  const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' : flow !== match);
+  const row = i => segRow(solo ? '조준선' : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
+  openSheet('조준선 길이', [row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
+    solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
+}
+function sheetSettings() {
+  openSheet('설정', [
+    segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
+    segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
+    segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
+    note('화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.'),
+  ]);
+}
+function sheetRecords() {
+  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w);
+  const grid = el('div', { class: 'rec' }, [el('span', { class: 'hd', text: '이름' }), el('span', { class: 'hd n', text: '승' }), el('span', { class: 'hd n', text: '패' }), el('span', { class: 'hd n', text: '최다 연승' })]);
+  for (const n of names) { const r = rec[n]; grid.append(el('span', { text: n }), el('span', { class: 'n', text: r.w }), el('span', { class: 'n', text: r.l }), el('span', { class: 'n', text: r.best })); }
+  openSheet('전적', [names.length ? grid : note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 승패가 쌓입니다.'),
+    names.length ? flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); }) : null]);
+}
+function sheetName(i) {
+  if (i === 1 && prefs.vsAI) return;
+  const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
+  const save = () => { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) { prefs.names[i] = v; savePrefs(); } closeSheet(); paintHome(); };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  openSheet(`${i + 1}번 선수 이름`, [input, note('전적은 이름별로 따로 쌓입니다. 열 글자까지.'), el('button', { class: 'btn cta', text: '저장', onclick: save })]);
+  setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
+}
+function sheetPause() {
+  openSheet('잠깐 멈춤', [
+    el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
+    el('div', { class: 'row' }, [flatBtn('조준선', sheetGuide), flatBtn('설정', sheetSettings)]),
+    el('div', { class: 'row' }, [flatBtn('다시 시작', () => { closeSheet(); flow.restart(); }), flatBtn('처음으로', goHome)]),
+  ]);
+}
 
 /* ================= home ================= */
 const MODE_ICON = {
@@ -219,394 +216,307 @@ function buildModes() {
   const box = $('#modeList'); box.textContent = '';
   for (const id of ['eight', 'nine', 'four', 'practice']) {
     const m = game.MODES[id];
-    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); preview(); } },
+    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
   }
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
+const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() {
-  $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
-  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
   const prac = prefs.mode === 'practice';
   $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#rightLab').textContent = prac ? '연습 고르기' : '대결';
   if (prac) {
-    const box = $('#pracList'); box.textContent = '';
-    for (const d of DRILLS) box.appendChild(optBtn(prefs.drill === d.id, optText(d.name, d.d), () => { prefs.drill = d.id; savePrefs(); paintHome(); }));
+    const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
+    for (const d of drills.list) box.appendChild(optBtn(prefs.drill === d.id,
+      [optText(d.name, d.d), d.make ? el('span', { class: 'lv', text: levelOf(d.id) + '단계' }) : null], () => { prefs.drill = d.id; savePrefs(); paintHome(); homePreview(); }));
+    box.scrollTop = top;
   }
+  $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = CUES[prefs.cue].name;
   const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }
-function cueCss(d) { return `linear-gradient(90deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`; }
-function preview() {
+// The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
+// (a new layout each time, which is also what the drill itself does).
+function homePreview() {
+  PH.pool = poolOf(prefs.table); scene.clearFalls(); scene.setZone(null);
+  st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
+  const d = drills.byId(prefs.drill);
+  if (prefs.mode === 'practice' && d.make) {
+    game.start('practice', [prefs.names[0], ''], false, {}); scene.setTable(game.P);
+    const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
+    if (L) { flow = null; putLayout(L); scene.setZone(L.zone); playDemo(L.demo, { quiet: true, after: homePreview }); return; }
+  }
+  flow = null;
   game.start(prefs.mode === 'practice' ? 'eight' : prefs.mode, [prefs.names[0], oppName()], false, {});
-  scene.setTable(game.P); st.aim = 0; st.power = 0; st.rev++; scene.invalidate();
+  scene.setTable(game.P); st.rev++; scene.invalidate();
 }
 function goHome() {
-  st.phase = 'home'; prac.on = false; scene.setZone(null); $('#pracBar').hidden = true; $('#p1').hidden = false; st.ai = null; st.cueAnim = null; closeSheet(); $('#spinPop').hidden = true;
-  $('#result').hidden = true; $('#home').hidden = false; $('#hud').hidden = true;
-  for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true;
-  app.classList.add('busy'); store.set('save', null);
-  buildModes(); paintHome(); preview(); layout();
+  store.set('save', null);
+  show('home'); buildModes(); paintHome(); homePreview();
 }
 
-/* ================= sheets ================= */
-function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b = $('#sheetBody'); b.textContent = ''; for (const k of [].concat(kids)) if (k) b.appendChild(k); $('#sheet').hidden = false; }
-function closeSheet() { $('#sheet').hidden = true; }
-$('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
-$('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
-const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: () => { SND.tap(); fn(); } }, kids);
-const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
-const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
-  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
-
-function sheetTable() {
-  const four = prefs.mode === 'four';
-  const sizes = four ? [el('p', { class: 'note', text: '4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.' })]
-    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); preview(); sheetTable(); }));
-  openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
-    el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
-      [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
-}
-function sheetCue() {
-  openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
-    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
-}
-function sheetGuide() {
-  const solo = prefs.vsAI || prefs.mode === 'practice' || isPrac();
-  const row = i => segRow(solo ? '조준선' : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
-  openSheet('조준선 길이', [row(0), solo ? null : row(1),
-    el('p', { class: 'note', text: GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ') }),
-    solo ? null : el('p', { class: 'note', text: '실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.' })]);
-}
-function sheetSettings() {
-  openSheet('설정', [
-    segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
-    segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
-    segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
-    segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
-    el('p', { class: 'note', text: '화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.' }),
-  ]);
-}
-function sheetRecords() {
-  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w);
-  const grid = el('div', { class: 'rec' }, [el('span', { class: 'hd', text: '이름' }), el('span', { class: 'hd n', text: '승' }), el('span', { class: 'hd n', text: '패' }), el('span', { class: 'hd n', text: '최다 연승' })]);
-  for (const n of names) { const r = rec[n]; grid.append(el('span', { text: n }), el('span', { class: 'n', text: r.w }), el('span', { class: 'n', text: r.l }), el('span', { class: 'n', text: r.best })); }
-  openSheet('전적', [names.length ? grid : el('p', { class: 'note', text: '아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 승패가 쌓입니다.' }),
-    names.length ? el('button', { class: 'btn flat', text: '전적 모두 지우기', onclick: () => { rec = {}; store.set('rec', rec); series.key = ''; paintHome(); sheetRecords(); } }) : null]);
-}
-function sheetName(i) {
-  if (i === 1 && prefs.vsAI) return;
-  const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
-  const save = () => { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) { prefs.names[i] = v; savePrefs(); } closeSheet(); paintHome(); };
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
-  openSheet(`${i + 1}번 선수 이름`, [input, el('p', { class: 'note', text: '전적은 이름별로 따로 쌓입니다. 열 글자까지.' }), el('button', { class: 'btn cta', text: '저장', onclick: save })]);
-  setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
-}
-function sheetPause() {
-  openSheet('잠깐 멈춤', [
-    el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
-    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '조준선', onclick: sheetGuide }), el('button', { class: 'btn flat', text: '설정', onclick: sheetSettings })]),
-    el('div', { class: 'row' }, [el('button', { class: 'btn flat', text: '다시 시작', onclick: () => { closeSheet(); if (isPrac()) startPractice(); else startMatch(game.turn); } }),
-      el('button', { class: 'btn flat', text: '처음으로', onclick: goHome })]),
-  ]);
-}
-$('#tableBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetTable(); });
-$('#cueBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetCue(); });
-$('#guideBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetGuide(); });
-$('#setBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetSettings(); });
-$('#recBtn').addEventListener('click', () => { SND.init(); SND.tap(); sheetRecords(); });
-$('#pc0').addEventListener('click', () => { SND.init(); SND.tap(); sheetName(0); });
-$('#pc1').addEventListener('click', () => { SND.init(); SND.tap(); sheetName(1); });
-$('#menuBtn').addEventListener('click', () => { SND.tap(); sheetPause(); });
-seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
-seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
-seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
-$('#startBtn').addEventListener('click', () => { SND.init(); SND.tap(); if (prefs.mode === 'practice') startPractice(); else startMatch(0); });
-$('#againBtn').addEventListener('click', () => { SND.init(); SND.tap(); startMatch(st.lastLoser == null ? 0 : st.lastLoser); });
-$('#homeBtn').addEventListener('click', () => { SND.tap(); goHome(); });
-
-/* ================= match flow ================= */
-function startMatch(first) {
-  PH.pool = poolOf(prefs.table);
-  const names = [prefs.names[0], oppName()], key = names.join('\u0001') + prefs.mode;
-  if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-  game.start(prefs.mode, names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: first || 0 });
-  enterGame();
-  toast(game.mode.id === 'four' ? `${game.players[game.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.` : `${game.players[game.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`, '', 3600);
-}
-function enterGame() {
-  scene.setTable(game.P);
-  $('#home').hidden = true; $('#result').hidden = true; $('#hud').hidden = false; closeSheet();
-  for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = false;
-  st.aim = 0; st.ai = null; st.cueAnim = null; st.rev++;
-  st.phase = 'aim'; layout(); beginTurn(true);
-}
+/* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
   st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; setPowerUI(0); setSpinUI(); $('#spinPop').hidden = true;
-  const p = game.players[game.turn], c = game.cueBall();
-  if (p.ai) { st.phase = 'ai'; st.ai = { t: 0, plan: null, from: st.aim }; }
+  const auto = flow.auto();
+  if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {
-    let best = null, bd = 1e9;
+    const c = game.cueBall(); let best = null, bd = 1e9;
     for (const id of game.legal()) { const b = game.world.balls[id], d = Math.hypot(b.x - c.x, b.y - c.y); if (d < bd) { bd = d; best = b; } }
     if (best) st.aim = Math.atan2(best.y - c.y, best.x - c.x);
   }
-  hud(); scene.invalidate(); snapshot();
+  flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
-  if (isPrac()) { prac.before = game.world.balls.map(x => [x.x, x.y, x.on]); prac.beforeAim = st.aim; }
-  game.beginShot(); st.phase = 'strike'; $('#spinPop').hidden = true;
+  flow.beforeShot(); game.beginShot();
+  st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
-  hud();
+  flow.hud();
 }
-function endShot() {
-  if (isPrac()) {
-    const j = pracJudge(); game.resolve(); st.rev++;
-    if (!j) return beginTurn(false);
-    toast(j.msg, j.kind, 1700); SND.tap(); st.phase = 'hold'; st.holdT = 1.5; hud(); return;   // leave the result on the table for a moment
-  }
-  const out = game.resolve(); st.rev++;
-  if (game.over) return finish();
-  toast(out.msg, out.kind, out.dur);
-  beginTurn(false);
-}
-function finish() {
-  st.phase = 'over';
-  const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
-  const rw = recOf(pw.name), rl = recOf(pl.name);
-  rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0; store.set('rec', rec);
-  series.s[w]++; st.lastLoser = l; store.set('save', null);
-  const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
-  win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
-  win.querySelector('.rc').textContent = `${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
-  $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name;
-  const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
-  const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
-  const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
-  if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
-  const box = $('#rStats'); box.textContent = '';
-  for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat panel' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
-  $('#rWhy').textContent = game.over.why;
-  $('#hud').hidden = true; for (const id of ['#power', '#fine', '#spinBtn']) $(id).hidden = true; $('#spinPop').hidden = true;
-  $('#result').hidden = false; app.classList.add('busy'); SND.win();
-}
+function endShot() { st.rev++; flow.afterShot(); }
+function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHold = then; flow.hud(); }
 
-/* ================= practice ================= */
-// A drill puts balls on the table and says what counts as success. Positions are fractions of the table, so every size works.
-const prac = { on: false, drill: null, tries: 0, ok: 0, before: null, zone: null, need: null, edit: false, tip: '' };
-const DRILLS = (() => {
-  const corner = P => P.POCKETS.reduce((a, p) => (p.x + p.y > a.x + a.y ? p : a));
-  const side = P => P.POCKETS.reduce((a, p) => (p.y - Math.abs(p.x) * 4 > a.y - Math.abs(a.x) * 4 ? p : a));
-  const unit = (ax, ay, bx, by) => { const l = Math.hypot(bx - ax, by - ay); return [(bx - ax) / l, (by - ay) / l]; };
-  const rot = (u, deg) => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a); return [u[0] * c - u[1] * s, u[0] * s + u[1] * c]; };
-  // object ball O going to pocket K, cue ball `dist` behind the contact point and `cut` degrees off the straight line
-  function shotTo(P, O, K, dist, cut) {
-    const u = unit(O[0], O[1], K.x, K.y), G = [O[0] - u[0] * 2 * P.R, O[1] - u[1] * 2 * P.R], back = rot([-u[0], -u[1]], cut || 0);
-    return { u, G, cue: [G[0] + back[0] * dist, G[1] + back[1] * dist] };
-  }
-  return [
-    { id: 'free', name: '자유 연습', d: '규칙 없이 마음대로. 공을 옮기고 한 수 되돌릴 수 있습니다.' },
-    { id: 'straight', name: '똑바로 넣기', d: '일직선으로 놓인 공을 넣습니다.', tip: '공 가운데를 겨누고 중간 세기로. 너무 세면 큐볼도 따라 들어갑니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.42, P.HW * 0.2], s = shotTo(P, O, K, 0.5, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
-    { id: 'stop', name: '스톱 샷', d: '공을 넣고 큐볼을 그 자리에 세웁니다.', tip: '큐볼 가운데보다 살짝 아래를 조금 세게. 큐볼이 원 안에 서야 합니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.3, P.HW * 0.05], s = shotTo(P, O, K, 0.38, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: s.G[0], y: s.G[1], r: 0.1 } }; } },
-    { id: 'follow', name: '밀어치기', d: '공을 넣고 큐볼을 앞으로 보냅니다.', tip: '큐볼 위쪽을 칩니다. 맞힌 뒤 큐볼이 따라가 원 안에 서야 합니다.',
-      build(P) { const K = corner(P), O = [-P.HL * 0.1, -P.HW * 0.25], s = shotTo(P, O, K, 0.36, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: O[0] + s.u[0] * 0.34, y: O[1] + s.u[1] * 0.34, r: 0.15 } }; } },
-    { id: 'draw', name: '끌어치기', d: '공을 넣고 큐볼을 뒤로 당겨 옵니다.', tip: '큐볼 맨 아래를 세게. 맞힌 뒤 큐볼이 되돌아와 원 안에 서야 합니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.25, 0], s = shotTo(P, O, K, 0.3, 0); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 }, zone: { x: O[0] - s.u[0] * 0.62, y: O[1] - s.u[1] * 0.62, r: 0.17 } }; } },
-    { id: 'cut', name: '비껴 넣기', d: '비스듬히 놓인 공을 넣습니다.', tip: '공 가운데가 아니라, 포켓 반대쪽 옆구리를 겨눕니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.5, P.HW * 0.3], s = shotTo(P, O, K, 0.45, 30); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
-    { id: 'thin', name: '얇게 치기', d: '많이 비껴 놓인 공을 살짝 스쳐 넣습니다.', tip: '공 가장자리만 스치게. 얇을수록 공은 느리게 가니 조금 세게 칩니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.55, P.HW * 0.45], s = shotTo(P, O, K, 0.42, -55); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
-    { id: 'side', name: '사이드 포켓', d: '가운데 포켓은 입구가 각도에 따라 좁아집니다.', tip: '포켓 정면에 가까울수록 쉽습니다. 턱에 맞지 않게 가운데로.',
-      build(P) { const K = side(P), O = [K.x - 0.2, K.y - 0.34], s = shotTo(P, O, K, 0.45, 22); return { cue: s.cue, balls: [[1, O]], need: { pot: 1 } }; } },
-    { id: 'bank', name: '뱅크 샷', d: '공을 쿠션에 한 번 튕겨 넣습니다.', tip: '반대쪽 쿠션에 튕겨 가운데 포켓으로. 포켓을 쿠션 건너편에 비춘 자리를 겨눈다고 생각하세요.',
-      build(P) {
-        const K = side(P), O = [P.HL * 0.3, -P.HW * 0.35], my = -2 * (P.HW - P.R) - K.y, u = unit(O[0], O[1], K.x, my);
-        return { cue: [O[0] - u[0] * 0.4, O[1] - u[1] * 0.4], balls: [[1, O]], need: { pot: 1, bank: 1 } };
-      } },
-    { id: 'spin', name: '옆 회전', d: '쿠션에 수직으로 쳐도 회전을 주면 옆으로 꺾입니다.', tip: '쿠션을 똑바로 겨눈 채 큐볼 오른쪽을 칩니다. 튕겨 나온 큐볼이 원 안에 서야 합니다.',
-      build(P) { return { cue: [0, -P.HW * 0.2], balls: [], aim: Math.PI / 2, need: {}, nominal: { power: 0.42, a: 0.4, b: 0, r: 0.17 } }; } },
-    { id: 'position', name: '다음 공 자리 잡기', d: '1번을 넣고, 2번을 치기 좋은 곳에 큐볼을 세웁니다.', tip: '세기만 맞추면 됩니다. 1번을 넣은 큐볼이 원 안에 서야 합니다.',
-      build(P) { const K = corner(P), O = [P.HL * 0.55, P.HW * 0.35], s = shotTo(P, O, K, 0.45, 32); return { cue: s.cue, balls: [[1, O], [2, [-P.HL * 0.45, P.HW * 0.55]]], need: { pot: 1 }, nominal: { at: s.G, power: 0.4, a: 0, b: 0, r: 0.24 } }; } },
-    { id: 'break', name: '브레이크', d: '공을 깨서 하나 이상 넣습니다.', tip: '맨 앞 공을 정면으로, 가장 세게. 큐볼이 빠지면 실패입니다.',
-      build() { return { rack: true, need: { any: 1 } }; } },
-  ];
-})();
-if (!DRILLS.some(d => d.id === prefs.drill)) prefs.drill = 'free';
-function loadDrill() {
-  const d = prac.drill, P = game.P, w = game.world;
-  game.MODES.practice.setup(game, Math.random); prac.zone = null; prac.need = null; prac.before = null; st.aim = 0;
-  if (d.id === 'free') { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; }
-  else {
-    const b = d.build(P); prac.need = b.need;
-    if (b.rack) { game.MODES.eight.setup(game, Math.random); game.placing = null; }
-    else {
-      P.place(w, 0, b.cue[0], b.cue[1], Math.random);
-      for (const [id, o] of b.balls) P.place(w, id, o[0], o[1], Math.random);
-      const first = b.balls[0]; st.aim = b.aim != null ? b.aim : Math.atan2(first[1][1] - b.cue[1], first[1][0] - b.cue[0]);
-    }
-    if (b.zone) prac.zone = b.zone;
-    if (b.nominal) {                               // the target is where a sensible shot leaves the cue ball
-      const n = b.nominal, w2 = P.clone(w), ang = n.at ? Math.atan2(n.at[1] - b.cue[1], n.at[0] - b.cue[0]) : st.aim;
-      P.strike(w2, ang, game.vOf(n.power), n.a, n.b); P.run(w2, 20);
-      prac.zone = { x: w2.balls[0].x, y: w2.balls[0].y, r: n.r };
-    }
-  }
-  scene.setZone(prac.zone); st.rev++;
-  beginTurn(true);
-}
-function startPractice(id) {
-  PH.pool = poolOf(prefs.table);
-  if (id) { prefs.drill = id; savePrefs(); }
-  prac.on = true; prac.drill = DRILLS.find(d => d.id === prefs.drill) || DRILLS[0]; prac.tries = 0; prac.ok = 0; prac.edit = false;
-  game.start('practice', [prefs.names[0], ''], false, {});
-  enterGame(); loadDrill(); pracBar();
-  toast(prac.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
-}
-function pracBar() {
-  const box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
-  const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
-  if (prac.drill.id === 'free') {
-    btn('되돌리기', pracUndo);
-    btn('옮기기', () => { prac.edit = !prac.edit; pracBar(); if (prac.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, prac.edit);
-    btn('공 놓기', sheetRack);
-  } else {
-    btn('다시', () => { if (st.phase === 'aim') loadDrill(); });
-    btn('설명', () => toast(prac.drill.tip, '', 5200));
-    btn('다음', () => { const i = DRILLS.indexOf(prac.drill); startPractice(DRILLS[i + 1 < DRILLS.length ? i + 1 : 1].id); });
-  }
-}
-function pracUndo() {
-  if (st.phase !== 'aim' || !prac.before) return toast('되돌릴 샷이 없습니다.', '', 1400);
-  prac.before.forEach((s, i) => { const b = game.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = s[2]; b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
-  st.aim = prac.beforeAim; st.rev++; hud(); scene.invalidate();
-}
-function sheetRack() {
-  const P = game.P, w = game.world, done = () => { closeSheet(); st.rev++; hud(); scene.invalidate(); };
-  const clear = () => { for (let i = 1; i < 16; i++) { w.balls[i].on = false; w.balls[i].x = w.balls[i].px = 9 + i; } };
-  openSheet('공 놓기', [
-    el('button', { class: 'btn flat', text: '8볼 모양으로 15개', onclick: () => { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; done(); } }),
-    el('button', { class: 'btn flat', text: '9볼 모양으로 9개', onclick: () => { clear(); const g2 = { P, world: w }; game.MODES.nine.setup(g2, Math.random); done(); } }),
-    el('button', { class: 'btn flat', text: '공 하나 더 놓기', onclick: () => {
-      const b = w.balls.find(x => x.id > 0 && !x.on); if (!b) return toast('공 15개가 모두 올라와 있습니다.', '', 1600);
-      const [x, y] = P.findFree(w, P.HL * 0.3, 0, b.id); P.place(w, b.id, x, y, Math.random); done();
-    } }),
-    el('button', { class: 'btn flat', text: '큐볼만 남기고 치우기', onclick: () => { clear(); done(); } }),
-    el('p', { class: 'note', text: '놓은 뒤 "옮기기"를 켜고 원하는 자리로 끌어 옮기세요.' }),
-  ]);
-}
-// called when the balls have stopped, before the rules tidy the table
-function pracJudge() {
-  const d = prac.drill, ev = game.world.ev, c = game.world.balls[0], need = prac.need;
-  if (d.id === 'free') return null;
-  const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0);
-  let why = '';
-  if (scratch) why = '큐볼이 포켓에 빠졌습니다';
-  else if (need.pot && !potted.includes(need.pot)) why = `${need.pot}번 공이 들어가지 않았습니다`;
-  else if (need.any && potted.length < need.any) why = '들어간 공이 없습니다';
-  else if (need.bank && !ev.railed.includes(need.bank)) why = '쿠션에 튕기지 않고 들어갔습니다';
-  else if (prac.zone && Math.hypot(c.x - prac.zone.x, c.y - prac.zone.y) > prac.zone.r) why = '큐볼이 원 밖에 섰습니다';
-  prac.tries++; if (!why) prac.ok++;
-  return why ? { msg: '실패 · ' + why, kind: 'foul' } : { msg: `성공! ${prac.ok}번째`, kind: 'good' };
-}
-
-/* ================= scoreboard ================= */
-function hud() {
-  const m = game.mode;
-  if (m.id === 'practice') {
-    const box = $('#p0'), free = prac.drill.id === 'free';
-    box.classList.add('on'); box.querySelector('.nm').textContent = prac.drill.name; box.querySelector('.tray').textContent = ''; box.querySelector('.pts').textContent = '';
-    box.querySelector('.sub').textContent = free ? '규칙 없음' : `성공 ${prac.ok} / ${prac.tries}`;
-    const badge = $('#badge'); badge.textContent = ''; badge.appendChild(el('b', { text: '연습' })); badge.appendChild(document.createTextNode(free ? '자유롭게' : prac.drill.d));
-    app.classList.toggle('busy', st.phase !== 'aim'); return;
-  }
-  for (let i = 0; i < 2; i++) {
-    const box = $('#p' + i), p = game.players[i], tray = box.querySelector('.tray'), pts = box.querySelector('.pts');
-    box.classList.toggle('on', game.turn === i && st.phase !== 'over');
-    box.querySelector('.nm').textContent = p.name; tray.textContent = ''; pts.textContent = '';
-    let sub = '';
-    if (m.id === 'eight') {
-      const rem = m.remaining(game, i); sub = p.group ? game.GROUP_KO[p.group] + ' 공' : '공 미정';
-      if (!rem) for (let k = 0; k < 7; k++) tray.appendChild(el('i', { class: 'mb slot' }));
-      else if (!rem.length) tray.appendChild(el('i', { class: 'mb e8' }));
-      else for (const id of rem) tray.appendChild(el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: '--c:' + ballCss(id) }));
-    } else if (m.id === 'nine') { sub = game.turn === i ? `다음 ${m.lowest(game)}번 공` : `성공 ${p.made}`; }
-    else { sub = `목표 ${game.target}점`; pts.textContent = p.score; }
-    box.querySelector('.sub').textContent = sub;
-  }
-  const badge = $('#badge'); badge.textContent = '';
-  badge.appendChild(el('b', { text: m.name }));
-  if (m.id === 'nine') {
-    badge.appendChild(document.createTextNode('다음'));
-    const low = m.lowest(game); for (let id = 1; id <= 9; id++) if (game.world.balls[id].on) badge.appendChild(el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (id === low ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55') }));
-  } else if (m.id === 'eight') badge.appendChild(document.createTextNode(game.isBreak ? '브레이크' : game.players.every(p => !p.group) ? '아직 공 미정' : '8번은 마지막에'));
-  else badge.appendChild(document.createTextNode('빨간 공 두 개 맞히면 1점'));
-  app.classList.toggle('busy', !(st.phase === 'aim' && !game.players[game.turn].ai));
-}
-function setPowerUI(p) {
-  const tr = $('#power'), fill = $('#powerFill'), c = $('#powerCue');
-  $('#powerNum').textContent = Math.round(p * 100);
-  if (scene.portrait) { fill.style.height = ''; fill.style.width = (p * 100) + '%'; c.style.transform = `translate(calc(-100% + 30px + ${p * (tr.clientWidth - 30)}px),-50%)`; }
-  else { fill.style.width = ''; fill.style.height = (p * 100) + '%'; c.style.transform = `translate(-50%,calc(-100% + 26px + ${p * (tr.clientHeight - 26)}px))`; }
-}
-function setSpinUI() {
-  const s = st.spin, k = 0.36;
-  $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
-  $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
-}
-
-/* ================= computer turn ================= */
-function aiTick(dt) {
-  const a = st.ai; a.t += dt;
+// The computer and the demo line up a shot the same way: wait, decide, swing the cue round, pull back, shoot.
+// plan: { angle, V, a, b, pos? }
+function autoTick(dt) {
+  const a = st.auto; a.t += dt;
   if (!a.plan) {
-    if (a.t < 0.5) return;
-    a.plan = game.aiPlan(); a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
+    if (a.t < a.src.think) return;
+    a.plan = a.src.plan(); a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
     if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
+    if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
   st.aim = a.from + a.delta * e(t / 0.75);
   st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
-  if (t > 1.45) { st.aim = a.plan.angle; st.ai = null; shoot(a.plan.V, 0, 0); }
+  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b); }
 }
+
+/* ================= scoreboard ================= */
+function paintPill(i, s) {
+  const box = $('#p' + i), tray = box.querySelector('.tray');
+  box.classList.toggle('on', !!s.on);
+  box.querySelector('.nm').textContent = s.name; box.querySelector('.sub').textContent = s.sub;
+  box.querySelector('.pts').textContent = s.pts == null ? '' : s.pts;
+  tray.textContent = '';
+  for (const t of s.tray || []) tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t));
+}
+function paintBadge(name, b) {
+  const badge = $('#badge'); badge.textContent = '';
+  badge.appendChild(el('b', { text: name })); badge.appendChild(document.createTextNode(b.text));
+  for (const id of b.balls || []) badge.appendChild(ballChip(id, id === b.mark ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55'));
+}
+const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
+
+/* ================= flow: a match between two players (or one and the computer) ================= */
+const match = {
+  quiet: false, save: true,
+  start(first) {
+    PH.pool = poolOf(prefs.table); scene.clearFalls();
+    const names = [prefs.names[0], oppName()], key = names.join('\u0001') + prefs.mode;
+    if (series.key !== key) { series.key = key; series.s = [0, 0]; }
+    game.start(prefs.mode, names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: first || 0 });
+    st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
+  },
+  enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
+  restart() { match.start(game.turn); },
+  guide: () => prefs.guides[game.turn],
+  auto: () => game.players[game.turn].ai ? { think: 0.5, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: 0, b: 0, pos: p.pos }; } } : null,
+  beforeShot() {},
+  afterShot() {
+    const out = game.resolve();
+    if (game.over) return match.finish();
+    toast(out.msg, out.kind, out.dur); beginTurn(false);
+  },
+  hud() {
+    const m = game.mode;
+    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i }, m.status(game, i)));
+    paintBadge(m.name, m.badge(game)); setBusy();
+  },
+  finish() {
+    const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
+    const rw = recOf(pw.name), rl = recOf(pl.name);
+    rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0; store.set('rec', rec);
+    series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
+    const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
+    win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
+    win.querySelector('.rc').textContent = `${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
+    $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name;
+    const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
+    const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
+    const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
+    if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
+    const box = $('#rStats'); box.textContent = '';
+    for (const [k, a, b] of rows) box.appendChild(el('div', { class: 'stat panel' }, [el('div', { class: 'k', text: k }), el('div', { class: 'v' }, [el('b', { text: a }), el('span', { text: b })])]));
+    $('#rWhy').textContent = game.over.why;
+    show('result'); SND.win();
+  },
+};
+
+/* ================= flow: practice (free table, or a drill that checks each shot) ================= */
+// put a drill layout on the table
+function putLayout(L) {
+  const P = game.P, w = game.world;
+  game.MODES.practice.setup(game, Math.random); scene.clearFalls();
+  if (L.rack) { game.MODES.eight.setup(game, Math.random); game.placing = null; st.aim = 0; }
+  else {
+    P.place(w, 0, L.cue[0], L.cue[1], Math.random);
+    for (const [id, x, y] of L.balls) P.place(w, id, x, y, Math.random);
+    st.aim = L.aim;
+  }
+  st.rev++; scene.invalidate();
+}
+const practice = {
+  quiet: false, save: false,
+  drill: null, level: 1, streak: 0, tries: 0, ok: 0, layout: null, before: null, beforeAim: 0, edit: false,
+  start(id) {
+    PH.pool = poolOf(prefs.table);
+    if (id) { prefs.drill = id; savePrefs(); }
+    const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
+    game.start('practice', [prefs.names[0], ''], false, {});
+    flow = practice; scene.setTable(game.P); show('play'); p.bar();
+    if (p.drill.make) p.fresh();
+    else { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++; beginTurn(true); }
+    toast(p.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
+  },
+  restart() { practice.start(); },
+  fresh() { const p = practice; p.layout = drills.make(p.drill.id, game.P, p.level, Math.random, game.vOf) || p.layout; p.again(); },   // a new layout
+  again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
+  guide: () => prefs.guides[0],
+  auto: () => null,
+  beforeShot() { practice.before = game.world.balls.map(b => [b.x, b.y, b.on]); practice.beforeAim = st.aim; },
+  afterShot() {
+    const p = practice;
+    if (!p.drill.make) { game.resolve(); return beginTurn(false); }
+    const why = drills.judge(p.layout, game.world.ev, game.world.balls[0]);
+    game.resolve(); p.tries++;
+    if (why) { p.streak = 0; toast('실패 · ' + why, 'foul', 1900); SND.bad(); return hold(1.7, p.again); }           // same layout until it goes in
+    p.ok++; p.streak++;
+    let msg = '성공!';
+    if (p.streak >= 3 && p.level < drills.LEVELS) { p.level++; p.streak = 0; prefs.drillLv[p.drill.id] = p.level; savePrefs(); p.bar(); msg = `성공! 이제 ${p.level}단계`; }
+    else if (p.level < drills.LEVELS) msg = `성공! 다음 단계까지 ${3 - p.streak}번`;
+    toast(msg, 'good', 1700); SND.good(); hold(1.4, p.fresh);
+  },
+  hud() {
+    const p = practice;
+    paintPill(0, { name: p.drill.name, on: true, sub: p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
+    paintBadge('연습', { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
+  },
+  // the row of buttons where the second player's panel would be
+  bar() {
+    const p = practice, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
+    const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
+    const aiming = fn => () => { if (flow === practice && st.phase === 'aim') fn(); };
+    if (!p.drill.make) {
+      btn('되돌리기', p.undo);
+      btn('옮기기', () => { p.edit = !p.edit; p.bar(); if (p.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, p.edit);
+      btn('공 놓기', p.sheetRack);
+    } else {
+      btn('시범', aiming(() => { toast('시범: 이렇게 치면 됩니다.', '', 2200); playDemo(p.layout.demo, { quiet: false, after: p.again }); }));
+      btn('힌트', () => toast(p.drill.tip + ' (' + drills.hint(p.layout.demo) + ')', '', 5200));
+      btn('새 배치', aiming(p.fresh));
+      btn(p.level + '단계', p.sheetLevel);
+    }
+  },
+  undo() {
+    const p = practice;
+    if (st.phase !== 'aim' || !p.before) return toast('되돌릴 샷이 없습니다.', '', 1400);
+    p.before.forEach((s, i) => { const b = game.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = s[2]; b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
+    st.aim = p.beforeAim; st.rev++; flow.hud(); scene.invalidate();
+  },
+  sheetLevel() {
+    const p = practice, i = drills.list.indexOf(p.drill), next = drills.list[i + 1 < drills.list.length ? i + 1 : 1];
+    const levels = []; for (let k = 1; k <= drills.LEVELS; k++) levels.push([k, k + '단계']);
+    openSheet(p.drill.name, [
+      segRow('단계', levels, p.level, v => { p.level = v; p.streak = 0; prefs.drillLv[p.drill.id] = v; savePrefs(); closeSheet(); p.bar(); if (flow === practice && st.phase === 'aim') p.fresh(); }),
+      note('세 번 잇따라 성공하면 다음 단계로 올라갑니다. 단계가 오르면 거리가 멀어지고 각도가 커지고 원이 작아집니다. 배치는 성공할 때마다 바뀝니다.'),
+      flatBtn(`다음 훈련: ${next.name}`, () => practice.start(next.id)),
+    ]);
+  },
+  sheetRack() {
+    const P = game.P, w = game.world, done = () => { closeSheet(); st.rev++; flow.hud(); scene.invalidate(); };
+    const clear = () => { for (let i = 1; i < 16; i++) { w.balls[i].on = false; w.balls[i].x = w.balls[i].px = 9 + i; } };
+    openSheet('공 놓기', [
+      flatBtn('8볼 모양으로 15개', () => { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; done(); }),
+      flatBtn('9볼 모양으로 9개', () => { clear(); game.MODES.nine.setup({ P, world: w }, Math.random); done(); }),
+      flatBtn('공 하나 더 놓기', () => {
+        const b = w.balls.find(x => x.id > 0 && !x.on); if (!b) return toast('공 15개가 모두 올라와 있습니다.', '', 1600);
+        const [x, y] = P.findFree(w, P.HL * 0.3, 0, b.id); P.place(w, b.id, x, y, Math.random); done();
+      }),
+      flatBtn('큐볼만 남기고 치우기', () => { clear(); done(); }),
+      note('놓은 뒤 "옮기기"를 켜고 원하는 자리로 끌어 옮기세요.'),
+    ]);
+  },
+};
+
+/* ================= flow: demo (plays one given shot, then hands back) ================= */
+// shot: { angle, power, a, b }.  opts.after: what to do once the balls have stopped and been looked at.
+function playDemo(shot, opts) {
+  const back = flow;
+  flow = {
+    quiet: !!opts.quiet, save: false,
+    restart() { (back || practice).restart(); },
+    guide: () => 3,
+    auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b }) }),
+    beforeShot() {},
+    afterShot() { hold(1.3, opts.after); },
+    hud() { if (back) back.hud(); setBusy(); },
+  };
+  beginTurn(true);
+}
+
+/* ================= buttons ================= */
+press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
+press('#setBtn', sheetSettings); press('#recBtn', sheetRecords);
+press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
+press('#menuBtn', sheetPause);
+press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
+press('#againBtn', () => match.start(st.lastLoser == null ? 0 : st.lastLoser));
+press('#homeBtn', goHome);
+seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
+seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
+seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
 
 /* ================= input ================= */
 let drag = null;
-const humanAiming = () => st.phase === 'aim' && !game.players[game.turn].ai && $('#sheet').hidden;
+const humanAiming = () => st.screen === 'play' && st.phase === 'aim' && $('#sheet').hidden;
+// move a ball to where the finger is, sliding it round anything in the way
 function tryPlace(p, ball) {
-  const P = game.P, { R, HL, HW } = P, w = game.world, c = ball || game.cueBall();
+  const P = game.P, { R, HL, HW } = P, w = game.world, c = ball || game.cueBall(), kitchen = !ball && game.placing === 'kitchen';
   let x = Math.max(-HL + R, Math.min(HL - R, p.x)), y = Math.max(-HW + R, Math.min(HW - R, p.y));
-  if (game.placing === 'kitchen') x = Math.min(x, -HL / 2);
+  if (kitchen) x = Math.min(x, -HL / 2);
   if (P.isFree(w, x, y, c.id)) { c.x = c.px = x; c.y = c.py = y; return; }
   for (const b of w.balls) {
     if (!b.on || b.id === c.id) continue;
     const d = Math.hypot(x - b.x, y - b.y);
-    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (game.placing !== 'kitchen' || nx <= -HL / 2)) { c.x = c.px = nx; c.y = c.py = ny; } return; }
+    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (!kitchen || nx <= -HL / 2)) { c.x = c.px = nx; c.y = c.py = ny; } return; }
   }
 }
+function ballUnder(p, reach) { let best = null, bd = reach; for (const b of game.world.balls) if (b.on) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < bd) { bd = d; best = b; } } return best; }
 canvas.addEventListener('pointerdown', e => {
   SND.init(); if (!humanAiming()) return;
-  const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y);
+  const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y), reach = Math.max(0.075, 26 / scene.ppm);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-  const near = Math.max(0.075, 26 / scene.ppm);
-  let pick = null; if (isPrac() && prac.edit) { let bd = near; for (const b of game.world.balls) if (b.on) { const q = Math.hypot(p.x - b.x, p.y - b.y); if (q < bd) { bd = q; pick = b; } } }
-  if (pick) drag = { kind: 'ball', id: e.pointerId, ball: pick };
-  else if (game.placing && d < near) drag = { kind: 'cue', id: e.pointerId };
+  const moving = flow === practice && practice.edit ? ballUnder(p, reach) : null;
+  if (moving) drag = { kind: 'ball', id: e.pointerId, ball: moving };
+  else if (game.placing && d < reach) drag = { kind: 'cue', id: e.pointerId };
   else drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 0 };
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', e => {
   if (!drag || drag.id !== e.pointerId || !humanAiming()) return;
-  const p = scene.toTable(e, game.P.R), c = game.cueBall();
+  const P = game.P, p = scene.toTable(e, P.R), c = game.cueBall();
   if (drag.kind === 'cue') tryPlace(p);
   else if (drag.kind === 'ball') {
-    const b = drag.ball, P = game.P, out = Math.abs(p.x) > P.HL + 4 * P.R || Math.abs(p.y) > P.HW + 4 * P.R;
-    if (out && b.id !== 0) { b.on = false; b.x = b.px = 9 + b.id; drag = null; st.rev++; hud(); scene.invalidate(); return; }
-    tryPlace(p, b); st.rev++;
+    const b = drag.ball, out = Math.abs(p.x) > P.HL + 4 * P.R || Math.abs(p.y) > P.HW + 4 * P.R;
+    if (out && b.id !== 0) { b.on = false; b.x = b.px = 9 + b.id; drag = null; } else tryPlace(p, b);
+    st.rev++; flow.hud();
   } else {
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     const a = Math.atan2(p.y - c.y, p.x - c.x);
@@ -654,7 +564,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (guideNow() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
@@ -673,47 +583,55 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
-  if (st.phase === 'over') { goHome(); return true; }
-  if (st.phase !== 'home') { sheetPause(); return true; }
+  if (st.screen === 'result') { goHome(); return true; }
+  if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };
 
 /* ================= frame loop ================= */
 let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
+// what the physics reported since the last frame: sounds to play, balls to drop into pockets
 function drain() {
   const s = game.world.snd; if (!s.length) return;
+  const quiet = flow.quiet;
   for (const e of s) {
-    if (e.t === 'ball') SND.ball(e.v); else if (e.t === 'rail') SND.rail(e.v);
-    else if (e.t === 'pocket') { SND.pocket(); scene.fall(game.P, e); }
+    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) SND.pocket(); }
+    else if (!quiet) { if (e.t === 'ball') SND.ball(e.v); else if (e.t === 'rail') SND.rail(e.v); }
   }
   s.length = 0;
+}
+function stepSim(dt) {
+  const w = game.world, P = game.P;
+  // once everything is crawling, run the clock faster so nobody waits on the last roll
+  let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
+  acc += dt * (vmax < 0.4 ? 2.1 : 1.12);
+  let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
+  if (n === 30) acc = 0;
+  const alpha = acc / TICK;
+  drain();
+  if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
+  return alpha;
 }
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
-  const w = game.world, P = game.P, paused = !$('#sheet').hidden;
+  const paused = !$('#sheet').hidden;
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2;
-  if (st.phase === 'ai' && !paused) { aiTick(dt); animating = true; }
-  if (st.phase === 'strike' && !paused) {
-    const ca = st.cueAnim; ca.t += dt; animating = true;
-    const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-    if (ca.t >= 0.1) { P.strike(w, st.aim, ca.V, ca.a, ca.b); SND.cue(ca.V); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+  if (!paused) {
+    if (st.phase === 'auto') { autoTick(dt); animating = true; }
+    if (st.phase === 'strike') {
+      const ca = st.cueAnim; ca.t += dt; animating = true;
+      const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
+      if (ca.t >= 0.1) { game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+    }
+    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; }
+    else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
-  if (st.phase === 'hold' && !paused) { st.holdT -= dt; animating = true; if (st.holdT <= 0) loadDrill(); }
-  if (st.phase === 'sim' && !paused) {
-    // once everything is crawling, run the clock faster so nobody waits on the last roll
-    let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
-    acc += dt * (vmax < 0.4 ? 2.1 : 1.12);
-    let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
-    if (n === 30) acc = 0;
-    alpha = acc / TICK; drain(); animating = true;
-    if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
-  }
-  const aiming = st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan) || st.phase === 'strike' || st.phase === 'home';
+  const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
-    showCue: aiming, showGuide: (st.phase === 'aim' || (st.phase === 'ai' && st.ai && st.ai.plan)), level: guideNow(),
-    legalIds: st.phase === 'home' ? [] : game.legal(), hand: !!game.placing && st.phase === 'aim',
+    showCue: lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
+    legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
   }, dt);
   if (prefs.fps) {
     fpsN++; fpsT += dt;
@@ -723,7 +641,7 @@ function frame(now) {
 
 /* ================= saving ================= */
 function snapshot() {
-  if (st.phase === 'home' || st.phase === 'over' || isPrac()) return;
+  if (st.screen !== 'play' || !flow || !flow.save) return;
   const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table };
   store.set('save', d);
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
@@ -732,14 +650,13 @@ function start(data) {
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
-  if (data && data.v === 2 && game.restore(data.game)) {
+  if (data && data.v === 2 && data.game && data.game.modeId !== 'practice' && game.restore(data.game)) {
     if (data.series) { series.key = data.series.key; series.s = data.series.s; }
-    prefs.mode = game.modeId; st.aim = data.aim || 0;
-    enterGame();
+    prefs.mode = game.modeId; st.aim = data.aim || 0; match.enter();
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, startMatch, startPractice, goHome, shoot, endShot, prac, DRILLS };
+window.__dp8 = { game, st, prefs, scene, drills, practice, match, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

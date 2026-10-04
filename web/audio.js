@@ -1,0 +1,131 @@
+/* Sound. Ball and cue hits are short recordings (sounds.js); cushion and pocket are built from a few damped
+   resonances. Everything goes through one small "room" and one limiter. The game only says what happened and how hard. */
+function createAudio(isOn) {
+  let ac = null, out = null, buf = null;
+  const voices = new Set(), previous = {};
+  const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
+
+  // parts: [frequency Hz, decay time s, level]; push: how long the contact lasts
+  function make(dur, push, parts, noise) {
+    const sr = ac.sampleRate, n = Math.floor(dur * sr), b = ac.createBuffer(1, n, sr), d = b.getChannelData(0), pn = Math.max(2, Math.floor(push * sr));
+    for (let i = 0; i < pn; i++) d[i] += 0.35 * Math.sin(Math.PI * i / pn) ** 2;
+    for (const [f, tau, amp] of parts) {
+      const w = 2 * Math.PI * f / sr, k = 1 / (tau * sr);
+      for (let i = 0; i < n; i++) d[i] += amp * Math.exp(-i * k) * Math.sin(w * i) * Math.min(1, i / pn);
+    }
+    if (noise) {
+      let lp = 0;
+      for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * noise[1]; d[i] += lp * noise[0] * Math.exp(-i / (noise[2] * sr)) * Math.min(1, i / pn); }
+    }
+    let mx = 0; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(d[i]));
+    const fade = Math.floor(0.012 * sr);
+    for (let i = 0; i < n; i++) d[i] = d[i] / Math.max(mx, 0.001) * 0.75 * Math.min(1, (n - 1 - i) / fade);
+    return b;
+  }
+
+  /* The room: a pool hall is a wide, low, soft room (cloth, carpet, people), so the echo is short and dull.
+     First the sound comes back off the table bed and the lamp above within a few milliseconds, then off the
+     walls, then a quiet tail that loses its treble quickly. Left and right differ a little so it has width. */
+  function room() {
+    const sr = ac.sampleRate, len = Math.floor(0.55 * sr), ir = ac.createBuffer(2, len, sr), pre = 0.006;
+    const early = [[2.1, 0.5], [3.7, -0.34], [6.3, 0.3], [9.8, -0.24], [14.2, 0.21], [19.5, 0.17], [26.4, -0.14], [34.0, 0.11], [43.5, 0.08]];
+    for (let ch = 0; ch < 2; ch++) {
+      const d = ir.getChannelData(ch); let lo = 0;
+      for (let i = Math.floor((pre + 0.03) * sr); i < len; i++) {
+        const t = i / sr - pre, cut = 0.05 + 0.5 * Math.exp(-t / 0.09);                 // treble dies first
+        lo += (Math.random() * 2 - 1 - lo) * cut;
+        d[i] = lo * Math.exp(-t / 0.085) * Math.min(1, (t - 0.03) / 0.02) * 0.42;        // about 0.6 s to silence
+      }
+      for (const [ms, a] of early) { const i = Math.floor((pre + (ms * (ch ? 1.07 : 1)) / 1000) * sr); d[i] += a; d[i + 1] += a * 0.5; }
+    }
+    const send = ac.createGain(), hp = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), conv = ac.createConvolver(), wet = ac.createGain();
+    send.gain.value = 1; hp.type = 'highpass'; hp.frequency.value = 260; lp.type = 'lowpass'; lp.frequency.value = 5200;
+    conv.normalize = false; conv.buffer = ir; wet.gain.value = 0.13;
+    send.connect(hp); hp.connect(lp); lp.connect(conv); conv.connect(wet);
+    return { input: send, output: wet };
+  }
+
+  function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
+  function init() {
+    if (ac) { resume(); return; }
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+      const lim = ac.createDynamicsCompressor();
+      lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 4; lim.attack.value = 0.003; lim.release.value = 0.16;
+      const master = ac.createGain(); master.gain.value = 0.85;
+      out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
+      const rm = room(); out.connect(rm.input); rm.output.connect(lim);
+      const recorded = createBilliardsSamples(ac);
+      const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
+      const pock = [[310, 0.026, 0.5], [490, 0.017, 0.4], [830, 0.008, 0.22]];
+      buf = {
+        ball: recorded.ball, cue: recorded.cue,
+        rail: [make(0.12, 0.003, rail, [0.15, 0.1, 0.014])],
+        pock: [make(0.18, 0.002, pock, [0.2, 0.12, 0.035])],
+        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],
+      };
+      resume();
+    } catch (e) {
+      if (ac) ac.close().catch(() => {});
+      ac = null; out = null; buf = null;
+    }
+  }
+  const ready = () => ac && buf && isOn();
+
+  function hit(name, gain, bright, at = 0, rate = 1, layer = -1) {
+    if (!ready() || gain <= 0 || voices.size >= 48) return;
+    const list = buf[name];
+    // do not play the identical recording twice in a row
+    let index = layer >= 0 ? layer : Math.floor(Math.random() * list.length);
+    if (layer < 0 && list.length > 1 && index === previous[name]) index = (index + 1) % list.length;
+    previous[name] = index;
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
+    s.buffer = list[index]; s.playbackRate.value = rate;
+    f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
+    s.connect(f); f.connect(g); g.connect(out); voices.add(s);
+    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
+    s.start(t);
+  }
+  // Several contacts in the same instant (a break) are all kept, slightly staggered and capped, so they neither
+  // collapse into one click nor overload the device.
+  function impact(name, v, scale, level, low, high, max) {
+    if (!ready() || !Number.isFinite(v) || v <= 0) return;
+    const burst = bursts[name], now = ac.currentTime;
+    if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
+    if (burst.count >= max) return;
+    const slot = burst.count++, k = Math.min(1, v / scale);
+    const gain = level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3);
+    const bright = low + high * Math.sqrt(k), at = slot * 0.0018, rate = 0.995 + Math.random() * 0.01;
+    if (name === 'ball') {
+      // blend the soft / medium / hard recordings so the tone changes smoothly with speed
+      if (voices.size > 46) return;
+      const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
+      const a = Math.min(1, Math.floor(position)), u = position - a, mix = u * u * (3 - 2 * u);
+      hit(name, gain * (1 - mix), bright, at, rate, a);
+      hit(name, gain * mix, bright, at, rate, a + 1);
+    } else hit(name, gain, bright, at, rate);
+  }
+  // interface blips stay dry: they are not in the room
+  function tone(freq, dur, gain, to, at) {
+    if (!ac || !isOn()) return;
+    const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(ac.destination); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t); o.stop(t + dur + 0.02);
+  }
+  return {
+    init,
+    ball(v) { impact('ball', v, 5, 0.95, 2200, 6300, 6); },
+    rail(v) { impact('rail', v, 4, 0.48, 750, 1700, 3); },
+    pocket() { hit('pock', 0.48, 2400); hit('roll', 0.13, 1100, 0.035); hit('pock', 0.17, 1500, 0.115, 0.87); },
+    cue(v) {
+      if (!Number.isFinite(v) || v <= 0) return;
+      const k = Math.min(1, v / 9);
+      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k);
+    },
+    tap() { tone(520, 0.05, 0.12, 1.5); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
+    good() { tone(660, 0.09, 0.16, 1.5); tone(990, 0.14, 0.14, 1, 0.08); },
+    bad() { tone(240, 0.16, 0.14, 0.7); },
+  };
+}

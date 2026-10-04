@@ -23,6 +23,13 @@ function createGame(PH) {
         P.place(w, 0, -HL / 2, 0, rnd);
         g.placing = 'kitchen'; g.isBreak = true;
       },
+      intro: g => `${g.players[g.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`,
+      // what the scoreboard shows for one player: a line of text and the balls still to pot
+      status(g, pi) {
+        const p = g.players[pi], rem = this.remaining(g, pi);
+        return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray: !rem ? ['slot', 'slot', 'slot', 'slot', 'slot', 'slot', 'slot'] : rem.length ? rem : ['eight'], pts: null };
+      },
+      badge: g => ({ text: g.isBreak ? '브레이크' : g.players.every(p => !p.group) ? '아직 공 미정' : '8번은 마지막에', balls: [] }),
       remaining(g, pi) {
         const grp = g.players[pi].group; if (!grp) return null;
         return (grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => g.world.balls[i].on);
@@ -75,6 +82,9 @@ function createGame(PH) {
         P.place(w, 0, -HL / 2, 0, rnd);
         g.placing = 'kitchen'; g.isBreak = true;
       },
+      intro: g => `${g.players[g.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`,
+      status(g, pi) { return { sub: g.turn === pi ? `다음 ${this.lowest(g)}번 공` : `성공 ${g.players[pi].made}`, tray: [], pts: null }; },
+      badge(g) { return { text: '다음', balls: g.world.balls.filter(b => b.on && b.id > 0).map(b => b.id), mark: this.lowest(g) }; },
       lowest(g) { for (let i = 1; i <= 9; i++) if (g.world.balls[i].on) return i; return 9; },
       legal(g) { return [this.lowest(g)]; },
       ctx(g) { return { turn: g.turn, isBreak: g.isBreak, lowest: this.lowest(g) }; },
@@ -101,6 +111,9 @@ function createGame(PH) {
         P.place(w, 1, -HL * 0.78, 0, rnd); P.place(w, 0, -HL * 0.78, -0.17, rnd);
         g.placing = null; g.isBreak = false;
       },
+      intro: g => `${g.players[g.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.`,
+      status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
+      badge: () => ({ text: '빨간 공 두 개 맞히면 1점', balls: [] }),
       legal() { return [2, 3]; },
       ctx(g) { return { turn: g.turn }; },
       evaluate(ev, c) {

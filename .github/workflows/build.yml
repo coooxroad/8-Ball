@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # rules, computer player and every practice layout are checked before anything is built
+      - name: Test
+        run: node web/test/run.js
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

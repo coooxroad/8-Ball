@@ -6,7 +6,8 @@ set -e
 cd "$(dirname "$0")"
 A=../app/src/main/assets
 mkdir -p dist "$A/fonts"
-script() { echo '<script>'; sed '$d' physics.js; sed '$d' game.js; cat scene.js sounds.js main.js; echo '</script>'; }
+# every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped
+script() { echo '<script>'; cat physics.js game.js drills.js look.js scene.js sounds.js audio.js main.js | grep -v '^if (typeof module'; echo '</script>'; }
 
 { cat head.html; script; } > dist/artifact.html
 
