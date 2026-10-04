@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 A=../app/src/main/assets
 mkdir -p dist "$A/fonts"
-script() { echo '<script>'; sed '$d' physics.js; sed '$d' game.js; cat scene.js main.js; echo '</script>'; }
+script() { echo '<script>'; sed '$d' physics.js; sed '$d' game.js; cat scene.js sounds.js main.js; echo '</script>'; }
 
 { cat head.html; script; } > dist/artifact.html
 

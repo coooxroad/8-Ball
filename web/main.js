@@ -38,77 +38,94 @@ const guideNow = () => { const p = game.players[game.turn]; return p && p.ai ? 2
 const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, ai: null, rev: 0, lastLoser: null, settle: 0 };
 
 /* ================= sound ================= */
-// Every hit is built once as a short waveform, the way the real thing is made: one very short push
-// (balls touch for about 0.2 ms, a leather tip for about 1 ms, a rubber cushion for several ms) that sets a few
-// quickly dying resonances ringing. A small "room" is added on the output so the hits do not sound dry.
+// Recorded ball/tip attacks carry the weight and short, bright clack of real contacts.
+// Rubber and pocket lining use damped, low resonances. No extra reverb on the recordings.
 const SND = (() => {
-  let ac = null, out = null, buf = null, lastBall = 0, lastRail = 0;
-  // parts: [frequency Hz, decay time s, level]; push: length of the contact in seconds
+  let ac = null, out = null, buf = null;
+  const voices = new Set(), previous = {};
+  const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
   function make(dur, push, parts, noise) {
     const sr = ac.sampleRate, n = Math.floor(dur * sr), b = ac.createBuffer(1, n, sr), d = b.getChannelData(0), pn = Math.max(2, Math.floor(push * sr));
-    for (let i = 0; i < pn; i++) d[i] += Math.sin(Math.PI * i / pn) ** 2;                       // the push itself
-    for (const [f, tau, amp] of parts) { const w = 2 * Math.PI * f / sr, k = 1 / (tau * sr), ph = Math.random() * 0.6; for (let i = 0; i < n; i++) d[i] += amp * Math.exp(-i * k) * Math.sin(w * i + ph) * Math.min(1, i / pn); }
-    if (noise) { let lp = 0; for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * noise[1]; d[i] += lp * noise[0] * Math.exp(-i / (noise[2] * sr)); } }
+    for (let i = 0; i < pn; i++) d[i] += 0.35 * Math.sin(Math.PI * i / pn) ** 2;
+    for (const [f, tau, amp] of parts) {
+      const w = 2 * Math.PI * f / sr, k = 1 / (tau * sr);
+      for (let i = 0; i < n; i++) d[i] += amp * Math.exp(-i * k) * Math.sin(w * i) * Math.min(1, i / pn);
+    }
+    if (noise) {
+      let lp = 0;
+      for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * noise[1]; d[i] += lp * noise[0] * Math.exp(-i / (noise[2] * sr)) * Math.min(1, i / pn); }
+    }
     let mx = 0; for (let i = 0; i < n; i++) mx = Math.max(mx, Math.abs(d[i]));
-    const fade = Math.floor(0.004 * sr); for (let i = 0; i < n; i++) d[i] = d[i] / mx * (i > n - fade ? (n - i) / fade : 1);
+    const fade = Math.floor(0.012 * sr);
+    for (let i = 0; i < n; i++) d[i] = d[i] / Math.max(mx, 0.001) * 0.75 * Math.min(1, (n - 1 - i) / fade);
     return b;
   }
-  const jit = (parts, k) => parts.map(([f, t, a]) => [f * (1 + (Math.random() - 0.5) * k), t, a]);
+  function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
   function init() {
-    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    if (ac) { resume(); return; }
     try {
-      ac = new (window.AudioContext || window.webkitAudioContext)();
-      const sr = ac.sampleRate;
-      const lim = ac.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = 0.001; lim.release.value = 0.08;
-      lim.connect(ac.destination);
-      out = ac.createGain(); out.connect(lim);
-      // the room: a few early reflections off the table and walls, then a short dull tail
-      const rn = Math.floor(0.32 * sr), ir = ac.createBuffer(2, rn, sr);
-      for (let ch = 0; ch < 2; ch++) {
-        const d = ir.getChannelData(ch); let lp = 0;
-        for (let i = 0; i < rn; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.35; d[i] = lp * Math.exp(-i / (0.055 * sr)) * 0.5; }
-        for (const [ms, a] of [[3.1, 0.55], [7.4, 0.42], [12.6, 0.3], [19, 0.22], [27, 0.14]]) d[Math.floor((ms + ch * 0.7) * sr / 1000)] += a;
-      }
-      const conv = ac.createConvolver(); conv.buffer = ir; const wet = ac.createGain(); wet.gain.value = 0.2;
-      out.connect(conv); conv.connect(wet); wet.connect(lim);
-      // phenolic ball on ball: hard click, energy in the upper mids, almost no bass
-      const ball = [[1480, 0.0042, 0.34], [2650, 0.0030, 0.6], [3900, 0.0021, 0.5], [5600, 0.0014, 0.34], [7900, 0.0009, 0.2], [760, 0.008, 0.16]];
-      // leather tip on the cue ball: duller and lower, with the shaft knocking under it
-      const cue = [[540, 0.011, 0.5], [980, 0.007, 0.42], [1750, 0.0038, 0.3], [2900, 0.002, 0.16], [300, 0.02, 0.2]];
-      // rubber cushion: a soft thump
-      const rail = [[290, 0.02, 0.5], [450, 0.014, 0.42], [720, 0.008, 0.22], [1150, 0.004, 0.1]];
-      // pocket: the ball knocks the liner and drops
-      const pock = [[330, 0.03, 0.5], [520, 0.02, 0.4], [860, 0.011, 0.25], [1500, 0.005, 0.12]];
+      ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+      const lim = ac.createDynamicsCompressor();
+      lim.threshold.value = -8; lim.knee.value = 8; lim.ratio.value = 12; lim.attack.value = 0.002; lim.release.value = 0.075;
+      const master = ac.createGain(); master.gain.value = 0.85;
+      out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
+      const recorded = createBilliardsSamples(ac);
+      const rail = [[240, 0.018, 0.45], [430, 0.012, 0.5], [760, 0.006, 0.18]];
+      const pock = [[310, 0.026, 0.5], [490, 0.017, 0.4], [830, 0.008, 0.22]];
       buf = {
-        ball: [0, 1, 2, 3].map(() => make(0.06, 0.00022, jit(ball, 0.08))),
-        cue: [0, 1].map(() => make(0.1, 0.0011, jit(cue, 0.06))),
-        rail: [0, 1, 2].map(() => make(0.13, 0.004, jit(rail, 0.1), [0.25, 0.08, 0.02])),
-        pock: [0, 1].map(() => make(0.2, 0.003, jit(pock, 0.08), [0.3, 0.12, 0.05])),
-        roll: [make(0.28, 0.02, [[190, 0.09, 0.3]], [0.9, 0.05, 0.11])],
+        ball: recorded.ball,
+        cue: recorded.cue,
+        rail: [make(0.12, 0.003, rail, [0.15, 0.1, 0.014])],
+        pock: [make(0.18, 0.002, pock, [0.2, 0.12, 0.035])],
+        roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],
       };
-    } catch (e) { ac = null; }
+      resume();
+    } catch (e) {
+      if (ac) ac.close().catch(() => {});
+      ac = null; out = null; buf = null;
+    }
   }
-  // play one prepared hit: softer hits are also duller, as the contact lasts longer
-  function hit(name, gain, bright, at, rate) {
-    if (!ac || !buf || !prefs.sound) return;
-    const list = buf[name], s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + (at || 0);
-    s.buffer = list[Math.floor(Math.random() * list.length)]; s.playbackRate.value = (rate || 1) * (0.97 + Math.random() * 0.06);
-    f.type = 'lowpass'; f.frequency.value = bright; f.Q.value = 0.5; g.gain.value = gain;
-    s.connect(f); f.connect(g); g.connect(out); s.start(t);
+  function hit(name, gain, bright, at = 0, rate = 1) {
+    if (!ac || !buf || !prefs.sound || gain <= 0 || voices.size >= 24) return;
+    const list = buf[name];
+    // Avoid playing the identical recording twice in a row.
+    let index = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && index === previous[name]) index = (index + 1) % list.length;
+    previous[name] = index;
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
+    s.buffer = list[index]; s.playbackRate.value = rate * (0.985 + Math.random() * 0.03);
+    f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
+    s.connect(f); f.connect(g); g.connect(out); voices.add(s);
+    s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
+    s.start(t);
+  }
+  // Keep several contacts in the same physics batch: a break must not collapse to one click.
+  // A tiny stagger avoids phase buildup; a bounded burst avoids overload on mobile.
+  function impact(name, v, scale, level, low, high, max) {
+    if (!ac || !buf || !prefs.sound || !Number.isFinite(v) || v <= 0) return;
+    const burst = bursts[name], now = ac.currentTime;
+    if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
+    if (burst.count >= max) return;
+    const slot = burst.count++, k = Math.min(1, v / scale);
+    hit(name, level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3), low + high * Math.sqrt(k), slot * 0.0018, 0.96 + 0.05 * k);
   }
   function tone(freq, dur, gain, to, at) {
     if (!ac || !prefs.sound) return;
     const t = ac.currentTime + (at || 0), o = ac.createOscillator(), g = ac.createGain();
     o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * (to || 0.6), t + dur);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g); g.connect(ac.destination); o.onended = () => { o.disconnect(); g.disconnect(); }; o.start(t); o.stop(t + dur + 0.02);
   }
   return {
     init,
-    ball(v) { const n = performance.now(); if (n - lastBall < 9) return; lastBall = n; const k = Math.min(1, v / 5); hit('ball', 0.1 + 0.9 * Math.pow(k, 0.7), 2600 + 9000 * Math.pow(k, 0.6)); },
-    rail(v) { const n = performance.now(); if (n - lastRail < 25) return; lastRail = n; const k = Math.min(1, v / 4); hit('rail', 0.14 + 0.7 * Math.pow(k, 0.8), 900 + 2200 * k); },
-    pocket() { hit('pock', 0.75, 3200); hit('roll', 0.3, 1400, 0.03); hit('ball', 0.22, 3000, 0.16, 0.8); },
-    cue(v) { const k = Math.min(1, v / 9); hit('cue', 0.4 + 0.6 * k, 1800 + 4200 * k); },
+    ball(v) { impact('ball', v, 5, 0.95, 2200, 6300, 6); },
+    rail(v) { impact('rail', v, 4, 0.48, 750, 1700, 3); },
+    pocket() { hit('pock', 0.48, 2400); hit('roll', 0.13, 1100, 0.035); hit('pock', 0.17, 1500, 0.115, 0.87); },
+    cue(v) {
+      if (!Number.isFinite(v) || v <= 0) return;
+      const k = Math.min(1, v / 9);
+      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k);
+    },
     tap() { tone(520, 0.05, 0.12, 1.5); },
     win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 0.22, 1, i * 0.11)); },
   };
