@@ -123,8 +123,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #pracBar{justify-self:end;display:flex;gap:6px;min-width:0}
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
-#menuBtn{width:46px;height:46px;border-radius:var(--r-pill)}
-[data-theme="light"] #menuBtn{border-radius:13px}
+.hud-l{display:flex;gap:6px}
+#menuBtn,#viewBtn{width:46px;height:46px;border-radius:var(--r-pill)}
+[data-theme="light"] #menuBtn,[data-theme="light"] #viewBtn{border-radius:13px}
+#viewBtn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
 .pill{justify-self:start;max-width:100%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);
   border-radius:var(--r-pill);padding:5px 15px 5px 6px;color:var(--sub);transition:background .2s,border-color .2s,color .2s}
 .pill.r{justify-self:end;flex-direction:row-reverse;padding:5px 6px 5px 15px;text-align:right}
@@ -284,11 +286,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-height:520px){
   :root{--hud-h:52px}
   .pill .av{width:30px;height:30px;font-size:14px}
-  #menuBtn{width:40px;height:40px}
+  #menuBtn,#viewBtn{width:40px;height:40px}
   #result{gap:10px;padding-block:14px}
   .stat{padding:10px 8px}.stat .v{font-size:28px}
   .r-win .av{width:48px;height:48px;font-size:22px}
 }
+@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}}
 @media (max-width:640px){
   #badge{display:none}
   #hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:6px;padding-inline:6px}
@@ -340,7 +343,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </section>
 
   <header id="hud" hidden>
-    <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+    <div class="hud-l">
+      <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+      <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
+    </div>
     <div class="pill" id="p0"><i class="av">1</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="badge"></div>
     <div class="pill r two" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>

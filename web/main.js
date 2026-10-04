@@ -133,6 +133,7 @@ function show(screen) {
   $('#home').hidden = screen !== 'home'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
+  if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   layout();
 }
@@ -575,6 +576,13 @@ press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', s
 press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
+// look round in 3D and back: while it is on, dragging the table turns the view instead of aiming
+function setView3D(on) {
+  if (scene.orbiting === on) return;
+  scene.setOrbit(on); $('#viewBtn').setAttribute('aria-pressed', String(on)); drag = null;
+  if (on) toast('드래그해서 둘러보세요. 조준은 옆의 미세 조준 바로 할 수 있고, 버튼을 다시 누르면 위에서 보는 화면으로 돌아옵니다.', '', 4200);
+}
+press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
@@ -599,7 +607,9 @@ function tryPlace(p, ball) {
 }
 function ballUnder(p, reach) { let best = null, bd = reach; for (const b of game.world.balls) if (b.on) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < bd) { bd = d; best = b; } } return best; }
 canvas.addEventListener('pointerdown', e => {
-  SND.init(); if (!humanAiming()) return;
+  SND.init();
+  if (scene.orbiting) { drag = { kind: 'orbit', id: e.pointerId, x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault(); return; }
+  if (!humanAiming()) return;
   const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y), reach = Math.max(0.075, 26 / scene.ppm);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   const moving = flow === practice && practice.edit ? ballUnder(p, reach) : null;
@@ -609,6 +619,7 @@ canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', e => {
+  if (drag && drag.kind === 'orbit' && drag.id === e.pointerId) { scene.orbitBy(e.clientX - drag.x, e.clientY - drag.y); drag.x = e.clientX; drag.y = e.clientY; return; }
   if (!drag || drag.id !== e.pointerId || !humanAiming()) return;
   const P = game.P, p = scene.toTable(e, P.R), c = game.cueBall();
   if (drag.kind === 'cue') tryPlace(p);
@@ -629,6 +640,7 @@ canvas.addEventListener('pointermove', e => {
 });
 const endDrag = e => {
   if (!drag || drag.id !== e.pointerId) return;
+  if (drag.kind === 'orbit') { drag = null; return; }
   if (drag.kind === 'aim' && drag.moved <= 6 && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
   drag = null; scene.invalidate(); snapshot();
 };

@@ -210,6 +210,15 @@ function createScene(canvas, app, PH) {
     const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
     rg.translate(0, 0, RAIL_Z - 0.12 - bev);
     const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
+    // the cabinet under the playing surface (only seen when looking from the side)
+    const body = new THREE.Shape(), bxo = ox - 0.035, byo = oy - 0.035, br = 0.07;
+    body.moveTo(-bxo + br, -byo); body.lineTo(bxo - br, -byo); body.absarc(bxo - br, -byo + br, br, -Math.PI / 2, 0, false);
+    body.lineTo(bxo, byo - br); body.absarc(bxo - br, byo - br, br, 0, Math.PI / 2, false);
+    body.lineTo(-bxo + br, byo); body.absarc(-bxo + br, byo - br, br, Math.PI / 2, Math.PI, false);
+    body.lineTo(-bxo, -byo + br); body.absarc(-bxo + br, -byo + br, br, Math.PI, Math.PI * 1.5, false);
+    for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r + 0.002, 0, Math.PI * 2, true); body.holes.push(h); }   // the pockets go down through it
+    const bg = new THREE.ExtrudeGeometry(body, { depth: 0.72, bevelEnabled: false, curveSegments: 12 }); bg.translate(0, 0, -0.8);
+    const bodyMesh = new THREE.Mesh(bg, woodMat); bodyMesh.castShadow = true; grp.add(bodyMesh);
     // sights
     const dg = new THREE.CircleGeometry(0.0095, 4);
     const sight = (x, y, turn) => { const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m); };
@@ -363,17 +372,48 @@ function createScene(canvas, app, PH) {
   /* layout: the table is fitted inside the insets; the insets ease when the screen changes */
   let portrait = false, dirty = 3, quality = 'auto', W = 0, H = 0;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
+  /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
+     moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
+  const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, live: 0 }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
+  function setOrbit(on) {
+    orbit.on = on;
+    if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.live = 4; }
+    applyCamera();
+  }
+  function orbitBy(dx, dy) {
+    if (!orbit.on) return;
+    orbit.az -= dx * 0.006; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.005)); orbit.live = 4; applyCamera();
+  }
   function applyCamera(soft) {
     if (!W || !H) return;
     const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
     const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
     ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
     const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
-    camera.aspect = fw / fh; camera.position.set(0, 0, fh / (2 * ppm * Math.tan(FOV * Math.PI / 360)));
-    camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); camera.lookAt(0, 0, 0);
+    const dist = fh / (2 * ppm * Math.tan(FOV * Math.PI / 360));
+    camera.aspect = fw / fh;
+    if (orbit.on) {
+      // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
+      const az = orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
+      const dir = fitV.set(ce * Math.sin(az), -ce * Math.cos(az), Math.sin(orbit.el));
+      // step back until the whole table is inside the free part of the screen, whichever way it is turned
+      const tan = Math.tan(FOV * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
+      let d = dist; camera.up.set(0, 0, 1);
+      for (let it = 0; it < 4; it++) {
+        camera.position.copy(dir).multiplyScalar(d); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+        let k = 0;
+        for (let c = 0; c < 8; c++) {
+          fitP.set(c & 1 ? ex : -ex, c & 2 ? ey : -ey, c & 4 ? RAIL_Z : -0.25).applyMatrix4(camera.matrixWorldInverse);
+          k = Math.max(k, Math.abs(fitP.x / -fitP.z) / limX, Math.abs(fitP.y / -fitP.z) / limY);
+        }
+        d *= 1 + (k * 1.03 - 1) * 0.9;
+      }
+      camera.position.copy(dir).multiplyScalar(d);
+    } else { camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
+    camera.lookAt(0, 0, 0);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;
-    if (soft && rt && !staticDirty) stale = true; else staticDirty = true;
+    if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
@@ -421,6 +461,8 @@ function createScene(canvas, app, PH) {
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }
+    if (orbit.on && Math.abs(orbit.elTo - orbit.el) > 0.002) { orbit.el += (orbit.elTo - orbit.el) * Math.min(1, dt * 7); orbit.live = 4; applyCamera(); }   // easing down from overhead
+    if (orbit.live > 0) dirty = 3;
     if (falls.length || v.animating) dirty = 3;
     if (dirty <= 0) return false; dirty--;
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
@@ -507,6 +549,14 @@ function createScene(canvas, app, PH) {
       }
       gHand.visible = !!v.hand; gHand.position.set(c.x, c.y, R); gHand.scale.setScalar(R);
     }
+    if (orbit.on && orbit.live > 0) {
+      orbit.live--; staticDirty = true;
+      renderer.setClearColor(clearCol, 1); unmask(); renderer.clear();
+      const bg = sScene.background; sScene.background = null; camera.layers.enable(1);
+      renderer.render(sScene, camera); camera.layers.disable(1); sScene.background = bg;
+      renderer.render(scene, camera);
+      return true;
+    }
     if (staticDirty && rt) {
       staticDirty = false; camera.layers.enable(1);
       renderer.setRenderTarget(rt); unmask(); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null);
@@ -527,7 +577,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, orbitBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
