@@ -136,12 +136,18 @@ function createScene(canvas, app, PH) {
       diffuseColor *= texelColor;`);
   };
   const metalMat = new THREE.MeshStandardMaterial({ color: col(0x9c8a66), roughness: 0.3, metalness: 1, envMapIntensity: 1.3 });   // brushed brass, not paint-yellow
-  // soft darkening where the cloth meets the cushions: one continuous inner shadow, no seams at the pockets
-  const aoC = mkCanvas(1024, 512), aoG = aoC.getContext('2d');
-  aoG.fillStyle = 'rgba(0,0,0,0.42)'; aoG.fillRect(0, 0, 1024, 512);
-  aoG.globalCompositeOperation = 'destination-out'; aoG.filter = 'blur(22px)'; aoG.fillStyle = '#000'; aoG.fillRect(30, 30, 964, 452);
-  aoG.filter = 'none'; aoG.globalCompositeOperation = 'source-over';
-  const aoMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(aoC), transparent: true, depthWrite: false });
+  // Soft darkening where the cloth runs under each cushion. It is drawn cushion by cushion and stops at their ends,
+  // so the cloth leading into a pocket stays as bright as the rest and does not look cut off from the table.
+  function cushionShade(P) {
+    const W = 1024, H = Math.round(1024 * P.HW / P.HL), c = mkCanvas(W, H), g = c.getContext('2d'), k = W / (2 * P.HL);
+    g.filter = `blur(${Math.round(0.03 * k)}px)`; g.strokeStyle = 'rgba(0,0,0,0.54)'; g.lineWidth = 0.1 * k; g.lineCap = 'butt';
+    for (const cu of P.CUSHIONS) {
+      // pull the ends in a little so the fade is finished before the jaw starts
+      const dx = cu.b[0] - cu.a[0], dy = cu.b[1] - cu.a[1], l = Math.hypot(dx, dy), e = P.POCKETED ? Math.min(0.018, l * 0.2) : 0, ux = dx / l, uy = dy / l;
+      g.beginPath(); g.moveTo((cu.a[0] + ux * e + P.HL) * k, (P.HW - cu.a[1] - uy * e) * k); g.lineTo((cu.b[0] - ux * e + P.HL) * k, (P.HW - cu.b[1] + uy * e) * k); g.stroke();
+    }
+    return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false });
+  }
 
   const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
   const linerMat = new THREE.MeshStandardMaterial({ color: col(0x1d1815), roughness: 0.7, metalness: 0, envMapIntensity: 0.3, side: THREE.DoubleSide });
@@ -155,7 +161,7 @@ function createScene(canvas, app, PH) {
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
     const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
-    const ao = new THREE.Mesh(new THREE.PlaneGeometry(HL * 2, HW * 2), aoMat); ao.position.z = 0.0007; grp.add(ao);
+    const ao = new THREE.Mesh(new THREE.PlaneGeometry(HL * 2, HW * 2), cushionShade(P)); ao.position.z = 0.0007; grp.add(ao);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);

@@ -27,7 +27,7 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, haptics: true, quality: 'auto', fps: false }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -55,7 +55,7 @@ const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 /* What is on screen and where the current shot is.
    screen: home | play | result | league
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { human: false, screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { simT: 0, screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -72,8 +72,31 @@ function applyTheme() {
   scene.setBackdrop(light ? 0xeef0f3 : 0x101216);
 }
 applyTheme();
-// the power control shows the cue that is in use
-function paintPowerCue() { const d = CUES[prefs.cue] || CUES[0]; $('#power').style.setProperty('--cue-v', cueCss(d, 180)); $('#power').style.setProperty('--cue-h', cueCss(d, 90)); }
+// One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,
+// forearm with its points, wrap, sleeve, bumper). Used by the power control and by the cue chooser.
+// Drawn tip-first along the canvas's long side; `vertical` puts the tip at the top.
+function drawCue(cv, d, vertical) {
+  const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const g = cv.getContext('2d'), L = vertical ? cv.height : cv.width, T = vertical ? cv.width : cv.height;
+  if (vertical) g.setTransform(0, 1, 1, 0, 0, 0);                                    // swap the axes: x runs down the cue
+  const LEN = 1.47, x = m => m / LEN * L, rad = m => (0.006 + (0.0146 - 0.006) * Math.min(1, m / 1.45)) / 0.0146 * T / 2;
+  const css = n => '#' + n.toString(16).padStart(6, '0');
+  const seg = (m0, m1, fill) => { g.fillStyle = fill; g.beginPath(); g.moveTo(x(m0), T / 2 - rad(m0)); g.lineTo(x(m1), T / 2 - rad(m1)); g.lineTo(x(m1), T / 2 + rad(m1)); g.lineTo(x(m0), T / 2 + rad(m0)); g.fill(); };
+  seg(0, 0.012, css(d.tip)); seg(0.012, 0.04, css(d.ferrule)); seg(0.04, 0.74, css(d.shaft)); seg(0.74, 0.756, css(d.joint));
+  seg(0.756, 1.03, css(d.fore)); seg(1.03, 1.3, css(d.wrap)); seg(1.3, 1.45, css(d.sleeve)); seg(1.45, 1.47, '#0d0d0d');
+  if (d.points != null) {                                                            // the points: long spear shapes running up the forearm
+    g.save(); g.beginPath(); g.moveTo(x(0.756), T / 2 - rad(0.756)); g.lineTo(x(1.03), T / 2 - rad(1.03)); g.lineTo(x(1.03), T / 2 + rad(1.03)); g.lineTo(x(0.756), T / 2 + rad(0.756)); g.clip();
+    g.fillStyle = css(d.points);
+    for (const o of [-1, 0, 1]) { const w = rad(1.03) * 0.42; g.beginPath(); g.moveTo(x(1.03), T / 2 + o * rad(1.03) * 0.95 - w); g.lineTo(x(1.03), T / 2 + o * rad(1.03) * 0.95 + w); g.lineTo(x(0.79), T / 2 + o * rad(0.79) * 0.95); g.fill(); }
+    g.restore();
+  }
+  // round it: dark edges, a soft highlight off-centre
+  const sh = g.createLinearGradient(0, 0, 0, T);
+  sh.addColorStop(0, 'rgba(0,0,0,.42)'); sh.addColorStop(0.3, 'rgba(255,255,255,.26)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.46)');
+  g.globalCompositeOperation = 'source-atop'; g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
+}
+function paintPowerCue() { drawCue($('#powerCue'), CUES[prefs.cue] || CUES[0], !scene.portrait); }
 
 /* ================= small DOM helpers ================= */
 function el(tag, attrs, kids) {
@@ -101,12 +124,6 @@ function toast(msg, kind, ms) {
 }
 // where on the screen a table position is, left (-1) to right (1), kept gentle
 const panOf = (x, y) => 0.45 * Math.max(-1, Math.min(1, scene.portrait ? -y / game.P.HW : x / game.P.HL));
-// a short tap in the hand: only for the player's own shots, never for the computer's or a demo
-// The Android app offers its own vibrator (it can also say whether the device has a motor at all); a browser only has navigator.vibrate.
-const device = window.CueDevice || null;
-const canBuzz = (() => { try { return device ? !!device.hasVibrator() : !!navigator.vibrate; } catch (e) { return false; } })();
-const vibrate = ms => { try { if (device) device.vibrate(Math.round(ms)); else if (navigator.vibrate) navigator.vibrate(Math.round(ms)); } catch (e) {} };
-const buzz = ms => { if (prefs.haptics && canBuzz && st.human && flow && !flow.quiet) vibrate(ms); };
 const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
 
 /* ================= screens and layout ================= */
@@ -128,6 +145,7 @@ function layout() {
   scene.resize();
   if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
+  if (st.screen === 'play') paintPowerCue();
   setPowerUI(st.power);
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
@@ -141,10 +159,12 @@ if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
 
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
-  const tr = $('#power'), c = $('#powerCue'), REST = 34, END = 96;
+  const tr = $('#power'), c = $('#powerCue'), REST = 10, END = 70;
   $('#powerNum').textContent = Math.round(p * 100);
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
+  // the harder the pull, the warmer the glow: calm blue-green, through yellow, to red
+  tr.style.setProperty('--heat', `hsl(${Math.round(190 - 190 * Math.min(1, p * 1.05))} 90% ${p < 0.02 ? 0 : 58}% / ${(0.25 + 0.75 * p).toFixed(2)})`);
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
@@ -171,10 +191,10 @@ function sheetTable() {
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
       [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
 }
-const cueCss = (d, deg) => `linear-gradient(${deg || 90}deg,${hex(d.tip)} 0 4%,${hex(d.ferrule)} 4% 8%,${hex(d.shaft)} 8% 50%,${hex(d.joint)} 50% 53%,${hex(d.fore)} 53% 70%,${hex(d.wrap)} 70% 90%,${hex(d.sleeve)} 90%)`;
 function sheetCue() {
   openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
-    [el('i', { class: 'cuepic', style: '--c:' + cueCss(c) }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintPowerCue(); paintHome(); sheetCue(); })));
+    [el('canvas', { class: 'cuepic' }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
+  document.querySelectorAll('#sheetBody .cuepic').forEach((cv, i) => drawCue(cv, CUES[i], false));
 }
 // one guide length per player (a handicap); a single row when only one person is aiming
 function sheetGuide() {
@@ -187,10 +207,10 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
-    canBuzz ? segRow('진동', [[true, '켬'], [false, '끔']], prefs.haptics, v => { prefs.haptics = v; savePrefs(); if (v) vibrate(25); sheetSettings(); }) : note('진동: 이 기기에는 진동 모터가 없어 쓸 수 없습니다.'),
+    segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
-    note('화질을 낮추면 움직임이 더 부드러워집니다. 자동은 기기 화면 크기에 맞춰 정합니다.'),
+    note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
   ]);
 }
 function sheetName(i) {
@@ -281,7 +301,6 @@ function beginTurn(first) {
   flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b) {
-  st.human = st.phase === 'aim';
   flow.beforeShot(); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
@@ -552,7 +571,7 @@ seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
 press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
-press('#menuBtn', sheetPause);
+press('#menuBtn', sheetPause); press('#skipBtn', skipShot);
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
@@ -671,7 +690,7 @@ let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
 function drain() {
   const s = game.world.snd, quiet = flow.quiet;
   for (const e of s) {
-    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); buzz(18); } }
+    if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); } }
     else if (!quiet) { if (e.t === 'ball') SND.ball(e.v, panOf(e.x, e.y)); else SND.rail(e.v, panOf(e.x, e.y)); }
   }
   s.length = 0;
@@ -686,7 +705,7 @@ function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
-  acc += dt * (vmax < 0.4 ? 2.1 : 1.12);
+  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12); st.simT += dt;
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
@@ -694,6 +713,15 @@ function stepSim(dt) {
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
   return alpha;
 }
+// Skip: work the shot out to the end at once and show where everything stopped.
+function skipShot() {
+  if (st.phase !== 'sim') return;
+  const w = game.world, P = game.P;
+  for (let n = 0; n < 7200 && !P.rest(w); n++) P.step(w, TICK);
+  for (const b of w.balls) { b.px = b.x; b.py = b.y; }
+  w.snd.length = 0; scene.clearFalls(); SND.rolling(0); endShot();
+}
+let skipShown = false;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
@@ -704,7 +732,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); buzz(12 + ca.V * 2); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.simT = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
@@ -716,6 +744,8 @@ function frame(now) {
     legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
+  const skip = st.screen === 'play' && st.phase === 'sim' && st.simT > 0.7;
+  if (skip !== skipShown) { skipShown = skip; $('#skipBtn').hidden = !skip; }
   if (paused && st.phase === 'sim') SND.rolling(0);
   if (prefs.fps) {
     fpsN++; fpsT += dt;
@@ -731,7 +761,6 @@ function snapshot() {
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
 function start(data) {
-  paintPowerCue();
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }

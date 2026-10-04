@@ -2,23 +2,19 @@ package io.github.coooxroad.eightball;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-/** Full-screen shell around the game page bundled in assets/. Works offline; the only permission is VIBRATE. */
+/** Full-screen shell around the game page bundled in assets/. Works offline; needs no permissions. */
 public class MainActivity extends Activity {
     private static final String PAGE = "file:///android_asset/index.html";
     // Back first closes whatever the page has on top (a sheet, the result screen, a match in progress);
@@ -26,27 +22,6 @@ public class MainActivity extends Activity {
     private static final String PAGE_BACK = "(function(){return window.__back&&window.__back()?1:0})()";
 
     private WebView web;
-
-    /** What the page may ask of the device: a short vibration, and whether there is a motor to do it. */
-    private final class Device {
-        private final Vibrator vibrator;
-
-        Device(Vibrator vibrator) {
-            this.vibrator = vibrator;
-        }
-
-        @JavascriptInterface
-        public boolean hasVibrator() {
-            return vibrator != null && vibrator.hasVibrator();
-        }
-
-        @JavascriptInterface
-        public void vibrate(int ms) {
-            if (vibrator == null || !vibrator.hasVibrator()) return;
-            int length = Math.max(1, Math.min(80, ms));
-            vibrator.vibrate(VibrationEffect.createOneShot(length, VibrationEffect.DEFAULT_AMPLITUDE));
-        }
-    }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -71,7 +46,6 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setTextZoom(100);
 
-        web.addJavascriptInterface(new Device((Vibrator) getSystemService(Context.VIBRATOR_SERVICE)), "CueDevice");
         web.setWebViewClient(new WebViewClient());
         setContentView(web);
         web.loadUrl(PAGE);
