@@ -38,7 +38,7 @@ const guideNow = () => { const p = game.players[game.turn]; return p && p.ai ? 2
 const st = { phase: 'home', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, ai: null, rev: 0, lastLoser: null, settle: 0 };
 
 /* ================= sound ================= */
-// Recorded ball/tip attacks carry the weight and short, bright clack of real contacts.
+// Velocity layers retain each recording's natural decay instead of reusing short clicks.
 // Rubber and pocket lining use damped, low resonances. No extra reverb on the recordings.
 const SND = (() => {
   let ac = null, out = null, buf = null;
@@ -66,7 +66,7 @@ const SND = (() => {
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
       const lim = ac.createDynamicsCompressor();
-      lim.threshold.value = -8; lim.knee.value = 8; lim.ratio.value = 12; lim.attack.value = 0.002; lim.release.value = 0.075;
+      lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 4; lim.attack.value = 0.003; lim.release.value = 0.16;
       const master = ac.createGain(); master.gain.value = 0.85;
       out = ac.createGain(); out.connect(lim); lim.connect(master); master.connect(ac.destination);
       const recorded = createBilliardsSamples(ac);
@@ -85,15 +85,15 @@ const SND = (() => {
       ac = null; out = null; buf = null;
     }
   }
-  function hit(name, gain, bright, at = 0, rate = 1) {
-    if (!ac || !buf || !prefs.sound || gain <= 0 || voices.size >= 24) return;
+  function hit(name, gain, bright, at = 0, rate = 1, layer = -1) {
+    if (!ac || !buf || !prefs.sound || gain <= 0 || voices.size >= 48) return;
     const list = buf[name];
     // Avoid playing the identical recording twice in a row.
-    let index = Math.floor(Math.random() * list.length);
-    if (list.length > 1 && index === previous[name]) index = (index + 1) % list.length;
+    let index = layer >= 0 ? layer : Math.floor(Math.random() * list.length);
+    if (layer < 0 && list.length > 1 && index === previous[name]) index = (index + 1) % list.length;
     previous[name] = index;
     const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime + at;
-    s.buffer = list[index]; s.playbackRate.value = rate * (0.985 + Math.random() * 0.03);
+    s.buffer = list[index]; s.playbackRate.value = rate;
     f.type = 'lowpass'; f.frequency.value = Math.min(bright, ac.sampleRate * 0.45); f.Q.value = 0.5; g.gain.value = gain;
     s.connect(f); f.connect(g); g.connect(out); voices.add(s);
     s.onended = () => { s.disconnect(); f.disconnect(); g.disconnect(); voices.delete(s); };
@@ -107,7 +107,20 @@ const SND = (() => {
     if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
     if (burst.count >= max) return;
     const slot = burst.count++, k = Math.min(1, v / scale);
-    hit(name, level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3), low + high * Math.sqrt(k), slot * 0.0018, 0.96 + 0.05 * k);
+    const gain = level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3);
+    const bright = low + high * Math.sqrt(k), at = slot * 0.0018;
+    // Small variation only; the actual recorded contact changes with impact speed.
+    const rate = 0.995 + Math.random() * 0.01;
+    if (name === 'ball') {
+      // Blend adjacent soft / medium / hard recordings without abrupt timbre steps.
+      // Reserve both voices so the voice cap cannot leave a partial, quieter blend.
+      if (voices.size > 46) return;
+      const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
+      const a = Math.min(1, Math.floor(position)), u = position - a;
+      const mix = u * u * (3 - 2 * u);
+      hit(name, gain * (1 - mix), bright, at, rate, a);
+      hit(name, gain * mix, bright, at, rate, a + 1);
+    } else hit(name, gain, bright, at, rate);
   }
   function tone(freq, dur, gain, to, at) {
     if (!ac || !prefs.sound) return;
