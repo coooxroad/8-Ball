@@ -56,7 +56,7 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [] }; }
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0 }; }   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -149,6 +149,7 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
+    if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 

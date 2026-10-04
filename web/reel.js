@@ -18,9 +18,16 @@
      count     three, two, one - a new camera on every beat
      stutter   the drop itself, hit six times over
 
-   Worst shot, two edits, no music:
+   Worst shot, six edits, no music:
      clown     as it happened, the moment it went wrong, tape back, once more slowly with the culprit ringed
      var       under review: the moment run back and forth three times, closer each time
+     huh       silence, then one question mark, then two, then three
+     sad       black and white and very slow, as if it were a great loss
+     news      breaking news: a banner, a headline, footage from two more angles
+     error     the game itself gives up: a crash screen, a recovery bar, a restart
+
+   Each edit also has a look of its own (a class on the page, sk-<name>): the cinema bars of cuts, the dark room of the
+   tracer, the blueprint of math, the print dots of freeze, the tape and 4:3 frame of rewind, the viewfinder of pov...
 
    On top of whatever an edit does itself, every edit gets the same layer of effects drawn over the picture: sparks and
    rings where balls meet, tails behind fast balls, a shock ring and a streak of light on the drop.
@@ -32,7 +39,8 @@ function createReel(d) {
   const wrap = a => { a = (a + Math.PI) % (2 * Math.PI); return a < 0 ? a + Math.PI : a - Math.PI; }, turnTo = (a, b, k) => a + wrap(b - a) * k;
   const INTRO = 2.2, HOLD = 0.1, PRE = 0.32, POST = 0.14;     // seconds: camera move-in; tape time held back before the drop; tape window of a cut
   const cv = $('#reelCv'), g = cv.getContext('2d'), big = $('#reelBig'), tagEl = $('#reelTag'), P2 = [0, 0], Q2 = [0, 0];
-  const CLS = ['reeling', 'colour', 'hit', 'beat', 'impact', 'hold', 'frozen', 'rew', 'g1', 'g2', 'g3', 'pulse'];
+  const CLS = ['reeling', 'colour', 'hit', 'beat', 'impact', 'hold', 'frozen', 'rew', 'g1', 'g2', 'g3', 'pulse', 'matrix', 'glitch', 'tinted'];
+  const cardEl = $('#reelCard');
   const MINT = '#7cffcb', GOLD = '#ffe04a', RED = '#ff4d43';
   let r = null, cam = null, tp = null, last = { best: null, worst: null };
   const bags = { best: [], worst: [] };
@@ -61,6 +69,10 @@ function createReel(d) {
   }
   const showBig = (text, cls) => { big.textContent = text; big.className = ''; void big.offsetWidth; big.className = cls; };
   const tag = text => { tagEl.textContent = text || ''; tagEl.hidden = !text; };
+  // a panel of words over the picture (the news banner, the crash screen, the caption)
+  const card = (cls, kids) => { cardEl.textContent = ''; cardEl.className = cls; for (const k of kids) cardEl.appendChild(k); cardEl.hidden = false; };
+  const hideCard = () => { cardEl.hidden = true; cardEl.textContent = ''; };
+  const skin = id => { for (const c of Array.from(app.classList)) if (c.slice(0, 3) === 'sk-') app.classList.remove(c); if (id) app.classList.add('sk-' + id); };
 
   /* ---- the tape ---- */
   // put the table at tape time T; going forward, everything passed on the way is heard (and seen) unless `quiet`
@@ -154,7 +166,7 @@ function createReel(d) {
   }
   function buildPlan(upto, hold, longest) { r.roll = Math.max(0, upto); r.slow = Math.max(0.42, r.roll / (longest || 4.2)); r.bd = r.roll / r.slow; r.hd = hold; return r.bd + hold; }
   function drop(emojis) {
-    r.dropped = true; r.rush = 0; app.classList.remove('hold', 'frozen', 'rew'); grade(0); app.classList.add('colour');
+    r.dropped = true; r.rush = 0; app.classList.remove('hold', 'frozen', 'rew', 'matrix', 'tinted'); grade(0); app.classList.add('colour');
     impact(); kick('hit'); SND.boom(); again($('#reelStreak'), 'go'); if (emojis) burst();
     shock(tp.kx, tp.ky, r.cols[r.key] || '#fff', 0.9); shock(tp.kx, tp.ky, '#fff', 0.5); sparks(tp.kx, tp.ky, r.cols[r.key] || '#fff', 46, 2.6);
   }
@@ -174,7 +186,7 @@ function createReel(d) {
   }
   // a slow turn round the whole table, then black; false once it is over
   function out(dt, rel) {
-    if (r.outAt == null) { r.outAt = rel; r.outT = r.T; big.className = ''; grade(0); tag(''); }
+    if (r.outAt == null) { r.outAt = rel; r.outT = r.T; big.className = ''; grade(0); tag(''); skin(null); app.classList.remove('glitch', 'matrix', 'tinted'); }
     const u = rel - r.outAt; go(r.outT + u * 0.8, dt);
     cam.az += dt * 0.55; cam.el += (0.8 - cam.el) * Math.min(1, dt * 1.5); cam.zoom += (1.02 - cam.zoom) * Math.min(1, dt * 1.6);
     cam.tx += (0 - cam.tx) * Math.min(1, dt * 2); cam.ty += (0 - cam.ty) * Math.min(1, dt * 2);
@@ -333,6 +345,44 @@ function createReel(d) {
   // the usual opening of a best-shot edit: down behind the cue, the strike, then the slow build to a held breath
   const opening = (dt, since, turn) => { if (cueUp(since, INTRO)) camIntro(ease(since / INTRO)); else build(since - INTRO, dt, turn); return true; };
   const after = (dt, rel) => { go(tp.tKey - HOLD * 0.5 + rel, dt); cam.zoom += (0.3 - cam.zoom) * Math.min(1, dt * 4); cam.az += dt * 0.5; return true; };
+  /* ---- what the worst-shot edits are made of ---- */
+  const HEAD = { scratch: '흰 공, 포켓으로 직행', air: '아무 공도 못 맞혀', wrong: '엉뚱한 공부터 맞혀', miss: '다 된 공 놓쳐', lost: '경기를 통째로 헌납' };
+  const CODE = { scratch: 'WHITE_BALL_IN_POCKET', air: 'NO_BALL_CONTACT', wrong: 'WRONG_BALL_FIRST', miss: 'EASY_SHOT_MISSED', lost: 'GAME_THROWN_AWAY' };
+  // they open the same way: the shot as it happened, from where someone standing by the table would have filmed it
+  function specInit(span, speed) {
+    const T0 = r.T0 = Math.max(0, tp.tKey - span * speed); r.I = T0 > 0 ? 0 : 0.8; r.spd = speed; r.Tb = Math.max(T0, tp.tKey - 1.3);
+    r.spec = { az: topAz() + 0.45, el: 0.62, zoom: 0.92, tx: 0, ty: 0 }; Object.assign(cam, r.spec);
+    app.classList.add('colour'); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+    return r.I + (tp.tKey - T0) / speed;
+  }
+  function specStep(dt, since) { cam.az = r.spec.az + Math.sin(r.t * 1.3) * 0.012; if (!cueUp(since, r.I)) go(r.T0 + (since - r.I) * r.spd, dt); return true; }
+  // the moment it goes wrong: everything stops and drains of colour
+  function moment() { r.dropped = true; go(tp.tKey, 0.016); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); r.c0 = Object.assign({}, cam); r.mark = true; }
+  // held on the moment while the camera crashes in on the culprit
+  function crash(dt, rel, zoom) {
+    const k = ease(rel / 0.22); go(tp.tKey, dt, true);
+    cam.tx = lerp(r.c0.tx, tp.kx, k); cam.ty = lerp(r.c0.ty, tp.ky, k); cam.el += (0.55 - cam.el) * Math.min(1, dt * 8); cam.zoom += (zoom - cam.zoom) * Math.min(1, dt * 12);
+    return true;
+  }
+  // the second half of most of them: tape back, the moment again slowly with the culprit ringed, then `finale` and black
+  function encore(dt, y, finale, S) {
+    const RW = 0.9; S = S || 3;
+    if (y < RW) {
+      if (!r.rw) { r.rw = 1; big.className = 'gone'; hideCard(); app.classList.remove('frozen', 'glitch'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀ 다시 봅시다'); }
+      go(lerp(tp.tKey, r.Tb, ease(y / RW)), dt, true); cam.zoom += (0.42 - cam.zoom) * Math.min(1, dt * 4); return true;
+    }
+    const z = y - RW;
+    if (z < S) {
+      if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('▶ 느린 화면'); }
+      go(lerp(r.Tb, tp.tKey, z / S), dt); const b = game.world.balls[r.key], f = Math.min(1, dt * 5);
+      cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.az += dt * 0.25; cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 2);
+      return true;
+    }
+    if (r.rw !== 3) { r.rw = 3; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); tag(''); finale(); }
+    go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
+    return fadeOut(z - S, 2.1);
+  }
+
   const STYLES = {
     cuts: {
       name: '컷 편집',
@@ -489,7 +539,7 @@ function createReel(d) {
     },
     pov: {
       name: '공 시점',
-      init() { r.h = [Math.cos(r.best.aim), Math.sin(r.best.aim)]; Object.assign(cam, { az: Math.atan2(-r.h[0], r.h[1]) + 0.9, el: 0.6, zoom: 0.5, tx: r.cue0[0], ty: r.cue0[1] }); return 1.7 + buildPlan(tp.tKey - HOLD, 0.6); },
+      init() { tag('● REC'); r.h = [Math.cos(r.best.aim), Math.sin(r.best.aim)]; Object.assign(cam, { az: Math.atan2(-r.h[0], r.h[1]) + 0.9, el: 0.6, zoom: 0.5, tx: r.cue0[0], ty: r.cue0[1] }); return 1.7 + buildPlan(tp.tKey - HOLD, 0.6); },
       // sit just behind the ball, looking the way it is going
       ride(dt, side) {
         const o = lead(), id = o ? o.id : r.key, a = [0, 0], b = [0, 0];
@@ -537,7 +587,7 @@ function createReel(d) {
         cam.az = turnTo(cam.az, topAz(), f); cam.el += (1.5 - cam.el) * f; cam.zoom += (1 - cam.zoom) * f;
         return fadeOut(lift, 6 * r.beat);
       },
-      beat() { if (r.dropped) r.w = 1.8; },
+      beat() { if (r.dropped) r.w = 1.8; if (r.struck && r.outAt == null) flash(); },
       draw() {
         for (const p of r.paths) {
           line(p, 0, r.T); g.globalAlpha = 0.35; g.strokeStyle = p.col; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1;
@@ -554,7 +604,7 @@ function createReel(d) {
           const x = since - INTRO;
           if (x < r.bd) { go(x * r.slow, dt); chase(dt, 0.46, 0.16); return true; }
           // time stops with the ball on the lip, and the camera goes all the way round it
-          if (!r.frozen) { r.frozen = true; grade(2); app.classList.add('hold'); kick('hit'); flash(); SND.boom(); r.c0 = Object.assign({}, cam); const kb = game.world.balls[r.key]; r.bx = kb.on ? kb.x : tp.kx; r.by = kb.on ? kb.y : tp.ky; }
+          if (!r.frozen) { r.frozen = true; app.classList.add('hold', 'matrix'); kick('hit'); flash(); SND.boom(); r.c0 = Object.assign({}, cam); const kb = game.world.balls[r.key]; r.bx = kb.on ? kb.x : tp.kx; r.by = kb.on ? kb.y : tp.ky; }
           const k = (x - r.bd) / r.F, e = ease(Math.min(1, k * 4));
           go(r.Tf + k * 0.025, dt, true); r.rush = 0.3;
           cam.az = r.c0.az + 2 * Math.PI * ease(k); cam.el = lerp(r.c0.el, 0.3, e); cam.zoom = lerp(r.c0.zoom, 0.26, e); cam.tx = lerp(r.c0.tx, r.bx, e); cam.ty = lerp(r.c0.ty, r.by, e);
@@ -578,7 +628,7 @@ function createReel(d) {
           if (x < r.bd) { go(x * r.slow, dt); chase(dt, 0.46, 0.16); return true; }
           // three, two, one: a number and a new camera on every beat, the ball crawling the last of the way
           const n = clamp(3 - Math.floor((x - r.bd) / r.beat), 1, 3);
-          if (r.cn !== n) { r.cn = n; showBig(String(n), 'num3'); kick('hit'); flash(); SND.thump(); Object.assign(cam, cutCam(3 - n)); cam.zoom *= 1 + 0.25 * (n - 1); grade(n); r.rush = 0.6; }
+          if (r.cn !== n) { r.cn = n; showBig(String(n), 'num3'); kick('hit'); flash(); SND.thump(); Object.assign(cam, cutCam(3 - n)); cam.zoom *= 1 + 0.25 * (n - 1); $('#reel').style.setProperty('--tint', ['#19e3ff', '#ffd60a', '#ff2d55'][n - 1]); app.classList.add('tinted'); r.rush = 0.6; }
           go(lerp(r.Tc, tp.tKey - 0.04, clamp((x - r.bd) / r.C, 0, 1)), dt); r.rush *= Math.max(0, 1 - dt * 2.5);
           cam.zoom *= 1 - dt * 0.3; cam.az += dt * (cam.spin || 0);
           return true;
@@ -597,10 +647,10 @@ function createReel(d) {
         // the drop itself, six times in three beats: back a fraction, in again, closer and from further round each time
         const h = r.beat / 2, i = Math.floor(rel / h), u = rel / h - i;
         if (i < 6) {
-          if (r.si !== i) { r.si = i; go(tp.tKey - 0.07, 0, true); if (i) { kick('hit'); flash(); grade(i % 2 ? 3 : 0); cam.zoom *= 0.9; cam.az += 0.4; again($('#reelStreak'), 'go'); } }
+          if (r.si !== i) { r.si = i; go(tp.tKey - 0.07, 0, true); if (i) { kick('hit'); flash(); grade(i % 2 ? 3 : 0); app.classList.toggle('glitch', i % 2 === 1); cam.zoom *= 0.9; cam.az += 0.4; again($('#reelStreak'), 'go'); } }
           go(tp.tKey - 0.07 + u * 0.13, dt); return true;
         }
-        if (r.si !== 6) { r.si = 6; grade(0); r.T1 = r.T; }
+        if (r.si !== 6) { r.si = 6; grade(0); app.classList.remove('glitch'); r.T1 = r.T; }
         const t = rel - 6 * h;
         if (t < 2 * r.beat) { go(r.T1 + t, dt); cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 3); cam.az += dt * 0.5; return true; }
         return out(dt, rel);
@@ -610,32 +660,13 @@ function createReel(d) {
     /* ---- worst shot: no song, and the "drop" is the moment it went wrong ---- */
     clown: {
       name: '광대', worst: true,
-      init() {
-        const T0 = r.T0 = Math.max(0, tp.tKey - 3.5); r.I = T0 > 0 ? 0 : 0.8; r.Tb = Math.max(T0, tp.tKey - 1.3);
-        r.spec = { az: topAz() + 0.45, el: 0.62, zoom: 0.92, tx: 0, ty: 0 }; Object.assign(cam, r.spec);
-        app.classList.add('colour'); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
-        return r.I + (tp.tKey - T0);
-      },
+      init() { return specInit(3.5, 1); },
       step(dt, since, rel) {
-        if (rel < 0) { cam.az = r.spec.az + Math.sin(r.t * 1.3) * 0.012; if (!cueUp(since, r.I)) go(r.T0 + since - r.I, dt); return true; }
+        if (rel < 0) return specStep(dt, since);
         // it happens: everything stops, the camera crashes in on the culprit
-        if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(0); showBig('🤡', 'skull'); rain(['💩'], 16); r.c0 = Object.assign({}, cam); }
-        if (rel < 2) { const k = ease(rel / 0.22); go(tp.tKey, dt, true); cam.tx = lerp(r.c0.tx, tp.kx, k); cam.ty = lerp(r.c0.ty, tp.ky, k); cam.zoom = lerp(r.c0.zoom, 0.3, k) * (1 - 0.03 * rel); cam.el = lerp(r.c0.el, 0.55, k); r.mark = true; return true; }
-        const y = rel - 2, RW = 0.9;
-        if (y < RW) {
-          if (!r.rw) { r.rw = true; big.className = 'gone'; app.classList.remove('frozen'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀ 다시 봅시다'); }
-          go(lerp(tp.tKey, r.Tb, ease(y / RW)), dt, true); cam.zoom += (0.42 - cam.zoom) * Math.min(1, dt * 4); return true;
-        }
-        const z = y - RW, S = 3;
-        if (z < S) {                                             // once more, slowly, with nowhere to hide
-          if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('▶ 느린 화면'); }
-          go(lerp(r.Tb, tp.tKey, z / S), dt); const b = game.world.balls[r.key], f = Math.min(1, dt * 5);
-          cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.az += dt * 0.25; cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 2);
-          return true;
-        }
-        if (r.rw !== 3) { r.rw = 3; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡', '💩'], 26); tag(''); }
-        go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
-        return fadeOut(z - S, 2.1);
+        if (!r.dropped) { moment(); SND.fart(0); showBig('🤡', 'skull'); rain(['💩'], 16); }
+        if (rel < 2) return crash(dt, rel, 0.3);
+        return encore(dt, rel - 2, () => { SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡', '💩'], 26); });
       },
       on() {},
       draw() { if (r.mark) culprit(); },
@@ -670,6 +701,94 @@ function createReel(d) {
       on() {},
       draw() { for (const p of r.paths) if (p.id === r.key || p.id === tp.cue) { line(p, 0, r.T); g.globalAlpha = 0.8; g.strokeStyle = p.id === r.key ? RED : '#fff'; g.lineWidth = 2; g.setLineDash([7, 6]); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; } culprit(); },
     },
+    huh: {
+      name: '물음표', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        // nobody says anything. Then one question mark, and another, and another, the camera a step closer each time
+        if (!r.dropped) { moment(); r.q = 0; }
+        if (rel < 3.1) {
+          const n = rel < 0.6 ? 0 : rel < 1.2 ? 1 : rel < 1.8 ? 2 : 3;
+          if (n !== r.q) { r.q = n; showBig('?'.repeat(n), 'num3 q'); kick('hit'); if (n < 3) SND.thump(); else { SND.fart(1); rain(['❓', '❔'], 22); } }
+          return crash(dt, rel, [0.62, 0.46, 0.34, 0.25][r.q]);
+        }
+        return encore(dt, rel - 3.1, () => { SND.fart(3); showBig('?', 'num3 q'); rain(['❓', '🤡', '❔', '❓'], 30); }, 2.5);
+      },
+      on() {},
+      draw() { if (r.mark) culprit(); },
+    },
+    sad: {
+      name: '비극', worst: true,
+      init() {
+        const T0 = r.T0 = Math.max(0, tp.tKey - 1.8); r.I = T0 > 0 ? 0 : 0.8; r.tear = 0; grade(3); app.classList.add('hold');
+        Object.assign(cam, { az: Math.atan2(-tp.ux, tp.uy) + 0.6, el: 0.4, zoom: 0.55, tx: r.cue0[0], ty: r.cue0[1] });
+        if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+        return r.I + (tp.tKey - T0) / 0.3;
+      },
+      step(dt, since, rel) {
+        const b = game.world.balls[r.key], f = Math.min(1, dt * 2.5);
+        cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.zoom *= 1 - dt * 0.035; cam.az += dt * 0.05;
+        if (rel < 0) {
+          // very slowly, in black and white, as if it mattered
+          if (!cueUp(since, r.I)) go(r.T0 + (since - r.I) * 0.3, dt);
+          if (r.t > r.tear) { r.tear = r.t + 0.8; emoji(['😭', '💔', '😢'][Math.floor(Math.random() * 3)], app.clientWidth * (0.15 + 0.7 * Math.random()), app.clientHeight * 0.72); }
+          return true;
+        }
+        if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); kick('hit'); SND.fart(2); showBig('🥀', 'skull'); rain(['🫡', '😭', '🕯️'], 18); card('obit', [el('b', { text: r.best.who }), el('span', { text: '의 샷 · 방금 우리 곁을 떠났습니다' })]); }
+        go(tp.tKey, dt, true);
+        if (rel > 2.6 && !r.squeak) { r.squeak = true; SND.fart(1); kick('beat'); }
+        return fadeOut(rel, 4.3);
+      },
+      on() {},
+      draw() { culprit(); },
+    },
+    news: {
+      name: '속보', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        if (!r.dropped) {
+          moment(); flash(); SND.fart(0); app.classList.remove('frozen'); app.classList.add('colour');
+          card('news', [el('i', { text: '속보' }), el('b', { text: `${r.best.who}, ${HEAD[r.best.kind] || '믿기 힘든 샷'}` }),
+            el('span', { class: 'tick', text: '목격자 "눈을 의심했다" · 전문가 "일부러 해도 어렵다" · 공 측 "할 말 없다" · 당사자는 연락 두절' })]);
+          scene.proj.begin(); if (scene.proj.at(tp.kx, tp.ky, game.P.R, P2)) emoji('📢', P2[0], P2[1]);
+        }
+        if (rel < 2.4) return crash(dt, rel, 0.36);
+        // footage from two more angles, each ending on the moment
+        const x = (rel - 2.4) / 1.9, i = Math.floor(x), u = x - i, away = Math.atan2(tp.ux, -tp.uy);
+        if (i < 2) {
+          if (r.ni !== i) { r.ni = i; go(Math.max(0, tp.tKey - 0.55), 0, true); kick('hit'); flash(); tag(i ? '단독 · 다른 각도' : '현장 화면'); cardEl.firstChild.textContent = i ? '단독' : '속보'; Object.assign(cam, { az: away + (i ? 2 : -1.2), el: i ? 1.25 : 0.34, zoom: i ? 0.3 : 0.32, tx: tp.kx, ty: tp.ky }); }
+          go(Math.max(0, tp.tKey - 0.55) + Math.min(1, u * 1.35) * 0.55, dt); cam.az += dt * 0.12; cam.zoom *= 1 - dt * 0.05;
+          if (u * 1.35 >= 1 && r.nf !== i) { r.nf = i; SND.fart(1 + i); kick('beat'); }
+          return true;
+        }
+        if (r.ni !== 2) { r.ni = 2; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '📰', '🤡'], 26); tag(''); }
+        go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
+        return fadeOut(rel - 2.4 - 3.8, 2);
+      },
+      on() {},
+      draw() { if (r.mark) culprit(); },
+    },
+    error: {
+      name: '오류', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        // the game itself cannot take it: the picture breaks up, then a crash screen with a recovery bar
+        if (!r.dropped) { moment(); app.classList.remove('frozen'); app.classList.add('glitch'); grade(3); SND.fart(1); }
+        if (rel < 0.6) return crash(dt, rel, 0.34);
+        if (rel < 3.4) {
+          if (!r.bsod) { r.bsod = true; app.classList.remove('glitch'); SND.fart(2); card('bsod', [el('b', { text: ':(' }), el('span', { text: '실력.exe가 응답하지 않습니다' }), el('small', { text: '' })]); }
+          cardEl.lastChild.textContent = `오류 코드: ${CODE[r.best.kind] || 'UNKNOWN_SHOT'} · 샷을 복구하는 중… ${Math.min(100, Math.floor((rel - 0.6) / 2.6 * 100))}%`;
+          go(tp.tKey, dt, true); return true;
+        }
+        if (!r.reboot) { r.reboot = true; grade(0); flash(); }
+        return encore(dt, rel - 3.4, () => { SND.fart(3); showBig('⚠️', 'skull'); rain(['⚠️', '💩', '🤡'], 26); }, 2.6);
+      },
+      on() {},
+      draw() { if (r.mark && !r.bsod || r.reboot) culprit(); },
+    },
   };
   const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
   // every edit comes up once before any comes up again
@@ -697,7 +816,7 @@ function createReel(d) {
     const info = kind === 'best' ? SND.song.info : null; r.beat = 60 / (info ? info.bpm : 140);
     $('#reelFx').textContent = ''; big.className = ''; big.textContent = ''; tag(''); $('#reel').hidden = false; $('#reelFade').classList.remove('go');
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');
-    app.classList.remove(...CLS); app.classList.add('reeling');
+    app.classList.remove(...CLS); app.classList.add('reeling'); skin(id); hideCard();
     r.lead = r.style.init();                                   // real seconds from now to the key moment
     r.song = kind === 'best' ? SND.song.play(r.lead) : false;
     scene.setCam(cam); drawOverlay(0);
@@ -705,7 +824,7 @@ function createReel(d) {
   function stop() {
     if (!r) return; r = null;
     SND.song.stop(); SND.rolling(0); scene.clearFalls();
-    $('#reel').hidden = true; app.classList.remove(...CLS); big.className = ''; tag(''); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+    $('#reel').hidden = true; app.classList.remove(...CLS); skin(null); hideCard(); big.className = ''; tag(''); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
     scene.setOrbit(false); d.onEnd();
   }
 

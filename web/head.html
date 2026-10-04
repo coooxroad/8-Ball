@@ -112,6 +112,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .ball i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:#111;font-style:normal;font-family:var(--num);font-weight:800;font-size:13px}
 .four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;width:40px;height:40px}
 .four i{border-radius:50%;background:var(--c)}
+.three{position:relative;width:40px;height:40px}
+.three i{position:absolute;width:19px;height:19px;border-radius:50%;background:var(--c)}
+.three i:nth-child(1){left:10.5px;top:1px}.three i:nth-child(2){left:0;bottom:2px}.three i:nth-child(3){right:0;bottom:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0}
 .h-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .chip-sw{width:16px;height:16px;border-radius:5px;background:var(--c)}
@@ -292,10 +295,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
 .reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
 /* three looks a cut can take: rich, bleached, and black-and-white with the contrast up (none of them changes which colour a ball is) */
-.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)}
-.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)}
-.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)}
-.reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)}
+.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)!important}
+.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)!important}
+.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)!important}
+.reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)!important}
 .reeling.rew #gl{animation:trk .16s steps(2) infinite}
 @keyframes trk{0%{transform:skewX(-.5deg) translateX(-4px)}100%{transform:skewX(.4deg) translateX(3px)}}
 /* a streak of light across the picture on the drop, a softer flash for cuts, the frame glowing in the ball's colour on each beat */
@@ -309,8 +312,70 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes glowE{0%{opacity:.75}100%{opacity:0}}
 .rfx.fall{animation:rfall 2.4s cubic-bezier(.4,0,.8,.6) forwards;font-size:44px}
 @keyframes rfall{0%{transform:translateY(-60px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),105vh) rotate(calc(var(--rot)*8));opacity:0}}
-.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05);transition:none}
-.reeling.impact #gl{filter:invert(1) contrast(1.5);transition:none}
+.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05)!important;transition:none}
+.reeling.impact #gl{filter:invert(1) contrast(1.5)!important;transition:none}
+/* ---------- the look of each edit (sk-<name> on the page while it plays) ---------- */
+#reelTint{position:absolute;inset:0;pointer-events:none;opacity:0}
+#reelFrame{position:absolute;inset:0;z-index:2;pointer-events:none}
+/* cuts: cinema - wider bars, teal shadows and orange highlights */
+.sk-cuts #reel .lb{height:12.5%}
+.sk-cuts #reelTint{opacity:.55;background:linear-gradient(180deg,#0aa6b8,transparent 42%,transparent 58%,#ff8a2b);mix-blend-mode:soft-light}
+/* tracer: light painted in a dark room */
+.reeling.sk-tracer #gl{filter:brightness(.36) saturate(.5) contrast(1.15)}
+.reeling.sk-tracer.colour #gl{filter:brightness(.58) saturate(1.15) contrast(1.15)}
+/* math: a blueprint */
+.reeling.sk-math #gl{filter:grayscale(1) brightness(.66) contrast(1.35)}
+.reeling.sk-math.colour #gl{filter:grayscale(.5) brightness(.85) contrast(1.25)}
+.sk-math #reelTint{opacity:1;background:#1246c4;mix-blend-mode:color}
+.sk-math.colour #reelTint{opacity:.5}
+/* freeze: a printed page - black and white with dots, red when everything stops */
+.reeling.sk-freeze #gl{filter:grayscale(1) contrast(1.7) brightness(1.06)}
+.reeling.sk-freeze.colour #gl{filter:saturate(1.5) contrast(1.2)}
+.sk-freeze #reelTint{opacity:.3;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px;mix-blend-mode:multiply}
+.sk-freeze.frozen #reelTint{opacity:.6;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px,#ff2a2a}
+.sk-freeze.colour #reelTint{opacity:0}
+/* velocity: speed - red and cyan fringes at the sides */
+.sk-velocity #reelFrame{top:9%;bottom:9%;box-shadow:inset 30px 0 46px -20px #ff2d55,inset -30px 0 46px -20px #19e3ff;mix-blend-mode:screen}
+/* combo: an arcade cabinet - loud colour from the first frame, scan lines, a lit frame */
+.reeling.sk-combo #gl{filter:saturate(1.75) contrast(1.2)}
+.sk-combo #reelTint{opacity:.2;background:repeating-linear-gradient(0deg,#000 0 2px,transparent 2px 4px);mix-blend-mode:multiply}
+.sk-combo #reelFrame{top:9%;bottom:9%;box-shadow:inset 0 0 0 4px #ffe04a,inset 0 0 46px #ff7a1a}
+/* rewind: video tape - a 4:3 frame, scan lines, colour bleed */
+.sk-rewind #reelFrame{background:linear-gradient(90deg,#000 0 10%,transparent 10% 90%,#000 90%)}
+.sk-rewind #reelTint{opacity:.55;background:repeating-linear-gradient(0deg,rgba(255,255,255,.1) 0 1px,transparent 1px 4px),linear-gradient(90deg,rgba(255,0,80,.14),rgba(0,200,255,.14));mix-blend-mode:screen}
+.sk-rewind #reelTag{right:calc(10% + 18px)}
+/* pov: a camera strapped to the ball - viewfinder corners, heavy edges */
+.sk-pov #reelFrame{inset:14% 6%;--b:linear-gradient(#fff,#fff);background:var(--b) 0 0/44px 3px,var(--b) 0 0/3px 44px,var(--b) 100% 0/44px 3px,var(--b) 100% 0/3px 44px,var(--b) 0 100%/44px 3px,var(--b) 0 100%/3px 44px,var(--b) 100% 100%/44px 3px,var(--b) 100% 100%/3px 44px;background-repeat:no-repeat;opacity:.85}
+.sk-pov #reel::after{opacity:1}
+.sk-pov #reelTag{color:#ff3b3b;text-shadow:0 0 6px rgba(0,0,0,.8);right:calc(6% + 62px);top:calc(14% + 10px)}
+/* strobe: a dark stage with a flashing light */
+.reeling.sk-strobe #gl{filter:brightness(.42) contrast(1.25) grayscale(.6)}
+.reeling.sk-strobe.colour #gl{filter:brightness(.68) contrast(1.2) saturate(1.3)}
+/* bullet: the world turns to green code while time is stopped */
+.reeling.sk-bullet.matrix #gl{filter:grayscale(1) contrast(1.5) brightness(.85)}
+.sk-bullet.matrix #reelTint{opacity:.85;background:#19ff7a;mix-blend-mode:color}
+/* count: a slab of colour for every number */
+.sk-count.tinted #reelTint{opacity:.78;background:var(--tint,#ff2d55);mix-blend-mode:multiply}
+.reeling.sk-count.tinted #gl{filter:grayscale(1) contrast(1.5) brightness(1.15)}
+/* glitch: the picture tearing (the stutter edit, and the crash in the worst-shot reel) */
+.glitch #reelTint{opacity:.9;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,0,80,.4) 22px 27px,transparent 27px 61px,rgba(0,220,255,.4) 61px 65px);animation:gly .09s steps(2) infinite}
+.glitch #gl{animation:glx .09s steps(2) infinite}
+@keyframes gly{0%{transform:translateY(-14px)}100%{transform:translateY(19px)}}
+@keyframes glx{0%{transform:translateX(-8px) skewX(1.6deg)}100%{transform:translateX(7px) skewX(-1.2deg)}}
+/* words over the picture in the worst-shot reels */
+#reelCard{position:absolute;z-index:2;color:#fff}
+#reelCard.news{left:0;right:0;bottom:9%;padding-right:130px;display:grid;grid-template-columns:auto 1fr;background:linear-gradient(90deg,#b00020,#e5123a);animation:newsIn .28s ease-out;box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+#reelCard.news i{grid-row:span 2;font-style:normal;font-weight:800;font-size:clamp(20px,3.4vw,34px);padding:8px 20px;background:#fff;color:#c0102e;display:grid;place-items:center}
+#reelCard.news b{font-size:clamp(18px,3vw,32px);padding:9px 18px 1px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#reelCard.news .tick{font-size:clamp(12px,1.6vw,16px);padding:2px 18px 9px;opacity:.92;white-space:nowrap;overflow:hidden}
+@keyframes newsIn{0%{transform:translateY(100%)}100%{transform:none}}
+#reelCard.bsod{left:0;right:0;top:9%;bottom:9%;background:#0b3fc4;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 9%}
+#reelCard.bsod b{font:300 clamp(64px,12vw,130px)/1 'Outfit',sans-serif}
+#reelCard.bsod span{font-size:clamp(19px,3vw,30px);font-weight:700}
+#reelCard.bsod small{font:500 clamp(12px,1.8vw,17px)/1.4 'Outfit','Gothic A1',sans-serif;opacity:.88}
+#reelCard.obit{left:0;right:0;bottom:calc(9% + 24px);text-align:center;font-size:clamp(16px,2.6vw,26px);text-shadow:0 2px 10px #000,0 0 2px #000}
+#reelCard.obit b{font-weight:800}
+#reelBig.num3.q{color:#ffe04a;letter-spacing:-.04em;font-style:normal;top:30%;font-size:min(30vh,26vw)}
 .hit #gl,.hit #reelCv{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
 .beat #gl,.beat #reelCv{animation:beat .2s ease-out}
 @keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
@@ -444,6 +509,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       </div>
       <div class="seg" id="segOpp"><button data-v="0">친구와</button><button data-v="1">컴퓨터와</button></div>
       <div class="seg slide" id="segLvl" data-lv="1"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button><button data-v="3">미친</button></div>
+      <div class="seg" id="segRule3" hidden><button data-v="0">쿠션 자유</button><button data-v="1">원쿠션</button><button data-v="3">쓰리쿠션</button></div>
       <div class="seg" id="segTarget"><button data-v="5">5점</button><button data-v="10">10점</button><button data-v="15">15점</button></div>
       </div>
       <button class="btn cta" id="startBtn">시작</button>
@@ -482,7 +548,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </div>
 
   <div id="reel" hidden>
+    <div id="reelTint"></div>
     <canvas id="reelCv"></canvas>
+    <div id="reelFrame"></div><div id="reelCard" hidden></div>
     <div class="lb t"></div><div class="lb b"></div>
     <div id="reelFx"></div>
     <div class="glowE"></div><div id="reelStreak"></div>

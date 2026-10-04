@@ -27,7 +27,7 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random' }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random', rule3: 3 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -95,7 +95,15 @@ function drawCue(cv, d, vertical) {
   // round it: dark edges, a soft highlight off-centre
   const sh = g.createLinearGradient(0, 0, 0, T);
   sh.addColorStop(0, 'rgba(0,0,0,.42)'); sh.addColorStop(0.3, 'rgba(255,255,255,.26)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.46)');
-  g.globalCompositeOperation = 'source-atop'; g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
+  g.globalCompositeOperation = 'source-atop';
+  if (d.crystal) {
+    // glass: a rainbow along its length, slanted facets on the butt, and a bright thread through the middle
+    const rb = g.createLinearGradient(0, 0, L, 0); [['#bff0ff', 0], ['#e9fbff', 0.3], ['#cfe0ff', 0.55], ['#e2ccff', 0.75], ['#ffc9ef', 1]].forEach(([c, o]) => rb.addColorStop(o, c));
+    g.fillStyle = rb; g.fillRect(x(0.012), 0, L, T);
+    g.fillStyle = 'rgba(255,255,255,.5)'; for (let m = 0.77; m < 1.45; m += 0.045) { g.beginPath(); g.moveTo(x(m), 0); g.lineTo(x(m + 0.02), 0); g.lineTo(x(m + 0.02) - T * 0.9, T); g.lineTo(x(m) - T * 0.9, T); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.9)'; g.fillRect(x(0.03), T * 0.44, L, T * 0.1);
+  }
+  g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
 }
 function paintPowerCue() { drawCue($('#powerCue'), CUES[prefs.cue] || CUES[0], !scene.portrait); }
 
@@ -204,7 +212,7 @@ const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div'
 const note = text => el('p', { class: 'note', text });
 
 function sheetTable() {
-  const sizes = prefs.mode === 'four' ? [note('4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
+  const sizes = isCarom() ? [note('3구와 4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
     : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); homePreview(); sheetTable(); }));
   openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
@@ -242,7 +250,7 @@ function sheetSong(busy) {
   openSheet('하이라이트', [
     el('div', { class: 'lab', text: '편집' }),
     el('div', { class: 'pickrow' }, [['random', '랜덤']].concat(reel.STYLES).map(([id, name]) => el('button', { text: name, 'aria-pressed': String(prefs.edit === id), onclick: () => { SND.tap(); prefs.edit = id; savePrefs(); again(); } }))),
-    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 두 가지 편집이 번갈아 나옵니다.`),
+    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 ${reel.WORST.length}가지 편집이 돌아가며 나옵니다.`),
     el('div', { class: 'lab', text: `노래 ${songs.length}/${SND.song.MAX}` }),
     songs.length ? el('div', null, songs.map(m => el('div', { class: 'song' + (m.on ? ' on' : ''), onclick: async () => { SND.tap(); await SND.song.toggle(m.id); again(); } }, [
       el('span', { class: 'chk', text: '✓' }),
@@ -276,10 +284,12 @@ function sheetPause() {
 }
 
 /* ================= home ================= */
+const isCarom = () => game.MODES[prefs.mode].table === 'carom';
 const MODE_ICON = {
   eight: () => el('span', { class: 'ball', style: '--c:#111' }, el('i', { text: '8' })),
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
   four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
+  three: () => el('span', { class: 'three' }, ['#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
   practice: () => el('span', { class: 'target' }, el('i')),
 };
 function check() {
@@ -289,7 +299,7 @@ function check() {
 }
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'four', 'practice']) {
+  for (const id of ['eight', 'nine', 'three', 'four', 'practice']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
@@ -308,9 +318,9 @@ function paintHome() {
   }
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
   $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
-  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
+  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom(); $('#segRule3').hidden = prefs.mode !== 'three';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
-  $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
+  $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = CUES[prefs.cue].name;
   const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }
@@ -399,7 +409,7 @@ const match = {
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null; match.worst = null;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -621,7 +631,7 @@ function leagueSetup(add) {
   add(el('div', { class: 'lab', text: '참가자' }),
     el('div', { class: 'chips' }, d.names.map((name, i) => el('span', { class: 'chipn' }, [document.createTextNode(name), el('button', { 'aria-label': name + ' 빼기', text: '×', onclick: () => { d.names.splice(i, 1); paintLeague(); } })]))),
     el('div', { class: 'row addrow' }, [input, el('button', { class: 'btn flat', text: '추가', onclick: () => { SND.tap(); addName(); } })]),
-    segRow('게임', ['eight', 'nine', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
+    segRow('게임', ['eight', 'nine', 'three', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
     segRow('방식', [[1, '한 번씩'], [2, '두 번씩']], d.legs, v => { d.legs = v; paintLeague(); }),
     note(n < 2 ? '두 명 이상 넣어 주세요.' : `${n}명이 서로 ${d.legs === 1 ? '한 번씩' : '두 번씩'}, 모두 ${games}경기. 이기면 승점 ${league.WIN_PTS}점.`),
     el('button', { class: 'btn cta', text: '리그 시작', onclick: () => { if (d.names.length < 2) return toast('두 명 이상 넣어 주세요.', '', 1500); SND.tap(); lg = league.create(d.names, d.mode, prefs.target, d.legs); saveLeague(); lgDraft = null; paintLeague(); } }));
@@ -661,6 +671,7 @@ press('#bestBtn', () => playBest()); press('#worstBtn', () => playWorst()); pres
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
+seg('#segRule3', () => prefs.rule3, v => { prefs.rule3 = +v; savePrefs(); });
 
 /* ================= input ================= */
 let drag = null;

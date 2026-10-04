@@ -129,6 +129,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .ball i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:#111;font-style:normal;font-family:var(--num);font-weight:800;font-size:13px}
 .four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;width:40px;height:40px}
 .four i{border-radius:50%;background:var(--c)}
+.three{position:relative;width:40px;height:40px}
+.three i{position:absolute;width:19px;height:19px;border-radius:50%;background:var(--c)}
+.three i:nth-child(1){left:10.5px;top:1px}.three i:nth-child(2){left:0;bottom:2px}.three i:nth-child(3){right:0;bottom:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0}
 .h-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .chip-sw{width:16px;height:16px;border-radius:5px;background:var(--c)}
@@ -309,10 +312,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
 .reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
 /* three looks a cut can take: rich, bleached, and black-and-white with the contrast up (none of them changes which colour a ball is) */
-.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)}
-.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)}
-.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)}
-.reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)}
+.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)!important}
+.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)!important}
+.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)!important}
+.reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)!important}
 .reeling.rew #gl{animation:trk .16s steps(2) infinite}
 @keyframes trk{0%{transform:skewX(-.5deg) translateX(-4px)}100%{transform:skewX(.4deg) translateX(3px)}}
 /* a streak of light across the picture on the drop, a softer flash for cuts, the frame glowing in the ball's colour on each beat */
@@ -326,8 +329,70 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes glowE{0%{opacity:.75}100%{opacity:0}}
 .rfx.fall{animation:rfall 2.4s cubic-bezier(.4,0,.8,.6) forwards;font-size:44px}
 @keyframes rfall{0%{transform:translateY(-60px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),105vh) rotate(calc(var(--rot)*8));opacity:0}}
-.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05);transition:none}
-.reeling.impact #gl{filter:invert(1) contrast(1.5);transition:none}
+.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05)!important;transition:none}
+.reeling.impact #gl{filter:invert(1) contrast(1.5)!important;transition:none}
+/* ---------- the look of each edit (sk-<name> on the page while it plays) ---------- */
+#reelTint{position:absolute;inset:0;pointer-events:none;opacity:0}
+#reelFrame{position:absolute;inset:0;z-index:2;pointer-events:none}
+/* cuts: cinema - wider bars, teal shadows and orange highlights */
+.sk-cuts #reel .lb{height:12.5%}
+.sk-cuts #reelTint{opacity:.55;background:linear-gradient(180deg,#0aa6b8,transparent 42%,transparent 58%,#ff8a2b);mix-blend-mode:soft-light}
+/* tracer: light painted in a dark room */
+.reeling.sk-tracer #gl{filter:brightness(.36) saturate(.5) contrast(1.15)}
+.reeling.sk-tracer.colour #gl{filter:brightness(.58) saturate(1.15) contrast(1.15)}
+/* math: a blueprint */
+.reeling.sk-math #gl{filter:grayscale(1) brightness(.66) contrast(1.35)}
+.reeling.sk-math.colour #gl{filter:grayscale(.5) brightness(.85) contrast(1.25)}
+.sk-math #reelTint{opacity:1;background:#1246c4;mix-blend-mode:color}
+.sk-math.colour #reelTint{opacity:.5}
+/* freeze: a printed page - black and white with dots, red when everything stops */
+.reeling.sk-freeze #gl{filter:grayscale(1) contrast(1.7) brightness(1.06)}
+.reeling.sk-freeze.colour #gl{filter:saturate(1.5) contrast(1.2)}
+.sk-freeze #reelTint{opacity:.3;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px;mix-blend-mode:multiply}
+.sk-freeze.frozen #reelTint{opacity:.6;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px,#ff2a2a}
+.sk-freeze.colour #reelTint{opacity:0}
+/* velocity: speed - red and cyan fringes at the sides */
+.sk-velocity #reelFrame{top:9%;bottom:9%;box-shadow:inset 30px 0 46px -20px #ff2d55,inset -30px 0 46px -20px #19e3ff;mix-blend-mode:screen}
+/* combo: an arcade cabinet - loud colour from the first frame, scan lines, a lit frame */
+.reeling.sk-combo #gl{filter:saturate(1.75) contrast(1.2)}
+.sk-combo #reelTint{opacity:.2;background:repeating-linear-gradient(0deg,#000 0 2px,transparent 2px 4px);mix-blend-mode:multiply}
+.sk-combo #reelFrame{top:9%;bottom:9%;box-shadow:inset 0 0 0 4px #ffe04a,inset 0 0 46px #ff7a1a}
+/* rewind: video tape - a 4:3 frame, scan lines, colour bleed */
+.sk-rewind #reelFrame{background:linear-gradient(90deg,#000 0 10%,transparent 10% 90%,#000 90%)}
+.sk-rewind #reelTint{opacity:.55;background:repeating-linear-gradient(0deg,rgba(255,255,255,.1) 0 1px,transparent 1px 4px),linear-gradient(90deg,rgba(255,0,80,.14),rgba(0,200,255,.14));mix-blend-mode:screen}
+.sk-rewind #reelTag{right:calc(10% + 18px)}
+/* pov: a camera strapped to the ball - viewfinder corners, heavy edges */
+.sk-pov #reelFrame{inset:14% 6%;--b:linear-gradient(#fff,#fff);background:var(--b) 0 0/44px 3px,var(--b) 0 0/3px 44px,var(--b) 100% 0/44px 3px,var(--b) 100% 0/3px 44px,var(--b) 0 100%/44px 3px,var(--b) 0 100%/3px 44px,var(--b) 100% 100%/44px 3px,var(--b) 100% 100%/3px 44px;background-repeat:no-repeat;opacity:.85}
+.sk-pov #reel::after{opacity:1}
+.sk-pov #reelTag{color:#ff3b3b;text-shadow:0 0 6px rgba(0,0,0,.8);right:calc(6% + 62px);top:calc(14% + 10px)}
+/* strobe: a dark stage with a flashing light */
+.reeling.sk-strobe #gl{filter:brightness(.42) contrast(1.25) grayscale(.6)}
+.reeling.sk-strobe.colour #gl{filter:brightness(.68) contrast(1.2) saturate(1.3)}
+/* bullet: the world turns to green code while time is stopped */
+.reeling.sk-bullet.matrix #gl{filter:grayscale(1) contrast(1.5) brightness(.85)}
+.sk-bullet.matrix #reelTint{opacity:.85;background:#19ff7a;mix-blend-mode:color}
+/* count: a slab of colour for every number */
+.sk-count.tinted #reelTint{opacity:.78;background:var(--tint,#ff2d55);mix-blend-mode:multiply}
+.reeling.sk-count.tinted #gl{filter:grayscale(1) contrast(1.5) brightness(1.15)}
+/* glitch: the picture tearing (the stutter edit, and the crash in the worst-shot reel) */
+.glitch #reelTint{opacity:.9;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,0,80,.4) 22px 27px,transparent 27px 61px,rgba(0,220,255,.4) 61px 65px);animation:gly .09s steps(2) infinite}
+.glitch #gl{animation:glx .09s steps(2) infinite}
+@keyframes gly{0%{transform:translateY(-14px)}100%{transform:translateY(19px)}}
+@keyframes glx{0%{transform:translateX(-8px) skewX(1.6deg)}100%{transform:translateX(7px) skewX(-1.2deg)}}
+/* words over the picture in the worst-shot reels */
+#reelCard{position:absolute;z-index:2;color:#fff}
+#reelCard.news{left:0;right:0;bottom:9%;padding-right:130px;display:grid;grid-template-columns:auto 1fr;background:linear-gradient(90deg,#b00020,#e5123a);animation:newsIn .28s ease-out;box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+#reelCard.news i{grid-row:span 2;font-style:normal;font-weight:800;font-size:clamp(20px,3.4vw,34px);padding:8px 20px;background:#fff;color:#c0102e;display:grid;place-items:center}
+#reelCard.news b{font-size:clamp(18px,3vw,32px);padding:9px 18px 1px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#reelCard.news .tick{font-size:clamp(12px,1.6vw,16px);padding:2px 18px 9px;opacity:.92;white-space:nowrap;overflow:hidden}
+@keyframes newsIn{0%{transform:translateY(100%)}100%{transform:none}}
+#reelCard.bsod{left:0;right:0;top:9%;bottom:9%;background:#0b3fc4;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 9%}
+#reelCard.bsod b{font:300 clamp(64px,12vw,130px)/1 'Outfit',sans-serif}
+#reelCard.bsod span{font-size:clamp(19px,3vw,30px);font-weight:700}
+#reelCard.bsod small{font:500 clamp(12px,1.8vw,17px)/1.4 'Outfit','Gothic A1',sans-serif;opacity:.88}
+#reelCard.obit{left:0;right:0;bottom:calc(9% + 24px);text-align:center;font-size:clamp(16px,2.6vw,26px);text-shadow:0 2px 10px #000,0 0 2px #000}
+#reelCard.obit b{font-weight:800}
+#reelBig.num3.q{color:#ffe04a;letter-spacing:-.04em;font-style:normal;top:30%;font-size:min(30vh,26vw)}
 .hit #gl,.hit #reelCv{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
 .beat #gl,.beat #reelCv{animation:beat .2s ease-out}
 @keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
@@ -461,6 +526,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       </div>
       <div class="seg" id="segOpp"><button data-v="0">친구와</button><button data-v="1">컴퓨터와</button></div>
       <div class="seg slide" id="segLvl" data-lv="1"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button><button data-v="3">미친</button></div>
+      <div class="seg" id="segRule3" hidden><button data-v="0">쿠션 자유</button><button data-v="1">원쿠션</button><button data-v="3">쓰리쿠션</button></div>
       <div class="seg" id="segTarget"><button data-v="5">5점</button><button data-v="10">10점</button><button data-v="15">15점</button></div>
       </div>
       <button class="btn cta" id="startBtn">시작</button>
@@ -499,7 +565,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </div>
 
   <div id="reel" hidden>
+    <div id="reelTint"></div>
     <canvas id="reelCv"></canvas>
+    <div id="reelFrame"></div><div id="reelCard" hidden></div>
     <div class="lb t"></div><div class="lb b"></div>
     <div id="reelFx"></div>
     <div class="glowE"></div><div id="reelStreak"></div>
@@ -595,7 +663,7 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [] }; }
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0 }; }   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -688,6 +756,7 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
+    if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
@@ -875,7 +944,7 @@ function createPhysics(cfg) {
 
   return { R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
 }
-/* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball and four-ball carom. No DOM in here. */
+/* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball, three-ball and four-ball carom. No DOM in here. */
 function createGame(PH) {
   const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
   const GROUP_KO = { solid: '단색', stripe: '줄무늬' };
@@ -1003,6 +1072,28 @@ function createGame(PH) {
     },
   };
 
+  // Three balls, no pockets: each player has a cue ball (white, yellow) and there is one red. A point for making your cue
+  // ball hit both of the others - after it has met as many cushions as the chosen rule asks for (0, 1, or the full three).
+  const RULE3 = { 0: '쿠션 없이도 인정', 1: '쿠션 1번 이상', 3: '쿠션 3번 이상' };
+  MODES.three = {
+    id: 'three', name: '3구', blurb: '내 공으로 나머지 두 공을 다 맞히면 1점', table: 'carom', n: 3, ballInHand: false, target: true, RULE3,
+    setup(g, rnd) {
+      const P = g.P, { HL } = P, w = g.world;
+      P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1, -HL / 2, 0, rnd); P.place(w, 0, -HL / 2, -0.18, rnd);
+      g.placing = null; g.isBreak = false;
+    },
+    intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
+    status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
+    badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
+    legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
+    ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },
+    evaluate(ev, c) {
+      const both = ev.hits.length >= 2, ok = both && ev.cushions >= c.need;
+      const note = both && !ok ? `쿠션 ${ev.cushions}번 · ${c.need}번이 필요합니다` : ev.firstHit == null ? '아무 공도 맞히지 못했습니다' : null;
+      return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: ok, pts: ok ? 1 : 0, note };
+    },
+  };
+
   // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
   MODES.practice = {
     id: 'practice', name: '연습', blurb: '자유 연습과 기술 훈련', table: 'pool', n: 16, ballInHand: false, solo: true,
@@ -1027,7 +1118,7 @@ function createGame(PH) {
     g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.table];
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
-    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level;
+    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
     g.mode.setup(g, opts.rnd || Math.random);
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
@@ -1061,7 +1152,7 @@ function createGame(PH) {
       else out.msg = `파울 · ${r.foul}. 1점 감점, ${nx} 차례.`;
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
-      g.turn = 1 - me; if (!out.msg) out.msg = `${g.players[g.turn].name} 차례`;
+      g.turn = 1 - me; if (!out.msg) out.msg = (r.note ? r.note + '. ' : '') + `${g.players[g.turn].name} 차례`; if (r.note) out.dur = 2600;
     } else if (r.pts > 0) {
       out.msg = `${p.name} 1점!`; out.kind = 'good';
     } else if (m.id === 'eight' && !r.assign) {
@@ -1274,7 +1365,8 @@ function createGame(PH) {
 
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
-    const nA = [72, 96, 144, 360][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]][lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
+    const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
+    const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
     const flair = [];                                         // top level: scoring shots it saw, and whether the cue ball went round the cushions to do it
     if (lvl >= 3) {
@@ -1287,7 +1379,7 @@ function createGame(PH) {
         if (r.pts > 0) { flair.push({ angle: all[i][0], V: all[i][1], s: (railed ? 3 : 0) + Math.random() }); if (railed) fancy++; }
       }
       // nothing yet: look again between the angles already tried, at other speeds
-      if (!flair.length) again: for (const V of [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
+      if (!flair.length) again: for (const V of need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
         const a = phase + (i + 0.5) * Math.PI / 360;
         if (g.mode.evaluate(simShot(a, V), ctx, g).pts > 0) { flair.push({ angle: a, V, s: 0 }); break again; }
       }
@@ -1305,7 +1397,7 @@ function createGame(PH) {
     }
     if (!best) {
       // nothing scores: at least hit a red squarely rather than give a point away
-      const reds = [w.balls[2], w.balls[3]].sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
+      const reds = g.mode.legal(g, g.turn).map(i => w.balls[i]).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
       for (const T of reds) {
         const a = Math.atan2(T.y - c.y, T.x - c.x), h = g.P.cast(w, c.x, c.y, Math.cos(a), Math.sin(a), w.cue);
         if (h.type === 'ball' && h.ball === T.id) { best = { angle: a, V: 2.2 }; break; }
@@ -1319,7 +1411,7 @@ function createGame(PH) {
 
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
-    turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level,
+    turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -1327,7 +1419,7 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
-    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.over = null;
+    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null;
     return true;
   };
   return g;
@@ -1580,6 +1672,8 @@ function createHighlights() {
     s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  // the two balls a carom shot has to reach: the reds in four-ball, whatever is not the cue ball in three-ball
+  const caromTargets = (n, cue) => n === 3 ? [0, 1, 2].filter(i => i !== cue) : [2, 3];
 
   // How good was that? 0 for a foul or a shot that did not score. `shot`: { snap, turn, isBreak }; `res`: the rules' verdict.
   function rate(P, mode, shot, ev, res) {
@@ -1587,8 +1681,8 @@ function createHighlights() {
     const cue = shot.snap.balls[shot.snap.cue], first = ev.firstHit;
     if (mode.table === 'carom') {
       if (!(res.pts > 0)) return { score: 0 };
-      const viaRail = ev.railed.includes(shot.snap.cue), reds = dist(shot.snap.balls[2], shot.snap.balls[3]);
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8, tag: viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
+      const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -1632,12 +1726,13 @@ function createHighlights() {
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
     P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    const obj = caromTargets(n, shot.snap.cue);
     const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
       const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
       P.step(w, T); t += T;
       if (tHit < 0 && w.ev.firstHit != null) tHit = t;
-      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) {
+      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(obj[0]) && w.ev.hits.includes(obj[1]))) {
         tKey = t; if (sp > 1e-3) { ux = vx / sp; uy = vy / sp; }
         const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
         kx = pk ? pk.x : x0; ky = pk ? pk.y : y0;
@@ -1726,6 +1821,7 @@ const CLOTHS = [
   { id: 'blue', name: '토너먼트 블루', felt: 0x2a78d2, wood: 0x15171c },
   { id: 'wine', name: '버건디', felt: 0x9a2536, wood: 0xa9743f },
   { id: 'charcoal', name: '차콜', felt: 0x4b5562, wood: 0x15171c },
+  { id: 'neon', name: '야간 네온', felt: 0x2a2278, wood: 0x0b0b12, neon: true },   // lights down: glowing edges, dark room whatever the screen theme
 ];
 const CUES = [
   { id: 'maple', name: '메이플 클래식', note: '단풍나무 상대에 흑단 하대, 네 갈래 포인트', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710 },
@@ -1733,6 +1829,7 @@ const CUES = [
   { id: 'rose', name: '로즈우드 인레이', note: '붉은 장미목 하대, 금색 포인트와 흰 리넨 그립', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c },
   { id: 'house', name: '하우스 큐', note: '당구장 벽에 걸린 통짜 나무 큐', shaft: 0xdcb87c, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xc79556, fore: 0xc79556, points: null, wrap: 0xb5793f, sleeve: 0x8a5a2c },
   { id: 'sport', name: '스포츠 그립', note: '흰 상대, 남색 하대에 노란 고무 그립', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d },
+  { id: 'crystal', name: '크리스탈', note: '속이 비치는 유리 큐. 각진 하대가 빛을 받아 무지갯빛으로 번집니다', crystal: true, shaft: 0xd9f3ff, ferrule: 0xffffff, tip: 0x62c8ff, joint: 0xffffff, fore: 0xa9e4ff, points: null, wrap: 0xd9c8ff, sleeve: 0xffc4ee },
 ];
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
 const ballHex = n => BALL_HEX[n === 0 ? 0 : n <= 8 ? n : n - 8];
@@ -1781,9 +1878,9 @@ function createScene(canvas, app, PH) {
     scene.environment = sScene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
   })();
 
-  const lampObjs = [];
+  const lampObjs = [], hemis = [];
   for (const sc of [sScene, scene]) {
-    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi);
+    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi); hemis.push(hemi);
     for (const [x, y, z] of LAMPS) {
       const lamp = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1);
       lamp.position.set(x, y, z); lamp.target.position.set(x, y, 0);
@@ -1822,7 +1919,20 @@ function createScene(canvas, app, PH) {
     const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
     sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
   })();
-  function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }
+  // the room takes the colour of the UI theme - except with the lights down for the neon table, when it is always night
+  let themeBg = 0x101216, neonOn = false;
+  const NEON_A = 0x19e3ff, NEON_B = 0xff2bd6, NIGHT = 0x07060d;
+  function setBackdrop(hex) { if (hex != null) themeBg = hex; const h = neonOn ? NIGHT : themeBg; floorMat.color.copy(col(h)); sScene.background.copy(col(h)); clearCol.set(h); staticDirty = true; dirty = 3; }
+  // light spilling onto the floor from under the neon table
+  const neonFloor = (() => {
+    const c = mkCanvas(256, 160), g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 256, 0);
+    gr.addColorStop(0, '#ff2bd6'); gr.addColorStop(1, '#19e3ff'); g.filter = 'blur(22px)'; g.fillStyle = gr; g.fillRect(40, 34, 176, 92);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    m.position.set(0, 0, -0.785); m.layers.set(1); m.visible = false; sScene.add(m); return m;
+  })();
+  const neonMat = h => new THREE.MeshBasicMaterial({ color: h, toneMapped: false });
+  const haloMat = (h, o) => new THREE.MeshBasicMaterial({ color: h, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+  const tubeA = neonMat(NEON_A), tubeB = neonMat(NEON_B), haloA = haloMat(NEON_A, 0.2), haloB = haloMat(NEON_B, 0.3);
 
   /* shared table materials */
   const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
@@ -1884,7 +1994,14 @@ function createScene(canvas, app, PH) {
     g.filter = `blur(${Math.max(2, Math.round(0.02 * k))}px)`; g.strokeStyle = 'rgba(0,0,0,0.3)'; g.lineWidth = 0.06 * k; g.lineCap = 'round'; g.lineJoin = 'round';
     const X = x => (x + mx) * k, Y = y => (my - y) * k;
     for (const cu of P.CUSHIONS) { g.beginPath(); g.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g.lineTo(X(cu.a[0]), Y(cu.a[1])); g.lineTo(X(cu.b[0]), Y(cu.b[1])); g.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g.stroke(); }
-    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), w: 2 * mx, h: 2 * my };
+    // the same line in light instead of shade, for the neon table: a glow along the foot of every cushion
+    const c2 = mkCanvas(W, H), g2 = c2.getContext('2d'); g2.lineCap = 'round'; g2.lineJoin = 'round';
+    for (const [blur, lw, al] of [[0.03, 0.07, 0.55], [0.006, 0.012, 1]]) {
+      g2.filter = `blur(${Math.max(1, Math.round(blur * k))}px)`; g2.strokeStyle = `rgba(255,255,255,${al})`; g2.lineWidth = lw * k;
+      for (const cu of P.CUSHIONS) { g2.beginPath(); g2.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g2.lineTo(X(cu.a[0]), Y(cu.a[1])); g2.lineTo(X(cu.b[0]), Y(cu.b[1])); g2.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g2.stroke(); }
+    }
+    const glow = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c2), color: NEON_B, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), glow, w: 2 * mx, h: 2 * my };
   }
 
   const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
@@ -1900,6 +2017,20 @@ function createScene(canvas, app, PH) {
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
     const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
     const shade = cushionShade(P), ao = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.mat); ao.position.z = 0.0007; grp.add(ao);
+    // everything that only shows with the lights down
+    const neon = new THREE.Group(); neon.visible = neonOn; grp.add(neon); grp.userData.neon = neon;
+    const lit = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.glow); lit.position.z = 0.0009; neon.add(lit);
+    // a tube of light round the top of the rail, with its halo
+    const band = (inset, w, z, mat) => {
+      const x = ox - inset, y = oy - inset, r = Math.max(0.01, rr - inset), sh = new THREE.Shape(), rect = (t, d) => {
+        const X = x + d, Y = y + d, R2 = Math.max(0.004, r + d);
+        t.moveTo(-X + R2, -Y); t.lineTo(X - R2, -Y); t.absarc(X - R2, -Y + R2, R2, -Math.PI / 2, 0, false); t.lineTo(X, Y - R2); t.absarc(X - R2, Y - R2, R2, 0, Math.PI / 2, false);
+        t.lineTo(-X + R2, Y); t.absarc(-X + R2, Y - R2, R2, Math.PI / 2, Math.PI, false); t.lineTo(-X, -Y + R2); t.absarc(-X + R2, -Y + R2, R2, Math.PI, Math.PI * 1.5, false);
+      };
+      rect(sh, w / 2); const h = new THREE.Path(); rect(h, -w / 2); sh.holes.push(h);
+      const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), mat); m.position.z = z; neon.add(m);
+    };
+    band(0.02, 0.006, RAIL_Z + 0.0014, tubeA); band(0.02, 0.034, RAIL_Z + 0.0011, haloA);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);
@@ -1933,6 +2064,8 @@ function createScene(canvas, app, PH) {
         // a brass plate let into the rail, a black rubber lip standing on its inner edge, and a leather liner down the cut
         const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.002, a.p.r + bev + 0.012, 48, 1, a.a1, len), metalMat);
         m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); grp.add(m);
+        const nr = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev + 0.004, a.p.r + bev + 0.008, 48, 1, a.a1, len), tubeB); nr.position.set(a.p.x, a.p.y, RAIL_Z + 0.0013); neon.add(nr);
+        const nh = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.006, a.p.r + bev + 0.02, 48, 1, a.a1, len), haloB); nh.position.set(a.p.x, a.p.y, RAIL_Z + 0.0012); neon.add(nh);
         const lip = new THREE.Mesh(new THREE.TorusGeometry(a.p.r + 0.0035, 0.006, 10, 48, len), lipMat);
         lip.rotation.z = a.a1; lip.position.set(a.p.x, a.p.y, RAIL_Z - 0.001); lip.castShadow = true; grp.add(lip);
         const lv = [], ln = [], seg = 32;
@@ -1995,12 +2128,20 @@ function createScene(canvas, app, PH) {
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     lampObjs.forEach((l, i) => { const x = LAMPS[i % 3][0]; l.position.x = x; l.target.position.x = x; l.target.updateMatrixWorld(); });
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
-    tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
+    tableShadow.scale.set(ow * 1.59, oh * 1.8, 1); neonFloor.scale.set(ow * 1.9, oh * 2.3, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
   }
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0];
+    const c = CLOTHS[i] || CLOTHS[0], was = neonOn; neonOn = !!c.neon;
     feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    // lights down for the neon table: dimmer, cooler lamps, glowing sights, and the room goes dark
+    for (const [, grp] of tables) grp.userData.neon.visible = neonOn;
+    neonFloor.visible = neonOn; tableShadow.visible = !neonOn;
+    lampObjs.forEach(l => { l.intensity = neonOn ? 0.4 : 0.58; l.color.set(neonOn ? 0xc9bcff : 0xfff1dc); });
+    hemis.forEach(h => { h.intensity = neonOn ? 0.2 : 0.27; h.color.set(neonOn ? 0x8f86ff : 0xe8ecf2); });
+    cushMat.emissive.copy(col(NEON_B)).multiplyScalar(neonOn ? 0.1 : 0); pearl.emissive.copy(col(NEON_A)).multiplyScalar(neonOn ? 0.9 : 0);
+    woodMat.envMapIntensity = neonOn ? 0.35 : 0.7;
+    if (was !== neonOn) { renderer.shadowMap.needsUpdate = true; setBackdrop(); }
     staticDirty = true; dirty = 3;
   }
 
@@ -2064,6 +2205,18 @@ function createScene(canvas, app, PH) {
       const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
       cue.add(new THREE.Mesh(g, mat));
     };
+    if (d.crystal) {
+      // cut glass: see-through, sharp reflections, the butt cut in flat faces, and a thread of light down the middle
+      const glass = h => new THREE.MeshStandardMaterial({ color: col(h), roughness: 0.04, metalness: 0.15, envMapIntensity: 2.6, transparent: true, opacity: 0.58, emissive: col(h), emissiveIntensity: 0.16 });
+      const cut = (x0, x1, r0, r1, h) => { const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 8, 1); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0); const m = glass(h); m.flatShading = true; cue.add(new THREE.Mesh(g, m)); };
+      part(0, 0.012, 0.006, 0.0062, new THREE.MeshStandardMaterial({ color: col(d.tip), roughness: 0.6, emissive: col(d.tip), emissiveIntensity: 0.5 }));
+      part(0.012, 0.04, 0.0062, 0.0064, glass(d.ferrule)); part(0.04, 0.74, 0.0064, 0.0104, glass(d.shaft));
+      part(0.74, 0.756, 0.0107, 0.0108, new THREE.MeshStandardMaterial({ color: col(0xffffff), roughness: 0.15, metalness: 1, envMapIntensity: 1.6 }));
+      cut(0.756, 1.03, 0.0106, 0.0124, d.fore); cut(1.03, 1.3, 0.0124, 0.0138, d.wrap); cut(1.3, 1.45, 0.0138, 0.0148, d.sleeve);
+      part(1.45, 1.47, 0.0148, 0.0142, new THREE.MeshStandardMaterial({ color: col(0xffffff), roughness: 0.15, metalness: 1, envMapIntensity: 1.6 }));
+      part(0.03, 1.45, 0.0018, 0.004, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, toneMapped: false }));
+      dirty = 3; return;
+    }
     const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
     part(0, 0.012, 0.006, 0.0062, std(d.tip, 0.9));
     part(0.012, 0.04, 0.0062, 0.0064, std(d.ferrule, 0.4));
@@ -2693,9 +2846,16 @@ function createAudio(isOn) {
      count     three, two, one - a new camera on every beat
      stutter   the drop itself, hit six times over
 
-   Worst shot, two edits, no music:
+   Worst shot, six edits, no music:
      clown     as it happened, the moment it went wrong, tape back, once more slowly with the culprit ringed
      var       under review: the moment run back and forth three times, closer each time
+     huh       silence, then one question mark, then two, then three
+     sad       black and white and very slow, as if it were a great loss
+     news      breaking news: a banner, a headline, footage from two more angles
+     error     the game itself gives up: a crash screen, a recovery bar, a restart
+
+   Each edit also has a look of its own (a class on the page, sk-<name>): the cinema bars of cuts, the dark room of the
+   tracer, the blueprint of math, the print dots of freeze, the tape and 4:3 frame of rewind, the viewfinder of pov...
 
    On top of whatever an edit does itself, every edit gets the same layer of effects drawn over the picture: sparks and
    rings where balls meet, tails behind fast balls, a shock ring and a streak of light on the drop.
@@ -2707,7 +2867,8 @@ function createReel(d) {
   const wrap = a => { a = (a + Math.PI) % (2 * Math.PI); return a < 0 ? a + Math.PI : a - Math.PI; }, turnTo = (a, b, k) => a + wrap(b - a) * k;
   const INTRO = 2.2, HOLD = 0.1, PRE = 0.32, POST = 0.14;     // seconds: camera move-in; tape time held back before the drop; tape window of a cut
   const cv = $('#reelCv'), g = cv.getContext('2d'), big = $('#reelBig'), tagEl = $('#reelTag'), P2 = [0, 0], Q2 = [0, 0];
-  const CLS = ['reeling', 'colour', 'hit', 'beat', 'impact', 'hold', 'frozen', 'rew', 'g1', 'g2', 'g3', 'pulse'];
+  const CLS = ['reeling', 'colour', 'hit', 'beat', 'impact', 'hold', 'frozen', 'rew', 'g1', 'g2', 'g3', 'pulse', 'matrix', 'glitch', 'tinted'];
+  const cardEl = $('#reelCard');
   const MINT = '#7cffcb', GOLD = '#ffe04a', RED = '#ff4d43';
   let r = null, cam = null, tp = null, last = { best: null, worst: null };
   const bags = { best: [], worst: [] };
@@ -2736,6 +2897,10 @@ function createReel(d) {
   }
   const showBig = (text, cls) => { big.textContent = text; big.className = ''; void big.offsetWidth; big.className = cls; };
   const tag = text => { tagEl.textContent = text || ''; tagEl.hidden = !text; };
+  // a panel of words over the picture (the news banner, the crash screen, the caption)
+  const card = (cls, kids) => { cardEl.textContent = ''; cardEl.className = cls; for (const k of kids) cardEl.appendChild(k); cardEl.hidden = false; };
+  const hideCard = () => { cardEl.hidden = true; cardEl.textContent = ''; };
+  const skin = id => { for (const c of Array.from(app.classList)) if (c.slice(0, 3) === 'sk-') app.classList.remove(c); if (id) app.classList.add('sk-' + id); };
 
   /* ---- the tape ---- */
   // put the table at tape time T; going forward, everything passed on the way is heard (and seen) unless `quiet`
@@ -2829,7 +2994,7 @@ function createReel(d) {
   }
   function buildPlan(upto, hold, longest) { r.roll = Math.max(0, upto); r.slow = Math.max(0.42, r.roll / (longest || 4.2)); r.bd = r.roll / r.slow; r.hd = hold; return r.bd + hold; }
   function drop(emojis) {
-    r.dropped = true; r.rush = 0; app.classList.remove('hold', 'frozen', 'rew'); grade(0); app.classList.add('colour');
+    r.dropped = true; r.rush = 0; app.classList.remove('hold', 'frozen', 'rew', 'matrix', 'tinted'); grade(0); app.classList.add('colour');
     impact(); kick('hit'); SND.boom(); again($('#reelStreak'), 'go'); if (emojis) burst();
     shock(tp.kx, tp.ky, r.cols[r.key] || '#fff', 0.9); shock(tp.kx, tp.ky, '#fff', 0.5); sparks(tp.kx, tp.ky, r.cols[r.key] || '#fff', 46, 2.6);
   }
@@ -2849,7 +3014,7 @@ function createReel(d) {
   }
   // a slow turn round the whole table, then black; false once it is over
   function out(dt, rel) {
-    if (r.outAt == null) { r.outAt = rel; r.outT = r.T; big.className = ''; grade(0); tag(''); }
+    if (r.outAt == null) { r.outAt = rel; r.outT = r.T; big.className = ''; grade(0); tag(''); skin(null); app.classList.remove('glitch', 'matrix', 'tinted'); }
     const u = rel - r.outAt; go(r.outT + u * 0.8, dt);
     cam.az += dt * 0.55; cam.el += (0.8 - cam.el) * Math.min(1, dt * 1.5); cam.zoom += (1.02 - cam.zoom) * Math.min(1, dt * 1.6);
     cam.tx += (0 - cam.tx) * Math.min(1, dt * 2); cam.ty += (0 - cam.ty) * Math.min(1, dt * 2);
@@ -3008,6 +3173,44 @@ function createReel(d) {
   // the usual opening of a best-shot edit: down behind the cue, the strike, then the slow build to a held breath
   const opening = (dt, since, turn) => { if (cueUp(since, INTRO)) camIntro(ease(since / INTRO)); else build(since - INTRO, dt, turn); return true; };
   const after = (dt, rel) => { go(tp.tKey - HOLD * 0.5 + rel, dt); cam.zoom += (0.3 - cam.zoom) * Math.min(1, dt * 4); cam.az += dt * 0.5; return true; };
+  /* ---- what the worst-shot edits are made of ---- */
+  const HEAD = { scratch: '흰 공, 포켓으로 직행', air: '아무 공도 못 맞혀', wrong: '엉뚱한 공부터 맞혀', miss: '다 된 공 놓쳐', lost: '경기를 통째로 헌납' };
+  const CODE = { scratch: 'WHITE_BALL_IN_POCKET', air: 'NO_BALL_CONTACT', wrong: 'WRONG_BALL_FIRST', miss: 'EASY_SHOT_MISSED', lost: 'GAME_THROWN_AWAY' };
+  // they open the same way: the shot as it happened, from where someone standing by the table would have filmed it
+  function specInit(span, speed) {
+    const T0 = r.T0 = Math.max(0, tp.tKey - span * speed); r.I = T0 > 0 ? 0 : 0.8; r.spd = speed; r.Tb = Math.max(T0, tp.tKey - 1.3);
+    r.spec = { az: topAz() + 0.45, el: 0.62, zoom: 0.92, tx: 0, ty: 0 }; Object.assign(cam, r.spec);
+    app.classList.add('colour'); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+    return r.I + (tp.tKey - T0) / speed;
+  }
+  function specStep(dt, since) { cam.az = r.spec.az + Math.sin(r.t * 1.3) * 0.012; if (!cueUp(since, r.I)) go(r.T0 + (since - r.I) * r.spd, dt); return true; }
+  // the moment it goes wrong: everything stops and drains of colour
+  function moment() { r.dropped = true; go(tp.tKey, 0.016); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); r.c0 = Object.assign({}, cam); r.mark = true; }
+  // held on the moment while the camera crashes in on the culprit
+  function crash(dt, rel, zoom) {
+    const k = ease(rel / 0.22); go(tp.tKey, dt, true);
+    cam.tx = lerp(r.c0.tx, tp.kx, k); cam.ty = lerp(r.c0.ty, tp.ky, k); cam.el += (0.55 - cam.el) * Math.min(1, dt * 8); cam.zoom += (zoom - cam.zoom) * Math.min(1, dt * 12);
+    return true;
+  }
+  // the second half of most of them: tape back, the moment again slowly with the culprit ringed, then `finale` and black
+  function encore(dt, y, finale, S) {
+    const RW = 0.9; S = S || 3;
+    if (y < RW) {
+      if (!r.rw) { r.rw = 1; big.className = 'gone'; hideCard(); app.classList.remove('frozen', 'glitch'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀ 다시 봅시다'); }
+      go(lerp(tp.tKey, r.Tb, ease(y / RW)), dt, true); cam.zoom += (0.42 - cam.zoom) * Math.min(1, dt * 4); return true;
+    }
+    const z = y - RW;
+    if (z < S) {
+      if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('▶ 느린 화면'); }
+      go(lerp(r.Tb, tp.tKey, z / S), dt); const b = game.world.balls[r.key], f = Math.min(1, dt * 5);
+      cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.az += dt * 0.25; cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 2);
+      return true;
+    }
+    if (r.rw !== 3) { r.rw = 3; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); tag(''); finale(); }
+    go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
+    return fadeOut(z - S, 2.1);
+  }
+
   const STYLES = {
     cuts: {
       name: '컷 편집',
@@ -3164,7 +3367,7 @@ function createReel(d) {
     },
     pov: {
       name: '공 시점',
-      init() { r.h = [Math.cos(r.best.aim), Math.sin(r.best.aim)]; Object.assign(cam, { az: Math.atan2(-r.h[0], r.h[1]) + 0.9, el: 0.6, zoom: 0.5, tx: r.cue0[0], ty: r.cue0[1] }); return 1.7 + buildPlan(tp.tKey - HOLD, 0.6); },
+      init() { tag('● REC'); r.h = [Math.cos(r.best.aim), Math.sin(r.best.aim)]; Object.assign(cam, { az: Math.atan2(-r.h[0], r.h[1]) + 0.9, el: 0.6, zoom: 0.5, tx: r.cue0[0], ty: r.cue0[1] }); return 1.7 + buildPlan(tp.tKey - HOLD, 0.6); },
       // sit just behind the ball, looking the way it is going
       ride(dt, side) {
         const o = lead(), id = o ? o.id : r.key, a = [0, 0], b = [0, 0];
@@ -3212,7 +3415,7 @@ function createReel(d) {
         cam.az = turnTo(cam.az, topAz(), f); cam.el += (1.5 - cam.el) * f; cam.zoom += (1 - cam.zoom) * f;
         return fadeOut(lift, 6 * r.beat);
       },
-      beat() { if (r.dropped) r.w = 1.8; },
+      beat() { if (r.dropped) r.w = 1.8; if (r.struck && r.outAt == null) flash(); },
       draw() {
         for (const p of r.paths) {
           line(p, 0, r.T); g.globalAlpha = 0.35; g.strokeStyle = p.col; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1;
@@ -3229,7 +3432,7 @@ function createReel(d) {
           const x = since - INTRO;
           if (x < r.bd) { go(x * r.slow, dt); chase(dt, 0.46, 0.16); return true; }
           // time stops with the ball on the lip, and the camera goes all the way round it
-          if (!r.frozen) { r.frozen = true; grade(2); app.classList.add('hold'); kick('hit'); flash(); SND.boom(); r.c0 = Object.assign({}, cam); const kb = game.world.balls[r.key]; r.bx = kb.on ? kb.x : tp.kx; r.by = kb.on ? kb.y : tp.ky; }
+          if (!r.frozen) { r.frozen = true; app.classList.add('hold', 'matrix'); kick('hit'); flash(); SND.boom(); r.c0 = Object.assign({}, cam); const kb = game.world.balls[r.key]; r.bx = kb.on ? kb.x : tp.kx; r.by = kb.on ? kb.y : tp.ky; }
           const k = (x - r.bd) / r.F, e = ease(Math.min(1, k * 4));
           go(r.Tf + k * 0.025, dt, true); r.rush = 0.3;
           cam.az = r.c0.az + 2 * Math.PI * ease(k); cam.el = lerp(r.c0.el, 0.3, e); cam.zoom = lerp(r.c0.zoom, 0.26, e); cam.tx = lerp(r.c0.tx, r.bx, e); cam.ty = lerp(r.c0.ty, r.by, e);
@@ -3253,7 +3456,7 @@ function createReel(d) {
           if (x < r.bd) { go(x * r.slow, dt); chase(dt, 0.46, 0.16); return true; }
           // three, two, one: a number and a new camera on every beat, the ball crawling the last of the way
           const n = clamp(3 - Math.floor((x - r.bd) / r.beat), 1, 3);
-          if (r.cn !== n) { r.cn = n; showBig(String(n), 'num3'); kick('hit'); flash(); SND.thump(); Object.assign(cam, cutCam(3 - n)); cam.zoom *= 1 + 0.25 * (n - 1); grade(n); r.rush = 0.6; }
+          if (r.cn !== n) { r.cn = n; showBig(String(n), 'num3'); kick('hit'); flash(); SND.thump(); Object.assign(cam, cutCam(3 - n)); cam.zoom *= 1 + 0.25 * (n - 1); $('#reel').style.setProperty('--tint', ['#19e3ff', '#ffd60a', '#ff2d55'][n - 1]); app.classList.add('tinted'); r.rush = 0.6; }
           go(lerp(r.Tc, tp.tKey - 0.04, clamp((x - r.bd) / r.C, 0, 1)), dt); r.rush *= Math.max(0, 1 - dt * 2.5);
           cam.zoom *= 1 - dt * 0.3; cam.az += dt * (cam.spin || 0);
           return true;
@@ -3272,10 +3475,10 @@ function createReel(d) {
         // the drop itself, six times in three beats: back a fraction, in again, closer and from further round each time
         const h = r.beat / 2, i = Math.floor(rel / h), u = rel / h - i;
         if (i < 6) {
-          if (r.si !== i) { r.si = i; go(tp.tKey - 0.07, 0, true); if (i) { kick('hit'); flash(); grade(i % 2 ? 3 : 0); cam.zoom *= 0.9; cam.az += 0.4; again($('#reelStreak'), 'go'); } }
+          if (r.si !== i) { r.si = i; go(tp.tKey - 0.07, 0, true); if (i) { kick('hit'); flash(); grade(i % 2 ? 3 : 0); app.classList.toggle('glitch', i % 2 === 1); cam.zoom *= 0.9; cam.az += 0.4; again($('#reelStreak'), 'go'); } }
           go(tp.tKey - 0.07 + u * 0.13, dt); return true;
         }
-        if (r.si !== 6) { r.si = 6; grade(0); r.T1 = r.T; }
+        if (r.si !== 6) { r.si = 6; grade(0); app.classList.remove('glitch'); r.T1 = r.T; }
         const t = rel - 6 * h;
         if (t < 2 * r.beat) { go(r.T1 + t, dt); cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 3); cam.az += dt * 0.5; return true; }
         return out(dt, rel);
@@ -3285,32 +3488,13 @@ function createReel(d) {
     /* ---- worst shot: no song, and the "drop" is the moment it went wrong ---- */
     clown: {
       name: '광대', worst: true,
-      init() {
-        const T0 = r.T0 = Math.max(0, tp.tKey - 3.5); r.I = T0 > 0 ? 0 : 0.8; r.Tb = Math.max(T0, tp.tKey - 1.3);
-        r.spec = { az: topAz() + 0.45, el: 0.62, zoom: 0.92, tx: 0, ty: 0 }; Object.assign(cam, r.spec);
-        app.classList.add('colour'); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
-        return r.I + (tp.tKey - T0);
-      },
+      init() { return specInit(3.5, 1); },
       step(dt, since, rel) {
-        if (rel < 0) { cam.az = r.spec.az + Math.sin(r.t * 1.3) * 0.012; if (!cueUp(since, r.I)) go(r.T0 + since - r.I, dt); return true; }
+        if (rel < 0) return specStep(dt, since);
         // it happens: everything stops, the camera crashes in on the culprit
-        if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(0); showBig('🤡', 'skull'); rain(['💩'], 16); r.c0 = Object.assign({}, cam); }
-        if (rel < 2) { const k = ease(rel / 0.22); go(tp.tKey, dt, true); cam.tx = lerp(r.c0.tx, tp.kx, k); cam.ty = lerp(r.c0.ty, tp.ky, k); cam.zoom = lerp(r.c0.zoom, 0.3, k) * (1 - 0.03 * rel); cam.el = lerp(r.c0.el, 0.55, k); r.mark = true; return true; }
-        const y = rel - 2, RW = 0.9;
-        if (y < RW) {
-          if (!r.rw) { r.rw = true; big.className = 'gone'; app.classList.remove('frozen'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀ 다시 봅시다'); }
-          go(lerp(tp.tKey, r.Tb, ease(y / RW)), dt, true); cam.zoom += (0.42 - cam.zoom) * Math.min(1, dt * 4); return true;
-        }
-        const z = y - RW, S = 3;
-        if (z < S) {                                             // once more, slowly, with nowhere to hide
-          if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('▶ 느린 화면'); }
-          go(lerp(r.Tb, tp.tKey, z / S), dt); const b = game.world.balls[r.key], f = Math.min(1, dt * 5);
-          cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.az += dt * 0.25; cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 2);
-          return true;
-        }
-        if (r.rw !== 3) { r.rw = 3; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡', '💩'], 26); tag(''); }
-        go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
-        return fadeOut(z - S, 2.1);
+        if (!r.dropped) { moment(); SND.fart(0); showBig('🤡', 'skull'); rain(['💩'], 16); }
+        if (rel < 2) return crash(dt, rel, 0.3);
+        return encore(dt, rel - 2, () => { SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡', '💩'], 26); });
       },
       on() {},
       draw() { if (r.mark) culprit(); },
@@ -3345,6 +3529,94 @@ function createReel(d) {
       on() {},
       draw() { for (const p of r.paths) if (p.id === r.key || p.id === tp.cue) { line(p, 0, r.T); g.globalAlpha = 0.8; g.strokeStyle = p.id === r.key ? RED : '#fff'; g.lineWidth = 2; g.setLineDash([7, 6]); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; } culprit(); },
     },
+    huh: {
+      name: '물음표', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        // nobody says anything. Then one question mark, and another, and another, the camera a step closer each time
+        if (!r.dropped) { moment(); r.q = 0; }
+        if (rel < 3.1) {
+          const n = rel < 0.6 ? 0 : rel < 1.2 ? 1 : rel < 1.8 ? 2 : 3;
+          if (n !== r.q) { r.q = n; showBig('?'.repeat(n), 'num3 q'); kick('hit'); if (n < 3) SND.thump(); else { SND.fart(1); rain(['❓', '❔'], 22); } }
+          return crash(dt, rel, [0.62, 0.46, 0.34, 0.25][r.q]);
+        }
+        return encore(dt, rel - 3.1, () => { SND.fart(3); showBig('?', 'num3 q'); rain(['❓', '🤡', '❔', '❓'], 30); }, 2.5);
+      },
+      on() {},
+      draw() { if (r.mark) culprit(); },
+    },
+    sad: {
+      name: '비극', worst: true,
+      init() {
+        const T0 = r.T0 = Math.max(0, tp.tKey - 1.8); r.I = T0 > 0 ? 0 : 0.8; r.tear = 0; grade(3); app.classList.add('hold');
+        Object.assign(cam, { az: Math.atan2(-tp.ux, tp.uy) + 0.6, el: 0.4, zoom: 0.55, tx: r.cue0[0], ty: r.cue0[1] });
+        if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+        return r.I + (tp.tKey - T0) / 0.3;
+      },
+      step(dt, since, rel) {
+        const b = game.world.balls[r.key], f = Math.min(1, dt * 2.5);
+        cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.zoom *= 1 - dt * 0.035; cam.az += dt * 0.05;
+        if (rel < 0) {
+          // very slowly, in black and white, as if it mattered
+          if (!cueUp(since, r.I)) go(r.T0 + (since - r.I) * 0.3, dt);
+          if (r.t > r.tear) { r.tear = r.t + 0.8; emoji(['😭', '💔', '😢'][Math.floor(Math.random() * 3)], app.clientWidth * (0.15 + 0.7 * Math.random()), app.clientHeight * 0.72); }
+          return true;
+        }
+        if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); kick('hit'); SND.fart(2); showBig('🥀', 'skull'); rain(['🫡', '😭', '🕯️'], 18); card('obit', [el('b', { text: r.best.who }), el('span', { text: '의 샷 · 방금 우리 곁을 떠났습니다' })]); }
+        go(tp.tKey, dt, true);
+        if (rel > 2.6 && !r.squeak) { r.squeak = true; SND.fart(1); kick('beat'); }
+        return fadeOut(rel, 4.3);
+      },
+      on() {},
+      draw() { culprit(); },
+    },
+    news: {
+      name: '속보', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        if (!r.dropped) {
+          moment(); flash(); SND.fart(0); app.classList.remove('frozen'); app.classList.add('colour');
+          card('news', [el('i', { text: '속보' }), el('b', { text: `${r.best.who}, ${HEAD[r.best.kind] || '믿기 힘든 샷'}` }),
+            el('span', { class: 'tick', text: '목격자 "눈을 의심했다" · 전문가 "일부러 해도 어렵다" · 공 측 "할 말 없다" · 당사자는 연락 두절' })]);
+          scene.proj.begin(); if (scene.proj.at(tp.kx, tp.ky, game.P.R, P2)) emoji('📢', P2[0], P2[1]);
+        }
+        if (rel < 2.4) return crash(dt, rel, 0.36);
+        // footage from two more angles, each ending on the moment
+        const x = (rel - 2.4) / 1.9, i = Math.floor(x), u = x - i, away = Math.atan2(tp.ux, -tp.uy);
+        if (i < 2) {
+          if (r.ni !== i) { r.ni = i; go(Math.max(0, tp.tKey - 0.55), 0, true); kick('hit'); flash(); tag(i ? '단독 · 다른 각도' : '현장 화면'); cardEl.firstChild.textContent = i ? '단독' : '속보'; Object.assign(cam, { az: away + (i ? 2 : -1.2), el: i ? 1.25 : 0.34, zoom: i ? 0.3 : 0.32, tx: tp.kx, ty: tp.ky }); }
+          go(Math.max(0, tp.tKey - 0.55) + Math.min(1, u * 1.35) * 0.55, dt); cam.az += dt * 0.12; cam.zoom *= 1 - dt * 0.05;
+          if (u * 1.35 >= 1 && r.nf !== i) { r.nf = i; SND.fart(1 + i); kick('beat'); }
+          return true;
+        }
+        if (r.ni !== 2) { r.ni = 2; go(tp.tKey, dt); app.classList.remove('colour'); app.classList.add('frozen'); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '📰', '🤡'], 26); tag(''); }
+        go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
+        return fadeOut(rel - 2.4 - 3.8, 2);
+      },
+      on() {},
+      draw() { if (r.mark) culprit(); },
+    },
+    error: {
+      name: '오류', worst: true,
+      init() { return specInit(3.5, 1); },
+      step(dt, since, rel) {
+        if (rel < 0) return specStep(dt, since);
+        // the game itself cannot take it: the picture breaks up, then a crash screen with a recovery bar
+        if (!r.dropped) { moment(); app.classList.remove('frozen'); app.classList.add('glitch'); grade(3); SND.fart(1); }
+        if (rel < 0.6) return crash(dt, rel, 0.34);
+        if (rel < 3.4) {
+          if (!r.bsod) { r.bsod = true; app.classList.remove('glitch'); SND.fart(2); card('bsod', [el('b', { text: ':(' }), el('span', { text: '실력.exe가 응답하지 않습니다' }), el('small', { text: '' })]); }
+          cardEl.lastChild.textContent = `오류 코드: ${CODE[r.best.kind] || 'UNKNOWN_SHOT'} · 샷을 복구하는 중… ${Math.min(100, Math.floor((rel - 0.6) / 2.6 * 100))}%`;
+          go(tp.tKey, dt, true); return true;
+        }
+        if (!r.reboot) { r.reboot = true; grade(0); flash(); }
+        return encore(dt, rel - 3.4, () => { SND.fart(3); showBig('⚠️', 'skull'); rain(['⚠️', '💩', '🤡'], 26); }, 2.6);
+      },
+      on() {},
+      draw() { if (r.mark && !r.bsod || r.reboot) culprit(); },
+    },
   };
   const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
   // every edit comes up once before any comes up again
@@ -3372,7 +3644,7 @@ function createReel(d) {
     const info = kind === 'best' ? SND.song.info : null; r.beat = 60 / (info ? info.bpm : 140);
     $('#reelFx').textContent = ''; big.className = ''; big.textContent = ''; tag(''); $('#reel').hidden = false; $('#reelFade').classList.remove('go');
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');
-    app.classList.remove(...CLS); app.classList.add('reeling');
+    app.classList.remove(...CLS); app.classList.add('reeling'); skin(id); hideCard();
     r.lead = r.style.init();                                   // real seconds from now to the key moment
     r.song = kind === 'best' ? SND.song.play(r.lead) : false;
     scene.setCam(cam); drawOverlay(0);
@@ -3380,7 +3652,7 @@ function createReel(d) {
   function stop() {
     if (!r) return; r = null;
     SND.song.stop(); SND.rolling(0); scene.clearFalls();
-    $('#reel').hidden = true; app.classList.remove(...CLS); big.className = ''; tag(''); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+    $('#reel').hidden = true; app.classList.remove(...CLS); skin(null); hideCard(); big.className = ''; tag(''); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
     scene.setOrbit(false); d.onEnd();
   }
 
@@ -3425,7 +3697,7 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random' }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random', rule3: 3 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -3493,7 +3765,15 @@ function drawCue(cv, d, vertical) {
   // round it: dark edges, a soft highlight off-centre
   const sh = g.createLinearGradient(0, 0, 0, T);
   sh.addColorStop(0, 'rgba(0,0,0,.42)'); sh.addColorStop(0.3, 'rgba(255,255,255,.26)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.46)');
-  g.globalCompositeOperation = 'source-atop'; g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
+  g.globalCompositeOperation = 'source-atop';
+  if (d.crystal) {
+    // glass: a rainbow along its length, slanted facets on the butt, and a bright thread through the middle
+    const rb = g.createLinearGradient(0, 0, L, 0); [['#bff0ff', 0], ['#e9fbff', 0.3], ['#cfe0ff', 0.55], ['#e2ccff', 0.75], ['#ffc9ef', 1]].forEach(([c, o]) => rb.addColorStop(o, c));
+    g.fillStyle = rb; g.fillRect(x(0.012), 0, L, T);
+    g.fillStyle = 'rgba(255,255,255,.5)'; for (let m = 0.77; m < 1.45; m += 0.045) { g.beginPath(); g.moveTo(x(m), 0); g.lineTo(x(m + 0.02), 0); g.lineTo(x(m + 0.02) - T * 0.9, T); g.lineTo(x(m) - T * 0.9, T); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.9)'; g.fillRect(x(0.03), T * 0.44, L, T * 0.1);
+  }
+  g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
 }
 function paintPowerCue() { drawCue($('#powerCue'), CUES[prefs.cue] || CUES[0], !scene.portrait); }
 
@@ -3602,7 +3882,7 @@ const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div'
 const note = text => el('p', { class: 'note', text });
 
 function sheetTable() {
-  const sizes = prefs.mode === 'four' ? [note('4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
+  const sizes = isCarom() ? [note('3구와 4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
     : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); homePreview(); sheetTable(); }));
   openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
@@ -3640,7 +3920,7 @@ function sheetSong(busy) {
   openSheet('하이라이트', [
     el('div', { class: 'lab', text: '편집' }),
     el('div', { class: 'pickrow' }, [['random', '랜덤']].concat(reel.STYLES).map(([id, name]) => el('button', { text: name, 'aria-pressed': String(prefs.edit === id), onclick: () => { SND.tap(); prefs.edit = id; savePrefs(); again(); } }))),
-    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 두 가지 편집이 번갈아 나옵니다.`),
+    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 ${reel.WORST.length}가지 편집이 돌아가며 나옵니다.`),
     el('div', { class: 'lab', text: `노래 ${songs.length}/${SND.song.MAX}` }),
     songs.length ? el('div', null, songs.map(m => el('div', { class: 'song' + (m.on ? ' on' : ''), onclick: async () => { SND.tap(); await SND.song.toggle(m.id); again(); } }, [
       el('span', { class: 'chk', text: '✓' }),
@@ -3674,10 +3954,12 @@ function sheetPause() {
 }
 
 /* ================= home ================= */
+const isCarom = () => game.MODES[prefs.mode].table === 'carom';
 const MODE_ICON = {
   eight: () => el('span', { class: 'ball', style: '--c:#111' }, el('i', { text: '8' })),
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
   four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
+  three: () => el('span', { class: 'three' }, ['#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
   practice: () => el('span', { class: 'target' }, el('i')),
 };
 function check() {
@@ -3687,7 +3969,7 @@ function check() {
 }
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'four', 'practice']) {
+  for (const id of ['eight', 'nine', 'three', 'four', 'practice']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
@@ -3706,9 +3988,9 @@ function paintHome() {
   }
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
   $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
-  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
+  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom(); $('#segRule3').hidden = prefs.mode !== 'three';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
-  $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
+  $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = CUES[prefs.cue].name;
   const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }
@@ -3797,7 +4079,7 @@ const match = {
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0 }); match.best = null; match.worst = null;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -4019,7 +4301,7 @@ function leagueSetup(add) {
   add(el('div', { class: 'lab', text: '참가자' }),
     el('div', { class: 'chips' }, d.names.map((name, i) => el('span', { class: 'chipn' }, [document.createTextNode(name), el('button', { 'aria-label': name + ' 빼기', text: '×', onclick: () => { d.names.splice(i, 1); paintLeague(); } })]))),
     el('div', { class: 'row addrow' }, [input, el('button', { class: 'btn flat', text: '추가', onclick: () => { SND.tap(); addName(); } })]),
-    segRow('게임', ['eight', 'nine', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
+    segRow('게임', ['eight', 'nine', 'three', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
     segRow('방식', [[1, '한 번씩'], [2, '두 번씩']], d.legs, v => { d.legs = v; paintLeague(); }),
     note(n < 2 ? '두 명 이상 넣어 주세요.' : `${n}명이 서로 ${d.legs === 1 ? '한 번씩' : '두 번씩'}, 모두 ${games}경기. 이기면 승점 ${league.WIN_PTS}점.`),
     el('button', { class: 'btn cta', text: '리그 시작', onclick: () => { if (d.names.length < 2) return toast('두 명 이상 넣어 주세요.', '', 1500); SND.tap(); lg = league.create(d.names, d.mode, prefs.target, d.legs); saveLeague(); lgDraft = null; paintLeague(); } }));
@@ -4059,6 +4341,7 @@ press('#bestBtn', () => playBest()); press('#worstBtn', () => playWorst()); pres
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
+seg('#segRule3', () => prefs.rule3, v => { prefs.rule3 = +v; savePrefs(); });
 
 /* ================= input ================= */
 let drag = null;

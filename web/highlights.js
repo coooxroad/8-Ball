@@ -9,6 +9,8 @@ function createHighlights() {
     s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  // the two balls a carom shot has to reach: the reds in four-ball, whatever is not the cue ball in three-ball
+  const caromTargets = (n, cue) => n === 3 ? [0, 1, 2].filter(i => i !== cue) : [2, 3];
 
   // How good was that? 0 for a foul or a shot that did not score. `shot`: { snap, turn, isBreak }; `res`: the rules' verdict.
   function rate(P, mode, shot, ev, res) {
@@ -16,8 +18,8 @@ function createHighlights() {
     const cue = shot.snap.balls[shot.snap.cue], first = ev.firstHit;
     if (mode.table === 'carom') {
       if (!(res.pts > 0)) return { score: 0 };
-      const viaRail = ev.railed.includes(shot.snap.cue), reds = dist(shot.snap.balls[2], shot.snap.balls[3]);
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8, tag: viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
+      const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -61,12 +63,13 @@ function createHighlights() {
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
     P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    const obj = caromTargets(n, shot.snap.cue);
     const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
       const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
       P.step(w, T); t += T;
       if (tHit < 0 && w.ev.firstHit != null) tHit = t;
-      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(2) && w.ev.hits.includes(3))) {
+      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(obj[0]) && w.ev.hits.includes(obj[1]))) {
         tKey = t; if (sp > 1e-3) { ux = vx / sp; uy = vy / sp; }
         const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
         kx = pk ? pk.x : x0; ky = pk ? pk.y : y0;

@@ -1,4 +1,4 @@
-/* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball and four-ball carom. No DOM in here. */
+/* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball, three-ball and four-ball carom. No DOM in here. */
 function createGame(PH) {
   const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
   const GROUP_KO = { solid: '단색', stripe: '줄무늬' };
@@ -126,6 +126,28 @@ function createGame(PH) {
     },
   };
 
+  // Three balls, no pockets: each player has a cue ball (white, yellow) and there is one red. A point for making your cue
+  // ball hit both of the others - after it has met as many cushions as the chosen rule asks for (0, 1, or the full three).
+  const RULE3 = { 0: '쿠션 없이도 인정', 1: '쿠션 1번 이상', 3: '쿠션 3번 이상' };
+  MODES.three = {
+    id: 'three', name: '3구', blurb: '내 공으로 나머지 두 공을 다 맞히면 1점', table: 'carom', n: 3, ballInHand: false, target: true, RULE3,
+    setup(g, rnd) {
+      const P = g.P, { HL } = P, w = g.world;
+      P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1, -HL / 2, 0, rnd); P.place(w, 0, -HL / 2, -0.18, rnd);
+      g.placing = null; g.isBreak = false;
+    },
+    intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
+    status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
+    badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
+    legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
+    ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },
+    evaluate(ev, c) {
+      const both = ev.hits.length >= 2, ok = both && ev.cushions >= c.need;
+      const note = both && !ok ? `쿠션 ${ev.cushions}번 · ${c.need}번이 필요합니다` : ev.firstHit == null ? '아무 공도 맞히지 못했습니다' : null;
+      return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: ok, pts: ok ? 1 : 0, note };
+    },
+  };
+
   // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
   MODES.practice = {
     id: 'practice', name: '연습', blurb: '자유 연습과 기술 훈련', table: 'pool', n: 16, ballInHand: false, solo: true,
@@ -150,7 +172,7 @@ function createGame(PH) {
     g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.table];
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
-    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level;
+    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
     g.mode.setup(g, opts.rnd || Math.random);
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
@@ -184,7 +206,7 @@ function createGame(PH) {
       else out.msg = `파울 · ${r.foul}. 1점 감점, ${nx} 차례.`;
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
-      g.turn = 1 - me; if (!out.msg) out.msg = `${g.players[g.turn].name} 차례`;
+      g.turn = 1 - me; if (!out.msg) out.msg = (r.note ? r.note + '. ' : '') + `${g.players[g.turn].name} 차례`; if (r.note) out.dur = 2600;
     } else if (r.pts > 0) {
       out.msg = `${p.name} 1점!`; out.kind = 'good';
     } else if (m.id === 'eight' && !r.assign) {
@@ -397,7 +419,8 @@ function createGame(PH) {
 
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
-    const nA = [72, 96, 144, 360][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]][lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
+    const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
+    const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
     const flair = [];                                         // top level: scoring shots it saw, and whether the cue ball went round the cushions to do it
     if (lvl >= 3) {
@@ -410,7 +433,7 @@ function createGame(PH) {
         if (r.pts > 0) { flair.push({ angle: all[i][0], V: all[i][1], s: (railed ? 3 : 0) + Math.random() }); if (railed) fancy++; }
       }
       // nothing yet: look again between the angles already tried, at other speeds
-      if (!flair.length) again: for (const V of [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
+      if (!flair.length) again: for (const V of need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
         const a = phase + (i + 0.5) * Math.PI / 360;
         if (g.mode.evaluate(simShot(a, V), ctx, g).pts > 0) { flair.push({ angle: a, V, s: 0 }); break again; }
       }
@@ -428,7 +451,7 @@ function createGame(PH) {
     }
     if (!best) {
       // nothing scores: at least hit a red squarely rather than give a point away
-      const reds = [w.balls[2], w.balls[3]].sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
+      const reds = g.mode.legal(g, g.turn).map(i => w.balls[i]).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
       for (const T of reds) {
         const a = Math.atan2(T.y - c.y, T.x - c.x), h = g.P.cast(w, c.x, c.y, Math.cos(a), Math.sin(a), w.cue);
         if (h.type === 'ball' && h.ball === T.id) { best = { angle: a, V: 2.2 }; break; }
@@ -442,7 +465,7 @@ function createGame(PH) {
 
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
-    turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level,
+    turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -450,7 +473,7 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
-    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.over = null;
+    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null;
     return true;
   };
   return g;

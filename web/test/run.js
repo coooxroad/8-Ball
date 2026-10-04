@@ -34,10 +34,10 @@ for (const name in TABLES) {
 // the top level: whenever it takes the table it has to keep it (a pot or a point on every shot), and so win from there
 {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  for (const mode of ['eight', 'nine', 'four']) {
+  for (const mode of ['eight', 'nine', 'four', 'three']) {
     const N = 10; let worst = 0, shots = 0, missed = 0, turns = 0, sum = 0;
     for (let i = 0; i < N; i++) {
-      g.start(mode, ['A', 'B'], true, { level: 3, target: 10, rnd }); g.players[0].ai = true;
+      g.start(mode, ['A', 'B'], true, { level: 3, target: mode === 'three' ? 5 : 10, rnd, cushions: 3 }); g.players[0].ai = true;
       let n = 0;
       while (!g.over && n < 400) {
         const who = g.turn, wasBreak = g.isBreak, t0 = Date.now(), pl = g.aiPlan(), ms = Date.now() - t0; worst = Math.max(worst, ms); sum += ms;
@@ -55,10 +55,10 @@ for (const name in TABLES) {
 
 for (const name of ['bar', 'pro', 'pub']) {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES[name])), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  for (const mode of ['eight', 'nine', 'four']) {
+  for (const mode of ['eight', 'nine', 'four', 'three']) {
     let shots = 0; const N = 3;
     for (let i = 0; i < N; i++) {
-      g.start(mode, ['A', 'B'], true, { level: 2, target: 5, rnd }); g.players[0].ai = true;
+      g.start(mode, ['A', 'B'], true, { level: 2, target: mode === 'three' ? 2 : 5, rnd, cushions: name === 'pro' ? 3 : name === 'pub' ? 1 : 0 }); g.players[0].ai = true;
       let n = 0;
       while (!g.over && n < 400) {
         const pl = g.aiPlan();
