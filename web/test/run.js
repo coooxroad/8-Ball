@@ -31,6 +31,28 @@ for (const name in TABLES) {
   console.log(`drills on ${name}: ${n} layouts checked`);
 }
 
+// the top level against the level below it: it has to finish its games, think in reasonable time, and win more than it loses
+{
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  for (const mode of ['eight', 'nine', 'four']) {
+    const N = 6, wins = [0, 0]; let worst = 0, shots = 0;
+    for (let i = 0; i < N; i++) {
+      const top = i % 2;                                             // which seat the top level sits in; seats alternate so the break is shared
+      g.start(mode, ['A', 'B'], true, { level: 2, target: 5, rnd }); g.players[0].ai = true;
+      let n = 0;
+      while (!g.over && n < 400) {
+        g.level = g.turn === top ? 3 : 2;
+        const t0 = Date.now(), pl = g.aiPlan(); worst = Math.max(worst, Date.now() - t0);
+        if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+      }
+      if (!g.over) fail(`top level, ${mode}: game did not finish in 400 shots`); else wins[g.over.winner === top ? 0 : 1]++;
+      shots += n;
+    }
+    console.log(`top level v level below, ${mode}: ${wins[0]}-${wins[1]}, ${Math.round(shots / N)} shots a game, slowest plan ${worst} ms`);
+  }
+}
+
 for (const name of ['bar', 'pro', 'pub']) {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES[name])), carom: createPhysics({ R: 0.03275, pockets: false }) });
   for (const mode of ['eight', 'nine', 'four']) {

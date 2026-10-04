@@ -3,7 +3,7 @@
    The game only reports what happened, how hard, and where on the table (pan, -1 left .. 1 right):
    nothing here runs on a timer, so what is heard is what is seen. */
 function createAudio(isOn) {
-  let ac = null, out = null, ui = null, buf = null, roll = null, sink = null, white = null, music = null;
+  let ac = null, out = null, ui = null, buf = null, roll = null, sink = null, white = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
 
@@ -158,23 +158,53 @@ function createAudio(isOn) {
     return bpm < 100 ? bpm * 2 : bpm;
   }
   const toBuffer = sg => { const b = ac.createBuffer(sg.data.length, sg.data[0].length, sg.sr); sg.data.forEach((d, c) => { const out = b.getChannelData(c); for (let i = 0; i < d.length; i++) out[i] = d[i] / 32768; }); return b; };
+  // Several songs can be kept. `list` holds what is known about each ({ id, name, drop, bpm, on }); the sound itself stays in
+  // storage under 'song:<id>' and only the one about to be played is held in memory.
+  const MAX_SONGS = 12;
+  let list = [], lastId = null;
+  const saveList = () => idb('readwrite', st => st.put(list, 'list')).catch(() => {});
+  const fetchSong = async id => { if (song && song.id === id) return song; const rec = await idb('readonly', st => st.get('song:' + id)); if (!rec) return null; const m = list.find(x => x.id === id); song = { id, name: m.name, sr: rec.sr, data: rec.data, drop: m.drop, bpm: m.bpm }; return song; };
   const songApi = {
-    get info() { return song && { name: song.name, drop: song.drop, bpm: song.bpm }; },
-    async load() { try { song = await idb('readonly', st => st.get('song')) || null; } catch (e) { song = null; } return songApi.info; },
+    MAX: MAX_SONGS,
+    get list() { return list; },
+    // the song that is loaded and ready to play
+    get info() { return song && { id: song.id, name: song.name, drop: song.drop, bpm: song.bpm }; },
+    async load() {
+      try {
+        list = await idb('readonly', st => st.get('list')) || [];
+        const old = await idb('readonly', st => st.get('song'));        // from the version that kept a single song
+        if (old && old.data) { const id = Date.now(); list.push({ id, name: old.name, drop: old.drop, bpm: old.bpm, on: true }); await idb('readwrite', st => { st.put({ sr: old.sr, data: old.data }, 'song:' + id); st.put(list, 'list'); st.delete('song'); }); }
+      } catch (e) { list = []; }
+      return list;
+    },
     // take a file the player picked: find its drop and tempo, keep 14 s before and 18 s after
     async take(file) {
       init(); if (!ac) throw new Error('audio');
+      if (list.length >= MAX_SONGS) throw new Error('full');
       const full = await ac.decodeAudioData(await file.arrayBuffer()), sr = full.sampleRate, len = full.length;
       const mono = new Float32Array(len); for (let c = 0; c < full.numberOfChannels; c++) { const d = full.getChannelData(c); for (let i = 0; i < len; i++) mono[i] += d[i] / full.numberOfChannels; }
       const drop = findDrop(mono, sr), bpm = findBpm(mono, sr, drop);
       const a = Math.max(0, Math.floor((drop - 14) * sr)), b = Math.min(len, Math.floor((drop + 18) * sr));
       const data = []; for (let c = 0; c < Math.min(2, full.numberOfChannels); c++) { const src = full.getChannelData(c), out = new Int16Array(b - a); for (let i = a; i < b; i++) out[i - a] = Math.max(-32768, Math.min(32767, Math.round(src[i] * 32767))); data.push(out); }
-      song = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40), sr, data, drop: drop - a / sr, bpm };
-      try { await idb('readwrite', st => st.put(song, 'song')); } catch (e) {}
+      const m = { id: Date.now(), name: file.name.replace(/\.[^.]+$/, '').slice(0, 40), drop: drop - a / sr, bpm, on: true };
+      await idb('readwrite', st => { st.put({ sr, data }, 'song:' + m.id); });
+      list.push(m); await saveList();
+      song = { id: m.id, name: m.name, sr, data, drop: m.drop, bpm };
+      return m;
+    },
+    async nudge(id, sec) { const m = list.find(x => x.id === id); if (!m) return; m.drop = Math.max(0.5, Math.min(31, m.drop + sec)); if (song && song.id === id) song.drop = m.drop; await saveList(); },
+    async toggle(id) { const m = list.find(x => x.id === id); if (!m) return; m.on = !m.on; await saveList(); },
+    async remove(id) { songApi.stop(); if (song && song.id === id) song = null; list = list.filter(x => x.id !== id); try { await idb('readwrite', st => { st.delete('song:' + id); st.put(list, 'list'); }); } catch (e) {} },
+    // get a song ready: the one asked for, or one of the songs switched on, picked at random (not the one just played)
+    async prepare(id) {
+      if (id == null) {
+        let pool = list.filter(x => x.on); if (pool.length > 1) pool = pool.filter(x => x.id !== lastId);
+        if (!pool.length) { song = null; return null; }
+        id = pool[Math.floor(Math.random() * pool.length)].id; lastId = id;
+      }
+      try { await fetchSong(id); } catch (e) { song = null; }
       return songApi.info;
     },
-    async nudge(sec) { if (!song) return null; song.drop = Math.max(0.5, Math.min(song.data[0].length / song.sr - 2, song.drop + sec)); try { await idb('readwrite', st => st.put({ name: song.name, sr: song.sr, data: song.data, drop: song.drop, bpm: song.bpm }, 'song')); } catch (e) {} return songApi.info; },
-    async clear() { songApi.stop(); song = null; try { await idb('readwrite', st => st.delete('song')); } catch (e) {} },
     // start so that the drop arrives `lead` seconds from now; returns false when there is no song (or sound is off)
     play(lead) {
       if (!song || !ready()) return false; songApi.stop();
@@ -200,10 +230,20 @@ function createAudio(isOn) {
       o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(34, t + 0.5);
       g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.75);
     },
-    blip() {
-      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
-      o.type = 'triangle'; o.frequency.setValueAtTime(620, t); o.frequency.exponentialRampToValueAtTime(1240, t + 0.07);
-      g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09); o.connect(g); g.connect(ui); o.start(t); o.stop(t + 0.1);
+    // a short rising blip; `step` raises it a semitone at a time (the combo counter in the reel)
+    blip(step) {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), f = 520 * Math.pow(2, Math.min(24, step || 0) / 12);
+      o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.9, t + 0.07);
+      g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11); o.connect(g); g.connect(ui); o.start(t); o.stop(t + 0.12);
+    },
+    // tape running backwards: a wobbling whine that climbs for as long as the rewind lasts
+    rewind(dur) {
+      if (!ready()) return; const t = ac.currentTime, o = ac.createOscillator(), l = ac.createOscillator(), lg = ac.createGain(), g = ac.createGain(), f = ac.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(1500, t + dur);
+      l.frequency.value = 27; lg.gain.value = 90; l.connect(lg); lg.connect(o.frequency);
+      f.type = 'bandpass'; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(3200, t + dur); f.Q.value = 1.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.06); g.gain.setValueAtTime(0.13, t + Math.max(0.07, dur - 0.08)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(f); f.connect(g); g.connect(ui); o.start(t); l.start(t); o.stop(t + dur + 0.02); l.stop(t + dur + 0.02);
     },
     ball(v, pan) { impact('ball', v, 5, 0.95, 2200, 6300, 6, pan); },
     rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },

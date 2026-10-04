@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("audio/*");
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 try {
                     startActivityForResult(Intent.createChooser(intent, "노래 고르기"), PICK_FILE);
                 } catch (RuntimeException e) {
@@ -108,7 +109,13 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != PICK_FILE || filePick == null) return;
         Uri[] picked = null;
-        if (resultCode == RESULT_OK && data != null && data.getData() != null) picked = new Uri[] { data.getData() };
+        if (resultCode == RESULT_OK && data != null) {
+            if (data.getClipData() != null && data.getClipData().getItemCount() > 0) {   // several songs picked at once
+                int n = data.getClipData().getItemCount();
+                picked = new Uri[n];
+                for (int i = 0; i < n; i++) picked[i] = data.getClipData().getItemAt(i).getUri();
+            } else if (data.getData() != null) picked = new Uri[] { data.getData() };
+        }
         filePick.onReceiveValue(picked);
         filePick = null;
     }

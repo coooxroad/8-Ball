@@ -206,7 +206,7 @@ function createGame(PH) {
 
   function aiPool() {
     const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.level, me = g.turn;
-    const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016][lvl];
+    const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016, 0.0003][lvl];
     if (g.isBreak) {
       const y = (Math.random() - 0.5) * 0.3, pos = [-HL / 2 - 0.1, y];
       return { pos, angle: Math.atan2(-y * 0.92, HL / 2 - pos[0]) + gauss() * 0.003, V: g.vOf(0.94 + Math.random() * 0.06) };
@@ -240,7 +240,26 @@ function createGame(PH) {
     if (cands.length) {
       let pick = null;
       if (lvl === 0) { const k = cands[Math.min(cands.length - 1, Math.floor(Math.random() * 2))]; pick = { pos: k.pos, angle: k.angle, V: speed(k) }; }
-      else {
+      else if (lvl >= 3) {
+        // the top level tries more ways of playing each pot and keeps the one that leaves the cue ball with the most to shoot at next
+        let found = 0, bestLeave = -1;
+        outer3: for (const k of cands.slice(0, 14)) for (const m of [1, 0.78, 1.3, 0.62]) for (const da of [0, 0.002, -0.002, 0.004, -0.004]) {
+          const V = Math.min(6.6, speed(k) * m), w2 = P.clone(w);
+          if (k.pos) { const c2 = w2.balls[w2.cue]; c2.x = k.pos[0]; c2.y = k.pos[1]; }
+          P.strike(w2, k.angle + da, V, 0, 0);
+          if (!good(g.mode.evaluate(P.run(w2, 20), ctx, g))) continue;
+          const c2 = w2.balls[w2.cue]; let leave = 0;
+          for (const t of targets) { const T = w2.balls[t]; if (!T.on) continue;
+            for (const p of POCKETS) {
+              let dx = p.ax - T.x, dy = p.ay - T.y; const dl = Math.hypot(dx, dy); dx /= dl; dy /= dl;
+              const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R, cx = gx - c2.x, cy = gy - c2.y, cl = Math.hypot(cx, cy);
+              if (cl < 1e-4 || (cx * dx + cy * dy) / cl < 0.5) continue;
+              if (P.pathClear(w2, T.x, T.y, p.ax, p.ay, [0, t]) && P.pathClear(w2, c2.x, c2.y, gx, gy, [0, t])) { leave += 1 / (0.4 + cl + dl); break; }
+            } }
+          if (leave > bestLeave) { bestLeave = leave; pick = { pos: k.pos, angle: k.angle + da, V }; }
+          if (++found >= 10) break outer3;
+        }
+      } else {
         const top = cands.slice(0, lvl === 2 ? 10 : 5);
         outer: for (const k of top) for (const m of [1, 0.78, 1.3]) for (const da of [0, 0.003, -0.003]) {
           const V = Math.min(6.6, speed(k) * m);
@@ -277,7 +296,7 @@ function createGame(PH) {
 
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
-    const nA = [72, 96, 144][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0]][lvl], noise = [0.02, 0.009, 0.003][lvl];
+    const nA = [72, 96, 144, 180][lvl], Vs = [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]][lvl], noise = [0.02, 0.009, 0.003, 0.0008][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
     for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) {
       const a = phase + i * 2 * Math.PI / nA, r = g.mode.evaluate(simShot(a, Vs[vi]), ctx, g);

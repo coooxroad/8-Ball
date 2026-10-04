@@ -53,6 +53,59 @@ function createHighlights() {
     }
     return { tHit, tKey, dur: t, kx, ky, ux, uy };
   }
-  return { snapshot, restore, rate, plan };
+  /* ---- the tape: the whole shot written down once, so that a replay can be run at any speed, backwards, or cut ---- */
+  const TICK = 1 / 120, F = 7;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
+  function record(P, n, shot) {
+    const tape = plan(P, n, shot), w = P.makeWorld(n); restore(w, shot.snap);
+    const nb = w.balls.length, S = nb * F, events = []; let data = new Float32Array(S * 600), count = 0;
+    const put = () => {
+      if ((count + 1) * S > data.length) { const d = new Float32Array(data.length * 2); d.set(data); data = d; }
+      let o = count * S; for (const b of w.balls) { data[o] = b.x; data[o + 1] = b.y; data[o + 2] = b.on ? 1 : 0; data[o + 3] = b.q[0]; data[o + 4] = b.q[1]; data[o + 5] = b.q[2]; data[o + 6] = b.q[3]; o += F; }
+      count++;
+    };
+    put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    while (!P.rest(w) && count < 30 * 120) { P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put(); }
+    if (tape.tKey < 0) tape.tKey = Math.min((count - 1) * TICK, 1);
+    if (tape.tHit < 0) tape.tHit = tape.tKey;
+    return Object.assign(tape, { nb, count, data, events, dur: (count - 1) * TICK, cue: shot.snap.cue });
+  }
+  // put the balls of a world where the tape has them at time t; returns the speed of the fastest ball (m/s)
+  function seek(w, tape, t) {
+    const d = tape.data, S = tape.nb * F, f = Math.max(0, Math.min(tape.count - 1, t / TICK)), i = Math.min(tape.count - 2, Math.floor(f)), k = f - i; let vmax = 0;
+    for (let j = 0; j < tape.nb; j++) {
+      const b = w.balls[j], o = Math.max(0, i) * S + j * F, o2 = tape.count > 1 ? o + S : o, both = d[o + 2] && d[o2 + 2], u = both ? k : 0;
+      b.on = !!d[o + 2] && (both || k < 0.5);
+      b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u;
+      const sg = d[o + 3] * d[o2 + 3] + d[o + 4] * d[o2 + 4] + d[o + 5] * d[o2 + 5] + d[o + 6] * d[o2 + 6] < 0 ? -1 : 1;
+      for (let c = 0; c < 4; c++) b.q[c] = d[o + 3 + c] + (sg * d[o2 + 3 + c] - d[o + 3 + c]) * u;
+      b.vx = b.vy = b.wx = b.wy = b.wz = 0;
+      if (both) vmax = Math.max(vmax, Math.hypot(d[o2] - d[o], d[o2 + 1] - d[o + 1]) / TICK);
+    }
+    return vmax;
+  }
+  // where one ball is at time t (out: [x, y]); false once it has left the table
+  function at(tape, id, t, out) {
+    const d = tape.data, S = tape.nb * F, f = Math.max(0, Math.min(tape.count - 1, t / TICK)), i = Math.max(0, Math.min(tape.count - 2, Math.floor(f))), o = i * S + id * F, o2 = tape.count > 1 ? o + S : o;
+    const u = d[o + 2] && d[o2 + 2] ? f - i : 0; out[0] = d[o] + (d[o2] - d[o]) * u; out[1] = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u;
+    return !!d[o + 2];
+  }
+  // the line one ball draws over the whole shot, as [x, y, time, ...] with only the points that matter (corners kept sharp);
+  // null for a ball that never moved
+  function path(tape, id) {
+    const d = tape.data, S = tape.nb * F, o0 = id * F; if (!d[o0 + 2]) return null;
+    const pts = [d[o0], d[o0 + 1], 0]; let lx = d[o0], ly = d[o0 + 1], px = lx, py = ly, pt = 0, len = 0;
+    for (let i = 1; i < tape.count; i++) {
+      const o = i * S + o0; if (!d[o + 2]) break;
+      const x = d[o], y = d[o + 1], ax = px - lx, ay = py - ly, bx = x - px, by = y - py, la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+      len += lb;
+      if (la > 1e-4 && lb > 1e-5 && Math.abs(ax * by - ay * bx) / (la * lb) > 0.045) { pts.push(px, py, pt); lx = px; ly = py; }
+      else if (Math.hypot(x - lx, y - ly) > 0.07) { pts.push(x, y, i * TICK); lx = x; ly = y; }
+      px = x; py = y; pt = i * TICK;
+    }
+    if (len < 0.02) return null;
+    if (pts[pts.length - 1] !== pt) pts.push(px, py, pt);
+    return new Float32Array(pts);
+  }
+  return { snapshot, restore, rate, plan, record, seek, at, path };
 }
 if (typeof module !== 'undefined') module.exports = createHighlights;

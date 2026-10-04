@@ -387,11 +387,15 @@ function createScene(canvas, app, PH) {
   // A camera placed by a script (the highlight reel): az is the compass direction the camera sits in, el its height angle,
   // zoom < 1 is closer than "whole table in view", and it looks at the table point (tx, ty).
   function setCam(c) { orbit.on = true; orbit.cam = c; orbit.el = orbit.elTo = c.el; orbit.live = 4; applyCamera(); }
+  // where a table point is on the screen, in pixels from the top-left of the game area (for overlays drawn on top of the 3D picture)
   const scr = new THREE.Vector3();
   function toScreen(x, y, z) {
-    scr.set(x, y, z || 0).project(camera); const r = canvas.getBoundingClientRect();
-    return { x: r.left + (scr.x + 1) / 2 * r.width, y: r.top + (1 - scr.y) / 2 * r.height };
+    camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    scr.set(x, y, z || 0).project(camera);
+    return { x: (scr.x + 1) / 2 * W, y: (1 - scr.y) / 2 * H, front: scr.z < 1 };
   }
+  // the same, for many points in a row: call begin() once, then at(), which says whether the point is in front of the camera
+  const proj = { begin() { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); }, at(x, y, z, out) { scr.set(x, y, z || 0).project(camera); out[0] = (scr.x + 1) / 2 * W; out[1] = (1 - scr.y) / 2 * H; return scr.z < 1; } };
   // f > 1 moves the camera away, f < 1 brings it in
   function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
   function applyCamera(soft) {
@@ -592,7 +596,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

@@ -27,7 +27,7 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random' }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -112,6 +112,19 @@ function el(tag, attrs, kids) {
 const hex = n => '#' + n.toString(16).padStart(6, '0');
 // every button press: wake the audio (browsers only allow that inside a tap), click, then act
 const press = (id, fn) => $(id).addEventListener('click', () => { SND.init(); SND.tap(); fn(); });
+const LEVELS = ['쉬움', '보통', '어려움', '미친'];
+// a seg whose choice can also be dragged along: the bar follows the finger and settles on the nearest choice
+function slider(id, get, set) {
+  const box = $(id), n = box.children.length; let cur = -1, down = false;
+  const paint = v => { cur = v; box.style.setProperty('--i', v); box.style.setProperty('--n', n); box.dataset.lv = v; for (const b of box.children) b.setAttribute('aria-pressed', String(+b.dataset.v === v)); };
+  const at = e => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(n - 1, Math.floor((e.clientX - r.left) / r.width * n))); };
+  const move = e => { const v = at(e); if (v !== cur) { SND.tap(); paint(v); set(v); } };
+  box.addEventListener('pointerdown', e => { SND.init(); down = true; box.classList.add('drag'); try { box.setPointerCapture(e.pointerId); } catch (err) {} const was = cur; move(e); if (cur === was) SND.tap(); });
+  box.addEventListener('pointermove', e => { if (down) move(e); });
+  const up = () => { down = false; box.classList.remove('drag'); };
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+  paint(+get()); return () => paint(+get());
+}
 function seg(id, get, set) {
   const box = $(id), paint = () => { for (const b of box.children) b.setAttribute('aria-pressed', String(b.dataset.v === String(get()))); };
   box.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; SND.init(); SND.tap(); set(b.dataset.v); paint(); });
@@ -213,29 +226,37 @@ function sheetSettings() {
   openSheet('설정', [
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
-    flatBtn('하이라이트 음악' + (SND.song.info ? ' · ' + SND.song.info.name : ''), sheetSong),
+    flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
   ]);
 }
-// the song for the best-shot reel: picked from this device and kept on it
+// the best-shot reel: which edit it gets, and the songs it may use (picked from this device and kept on it)
 const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
 function sheetSong(busy) {
-  const info = SND.song.info;
-  openSheet('하이라이트 음악', [
-    note(info ? `${info.name} · 드롭 ${mmss(info.drop)} · ${Math.round(info.bpm)} BPM` : '최고의 샷 다시 보기에 깔 노래를 이 기기에서 고릅니다. 노래는 기기 안에만 저장되고, 드롭 앞뒤 30초만 씁니다.'),
-    busy ? note('노래를 읽는 중입니다…') : flatBtn(info ? '다른 노래 고르기' : '노래 고르기', () => $('#songFile').click()),
-    info ? el('div', { class: 'row' }, [flatBtn('드롭 0.1초 앞으로', async () => { await SND.song.nudge(-0.1); sheetSong(); }), flatBtn('드롭 0.1초 뒤로', async () => { await SND.song.nudge(0.1); sheetSong(); })]) : null,
-    info ? el('div', { class: 'row' }, [flatBtn('드롭 들어보기', () => { SND.init(); SND.song.play(2); setTimeout(() => SND.boom(), 2000); setTimeout(() => SND.song.stop(), 6000); }), flatBtn('지우기', async () => { await SND.song.clear(); sheetSong(); })]) : null,
-    info ? note('드롭은 자동으로 찾습니다. "드롭 들어보기"를 누르면 2초 뒤 쿵 소리와 드롭이 겹쳐야 맞는 것이고, 어긋나면 앞뒤로 옮기세요.') : null,
+  const songs = SND.song.list, again = () => sheetSong();
+  const listen = async m => { SND.init(); await SND.song.prepare(m.id); SND.song.play(2); setTimeout(() => SND.boom(), 2000); setTimeout(() => SND.song.stop(), 6000); };
+  const act = (text, fn) => el('button', { text, onclick: async e => { e.stopPropagation(); SND.tap(); await fn(); } });
+  openSheet('하이라이트', [
+    el('div', { class: 'lab', text: '편집' }),
+    el('div', { class: 'pickrow' }, [['random', '랜덤']].concat(reel.STYLES).map(([id, name]) => el('button', { text: name, 'aria-pressed': String(prefs.edit === id), onclick: () => { SND.tap(); prefs.edit = id; savePrefs(); again(); } }))),
+    note('랜덤은 일곱 가지 편집이 한 번씩 돌아가며 나옵니다.'),
+    el('div', { class: 'lab', text: `노래 ${songs.length}/${SND.song.MAX}` }),
+    songs.length ? el('div', null, songs.map(m => el('div', { class: 'song' + (m.on ? ' on' : ''), onclick: async () => { SND.tap(); await SND.song.toggle(m.id); again(); } }, [
+      el('span', { class: 'chk', text: '✓' }),
+      el('div', { style: 'min-width:0' }, [el('div', { class: 'nm', text: m.name }), el('div', { class: 'meta', text: `드롭 ${mmss(m.drop)} · ${Math.round(m.bpm)} BPM` })]),
+      el('div', { class: 'acts' }, [act('듣기', () => listen(m)), act('−0.1', async () => { await SND.song.nudge(m.id, -0.1); again(); }), act('+0.1', async () => { await SND.song.nudge(m.id, 0.1); again(); }), act('삭제', async () => { await SND.song.remove(m.id); again(); })]),
+    ]))) : note('최고의 샷 다시 보기에 깔 노래를 이 기기에서 고릅니다. 노래는 기기 안에만 저장되고, 드롭 앞뒤 30초만 씁니다.'),
+    busy ? note('노래를 읽는 중입니다…') : songs.length < SND.song.MAX ? flatBtn('노래 추가', () => $('#songFile').click()) : null,
+    songs.length ? note('체크한 노래 중 하나가 매번 무작위로 깔립니다. "듣기"를 누르면 2초 뒤 쿵 소리와 드롭이 겹쳐야 맞는 것이고, 어긋나면 −0.1 / +0.1초로 옮기세요.') : null,
   ]);
 }
 $('#songFile').addEventListener('change', async e => {
-  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  const files = Array.from(e.target.files || []); e.target.value = ''; if (!files.length) return;
   sheetSong(true);
-  try { await SND.song.take(f); } catch (err) { toast('이 파일은 읽을 수 없습니다. mp3나 m4a, wav 파일로 해 보세요.', 'foul', 3200); }
+  for (const f of files) { try { await SND.song.take(f); } catch (err) { toast(err && err.message === 'full' ? `노래는 ${SND.song.MAX}곡까지 넣을 수 있습니다.` : '이 파일은 읽을 수 없습니다. mp3나 m4a, wav 파일로 해 보세요.', 'foul', 3200); } }
   sheetSong();
 });
 function sheetName(i) {
@@ -286,7 +307,7 @@ function paintHome() {
     box.scrollTop = top;
   }
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
-  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? ['쉬움', '보통', '어려움'][prefs.level] + ' 난이도' : recText(prefs.names[1]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = prefs.mode !== 'four';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (prefs.mode === 'four' ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
@@ -618,14 +639,16 @@ press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague();
 press('#homeBtn', goHome);
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
-function playBest() {
-  if (!match.best) return;
+async function playBest(style) {
+  if (!match.best || st.screen === 'reel') return;
+  await SND.song.prepare();
+  if (st.screen !== 'result') return;
   show('reel'); flow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
-  st.phase = 'reel'; reel.play(match.best);
+  st.phase = 'reel'; reel.play(match.best, typeof style === 'string' ? style : prefs.edit);
 }
-press('#bestBtn', playBest); press('#reelSkip', () => reel.skip());
+press('#bestBtn', () => playBest()); press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
-seg('#segLvl', () => prefs.level, v => { prefs.level = +v; savePrefs(); paintHome(); });
+slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
 
 /* ================= input ================= */
