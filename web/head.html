@@ -4,7 +4,7 @@
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
    Two looks share the layout: "light" (white cards on pale grey, one blue) and "dark" (glass panels on near-black, one cyan). */
-:root{color-scheme:dark;--hud-h:60px}
+:root{color-scheme:light;--hud-h:60px}
 #app[data-theme="light"]{
   --bg:#eef0f3;--fg:#191f28;--fg2:#333d4b;--sub:#6b7684;
   --panel:#ffffff;--bd:transparent;--sh:0 1px 2px rgba(25,31,40,.06),0 6px 16px rgba(25,31,40,.08);
@@ -33,7 +33,7 @@
 }
 [hidden]{display:none!important}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-body{background:#101216;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
+body{background:#eef0f3;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -162,8 +162,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #power,#fine{position:absolute;touch-action:none;border-radius:var(--r-ctl);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);box-sizing:border-box}
 #power{left:10px;top:calc(var(--hud-h) + 12px);bottom:14px;width:48px;overflow:hidden}
 /* the power control is the chosen cue: drag it back along the track, let go to strike */
-#powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 0 7px var(--heat,transparent)) drop-shadow(0 2px 3px rgba(0,0,0,.4))}
-#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--heat,transparent)}
+#powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+#power::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--heat,transparent),transparent var(--reach,0%));pointer-events:none}
+#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px}
 [data-theme="light"] #powerNum{--chip-bg:#f2f4f6}
 #powerLab{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10.5px;color:var(--sub);z-index:1}
 #fine{right:10px;top:calc(var(--hud-h) + 12px);bottom:90px;width:48px;overflow:hidden;
@@ -184,6 +185,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #power,#fine,#spinBtn{transition:opacity .2s}
 
 .portrait #power{left:84px;right:10px;top:auto;bottom:14px;width:auto;height:46px}
+.portrait #power::before{background:linear-gradient(to left,var(--heat,transparent),transparent var(--reach,0%))}
 .portrait #powerCue{left:0;top:50%;width:100%;height:15px;transform:translate(10px,-50%)}
 .portrait #powerNum{left:auto;right:5px;top:5px;bottom:5px;padding:0 12px 0 40px;display:grid;place-items:center}
 .portrait #powerLab{left:auto;right:42px;top:0;bottom:0;display:grid;place-items:center}
@@ -193,9 +195,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .portrait #fineLab{left:0;right:auto;top:0;bottom:0;padding:0 8px 0 12px;display:grid;place-items:center}
 .portrait #spinBtn{left:12px;right:auto;bottom:26px}
 .portrait #spinPop{left:10px;right:auto;bottom:112px}
-
-#skipBtn{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);height:40px;padding:0 18px;font-size:14px;opacity:.92}
-.portrait #skipBtn{bottom:124px}
 
 /* ---------- sheets ---------- */
 .scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
@@ -302,7 +301,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
-<div id="app" class="busy" data-theme="dark">
+<div id="app" class="busy" data-theme="light">
   <canvas id="gl"></canvas>
 
   <section id="home">
@@ -349,7 +348,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>
-  <button class="btn" id="skipBtn" hidden>건너뛰기</button>
   <div id="fps" hidden></div>
 
   <div id="power" aria-label="샷 세기" hidden>

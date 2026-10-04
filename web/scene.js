@@ -136,17 +136,16 @@ function createScene(canvas, app, PH) {
       diffuseColor *= texelColor;`);
   };
   const metalMat = new THREE.MeshStandardMaterial({ color: col(0x9c8a66), roughness: 0.3, metalness: 1, envMapIntensity: 1.3 });   // brushed brass, not paint-yellow
-  // Soft darkening where the cloth runs under each cushion. It is drawn cushion by cushion and stops at their ends,
-  // so the cloth leading into a pocket stays as bright as the rest and does not look cut off from the table.
+  // Soft darkening of the cloth next to the cushions: light from above is partly blocked there.
+  // It is one faint line traced along every cushion, round its angled ends and on into the pocket throat, then blurred;
+  // nothing is drawn across a pocket opening, so the shade thins out towards a pocket instead of stopping in a block.
+  // Returns the material and the size of the cloth it covers (the play area plus the throats).
   function cushionShade(P) {
-    const W = 1024, H = Math.round(1024 * P.HW / P.HL), c = mkCanvas(W, H), g = c.getContext('2d'), k = W / (2 * P.HL);
-    g.filter = `blur(${Math.round(0.03 * k)}px)`; g.strokeStyle = 'rgba(0,0,0,0.54)'; g.lineWidth = 0.1 * k; g.lineCap = 'butt';
-    for (const cu of P.CUSHIONS) {
-      // pull the ends in a little so the fade is finished before the jaw starts
-      const dx = cu.b[0] - cu.a[0], dy = cu.b[1] - cu.a[1], l = Math.hypot(dx, dy), e = P.POCKETED ? Math.min(0.018, l * 0.2) : 0, ux = dx / l, uy = dy / l;
-      g.beginPath(); g.moveTo((cu.a[0] + ux * e + P.HL) * k, (P.HW - cu.a[1] - uy * e) * k); g.lineTo((cu.b[0] - ux * e + P.HL) * k, (P.HW - cu.b[1] + uy * e) * k); g.stroke();
-    }
-    return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false });
+    const mx = P.HL + 0.1, my = P.HW + 0.1, W = 1024, k = W / (2 * mx), H = Math.round(2 * my * k), c = mkCanvas(W, H), g = c.getContext('2d');
+    g.filter = `blur(${Math.max(2, Math.round(0.02 * k))}px)`; g.strokeStyle = 'rgba(0,0,0,0.3)'; g.lineWidth = 0.06 * k; g.lineCap = 'round'; g.lineJoin = 'round';
+    const X = x => (x + mx) * k, Y = y => (my - y) * k;
+    for (const cu of P.CUSHIONS) { g.beginPath(); g.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g.lineTo(X(cu.a[0]), Y(cu.a[1])); g.lineTo(X(cu.b[0]), Y(cu.b[1])); g.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g.stroke(); }
+    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), w: 2 * mx, h: 2 * my };
   }
 
   const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
@@ -161,7 +160,7 @@ function createScene(canvas, app, PH) {
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
     const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
-    const ao = new THREE.Mesh(new THREE.PlaneGeometry(HL * 2, HW * 2), cushionShade(P)); ao.position.z = 0.0007; grp.add(ao);
+    const shade = cushionShade(P), ao = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.mat); ao.position.z = 0.0007; grp.add(ao);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);
@@ -327,7 +326,8 @@ function createScene(canvas, app, PH) {
       const c = mkCanvas(128, 256), g = c.getContext('2d');
       g.fillStyle = '#' + d.fore.toString(16).padStart(6, '0'); g.fillRect(0, 0, 128, 256);
       g.fillStyle = '#' + d.points.toString(16).padStart(6, '0');
-      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 256); g.lineTo(k * 32 + 28, 256); g.lineTo(k * 32 + 16, 36); g.fill(); }
+      // points start wide at the wrap and run to a sharp end near the joint (the top of this picture is the butt end)
+      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 0); g.lineTo(k * 32 + 28, 0); g.lineTo(k * 32 + 16, 220); g.fill(); }
       fore = new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.36, metalness: 0, envMapIntensity: 0.5 });
     }
     part(0.756, 1.03, 0.0106, 0.0122, fore);

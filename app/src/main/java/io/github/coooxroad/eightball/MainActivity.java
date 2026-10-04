@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
-        web.setBackgroundColor(Color.rgb(6, 8, 11));
+        web.setBackgroundColor(Color.rgb(238, 240, 243));
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.setVerticalScrollBarEnabled(false);
         web.setHorizontalScrollBarEnabled(false);

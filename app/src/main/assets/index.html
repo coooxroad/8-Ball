@@ -20,7 +20,7 @@ body{margin:0}
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
    Two looks share the layout: "light" (white cards on pale grey, one blue) and "dark" (glass panels on near-black, one cyan). */
-:root{color-scheme:dark;--hud-h:60px}
+:root{color-scheme:light;--hud-h:60px}
 #app[data-theme="light"]{
   --bg:#eef0f3;--fg:#191f28;--fg2:#333d4b;--sub:#6b7684;
   --panel:#ffffff;--bd:transparent;--sh:0 1px 2px rgba(25,31,40,.06),0 6px 16px rgba(25,31,40,.08);
@@ -49,7 +49,7 @@ body{margin:0}
 }
 [hidden]{display:none!important}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-body{background:#101216;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
+body{background:#eef0f3;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -178,8 +178,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #power,#fine{position:absolute;touch-action:none;border-radius:var(--r-ctl);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);box-sizing:border-box}
 #power{left:10px;top:calc(var(--hud-h) + 12px);bottom:14px;width:48px;overflow:hidden}
 /* the power control is the chosen cue: drag it back along the track, let go to strike */
-#powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 0 7px var(--heat,transparent)) drop-shadow(0 2px 3px rgba(0,0,0,.4))}
-#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--heat,transparent)}
+#powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+#power::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--heat,transparent),transparent var(--reach,0%));pointer-events:none}
+#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px}
 [data-theme="light"] #powerNum{--chip-bg:#f2f4f6}
 #powerLab{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10.5px;color:var(--sub);z-index:1}
 #fine{right:10px;top:calc(var(--hud-h) + 12px);bottom:90px;width:48px;overflow:hidden;
@@ -200,6 +201,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #power,#fine,#spinBtn{transition:opacity .2s}
 
 .portrait #power{left:84px;right:10px;top:auto;bottom:14px;width:auto;height:46px}
+.portrait #power::before{background:linear-gradient(to left,var(--heat,transparent),transparent var(--reach,0%))}
 .portrait #powerCue{left:0;top:50%;width:100%;height:15px;transform:translate(10px,-50%)}
 .portrait #powerNum{left:auto;right:5px;top:5px;bottom:5px;padding:0 12px 0 40px;display:grid;place-items:center}
 .portrait #powerLab{left:auto;right:42px;top:0;bottom:0;display:grid;place-items:center}
@@ -209,9 +211,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .portrait #fineLab{left:0;right:auto;top:0;bottom:0;padding:0 8px 0 12px;display:grid;place-items:center}
 .portrait #spinBtn{left:12px;right:auto;bottom:26px}
 .portrait #spinPop{left:10px;right:auto;bottom:112px}
-
-#skipBtn{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);height:40px;padding:0 18px;font-size:14px;opacity:.92}
-.portrait #skipBtn{bottom:124px}
 
 /* ---------- sheets ---------- */
 .scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
@@ -318,7 +317,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
-<div id="app" class="busy" data-theme="dark">
+<div id="app" class="busy" data-theme="light">
   <canvas id="gl"></canvas>
 
   <section id="home">
@@ -365,7 +364,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>
-  <button class="btn" id="skipBtn" hidden>건너뛰기</button>
   <div id="fps" hidden></div>
 
   <div id="power" aria-label="샷 세기" hidden>
@@ -1461,17 +1459,16 @@ function createScene(canvas, app, PH) {
       diffuseColor *= texelColor;`);
   };
   const metalMat = new THREE.MeshStandardMaterial({ color: col(0x9c8a66), roughness: 0.3, metalness: 1, envMapIntensity: 1.3 });   // brushed brass, not paint-yellow
-  // Soft darkening where the cloth runs under each cushion. It is drawn cushion by cushion and stops at their ends,
-  // so the cloth leading into a pocket stays as bright as the rest and does not look cut off from the table.
+  // Soft darkening of the cloth next to the cushions: light from above is partly blocked there.
+  // It is one faint line traced along every cushion, round its angled ends and on into the pocket throat, then blurred;
+  // nothing is drawn across a pocket opening, so the shade thins out towards a pocket instead of stopping in a block.
+  // Returns the material and the size of the cloth it covers (the play area plus the throats).
   function cushionShade(P) {
-    const W = 1024, H = Math.round(1024 * P.HW / P.HL), c = mkCanvas(W, H), g = c.getContext('2d'), k = W / (2 * P.HL);
-    g.filter = `blur(${Math.round(0.03 * k)}px)`; g.strokeStyle = 'rgba(0,0,0,0.54)'; g.lineWidth = 0.1 * k; g.lineCap = 'butt';
-    for (const cu of P.CUSHIONS) {
-      // pull the ends in a little so the fade is finished before the jaw starts
-      const dx = cu.b[0] - cu.a[0], dy = cu.b[1] - cu.a[1], l = Math.hypot(dx, dy), e = P.POCKETED ? Math.min(0.018, l * 0.2) : 0, ux = dx / l, uy = dy / l;
-      g.beginPath(); g.moveTo((cu.a[0] + ux * e + P.HL) * k, (P.HW - cu.a[1] - uy * e) * k); g.lineTo((cu.b[0] - ux * e + P.HL) * k, (P.HW - cu.b[1] + uy * e) * k); g.stroke();
-    }
-    return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false });
+    const mx = P.HL + 0.1, my = P.HW + 0.1, W = 1024, k = W / (2 * mx), H = Math.round(2 * my * k), c = mkCanvas(W, H), g = c.getContext('2d');
+    g.filter = `blur(${Math.max(2, Math.round(0.02 * k))}px)`; g.strokeStyle = 'rgba(0,0,0,0.3)'; g.lineWidth = 0.06 * k; g.lineCap = 'round'; g.lineJoin = 'round';
+    const X = x => (x + mx) * k, Y = y => (my - y) * k;
+    for (const cu of P.CUSHIONS) { g.beginPath(); g.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g.lineTo(X(cu.a[0]), Y(cu.a[1])); g.lineTo(X(cu.b[0]), Y(cu.b[1])); g.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g.stroke(); }
+    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), w: 2 * mx, h: 2 * my };
   }
 
   const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
@@ -1486,7 +1483,7 @@ function createScene(canvas, app, PH) {
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
     const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
-    const ao = new THREE.Mesh(new THREE.PlaneGeometry(HL * 2, HW * 2), cushionShade(P)); ao.position.z = 0.0007; grp.add(ao);
+    const shade = cushionShade(P), ao = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.mat); ao.position.z = 0.0007; grp.add(ao);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);
@@ -1652,7 +1649,8 @@ function createScene(canvas, app, PH) {
       const c = mkCanvas(128, 256), g = c.getContext('2d');
       g.fillStyle = '#' + d.fore.toString(16).padStart(6, '0'); g.fillRect(0, 0, 128, 256);
       g.fillStyle = '#' + d.points.toString(16).padStart(6, '0');
-      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 256); g.lineTo(k * 32 + 28, 256); g.lineTo(k * 32 + 16, 36); g.fill(); }
+      // points start wide at the wrap and run to a sharp end near the joint (the top of this picture is the butt end)
+      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 0); g.lineTo(k * 32 + 28, 0); g.lineTo(k * 32 + 16, 220); g.fill(); }
       fore = new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.36, metalness: 0, envMapIntensity: 0.5 });
     }
     part(0.756, 1.03, 0.0106, 0.0122, fore);
@@ -2070,7 +2068,7 @@ const TABLES = [
 ];
 const prefs = (() => {
   const saved = store.get('prefs', {});
-  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0,
+  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -2099,7 +2097,7 @@ const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 /* What is on screen and where the current shot is.
    screen: home | play | result | league
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { simT: 0, screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -2207,8 +2205,11 @@ function setPowerUI(p) {
   $('#powerNum').textContent = Math.round(p * 100);
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
-  // the harder the pull, the warmer the glow: calm blue-green, through yellow, to red
-  tr.style.setProperty('--heat', `hsl(${Math.round(190 - 190 * Math.min(1, p * 1.05))} 90% ${p < 0.02 ? 0 : 58}% / ${(0.25 + 0.75 * p).toFixed(2)})`);
+  // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
+  // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
+  const q = Math.min(1, p), hue = 185 - 185 * Math.pow(q, 0.85);
+  tr.style.setProperty('--heat', `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(52 - 4 * q)}% / ${(q < 0.02 ? 0 : 0.35 + 0.6 * q).toFixed(2)})`);
+  tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
@@ -2615,7 +2616,7 @@ seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
 press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
-press('#menuBtn', sheetPause); press('#skipBtn', skipShot);
+press('#menuBtn', sheetPause);
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
@@ -2749,7 +2750,7 @@ function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
-  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12); st.simT += dt;
+  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12);
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
@@ -2757,15 +2758,6 @@ function stepSim(dt) {
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
   return alpha;
 }
-// Skip: work the shot out to the end at once and show where everything stopped.
-function skipShot() {
-  if (st.phase !== 'sim') return;
-  const w = game.world, P = game.P;
-  for (let n = 0; n < 7200 && !P.rest(w); n++) P.step(w, TICK);
-  for (const b of w.balls) { b.px = b.x; b.py = b.y; }
-  w.snd.length = 0; scene.clearFalls(); SND.rolling(0); endShot();
-}
-let skipShown = false;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
@@ -2776,7 +2768,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.simT = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
@@ -2788,8 +2780,6 @@ function frame(now) {
     legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
-  const skip = st.screen === 'play' && st.phase === 'sim' && st.simT > 0.7;
-  if (skip !== skipShown) { skipShown = skip; $('#skipBtn').hidden = !skip; }
   if (paused && st.phase === 'sim') SND.rolling(0);
   if (prefs.fps) {
     fpsN++; fpsT += dt;

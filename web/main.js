@@ -26,7 +26,7 @@ const TABLES = [
 ];
 const prefs = (() => {
   const saved = store.get('prefs', {});
-  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'dark', cloth: 0, cue: 0,
+  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -55,7 +55,7 @@ const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 /* What is on screen and where the current shot is.
    screen: home | play | result | league
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { simT: 0, screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -163,8 +163,11 @@ function setPowerUI(p) {
   $('#powerNum').textContent = Math.round(p * 100);
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
-  // the harder the pull, the warmer the glow: calm blue-green, through yellow, to red
-  tr.style.setProperty('--heat', `hsl(${Math.round(190 - 190 * Math.min(1, p * 1.05))} 90% ${p < 0.02 ? 0 : 58}% / ${(0.25 + 0.75 * p).toFixed(2)})`);
+  // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
+  // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
+  const q = Math.min(1, p), hue = 185 - 185 * Math.pow(q, 0.85);
+  tr.style.setProperty('--heat', `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(52 - 4 * q)}% / ${(q < 0.02 ? 0 : 0.35 + 0.6 * q).toFixed(2)})`);
+  tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
@@ -571,7 +574,7 @@ seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
 press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
-press('#menuBtn', sheetPause); press('#skipBtn', skipShot);
+press('#menuBtn', sheetPause);
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
@@ -705,7 +708,7 @@ function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
-  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12); st.simT += dt;
+  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12);
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
@@ -713,15 +716,6 @@ function stepSim(dt) {
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
   return alpha;
 }
-// Skip: work the shot out to the end at once and show where everything stopped.
-function skipShot() {
-  if (st.phase !== 'sim') return;
-  const w = game.world, P = game.P;
-  for (let n = 0; n < 7200 && !P.rest(w); n++) P.step(w, TICK);
-  for (const b of w.balls) { b.px = b.x; b.py = b.y; }
-  w.snd.length = 0; scene.clearFalls(); SND.rolling(0); endShot();
-}
-let skipShown = false;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
@@ -732,7 +726,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.simT = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
@@ -744,8 +738,6 @@ function frame(now) {
     legalIds: st.screen === 'play' ? game.legal() : [], hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
-  const skip = st.screen === 'play' && st.phase === 'sim' && st.simT > 0.7;
-  if (skip !== skipShown) { skipShown = skip; $('#skipBtn').hidden = !skip; }
   if (paused && st.phase === 'sim') SND.rolling(0);
   if (prefs.fps) {
     fpsN++; fpsT += dt;
