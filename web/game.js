@@ -257,13 +257,16 @@ function createGame(PH) {
         } }
       return 0;
     };
-    const tryShot = (angle, V, pos, flair) => {
+    // a, b: where on the cue ball it is struck (side, and above or below centre). Two balls down in one shot is worth
+    // more to it than anything except winning; a shot played with spin is worth a little more than the same shot without.
+    const tryShot = (angle, V, pos, flair, a, b) => {
       sims++; const w2 = P.clone(w);
       if (pos) { const c2 = w2.balls[w2.cue]; c2.x = c2.px = pos[0]; c2.y = c2.py = pos[1]; }
-      P.strike(w2, angle, V, 0, 0);
+      P.strike(w2, angle, V, a || 0, b || 0);
       const r = g.mode.evaluate(P.run(w2, 20), ctx, g); if (!good(r)) return false;
-      const pots = w2.ev.pocketed.length;
-      found.push({ pos: pos || null, angle, V, flair, score: (r.win === me ? 100 : 0) + flair + 1.5 * (pots - 1) + 6 * leaveOf(w2) + Math.random() * 0.8 });
+      // only its own balls count toward "two at once"; knocking the other player's in for them counts against the shot
+      const down = w2.ev.pocketed.filter(q => q.id !== w2.cue), pots = g.modeId === 'nine' ? down.length : down.filter(q => targets.includes(q.id)).length, gift = down.length - pots;
+      found.push({ pos: pos || null, angle, V, a: a || 0, b: b || 0, flair, pots, score: (r.win === me ? 100 : 0) + flair + 7 * Math.max(0, pots - 1) - 3 * gift + (a || b ? 1.5 : 0) + 6 * leaveOf(w2) + Math.random() * 0.8 });
       return true;
     };
     // plain pots, easiest first
@@ -329,6 +332,23 @@ function createGame(PH) {
         if (ok) shown++;
       }
     }
+    if (!g.placing) {
+      // where its balls sit in a bunch, hit into them hard: sometimes two go down at once, and it will take that if it sees it
+      let bunches = 0;
+      for (const t of targets) {
+        if (sims > 900 || bunches >= 3) break;
+        const T = w.balls[t]; if (!w.balls.some(o => o.on && o.id !== t && o.id !== w.cue && Math.hypot(o.x - T.x, o.y - T.y) < 0.3)) continue;
+        bunches++;
+        const dd = Math.hypot(T.x - c.x, T.y - c.y), base = Math.atan2(T.y - c.y, T.x - c.x), half = Math.asin(Math.min(1, 2 * R / Math.max(dd, 2 * R))) * 0.9;
+        for (let i = 0; i <= 14; i++) { const f = (i % 2 ? 1 : -1) * Math.ceil(i / 2) / 7; for (const V of [5.4, 6.4]) tryShot(base + f * half, V, null, 1.5); }
+      }
+      // the best few so far, again with spin: side to either hand, follow, draw, and draw with side
+      found.sort((p, q) => q.score - p.score);
+      for (const k of found.slice(0, 5)) {
+        if (sims > 1150) break;
+        for (const [a, b] of [[0.3, 0], [-0.3, 0], [0, 0.32], [0, -0.32], [0.22, -0.24], [-0.22, -0.24]]) for (const da of [0, 0.003, -0.003]) if (tryShot(k.angle + da, k.V, k.pos, k.flair, a, b)) break;
+      }
+    }
     if (!found.length) {
       // nothing obvious: sweep finely across every ball it may hit (from a few places, with the ball in hand), then round the whole clock
       const spots = g.placing ? [[-HL / 2, 0], [0, 0], [HL / 2, 0], [0, HW / 2], [0, -HW / 2]].map(q => P.isFree(w, q[0], q[1], 0) ? q : P.findFree(w, q[0], q[1], 0)) : [null];
@@ -352,7 +372,7 @@ function createGame(PH) {
     }
     if (!found.length) return null;
     found.sort((a, b) => b.score - a.score);
-    return { pos: found[0].pos, angle: found[0].angle, V: found[0].V, flair: found[0].flair };
+    return { pos: found[0].pos, angle: found[0].angle, V: found[0].V, a: found[0].a, b: found[0].b, flair: found[0].flair, pots: found[0].pots };
   }
 
   function aiPool() {
@@ -436,11 +456,12 @@ function createGame(PH) {
     if (lvl >= 3) {
       const all = []; for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) all.push([phase + i * 2 * Math.PI / nA, Vs[vi]]);
       for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)), x = all[i]; all[i] = all[j]; all[j] = x; }
-      let fancy = 0;
+      let fancy = 0; const SPINS = [[0, 0], [0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3], [0.22, 0.22], [-0.22, 0.22]];
       for (let i = 0; i < all.length && fancy < 2 && !(i > 400 && flair.length); i++) {
-        const w2 = g.P.clone(w); g.P.strike(w2, all[i][0], all[i][1], 0, 0);
+        // two shots in three are tried with spin: side to either hand, follow or draw
+        const sp = SPINS[i % 3 ? 1 + Math.floor(Math.random() * (SPINS.length - 1)) : 0], w2 = g.P.clone(w); g.P.strike(w2, all[i][0], all[i][1], sp[0], sp[1]);
         const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g), railed = w2.ev.railed.includes(w2.cue);
-        if (r.pts > 0) { flair.push({ angle: all[i][0], V: all[i][1], s: (railed ? 3 : 0) + Math.random() }); if (railed) fancy++; }
+        if (r.pts > 0) { const showy = railed && (sp[0] || sp[1]); flair.push({ angle: all[i][0], V: all[i][1], a: sp[0], b: sp[1], s: (railed ? 3 : 0) + (sp[0] || sp[1] ? 1.5 : 0) + Math.min(3, w2.ev.cushions) * 0.6 + Math.random() }); if (showy) fancy++; }
       }
       // nothing yet: look again between the angles already tried, at other speeds
       if (!flair.length) again: for (const V of need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
@@ -452,7 +473,7 @@ function createGame(PH) {
       if (r.pts > 0) hit[vi][i] = true; else if (!r.foul) okay.push({ angle: a, V: Vs[vi] });
     }
     // the top level takes a shot it has seen score, exactly as it saw it - by way of the cushions when it can
-    if (flair.length) { flair.sort((p, q) => q.s - p.s); return { pos: null, angle: flair[0].angle, V: flair[0].V }; }
+    if (flair.length) { flair.sort((p, q) => q.s - p.s); return { pos: null, angle: flair[0].angle, V: flair[0].V, a: flair[0].a || 0, b: flair[0].b || 0 }; }
     let best = null, bs = -1;
     for (let vi = 0; vi < Vs.length; vi++) for (let i = 0; i < nA; i++) if (hit[vi][i]) {
       let run = 1; for (let k = 1; k < 6 && hit[vi][(i + k) % nA] && hit[vi][(i - k + nA) % nA]; k++) run += 2;

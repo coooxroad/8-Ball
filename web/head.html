@@ -223,7 +223,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    The element itself is drawn as a thick black stroke; an exact copy of the text sits on top in the fill colour. */
 #toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);width:max-content;max-width:min(90%,680px);
   font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;text-align:center;
-  color:#15171c;-webkit-text-stroke:7px #15171c;--fill:#fff;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1)}
+  color:#15171c;-webkit-text-stroke:6px #15171c;--fill:#fff;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1)}
 #toast::after{content:attr(data-t);position:absolute;inset:0;color:var(--fill);-webkit-text-stroke:0}
 #toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
 #toast.foul{--fill:#ff6259}

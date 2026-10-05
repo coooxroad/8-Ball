@@ -35,20 +35,21 @@ for (const name in TABLES) {
 {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
   for (const mode of ['eight', 'nine', 'four', 'three']) {
-    const N = 10; let worst = 0, shots = 0, missed = 0, turns = 0, sum = 0;
+    const N = 10; let worst = 0, shots = 0, missed = 0, turns = 0, sum = 0, spun = 0, multi = 0;
     for (let i = 0; i < N; i++) {
       g.start(mode, ['A', 'B'], true, { level: 3, target: mode === 'three' ? 5 : 10, rnd, cushions: 3 }); g.players[0].ai = true;
       let n = 0;
       while (!g.over && n < 400) {
         const who = g.turn, wasBreak = g.isBreak, t0 = Date.now(), pl = g.aiPlan(), ms = Date.now() - t0; worst = Math.max(worst, ms); sum += ms;
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         if (!wasBreak) { turns++; if (!g.over && g.turn !== who) missed++; else if (g.over && g.over.winner !== who) missed++; }
+        if (!wasBreak) { if (pl.a || pl.b) spun++; if (pl.pots > 1) multi++; }
       }
       if (!g.over) fail(`top level, ${mode}: game did not finish in 400 shots`);
       shots += n;
     }
-    console.log(`top level, ${mode}: gave the table away ${missed} times in ${turns} shots, ${Math.round(shots / N)} shots a game, plans ${Math.round(sum / Math.max(1, shots))} ms on average, ${worst} ms at worst`);
+    console.log(`top level, ${mode}: gave the table away ${missed} times in ${turns} shots, ${Math.round(shots / N)} shots a game, plans ${Math.round(sum / Math.max(1, shots))} ms on average, ${worst} ms at worst; ${spun} with spin, ${multi} potting two or more`);
     if (missed > turns * 0.1) fail(`top level, ${mode}: gave the table away ${missed} times in ${turns} shots`);
   }
 }
@@ -63,7 +64,7 @@ for (const name of ['bar', 'pro', 'pub']) {
       while (!g.over && n < 400) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`${name} ${mode}: ball position is not a number`); n = 999; break; }
       }
       if (!g.over) fail(`${name} ${mode}: game did not finish in 400 shots`);
@@ -86,8 +87,8 @@ for (const name of ['bar', 'pro', 'pub']) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
         g.beginShot();
-        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: 0, b: 0, turn: g.turn, isBreak: g.isBreak };
-        g.P.strike(g.world, pl.angle, pl.V, 0, 0); g.P.run(g.world, 40); g.world.snd.length = 0;
+        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: pl.a || 0, b: pl.b || 0, turn: g.turn, isBreak: g.isBreak };
+        g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0); g.P.run(g.world, 40); g.world.snd.length = 0;
         const ev = g.world.ev, end = g.world.balls.map(b => [b.x, b.y, b.on]), out = g.resolve(); n++;
         try {
           const good = H.rate(g.P, g.mode, shot, ev, out.r), bad = H.rateWorst(g.P, g.mode, shot, ev, out.r);
