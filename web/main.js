@@ -170,7 +170,7 @@ function layout() {
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   if (st.screen === 'play') paintPowerCue();
@@ -303,7 +303,7 @@ function check() {
 }
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'three', 'four', 'practice']) {
+  for (const id of ['eight', 'nine', 'three', 'four']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
@@ -313,7 +313,9 @@ function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() {
   const prac = prefs.mode === 'practice';
-  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#rightLab').textContent = prac ? '연습 고르기' : '대결';
+  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
+  $('#modeBlurb').textContent = prac ? '' : game.MODES[prefs.mode].blurb;
+  for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === (prac ? 'practice' : 'play')));
   if (prac) {
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
     for (const d of drills.list) box.appendChild(optBtn(prefs.drill === d.id,
@@ -404,12 +406,6 @@ function paintBadge(name, b) {
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
-// A mark for a shot, as in a chess review: !! and ! for the good ones, ?? for a blunder. It pops up where the cue ball was.
-const MARKS = { brill: ['!!', '기막힌 샷'], great: ['!', '좋은 샷'], blunder: ['??', '대실수'] };
-function showMark(kind, at) {
-  const p = scene.toScreen(at[0], at[1], game.P.R), n = el('div', { class: 'mk ' + kind, style: `left:${p.x}px;top:${p.y}px` }, [el('b', { text: MARKS[kind][0] }), el('span', { text: MARKS[kind][1] })]);
-  app.appendChild(n); setTimeout(() => n.remove(), 2100);
-}
 // A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.
 function drawShot(cv, shot) {
   const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
@@ -435,13 +431,13 @@ function drawShot(cv, shot) {
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
-  pending: null, best: null, worst: null, tally: [{}, {}],                              // the shot in progress, and the best one of the match so far
+  pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.tally = [{}, {}];
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -453,13 +449,13 @@ const match = {
     const shot = match.pending, ev = game.world.ev, out = game.resolve();
     if (shot) {
       const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
-      if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r);
-      if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad);
-      // what kind of shot it was goes on that player's sheet; the ones worth a mark get one on the table, as in a chess review
-      const t = match.tally[shot.turn] || (match.tally[shot.turn] = {}), add = k => { t[k] = (t[k] || 0) + 1; };
-      if (r.score > 0) for (const k in r.kinds || {}) if (r.kinds[k]) add(k);
-      const mark = r.score >= 34 ? 'brill' : r.score >= 24 ? 'great' : bad.score >= 26 ? 'blunder' : bad.score > 0 ? 'miss' : null;
-      if (mark) { add(mark); if (mark !== 'miss' && !game.over) showMark(mark, shot.snap.balls[shot.snap.cue]); }
+      const n = ++match.count;
+      if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r, { n, good: true });
+      if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad, { n, good: false });
+      // shots worth a second look are kept for the highlights at the end (a few of each, the strongest)
+      const keep = (x, good) => { match.shots.push(Object.assign({}, shot, x, { n, good })); const same = match.shots.filter(q => q.good === good).sort((p, q) => q.score - p.score); if (same.length > 3) match.shots.splice(match.shots.indexOf(same[3]), 1); };
+      if (r.score >= 20) keep(r, true);
+      if (bad.score >= 20) keep(bad, false);
     }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
@@ -481,38 +477,41 @@ const match = {
     // ratings move: more for beating a stronger player
     const ew = pw.ai ? AI_ELO[game.level] : rw.elo, el0 = pl.ai ? AI_ELO[game.level] : rl.elo, gain = Math.max(1, Math.round(32 * (1 - 1 / (1 + Math.pow(10, (el0 - ew) / 400)))));
     if (!pw.ai) rw.elo += gain; if (!pl.ai) rl.elo = Math.max(100, rl.elo - gain); store.set('rec', rec);
-    const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
-    win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
-    win.querySelector('.rc').textContent = (pw.ai ? `레이팅 ${ew}` : `레이팅 ${rw.elo} (+${gain})`) + ` · ${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
-    $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name; $('#rLose .rc').textContent = pl.ai ? `레이팅 ${el0}` : `레이팅 ${rl.elo} (−${gain})`;
-    const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
-    // The match sheet: winner on the left, loser on the right, a bar each way showing the share. The usual numbers first,
-    // then a count of each kind of shot that came up (rows nobody scored in are left out).
-    const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%', tw = match.tally[w] || {}, tl = match.tally[l] || {}, n = (t, k) => t[k] || 0;
-    const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], [game.mode.target ? '점수' : '친 횟수', game.mode.target ? pw.score : pw.shots, game.mode.target ? pl.score : pl.shots], ['파울', pw.fouls, pl.fouls]];
-    for (const [k, label] of [['brill', '기막힌 샷 !!'], ['great', '좋은 샷 !'], ['bank', '뱅크 샷'], ['rail', '쿠션 득점'], ['combo', '콤비네이션'], ['long', '장거리 샷'], ['thin', '얇은 컷'], ['multi', '한 번에 여러 개'], ['miss', '아쉬운 샷 ?'], ['blunder', '대실수 ??']])
-      if (n(tw, k) || n(tl, k)) rows.push([label, n(tw, k), n(tl, k), k]);
+    // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
+    $('#rTitle').textContent = pw.name + ' 승리';
+    for (let i = 0; i < 2; i++) {
+      const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
+      box.classList.toggle('won', won);
+      box.querySelector('.nm').textContent = p.name;
+      box.querySelector('.rc').textContent = (p.ai ? `레이팅 ${AI_ELO[game.level]}` : `레이팅 ${r.elo} (${won ? '+' : '−'}${gain})`) + ` · ${r.w}승 ${r.l}패`;
+    }
+    const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { text: series.s[0] }), ' : ', el(w === 1 ? 'b' : 'span', { text: series.s[1] }));
+    const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
+    const rows = [['샷 성공률', pct(P0), pct(P1)], ['연속 성공', P0.best, P1.best], [game.mode.target ? '점수' : '친 횟수', game.mode.target ? P0.score : P0.shots, game.mode.target ? P1.score : P1.shots], ['파울', P0.fouls, P1.fouls]];
     const box = $('#rStats'); box.textContent = '';
-    box.appendChild(el('div', { class: 'shead' }, [el('b', { text: pw.name }), el('span', { text: '경기 기록' }), el('b', { text: pl.name })]));
-    for (const [k, a, b, kind] of rows) {
+    for (const [k, a, b] of rows) {
       const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
-      box.appendChild(el('div', { class: 'srow' + (kind ? ' k-' + kind : '') }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
         el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
     }
-    // the two shots worth watching again sit on the same sheet, each with a small drawing of what happened
-    const tiles = el('div', { class: 'shots' });
-    for (const [shot, cls, label, play] of [[match.best, 'best', 'BEST SHOT', () => playBest()], [match.worst, 'worst', 'WORST SHOT', () => playWorst()]]) {
-      if (!shot) continue;
-      const cv = el('canvas', { class: 'pic' });
-      tiles.appendChild(el('button', { class: 'shot ' + cls, onclick: () => { SND.init(); SND.tap(); play(); } }, [cv,
-        el('span', { class: 'tx' }, [el('span', { class: 'k', text: label }), el('b', { text: shot.who }), el('span', { class: 'tg', text: shot.tag })]), el('span', { class: 'go', text: '▶' })]));
-      shot._pic = cv;
+    // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
+    // Exactly one is the best shot and one the worst.
+    const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
+    if (match.best && !has(match.best)) list.push(match.best);
+    if (match.worst && !has(match.worst)) list.push(match.worst);
+    list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
+    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
+    const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
+    for (const q of list) {
+      const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
+      const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
+      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q); } }, [
+        el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
+        cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
-    if (tiles.children.length) box.appendChild(tiles);
     $('#rWhy').textContent = game.over.why;
-    document.querySelectorAll('.mk').forEach(n => n.remove());
     show('result'); SND.win();
-    for (const shot of [match.best, match.worst]) if (shot && shot._pic) drawShot(shot._pic, shot);
+    for (const [cv, q] of pics) drawShot(cv, q);
   },
 };
 
@@ -691,7 +690,18 @@ seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
+press('#lgBack', goHome);
+// the rail: play and practice change what the panel offers; league, records and settings open their own places
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('.nv'); if (!b) return; SND.init(); SND.tap();
+  const v = b.dataset.v;
+  if (v === 'set') return sheetSettings();
+  if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
+  if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
+  else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
+  else return;
+  savePrefs(); buildModes(); paintHome(); homePreview();
+});
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
 // look round in 3D and back: while it is on, dragging the table turns the view instead of aiming
@@ -707,18 +717,14 @@ press('#homeBtn', goHome);
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
 const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
-async function playBest(style) {
-  if (!match.best || st.screen === 'reel') return;
-  await SND.song.prepare();
-  if (st.screen !== 'result') return;
-  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.best, typeof style === 'string' ? style : prefs.edit);
+// one of the match's highlights, played as an edit: a good shot to the player's song, a bad one for laughs with no music
+async function playShot(shot, style) {
+  if (!shot || st.screen !== 'result') return;
+  if (!shot.kind) { await SND.song.prepare(); if (st.screen !== 'result') return; }
+  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(shot, typeof style === 'string' ? style : shot.kind ? undefined : prefs.edit);
 }
-// the worst shot of the match, played for laughs: no song
-function playWorst(style) {
-  if (!match.worst || st.screen !== 'result') return;
-  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.worst, style);
-}
- press('#reelSkip', () => reel.skip());
+const playBest = style => playShot(match.best, style), playWorst = style => playShot(match.worst, style);
+press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });

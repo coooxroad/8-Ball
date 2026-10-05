@@ -101,9 +101,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .two .av{background:var(--av2-bg);border-color:var(--av2-bd);color:var(--av2-fg)}
 
 /* ---------- home ---------- */
-#home{position:absolute;inset:0;display:grid;grid-template-columns:300px minmax(0,1fr) 300px;grid-template-rows:auto minmax(0,1fr);
-  gap:18px 26px;padding:24px 30px 26px;pointer-events:none}
-#home>*{pointer-events:auto}
+#home{position:absolute;inset:0;display:grid;grid-template-columns:96px minmax(0,1fr) 372px;grid-template-rows:minmax(0,1fr);pointer-events:none}
 .h-top{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
@@ -113,8 +111,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 [data-theme="light"] .logo .en{display:none}
 @media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
 .h-actions{margin-left:auto;display:flex;gap:8px}
-.h-left,.h-right{display:flex;flex-direction:column;gap:10px;min-height:0}
-#modeList{display:flex;flex-direction:column;gap:10px}
+/* the rail: logo, the places to go, settings at the foot */
+.h-nav{display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:18px 8px 14px;background:var(--panel);border-right:1px solid var(--hair);box-shadow:var(--sh)}
+.h-nav .logo{flex-direction:column;gap:6px;margin-bottom:14px}
+.h-nav .logo .word{font-size:15px;letter-spacing:.2em;margin-right:-.2em}
+.nv{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px 9px;border-radius:14px;color:var(--sub);font-size:12.5px;font-weight:600;transition:background .12s,color .12s}
+.nv svg{display:block}
+.nv[aria-pressed="true"]{background:rgba(47,107,255,.12);color:var(--acc)}
+.nv:active{background:var(--seg)}
+.nv.end{margin-top:auto}
+/* the panel on the right: what the chosen place offers, with its one big button at the bottom */
+.h-right{display:flex;flex-direction:column;gap:12px;min-height:0;margin:20px 22px 22px 0;padding:18px 18px 18px;overflow:auto}
+.h-title{font-size:22px;font-weight:var(--w-title);letter-spacing:-.01em}
+#modeList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#modeBlurb{text-align:center;margin-top:8px}
+#modeList .gcard{flex-direction:column;gap:7px;padding:12px 4px 10px;text-align:center;border-radius:14px;background:var(--seg);border-color:transparent;box-shadow:none}
+#modeList .gcard[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
+#modeList .gcard .nm{font-size:15px}
+#modeList .gcard .bl,#modeList .gcard .ck{display:none}
+.plist{background:var(--seg);border-radius:14px}
 .gcard{background:var(--panel);border:2px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-card);padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}
 [data-theme="light"] .gcard{border-color:var(--panel)}
 .gcard:active{transform:scale(.985)}
@@ -132,7 +147,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .three{position:relative;width:40px;height:40px}
 .three i{position:absolute;width:19px;height:19px;border-radius:50%;background:var(--c)}
 .three i:nth-child(1){left:10.5px;top:1px}.three i:nth-child(2){left:0;bottom:2px}.three i:nth-child(3){right:0;bottom:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-.h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0}
+.h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0;padding:0 16px 26px}
 .h-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .chip-sw{width:16px;height:16px;border-radius:5px;background:var(--c)}
 .plist{padding:4px 16px;display:flex;flex-direction:column}
@@ -155,11 +170,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .target{width:40px;height:40px;border-radius:50%;border:3px solid var(--acc);display:grid;place-items:center;box-sizing:border-box}
 .target i{width:14px;height:14px;border-radius:50%;background:var(--acc)}
 
-.compact #home{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:max-content max-content max-content;align-content:start;overflow:auto;pointer-events:auto;
-  background:var(--bg);gap:14px 16px;padding:14px 16px 20px}
-.compact .h-mid{grid-column:1/-1;order:3}
-.compact.portrait #home{grid-template-columns:minmax(0,1fr)}
-.compact #startBtn{margin-top:6px;position:sticky;bottom:10px;z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.22)}   /* always in reach, however long the options above it get */
+/* narrow screens: one column that scrolls, the rail turned into a bar along the bottom */
+.compact #home{display:flex;flex-direction:column;overflow:auto;pointer-events:auto;background:var(--bg)}
+.compact .h-right{order:1;margin:14px 14px 0;overflow:visible;flex:none}
+.compact .h-mid{order:2;padding:14px 14px 18px}
+.compact .h-nav{order:3;position:sticky;bottom:0;z-index:3;flex-direction:row;justify-content:space-around;padding:6px 6px 8px;border-right:0;border-top:1px solid var(--hair);margin-top:auto}
+.compact .h-nav .logo{display:none}
+.compact .nv{flex:1;padding:7px 2px 5px;font-size:11.5px}
+.compact .nv.end{margin-top:0}
+.compact #startBtn{margin-top:6px;position:sticky;bottom:74px;z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.22)}   /* always in reach, however long the options above it get */
+.compact #modeList{grid-template-columns:repeat(4,minmax(0,1fr))}
 
 /* ---------- in-game scoreboard ---------- */
 #hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
@@ -438,15 +458,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
 .r-title{margin-top:auto;font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
 .r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);flex-wrap:wrap}
-.r-win{display:flex;align-items:center;gap:16px;min-width:0}
-.r-win .av{width:64px;height:64px;font-size:28px;background:var(--on-av-bg);border-color:transparent;color:var(--on-av-fg)}
-[data-theme="light"] .r-win .av{background:var(--acc);color:#fff}
-.r-win .nm{font-size:clamp(30px,4.6vw,48px);font-weight:var(--w-title);line-height:1.05;letter-spacing:-.02em}
-.r-win .rc{font-size:15px;color:var(--sub);margin-top:4px}
-.r-score{font-family:var(--num);font-weight:var(--num-w);font-size:clamp(52px,8vw,88px);line-height:1;white-space:nowrap;color:var(--sub)}
+.r-p{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 0;color:var(--sub)}
+.r-p.two{justify-content:flex-end;text-align:right}
+.r-p .av{flex:none;width:52px;height:52px;font-size:23px}
+.r-p .nm{font-size:clamp(22px,3.4vw,36px);font-weight:var(--w-title);line-height:1.08;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-p .rc{font-size:14px;color:var(--sub);margin-top:4px}
+.r-p.won{color:var(--fg)}
+.r-p.won .av{background:var(--acc);border-color:transparent;color:#fff}
+.r-vs{width:100%;max-width:760px}
+.r-score{flex:none;font-family:var(--num);font-weight:var(--num-w);font-size:clamp(46px,7vw,80px);line-height:1;white-space:nowrap;color:var(--sub)}
 .r-score b{font-weight:inherit;color:var(--win)}
-.r-lose{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:20px}
-.r-lose .av{width:40px;height:40px}
 #rStats{width:100%;max-width:760px;padding:2px 22px}
 .srow{display:grid;grid-template-columns:64px minmax(0,1fr) 112px minmax(0,1fr) 64px;align-items:center;gap:12px;padding:6px 0}
 .srow+.srow{border-top:1px solid var(--hair)}
@@ -456,29 +477,29 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .srow .bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;display:flex}
 .srow .bar.l{justify-content:flex-end}
 .srow .bar i{display:block;height:100%;width:var(--w);border-radius:3px;background:var(--win)}
-.srow .bar.r i{background:var(--sub);opacity:.6}
-/* the match sheet: names across the top, the numbers, then the two shots to watch again */
-.shead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:12px 0 8px;border-bottom:1px solid var(--hair)}
-.shead b{font-size:16px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shead b:last-child{text-align:right;color:var(--sub)}
-.shead span{font-family:'Outfit','Gothic A1',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--sub)}
-.srow.k-brill .k{color:#0ca678;font-weight:700}.srow.k-great .k{color:#2f6bff;font-weight:700}.srow.k-miss .k{color:#e8890c;font-weight:700}.srow.k-blunder .k{color:#e5484d;font-weight:700}
-.shots{display:flex;gap:10px;padding:12px 0 14px;border-top:1px solid var(--hair);flex-wrap:wrap}
-.shot{flex:1 1 250px;min-width:0;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border-radius:14px;border:1px solid var(--bd);background:var(--seg);text-align:left;color:var(--fg)}
-.shot .pic{flex:none;width:96px;height:54px;border-radius:8px;display:block}
-.shot .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.shot .k{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;color:#b7791f}
-.shot.worst .k{color:#e5484d}
-.shot b{font-size:15.5px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shot .tg{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shot .go{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--win);color:#fff;font-size:13px;padding-left:2px}
-.shot.worst .go{background:#e5484d}
-.r-lose .rc{font-size:13px;margin-top:2px}
-/* a mark on the table for a shot worth one */
-.mk{position:absolute;z-index:6;pointer-events:none;display:flex;align-items:center;gap:7px;transform:translate(-50%,-150%);padding:5px 11px 5px 5px;border-radius:10px;background:var(--panel,#fff);box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;font-weight:700;color:var(--fg);white-space:nowrap;animation:mk 2.1s ease-out forwards}
-.mk b{display:grid;place-items:center;min-width:26px;height:26px;padding:0 5px;border-radius:7px;color:#fff;font:800 15px/1 'Outfit',sans-serif;background:#2f6bff}
-.mk.brill b{background:#0ca678}.mk.blunder b{background:#e5484d}
-@keyframes mk{0%{opacity:0;transform:translate(-50%,-110%) scale(.6)}10%{opacity:1;transform:translate(-50%,-150%) scale(1.08)}16%{transform:translate(-50%,-150%) scale(1)}82%{opacity:1}100%{opacity:0;transform:translate(-50%,-190%) scale(1)}}
+.srow .bar.r i{background:#e5484d;opacity:.85}
+/* highlights: one card per shot worth watching again, under the numbers */
+#rHlBox{width:100%;max-width:760px}
+.hl-lab{font-family:'Outfit','Gothic A1',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--sub);text-align:center;margin-bottom:8px}
+#rHl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.hcard{position:relative;display:flex;align-items:stretch;justify-content:space-between;gap:8px;min-height:104px;padding:12px 12px 12px 14px;border-radius:14px;background:#1b1e24;color:#fff;text-align:left;overflow:hidden;transition:transform .08s,filter .15s}
+.hcard:active{transform:scale(.98);filter:brightness(1.25)}
+.hcard .tx{display:flex;flex-direction:column;min-width:0;flex:1}
+.hcard .tag{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcard .when{font-family:var(--num);font-size:14px;color:rgba(255,255,255,.45);margin-top:1px}
+.hcard .who{margin-top:auto;display:flex;align-items:center;gap:7px;min-width:0}
+.hcard .who .av{flex:none;width:20px;height:20px;font-size:11px;border-radius:5px;background:#2f6bff;color:#fff;border:0}
+.hcard.two .who .av{background:#e5484d}
+.hcard .who b{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcard .pic{flex:none;align-self:center;width:96px;height:56px;border-radius:7px;display:block;opacity:.95}
+.hcard .go{position:absolute;right:46px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(18,200,110,.92);color:#fff;font-size:13px;padding-left:2px;opacity:0;transition:opacity .15s}
+.hcard:active .go,.hcard:hover .go{opacity:1}
+.hcard .rib{position:absolute;right:0;top:0;padding:3px 9px 3px 10px;border-bottom-left-radius:10px;font:800 10.5px/1.4 'Outfit',sans-serif;letter-spacing:.14em;background:#f2b705;color:#1b1e24}
+.hcard.best{box-shadow:inset 0 0 0 2px #f2b705}
+.hcard.worst{box-shadow:inset 0 0 0 2px #e5484d}
+.hcard.worst .rib{background:#e5484d;color:#fff}
+.hcard.bad .tag,.hcard.worst .tag{color:#ff8f8f}
+@media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
 .pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
 .dart{display:grid;place-items:center;width:40px;height:40px}
@@ -498,7 +519,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   #menuBtn,#viewBtn{width:40px;height:40px}
   #result{gap:10px;padding-block:14px}
   .srow{padding:7px 0}
-  .r-win .av{width:48px;height:48px;font-size:22px}
+  .r-p .av{width:40px;height:40px;font-size:18px}
 }
 @media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto}}
 @media (max-width:640px){
@@ -516,17 +537,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   <canvas id="gl"></canvas>
 
   <section id="home">
-    <header class="h-top">
+    <!-- the way round the app: a rail down the side on a wide screen, a bar along the bottom on a narrow one -->
+    <nav class="h-nav" id="nav">
       <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
-      <div class="h-actions">
-        <button class="btn" id="recBtn">리그</button>
-        <button class="btn icon" id="setBtn" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
-      </div>
-    </header>
-    <div class="h-left">
-      <div class="lab">게임</div>
-      <div id="modeList"></div>
-    </div>
+      <button class="nv" data-v="play"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><circle cx="16.5" cy="8.5" r="3.5"/><path d="M13.5 20.5 21 13"/></svg><span>대결</span></button>
+      <button class="nv" data-v="practice"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13 19 5M17 3.5l3.5 3.5"/></svg><span>연습</span></button>
+      <button class="nv" data-v="league"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 20h8"/></svg><span>리그</span></button>
+      <button class="nv" data-v="all"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
+      <button class="nv end" data-v="set"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
+    </nav>
     <div class="h-mid">
       <div class="h-chips">
         <button class="btn" id="tableBtn"><i class="chip-sw" id="clothSw"></i><span class="k">테이블</span><span class="v" id="tableVal"></span></button>
@@ -534,11 +553,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
         <button class="btn" id="guideBtn"><span class="k">조준선</span><span class="v" id="guideVal"></span></button>
       </div>
     </div>
-    <div class="h-right">
-      <div class="lab" id="rightLab">대결</div>
+    <div class="h-right panel">
+      <div class="h-title" id="rightLab">대결</div>
+      <div id="modeBox"><div id="modeList"></div><p class="note" id="modeBlurb"></p></div>
       <div id="pracList" hidden></div>
       <div id="vsBox">
-      <div class="panel plist">
+      <div class="plist">
         <button class="prow" id="pc0"><i class="av">1</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="prow two" id="pc1"><i class="av">2</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
@@ -606,13 +626,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </section>
 
   <section id="result" hidden>
-    <div class="r-title">WINNER</div>
+    <div class="r-title" id="rTitle"></div>
     <div class="r-vs">
-      <div class="r-win" id="rWin"><i class="av"></i><div><div class="nm"></div><div class="rc"></div></div></div>
+      <div class="r-p" id="rP0"><i class="av">1</i><div><div class="nm"></div><div class="rc"></div></div></div>
       <div class="r-score" id="rScore"></div>
-      <div class="r-lose" id="rLose"><i class="av"></i><div><span class="nm"></span><div class="rc"></div></div></div>
+      <div class="r-p two" id="rP1"><div><div class="nm"></div><div class="rc"></div></div><i class="av">2</i></div>
     </div>
     <div id="rStats" class="panel"></div>
+    <div id="rHlBox" hidden><div class="hl-lab">경기 하이라이트</div><div id="rHl"></div></div>
     <p id="rWhy"></p>
     <div class="r-btns"><button class="btn" id="homeBtn">처음으로</button><button class="btn cta" id="againBtn">한 판 더</button></div>
   </section>
@@ -1725,7 +1746,7 @@ function createHighlights() {
       return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
     }
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
-    if (first == null) return { score: 50, tag: '아무것도 못 맞힘', kind: 'air', ball: cueId, near: -1 };
+    if (first == null) return { score: 50, tag: '헛스윙', kind: 'air', ball: cueId, near: -1 };
     // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
     if (res.foul) { const wrong = /먼저|상대 공/.test(res.foul); return { score: wrong ? 30 : 14, tag: wrong ? '엉뚱한 공부터' : '맞히고도 파울', kind: 'wrong', ball: first }; }
     if (mode.table === 'carom') {
@@ -3865,7 +3886,7 @@ function layout() {
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  if (st.screen === 'home' && wide) scene.setInsets({ t: 92, l: 350, r: 350, b: 100 });
+  if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   if (st.screen === 'play') paintPowerCue();
@@ -3998,7 +4019,7 @@ function check() {
 }
 function buildModes() {
   const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'three', 'four', 'practice']) {
+  for (const id of ['eight', 'nine', 'three', 'four']) {
     const m = game.MODES[id];
     box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
@@ -4008,7 +4029,9 @@ function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() {
   const prac = prefs.mode === 'practice';
-  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#rightLab').textContent = prac ? '연습 고르기' : '대결';
+  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
+  $('#modeBlurb').textContent = prac ? '' : game.MODES[prefs.mode].blurb;
+  for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === (prac ? 'practice' : 'play')));
   if (prac) {
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
     for (const d of drills.list) box.appendChild(optBtn(prefs.drill === d.id,
@@ -4099,12 +4122,6 @@ function paintBadge(name, b) {
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
-// A mark for a shot, as in a chess review: !! and ! for the good ones, ?? for a blunder. It pops up where the cue ball was.
-const MARKS = { brill: ['!!', '기막힌 샷'], great: ['!', '좋은 샷'], blunder: ['??', '대실수'] };
-function showMark(kind, at) {
-  const p = scene.toScreen(at[0], at[1], game.P.R), n = el('div', { class: 'mk ' + kind, style: `left:${p.x}px;top:${p.y}px` }, [el('b', { text: MARKS[kind][0] }), el('span', { text: MARKS[kind][1] })]);
-  app.appendChild(n); setTimeout(() => n.remove(), 2100);
-}
 // A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.
 function drawShot(cv, shot) {
   const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
@@ -4130,13 +4147,13 @@ function drawShot(cv, shot) {
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
-  pending: null, best: null, worst: null, tally: [{}, {}],                              // the shot in progress, and the best one of the match so far
+  pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.tally = [{}, {}];
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -4148,13 +4165,13 @@ const match = {
     const shot = match.pending, ev = game.world.ev, out = game.resolve();
     if (shot) {
       const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
-      if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r);
-      if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad);
-      // what kind of shot it was goes on that player's sheet; the ones worth a mark get one on the table, as in a chess review
-      const t = match.tally[shot.turn] || (match.tally[shot.turn] = {}), add = k => { t[k] = (t[k] || 0) + 1; };
-      if (r.score > 0) for (const k in r.kinds || {}) if (r.kinds[k]) add(k);
-      const mark = r.score >= 34 ? 'brill' : r.score >= 24 ? 'great' : bad.score >= 26 ? 'blunder' : bad.score > 0 ? 'miss' : null;
-      if (mark) { add(mark); if (mark !== 'miss' && !game.over) showMark(mark, shot.snap.balls[shot.snap.cue]); }
+      const n = ++match.count;
+      if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r, { n, good: true });
+      if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad, { n, good: false });
+      // shots worth a second look are kept for the highlights at the end (a few of each, the strongest)
+      const keep = (x, good) => { match.shots.push(Object.assign({}, shot, x, { n, good })); const same = match.shots.filter(q => q.good === good).sort((p, q) => q.score - p.score); if (same.length > 3) match.shots.splice(match.shots.indexOf(same[3]), 1); };
+      if (r.score >= 20) keep(r, true);
+      if (bad.score >= 20) keep(bad, false);
     }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
@@ -4176,38 +4193,41 @@ const match = {
     // ratings move: more for beating a stronger player
     const ew = pw.ai ? AI_ELO[game.level] : rw.elo, el0 = pl.ai ? AI_ELO[game.level] : rl.elo, gain = Math.max(1, Math.round(32 * (1 - 1 / (1 + Math.pow(10, (el0 - ew) / 400)))));
     if (!pw.ai) rw.elo += gain; if (!pl.ai) rl.elo = Math.max(100, rl.elo - gain); store.set('rec', rec);
-    const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
-    win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
-    win.querySelector('.rc').textContent = (pw.ai ? `레이팅 ${ew}` : `레이팅 ${rw.elo} (+${gain})`) + ` · ${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
-    $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name; $('#rLose .rc').textContent = pl.ai ? `레이팅 ${el0}` : `레이팅 ${rl.elo} (−${gain})`;
-    const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
-    // The match sheet: winner on the left, loser on the right, a bar each way showing the share. The usual numbers first,
-    // then a count of each kind of shot that came up (rows nobody scored in are left out).
-    const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%', tw = match.tally[w] || {}, tl = match.tally[l] || {}, n = (t, k) => t[k] || 0;
-    const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], [game.mode.target ? '점수' : '친 횟수', game.mode.target ? pw.score : pw.shots, game.mode.target ? pl.score : pl.shots], ['파울', pw.fouls, pl.fouls]];
-    for (const [k, label] of [['brill', '기막힌 샷 !!'], ['great', '좋은 샷 !'], ['bank', '뱅크 샷'], ['rail', '쿠션 득점'], ['combo', '콤비네이션'], ['long', '장거리 샷'], ['thin', '얇은 컷'], ['multi', '한 번에 여러 개'], ['miss', '아쉬운 샷 ?'], ['blunder', '대실수 ??']])
-      if (n(tw, k) || n(tl, k)) rows.push([label, n(tw, k), n(tl, k), k]);
+    // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
+    $('#rTitle').textContent = pw.name + ' 승리';
+    for (let i = 0; i < 2; i++) {
+      const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
+      box.classList.toggle('won', won);
+      box.querySelector('.nm').textContent = p.name;
+      box.querySelector('.rc').textContent = (p.ai ? `레이팅 ${AI_ELO[game.level]}` : `레이팅 ${r.elo} (${won ? '+' : '−'}${gain})`) + ` · ${r.w}승 ${r.l}패`;
+    }
+    const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { text: series.s[0] }), ' : ', el(w === 1 ? 'b' : 'span', { text: series.s[1] }));
+    const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
+    const rows = [['샷 성공률', pct(P0), pct(P1)], ['연속 성공', P0.best, P1.best], [game.mode.target ? '점수' : '친 횟수', game.mode.target ? P0.score : P0.shots, game.mode.target ? P1.score : P1.shots], ['파울', P0.fouls, P1.fouls]];
     const box = $('#rStats'); box.textContent = '';
-    box.appendChild(el('div', { class: 'shead' }, [el('b', { text: pw.name }), el('span', { text: '경기 기록' }), el('b', { text: pl.name })]));
-    for (const [k, a, b, kind] of rows) {
+    for (const [k, a, b] of rows) {
       const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
-      box.appendChild(el('div', { class: 'srow' + (kind ? ' k-' + kind : '') }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
         el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
     }
-    // the two shots worth watching again sit on the same sheet, each with a small drawing of what happened
-    const tiles = el('div', { class: 'shots' });
-    for (const [shot, cls, label, play] of [[match.best, 'best', 'BEST SHOT', () => playBest()], [match.worst, 'worst', 'WORST SHOT', () => playWorst()]]) {
-      if (!shot) continue;
-      const cv = el('canvas', { class: 'pic' });
-      tiles.appendChild(el('button', { class: 'shot ' + cls, onclick: () => { SND.init(); SND.tap(); play(); } }, [cv,
-        el('span', { class: 'tx' }, [el('span', { class: 'k', text: label }), el('b', { text: shot.who }), el('span', { class: 'tg', text: shot.tag })]), el('span', { class: 'go', text: '▶' })]));
-      shot._pic = cv;
+    // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
+    // Exactly one is the best shot and one the worst.
+    const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
+    if (match.best && !has(match.best)) list.push(match.best);
+    if (match.worst && !has(match.worst)) list.push(match.worst);
+    list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
+    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
+    const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
+    for (const q of list) {
+      const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
+      const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
+      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q); } }, [
+        el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
+        cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
-    if (tiles.children.length) box.appendChild(tiles);
     $('#rWhy').textContent = game.over.why;
-    document.querySelectorAll('.mk').forEach(n => n.remove());
     show('result'); SND.win();
-    for (const shot of [match.best, match.worst]) if (shot && shot._pic) drawShot(shot._pic, shot);
+    for (const [cv, q] of pics) drawShot(cv, q);
   },
 };
 
@@ -4386,7 +4406,18 @@ seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-press('#setBtn', sheetSettings); press('#recBtn', showLeague); press('#lgBack', goHome);
+press('#lgBack', goHome);
+// the rail: play and practice change what the panel offers; league, records and settings open their own places
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('.nv'); if (!b) return; SND.init(); SND.tap();
+  const v = b.dataset.v;
+  if (v === 'set') return sheetSettings();
+  if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
+  if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
+  else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
+  else return;
+  savePrefs(); buildModes(); paintHome(); homePreview();
+});
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
 // look round in 3D and back: while it is on, dragging the table turns the view instead of aiming
@@ -4402,18 +4433,14 @@ press('#homeBtn', goHome);
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
 const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
-async function playBest(style) {
-  if (!match.best || st.screen === 'reel') return;
-  await SND.song.prepare();
-  if (st.screen !== 'result') return;
-  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.best, typeof style === 'string' ? style : prefs.edit);
+// one of the match's highlights, played as an edit: a good shot to the player's song, a bad one for laughs with no music
+async function playShot(shot, style) {
+  if (!shot || st.screen !== 'result') return;
+  if (!shot.kind) { await SND.song.prepare(); if (st.screen !== 'result') return; }
+  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(shot, typeof style === 'string' ? style : shot.kind ? undefined : prefs.edit);
 }
-// the worst shot of the match, played for laughs: no song
-function playWorst(style) {
-  if (!match.worst || st.screen !== 'result') return;
-  show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.worst, style);
-}
- press('#reelSkip', () => reel.skip());
+const playBest = style => playShot(match.best, style), playWorst = style => playShot(match.worst, style);
+press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });

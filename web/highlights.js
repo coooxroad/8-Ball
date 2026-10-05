@@ -48,7 +48,7 @@ function createHighlights() {
       return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
     }
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
-    if (first == null) return { score: 50, tag: '아무것도 못 맞힘', kind: 'air', ball: cueId, near: -1 };
+    if (first == null) return { score: 50, tag: '헛스윙', kind: 'air', ball: cueId, near: -1 };
     // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
     if (res.foul) { const wrong = /먼저|상대 공/.test(res.foul); return { score: wrong ? 30 : 14, tag: wrong ? '엉뚱한 공부터' : '맞히고도 파울', kind: 'wrong', ball: first }; }
     if (mode.table === 'carom') {
