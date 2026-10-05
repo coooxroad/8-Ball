@@ -4151,7 +4151,7 @@ const prefs = (() => {
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
   p.lab = Object.assign({ masse: true, suji: true, arcade: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
-  if (p.v < 2) { p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
+  if (p.v < 2) { p.news = Object.keys(saved).length > 0; p.how = !!p.news; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
@@ -4366,6 +4366,27 @@ function sheetSettings() {
     flatBtn('실험실 · 2.0에서 바뀐 것 끄고 켜기', sheetLab),
     note('CUE 2.0'),
   ]);
+}
+// shown once: to someone new, how to play a shot; to someone coming from 1.x, what 2.0 added and where it is
+function sheetHow() {
+  prefs.how = true; savePrefs();
+  openSheet('치는 법', [
+    optText('조준', '테이블 위를 끌면 큐가 돌아갑니다. 오른쪽 띠는 미세 조준.'),
+    optText('치기', '왼쪽 큐 막대를 아래로 당겼다 놓으면 나갑니다. 많이 당길수록 세게.'),
+    optText('회전', '오른쪽 아래 흰 공을 누르면 칠 곳을 정합니다. 맛세이와 점프도 여기.'),
+    el('button', { class: 'btn cta', text: '시작', onclick: () => { SND.tap(); closeSheet(); } }),
+  ].map(k => k.tagName === 'BUTTON' ? k : el('div', { class: 'opt' }, k)));
+}
+function sheetNews() {
+  prefs.news = false; savePrefs();
+  openSheet('CUE 2.0', [
+    ['맛세이 · 점프', '회전 창에서 고릅니다. 큐를 세워 치면 공이 휘고, 점프는 앞 공을 넘어갑니다. 시작 전에 허용/금지를 정합니다.'],
+    ['수지', '4구에서 이름을 누르면 각자 수지를 정합니다. 50이면 다섯 번 득점.'],
+    ['아케이드', '빙판과 장애물. 시작 전에 고릅니다.'],
+    ['퍼즐 스테이지', '4구 기술 일곱 가지, 105문제. 힌트는 흰 공이 닿는 곳을 번호로.'],
+    ['이어하기 · 넣은 공 · 연승 불꽃 · 큐 각자', '하던 판은 첫 화면 카드로 남고, 이름표에 넣은 공이 쌓입니다.'],
+    ['실험실', '설정 맨 아래. 새 기능을 하나씩 끌 수 있습니다.'],
+  ].map(([t, d]) => el('div', { class: 'opt' }, optText(t, d))).concat(el('button', { class: 'btn cta', text: '확인', onclick: () => { SND.tap(); closeSheet(); } })));
 }
 // every large change of 2.0 behind its own switch, so that one that turns out badly can be taken back without reinstalling
 function sheetLab() {
@@ -4673,6 +4694,7 @@ const match = {
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: LAB.tray, ice: c.arcade === 'ice', bars: c.arcade === 'bars', masse: c.masse }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
+    if (!prefs.how && !game.players[game.turn].ai) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); scene.setIce(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
   cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
@@ -5238,6 +5260,7 @@ function start(data) {
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
   // a game left unfinished waits on the first screen as a card to carry on with
   goHome(true);
+  if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }
 window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
