@@ -27,9 +27,16 @@ function createGame(PH) {
       // what the scoreboard shows for one player: a line of text and the balls still to pot
       status(g, pi) {
         const p = g.players[pi], rem = this.remaining(g, pi);
+        if (g.potTray) {
+          // the balls this player has put away, then a ring for each still to go; the 8 shows once only it is left
+          const mine = !p.group ? [] : (p.group === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => !g.world.balls[i].on), tray = mine.slice();
+          while (tray.length < 7) tray.push('slot');
+          if (rem && !rem.length) tray.push('eight');
+          return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray, pts: null };
+        }
         return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray: !rem ? ['slot', 'slot', 'slot', 'slot', 'slot', 'slot', 'slot'] : rem.length ? rem : ['eight'], pts: null };
       },
-      badge: g => ({ text: g.isBreak ? '브레이크' : g.players.every(p => !p.group) ? '아직 공 미정' : '8번은 마지막에', balls: [] }),
+      badge: g => { const open = g.players.every(p => !p.group); return { text: g.isBreak ? '브레이크' : open ? '아직 공 미정' : '8번은 마지막에', balls: g.potTray && open ? g.world.balls.filter(b => !b.on && b.id > 0 && b.id !== 8).map(b => b.id) : [], plain: true }; },
       remaining(g, pi) {
         const grp = g.players[pi].group; if (!grp) return null;
         return (grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => g.world.balls[i].on);
@@ -112,16 +119,18 @@ function createGame(PH) {
         g.placing = null; g.isBreak = false;
       },
       intro: g => `${g.players[g.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.`,
-      status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
-      badge: () => ({ text: '빨간 공 두 개 맞히면 1점', balls: [] }),
+      status: (g, pi) => ({ sub: g.tens ? `수지 ${g.targets[pi] * 10}` : `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
+      badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
-      ctx(g) { return { turn: g.turn }; },
+      // last: this player is one point from home and the house rule says that point has to come off a cushion
+      ctx(g) { return { turn: g.turn, last: !!g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 }; },
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
         const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        const pts = foul ? -1 : reds === 2 ? 1 : 0;
-        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts };
+        const short = !foul && reds === 2 && c.last && ev.cushions < 1;
+        const pts = foul ? -1 : reds === 2 && !short ? 1 : 0;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note: short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null };
       },
     },
   };
@@ -137,7 +146,7 @@ function createGame(PH) {
       g.placing = null; g.isBreak = false;
     },
     intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
-    status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
+    status: (g, pi) => ({ sub: `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score }),
     badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
     legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
     ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },
@@ -174,7 +183,8 @@ function createGame(PH) {
   const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0 });
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
-    players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, level: 1, _ctx: null,
+    players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
+    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true,
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -183,9 +193,27 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
     g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
+    // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
+    g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
+    g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     g.mode.setup(g, opts.rnd || Math.random);
+    g.world.ice = g.ice; g.bars = opts.bars ? makeBars(opts.rnd || Math.random) : null; g.setBars();
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
+  // Arcade: two or three barricades standing on the cloth, clear of where the balls start and of the line of the break.
+  function makeBars(rnd) {
+    const { HL, HW, R } = g.P, out = [];
+    for (let k = 0; k < 60 && out.length < 3; k++) {
+      const cx = (rnd() - 0.5) * HL * 1.1, cy = (0.2 + rnd() * (HW - 0.38)) * (out.length % 2 ? -1 : 1), a = (rnd() - 0.5) * 2.2, l = 0.13 + rnd() * 0.1;
+      const q = [cx - Math.cos(a) * l, cy - Math.sin(a) * l, cx + Math.cos(a) * l, cy + Math.sin(a) * l].map(v => Math.round(v * 1000) / 1000), s = g.P.wall(q[0], q[1], q[2], q[3]);
+      const far = (x, y, min) => { const u = Math.max(0, Math.min(s.len, (x - s.ax) * s.tx + (y - s.ay) * s.ty)); return Math.hypot(x - s.ax - s.tx * u, y - s.ay - s.ty * u) > min; };
+      if (Math.abs(q[1]) > HW - 0.13 || Math.abs(q[3]) > HW - 0.13 || Math.abs(q[1]) < 0.12 || Math.abs(q[3]) < 0.12 || q[1] * q[3] < 0) continue;
+      if (!g.world.balls.every(b => !b.on || far(b.x, b.y, 3.2 * R)) || out.some(o => Math.hypot((o[0] + o[2]) / 2 - cx, (o[1] + o[3]) / 2 - cy) < 0.4)) continue;
+      out.push(q);
+    }
+    return out;
+  }
+  g.setBars = () => { g.world.walls = g.bars && g.bars.length ? g.bars.map(q => g.P.wall(q[0], q[1], q[2], q[3])) : null; };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
   g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
@@ -197,6 +225,17 @@ function createGame(PH) {
     const m = g.mode, P = g.P, w = g.world, me = g.turn, p = g.players[me];
     const r = m.evaluate(w.ev, g._ctx, g), out = { r, msg: '', kind: '', dur: 1600 };
     for (const b of w.balls) b.wz = 0;
+    if (w.ev.off.length) {
+      // a ball over the rail is a foul; it comes back on its spot (the cue ball: wherever the other player likes, on a pool table)
+      const cueOff = w.ev.off.includes(w.cue);
+      r.foul = cueOff ? '큐볼이 테이블 밖으로 나갔습니다' : '공이 테이블 밖으로 나갔습니다'; r.keep = false; r.solved = false;
+      if (m.table === 'carom') { r.pts = m.solo ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
+      else {
+        if (cueOff) r.scratch = true;
+        if (r.win === me) { r.win = m.id === 'eight' ? 1 - me : null; r.why = '8번 공을 넣으면서 파울이 났습니다.'; if (m.id === 'nine') r.respot.push(9); }
+        for (const id of w.ev.off) if (id !== w.cue && !r.respot.includes(id)) r.respot.push(id);
+      }
+    }
     for (const id of r.respot) { const [x, y] = P.findFree(w, P.HL / 2, 0, id); P.place(w, id, x, y); }
     if (r.scratch) { const [x, y] = P.findFree(w, -P.HL / 2, 0, 0); P.place(w, 0, x, y); }
     g.isBreak = false;
@@ -204,7 +243,7 @@ function createGame(PH) {
     if (r.foul) p.fouls++;
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
-    if (m.target && p.score >= g.target) { r.win = me; r.why = `먼저 ${g.target}점을 냈습니다.`; }
+    if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; }
     if (r.win != null) { g.over = { winner: r.win, why: r.why }; return out; }
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
@@ -213,12 +252,12 @@ function createGame(PH) {
     if (r.foul) {
       g.turn = 1 - me; const nx = g.players[g.turn].name;
       if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul}. ${nx} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
-      else out.msg = `파울 · ${r.foul}. 1점 감점, ${nx} 차례.`;
+      else out.msg = `파울 · ${r.foul}. ${g.tens ? 10 : 1}점 감점, ${nx} 차례.`;
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
       g.turn = 1 - me; if (!out.msg) out.msg = (r.note ? r.note + '. ' : '') + `${g.players[g.turn].name} 차례`; if (r.note) out.dur = 2600;
     } else if (r.pts > 0) {
-      out.msg = `${p.name} 1점!`; out.kind = 'good';
+      out.msg = `${p.name} ${g.tens ? 10 : 1}점!`; out.kind = 'good';
     } else if (m.id === 'eight' && !r.assign) {
       const rem = m.remaining(g, me);
       if (rem && !rem.length) { out.msg = '이제 8번 공을 넣으면 이깁니다.'; out.kind = 'good'; out.dur = 2400; }
@@ -376,7 +415,7 @@ function createGame(PH) {
   }
 
   function aiPool() {
-    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.level, me = g.turn;
+    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.levels ? g.levels[g.turn] : g.level, me = g.turn;
     const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016, 0][lvl];
     if (g.isBreak) {
       const y = (Math.random() - 0.5) * 0.3, pos = [-HL / 2 - 0.1, y];
@@ -448,7 +487,7 @@ function createGame(PH) {
   }
 
   function aiCarom() {
-    const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
+    const w = g.world, c = w.balls[w.cue], lvl = g.levels ? g.levels[g.turn] : g.level, ctx = g.mode.ctx(g);
     const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
     const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
@@ -497,6 +536,7 @@ function createGame(PH) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, bars: g.bars, masse: g.masse,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -504,7 +544,9 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
-    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null;
+    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
+    g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
+    g.ice = !!d.ice; g.world.ice = g.ice; g.bars = d.bars || null; g.setBars(); g.masse = d.masse !== false;
     return true;
   };
   return g;

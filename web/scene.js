@@ -259,11 +259,15 @@ function createScene(canvas, app, PH) {
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
   }
+  let clothI = 0, iced = false;
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0];
-    feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    const c = CLOTHS[i] || CLOTHS[0]; clothI = i;
+    feltMat.color.copy(col(iced ? 0xb4e1f7 : c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    // ice: pale, smooth and shining where the cloth is matt
+    feltMat.roughness = iced ? 0.22 : 1; feltMat.envMapIntensity = iced ? 0.75 : 0.1; feltMat.bumpScale = iced ? 0.00012 : 0.0005; feltMat.needsUpdate = true;
     staticDirty = true; dirty = 3;
   }
+  function setIce(on) { if (iced === !!on) return; iced = !!on; setCloth(clothI); }
 
   /* balls */
   const sphere = new THREE.SphereGeometry(1, 40, 28);
@@ -354,7 +358,7 @@ function createScene(canvas, app, PH) {
   const gHand = new THREE.Mesh(new THREE.RingGeometry(1.55, 1.78, 40), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false }));
   const dotGeo = new THREE.CircleGeometry(1, 14), dotMat = gMat(0.95), gDots = [];
   dotMat.color.copy(col(0xffd21f));
-  for (let i = 0; i < 44; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
+  for (let i = 0; i < 90; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
   for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
@@ -362,6 +366,15 @@ function createScene(canvas, app, PH) {
   zone.add(new THREE.Mesh(new THREE.RingGeometry(0.955, 1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false })));
   zone.children.forEach(m => { m.renderOrder = 2; });
   function setZone(z) { zone.visible = !!z; if (z) { zone.position.set(z.x, z.y, 0.0012); zone.scale.set(z.r, z.r, 1); } dirty = 3; }
+  // hint marks: numbered spots where the cue ball will touch something, in order
+  const marks = new THREE.Group(); scene.add(marks);
+  const markTex = n => { const c = mkCanvas(96, 96), g = c.getContext('2d'); g.beginPath(); g.arc(48, 48, 42, 0, 6.3); g.fillStyle = '#ffd21f'; g.fill(); g.lineWidth = 7; g.strokeStyle = '#15171c'; g.stroke();
+    g.fillStyle = '#15171c'; g.font = '800 54px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 48, 52); return tex(c); };
+  function setMarks(list) {
+    while (marks.children.length) { const m = marks.children.pop(); m.material.map.dispose(); m.material.dispose(); }
+    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 2.2); m.scale.set(cur.R * 1.5, cur.R * 1.5, 1); marks.add(m); });
+    dirty = 3;
+  }
   let ppm = 200, guideKey = '', pathPts = [];
   function setLine(m, x0, y0, x1, y1, px, z) {
     const len = Math.hypot(x1 - x0, y1 - y0);
@@ -471,6 +484,8 @@ function createScene(canvas, app, PH) {
     if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
     falls.push({ id: e.id, x: e.x, y: e.y, z: P.R, vx, vy, vz: 0, p });
   }
+  // a ball that has jumped the rail carries on through the air and out of sight
+  function fly(P, e) { falls.push({ id: e.id, x: e.x, y: e.y, z: P.R + (e.z || 0), vx: e.vx, vy: e.vy, vz: e.vz || 0, p: null }); }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   /* barricades (puzzles): striped bars standing on the cloth, kept in step with the world's list of walls */
@@ -509,16 +524,23 @@ function createScene(canvas, app, PH) {
       const b = w.balls[i], m = set.mesh[i], s = set.blob[i];
       const on = !!b && b.on; s.visible = on;
       if (on) {
-        const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a;
-        m.visible = true; m.scale.setScalar(R); m.position.set(x, y, R); m.material.color.setScalar(1);
+        const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a, z = (b.pz || 0) + ((b.z || 0) - (b.pz || 0)) * a;
+        m.visible = true; m.scale.setScalar(R * (1 + z * 2.4)); m.position.set(x, y, R + z); m.material.color.setScalar(1);   // off the cloth it comes towards the eye
+        const so = z * 0.55;
         const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
         m.quaternion.set(q[0], q[1], q[2], q[3]);
-        s.children[0].position.x = x; s.children[0].position.y = y;
+        s.children[0].position.x = x + so; s.children[0].position.y = y - so;
         for (let k = 0; k < LAMPS.length; k++) { const L = LAMPS[k], f = R / (L[2] - R), c2 = s.children[k + 1]; c2.position.x = x + (x - L[0]) * f; c2.position.y = y + (y - L[1]) * f; }
       } else if (!falls.some(f => f.id === i)) m.visible = false;
     }
     for (let i = falls.length - 1; i >= 0; i--) {
       const f = falls[i], m = set.mesh[f.id], p = f.p;
+      if (!p) {
+        const h = Math.min(dt, 0.05); f.vz -= 9.8 * h; f.x += f.vx * h; f.y += f.vy * h; f.z += f.vz * h;
+        if (m) { m.visible = f.z > -0.7; m.scale.setScalar(R); m.position.set(f.x, f.y, f.z); m.material.color.setScalar(Math.max(0.2, Math.min(1, 1 + f.z * 1.6))); }
+        if (f.z <= -0.7) { fallEvents.push({ t: 'land', v: 2.5, x: Math.max(-1, Math.min(1, f.x)), y: f.y }); falls.splice(i, 1); }
+        continue;
+      }
       let left = Math.min(dt, 0.05);
       while (left > 1e-5) {
         const h = Math.min(left, 0.004); left -= h;
@@ -540,14 +562,35 @@ function createScene(canvas, app, PH) {
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
     if (cue.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
-      const tx = c.x - dx * (R + v.pull), ty = c.y - dy * (R + v.pull);
-      cue.position.set(tx, ty, R + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI);
-      const sx = tx - dx * 0.735 + 0.012, sy = ty - dy * 0.735 - 0.014;
-      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47, 0.022, 1);
+      // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
+      const e = v.jump ? 0.7 : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
+      const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
+      cue.position.set(tx, ty, R + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -(0.085 + e), v.aim + Math.PI);
+      const sx = tx - dx * 0.735 * ce + 0.012, sy = ty - dy * 0.735 * ce - 0.014;
+      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }
     if (guide.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim), lv = v.level;
-      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev].join('|');
+      const raised = v.jump || v.el > 0.02;
+      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, v.jump ? 'j' : (v.el || 0).toFixed(2)].join('|');
+      if (key !== guideKey && raised) {
+        // no straight line for a ball that curves or flies: the shot is played out and its path dotted, as far as the guide length allows
+        guideKey = key;
+        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
+        for (const d of gDots) d.visible = false;
+        if (lv >= 1) {
+          const pts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, lv >= 3 ? 2.6 : 1.8, v.el || 0, !!v.jump, lv >= 3 ? 2 : 1);
+          let acc = 0, n = 0, lx = c.x, ly = c.y;
+          for (let i = 0; i < pts.length && n < gDots.length; i += 3) {
+            const x = pts[i], y = pts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
+            if (acc >= 0.036) { acc = 0; const d = gDots[n++]; d.visible = true; d.position.set(x, y, R + pts[i + 2]); d.scale.setScalar(Math.max(0.004, (pts.first >= 0 && i > pts.first ? 2.6 : 3.4) / ppm)); }
+          }
+          if (pts.first >= 0 && pts.first < pts.length) {
+            gRing.visible = true; gRing.position.set(pts[pts.first], pts[pts.first + 1], R + pts[pts.first + 2]); gRing.scale.setScalar(R);
+            gRing.material.color.set(pts.hit == null || v.legalIds.indexOf(pts.hit) >= 0 ? 0xffffff : 0xff6a58);
+          }
+        }
+      }
       if (key !== guideKey) {
         guideKey = key;
         const pr = P.cast(w, c.x, c.y, dx, dy, w.cue);
@@ -619,7 +662,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setIce, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

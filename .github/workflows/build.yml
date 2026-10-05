@@ -56,7 +56,7 @@ jobs:
       - name: Collect APK
         run: |
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk "out/CUE-1.${{ github.run_number }}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "out/CUE-2.0.${{ github.run_number }}.apk"
           ls -la out
 
       - uses: actions/upload-artifact@v4
@@ -68,7 +68,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v1.${{ github.run_number }}" out/*.apk \
+          gh release create "v2.0.${{ github.run_number }}" out/*.apk \
             --target "$GITHUB_SHA" \
-            --title "CUE 1.${{ github.run_number }}" \
+            --title "CUE 2.0 (빌드 ${{ github.run_number }})" \
             --notes "서명: $SIGNED_WITH"

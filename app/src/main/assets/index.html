@@ -553,6 +553,51 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   .grid2{grid-template-columns:minmax(0,1fr)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---- 2.0 ---- */
+#arcBox{display:flex;flex-direction:column;gap:6px}
+#resumeBox{display:flex;gap:8px;align-items:stretch}
+.resume{flex:1;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:baseline;text-align:left;padding:11px 14px;border-radius:14px;background:var(--sel-bg);border:2px solid var(--sel-bd)}
+.resume .k{grid-row:1/3;align-self:center;font-size:12.5px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;padding:5px 10px}
+.resume b{font-size:15.5px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resume .d{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resume-x{flex:none;width:40px;border-radius:14px;background:var(--seg);color:var(--sub);font-size:20px}
+.pill.think .sub::after{content:"";display:inline-block;width:1.1em;text-align:left;animation:dots 1s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.mb.pop{animation:mbPop .7s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes mbPop{0%{transform:scale(0)}55%{transform:scale(1.9)}100%{transform:scale(1)}}
+#badge .mb{width:16px;height:16px}
+#kindBox{display:flex;flex-direction:column;gap:8px;width:190px}
+#kindBox .seg button{height:34px;font-size:13.5px}
+#elRow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
+#elRow input{flex:1;min-width:0;accent-color:#8a4dff}
+#elRow b{font-family:var(--num);color:var(--fg);min-width:30px;text-align:right}
+#spinBtn{overflow:visible}
+#spinTag{position:absolute;left:50%;top:-11px;transform:translateX(-50%);font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+#spinTag[data-k="2"]{background:#ff7a1a}
+/* a run of wins: the card catches fire */
+.fire{--f:#ff4433;--f2:#ffb08a}
+.fire.f3{--f:#ffc21a;--f2:#fff0a8}.fire.f4{--f:#19d6a5;--f2:#b6ffe9}.fire.f5{--f:#9a55ff;--f2:#e2c8ff}
+.rcards{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+.rcard{position:relative;display:flex;align-items:center;gap:14px;background:var(--panel);border:1.5px solid var(--bd);border-radius:18px;padding:14px 18px;box-shadow:var(--sh)}
+.rcard .pos{font-family:var(--num);font-weight:var(--num-w);font-size:20px;color:var(--sub);width:26px;text-align:center}
+.rcard .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rcard .who b{font-size:18px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard .who span{font-size:13px;color:var(--sub)}
+.rcard .run{font-size:13px;font-weight:800;color:#fff;background:var(--f);border-radius:999px;padding:5px 11px;white-space:nowrap}
+.rcard.fire,.prow.fire{border-color:var(--f)}
+.rcard.fire{animation:fireGlow 1.1s ease-in-out infinite alternate}
+@keyframes fireGlow{from{box-shadow:0 0 0 1px var(--f),0 4px 18px -6px var(--f)}to{box-shadow:0 0 0 1px var(--f),0 6px 30px -2px var(--f)}}
+.rcard.fire::before,.rcard.fire::after{content:"";position:absolute;left:10px;right:10px;bottom:100%;height:26px;pointer-events:none;transform-origin:50% 100%}
+.rcard.fire::before{background:radial-gradient(ellipse 13px 26px at 14px 100%,var(--f) 0,transparent 72%) 0 0/28px 100% repeat-x;filter:blur(2px);opacity:.95;animation:flameA .42s ease-in-out infinite alternate,flameB 1.9s linear infinite}
+.rcard.fire::after{background:radial-gradient(ellipse 8px 17px at 10px 100%,var(--f2) 0,transparent 72%) 7px 0/21px 100% repeat-x;filter:blur(1.5px);animation:flameA .31s ease-in-out infinite alternate-reverse,flameC 1.3s linear infinite}
+@keyframes flameA{from{transform:scaleY(.6)}to{transform:scaleY(1.15)}}
+@keyframes flameB{to{background-position:28px 0}}
+@keyframes flameC{to{background-position:-14px 0}}
+.prow.fire .rc{color:var(--f);font-weight:700}
+.prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
+@keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
+#league .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
 </style>
 
 <div id="app" class="busy" data-theme="light">
@@ -564,7 +609,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <button class="nv" data-v="play"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><circle cx="16.5" cy="8.5" r="3.5"/><path d="M13.5 20.5 21 13"/></svg><span>대결</span></button>
     <button class="nv" data-v="puzzle"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13 19 5M17 3.5l3.5 3.5"/></svg><span>퍼즐</span></button>
     <button class="nv" data-v="practice"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 4.5 21.5 9 12 13.5zM6.5 11.2V16c1.6 1.7 3.4 2.5 5.5 2.5s3.9-.8 5.5-2.5v-4.8M21.5 9v5"/></svg><span>레슨</span></button>
-    <button class="nv" data-v="league"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 20h8"/></svg><span>리그</span></button>
     <button class="nv" data-v="all"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
     <button class="nv end" data-v="set"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
   </nav>
@@ -578,6 +622,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     </div>
     <div class="h-right panel">
       <div class="h-title" id="rightLab">대결</div>
+      <div id="resumeBox" hidden></div>
       <div id="modeBox"><div id="modeList"></div></div>
       <div id="pracList" hidden></div>
       <div id="puzBox" hidden></div>
@@ -589,7 +634,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="seg" id="segOpp"><button data-v="0">친구와</button><button data-v="1">컴퓨터와</button></div>
       <div class="seg slide" id="segLvl" data-lv="1"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button><button data-v="3">미친</button></div>
       <div class="seg" id="segRule3" hidden><button data-v="0">쿠션 자유</button><button data-v="1">원쿠션</button><button data-v="3">쓰리쿠션</button></div>
-      <div class="seg" id="segTarget"><button data-v="5">5점</button><button data-v="10">10점</button><button data-v="15">15점</button></div>
+      <div class="seg" id="segTarget"><button data-v="3">3점</button><button data-v="5">5점</button><button data-v="10">10점</button></div>
+      <div class="seg" id="segFinish" hidden><button data-v="0">마무리 자유</button><button data-v="1">쿠션 마무리</button></div>
+      <div id="arcBox"><div class="lab">아케이드</div><div class="seg" id="segArcade"><button data-v="none">기본</button><button data-v="ice">빙판</button><button data-v="bars">장애물</button></div></div>
+      <div class="seg" id="segMasse"><button data-v="1">맛세이·점프 허용</button><button data-v="0">금지</button></div>
       </div>
       <button class="btn cta" id="startBtn">시작</button>
     </div>
@@ -612,10 +660,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <div id="powerLab">세기</div><div id="powerNum">0</div>
   </div>
   <div id="fine" aria-label="미세 조준" hidden><div id="fineLab">미세</div></div>
-  <button id="spinBtn" aria-label="큐볼의 칠 곳 정하기" hidden><i id="spinDot"></i></button>
+  <button id="spinBtn" aria-label="큐볼의 칠 곳 정하기" hidden><i id="spinDot"></i><b id="spinTag" hidden></b></button>
   <div id="spinPop" hidden>
     <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
     <div id="spinHint"></div>
+    <div id="kindBox"><div class="seg" id="segKind"><button data-v="0">보통</button><button data-v="1">맛세이</button><button data-v="2">점프</button></div>
+      <div id="elRow" hidden><span>큐 세우기</span><input type="range" id="elRange" min="25" max="80" value="55"><b id="elVal">55°</b></div></div>
     <button class="btn flat" id="spinReset">가운데로</button>
   </div>
 
@@ -668,7 +718,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
-  const MU_S = 0.2, MU_R = 0.016, MU_SP = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
+  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
   const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
@@ -720,21 +770,21 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0 }; }   // cushions: how many the cue ball met before it had hit two balls
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, off: [] }; }   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
-    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null };   // walls: barricades standing on the cloth (puzzles), made with wall()
+    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls, ice: w.ice };
   }
 
   function place(w, id, x, y, rnd) {
     const b = w.balls[id];
-    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.hot = 0; b.spit = 0; b.on = true;
+    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; b.hot = 0; b.spit = 0; b.on = true;
     if (rnd) {
       const a = rnd() * Math.PI * 2, tl = (rnd() - 0.5) * 0.9;
       const cz = Math.cos(a / 2), sz = Math.sin(a / 2), cx = Math.cos(tl / 2), sx = Math.sin(tl / 2);
@@ -742,15 +792,32 @@ function createPhysics(cfg) {
     }
   }
 
-  function strike(w, ang, V, a, bb) {
+  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). A raised cue with side on it sets the
+     ball spinning about the line it travels along, and the cloth pushes back sideways: the ball curves (masse).
+     jump: struck down into the slate so that it leaves the cloth. */
+  function strike(w, ang, V, a, bb, el, jump) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
-    c.vx = V * dx; c.vy = V * dy;
-    const k = 2.5 * V * bb / R;
-    c.wx = -dy * k; c.wy = dx * k; c.wz = 2.5 * V * a / R;
+    el = el || 0; const ce = Math.cos(el), se = Math.sin(el), Vh = V * (jump ? Math.max(0.72, ce) : 0.35 + 0.65 * ce);
+    c.vx = Vh * dx; c.vy = Vh * dy;
+    const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R, tw = jump ? 0 : se;
+    c.wx = -dy * k + dx * ka * tw; c.wy = dx * k + dy * ka * tw; c.wz = ka * (jump ? 1 : ce);
+    c.z = 0; c.vz = jump ? JUMP * V * Math.max(se, 0.5) : 0;
     w.ev = newEv();
   }
+  const JUMP = 0.5, CLEAR = 0.034;                               // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
+    if (b.z > 0 || b.vz > 0) {
+      // in the air: nothing but gravity, until it comes down (and bounces once or twice if it came down hard)
+      b.vz -= G * h; b.z += b.vz * h; b.x += b.vx * h; b.y += b.vy * h;
+      if (b.z <= 0) {
+        b.z = 0;
+        if (b.vz < -0.7) { if (w.snd) w.snd.push({ t: 'land', v: -b.vz, x: b.x, y: b.y, id: b.id }); b.vz = -b.vz * 0.42; b.vx *= 0.94; b.vy *= 0.94; } else b.vz = 0;
+      }
+      if (w.track) turn(b, h);
+      return;
+    }
+    const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? 0.0085 : MU_R0, MU_SP = w.ice ? 0.012 : MU_SP0;
     const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
     if (us > 1e-4) {
       const dec = MU_S * G * h;
@@ -772,16 +839,17 @@ function createPhysics(cfg) {
     b.x += b.vx * h; b.y += b.vy * h;
     const spd = Math.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
     if (b.spit > 0) b.spit -= h;
-    if (w.track) {
-      const wm = Math.hypot(b.wx, b.wy, b.wz);
-      if (wm > 1e-6) {
-        const ang = wm * h, s = Math.sin(ang / 2) / wm, c = Math.cos(ang / 2);
-        const dx = b.wx * s, dy = b.wy * s, dzq = b.wz * s, q = b.q, qx = q[0], qy = q[1], qz = q[2], qw = q[3];
-        q[0] = c * qx + dx * qw + dy * qz - dzq * qy;
-        q[1] = c * qy + dy * qw + dzq * qx - dx * qz;
-        q[2] = c * qz + dzq * qw + dx * qy - dy * qx;
-        q[3] = c * qw - dx * qx - dy * qy - dzq * qz;
-      }
+    if (w.track) turn(b, h);
+  }
+  function turn(b, h) {
+    const wm = Math.hypot(b.wx, b.wy, b.wz);
+    if (wm > 1e-6) {
+      const ang = wm * h, s = Math.sin(ang / 2) / wm, c = Math.cos(ang / 2);
+      const dx = b.wx * s, dy = b.wy * s, dzq = b.wz * s, q = b.q, qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+      q[0] = c * qx + dx * qw + dy * qz - dzq * qy;
+      q[1] = c * qy + dy * qw + dzq * qx - dx * qz;
+      q[2] = c * qz + dzq * qw + dx * qy - dy * qx;
+      q[3] = c * qw - dx * qx - dy * qy - dzq * qz;
     }
   }
 
@@ -830,7 +898,9 @@ function createPhysics(cfg) {
         const b = bs[j]; if (!b.on) continue;
         const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
         if (d2 >= 4 * R * R || d2 < 1e-14) continue;
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
+        const dz = a.z - b.z, reach = dz === 0 ? 2 * R : Math.sqrt(Math.max(0, 4 * R * R - dz * dz));   // one of them in the air: they meet later, or not at all
+        if (dz !== 0 && d2 >= reach * reach) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (reach - d) / 2;
         a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
         const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
         if (rel >= 0) continue;
@@ -846,8 +916,17 @@ function createPhysics(cfg) {
     }
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
-      if (w.walls && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
+      if (w.walls && b.z < 0.046 && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
+        if (b.z > CLEAR) {
+          // over the cushion: once it is past the rail it is gone
+          if (Math.abs(b.x) > HL + 0.05 || Math.abs(b.y) > HW + 0.05) {
+            b.on = false; w.ev.off.push(b.id);
+            if (w.snd) w.snd.push({ t: 'off', id: b.id, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz });
+            b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.vz = 0;
+          }
+          continue;
+        }
         if (b.vx !== 0 || b.vy !== 0) for (let k = 0; k < SEGS.length; k++) hitSeg(w, b, SEGS[k]);
         if (!POCKETED) continue;
         // A ball drops once its centre is far enough over the hole. A fast ball has to get deeper before it drops,
@@ -893,14 +972,14 @@ function createPhysics(cfg) {
 
   function step(w, dt) {
     let vmax = 0;
-    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
+    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
   }
 
   function rest(w) {
-    for (const b of w.balls) if (b.on && (b.vx !== 0 || b.vy !== 0 || b.wx !== 0 || b.wy !== 0)) return false;
+    for (const b of w.balls) if (b.on && (b.vx !== 0 || b.vy !== 0 || b.wx !== 0 || b.wy !== 0 || b.z !== 0 || b.vz !== 0)) return false;
     return true;
   }
 
@@ -962,15 +1041,19 @@ function createPhysics(cfg) {
     return cast(w, c.x, c.y, Math.cos(ang), Math.sin(ang), w.cue);
   }
 
-  // Where the cue ball travels after its first contact, for the long aiming guide.
-  function cuePath(w, ang, V, a, bb, maxT) {
-    const w2 = clone(w); strike(w2, ang, V, a, bb);
+  // Where the cue ball travels after its first contact, for the long aiming guide. With `whole`, from the moment it is struck
+  // (a curving or jumping shot has no straight line to draw) as [x, y, z, ...], and `first` is set to where the first contact came.
+  function cuePath(w, ang, V, a, bb, maxT, el, jump, whole) {
+    const w2 = clone(w); strike(w2, ang, V, a, bb, el, jump);
     const c = w2.balls[w2.cue], pts = [];
-    let t = 0, started = false;
+    let t = 0, started = false; pts.first = -1;
     while (t < (maxT || 2.2) && c.on) {
       step(w2, 1 / 120); t += 1 / 120;
-      if (!started && (w2.ev.firstHit != null)) started = true;
-      if (started) { pts.push(c.x, c.y); if (c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break; }
+      if (!started && (w2.ev.firstHit != null || (whole && w2.ev.railed.length))) { started = true; pts.first = pts.length; pts.hit = w2.ev.firstHit; }
+      if (whole) { pts.push(c.x, c.y, c.z); if (started && whole === 1) break; }
+      else if (started) pts.push(c.x, c.y);
+      if (started && c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break;
+      if (!started && c.vx === 0 && c.vy === 0 && c.z === 0) break;
     }
     return pts;
   }
@@ -993,6 +1076,7 @@ function createPhysics(cfg) {
       if (!b.on || b.id === skipId) continue;
       if ((b.x - x) ** 2 + (b.y - y) ** 2 < (2 * R + 0.0008) ** 2) return false;
     }
+    for (const q of w.walls || []) { const u = Math.max(0, Math.min(q.len, (x - q.ax) * q.tx + (y - q.ay) * q.ty)); if (Math.hypot(x - q.ax - q.tx * u, y - q.ay - q.ty * u) < R + q.r + 0.002) return false; }
     return true;
   }
 
@@ -1036,9 +1120,16 @@ function createGame(PH) {
       // what the scoreboard shows for one player: a line of text and the balls still to pot
       status(g, pi) {
         const p = g.players[pi], rem = this.remaining(g, pi);
+        if (g.potTray) {
+          // the balls this player has put away, then a ring for each still to go; the 8 shows once only it is left
+          const mine = !p.group ? [] : (p.group === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => !g.world.balls[i].on), tray = mine.slice();
+          while (tray.length < 7) tray.push('slot');
+          if (rem && !rem.length) tray.push('eight');
+          return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray, pts: null };
+        }
         return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray: !rem ? ['slot', 'slot', 'slot', 'slot', 'slot', 'slot', 'slot'] : rem.length ? rem : ['eight'], pts: null };
       },
-      badge: g => ({ text: g.isBreak ? '브레이크' : g.players.every(p => !p.group) ? '아직 공 미정' : '8번은 마지막에', balls: [] }),
+      badge: g => { const open = g.players.every(p => !p.group); return { text: g.isBreak ? '브레이크' : open ? '아직 공 미정' : '8번은 마지막에', balls: g.potTray && open ? g.world.balls.filter(b => !b.on && b.id > 0 && b.id !== 8).map(b => b.id) : [], plain: true }; },
       remaining(g, pi) {
         const grp = g.players[pi].group; if (!grp) return null;
         return (grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => g.world.balls[i].on);
@@ -1121,16 +1212,18 @@ function createGame(PH) {
         g.placing = null; g.isBreak = false;
       },
       intro: g => `${g.players[g.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.`,
-      status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
-      badge: () => ({ text: '빨간 공 두 개 맞히면 1점', balls: [] }),
+      status: (g, pi) => ({ sub: g.tens ? `수지 ${g.targets[pi] * 10}` : `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
+      badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
-      ctx(g) { return { turn: g.turn }; },
+      // last: this player is one point from home and the house rule says that point has to come off a cushion
+      ctx(g) { return { turn: g.turn, last: !!g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 }; },
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
         const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        const pts = foul ? -1 : reds === 2 ? 1 : 0;
-        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts };
+        const short = !foul && reds === 2 && c.last && ev.cushions < 1;
+        const pts = foul ? -1 : reds === 2 && !short ? 1 : 0;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note: short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null };
       },
     },
   };
@@ -1146,7 +1239,7 @@ function createGame(PH) {
       g.placing = null; g.isBreak = false;
     },
     intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
-    status: (g, pi) => ({ sub: `목표 ${g.target}점`, tray: [], pts: g.players[pi].score }),
+    status: (g, pi) => ({ sub: `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score }),
     badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
     legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
     ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },
@@ -1183,7 +1276,8 @@ function createGame(PH) {
   const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0 });
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
-    players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, level: 1, _ctx: null,
+    players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
+    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true,
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -1192,9 +1286,27 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
     g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
+    // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
+    g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
+    g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     g.mode.setup(g, opts.rnd || Math.random);
+    g.world.ice = g.ice; g.bars = opts.bars ? makeBars(opts.rnd || Math.random) : null; g.setBars();
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
+  // Arcade: two or three barricades standing on the cloth, clear of where the balls start and of the line of the break.
+  function makeBars(rnd) {
+    const { HL, HW, R } = g.P, out = [];
+    for (let k = 0; k < 60 && out.length < 3; k++) {
+      const cx = (rnd() - 0.5) * HL * 1.1, cy = (0.2 + rnd() * (HW - 0.38)) * (out.length % 2 ? -1 : 1), a = (rnd() - 0.5) * 2.2, l = 0.13 + rnd() * 0.1;
+      const q = [cx - Math.cos(a) * l, cy - Math.sin(a) * l, cx + Math.cos(a) * l, cy + Math.sin(a) * l].map(v => Math.round(v * 1000) / 1000), s = g.P.wall(q[0], q[1], q[2], q[3]);
+      const far = (x, y, min) => { const u = Math.max(0, Math.min(s.len, (x - s.ax) * s.tx + (y - s.ay) * s.ty)); return Math.hypot(x - s.ax - s.tx * u, y - s.ay - s.ty * u) > min; };
+      if (Math.abs(q[1]) > HW - 0.13 || Math.abs(q[3]) > HW - 0.13 || Math.abs(q[1]) < 0.12 || Math.abs(q[3]) < 0.12 || q[1] * q[3] < 0) continue;
+      if (!g.world.balls.every(b => !b.on || far(b.x, b.y, 3.2 * R)) || out.some(o => Math.hypot((o[0] + o[2]) / 2 - cx, (o[1] + o[3]) / 2 - cy) < 0.4)) continue;
+      out.push(q);
+    }
+    return out;
+  }
+  g.setBars = () => { g.world.walls = g.bars && g.bars.length ? g.bars.map(q => g.P.wall(q[0], q[1], q[2], q[3])) : null; };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
   g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
@@ -1206,6 +1318,17 @@ function createGame(PH) {
     const m = g.mode, P = g.P, w = g.world, me = g.turn, p = g.players[me];
     const r = m.evaluate(w.ev, g._ctx, g), out = { r, msg: '', kind: '', dur: 1600 };
     for (const b of w.balls) b.wz = 0;
+    if (w.ev.off.length) {
+      // a ball over the rail is a foul; it comes back on its spot (the cue ball: wherever the other player likes, on a pool table)
+      const cueOff = w.ev.off.includes(w.cue);
+      r.foul = cueOff ? '큐볼이 테이블 밖으로 나갔습니다' : '공이 테이블 밖으로 나갔습니다'; r.keep = false; r.solved = false;
+      if (m.table === 'carom') { r.pts = m.solo ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
+      else {
+        if (cueOff) r.scratch = true;
+        if (r.win === me) { r.win = m.id === 'eight' ? 1 - me : null; r.why = '8번 공을 넣으면서 파울이 났습니다.'; if (m.id === 'nine') r.respot.push(9); }
+        for (const id of w.ev.off) if (id !== w.cue && !r.respot.includes(id)) r.respot.push(id);
+      }
+    }
     for (const id of r.respot) { const [x, y] = P.findFree(w, P.HL / 2, 0, id); P.place(w, id, x, y); }
     if (r.scratch) { const [x, y] = P.findFree(w, -P.HL / 2, 0, 0); P.place(w, 0, x, y); }
     g.isBreak = false;
@@ -1213,7 +1336,7 @@ function createGame(PH) {
     if (r.foul) p.fouls++;
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
-    if (m.target && p.score >= g.target) { r.win = me; r.why = `먼저 ${g.target}점을 냈습니다.`; }
+    if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; }
     if (r.win != null) { g.over = { winner: r.win, why: r.why }; return out; }
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
@@ -1222,12 +1345,12 @@ function createGame(PH) {
     if (r.foul) {
       g.turn = 1 - me; const nx = g.players[g.turn].name;
       if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul}. ${nx} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
-      else out.msg = `파울 · ${r.foul}. 1점 감점, ${nx} 차례.`;
+      else out.msg = `파울 · ${r.foul}. ${g.tens ? 10 : 1}점 감점, ${nx} 차례.`;
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
       g.turn = 1 - me; if (!out.msg) out.msg = (r.note ? r.note + '. ' : '') + `${g.players[g.turn].name} 차례`; if (r.note) out.dur = 2600;
     } else if (r.pts > 0) {
-      out.msg = `${p.name} 1점!`; out.kind = 'good';
+      out.msg = `${p.name} ${g.tens ? 10 : 1}점!`; out.kind = 'good';
     } else if (m.id === 'eight' && !r.assign) {
       const rem = m.remaining(g, me);
       if (rem && !rem.length) { out.msg = '이제 8번 공을 넣으면 이깁니다.'; out.kind = 'good'; out.dur = 2400; }
@@ -1385,7 +1508,7 @@ function createGame(PH) {
   }
 
   function aiPool() {
-    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.level, me = g.turn;
+    const P = g.P, { R, HL, HW, POCKETS } = P, w = g.world, c = w.balls[w.cue], lvl = g.levels ? g.levels[g.turn] : g.level, me = g.turn;
     const ctx = g.mode.ctx(g), noise = [0.014, 0.0055, 0.0016, 0][lvl];
     if (g.isBreak) {
       const y = (Math.random() - 0.5) * 0.3, pos = [-HL / 2 - 0.1, y];
@@ -1457,7 +1580,7 @@ function createGame(PH) {
   }
 
   function aiCarom() {
-    const w = g.world, c = w.balls[w.cue], lvl = g.level, ctx = g.mode.ctx(g);
+    const w = g.world, c = w.balls[w.cue], lvl = g.levels ? g.levels[g.turn] : g.level, ctx = g.mode.ctx(g);
     const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
     const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
@@ -1506,6 +1629,7 @@ function createGame(PH) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, bars: g.bars, masse: g.masse,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -1513,7 +1637,9 @@ function createGame(PH) {
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
-    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null;
+    g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
+    g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
+    g.ice = !!d.ice; g.world.ice = g.ice; g.bars = d.bars || null; g.setBars(); g.masse = d.masse !== false;
     return true;
   };
   return g;
@@ -1808,10 +1934,10 @@ function createLeague() {
    No DOM in here. */
 function createHighlights() {
   // everything the physics depends on, for every ball
-  function snapshot(w) { return { cue: w.cue, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
+  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, walls: w.walls || null, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
   function restore(w, s) {
-    w.cue = s.cue;
-    s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
+    w.cue = s.cue; w.ice = !!s.ice; w.walls = s.walls || null;
+    s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
   // the two balls a carom shot has to reach: the reds in four-ball, whatever is not the cue ball in three-ball
@@ -1824,7 +1950,8 @@ function createHighlights() {
     if (mode.table === 'carom') {
       if (!(res.pts > 0)) return { score: 0 };
       const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
+      const trick = shot.j ? '점프 샷' : shot.el > 0.3 ? '맛세이' : null;
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5 + (trick ? 18 : 0), tag: trick ? trick + ' 득점' : cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -1838,7 +1965,8 @@ function createHighlights() {
     const bank = ev.railed.includes(main.id), combo = main.id !== first, many = potted.length;
     let score = 10 * many + 6 * (d1 + d2) + cut / 5 + (bank ? 14 : 0) + (combo ? 12 : 0) + (res.win === shot.turn ? 6 : 0);
     if (shot.isBreak) score *= 0.35;                                   // a break is mostly luck
-    const tag = bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
+    if (shot.j || shot.el > 0.3) score += 18;
+    const tag = shot.j ? '점프 샷' : shot.el > 0.3 ? '맛세이' : bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
     return { score, tag, key: main.id, kinds: { bank, combo, long: d1 + d2 > 1.5, multi: many >= 2, thin: cut > 42 } };
   }
 
@@ -1852,6 +1980,7 @@ function createHighlights() {
       const last = ev.pocketed.filter(p => p.id !== cueId).pop();
       return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
     }
+    if (ev.off && ev.off.length) return { score: 70, tag: '장외 홈런', kind: 'air', ball: ev.off[0], near: -1 };
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
     if (first == null) return { score: 50, tag: '헛스윙', kind: 'air', ball: cueId, near: -1 };
     // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
@@ -1873,7 +2002,7 @@ function createHighlights() {
   // is hit), where on the table that is, and which way the ball was travelling as it got there.
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
-    P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el, shot.j);
     const obj = caromTargets(n, shot.snap.cue);
     const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
@@ -1889,16 +2018,16 @@ function createHighlights() {
     return { tHit, tKey, dur: t, kx, ky, ux, uy };
   }
   /* ---- the tape: the whole shot written down once, so that a replay can be run at any speed, backwards, or cut ---- */
-  const TICK = 1 / 120, F = 7;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
+  const TICK = 1 / 120, F = 8;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
   function record(P, n, shot) {
     const tape = plan(P, n, shot), w = P.makeWorld(n); restore(w, shot.snap);
     const nb = w.balls.length, S = nb * F, events = []; let data = new Float32Array(S * 600), count = 0;
     const put = () => {
       if ((count + 1) * S > data.length) { const d = new Float32Array(data.length * 2); d.set(data); data = d; }
-      let o = count * S; for (const b of w.balls) { data[o] = b.x; data[o + 1] = b.y; data[o + 2] = b.on ? 1 : 0; data[o + 3] = b.q[0]; data[o + 4] = b.q[1]; data[o + 5] = b.q[2]; data[o + 6] = b.q[3]; o += F; }
+      let o = count * S; for (const b of w.balls) { data[o] = b.x; data[o + 1] = b.y; data[o + 2] = b.on ? 1 : 0; data[o + 3] = b.q[0]; data[o + 4] = b.q[1]; data[o + 5] = b.q[2]; data[o + 6] = b.q[3]; data[o + 7] = b.z || 0; o += F; }
       count++;
     };
-    put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el, shot.j);
     while (!P.rest(w) && count < 30 * 120) { P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put(); }
     if (tape.tKey < 0) tape.tKey = Math.min((count - 1) * TICK, 1);
     if (tape.tHit < 0) tape.tHit = tape.tKey;
@@ -1911,7 +2040,9 @@ function createHighlights() {
   function blunder(P, tape, shot) {
     const id = shot.ball, a = [0, 0], b = [0, 0]; let t = tape.dur;
     const drop = tape.events.find(e => e.t === 'pocket' && e.id === id);
-    if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
+    const gone = tape.events.find(e => e.t === 'off' && e.id === id);
+    if (gone) { t = gone.time; tape.kx = gone.x; tape.ky = gone.y; }
+    else if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
     else {
       if (shot.kind === 'wrong') t = tape.tHit;
       else if (shot.near != null) {
@@ -1932,7 +2063,7 @@ function createHighlights() {
     for (let j = 0; j < tape.nb; j++) {
       const b = w.balls[j], o = Math.max(0, i) * S + j * F, o2 = tape.count > 1 ? o + S : o, both = !!(d[o + 2] && d[o2 + 2]), u = both ? k : 0;
       b.on = !!d[o + 2] && (both || k < 0.5);
-      b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u;
+      b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u; b.z = b.pz = d[o + 7] + (d[o2 + 7] - d[o + 7]) * u; b.vz = 0;
       const sg = d[o + 3] * d[o2 + 3] + d[o + 4] * d[o2 + 4] + d[o + 5] * d[o2 + 5] + d[o + 6] * d[o2 + 6] < 0 ? -1 : 1;
       for (let c = 0; c < 4; c++) b.q[c] = d[o + 3 + c] + (sg * d[o2 + 3 + c] - d[o + 3 + c]) * u;
       b.vx = b.vy = b.wx = b.wy = b.wz = 0;
@@ -2244,11 +2375,15 @@ function createScene(canvas, app, PH) {
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
   }
+  let clothI = 0, iced = false;
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0];
-    feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    const c = CLOTHS[i] || CLOTHS[0]; clothI = i;
+    feltMat.color.copy(col(iced ? 0xb4e1f7 : c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    // ice: pale, smooth and shining where the cloth is matt
+    feltMat.roughness = iced ? 0.22 : 1; feltMat.envMapIntensity = iced ? 0.75 : 0.1; feltMat.bumpScale = iced ? 0.00012 : 0.0005; feltMat.needsUpdate = true;
     staticDirty = true; dirty = 3;
   }
+  function setIce(on) { if (iced === !!on) return; iced = !!on; setCloth(clothI); }
 
   /* balls */
   const sphere = new THREE.SphereGeometry(1, 40, 28);
@@ -2339,7 +2474,7 @@ function createScene(canvas, app, PH) {
   const gHand = new THREE.Mesh(new THREE.RingGeometry(1.55, 1.78, 40), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.95, depthTest: false, depthWrite: false, toneMapped: false }));
   const dotGeo = new THREE.CircleGeometry(1, 14), dotMat = gMat(0.95), gDots = [];
   dotMat.color.copy(col(0xffd21f));
-  for (let i = 0; i < 44; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
+  for (let i = 0; i < 90; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
   for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
@@ -2347,6 +2482,15 @@ function createScene(canvas, app, PH) {
   zone.add(new THREE.Mesh(new THREE.RingGeometry(0.955, 1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false })));
   zone.children.forEach(m => { m.renderOrder = 2; });
   function setZone(z) { zone.visible = !!z; if (z) { zone.position.set(z.x, z.y, 0.0012); zone.scale.set(z.r, z.r, 1); } dirty = 3; }
+  // hint marks: numbered spots where the cue ball will touch something, in order
+  const marks = new THREE.Group(); scene.add(marks);
+  const markTex = n => { const c = mkCanvas(96, 96), g = c.getContext('2d'); g.beginPath(); g.arc(48, 48, 42, 0, 6.3); g.fillStyle = '#ffd21f'; g.fill(); g.lineWidth = 7; g.strokeStyle = '#15171c'; g.stroke();
+    g.fillStyle = '#15171c'; g.font = '800 54px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 48, 52); return tex(c); };
+  function setMarks(list) {
+    while (marks.children.length) { const m = marks.children.pop(); m.material.map.dispose(); m.material.dispose(); }
+    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 2.2); m.scale.set(cur.R * 1.5, cur.R * 1.5, 1); marks.add(m); });
+    dirty = 3;
+  }
   let ppm = 200, guideKey = '', pathPts = [];
   function setLine(m, x0, y0, x1, y1, px, z) {
     const len = Math.hypot(x1 - x0, y1 - y0);
@@ -2456,6 +2600,8 @@ function createScene(canvas, app, PH) {
     if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
     falls.push({ id: e.id, x: e.x, y: e.y, z: P.R, vx, vy, vz: 0, p });
   }
+  // a ball that has jumped the rail carries on through the air and out of sight
+  function fly(P, e) { falls.push({ id: e.id, x: e.x, y: e.y, z: P.R + (e.z || 0), vx: e.vx, vy: e.vy, vz: e.vz || 0, p: null }); }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   /* barricades (puzzles): striped bars standing on the cloth, kept in step with the world's list of walls */
@@ -2494,16 +2640,23 @@ function createScene(canvas, app, PH) {
       const b = w.balls[i], m = set.mesh[i], s = set.blob[i];
       const on = !!b && b.on; s.visible = on;
       if (on) {
-        const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a;
-        m.visible = true; m.scale.setScalar(R); m.position.set(x, y, R); m.material.color.setScalar(1);
+        const x = b.px + (b.x - b.px) * a, y = b.py + (b.y - b.py) * a, z = (b.pz || 0) + ((b.z || 0) - (b.pz || 0)) * a;
+        m.visible = true; m.scale.setScalar(R * (1 + z * 2.4)); m.position.set(x, y, R + z); m.material.color.setScalar(1);   // off the cloth it comes towards the eye
+        const so = z * 0.55;
         const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
         m.quaternion.set(q[0], q[1], q[2], q[3]);
-        s.children[0].position.x = x; s.children[0].position.y = y;
+        s.children[0].position.x = x + so; s.children[0].position.y = y - so;
         for (let k = 0; k < LAMPS.length; k++) { const L = LAMPS[k], f = R / (L[2] - R), c2 = s.children[k + 1]; c2.position.x = x + (x - L[0]) * f; c2.position.y = y + (y - L[1]) * f; }
       } else if (!falls.some(f => f.id === i)) m.visible = false;
     }
     for (let i = falls.length - 1; i >= 0; i--) {
       const f = falls[i], m = set.mesh[f.id], p = f.p;
+      if (!p) {
+        const h = Math.min(dt, 0.05); f.vz -= 9.8 * h; f.x += f.vx * h; f.y += f.vy * h; f.z += f.vz * h;
+        if (m) { m.visible = f.z > -0.7; m.scale.setScalar(R); m.position.set(f.x, f.y, f.z); m.material.color.setScalar(Math.max(0.2, Math.min(1, 1 + f.z * 1.6))); }
+        if (f.z <= -0.7) { fallEvents.push({ t: 'land', v: 2.5, x: Math.max(-1, Math.min(1, f.x)), y: f.y }); falls.splice(i, 1); }
+        continue;
+      }
       let left = Math.min(dt, 0.05);
       while (left > 1e-5) {
         const h = Math.min(left, 0.004); left -= h;
@@ -2525,14 +2678,35 @@ function createScene(canvas, app, PH) {
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
     if (cue.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
-      const tx = c.x - dx * (R + v.pull), ty = c.y - dy * (R + v.pull);
-      cue.position.set(tx, ty, R + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI);
-      const sx = tx - dx * 0.735 + 0.012, sy = ty - dy * 0.735 - 0.014;
-      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47, 0.022, 1);
+      // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
+      const e = v.jump ? 0.7 : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
+      const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
+      cue.position.set(tx, ty, R + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -(0.085 + e), v.aim + Math.PI);
+      const sx = tx - dx * 0.735 * ce + 0.012, sy = ty - dy * 0.735 * ce - 0.014;
+      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }
     if (guide.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim), lv = v.level;
-      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev].join('|');
+      const raised = v.jump || v.el > 0.02;
+      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, v.jump ? 'j' : (v.el || 0).toFixed(2)].join('|');
+      if (key !== guideKey && raised) {
+        // no straight line for a ball that curves or flies: the shot is played out and its path dotted, as far as the guide length allows
+        guideKey = key;
+        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
+        for (const d of gDots) d.visible = false;
+        if (lv >= 1) {
+          const pts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, lv >= 3 ? 2.6 : 1.8, v.el || 0, !!v.jump, lv >= 3 ? 2 : 1);
+          let acc = 0, n = 0, lx = c.x, ly = c.y;
+          for (let i = 0; i < pts.length && n < gDots.length; i += 3) {
+            const x = pts[i], y = pts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
+            if (acc >= 0.036) { acc = 0; const d = gDots[n++]; d.visible = true; d.position.set(x, y, R + pts[i + 2]); d.scale.setScalar(Math.max(0.004, (pts.first >= 0 && i > pts.first ? 2.6 : 3.4) / ppm)); }
+          }
+          if (pts.first >= 0 && pts.first < pts.length) {
+            gRing.visible = true; gRing.position.set(pts[pts.first], pts[pts.first + 1], R + pts[pts.first + 2]); gRing.scale.setScalar(R);
+            gRing.material.color.set(pts.hit == null || v.legalIds.indexOf(pts.hit) >= 0 ? 0xffffff : 0xff6a58);
+          }
+        }
+      }
       if (key !== guideKey) {
         guideKey = key;
         const pr = P.cast(w, c.x, c.y, dx, dy, w.cue);
@@ -2604,7 +2778,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setIce, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
@@ -3031,6 +3205,8 @@ function createReel(d) {
     const pan = d.panOf(e.x, e.y), fx = !r.style.bare;
     if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); if (fx) { const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); } }
     else if (e.t === 'ball') { SND.ball(e.v, pan); if (fx && e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
+    else if (e.t === 'off') scene.fly(game.P, e);
+    else if (e.t === 'land') SND.ball(Math.min(1.2, e.v * 0.4), pan);
     else { SND.rail(e.v, pan); if (fx && e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
     if (r.style.on) r.style.on(e); else if (e.t === 'ball' && e.v > 0.8) kick('beat');
   }
@@ -3775,7 +3951,7 @@ function createReel(d) {
       const pts = HL.path(tp, i); if (pts) r.paths.push({ id: i, pts, col: r.cols[i] });
     }
     const c = w.balls[w.cue]; r.cue0 = [c.x, c.y];
-    st.aim = shot.aim; st.power = Math.min(1, game.powerOf(shot.V)); st.spin = { x: shot.a / 0.5, y: shot.b / 0.5 };
+    st.aim = shot.aim; st.power = Math.min(1, game.powerOf(shot.V)); st.spin = { x: shot.a / 0.5, y: shot.b / 0.5 }; st.el = shot.el || 0; st.jump = !!shot.j;
     const info = kind === 'best' ? SND.song.info : null; r.beat = 60 / (info ? info.bpm : 140);
     $('#reelFx').textContent = ''; big.className = ''; big.textContent = ''; tag(''); $('#reel').hidden = false; $('#reelFade').classList.remove('go');
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');
@@ -3832,13 +4008,20 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null,
+    suji: {}, sujiAI: 5, finish: false, arcade: 'none', masse: true, cues: null, lab: null, v: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   if (!p.puz || typeof p.puz !== 'object') p.puz = { cur: 1, done: {}, best: 0 };
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
+  if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
+  p.cues = p.cues.map(i => CUES[i] ? i : 0);
+  if (!p.suji || typeof p.suji !== 'object') p.suji = {};
+  // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
+  p.lab = Object.assign({ masse: true, suji: true, arcade: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
+  if (p.v < 2) { p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
@@ -3859,11 +4042,15 @@ let rec = store.get('rec', {});
 const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
+const LAB = prefs.lab;
+// four-ball handicaps, the way a hall counts: 50 means five scores to go out. Kept per name.
+const SUJI = [3, 5, 8, 10, 15, 20];
+const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;
 
 /* What is on screen and where the current shot is.
    screen: home | play | result | league | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, jump: false, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -3872,7 +4059,7 @@ if (!scene) {
   d.textContent = '이 기기에서 3D 그래픽을 켤 수 없어 게임을 띄우지 못했습니다. 인터넷 연결을 확인한 뒤 다시 열어 주세요.';
   app.textContent = ''; app.appendChild(d); return;
 }
-scene.setCloth(prefs.cloth); scene.setCue(prefs.cue); scene.setQuality(prefs.quality);
+scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs.quality);
 function applyTheme() {
   const light = prefs.theme === 'light';
   app.dataset.theme = light ? 'light' : 'dark';
@@ -3905,7 +4092,10 @@ function drawCue(cv, d, vertical) {
   g.globalCompositeOperation = 'source-atop';
   g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
 }
-function paintPowerCue() { drawCue($('#powerCue'), CUES[prefs.cue] || CUES[0], !scene.portrait); }
+// whose cue is out: each player has their own
+let cueNow = prefs.cues[0];
+function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); if (st.screen === 'play') paintPowerCue(); }
+function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], !scene.portrait); }
 
 /* ================= small DOM helpers ================= */
 function el(tag, attrs, kids) {
@@ -4020,9 +4210,11 @@ function sheetTable() {
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
       [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); scene.setCloth(i); paintHome(); sheetTable(); })))]);
 }
+let cueWho = 0;
 function sheetCue() {
-  openSheet('큐 고르기', CUES.map((c, i) => optBtn(prefs.cue === i,
-    [el('canvas', { class: 'cuepic' }), optText(c.name, c.note)], () => { prefs.cue = i; savePrefs(); scene.setCue(i); paintHome(); sheetCue(); })));
+  const two = !prefs.vsAI && prefs.mode !== 'practice' && prefs.mode !== 'puzzle'; if (!two) cueWho = 0;
+  openSheet('큐 고르기', [two ? segRow('누구 큐', [[0, prefs.names[0]], [1, prefs.names[1]]], cueWho, v => { cueWho = v; sheetCue(); }) : null].concat(CUES.map((c, i) => optBtn(prefs.cues[cueWho] === i,
+    [el('canvas', { class: 'cuepic' }), optText(c.name, c.note)], () => { prefs.cues[cueWho] = i; if (!cueWho) prefs.cue = i; savePrefs(); if (cueWho === 0) useCue(i); paintHome(); sheetCue(); }))));
   document.querySelectorAll('#sheetBody .cuepic').forEach((cv, i) => drawCue(cv, CUES[i], false));
 }
 // one guide length per player (a handicap); a single row when only one person is aiming
@@ -4041,8 +4233,27 @@ function sheetSettings() {
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
+    flatBtn('실험실 · 2.0에서 바뀐 것 끄고 켜기', sheetLab),
+    note('CUE 2.0'),
   ]);
 }
+// every large change of 2.0 behind its own switch, so that one that turns out badly can be taken back without reinstalling
+function sheetLab() {
+  const row = (k, name, d) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: name }), el('div', { class: 'seg' }, [[true, '켬'], [false, '끔']].map(([v, t]) => el('button', { 'aria-pressed': String(LAB[k] === v), text: t, onclick: () => { SND.tap(); LAB[k] = v; savePrefs(); labChanged(); sheetLab(); } }))), d ? note(d) : null]);
+  openSheet('실험실', [
+    note('2.0에서 새로 들어간 것들입니다. 마음에 안 드는 것은 여기서 끄면 1.x 때처럼 돌아갑니다.'),
+    row('masse', '맛세이 · 점프', '큐를 세워 치는 샷. 끄면 회전 창에서 사라집니다.'),
+    row('suji', '수지 (4구)', '이름마다 자기 수지까지 칩니다. 끄면 둘 다 같은 점수까지.'),
+    row('arcade', '아케이드 (빙판 · 장애물)'),
+    row('tray', '넣은 공 표시 (8볼)', '이름표에 넣은 공이 쌓입니다. 끄면 남은 공을 보여줍니다.'),
+    row('demo', '첫 화면 자동 시연'),
+    row('fire', '연승 불꽃'),
+    row('stage', '퍼즐 스테이지 화면'),
+    row('resume', '이어하기', '끄면 처음으로 나갈 때 하던 판을 지웁니다.'),
+    flatBtn('설정으로', sheetSettings),
+  ]);
+}
+function labChanged() { if (st.screen === 'home') { paintHome(); homePreview(); } }
 // the best-shot reel: which edit it gets, and the songs it may use (picked from this device and kept on it)
 const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
 function sheetSong(busy) {
@@ -4069,19 +4280,27 @@ $('#songFile').addEventListener('change', async e => {
   for (const f of files) { try { await SND.song.take(f); } catch (err) { toast(err && err.message === 'full' ? `노래는 ${SND.song.MAX}곡까지 넣을 수 있습니다.` : '이 파일은 읽을 수 없습니다. mp3나 m4a, wav 파일로 해 보세요.', 'foul', 3200); } }
   sheetSong();
 });
-function sheetName(i) {
-  if (i === 1 && prefs.vsAI) return;
-  const input = el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: prefs.names[i], 'aria-label': '이름', autocomplete: 'off' });
-  const save = () => { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) { prefs.names[i] = v; savePrefs(); } closeSheet(); paintHome(); };
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
-  openSheet(`${i + 1}번 선수 이름`, [input, note('전적은 이름별로 따로 쌓입니다. 열 글자까지.'), el('button', { class: 'btn cta', text: '저장', onclick: save })]);
-  setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
+function sheetName(i, keep) {
+  const ai = i === 1 && prefs.vsAI, four = prefs.mode === 'four' && LAB.suji;
+  if (ai && !four) return;
+  const input = ai ? null : el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: keep == null ? prefs.names[i] : keep, 'aria-label': '이름', autocomplete: 'off' });
+  let suji = sujiOf(i);
+  const save = () => {
+    if (input) { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) prefs.names[i] = v; }
+    if (four) { if (ai) prefs.sujiAI = suji; else prefs.suji[prefs.names[i]] = suji; }
+    savePrefs(); closeSheet(); paintHome();
+  };
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  const sj = four ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '수지 (몇 쳐?)' }), el('div', { class: 'seg' }, SUJI.map(v => el('button', { 'aria-pressed': String(v === suji), text: String(v * 10), onclick: e => { SND.tap(); suji = v; for (const b of e.target.parentNode.children) b.setAttribute('aria-pressed', String(b === e.target)); } }))),
+    note('한 번 득점이 10점, 자기 수지만큼 먼저 치면 이깁니다. 50이면 다섯 번. 실력이 달라도 각자 수지대로 치면 승부가 됩니다.')]) : null;
+  openSheet(ai ? '컴퓨터 수지' : `${i + 1}번 선수`, [input, input ? note('전적은 이름별로 따로 쌓입니다. 열 글자까지.') : null, sj, el('button', { class: 'btn cta', text: '저장', onclick: save })]);
+  if (input && !four) setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
 }
 function sheetPause() {
   openSheet('잠깐 멈춤', [
     el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
     el('div', { class: 'row' }, [flatBtn('조준선', sheetGuide), flatBtn('설정', sheetSettings)]),
-    el('div', { class: 'row' }, [flatBtn('다시 시작', () => { closeSheet(); flow.restart(); }), flatBtn('처음으로', goHome)]),
+    el('div', { class: 'row' }, [flatBtn('다시 시작', () => { closeSheet(); flow.restart(); }), flatBtn('처음으로', () => goHome(true))]),
   ]);
 }
 
@@ -4116,6 +4335,16 @@ function buildModes() {
   }
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
+// a run of wins burns: red at two, yellow at three, mint at four, purple from five on
+const fireOf = n => LAB.fire && n >= 2 ? ' fire f' + Math.min(5, n) : '';
+const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구' };
+function paintResume() {
+  const box = $('#resumeBox'), d = LAB.resume ? store.get('save', null) : null, ok = !!(d && d.v === 2 && d.game && MODE_KO[d.game.modeId] && prefs.mode !== 'practice' && prefs.mode !== 'puzzle');
+  box.hidden = !ok; box.textContent = ''; if (!ok) return;
+  const gm = d.game, ps = gm.players, tens = gm.tens ? 10 : 1, sc = gm.modeId === 'four' || gm.modeId === 'three' ? ` · ${ps[0].score * tens} : ${ps[1].score * tens}` : '';
+  box.appendChild(el('button', { class: 'resume', onclick: () => { SND.init(); SND.tap(); resume(d); } }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
+  box.appendChild(el('button', { class: 'resume-x', 'aria-label': '하던 판 지우기', text: '×', onclick: () => { SND.tap(); store.set('save', null); paintResume(); } }));
+}
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 // lessons, grouped the way a course list is: what you learn first at the top
 const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
@@ -4123,7 +4352,7 @@ function paintHome() {
   const prac = prefs.mode === 'practice', puz = prefs.mode === 'puzzle';
   $('#vsBox').hidden = prac || puz; $('#pracList').hidden = !prac; $('#puzBox').hidden = !puz; $('#modeBox').hidden = prac || puz;
   $('#rightLab').textContent = prac ? '레슨' : puz ? '퍼즐' : '대결'; $('#startBtn').textContent = prac ? '레슨 시작' : puz ? '퍼즐 풀기' : '시작';
-  paintNav();
+  paintNav(); paintResume();
   if (prac) {
     // each lesson a row with how far it has been taken; a lesson is finished at its top level
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
@@ -4150,12 +4379,16 @@ function paintHome() {
     });
     box.scrollTop = top;
   }
-  $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
-  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
-  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom(); $('#segRule3').hidden = prefs.mode !== 'three';
+  const sujiOn = prefs.mode === 'four' && LAB.suji, sj = i => sujiOn ? `수지 ${sujiOf(i) * 10} · ` : '';
+  $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = sj(0) + recText(prefs.names[0]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = sj(1) + (prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]));
+  for (let i = 0; i < 2; i++) { const r = rec[i === 1 && prefs.vsAI ? '컴퓨터' : prefs.names[i]]; $('#pc' + i).className = 'prow' + (i ? ' two' : '') + fireOf(r ? r.streak : 0); }
+  $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom() || sujiOn; $('#segRule3').hidden = prefs.mode !== 'three';
+  $('#segFinish').hidden = prefs.mode !== 'four'; $('#arcBox').hidden = !LAB.arcade; $('#segMasse').hidden = !LAB.masse;
+  for (const f of segPaint) f();
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
-  $('#cueVal').textContent = CUES[prefs.cue].name;
+  $('#cueVal').textContent = prefs.cues[0] === prefs.cues[1] || prefs.vsAI || prac || puz ? CUES[prefs.cues[0]].name : '각자';
   const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
@@ -4170,18 +4403,37 @@ function homePreview() {
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
     if (L) { flow = null; putLayout(L); scene.setZone(L.zone); playDemo(L.demo, { quiet: true, after: homePreview }); return; }
   }
-  flow = null;
-  game.start(game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', [prefs.names[0], oppName()], false, {});
-  scene.setTable(game.P); st.rev++; scene.invalidate();
+  flow = null; scene.setMarks(null); useCue(prefs.cues[0]);
+  const mode = game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', ice = LAB.arcade && prefs.arcade === 'ice';
+  game.start(mode, [prefs.names[0], oppName()], false, { ice, bars: LAB.arcade && prefs.arcade === 'bars', levels: [2, 2], target: 99 });
+  scene.setIce(ice); scene.setTable(game.P); st.rev++; scene.invalidate();
+  if (LAB.demo) { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; st.jump = false; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }
 }
-function goHome() {
-  store.set('save', null);
+// The table on the first screen plays itself: two computers at the hard level, one game after another, without a sound.
+const homeDemo = {
+  quiet: true, save: false, guide: () => 2, restart() {}, beforeShot() {}, hud() {},
+  auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, pos: p.pos }; } }),
+  afterShot() { game.resolve(); if (st.screen !== 'home') return; if (game.over) return hold(2.2, () => { if (flow === homeDemo && st.screen === 'home') homePreview(); }); useCue(prefs.cues[prefs.vsAI ? 0 : game.turn]); beginTurn(false); },
+};
+// leaving a game: `keep` leaves it saved so that it can be picked up again from the first screen
+function goHome(keep) {
+  if (!(keep === true && LAB.resume)) store.set('save', null);
   show('home'); buildModes(); paintHome(); homePreview();
+}
+function resume(d) {
+  if (TABLES.some(t => t.id === d.tbl)) { prefs.table = d.tbl; PH.pool = poolOf(d.tbl); }
+  st.phase = 'idle'; st.auto = null; st.afterHold = null; scene.clearFalls();
+  if (!game.restore(d.game)) { store.set('save', null); return paintResume(); }
+  if (d.series) { series.key = d.series.key; series.s = d.series.s; }
+  match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target, fix: null,
+    targets: game.tens ? game.targets.slice() : null, finish: game.finish, arcade: game.ice ? 'ice' : game.bars ? 'bars' : 'none', masse: game.masse };
+  const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
+  prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
 }
 
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
-  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; setPowerUI(0); setSpinUI(); $('#spinPop').hidden = true;
+  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = 0; st.jump = false; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {
@@ -4191,10 +4443,11 @@ function beginTurn(first) {
   }
   flow.hud(); scene.invalidate(); snapshot();
 }
-function shoot(V, a, b) {
-  flow.beforeShot(V, a, b); game.beginShot();
+function shoot(V, a, b, el, j) {
+  el = j ? 0.7 : el || 0; j = !!j;
+  flow.beforeShot(V, a, b, el, j); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
-  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b };
+  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el, j };
   flow.hud();
 }
 function endShot() { st.rev++; flow.afterShot(); }
@@ -4210,12 +4463,13 @@ function autoTick(dt) {
     if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
+    st.el = a.plan.j ? 0 : a.plan.el || 0; st.jump = !!a.plan.j; setKindUI(); flow.hud();
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
   st.aim = a.from + a.delta * e(t / 0.75);
   st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
-  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b); }
+  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, a.plan.el, a.plan.j); }
 }
 
 /* ================= scoreboard ================= */
@@ -4223,15 +4477,15 @@ function paintPill(i, s) {
   const box = $('#p' + i), tray = box.querySelector('.tray');
   box.classList.toggle('on', !!s.on);
   box.querySelector('.nm').textContent = s.name;
-  box.querySelector('.sub').textContent = s.sub;
+  box.querySelector('.sub').textContent = s.think ? '생각 중' : s.sub; box.classList.toggle('think', !!s.think);
   box.querySelector('.pts').textContent = s.pts == null ? '' : s.pts;
   tray.textContent = '';
-  for (const t of s.tray || []) tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t));
+  for (const t of s.tray || []) { const c = tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t)); if (s.pop && s.pop.includes(t)) c.classList.add('pop'); }
 }
 function paintBadge(name, b) {
   const badge = $('#badge'); badge.textContent = '';
   badge.appendChild(el('b', { text: name })); badge.appendChild(document.createTextNode(b.text));
-  for (const id of b.balls || []) badge.appendChild(ballChip(id, id === b.mark ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55'));
+  for (const id of b.balls || []) badge.appendChild(ballChip(id, b.plain ? '' : id === b.mark ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55'));
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
@@ -4263,17 +4517,19 @@ const match = {
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
-    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
+    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null,
+      targets: prefs.mode === 'four' && LAB.suji ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, arcade: LAB.arcade ? prefs.arcade : 'none', masse: LAB.masse && prefs.masse };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: LAB.tray, ice: c.arcade === 'ice', bars: c.arcade === 'bars', masse: c.masse }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
-  enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
+  enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); scene.setIce(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
+  cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, pos: p.pos }; } } : null,
-  beforeShot(V, a, b) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
+  beforeShot(V, a, b, el, j) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, j, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, out = game.resolve();
     if (shot) {
@@ -4287,11 +4543,11 @@ const match = {
       if (bad.score >= 20) keep(bad, false);
     }
     if (game.over) return match.finish();
-    toast(out.msg, out.kind, out.dur); beginTurn(false);
+    toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
   },
   hud() {
-    const m = game.mode;
-    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i }, m.status(game, i)));
+    const m = game.mode, pop = st.phase === 'aim' || st.phase === 'auto' ? game.world.ev.pocketed.map(q => q.id) : null;
+    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, pop, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) }, m.status(game, i)));
     paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {
@@ -4364,7 +4620,7 @@ const practice = {
     if (id) { prefs.drill = id; savePrefs(); }
     const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     game.start('practice', [prefs.names[0], ''], false, {});
-    flow = practice; scene.setTable(game.P); show('play'); p.bar();
+    flow = practice; scene.setMarks(null); scene.setIce(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar();
     if (p.drill.make) p.fresh();
     else { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++; beginTurn(true); }
     toast(p.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
@@ -4529,9 +4785,11 @@ function paintLeague() {
   if (lgTab === 'all') {
     const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
     if (!names.length) return add(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.'));
-    add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 56px 124px 52px',
-      [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승률', 'n'], ['최근 5경기', 'fc'], ['연승', 'n xs']],
-      names.map((n, k) => { const r = recOf(n); return [k + 1, n, r.w + r.l, r.w, r.l, Math.round(r.w / (r.w + r.l) * 100) + '%', formChips(r.form), r.best]; }), 1),
+    // one card a player; whoever is on a run of wins has a card on fire
+    add(el('div', { class: 'rcards' }, names.map((n, k) => { const r = recOf(n);
+      return el('div', { class: 'rcard' + fireOf(r.streak) }, [el('span', { class: 'pos', text: k + 1 }),
+        el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
+        formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]); })),
       flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintLeague(); }));
     return;
   }
@@ -4556,9 +4814,10 @@ $('#nav').addEventListener('click', e => {
   if ((v === 'practice' || v === 'puzzle') && prefs.mode !== v) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = v; }
   else if (v === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
   else if (st.screen === 'home') return;
-  modeOpen = false; savePrefs(); goHome();
+  modeOpen = false; savePrefs(); goHome(true);
 });
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
+const segPaint = [];
 press('#menuBtn', sheetPause);
 // look round in 3D and back: while it is on, dragging the table turns the view instead of aiming
 function setView3D(on) {
@@ -4569,7 +4828,7 @@ function setView3D(on) {
 press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else if (prefs.mode === 'puzzle') puzzle.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
-press('#homeBtn', goHome);
+press('#homeBtn', () => goHome());
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
 const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, hud() {}, beforeShot() {}, afterShot() {}, restart() {} };
@@ -4584,8 +4843,11 @@ const playBest = style => playShot(match.best, style), playWorst = style => play
 press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
-seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });
+segPaint.push(seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); }));
 seg('#segRule3', () => prefs.rule3, v => { prefs.rule3 = +v; savePrefs(); });
+segPaint.push(seg('#segFinish', () => prefs.finish ? 1 : 0, v => { prefs.finish = v === '1'; savePrefs(); }));
+segPaint.push(seg('#segArcade', () => prefs.arcade, v => { prefs.arcade = v; savePrefs(); homePreview(); }));
+segPaint.push(seg('#segMasse', () => prefs.masse ? 1 : 0, v => { prefs.masse = v === '1'; savePrefs(); }));
 
 /* ================= input ================= */
 let drag = null;
@@ -4675,7 +4937,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null;
     const p = st.power;
-    if (!cancel && p > 0.03 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5); else { st.power = 0; setPowerUI(0); }
+    if (!cancel && p > 0.03 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el, st.jump); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -4707,8 +4969,24 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   pad.addEventListener('pointerdown', e => { id = e.pointerId; try { pad.setPointerCapture(id); } catch (err) {} set(e); e.preventDefault(); });
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
   pad.addEventListener('pointerup', () => { id = null; }); pad.addEventListener('pointercancel', () => { id = null; });
-  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; setSpinUI(); scene.invalidate(); });
+  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; st.jump = false; setSpinUI(); setKindUI(); scene.invalidate(); });
+  // an ordinary shot, a masse (the cue raised: with side on it the ball curves) or a jump
+  $('#segKind').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || !humanAiming()) return; SND.tap();
+    st.jump = b.dataset.v === '2'; st.el = b.dataset.v === '1' ? (+$('#elRange').value) * Math.PI / 180 : 0;
+    if (b.dataset.v === '1' && Math.abs(st.spin.x) < 0.15) { st.spin = { x: 0.7, y: 0 }; setSpinUI(); toast('맛세이: 회전을 준 쪽으로 큐볼이 휩니다. 큐를 더 세울수록 많이 휩니다.', '', 3200); }
+    if (st.jump) toast('점프: 세게 칠수록 높이, 멀리 뜹니다. 쿠션을 넘어 나가면 파울.', '', 3200);
+    setKindUI(); scene.invalidate();
+  });
+  $('#elRange').addEventListener('input', e => { st.el = (+e.target.value) * Math.PI / 180; setKindUI(); scene.invalidate(); });
 })();
+const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
+function setKindUI() {
+  const k = st.jump ? 2 : st.el > 0.02 ? 1 : 0, ok = trickOK();
+  $('#kindBox').hidden = !ok; $('#elRow').hidden = k !== 1; $('#elVal').textContent = Math.round(st.el * 180 / Math.PI) + '°';
+  for (const b of $('#segKind').children) b.setAttribute('aria-pressed', String(+b.dataset.v === k));
+  const tag = $('#spinTag'); tag.hidden = k === 0; tag.textContent = k === 1 ? '맛세이' : '점프'; tag.dataset.k = k;
+}
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // Android back button: close whatever is on top; false means "nothing left, leave the app".
@@ -4716,7 +4994,7 @@ window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
   if (st.screen === 'reel') { reel.skip(); return true; }
-  if (st.screen === 'result' || st.screen === 'league') { goHome(); return true; }
+  if (st.screen === 'result' || st.screen === 'league') { goHome(st.screen === 'league'); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };
@@ -4731,6 +5009,8 @@ function drain() {
   const s = game.world.snd, quiet = flow.quiet;
   for (const e of s) {
     if (e.t === 'pocket') { scene.fall(game.P, e); if (!quiet) { SND.drop('lip', Math.hypot(e.vx, e.vy), panOf(e.x, e.y)); } }
+    else if (e.t === 'off') scene.fly(game.P, e);
+    else if (e.t === 'land') { if (!quiet) SND.ball(Math.min(1.2, e.v * 0.4), panOf(e.x, e.y)); }
     else if (!quiet) { if (e.t === 'ball') SND.ball(e.v, panOf(e.x, e.y)); else SND.rail(e.v, panOf(e.x, e.y)); }
   }
   s.length = 0;
@@ -4763,7 +5043,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el, ca.j); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
@@ -4771,7 +5051,7 @@ function frame(now) {
   }
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
-    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, rev: st.rev, animating,
+    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, jump: st.phase === 'strike' && st.cueAnim ? st.cueAnim.j : st.jump, rev: st.rev, animating,
     showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
@@ -4786,7 +5066,7 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, fix: match.ctx ? match.ctx.fix : null };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, fix: match.ctx ? match.ctx.fix : null, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
   store.set('save', d);
   try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
@@ -4795,15 +5075,11 @@ function start(data) {
   if (!(data && data.v === 2)) data = store.get('save', null);
   $('#fps').hidden = !prefs.fps;
   if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
-  if (data && data.v === 2 && data.game && data.game.modeId !== 'practice' && game.restore(data.game)) {
-    if (data.series) { series.key = data.series.key; series.s = data.series.s; }
-    match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target, fix: data.fix == null ? null : data.fix };
-    if (match.ctx.fix == null) prefs.mode = game.modeId;
-    st.aim = data.aim || 0; match.enter();
-  } else goHome();
+  // a game left unfinished waits on the first screen as a card to carry on with
+  goHome(true);
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();

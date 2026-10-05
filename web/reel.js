@@ -88,6 +88,8 @@ function createReel(d) {
     const pan = d.panOf(e.x, e.y), fx = !r.style.bare;
     if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); if (fx) { const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); } }
     else if (e.t === 'ball') { SND.ball(e.v, pan); if (fx && e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
+    else if (e.t === 'off') scene.fly(game.P, e);
+    else if (e.t === 'land') SND.ball(Math.min(1.2, e.v * 0.4), pan);
     else { SND.rail(e.v, pan); if (fx && e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
     if (r.style.on) r.style.on(e); else if (e.t === 'ball' && e.v > 0.8) kick('beat');
   }
@@ -832,7 +834,7 @@ function createReel(d) {
       const pts = HL.path(tp, i); if (pts) r.paths.push({ id: i, pts, col: r.cols[i] });
     }
     const c = w.balls[w.cue]; r.cue0 = [c.x, c.y];
-    st.aim = shot.aim; st.power = Math.min(1, game.powerOf(shot.V)); st.spin = { x: shot.a / 0.5, y: shot.b / 0.5 };
+    st.aim = shot.aim; st.power = Math.min(1, game.powerOf(shot.V)); st.spin = { x: shot.a / 0.5, y: shot.b / 0.5 }; st.el = shot.el || 0; st.jump = !!shot.j;
     const info = kind === 'best' ? SND.song.info : null; r.beat = 60 / (info ? info.bpm : 140);
     $('#reelFx').textContent = ''; big.className = ''; big.textContent = ''; tag(''); $('#reel').hidden = false; $('#reelFade').classList.remove('go');
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');

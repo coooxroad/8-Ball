@@ -3,10 +3,10 @@
    No DOM in here. */
 function createHighlights() {
   // everything the physics depends on, for every ball
-  function snapshot(w) { return { cue: w.cue, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
+  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, walls: w.walls || null, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
   function restore(w, s) {
-    w.cue = s.cue;
-    s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; });
+    w.cue = s.cue; w.ice = !!s.ice; w.walls = s.walls || null;
+    s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
   // the two balls a carom shot has to reach: the reds in four-ball, whatever is not the cue ball in three-ball
@@ -19,7 +19,8 @@ function createHighlights() {
     if (mode.table === 'carom') {
       if (!(res.pts > 0)) return { score: 0 };
       const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
+      const trick = shot.j ? '점프 샷' : shot.el > 0.3 ? '맛세이' : null;
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5 + (trick ? 18 : 0), tag: trick ? trick + ' 득점' : cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -33,7 +34,8 @@ function createHighlights() {
     const bank = ev.railed.includes(main.id), combo = main.id !== first, many = potted.length;
     let score = 10 * many + 6 * (d1 + d2) + cut / 5 + (bank ? 14 : 0) + (combo ? 12 : 0) + (res.win === shot.turn ? 6 : 0);
     if (shot.isBreak) score *= 0.35;                                   // a break is mostly luck
-    const tag = bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
+    if (shot.j || shot.el > 0.3) score += 18;
+    const tag = shot.j ? '점프 샷' : shot.el > 0.3 ? '맛세이' : bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
     return { score, tag, key: main.id, kinds: { bank, combo, long: d1 + d2 > 1.5, multi: many >= 2, thin: cut > 42 } };
   }
 
@@ -47,6 +49,7 @@ function createHighlights() {
       const last = ev.pocketed.filter(p => p.id !== cueId).pop();
       return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
     }
+    if (ev.off && ev.off.length) return { score: 70, tag: '장외 홈런', kind: 'air', ball: ev.off[0], near: -1 };
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
     if (first == null) return { score: 50, tag: '헛스윙', kind: 'air', ball: cueId, near: -1 };
     // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
@@ -68,7 +71,7 @@ function createHighlights() {
   // is hit), where on the table that is, and which way the ball was travelling as it got there.
   function plan(P, n, shot) {
     const w = P.makeWorld(n); restore(w, shot.snap);
-    P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el, shot.j);
     const obj = caromTargets(n, shot.snap.cue);
     const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
     while (!P.rest(w) && t < 30) {
@@ -84,16 +87,16 @@ function createHighlights() {
     return { tHit, tKey, dur: t, kx, ky, ux, uy };
   }
   /* ---- the tape: the whole shot written down once, so that a replay can be run at any speed, backwards, or cut ---- */
-  const TICK = 1 / 120, F = 7;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
+  const TICK = 1 / 120, F = 8;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
   function record(P, n, shot) {
     const tape = plan(P, n, shot), w = P.makeWorld(n); restore(w, shot.snap);
     const nb = w.balls.length, S = nb * F, events = []; let data = new Float32Array(S * 600), count = 0;
     const put = () => {
       if ((count + 1) * S > data.length) { const d = new Float32Array(data.length * 2); d.set(data); data = d; }
-      let o = count * S; for (const b of w.balls) { data[o] = b.x; data[o + 1] = b.y; data[o + 2] = b.on ? 1 : 0; data[o + 3] = b.q[0]; data[o + 4] = b.q[1]; data[o + 5] = b.q[2]; data[o + 6] = b.q[3]; o += F; }
+      let o = count * S; for (const b of w.balls) { data[o] = b.x; data[o + 1] = b.y; data[o + 2] = b.on ? 1 : 0; data[o + 3] = b.q[0]; data[o + 4] = b.q[1]; data[o + 5] = b.q[2]; data[o + 6] = b.q[3]; data[o + 7] = b.z || 0; o += F; }
       count++;
     };
-    put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b);
+    put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el, shot.j);
     while (!P.rest(w) && count < 30 * 120) { P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put(); }
     if (tape.tKey < 0) tape.tKey = Math.min((count - 1) * TICK, 1);
     if (tape.tHit < 0) tape.tHit = tape.tKey;
@@ -106,7 +109,9 @@ function createHighlights() {
   function blunder(P, tape, shot) {
     const id = shot.ball, a = [0, 0], b = [0, 0]; let t = tape.dur;
     const drop = tape.events.find(e => e.t === 'pocket' && e.id === id);
-    if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
+    const gone = tape.events.find(e => e.t === 'off' && e.id === id);
+    if (gone) { t = gone.time; tape.kx = gone.x; tape.ky = gone.y; }
+    else if ((shot.kind === 'lost' || shot.kind === 'scratch') && drop) { t = drop.time; tape.kx = P.POCKETS[drop.pocket].x; tape.ky = P.POCKETS[drop.pocket].y; }
     else {
       if (shot.kind === 'wrong') t = tape.tHit;
       else if (shot.near != null) {
@@ -127,7 +132,7 @@ function createHighlights() {
     for (let j = 0; j < tape.nb; j++) {
       const b = w.balls[j], o = Math.max(0, i) * S + j * F, o2 = tape.count > 1 ? o + S : o, both = !!(d[o + 2] && d[o2 + 2]), u = both ? k : 0;
       b.on = !!d[o + 2] && (both || k < 0.5);
-      b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u;
+      b.x = b.px = d[o] + (d[o2] - d[o]) * u; b.y = b.py = d[o + 1] + (d[o2 + 1] - d[o + 1]) * u; b.z = b.pz = d[o + 7] + (d[o2 + 7] - d[o + 7]) * u; b.vz = 0;
       const sg = d[o + 3] * d[o2 + 3] + d[o + 4] * d[o2 + 4] + d[o + 5] * d[o2 + 5] + d[o + 6] * d[o2 + 6] < 0 ? -1 : 1;
       for (let c = 0; c < 4; c++) b.q[c] = d[o + 3 + c] + (sg * d[o2 + 3 + c] - d[o + 3 + c]) * u;
       b.vx = b.vy = b.wx = b.wy = b.wz = 0;

@@ -4,7 +4,7 @@
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
-  const MU_S = 0.2, MU_R = 0.016, MU_SP = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
+  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
   const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
@@ -56,21 +56,21 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0 }; }   // cushions: how many the cue ball met before it had hit two balls
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, off: [] }; }   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
-    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null };   // walls: barricades standing on the cloth (puzzles), made with wall()
+    for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls, ice: w.ice };
   }
 
   function place(w, id, x, y, rnd) {
     const b = w.balls[id];
-    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.hot = 0; b.spit = 0; b.on = true;
+    b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; b.hot = 0; b.spit = 0; b.on = true;
     if (rnd) {
       const a = rnd() * Math.PI * 2, tl = (rnd() - 0.5) * 0.9;
       const cz = Math.cos(a / 2), sz = Math.sin(a / 2), cx = Math.cos(tl / 2), sx = Math.sin(tl / 2);
@@ -78,15 +78,32 @@ function createPhysics(cfg) {
     }
   }
 
-  function strike(w, ang, V, a, bb) {
+  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). A raised cue with side on it sets the
+     ball spinning about the line it travels along, and the cloth pushes back sideways: the ball curves (masse).
+     jump: struck down into the slate so that it leaves the cloth. */
+  function strike(w, ang, V, a, bb, el, jump) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
-    c.vx = V * dx; c.vy = V * dy;
-    const k = 2.5 * V * bb / R;
-    c.wx = -dy * k; c.wy = dx * k; c.wz = 2.5 * V * a / R;
+    el = el || 0; const ce = Math.cos(el), se = Math.sin(el), Vh = V * (jump ? Math.max(0.72, ce) : 0.35 + 0.65 * ce);
+    c.vx = Vh * dx; c.vy = Vh * dy;
+    const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R, tw = jump ? 0 : se;
+    c.wx = -dy * k + dx * ka * tw; c.wy = dx * k + dy * ka * tw; c.wz = ka * (jump ? 1 : ce);
+    c.z = 0; c.vz = jump ? JUMP * V * Math.max(se, 0.5) : 0;
     w.ev = newEv();
   }
+  const JUMP = 0.5, CLEAR = 0.034;                               // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
+    if (b.z > 0 || b.vz > 0) {
+      // in the air: nothing but gravity, until it comes down (and bounces once or twice if it came down hard)
+      b.vz -= G * h; b.z += b.vz * h; b.x += b.vx * h; b.y += b.vy * h;
+      if (b.z <= 0) {
+        b.z = 0;
+        if (b.vz < -0.7) { if (w.snd) w.snd.push({ t: 'land', v: -b.vz, x: b.x, y: b.y, id: b.id }); b.vz = -b.vz * 0.42; b.vx *= 0.94; b.vy *= 0.94; } else b.vz = 0;
+      }
+      if (w.track) turn(b, h);
+      return;
+    }
+    const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? 0.0085 : MU_R0, MU_SP = w.ice ? 0.012 : MU_SP0;
     const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
     if (us > 1e-4) {
       const dec = MU_S * G * h;
@@ -108,16 +125,17 @@ function createPhysics(cfg) {
     b.x += b.vx * h; b.y += b.vy * h;
     const spd = Math.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
     if (b.spit > 0) b.spit -= h;
-    if (w.track) {
-      const wm = Math.hypot(b.wx, b.wy, b.wz);
-      if (wm > 1e-6) {
-        const ang = wm * h, s = Math.sin(ang / 2) / wm, c = Math.cos(ang / 2);
-        const dx = b.wx * s, dy = b.wy * s, dzq = b.wz * s, q = b.q, qx = q[0], qy = q[1], qz = q[2], qw = q[3];
-        q[0] = c * qx + dx * qw + dy * qz - dzq * qy;
-        q[1] = c * qy + dy * qw + dzq * qx - dx * qz;
-        q[2] = c * qz + dzq * qw + dx * qy - dy * qx;
-        q[3] = c * qw - dx * qx - dy * qy - dzq * qz;
-      }
+    if (w.track) turn(b, h);
+  }
+  function turn(b, h) {
+    const wm = Math.hypot(b.wx, b.wy, b.wz);
+    if (wm > 1e-6) {
+      const ang = wm * h, s = Math.sin(ang / 2) / wm, c = Math.cos(ang / 2);
+      const dx = b.wx * s, dy = b.wy * s, dzq = b.wz * s, q = b.q, qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+      q[0] = c * qx + dx * qw + dy * qz - dzq * qy;
+      q[1] = c * qy + dy * qw + dzq * qx - dx * qz;
+      q[2] = c * qz + dzq * qw + dx * qy - dy * qx;
+      q[3] = c * qw - dx * qx - dy * qy - dzq * qz;
     }
   }
 
@@ -166,7 +184,9 @@ function createPhysics(cfg) {
         const b = bs[j]; if (!b.on) continue;
         const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
         if (d2 >= 4 * R * R || d2 < 1e-14) continue;
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
+        const dz = a.z - b.z, reach = dz === 0 ? 2 * R : Math.sqrt(Math.max(0, 4 * R * R - dz * dz));   // one of them in the air: they meet later, or not at all
+        if (dz !== 0 && d2 >= reach * reach) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (reach - d) / 2;
         a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
         const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
         if (rel >= 0) continue;
@@ -182,8 +202,17 @@ function createPhysics(cfg) {
     }
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
-      if (w.walls && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
+      if (w.walls && b.z < 0.046 && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
+        if (b.z > CLEAR) {
+          // over the cushion: once it is past the rail it is gone
+          if (Math.abs(b.x) > HL + 0.05 || Math.abs(b.y) > HW + 0.05) {
+            b.on = false; w.ev.off.push(b.id);
+            if (w.snd) w.snd.push({ t: 'off', id: b.id, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz });
+            b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.vz = 0;
+          }
+          continue;
+        }
         if (b.vx !== 0 || b.vy !== 0) for (let k = 0; k < SEGS.length; k++) hitSeg(w, b, SEGS[k]);
         if (!POCKETED) continue;
         // A ball drops once its centre is far enough over the hole. A fast ball has to get deeper before it drops,
@@ -229,14 +258,14 @@ function createPhysics(cfg) {
 
   function step(w, dt) {
     let vmax = 0;
-    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
+    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
   }
 
   function rest(w) {
-    for (const b of w.balls) if (b.on && (b.vx !== 0 || b.vy !== 0 || b.wx !== 0 || b.wy !== 0)) return false;
+    for (const b of w.balls) if (b.on && (b.vx !== 0 || b.vy !== 0 || b.wx !== 0 || b.wy !== 0 || b.z !== 0 || b.vz !== 0)) return false;
     return true;
   }
 
@@ -298,15 +327,19 @@ function createPhysics(cfg) {
     return cast(w, c.x, c.y, Math.cos(ang), Math.sin(ang), w.cue);
   }
 
-  // Where the cue ball travels after its first contact, for the long aiming guide.
-  function cuePath(w, ang, V, a, bb, maxT) {
-    const w2 = clone(w); strike(w2, ang, V, a, bb);
+  // Where the cue ball travels after its first contact, for the long aiming guide. With `whole`, from the moment it is struck
+  // (a curving or jumping shot has no straight line to draw) as [x, y, z, ...], and `first` is set to where the first contact came.
+  function cuePath(w, ang, V, a, bb, maxT, el, jump, whole) {
+    const w2 = clone(w); strike(w2, ang, V, a, bb, el, jump);
     const c = w2.balls[w2.cue], pts = [];
-    let t = 0, started = false;
+    let t = 0, started = false; pts.first = -1;
     while (t < (maxT || 2.2) && c.on) {
       step(w2, 1 / 120); t += 1 / 120;
-      if (!started && (w2.ev.firstHit != null)) started = true;
-      if (started) { pts.push(c.x, c.y); if (c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break; }
+      if (!started && (w2.ev.firstHit != null || (whole && w2.ev.railed.length))) { started = true; pts.first = pts.length; pts.hit = w2.ev.firstHit; }
+      if (whole) { pts.push(c.x, c.y, c.z); if (started && whole === 1) break; }
+      else if (started) pts.push(c.x, c.y);
+      if (started && c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break;
+      if (!started && c.vx === 0 && c.vy === 0 && c.z === 0) break;
     }
     return pts;
   }
@@ -329,6 +362,7 @@ function createPhysics(cfg) {
       if (!b.on || b.id === skipId) continue;
       if ((b.x - x) ** 2 + (b.y - y) ** 2 < (2 * R + 0.0008) ** 2) return false;
     }
+    for (const q of w.walls || []) { const u = Math.max(0, Math.min(q.len, (x - q.ax) * q.tx + (y - q.ay) * q.ty)); if (Math.hypot(x - q.ax - q.tx * u, y - q.ay - q.ty * u) < R + q.r + 0.002) return false; }
     return true;
   }
 
