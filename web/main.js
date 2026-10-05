@@ -301,12 +301,20 @@ function check() {
   s.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   return s;
 }
+// The kind of game is one card filling the panel's width. Tapping it opens the choices; choosing one closes them again.
+let modeOpen = false;
 function buildModes() {
-  const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'three', 'four']) {
-    const m = game.MODES[id];
-    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
-      [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
+  const box = $('#modeList'); box.textContent = ''; box.classList.toggle('open', modeOpen);
+  const cur = game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight';
+  for (const id of modeOpen ? ['eight', 'nine', 'three', 'four'] : [cur]) {
+    const m = game.MODES[id], chev = el('span', { class: 'chev' });
+    chev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(cur === id), onclick: () => {
+      SND.init(); SND.tap();
+      if (!modeOpen) modeOpen = true;
+      else { modeOpen = false; if (prefs.mode !== id) { prefs.mode = id; savePrefs(); homePreview(); } }
+      buildModes(); paintHome();
+    } }, [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check(), chev]));
   }
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이팅 1000 · 첫 판'; return `레이팅 ${r.elo || 1000} · ${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
@@ -314,7 +322,6 @@ const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1
 function paintHome() {
   const prac = prefs.mode === 'practice';
   $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
-  $('#modeBlurb').textContent = prac ? '' : game.MODES[prefs.mode].blurb;
   for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === (prac ? 'practice' : 'play')));
   if (prac) {
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
@@ -497,15 +504,17 @@ const match = {
     // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
     // Exactly one is the best shot and one the worst.
     const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
+    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
     if (match.best && !has(match.best)) list.push(match.best);
     if (match.worst && !has(match.worst)) list.push(match.worst);
+    // at most six: the best and the worst always, then the strongest of the rest
+    const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(6, list.length);
     list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
-    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
     const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
     for (const q of list) {
       const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
       const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
-      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q); } }, [
+      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q, best ? undefined : 'plain'); } }, [
         el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
@@ -700,7 +709,7 @@ $('#nav').addEventListener('click', e => {
   if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
   else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
   else return;
-  savePrefs(); buildModes(); paintHome(); homePreview();
+  modeOpen = false; savePrefs(); buildModes(); paintHome(); homePreview();
 });
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
@@ -720,7 +729,8 @@ const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, 
 // one of the match's highlights, played as an edit: a good shot to the player's song, a bad one for laughs with no music
 async function playShot(shot, style) {
   if (!shot || st.screen !== 'result') return;
-  if (!shot.kind) { await SND.song.prepare(); if (st.screen !== 'result') return; }
+  // only the best shot gets an edit and a song; every other highlight is simply shown again with one camera move
+  if (!shot.kind && style !== 'plain') { await SND.song.prepare(); if (st.screen !== 'result') return; }
   show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(shot, typeof style === 'string' ? style : shot.kind ? undefined : prefs.edit);
 }
 const playBest = style => playShot(match.best, style), playWorst = style => playShot(match.worst, style);

@@ -85,10 +85,10 @@ function createReel(d) {
     r.rate = rate; r.T = T;
   }
   function fire(e) {
-    const pan = d.panOf(e.x, e.y);
-    if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); }
-    else if (e.t === 'ball') { SND.ball(e.v, pan); if (e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
-    else { SND.rail(e.v, pan); if (e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
+    const pan = d.panOf(e.x, e.y), fx = !r.style.bare;
+    if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); if (fx) { const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); } }
+    else if (e.t === 'ball') { SND.ball(e.v, pan); if (fx && e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
+    else { SND.rail(e.v, pan); if (fx && e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
     if (r.style.on) r.style.on(e); else if (e.t === 'ball' && e.v > 0.8) kick('beat');
   }
 
@@ -140,7 +140,7 @@ function createReel(d) {
   // the cue being drawn back for D seconds, then the strike; true while it is still drawing back
   function cueUp(since, D) {
     if (since < D) { r.cue = true; r.pull = 0.03 + 0.24 * st.power * ease((since - D * 0.25) / (D * 0.65)); return true; }
-    if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); }
+    if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); if (!r.style.bare) { kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); } }
     r.cue = false; return false;
   }
   // from a wide view down to just behind the cue
@@ -659,6 +659,24 @@ function createReel(d) {
       },
     },
 
+    /* ---- any other highlight: the shot again as it happened, with one easy camera move and nothing added ---- */
+    plain: {
+      name: '다시 보기', hidden: true, bare: true, plain: true,
+      init() {
+        const T0 = r.T0 = Math.max(0, tp.tKey - 4); r.I = T0 > 0 ? 0 : 0.9; app.classList.add('colour');
+        Object.assign(cam, { az: topAz() + 0.35, el: 0.72, zoom: 0.96, tx: 0, ty: 0 }); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+        return r.I + (tp.tKey - T0);
+      },
+      step(dt, since, rel) {
+        // from a wide view, drifting round and in toward where it happens
+        const k = ease(since / (r.lead + 0.9));
+        cam.az = topAz() + 0.35 + 0.55 * k; cam.el = lerp(0.72, 0.5, k); cam.zoom = lerp(0.96, 0.5, k); cam.tx = lerp(0, tp.kx * 0.75, k); cam.ty = lerp(0, tp.ky * 0.75, k);
+        if (!cueUp(since, r.I)) go(r.T0 + since - r.I, dt);
+        return fadeOut(rel, 1.4);
+      },
+      on() {},
+    },
+
     /* ---- worst shot: no song, and the "drop" is the moment it went wrong ---- */
     clown: {
       name: '광대', worst: true,
@@ -792,7 +810,7 @@ function createReel(d) {
       draw() { if (r.mark && !r.bsod || r.reboot) culprit(); },
     },
   };
-  const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
+  const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst && !STYLES[id].hidden), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
   // every edit comes up once before any comes up again
   function pick(kind) {
     const bag = bags[kind];
@@ -804,7 +822,7 @@ function createReel(d) {
   function play(shot, style) {
     const w = game.world, carom = game.mode && game.mode.table === 'carom', kind = shot.kind ? 'worst' : 'best';
     tp = HL.record(game.P, w.balls.length, shot);
-    const id = STYLES[style] && !!STYLES[style].worst === (kind === 'worst') ? style : pick(kind); last[kind] = id;
+    const id = style === 'plain' ? style : STYLES[style] && !!STYLES[style].worst === (kind === 'worst') ? style : pick(kind); if (id !== 'plain') last[kind] = id;
     cam = { az: shot.aim - Math.PI / 2 + 1.0, el: 1.15, zoom: 1, tx: 0, ty: 0 };
     r = { best: shot, id, style: STYLES[id], t: 0, T: 0, rate: 0, rush: 0, bn: null, key: kind === 'worst' ? shot.ball : shot.key >= 0 ? shot.key : tp.cue, struck: false, dropped: false, cue: true, pull: 0.03,
       from: Object.assign({}, cam), paths: [], parts: [], rings: [], cols: {} };
@@ -820,7 +838,7 @@ function createReel(d) {
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');
     app.classList.remove(...CLS); app.classList.add('reeling'); skin(id); hideCard();
     r.lead = r.style.init();                                   // real seconds from now to the key moment
-    r.song = kind === 'best' ? SND.song.play(r.lead) : false;
+    r.song = kind === 'best' && id !== 'plain' ? SND.song.play(r.lead) : false;
     scene.setCam(cam); drawOverlay(0);
   }
   function stop() {
@@ -836,7 +854,7 @@ function createReel(d) {
     const song = r.song ? SND.song.time() : null, rel = song != null ? song : r.t - r.lead;   // seconds since the key moment (negative before)
     if (r.style.step(dt, rel + r.lead, rel) === false) { stop(); return null; }
     const bn = Math.floor(rel / r.beat);
-    if (bn !== r.bn) { r.bn = bn; if (r.style.beat) r.style.beat(bn); if (r.dropped && !r.style.worst && r.outAt == null) again(app, 'pulse'); }
+    if (bn !== r.bn) { r.bn = bn; if (r.style.beat) r.style.beat(bn); if (r.dropped && !r.style.worst && !r.style.bare && r.outAt == null) again(app, 'pulse'); }
     scene.setCam(cam); drawOverlay(dt);
     return { alpha: 1, pull: r.pull, cue: r.cue };
   }

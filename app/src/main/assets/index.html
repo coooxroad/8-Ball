@@ -102,6 +102,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* ---------- home ---------- */
 #home{position:absolute;inset:0;display:grid;grid-template-columns:96px minmax(0,1fr) 372px;grid-template-rows:minmax(0,1fr);pointer-events:none}
+#home>*{pointer-events:auto}   /* the table behind shows through the middle; everything else takes taps */
 .h-top{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
@@ -123,12 +124,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* the panel on the right: what the chosen place offers, with its one big button at the bottom */
 .h-right{display:flex;flex-direction:column;gap:12px;min-height:0;margin:20px 22px 22px 0;padding:18px 18px 18px;overflow:auto}
 .h-title{font-size:22px;font-weight:var(--w-title);letter-spacing:-.01em}
-#modeList{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-#modeBlurb{text-align:center;margin-top:8px}
-#modeList .gcard{flex-direction:column;gap:7px;padding:12px 4px 10px;text-align:center;border-radius:14px;background:var(--seg);border-color:transparent;box-shadow:none}
+#modeList{display:flex;flex-direction:column;gap:8px}
+#modeList .gcard{width:100%;padding:12px 14px;border-radius:14px;background:var(--seg);border-color:transparent;box-shadow:none}
 #modeList .gcard[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
-#modeList .gcard .nm{font-size:15px}
-#modeList .gcard .bl,#modeList .gcard .ck{display:none}
+#modeList .gcard .chev{margin-left:auto;flex:none;color:var(--sub)}
+#modeList:not(.open) .gcard .ck{display:none}
+#modeList.open .gcard .chev{display:none}
 .plist{background:var(--seg);border-radius:14px}
 .gcard{background:var(--panel);border:2px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-card);padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}
 [data-theme="light"] .gcard{border-color:var(--panel)}
@@ -179,7 +180,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .compact .nv{flex:1;padding:7px 2px 5px;font-size:11.5px}
 .compact .nv.end{margin-top:0}
 .compact #startBtn{margin-top:6px;position:sticky;bottom:74px;z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.22)}   /* always in reach, however long the options above it get */
-.compact #modeList{grid-template-columns:repeat(4,minmax(0,1fr))}
 
 /* ---------- in-game scoreboard ---------- */
 #hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
@@ -354,6 +354,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* ---------- the look of each edit (sk-<name> on the page while it plays) ---------- */
 #reelTint{position:absolute;inset:0;pointer-events:none;opacity:0}
 #reelFrame{position:absolute;inset:0;z-index:2;pointer-events:none}
+/* plain: just the shot again - no bars, no grade */
+.sk-plain #reel .lb{display:none}
+.reeling.sk-plain #gl{filter:none}
+.sk-plain #reel::after{opacity:.25}
 /* cuts: cinema - wider bars, teal shadows and orange highlights */
 .sk-cuts #reel .lb{height:12.5%}
 .sk-cuts #reelTint{opacity:.55;background:linear-gradient(180deg,#0aa6b8,transparent 42%,transparent 58%,#ff8a2b);mix-blend-mode:soft-light}
@@ -482,23 +486,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #rHlBox{width:100%;max-width:760px}
 .hl-lab{font-family:'Outfit','Gothic A1',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--sub);text-align:center;margin-bottom:8px}
 #rHl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.hcard{position:relative;display:flex;align-items:stretch;justify-content:space-between;gap:8px;min-height:104px;padding:12px 12px 12px 14px;border-radius:14px;background:#1b1e24;color:#fff;text-align:left;overflow:hidden;transition:transform .08s,filter .15s}
-.hcard:active{transform:scale(.98);filter:brightness(1.25)}
+.hcard{position:relative;display:flex;align-items:stretch;justify-content:space-between;gap:8px;min-height:104px;padding:12px 12px 12px 14px;border-radius:var(--r-card);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);color:var(--fg);text-align:left;overflow:hidden;transition:transform .08s}
+.hcard:active{transform:scale(.98)}
 .hcard .tx{display:flex;flex-direction:column;min-width:0;flex:1}
 .hcard .tag{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcard .when{font-family:var(--num);font-size:14px;color:rgba(255,255,255,.45);margin-top:1px}
+.hcard .when{font-family:var(--num);font-size:14px;color:var(--sub);margin-top:1px}
 .hcard .who{margin-top:auto;display:flex;align-items:center;gap:7px;min-width:0}
 .hcard .who .av{flex:none;width:20px;height:20px;font-size:11px;border-radius:5px;background:#2f6bff;color:#fff;border:0}
 .hcard.two .who .av{background:#e5484d}
-.hcard .who b{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcard .pic{flex:none;align-self:center;width:96px;height:56px;border-radius:7px;display:block;opacity:.95}
-.hcard .go{position:absolute;right:46px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(18,200,110,.92);color:#fff;font-size:13px;padding-left:2px;opacity:0;transition:opacity .15s}
-.hcard:active .go,.hcard:hover .go{opacity:1}
+.hcard .who b{font-size:13.5px;font-weight:600;color:var(--fg2,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcard .pic{flex:none;align-self:center;width:96px;height:56px;border-radius:7px;display:block}
+.hcard .go{position:absolute;right:46px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:#fff;font-size:13px;padding-left:2px;opacity:0;transition:opacity .15s}
+.hcard:active .go,.hcard:hover .go{opacity:.95}
 .hcard .rib{position:absolute;right:0;top:0;padding:3px 9px 3px 10px;border-bottom-left-radius:10px;font:800 10.5px/1.4 'Outfit',sans-serif;letter-spacing:.14em;background:#f2b705;color:#1b1e24}
-.hcard.best{box-shadow:inset 0 0 0 2px #f2b705}
-.hcard.worst{box-shadow:inset 0 0 0 2px #e5484d}
+.hcard.best{box-shadow:inset 0 0 0 2px #f2b705,var(--sh)}
+.hcard.worst{box-shadow:inset 0 0 0 2px #e5484d,var(--sh)}
 .hcard.worst .rib{background:#e5484d;color:#fff}
-.hcard.bad .tag,.hcard.worst .tag{color:#ff8f8f}
+.hcard.bad .tag,.hcard.worst .tag{color:#e5484d}
 @media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
 .pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
@@ -555,7 +559,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     </div>
     <div class="h-right panel">
       <div class="h-title" id="rightLab">대결</div>
-      <div id="modeBox"><div id="modeList"></div><p class="note" id="modeBlurb"></p></div>
+      <div id="modeBox"><div id="modeList"></div></div>
       <div id="pracList" hidden></div>
       <div id="vsBox">
       <div class="plist">
@@ -2957,10 +2961,10 @@ function createReel(d) {
     r.rate = rate; r.T = T;
   }
   function fire(e) {
-    const pan = d.panOf(e.x, e.y);
-    if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); }
-    else if (e.t === 'ball') { SND.ball(e.v, pan); if (e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
-    else { SND.rail(e.v, pan); if (e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
+    const pan = d.panOf(e.x, e.y), fx = !r.style.bare;
+    if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); if (fx) { const pk = game.P.POCKETS[e.pocket]; shock(pk.x, pk.y, r.cols[e.id] || '#fff', 0.5); sparks(pk.x, pk.y, r.cols[e.id] || '#fff', 22, 1.6); } }
+    else if (e.t === 'ball') { SND.ball(e.v, pan); if (fx && e.v > 0.25) { sparks(e.x, e.y, '#fff', 4 + Math.min(14, e.v * 5), 0.5 + e.v * 0.35); if (e.v > 1) shock(e.x, e.y, '#fff', 0.16); } }
+    else { SND.rail(e.v, pan); if (fx && e.v > 0.4) shock(e.x, e.y, r.cols[e.id] || '#fff', 0.13); }
     if (r.style.on) r.style.on(e); else if (e.t === 'ball' && e.v > 0.8) kick('beat');
   }
 
@@ -3012,7 +3016,7 @@ function createReel(d) {
   // the cue being drawn back for D seconds, then the strike; true while it is still drawing back
   function cueUp(since, D) {
     if (since < D) { r.cue = true; r.pull = 0.03 + 0.24 * st.power * ease((since - D * 0.25) / (D * 0.65)); return true; }
-    if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); }
+    if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); if (!r.style.bare) { kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); } }
     r.cue = false; return false;
   }
   // from a wide view down to just behind the cue
@@ -3531,6 +3535,24 @@ function createReel(d) {
       },
     },
 
+    /* ---- any other highlight: the shot again as it happened, with one easy camera move and nothing added ---- */
+    plain: {
+      name: '다시 보기', hidden: true, bare: true, plain: true,
+      init() {
+        const T0 = r.T0 = Math.max(0, tp.tKey - 4); r.I = T0 > 0 ? 0 : 0.9; app.classList.add('colour');
+        Object.assign(cam, { az: topAz() + 0.35, el: 0.72, zoom: 0.96, tx: 0, ty: 0 }); if (T0 > 0) { r.struck = true; go(T0, 0, true); }
+        return r.I + (tp.tKey - T0);
+      },
+      step(dt, since, rel) {
+        // from a wide view, drifting round and in toward where it happens
+        const k = ease(since / (r.lead + 0.9));
+        cam.az = topAz() + 0.35 + 0.55 * k; cam.el = lerp(0.72, 0.5, k); cam.zoom = lerp(0.96, 0.5, k); cam.tx = lerp(0, tp.kx * 0.75, k); cam.ty = lerp(0, tp.ky * 0.75, k);
+        if (!cueUp(since, r.I)) go(r.T0 + since - r.I, dt);
+        return fadeOut(rel, 1.4);
+      },
+      on() {},
+    },
+
     /* ---- worst shot: no song, and the "drop" is the moment it went wrong ---- */
     clown: {
       name: '광대', worst: true,
@@ -3664,7 +3686,7 @@ function createReel(d) {
       draw() { if (r.mark && !r.bsod || r.reboot) culprit(); },
     },
   };
-  const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
+  const BEST = Object.keys(STYLES).filter(id => !STYLES[id].worst && !STYLES[id].hidden), WORST = Object.keys(STYLES).filter(id => STYLES[id].worst);
   // every edit comes up once before any comes up again
   function pick(kind) {
     const bag = bags[kind];
@@ -3676,7 +3698,7 @@ function createReel(d) {
   function play(shot, style) {
     const w = game.world, carom = game.mode && game.mode.table === 'carom', kind = shot.kind ? 'worst' : 'best';
     tp = HL.record(game.P, w.balls.length, shot);
-    const id = STYLES[style] && !!STYLES[style].worst === (kind === 'worst') ? style : pick(kind); last[kind] = id;
+    const id = style === 'plain' ? style : STYLES[style] && !!STYLES[style].worst === (kind === 'worst') ? style : pick(kind); if (id !== 'plain') last[kind] = id;
     cam = { az: shot.aim - Math.PI / 2 + 1.0, el: 1.15, zoom: 1, tx: 0, ty: 0 };
     r = { best: shot, id, style: STYLES[id], t: 0, T: 0, rate: 0, rush: 0, bn: null, key: kind === 'worst' ? shot.ball : shot.key >= 0 ? shot.key : tp.cue, struck: false, dropped: false, cue: true, pull: 0.03,
       from: Object.assign({}, cam), paths: [], parts: [], rings: [], cols: {} };
@@ -3692,7 +3714,7 @@ function createReel(d) {
     $('#reel').style.setProperty('--kc', r.cols[r.key] === '#aab1bd' ? '#ffffff' : r.cols[r.key] || '#ffffff');
     app.classList.remove(...CLS); app.classList.add('reeling'); skin(id); hideCard();
     r.lead = r.style.init();                                   // real seconds from now to the key moment
-    r.song = kind === 'best' ? SND.song.play(r.lead) : false;
+    r.song = kind === 'best' && id !== 'plain' ? SND.song.play(r.lead) : false;
     scene.setCam(cam); drawOverlay(0);
   }
   function stop() {
@@ -3708,7 +3730,7 @@ function createReel(d) {
     const song = r.song ? SND.song.time() : null, rel = song != null ? song : r.t - r.lead;   // seconds since the key moment (negative before)
     if (r.style.step(dt, rel + r.lead, rel) === false) { stop(); return null; }
     const bn = Math.floor(rel / r.beat);
-    if (bn !== r.bn) { r.bn = bn; if (r.style.beat) r.style.beat(bn); if (r.dropped && !r.style.worst && r.outAt == null) again(app, 'pulse'); }
+    if (bn !== r.bn) { r.bn = bn; if (r.style.beat) r.style.beat(bn); if (r.dropped && !r.style.worst && !r.style.bare && r.outAt == null) again(app, 'pulse'); }
     scene.setCam(cam); drawOverlay(dt);
     return { alpha: 1, pull: r.pull, cue: r.cue };
   }
@@ -4017,12 +4039,20 @@ function check() {
   s.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   return s;
 }
+// The kind of game is one card filling the panel's width. Tapping it opens the choices; choosing one closes them again.
+let modeOpen = false;
 function buildModes() {
-  const box = $('#modeList'); box.textContent = '';
-  for (const id of ['eight', 'nine', 'three', 'four']) {
-    const m = game.MODES[id];
-    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(prefs.mode === id), onclick: () => { SND.init(); SND.tap(); prefs.mode = id; savePrefs(); buildModes(); paintHome(); homePreview(); } },
-      [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
+  const box = $('#modeList'); box.textContent = ''; box.classList.toggle('open', modeOpen);
+  const cur = game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight';
+  for (const id of modeOpen ? ['eight', 'nine', 'three', 'four'] : [cur]) {
+    const m = game.MODES[id], chev = el('span', { class: 'chev' });
+    chev.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    box.appendChild(el('button', { class: 'gcard', 'aria-pressed': String(cur === id), onclick: () => {
+      SND.init(); SND.tap();
+      if (!modeOpen) modeOpen = true;
+      else { modeOpen = false; if (prefs.mode !== id) { prefs.mode = id; savePrefs(); homePreview(); } }
+      buildModes(); paintHome();
+    } }, [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check(), chev]));
   }
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이팅 1000 · 첫 판'; return `레이팅 ${r.elo || 1000} · ${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
@@ -4030,7 +4060,6 @@ const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1
 function paintHome() {
   const prac = prefs.mode === 'practice';
   $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
-  $('#modeBlurb').textContent = prac ? '' : game.MODES[prefs.mode].blurb;
   for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === (prac ? 'practice' : 'play')));
   if (prac) {
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
@@ -4213,15 +4242,17 @@ const match = {
     // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
     // Exactly one is the best shot and one the worst.
     const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
+    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
     if (match.best && !has(match.best)) list.push(match.best);
     if (match.worst && !has(match.worst)) list.push(match.worst);
+    // at most six: the best and the worst always, then the strongest of the rest
+    const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(6, list.length);
     list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
-    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
     const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
     for (const q of list) {
       const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
       const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
-      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q); } }, [
+      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q, best ? undefined : 'plain'); } }, [
         el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
@@ -4416,7 +4447,7 @@ $('#nav').addEventListener('click', e => {
   if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
   else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
   else return;
-  savePrefs(); buildModes(); paintHome(); homePreview();
+  modeOpen = false; savePrefs(); buildModes(); paintHome(); homePreview();
 });
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
@@ -4436,7 +4467,8 @@ const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, 
 // one of the match's highlights, played as an edit: a good shot to the player's song, a bad one for laughs with no music
 async function playShot(shot, style) {
   if (!shot || st.screen !== 'result') return;
-  if (!shot.kind) { await SND.song.prepare(); if (st.screen !== 'result') return; }
+  // only the best shot gets an edit and a song; every other highlight is simply shown again with one camera move
+  if (!shot.kind && style !== 'plain') { await SND.song.prepare(); if (st.screen !== 'result') return; }
   show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(shot, typeof style === 'string' ? style : shot.kind ? undefined : prefs.edit);
 }
 const playBest = style => playShot(match.best, style), playWorst = style => playShot(match.worst, style);
