@@ -107,24 +107,50 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
   }
 }
-// puzzles: every one is on the cloth, clear of its barricades, and the answer stored with it really does score -
+// puzzles: every one is on the cloth, and the answer stored with it really does what its stage asks -
 // played both straight from the stored speed and through the power control's rounding, as the app's "answer" button does
 {
   const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  let bad = 0, walled = 0;
+  let bad = 0;
   for (const z of Z.list) {
-    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world;
+    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
     z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
-    w.walls = z.walls.length ? z.walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; w.cue = 0; if (w.walls) walled++;
+    w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
-      const t = P.clone(w); P.strike(t, z.sol[0], V, 0, 0); const ev = P.run(t, 30);
-      if (!g.MODES.puzzle4.evaluate(ev).solved) { bad++; fail(`puzzle ${z.id}: its stored answer does not score`); break; }
-      for (const b of t.balls) for (const s of t.walls || []) { const u = Math.max(0, Math.min(s.len, (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty)); if (Math.hypot(b.x - s.ax - s.tx * u, b.y - s.ay - s.ty * u) < P.R + s.r - 1e-3) fail(`puzzle ${z.id}: a ball ended inside a barricade`); }
+      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4], !!z.sol[5]); const ev = P.run(t, 30);
+      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; fail(`puzzle ${z.id} (${Z.STAGES[z.stage].name}): its stored answer does not work`); break; }
     }
   }
-  if (Z.list.length < 20) fail('fewer than 20 puzzles');
-  console.log(`puzzles: ${Z.list.length} (${walled} with barricades), ${Z.list.length - bad} stored answers score`);
+  if (Z.list.length < 40) fail('fewer than 40 puzzles');
+  console.log(`puzzles: ${Z.list.length} in ${Z.STAGES.length} stages (${Z.STAGES.map((s, i) => s.name + ' ' + Z.of(i).length).join(', ')}), ${Z.list.length - bad} stored answers work`);
+}
+// 2.0: the raised cue. A masse bends towards the side that was put on it; a jump clears a ball in the way and a soft one does not;
+// a ball that goes over the rail is a foul and comes back; a shot replayed from its tape ends where it ended, in the air or not
+{
+  const P = createPhysics({ R: 0.03275, pockets: false }), mk = () => { const w = P.makeWorld(4); [[-0.8, 0], [9, 9], [0.2, 0], [9, 9]].forEach((b, i) => P.place(w, i, b[0], b[1])); w.balls[1].on = w.balls[3].on = false; return w; };
+  for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, 1.0); for (let i = 0; i < 90; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.02)) fail(`masse with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
+  { const w = mk(); P.strike(w, 0, 3.5, 0.4, 0, 0); for (let i = 0; i < 60; i++) P.step(w, 1 / 120); if (Math.abs(w.balls[0].y) > 0.01) fail('a level cue curved the ball'); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0.7, true); let hit = false; for (let i = 0; i < 60; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit) fail('a hard jump did not clear the ball in front'); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0, false); P.run(w, 20); if (w.ev.firstHit !== 2) fail('a level shot went through a ball'); }
+  { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 6.5, 0, 0, 0.7, true); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
+  g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
+  { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 6.5, 0, 0, 0.7, true); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
+  // handicaps: each player goes out at their own number, and the last point needs a cushion when that rule is on
+  g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
+  { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; const r = g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g); if (r.pts !== 0) fail('cushion finish: the last point counted without a cushion'); ev.cushions = 1; if (g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g).pts !== 1) fail('cushion finish: the last point off a cushion did not count'); }
+  { g.players[0].score = 2; g.finish = false; g._ctx = g.MODES.four.ctx(g); const w = g.world; w.ev = P.newEv(); w.ev.firstHit = 2; w.ev.hits = [2, 3]; g.resolve(); if (!g.over || g.over.winner !== 0) fail('handicap: player with 30 did not go out on the third score'); }
+  // ice: the same shot runs longer, and a saved game comes back with its ice and its barricades
+  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; b.ice = true; let ta = 0, tb = 0; P.strike(a, 0.3, 3, 0, 0); while (!P.rest(a) && ta < 9000) { P.step(a, 1 / 120); ta++; } P.strike(b, 0.3, 3, 0, 0); while (!P.rest(b) && tb < 9000) { P.step(b, 1 / 120); tb++; } if (!(tb > ta * 1.2)) fail('ice is not slipperier than cloth'); }
+  g.start('eight', ['A', 'B'], false, { ice: true, bars: true, rnd }); const d = JSON.parse(JSON.stringify(g.serialize())); const n = g.bars.length; g.start('nine', ['A', 'B'], false, {});
+  if (!g.restore(d) || !g.world.ice || !g.world.walls || g.world.walls.length !== n || !n) fail('a saved arcade game lost its ice or its barricades');
+  // a jump on the tape
+  const H = require(path.join(W, 'highlights.js'))(); g.start('four', ['A', 'B'], false, { rnd });
+  { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 5.5, a: 0, b: 0, el: 0.7, j: true, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 5.5, 0, 0, 0.7, true); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);
+    const tape = H.record(g.P, 4, shot), w2 = g.P.makeWorld(4); let high = 0; for (let t = 0; t < 0.4; t += 0.02) { H.seek(w2, tape, t); high = Math.max(high, w2.balls[0].z); } H.seek(w2, tape, tape.dur);
+    if (!(high > 0.03)) fail('the tape of a jump has no height in it'); end.forEach((e, k) => { const b = w2.balls[k]; if (b.on !== e[2] || (e[2] && Math.hypot(b.x - e[0], b.y - e[1]) > 1e-3)) fail('the tape of a jump ends somewhere else'); }); }
+  console.log('raised cue, handicaps, ice: checked');
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

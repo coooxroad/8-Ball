@@ -28,7 +28,7 @@ const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null,
-    suji: {}, sujiAI: 5, finish: false, arcade: 'none', masse: true, cues: null, lab: null, v: 0 }, saved);
+    pz: null, suji: {}, sujiAI: 5, finish: false, arcade: 'none', masse: true, cues: null, lab: null, v: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -38,6 +38,7 @@ const prefs = (() => {
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
   p.cues = p.cues.map(i => CUES[i] ? i : 0);
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
+  if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
   p.lab = Object.assign({ masse: true, suji: true, arcade: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
   if (p.v < 2) { p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
@@ -364,6 +365,9 @@ function paintResume() {
   box.appendChild(el('button', { class: 'resume', onclick: () => { SND.init(); SND.tap(); resume(d); } }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
   box.appendChild(el('button', { class: 'resume-x', 'aria-label': '하던 판 지우기', text: '×', onclick: () => { SND.tap(); store.set('save', null); paintResume(); } }));
 }
+// the puzzles on offer (the masse and jump stage goes when those shots are switched off), and which stages are open
+const pzList = () => puzzles.list.filter(q => LAB.masse || !puzzles.STAGES[q.stage].trick), PZ_NEED = 5;
+const pzOpen = si => si === 0 || !LAB.stage || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 // lessons, grouped the way a course list is: what you learn first at the top
 const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
@@ -387,16 +391,33 @@ function paintHome() {
     box.scrollTop = top;
   }
   if (puz) {
-    // how many are solved, then every puzzle as a numbered tile under the name of its kind
-    const box = $('#puzBox'), top = box.scrollTop, z = prefs.puz, n = puzzles.list.filter(q => z.done[q.id]).length; box.textContent = '';
-    box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${n}` }), el('span', { text: ` / ${puzzles.list.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { text: `${z.best || 0}` }), el('small', { text: '최고 연속' })])]));
-    box.appendChild(el('div', { class: 'pzkind' }, [el('span', { class: 'on', text: '4구' }), el('span', { text: '3구 · 준비 중' }), el('span', { text: '8볼 · 준비 중' })]));
-    puzzles.TIERS.forEach((name, t) => {
-      box.appendChild(el('div', { class: 'lab', text: name }));
-      box.appendChild(el('div', { class: 'pzgrid' }, puzzles.list.filter(q => q.tier === t).map(q => el('button', { class: 'pz' + (z.done[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.done[q.id] ? '✓' : String(q.id),
-        onclick: () => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); } }))));
+    const box = $('#puzBox'), top = box.scrollTop, z = prefs.pz, L = pzList(), solved = L.filter(q => z.stars[q.id]).length, stars = L.reduce((a, q) => a + (z.stars[q.id] || 0), 0); box.textContent = '';
+    if (!L.some(q => q.id === z.cur)) z.cur = L[0].id;
+    box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${solved}` }), el('span', { text: ` / ${L.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { class: 'st', text: '★ ' + stars }), el('span', { text: ` / ${L.length * 3}` }), el('small', { text: '모은 별' })])]));
+    const pickPz = q => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); };
+    puzzles.STAGES.forEach((S, si) => {
+      if (S.trick && !LAB.masse) return;
+      const qs = puzzles.of(si), done = qs.filter(q => z.stars[q.id]).length, open = pzOpen(si);
+      if (!LAB.stage) {   // the plain numbered board
+        box.appendChild(el('div', { class: 'lab', text: S.name }));
+        box.appendChild(el('div', { class: 'pzgrid' }, qs.map(q => el('button', { class: 'pz' + (z.stars[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.stars[q.id] ? '✓' : String(q.n), onclick: () => pickPz(q) }))));
+        return;
+      }
+      // a stage: its number, what it is about, how far along; opened, its puzzles as stops along a winding road
+      const shown = z.open === si;
+      box.appendChild(el('button', { class: 'stg' + (shown ? ' open' : '') + (open ? '' : ' locked') + (done === qs.length ? ' clear' : ''), style: `--h:${[212, 156, 28, 268, 348, 190, 42][si % 7]}`, onclick: () => {
+        SND.init(); SND.tap(); if (!open) return toast(`앞 스테이지에서 ${PZ_NEED}문제를 풀면 열립니다.`, '', 2200);
+        z.open = shown ? -1 : si; if (!shown && !qs.some(q => q.id === z.cur)) { z.cur = (qs.find(q => !z.stars[q.id]) || qs[0]).id; homePreview(); } savePrefs(); paintHome();
+      } }, [el('span', { class: 'no', text: open ? String(si + 1) : '🔒' }), el('span', { class: 'tx' }, [el('b', { text: S.name }), el('small', { text: open ? S.desc : `앞 스테이지 ${PZ_NEED}문제를 풀면 열립니다` })]),
+        el('span', { class: 'pg' }, [el('em', { text: `${done}/${qs.length}` }), el('i', null, el('u', { style: `width:${Math.round(done / qs.length * 100)}%` }))])]));
+      if (!shown || !open) return;
+      const road = el('div', { class: 'road', style: `--h:${[212, 156, 28, 268, 348, 190, 42][si % 7]}` }), next = qs.find(q => !z.stars[q.id]);
+      for (let r = 0; r * 5 < qs.length; r++) road.appendChild(el('div', { class: 'rw' + (r % 2 ? ' rev' : '') + ((r + 1) * 5 < qs.length ? ' more' : '') }, qs.slice(r * 5, r * 5 + 5).map(q => { const n = z.stars[q.id] || 0;
+        return el('button', { class: 'nd' + (n ? ' done' : '') + (next && next.id === q.id ? ' next' : ''), 'aria-pressed': String(z.cur === q.id), onclick: () => pickPz(q) }, [el('b', { text: String(q.n) }), el('span', { class: 'sr', text: '★'.repeat(n) + '☆'.repeat(3 - n) })]); })));
+      box.appendChild(road);
     });
     box.scrollTop = top;
+    const cur = puzzles.byId(z.cur); if (cur) $('#startBtn').textContent = `${cur.stage + 1}-${cur.n} 풀기`;
   }
   const sujiOn = prefs.mode === 'four' && LAB.suji, sj = i => sujiOn ? `수지 ${sujiOf(i) * 10} · ` : '';
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = sj(0) + recText(prefs.names[0]);
@@ -416,7 +437,7 @@ function homePreview() {
   PH.pool = poolOf(prefs.table); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
-  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.puz.cur) || puzzles.list[0]); return; }
+  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); scene.setIce(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
   if (prefs.mode === 'practice' && d.make) {
     game.start('practice', [prefs.names[0], ''], false, {}); scene.setTable(game.P);
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
@@ -716,56 +737,67 @@ const practice = {
 
 /* ================= flow: puzzle (one position, one shot to score with; solve it and the next one comes) ================= */
 const puzzle = {
-  quiet: false, save: false, cur: null, helped: false, streak: 0,
-  // the balls and barricades of a puzzle, onto the table
+  quiet: false, save: false, cur: null, helped: false, tries: 0,
+  stage: z => puzzles.STAGES[z.stage],
+  // the balls of a puzzle, onto the table
   put(z) {
-    const P = game.P, w = game.world;
+    const P = game.P, w = game.world, n = Math.hypot(z.balls[2][0] - z.balls[0][0], z.balls[2][1] - z.balls[0][1]) <= Math.hypot(z.balls[3][0] - z.balls[0][0], z.balls[3][1] - z.balls[0][1]) ? 2 : 3;
     z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
-    w.walls = z.walls.length ? z.walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; w.cue = 0;
-    scene.clearFalls(); scene.setZone(null); st.aim = Math.atan2(z.balls[2][1] - z.balls[0][1], z.balls[2][0] - z.balls[0][0]); st.rev++; scene.invalidate();
+    w.walls = null; w.cue = 0; game.goal = puzzle.stage(z).goal;
+    scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
   start(id) {
-    const z = puzzles.byId(id || prefs.puz.cur) || puzzles.list[0], p = puzzle;
-    if (!p.cur || p.cur.id !== z.id) p.helped = false;
-    p.cur = z; prefs.puz.cur = z.id; savePrefs();
+    const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
+    if (!p.cur || p.cur.id !== z.id) { p.helped = false; p.tries = 0; }
+    p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
     game.start('puzzle4', [prefs.names[0], ''], false, {});
-    flow = puzzle; scene.setTable(game.P); show('play'); p.bar(); p.again();
-    toast(`퍼즐 ${z.id} · ${puzzles.TIERS[z.tier]}. 한 번에 빨간 공 두 개를 맞히세요. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+    flow = puzzle; scene.setIce(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
+    toast(`${z.stage + 1}-${z.n} ${p.stage(z).name} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
   },
   restart() { puzzle.start(); },
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
-  // the next one not yet solved after this (or simply the next, when all are)
+  // the next one not yet solved after this (or simply the next, when all are), staying inside the stages that are open
   step(dir) {
-    const L = puzzles.list, i = L.indexOf(puzzle.cur); let k = i;
-    for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.puz.done[L[k].id]) break; }
+    const L = pzList().filter(q => pzOpen(q.stage)), i = Math.max(0, L.indexOf(puzzle.cur)); let k = i;
+    for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.pz.stars[L[k].id]) break; }
     if (k === i) k = (i + dir + L.length) % L.length;
     puzzle.start(L[k].id);
   },
   guide: () => prefs.guides[0],
   auto: () => null,
-  beforeShot() {},
+  beforeShot() { scene.setMarks(null); },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
-    if (!r.solved) { p.streak = 0; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
-    const first = !prefs.puz.done[z.id]; prefs.puz.done[z.id] = 1;
-    if (!p.helped && first) { p.streak++; prefs.puz.best = Math.max(prefs.puz.best || 0, p.streak); }
-    savePrefs();
-    const all = puzzles.list.every(q => prefs.puz.done[q.id]);
-    toast(all && first ? '정답! 퍼즐을 모두 풀었습니다.' : p.helped ? '정답!' : `정답! 연속 ${p.streak}`, 'good', 1900); SND.good();
-    hold(1.8, () => p.step(1));
+    if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
+    // three stars for the first try, two within three, one after that or with help
+    const stars = p.helped ? 1 : p.tries === 0 ? 3 : p.tries <= 2 ? 2 : 1, was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
+    prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
+    const now = pzList().filter(q => pzOpen(q.stage)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
+    toast(all && !was ? '정답! 퍼즐을 모두 풀었습니다.' : now > opened ? '정답! 다음 스테이지가 열렸습니다.' : '정답! ' + '★'.repeat(stars), 'good', 2000); SND.good();
+    hold(1.9, () => p.step(1));
   },
   hud() {
-    const p = puzzle, z = p.cur, n = puzzles.list.filter(q => prefs.puz.done[q.id]).length;
-    paintPill(0, { name: `퍼즐 ${z.id}`, on: true, sub: `${puzzles.TIERS[z.tier]} · 연속 ${p.streak}`, tray: [], pts: null });
-    paintBadge('4구 퍼즐', { text: `푼 퍼즐 ${n}/${puzzles.list.length}` }); setBusy();
+    const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
+    paintPill(0, { name: `${z.stage + 1}-${z.n} ${p.stage(z).name}`, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '첫 시도에 풀면 ★★★', tray: [], pts: null });
+    paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
+  },
+  // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
+  marks(z) {
+    const P = game.P, t = P.clone(game.world), out = []; t.snd = []; P.strike(t, z.sol[0], z.sol[1], z.sol[2], z.sol[3], z.sol[4], !!z.sol[5]);
+    for (let i = 0; i < 120 * 25 && !P.rest(t) && out.length < 9; i++) {
+      P.step(t, TICK);
+      for (const e of t.snd) { if (e.t === 'rail' && e.id === 0) out.push({ x: e.x, y: e.y }); else if (e.t === 'ball' && (e.ia === 0 || e.ib === 0)) out.push({ x: e.x, y: e.y }); }
+      t.snd.length = 0; if (t.ev.hits.includes(2) && t.ev.hits.includes(3)) break;
+    }
+    return out;
   },
   bar() {
     const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
     const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); };
-    // a hint rings the red to go for first and says how many cushions the answer uses; the answer is played out in full
-    btn('힌트', aiming(() => { const z = p.cur, b = z.balls[z.first]; p.helped = true; scene.setZone({ x: b[0], y: b[1], r: game.P.R * 2.1 }); toast(`힌트: 동그라미 친 공부터${z.cush ? `, 쿠션을 ${z.cush}번 거쳐 다음 공으로` : ' 맞히고 다음 공으로'}.`, '', 4200); }));
-    btn('정답', aiming(() => { const z = p.cur; p.helped = true; toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: 0, b: 0 }, { quiet: false, after: p.again }); }));
+    // a hint marks every place the cue ball touches on the way, numbered; the answer is played out in full
+    btn('힌트', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(p.marks(z)); const k = z.sol[5] ? ' 점프로 칩니다.' : z.sol[4] ? ' 맛세이로 칩니다.' : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); }));
+    btn('정답', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(null); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4], j: !!z.sol[5] }, { quiet: false, after: p.again }); }));
     btn('이전', aiming(() => p.step(-1)));
     btn('다음', aiming(() => p.step(1)));
   },
@@ -779,7 +811,7 @@ function playDemo(shot, opts) {
     quiet: !!opts.quiet, save: false,
     restart() { (back || practice).restart(); },
     guide: () => 3,
-    auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b }) }),
+    auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b, el: shot.el || 0, j: !!shot.j }) }),
     beforeShot() {},
     afterShot() { hold(1.3, opts.after); },
     hud() { if (back) back.hud(); setBusy(); },

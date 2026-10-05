@@ -157,14 +157,34 @@ function createGame(PH) {
     },
   };
 
-  // A four-ball puzzle: one player, one position, one shot to score with. The app puts the balls (and any barricades) down.
+  // A four-ball puzzle: one player, one position, one shot. The app puts the balls down and says what the shot has to do
+  // (g.goal): score - both reds, never the yellow;  gather - score and leave the three balls close together;
+  // bank - a cushion before any ball;  three - three cushions before the second red;  direct - no cushion at all on the way.
+  const GOALS = {
+    score: { text: '한 번에 빨간 공 두 개를 맞히세요', miss: '빨간 공 하나만 맞혔습니다' },
+    gather: { text: '득점하고, 세 공을 한데 모으세요', miss: '득점했지만 공이 흩어졌습니다' },
+    bank: { text: '쿠션부터 맞히고 득점하세요', miss: '쿠션보다 공을 먼저 맞혔습니다' },
+    three: { text: '쿠션 3번 이상 돌려서 득점하세요', miss: '쿠션이 3번에 못 미쳤습니다' },
+    direct: { text: '쿠션 없이 바로 득점하세요', miss: '쿠션을 거쳤습니다' },
+  };
+  const GATHER = 0.42;                                              // "together": no two of the three further apart than this
   MODES.puzzle4 = {
-    id: 'puzzle4', name: '4구 퍼즐', blurb: '한 번에 빨간 공 두 개를 맞히세요', table: 'carom', n: 4, ballInHand: false, solo: true,
+    id: 'puzzle4', name: '4구 퍼즐', blurb: '한 번에 빨간 공 두 개를 맞히세요', table: 'carom', n: 4, ballInHand: false, solo: true, GOALS, GATHER,
     setup(g, rnd) { const P = g.P, w = g.world; P.place(w, 2, P.HL / 2, 0, rnd); P.place(w, 3, -P.HL / 2, 0, rnd); P.place(w, 1, -P.HL * 0.78, 0, rnd); P.place(w, 0, -P.HL * 0.78, -0.17, rnd); g.placing = null; g.isBreak = false; },
     legal() { return [2, 3]; },
-    ctx(g) { return { turn: g.turn }; },
-    // solved: both reds, and never the yellow ball
-    evaluate(ev) { const ok = ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1); return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0, solved: ok, note: ev.hits.includes(1) ? '노란 공을 맞혔습니다' : ev.hits.length ? '빨간 공 하나만 맞혔습니다' : '아무 공도 맞히지 못했습니다' }; },
+    ctx(g) { return { turn: g.turn, goal: g.goal || 'score' }; },
+    // did the shot do what was asked? w: the table once everything has stopped
+    judge(goal, ev, w) {
+      const both = ev.hits.includes(2) && ev.hits.includes(3), clean = !ev.hits.includes(1) && !ev.off.length;
+      if (!both || !clean) return { ok: false, note: ev.off.length ? '공이 테이블 밖으로 나갔습니다' : ev.hits.includes(1) ? '노란 공을 맞혔습니다' : ev.hits.length ? '빨간 공 하나만 맞혔습니다' : '아무 공도 맞히지 못했습니다' };
+      let ok = true;
+      if (goal === 'gather') { const b = w.balls, d = (i, j) => Math.hypot(b[i].x - b[j].x, b[i].y - b[j].y); ok = Math.max(d(0, 2), d(0, 3), d(2, 3)) <= GATHER; }
+      else if (goal === 'bank') ok = ev.pre >= 1;
+      else if (goal === 'three') ok = ev.cushions >= 3;
+      else if (goal === 'direct') ok = ev.cushions === 0;
+      return { ok, note: ok ? null : GOALS[goal].miss };
+    },
+    evaluate(ev, c, g) { const j = this.judge(c ? c.goal : 'score', ev, g ? g.world : null); return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0, solved: j.ok, note: j.note }; },
   };
 
   // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
@@ -184,7 +204,7 @@ function createGame(PH) {
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
-    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true,
+    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true, goal: 'score',
   };
 
   g.start = function (modeId, names, ai, opts) {

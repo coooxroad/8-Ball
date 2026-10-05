@@ -598,6 +598,36 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
 @keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
 #league .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
+
+/* puzzle stages */
+.pzsum b.st{color:#f5a400}
+.stg{--c:hsl(var(--h) 78% 52%);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:10px 12px;border-radius:16px;background:var(--seg);border:2px solid transparent;flex:none}
+.stg .no{width:42px;height:42px;border-radius:13px;background:var(--c);color:#fff;font-family:var(--num);font-weight:800;font-size:20px;display:grid;place-items:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.stg .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stg .tx b{font-size:15.5px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg .tx small{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg .pg{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.stg .pg em{font-style:normal;font-family:var(--num);font-size:13px;color:var(--sub)}
+.stg .pg i{display:block;width:54px;height:6px;border-radius:3px;background:var(--bd);overflow:hidden}
+.stg .pg u{display:block;height:100%;background:var(--c);border-radius:3px}
+.stg.open{border-color:var(--c);background:var(--panel)}
+.stg.clear .pg em{color:var(--c);font-weight:700}
+.stg.locked{opacity:.55}.stg.locked .no{background:var(--bd);box-shadow:none;font-size:17px}
+.road{--c:hsl(var(--h) 78% 52%);display:flex;flex-direction:column;gap:14px;padding:8px 6px 10px;flex:none}
+.rw{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));justify-items:center}
+.rw.rev{direction:rtl}
+.rw::before{content:"";position:absolute;left:10%;right:10%;top:19px;border-top:3px dotted var(--bd)}
+.rw.more::after{content:"";position:absolute;right:10%;top:21px;height:62px;border-right:3px dotted var(--bd)}
+.rw.rev.more::after{right:auto;left:10%}
+.nd{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;direction:ltr}
+.nd b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--seg);border:2.5px solid var(--bd);font-family:var(--num);font-weight:700;font-size:15px;color:var(--sub)}
+.nd .sr{font-size:10px;letter-spacing:.5px;color:var(--bd)}
+.nd.done b{background:var(--c);border-color:var(--c);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.nd.done .sr{color:#f5a400}
+.nd.next b{border-color:var(--c);color:var(--c);animation:ndPulse 1.2s ease-in-out infinite}
+@keyframes ndPulse{50%{box-shadow:0 0 0 6px hsl(var(--h) 78% 52% / .22)}}
+.nd[aria-pressed="true"] b{outline:3px solid var(--fg);outline-offset:2px}
+@media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
 </style>
 
 <div id="app" class="busy" data-theme="light">
@@ -770,7 +800,7 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, off: [] }; }   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, off: [] }; }   // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -886,6 +916,7 @@ function createPhysics(cfg) {
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
     if (!s.wall && b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
+    if (!s.wall && b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
@@ -1250,14 +1281,34 @@ function createGame(PH) {
     },
   };
 
-  // A four-ball puzzle: one player, one position, one shot to score with. The app puts the balls (and any barricades) down.
+  // A four-ball puzzle: one player, one position, one shot. The app puts the balls down and says what the shot has to do
+  // (g.goal): score - both reds, never the yellow;  gather - score and leave the three balls close together;
+  // bank - a cushion before any ball;  three - three cushions before the second red;  direct - no cushion at all on the way.
+  const GOALS = {
+    score: { text: '한 번에 빨간 공 두 개를 맞히세요', miss: '빨간 공 하나만 맞혔습니다' },
+    gather: { text: '득점하고, 세 공을 한데 모으세요', miss: '득점했지만 공이 흩어졌습니다' },
+    bank: { text: '쿠션부터 맞히고 득점하세요', miss: '쿠션보다 공을 먼저 맞혔습니다' },
+    three: { text: '쿠션 3번 이상 돌려서 득점하세요', miss: '쿠션이 3번에 못 미쳤습니다' },
+    direct: { text: '쿠션 없이 바로 득점하세요', miss: '쿠션을 거쳤습니다' },
+  };
+  const GATHER = 0.42;                                              // "together": no two of the three further apart than this
   MODES.puzzle4 = {
-    id: 'puzzle4', name: '4구 퍼즐', blurb: '한 번에 빨간 공 두 개를 맞히세요', table: 'carom', n: 4, ballInHand: false, solo: true,
+    id: 'puzzle4', name: '4구 퍼즐', blurb: '한 번에 빨간 공 두 개를 맞히세요', table: 'carom', n: 4, ballInHand: false, solo: true, GOALS, GATHER,
     setup(g, rnd) { const P = g.P, w = g.world; P.place(w, 2, P.HL / 2, 0, rnd); P.place(w, 3, -P.HL / 2, 0, rnd); P.place(w, 1, -P.HL * 0.78, 0, rnd); P.place(w, 0, -P.HL * 0.78, -0.17, rnd); g.placing = null; g.isBreak = false; },
     legal() { return [2, 3]; },
-    ctx(g) { return { turn: g.turn }; },
-    // solved: both reds, and never the yellow ball
-    evaluate(ev) { const ok = ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1); return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0, solved: ok, note: ev.hits.includes(1) ? '노란 공을 맞혔습니다' : ev.hits.length ? '빨간 공 하나만 맞혔습니다' : '아무 공도 맞히지 못했습니다' }; },
+    ctx(g) { return { turn: g.turn, goal: g.goal || 'score' }; },
+    // did the shot do what was asked? w: the table once everything has stopped
+    judge(goal, ev, w) {
+      const both = ev.hits.includes(2) && ev.hits.includes(3), clean = !ev.hits.includes(1) && !ev.off.length;
+      if (!both || !clean) return { ok: false, note: ev.off.length ? '공이 테이블 밖으로 나갔습니다' : ev.hits.includes(1) ? '노란 공을 맞혔습니다' : ev.hits.length ? '빨간 공 하나만 맞혔습니다' : '아무 공도 맞히지 못했습니다' };
+      let ok = true;
+      if (goal === 'gather') { const b = w.balls, d = (i, j) => Math.hypot(b[i].x - b[j].x, b[i].y - b[j].y); ok = Math.max(d(0, 2), d(0, 3), d(2, 3)) <= GATHER; }
+      else if (goal === 'bank') ok = ev.pre >= 1;
+      else if (goal === 'three') ok = ev.cushions >= 3;
+      else if (goal === 'direct') ok = ev.cushions === 0;
+      return { ok, note: ok ? null : GOALS[goal].miss };
+    },
+    evaluate(ev, c, g) { const j = this.judge(c ? c.goal : 'score', ev, g ? g.world : null); return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0, solved: j.ok, note: j.note }; },
   };
 
   // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
@@ -1277,7 +1328,7 @@ function createGame(PH) {
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
-    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true,
+    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true, goal: 'score',
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -1843,53 +1894,119 @@ function createDrills() {
   }
   return { list, LEVELS, byId, make, judge, hint };
 }
-/* Four-ball puzzles: positions with one shot to score. Made by tools/gen-puzzles.js, which checked that each has an answer
-   (sol: [direction, speed] of one that works, with no spin). balls: cue, yellow, red, red. walls: barricades as [x0, y0, x1, y1]. */
+/* Four-ball puzzles, in stages. Made by tools/gen-puzzles.js from positions that came up in games between two computer
+   players, and kept only with an answer that was seen to work (sol: [direction, speed, side, follow/draw, cue raised, jump]).
+   balls: cue, yellow, red, red. A stage's goal says what the shot has to do (see the puzzle rules in game.js). */
 function createPuzzles() {
-  const TIERS = ["가까운 두 공","멀리 떨어진 두 공","노란 공 피하기","바리케이드","미로"];
+  const STAGES = [{"name":"첫 득점","goal":"score","desc":"가까운 두 공을 한 번에","trick":false},{"name":"모아치기","goal":"gather","desc":"치고 나서 세 공이 한데 모이게","trick":false},{"name":"빈쿠션","goal":"bank","desc":"쿠션을 먼저 맞히고 들어가기","trick":false},{"name":"밀어치기 · 끌어치기","goal":"direct","desc":"쿠션 없이, 위아래 회전으로","trick":false},{"name":"상대 공 피해 가기","goal":"score","desc":"노란 공을 건드리지 않고","trick":false},{"name":"돌려치기","goal":"three","desc":"쿠션 세 번을 돌아서","trick":false},{"name":"맛세이 · 점프","goal":"direct","desc":"막은 공을 넘거나 휘어서","trick":true}];
   const list = [
-    {"id":1,"tier":0,"balls":[[0.184,0.091],[0.556,-0.256],[0.468,0.501],[0.519,0.361]],"walls":[],"sol":[0.75922,4.6],"first":3,"cush":0},
-    {"id":2,"tier":0,"balls":[[-1.118,0.347],[-0.917,0.159],[-0.915,-0.076],[-1.015,-0.262]],"walls":[],"sol":[5.07891,2.4],"first":2,"cush":0},
-    {"id":3,"tier":0,"balls":[[0.123,0.283],[-0.399,-0.14],[0.611,0.393],[0.682,0.558]],"walls":[],"sol":[0.28798,2.4],"first":2,"cush":0},
-    {"id":4,"tier":0,"balls":[[-0.533,0.351],[-1.1,0.387],[0.15,-0.194],[0.293,-0.128]],"walls":[],"sol":[5.64614,2.4],"first":2,"cush":0},
-    {"id":5,"tier":0,"balls":[[-0.833,0.184],[0.349,-0.41],[-0.101,0.468],[-0.216,0.373]],"walls":[],"sol":[0.34034,3.4],"first":3,"cush":1},
-    {"id":6,"tier":0,"balls":[[-0.774,-0.368],[0.342,-0.311],[-0.565,0.04],[-0.432,-0.092]],"walls":[],"sol":[0.72431,4.6],"first":3,"cush":0},
-    {"id":7,"tier":0,"balls":[[-0.362,-0.119],[0.76,0.359],[0.117,-0.299],[0.295,-0.378]],"walls":[],"sol":[5.85558,2.4],"first":2,"cush":1},
-    {"id":8,"tier":0,"balls":[[0.185,0.479],[-0.603,-0.371],[0.57,-0.401],[0.672,-0.233]],"walls":[],"sol":[5.27089,2.4],"first":3,"cush":0},
-    {"id":9,"tier":1,"balls":[[-0.623,-0.18],[-0.329,-0.514],[-0.684,-0.079],[0.467,0.161]],"walls":[],"sol":[1.85005,4.6],"first":2,"cush":1},
-    {"id":10,"tier":1,"balls":[[0.839,0.097],[0.083,-0.111],[1.14,-0.495],[0.536,0.28]],"walls":[],"sol":[1.88496,4.6],"first":3,"cush":1},
-    {"id":11,"tier":1,"balls":[[-0.519,0.175],[-0.547,0.319],[1.028,0.43],[0.723,-0.511]],"walls":[],"sol":[0.41015,3.4],"first":2,"cush":3},
-    {"id":12,"tier":1,"balls":[[1.118,-0.354],[0.859,0.249],[-0.184,-0.511],[-0.999,0.207]],"walls":[],"sol":[3.23759,2.4],"first":2,"cush":1},
-    {"id":13,"tier":1,"balls":[[-1.051,-0.345],[-1.026,0.139],[-0.8,0.006],[0.182,-0.19]],"walls":[],"sol":[0.88139,4.6],"first":2,"cush":0},
-    {"id":14,"tier":1,"balls":[[0.283,0.362],[0.279,-0.014],[-0.954,-0.001],[-0.052,0.285]],"walls":[],"sol":[2.17293,2.4],"first":3,"cush":1},
-    {"id":15,"tier":1,"balls":[[-0.929,-0.384],[-0.22,0.159],[0.634,0.48],[-0.855,-0.486]],"walls":[],"sol":[5.60251,4.6],"first":3,"cush":1},
-    {"id":16,"tier":1,"balls":[[-0.053,0.157],[0.642,0.473],[1.124,-0.308],[0.094,-0.398]],"walls":[],"sol":[5.01782,2.4],"first":3,"cush":1},
-    {"id":17,"tier":2,"balls":[[-0.302,0.249],[-0.55,-0.05],[-0.701,-0.285],[-0.426,-0.421]],"walls":[],"sol":[3.49939,3.4],"first":2,"cush":2},
-    {"id":18,"tier":2,"balls":[[0.74,0.242],[0.343,0.332],[-0.048,0.376],[-0.081,0.054]],"walls":[],"sol":[2.46964,3.4],"first":2,"cush":1},
-    {"id":19,"tier":2,"balls":[[-0.694,-0.115],[-0.298,-0.115],[0.099,-0.072],[0.194,0.278]],"walls":[],"sol":[5.31453,2.4],"first":2,"cush":2},
-    {"id":20,"tier":2,"balls":[[-0.13,-0.349],[-0.156,-0.001],[-0.196,0.322],[0.289,0.256]],"walls":[],"sol":[0.49742,3.4],"first":3,"cush":2},
-    {"id":21,"tier":2,"balls":[[-0.472,-0.509],[0.14,-0.464],[0.941,-0.365],[0.851,0.304]],"walls":[],"sol":[5.41052,3.4],"first":3,"cush":2},
-    {"id":22,"tier":2,"balls":[[0.391,0.206],[0.418,-0.029],[0.418,-0.416],[0.944,-0.112]],"walls":[],"sol":[5.98648,2.4],"first":3,"cush":2},
-    {"id":23,"tier":2,"balls":[[-0.209,0.39],[-0.035,0.292],[0.359,0.113],[-0.59,-0.155]],"walls":[],"sol":[3.42957,3.4],"first":3,"cush":1},
-    {"id":24,"tier":2,"balls":[[0.727,0.45],[0.959,0],[1.057,-0.225],[-1.046,-0.315]],"walls":[],"sol":[0.88139,4.6],"first":2,"cush":4},
-    {"id":25,"tier":3,"balls":[[-0.456,0.086],[0.246,0.23],[-0.915,-0.348],[-0.996,-0.463]],"walls":[[-1.019,0.006,-0.453,-0.385]],"sol":[2.24275,3.4],"first":2,"cush":2},
-    {"id":26,"tier":3,"balls":[[-0.986,0.098],[0.763,-0.074],[0.482,-0.082],[0.567,0.136]],"walls":[[-0.412,-0.214,-0.155,0.345]],"sol":[3.80482,3.4],"first":2,"cush":2},
-    {"id":27,"tier":3,"balls":[[1.037,0.007],[0.371,0.137],[0.061,-0.383],[-0.112,-0.37]],"walls":[[0.145,-0.029,0.556,-0.453]],"sol":[0.48869,4.6],"first":3,"cush":4},
-    {"id":28,"tier":3,"balls":[[1.109,-0.067],[0.624,0.295],[0.255,0.061],[0.536,-0.005]],"walls":[[0.957,0.214,0.715,-0.276]],"sol":[4.20624,3.4],"first":3,"cush":1},
-    {"id":29,"tier":3,"balls":[[0.66,0.094],[1.063,-0.408],[-0.255,-0.258],[-0.831,-0.44]],"walls":[[0.133,0.189,0.278,-0.336]],"sol":[2.14675,2.4],"first":2,"cush":1},
-    {"id":30,"tier":3,"balls":[[-0.557,0.232],[0.129,0.506],[0.522,-0.109],[1.056,-0.004]],"walls":[[-0.18,-0.12,0.096,0.364]],"sol":[5.40179,3.4],"first":2,"cush":1},
-    {"id":31,"tier":3,"balls":[[0.95,0.208],[0.758,-0.231],[-0.048,-0.507],[-0.043,-0.004]],"walls":[[0.309,0.192,0.598,-0.238]],"sol":[2.33874,3.4],"first":3,"cush":1},
-    {"id":32,"tier":3,"balls":[[-0.217,-0.147],[1.126,0.435],[-1.013,0.184],[-0.622,0.371]],"walls":[[-0.378,0.341,-0.79,-0.117]],"sol":[3.97935,3.4],"first":3,"cush":3},
-    {"id":33,"tier":4,"balls":[[0.946,0.255],[0.147,0.436],[-0.27,-0.339],[0.933,0.12]],"walls":[[0.244,0.161,0.225,-0.346],[0.382,-0.309,0.067,0.009]],"sol":[4.93928,4.6],"first":3,"cush":2},
-    {"id":34,"tier":4,"balls":[[0.494,-0.325],[-0.78,0.356],[-0.575,0.327],[-0.525,-0.468]],"walls":[[-0.004,0.277,-0.053,-0.289],[-0.79,0.005,-0.305,-0.22]],"sol":[3.24631,2.4],"first":3,"cush":1},
-    {"id":35,"tier":4,"balls":[[-0.83,0.385],[-0.318,0.38],[-0.388,-0.361],[-0.984,0.348]],"walls":[[-0.941,0.036,-0.327,0.072],[-0.513,0.227,-0.83,-0.273]],"sol":[3.78736,4.6],"first":3,"cush":2},
-    {"id":36,"tier":4,"balls":[[0.291,-0.474],[0.972,0.489],[-0.564,0.338],[-1.004,-0.276]],"walls":[[0.035,0.107,-0.422,-0.135],[-0.973,0.128,-0.588,-0.057]],"sol":[2.96706,3.4],"first":3,"cush":2},
-    {"id":37,"tier":4,"balls":[[0.785,-0.437],[-0.882,0.141],[0.023,0.318],[0.757,-0.198]],"walls":[[0.715,-0.041,0.223,-0.207],[0.247,-0.06,0.527,0.184]],"sol":[1.55334,4.6],"first":3,"cush":2},
-    {"id":38,"tier":4,"balls":[[-0.904,0.44],[0.184,-0.114],[-0.048,-0.01],[-1.018,-0.312]],"walls":[[-0.397,-0.144,-0.354,0.468],[-0.604,0.036,-0.568,-0.392]],"sol":[4.59894,3.4],"first":3,"cush":1},
-    {"id":39,"tier":4,"balls":[[0.719,-0.319],[1.099,-0.487],[-1.067,-0.05],[-0.147,-0.184]],"walls":[[-0.245,0.072,-0.363,-0.402],[-0.563,-0.375,-0.379,0.101]],"sol":[3.01069,4.6],"first":3,"cush":1},
-    {"id":40,"tier":4,"balls":[[-0.655,-0.286],[1.012,0.101],[0.797,-0.126],[0.021,0.022]],"walls":[[0.009,-0.512,0.226,0.111],[0.44,0.22,0.422,-0.332]],"sol":[0.47997,2.4],"first":3,"cush":1},
+    {"id":1,"stage":0,"n":1,"balls":[[0.868,0.245],[1.125,-0.561],[1.04,0.326],[1.153,0.114]],"sol":[0.27227,4.6,0,0,null,0]},
+    {"id":2,"stage":0,"n":2,"balls":[[-0.634,-0.356],[-0.492,-0.034],[-0.738,-0.113],[-0.738,-0.372]],"sol":[3.04734,4.6,0,0,null,0]},
+    {"id":3,"stage":0,"n":3,"balls":[[-0.091,0.378],[0.316,-0.185],[0.244,0.208],[-0.09,0.274]],"sol":[5.0056,3.4,0,0,null,0]},
+    {"id":4,"stage":0,"n":4,"balls":[[1.055,0.297],[-0.185,-0.569],[0.698,0.385],[0.785,0.526]],"sol":[2.5028,4.6,0,0,null,0]},
+    {"id":5,"stage":0,"n":5,"balls":[[0.63,0.09],[-1.145,-0.296],[0.285,-0.435],[0.412,-0.484]],"sol":[4.28304,2.4,0,0,null,0]},
+    {"id":6,"stage":0,"n":6,"balls":[[-1.126,-0.291],[-1.197,0.12],[-0.836,-0.425],[-0.685,-0.274]],"sol":[5.94808,3.4,0,0,null,0]},
+    {"id":7,"stage":0,"n":7,"balls":[[1.154,-0.349],[0.09,0.493],[0.903,-0.374],[0.689,-0.002]],"sol":[3.12065,2.4,0,0,null,0]},
+    {"id":8,"stage":0,"n":8,"balls":[[0.709,0.034],[0.582,-0.47],[0.532,0.003],[0.393,0.251]],"sol":[3.13112,2.4,0,0,null,0]},
+    {"id":9,"stage":0,"n":9,"balls":[[0.608,0.403],[1.144,-0.342],[0.618,-0.454],[0.421,-0.439]],"sol":[4.53437,2.4,0,0,null,0]},
+    {"id":10,"stage":0,"n":10,"balls":[[1.205,-0.474],[1.131,0.269],[0.243,0.179],[0.296,-0.066]],"sol":[2.68083,3.4,0,0,null,0]},
+    {"id":11,"stage":0,"n":11,"balls":[[-0.434,-0.553],[1.05,0.067],[-0.91,-0.115],[-0.534,-0.214]],"sol":[1.94779,2.4,0,0,null,0]},
+    {"id":12,"stage":0,"n":12,"balls":[[-0.928,0.262],[0.543,-0.244],[-1.159,-0.227],[-1.031,-0.37]],"sol":[4.32493,3.4,0,0,null,0]},
+    {"id":13,"stage":0,"n":13,"balls":[[0.353,0.527],[1.131,0.269],[-0.213,0.556],[-0.337,0.417]],"sol":[3.15206,2.4,0,0,null,0]},
+    {"id":14,"stage":0,"n":14,"balls":[[0.48,0.206],[0.638,-0.059],[1.105,0.261],[1.21,0.408]],"sol":[0.17802,2.4,0,0,null,0]},
+    {"id":15,"stage":0,"n":15,"balls":[[-0.45,0.421],[-0.091,0.378],[-0.125,0.469],[-0.298,0.325]],"sol":[5.86431,2.4,0,0,null,0]},
+    {"id":16,"stage":1,"n":1,"balls":[[0.94,-0.117],[0.785,-0.287],[1.05,0.061],[1.14,-0.013]],"sol":[0.90059,1.5,0,0,null,0]},
+    {"id":17,"stage":1,"n":2,"balls":[[-0.253,-0.188],[0.239,0.443],[-0.846,-0.534],[-0.784,-0.418]],"sol":[3.58142,1.5,0,0,null,0]},
+    {"id":18,"stage":1,"n":3,"balls":[[-0.928,0.262],[0.543,-0.244],[-1.159,-0.227],[-1.031,-0.37]],"sol":[4.20973,1.5,0,0,null,0]},
+    {"id":19,"stage":1,"n":4,"balls":[[-0.703,-0.351],[-0.29,0.49],[-0.917,-0.161],[-0.889,-0.304]],"sol":[3.7385,1.5,0,0,null,0]},
+    {"id":20,"stage":1,"n":5,"balls":[[-0.465,0.558],[0.08,-0.378],[-0.829,0.553],[-0.976,0.547]],"sol":[3.17301,1.5,0,0,null,0]},
+    {"id":21,"stage":1,"n":6,"balls":[[0.889,-0.147],[-0.948,-0.53],[1.132,0.416],[1.082,0.203]],"sol":[4.87994,2,0,0,null,0]},
+    {"id":22,"stage":1,"n":7,"balls":[[0.521,0.465],[-0.483,-0.015],[0.956,0.031],[0.971,0.18]],"sol":[0.93201,1.5,0,0,null,0]},
+    {"id":23,"stage":1,"n":8,"balls":[[1.055,0.297],[-0.185,-0.569],[0.698,0.385],[0.785,0.526]],"sol":[0.29322,1.5,0,0,null,0]},
+    {"id":24,"stage":1,"n":9,"balls":[[0.63,0.09],[-1.145,-0.296],[0.285,-0.435],[0.412,-0.484]],"sol":[5.95855,1.5,0,0,null,0]},
+    {"id":25,"stage":1,"n":10,"balls":[[-0.45,0.421],[-0.091,0.378],[-0.125,0.469],[-0.298,0.325]],"sol":[5.81195,2.6,0,0,null,0]},
+    {"id":26,"stage":1,"n":11,"balls":[[-0.629,-0.527],[-0.119,0.41],[-0.758,-0.352],[-0.653,-0.262]],"sol":[4.35634,2.6,0,0,null,0]},
+    {"id":27,"stage":1,"n":12,"balls":[[0.879,0.218],[0.638,-0.059],[0.361,-0.266],[0.461,-0.355]],"sol":[5.88525,1.5,0,0,null,0]},
+    {"id":28,"stage":1,"n":13,"balls":[[1.141,-0.273],[0.534,0.248],[1.061,0.488],[0.923,0.402]],"sol":[4.5972,1.5,0,0,null,0]},
+    {"id":29,"stage":1,"n":14,"balls":[[0.353,0.527],[1.131,0.269],[-0.213,0.556],[-0.337,0.417]],"sol":[0.0733,2,0,0,null,0]},
+    {"id":30,"stage":1,"n":15,"balls":[[-1.126,-0.291],[-1.197,0.12],[-0.836,-0.425],[-0.685,-0.274]],"sol":[3.34056,1.5,0,0,null,0]},
+    {"id":31,"stage":2,"n":1,"balls":[[-0.45,0.565],[0.767,0.242],[0.424,0.409],[0.194,0.327]],"sol":[0.41888,2.6,0,0,null,0]},
+    {"id":32,"stage":2,"n":2,"balls":[[0.106,-0.439],[0.07,0.504],[-0.946,-0.485],[-0.501,-0.493]],"sol":[3.51858,2.6,0,0,null,0]},
+    {"id":33,"stage":2,"n":3,"balls":[[-1.212,-0.29],[0.96,0.459],[0.136,-0.55],[0.097,-0.32]],"sol":[1.02625,3.6,0,0,null,0]},
+    {"id":34,"stage":2,"n":4,"balls":[[-0.639,-0.182],[-0.991,0],[-0.494,0.043],[-0.556,-0.094]],"sol":[3.04734,2.6,0,0,null,0]},
+    {"id":35,"stage":2,"n":5,"balls":[[-0.928,0.262],[0.543,-0.244],[-1.159,-0.227],[-1.031,-0.37]],"sol":[1.73835,2.6,0,0,null,0]},
+    {"id":36,"stage":2,"n":6,"balls":[[-0.903,0.482],[0.08,-0.378],[-0.776,0.525],[-1.169,0.204]],"sol":[1.06814,4.8,0,0,null,0]},
+    {"id":37,"stage":2,"n":7,"balls":[[-0.991,0],[1.144,-0.342],[-0.403,0.391],[-0.735,0.207]],"sol":[2.81696,3.6,0,0,null,0]},
+    {"id":38,"stage":2,"n":8,"balls":[[1.127,-0.038],[0.729,0.127],[0.541,-0.428],[0.073,-0.475]],"sol":[5.49779,2.6,0,0,null,0]},
+    {"id":39,"stage":2,"n":9,"balls":[[1.158,-0.347],[0.075,0.293],[1.071,-0.242],[0.674,-0.305]],"sol":[0.17802,3.6,0,0,null,0]},
+    {"id":40,"stage":2,"n":10,"balls":[[-0.928,-0.552],[0.945,-0.056],[-0.34,-0.238],[-0.714,-0.58]],"sol":[3.27773,2.6,0,0,null,0]},
+    {"id":41,"stage":2,"n":11,"balls":[[0.103,0.281],[-0.696,0.145],[-1.068,0.515],[-0.402,0.413]],"sol":[0.17802,3.6,0,0,null,0]},
+    {"id":42,"stage":2,"n":12,"balls":[[-0.092,-0.495],[-0.948,-0.53],[0.31,0.165],[0.905,0.377]],"sol":[5.1941,3.6,0,0,null,0]},
+    {"id":43,"stage":2,"n":13,"balls":[[1.182,-0.194],[-0.229,0.326],[-1.175,0.108],[-0.91,-0.175]],"sol":[0.02094,3.6,0,0,null,0]},
+    {"id":44,"stage":2,"n":14,"balls":[[-0.149,0.416],[0.56,-0.546],[-0.303,0.362],[-0.17,-0.004]],"sol":[1.80118,2.6,0,0,null,0]},
+    {"id":45,"stage":2,"n":15,"balls":[[0.542,0.503],[0.08,-0.378],[0.317,0.517],[-0.094,0.186]],"sol":[6.27271,3.6,0,0,null,0]},
+    {"id":46,"stage":3,"n":1,"balls":[[0.818,-0.247],[-0.834,0.41],[0.496,-0.212],[-0.214,-0.377]],"sol":[3.0547,2.6,0,0.36,null,0]},
+    {"id":47,"stage":3,"n":2,"balls":[[0.455,-0.139],[1.099,-0.251],[0.214,-0.1],[-0.255,-0.202]],"sol":[3.00968,2.6,0,0.36,null,0]},
+    {"id":48,"stage":3,"n":3,"balls":[[-0.287,0.326],[-0.858,-0.473],[-0.38,0.101],[-0.387,-0.383]],"sol":[-1.93414,2.6,0,0.36,null,0]},
+    {"id":49,"stage":3,"n":4,"balls":[[0.285,0.073],[-0.672,-0.094],[0.52,-0.095],[-0.112,0.17]],"sol":[-0.63266,2.6,0,-0.36,null,0]},
+    {"id":50,"stage":3,"n":5,"balls":[[0.275,0.281],[-1.096,0.222],[0.505,0.425],[0.085,0.044]],"sol":[0.54658,2.6,0,-0.36,null,0]},
+    {"id":51,"stage":3,"n":6,"balls":[[-0.801,-0.32],[0.911,-0.386],[-0.57,-0.241],[-0.117,-0.233]],"sol":[0.30813,2.6,0,0.36,null,0]},
+    {"id":52,"stage":3,"n":7,"balls":[[-0.56,-0.347],[-0.031,-0.229],[-0.495,-0.125],[-0.491,0.227]],"sol":[1.30104,2.6,0,0.36,null,0]},
+    {"id":53,"stage":3,"n":8,"balls":[[-0.859,-0.145],[0.128,-0.459],[-0.655,-0.231],[-1.143,-0.024]],"sol":[-0.39896,2.6,0,-0.36,null,0]},
+    {"id":54,"stage":3,"n":9,"balls":[[-0.559,-0.168],[0.777,-0.185],[-0.359,-0.374],[-0.674,0.12]],"sol":[-0.78809,2.6,0,-0.36,null,0]},
+    {"id":55,"stage":3,"n":10,"balls":[[0.518,0.098],[-0.794,-0.237],[0.652,0.364],[0.325,-0.148]],"sol":[1.10997,2.6,0,-0.36,null,0]},
+    {"id":56,"stage":3,"n":11,"balls":[[0.42,0.209],[-1.013,0.315],[0.644,0.129],[0.121,0.258]],"sol":[-0.35035,2.6,0,-0.36,null,0]},
+    {"id":57,"stage":3,"n":12,"balls":[[0.138,-0.11],[-0.32,0.335],[-0.14,-0.159],[-0.576,-0.144]],"sol":[-2.97942,2.6,0,0.36,null,0]},
+    {"id":58,"stage":3,"n":13,"balls":[[-0.542,-0.255],[0.169,-0.414],[-0.777,-0.048],[-0.241,-0.37]],"sol":[2.4084,2.6,0,-0.36,null,0]},
+    {"id":59,"stage":3,"n":14,"balls":[[0.208,0.148],[0.682,-0.157],[0.42,0.264],[-0.134,0.084]],"sol":[0.51508,2.6,0,-0.36,null,0]},
+    {"id":60,"stage":3,"n":15,"balls":[[-0.678,-0.148],[0.332,-0.468],[-0.681,0.077],[-0.7,-0.506]],"sol":[1.58413,2.6,0,-0.36,null,0]},
+    {"id":61,"stage":4,"n":1,"balls":[[-1.178,-0.196],[-0.815,-0.031],[-0.495,0.477],[-0.332,0.222]],"sol":[2.38761,4.6,0,0,null,0]},
+    {"id":62,"stage":4,"n":2,"balls":[[0.922,-0.078],[0.544,-0.002],[0.102,-0.015],[0.332,0.067]],"sol":[2.01062,2.4,0,0,null,0]},
+    {"id":63,"stage":4,"n":3,"balls":[[-0.43,-0.494],[0.345,-0.147],[1.114,0.507],[1.081,0.166]],"sol":[5.72817,3.4,0,0,null,0]},
+    {"id":64,"stage":4,"n":4,"balls":[[0.733,0.488],[0.563,0.166],[0.41,-0.069],[0.864,-0.176]],"sol":[5.65487,3.4,0,0,null,0]},
+    {"id":65,"stage":4,"n":5,"balls":[[0.067,-0.268],[0.341,-0.186],[0.797,-0.099],[1.146,-0.176]],"sol":[1.1205,4.6,0,0,null,0]},
+    {"id":66,"stage":4,"n":6,"balls":[[0.666,0.373],[0.125,0.304],[-0.964,0.426],[-0.298,0.266]],"sol":[2.61799,4.6,0,0,null,0]},
+    {"id":67,"stage":4,"n":7,"balls":[[-0.903,-0.183],[-0.6,-0.087],[-0.294,0.022],[-0.342,-0.563]],"sol":[5.64439,3.4,0,0,null,0]},
+    {"id":68,"stage":4,"n":8,"balls":[[-1.093,-0.581],[-0.955,-0.241],[-0.825,0.028],[-0.948,0.393]],"sol":[3.93746,4.6,0,0,null,0]},
+    {"id":69,"stage":4,"n":9,"balls":[[0.705,-0.466],[0.404,-0.479],[0.087,-0.525],[-1.159,0.212]],"sol":[3.43481,3.4,0,0,null,0]},
+    {"id":70,"stage":4,"n":10,"balls":[[-0.645,0.04],[-0.488,0.138],[-0.161,0.338],[0.337,0.185]],"sol":[1.01578,2.4,0,0,null,0]},
+    {"id":71,"stage":4,"n":11,"balls":[[-0.62,-0.178],[-0.429,0.031],[0.642,0.479],[-0.009,0.351]],"sol":[2.62847,3.4,0,0,null,0]},
+    {"id":72,"stage":4,"n":12,"balls":[[-1.183,-0.411],[-0.814,-0.394],[0.944,-0.336],[-0.422,-0.391]],"sol":[5.82242,3.4,0,0,null,0]},
+    {"id":73,"stage":4,"n":13,"balls":[[-0.842,-0.211],[-0.014,-0.385],[1.128,0.478],[0.507,-0.483]],"sol":[5.88525,3.4,0,0,null,0]},
+    {"id":74,"stage":4,"n":14,"balls":[[0.508,0.362],[0.033,0.456],[-0.877,-0.411],[-0.251,0.526]],"sol":[2.68083,2.4,0,0,null,0]},
+    {"id":75,"stage":4,"n":15,"balls":[[0.911,0.01],[0.596,0.083],[0.316,-0.32],[0.337,0.185]],"sol":[4.17832,2.4,0,0,null,0]},
+    {"id":76,"stage":5,"n":1,"balls":[[-1.114,0.052],[0.718,-0.464],[-0.602,-0.085],[-1.153,-0.416]],"sol":[4.34587,4.2,0,0,null,0]},
+    {"id":77,"stage":5,"n":2,"balls":[[-1.21,0.424],[0.545,0.379],[0.184,-0.484],[0.372,-0.385]],"sol":[3.48717,6.2,0,0,null,0]},
+    {"id":78,"stage":5,"n":3,"balls":[[0.419,-0.547],[-0.991,0],[0.419,-0.435],[0.24,-0.004]],"sol":[1.02625,4.2,0,0,null,0]},
+    {"id":79,"stage":5,"n":4,"balls":[[-0.177,0.038],[-0.991,0],[-0.242,0.402],[-0.684,0.387]],"sol":[4.01077,5.2,0,0,null,0]},
+    {"id":80,"stage":5,"n":5,"balls":[[-1.072,0.293],[-0.03,0.58],[0.288,0.163],[0.205,-0.113]],"sol":[3.85369,5.2,0,0,null,0]},
+    {"id":81,"stage":5,"n":6,"balls":[[0.171,-0.426],[0.008,-0.349],[-1.065,-0.498],[-0.478,-0.525]],"sol":[3.34056,6.2,0,0,null,0]},
+    {"id":82,"stage":5,"n":7,"balls":[[0.757,-0.311],[1.035,-0.421],[1.034,0.429],[0.86,-0.365]],"sol":[6.25177,6.2,0,0,null,0]},
+    {"id":83,"stage":5,"n":8,"balls":[[0.186,0.293],[-1.21,0.424],[0.184,-0.484],[1.18,-0.359]],"sol":[0.80634,4.2,0,0,null,0]},
+    {"id":84,"stage":5,"n":9,"balls":[[-0.433,-0.466],[-0.332,-0.53],[-0.667,0.052],[-0.853,-0.489]],"sol":[3.63378,5.2,0,0,null,0]},
+    {"id":85,"stage":5,"n":10,"balls":[[-1.005,-0.537],[-0.58,0.18],[-0.932,-0.394],[-0.426,0.289]],"sol":[4.81711,5.2,0,0,null,0]},
+    {"id":86,"stage":5,"n":11,"balls":[[0.247,0.047],[0.098,-0.506],[-1.043,0.478],[0.086,0.209]],"sol":[0.89012,6.2,0,0,null,0]},
+    {"id":87,"stage":5,"n":12,"balls":[[0.329,-0.031],[0.056,-0.508],[1.185,-0.334],[0.076,-0.403]],"sol":[0.99484,4.2,0,0,null,0]},
+    {"id":88,"stage":5,"n":13,"balls":[[-0.089,0.083],[0.535,0.066],[-1.131,-0.472],[-0.079,-0.076]],"sol":[5.13127,5.2,0,0,null,0]},
+    {"id":89,"stage":5,"n":14,"balls":[[0.351,-0.498],[0.187,-0.547],[-1.079,-0.363],[-0.422,-0.179]],"sol":[4.32493,6.2,0,0,null,0]},
+    {"id":90,"stage":5,"n":15,"balls":[[0.961,0.567],[0.686,0.081],[-1.211,-0.341],[-0.972,0.06]],"sol":[1.0472,6.2,0,0,null,0]},
+    {"id":91,"stage":6,"n":1,"balls":[[1.045,0.485],[0.753,0.437],[-0.054,0.456],[-0.061,0.269]],"sol":[-3.09621,4.4,0,0,0.7,1]},
+    {"id":92,"stage":6,"n":2,"balls":[[-0.749,0.41],[-0.44,0.318],[0.654,-0.178],[0.622,0.027]],"sol":[-0.30141,4.4,0,0,0.7,1]},
+    {"id":93,"stage":6,"n":3,"balls":[[1.125,-0.561],[0.918,-0.389],[0.109,0.328],[-0.064,0.145]],"sol":[2.43576,5,0,0,0.7,1]},
+    {"id":94,"stage":6,"n":4,"balls":[[1.191,-0.285],[0.918,-0.288],[0.009,-0.283],[0.07,-0.497]],"sol":[-2.97468,4.4,0,0,0.7,1]},
+    {"id":95,"stage":6,"n":5,"balls":[[-0.013,-0.388],[0.22,-0.396],[0.938,-0.407],[0.806,-0.209]],"sol":[0.31018,3.4,0.42,0,0.95,0]},
+    {"id":96,"stage":6,"n":6,"balls":[[-0.991,0],[-0.611,0.055],[0.296,0.02],[0.139,0.177]],"sol":[0.11437,4.4,0,0,0.7,1]},
+    {"id":97,"stage":6,"n":7,"balls":[[0.58,0.313],[0.461,0.069],[0.338,-0.564],[0.195,-0.444]],"sol":[-2.02529,4.4,0,0,0.7,1]},
+    {"id":98,"stage":6,"n":8,"balls":[[0.332,-0.455],[0.237,-0.14],[0.099,0.264],[0.293,0.333]],"sol":[1.57418,4.4,-0.42,0,0.95,0]},
+    {"id":99,"stage":6,"n":9,"balls":[[0.689,0.086],[0.335,0.199],[-0.118,0.547],[-0.141,0.355]],"sol":[2.80818,4.4,0,0,0.7,1]},
+    {"id":100,"stage":6,"n":10,"balls":[[0.253,-0.481],[-0.029,-0.47],[-1.019,-0.406],[-1.172,-0.26]],"sol":[3.0387,4.4,0,0,0.7,1]},
+    {"id":101,"stage":6,"n":11,"balls":[[0.827,0.448],[0.862,0.19],[0.668,-0.451],[0.968,-0.488]],"sol":[-1.81585,5.4,-0.42,0,1.2,0]},
+    {"id":102,"stage":6,"n":12,"balls":[[-1.136,-0.49],[-0.915,-0.437],[-0.122,-0.489],[0.05,-0.233]],"sol":[0.04399,4.4,0,0,0.7,1]},
+    {"id":103,"stage":6,"n":13,"balls":[[-1.132,-0.576],[-0.965,-0.438],[-0.112,0.503],[-0.109,0.334]],"sol":[1.11201,3.4,0.42,0,1.2,0]},
+    {"id":104,"stage":6,"n":14,"balls":[[1.205,-0.474],[0.915,-0.339],[0.243,0.179],[0.296,-0.066]],"sol":[2.6697,4.4,0,0,0.7,1]},
+    {"id":105,"stage":6,"n":15,"balls":[[-0.03,0.04],[0.305,0.212],[0.708,0.408],[1.067,0.388]],"sol":[0.19256,3.4,-0.42,0,1.2,0]},
   ];
-  return { list, TIERS, byId: id => list.find(p => p.id === id) };
+  return { list, STAGES, byId: id => list.find(p => p.id === id), of: s => list.filter(p => p.stage === s) };
 }
 /* League: everyone plays everyone, results make a table. Plain data in, plain data out; no DOM in here.
    league = { mode, target, names: [...], fx: [{ r: round, a, b, w: null | 0 | 1, sa, sb }] }   (a, b: indexes into names; w: which of the two won) */
@@ -2488,7 +2605,7 @@ function createScene(canvas, app, PH) {
     g.fillStyle = '#15171c'; g.font = '800 54px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 48, 52); return tex(c); };
   function setMarks(list) {
     while (marks.children.length) { const m = marks.children.pop(); m.material.map.dispose(); m.material.dispose(); }
-    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 2.2); m.scale.set(cur.R * 1.5, cur.R * 1.5, 1); marks.add(m); });
+    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 1.1); m.scale.set(cur.R * 1.7, cur.R * 1.7, 1); marks.add(m); });
     dirty = 3;
   }
   let ppm = 200, guideKey = '', pathPts = [];
@@ -4009,7 +4126,7 @@ const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null,
-    suji: {}, sujiAI: 5, finish: false, arcade: 'none', masse: true, cues: null, lab: null, v: 0 }, saved);
+    pz: null, suji: {}, sujiAI: 5, finish: false, arcade: 'none', masse: true, cues: null, lab: null, v: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -4019,6 +4136,7 @@ const prefs = (() => {
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
   p.cues = p.cues.map(i => CUES[i] ? i : 0);
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
+  if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
   p.lab = Object.assign({ masse: true, suji: true, arcade: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
   if (p.v < 2) { p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
@@ -4345,6 +4463,9 @@ function paintResume() {
   box.appendChild(el('button', { class: 'resume', onclick: () => { SND.init(); SND.tap(); resume(d); } }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
   box.appendChild(el('button', { class: 'resume-x', 'aria-label': '하던 판 지우기', text: '×', onclick: () => { SND.tap(); store.set('save', null); paintResume(); } }));
 }
+// the puzzles on offer (the masse and jump stage goes when those shots are switched off), and which stages are open
+const pzList = () => puzzles.list.filter(q => LAB.masse || !puzzles.STAGES[q.stage].trick), PZ_NEED = 5;
+const pzOpen = si => si === 0 || !LAB.stage || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 // lessons, grouped the way a course list is: what you learn first at the top
 const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
@@ -4368,16 +4489,33 @@ function paintHome() {
     box.scrollTop = top;
   }
   if (puz) {
-    // how many are solved, then every puzzle as a numbered tile under the name of its kind
-    const box = $('#puzBox'), top = box.scrollTop, z = prefs.puz, n = puzzles.list.filter(q => z.done[q.id]).length; box.textContent = '';
-    box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${n}` }), el('span', { text: ` / ${puzzles.list.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { text: `${z.best || 0}` }), el('small', { text: '최고 연속' })])]));
-    box.appendChild(el('div', { class: 'pzkind' }, [el('span', { class: 'on', text: '4구' }), el('span', { text: '3구 · 준비 중' }), el('span', { text: '8볼 · 준비 중' })]));
-    puzzles.TIERS.forEach((name, t) => {
-      box.appendChild(el('div', { class: 'lab', text: name }));
-      box.appendChild(el('div', { class: 'pzgrid' }, puzzles.list.filter(q => q.tier === t).map(q => el('button', { class: 'pz' + (z.done[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.done[q.id] ? '✓' : String(q.id),
-        onclick: () => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); } }))));
+    const box = $('#puzBox'), top = box.scrollTop, z = prefs.pz, L = pzList(), solved = L.filter(q => z.stars[q.id]).length, stars = L.reduce((a, q) => a + (z.stars[q.id] || 0), 0); box.textContent = '';
+    if (!L.some(q => q.id === z.cur)) z.cur = L[0].id;
+    box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${solved}` }), el('span', { text: ` / ${L.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { class: 'st', text: '★ ' + stars }), el('span', { text: ` / ${L.length * 3}` }), el('small', { text: '모은 별' })])]));
+    const pickPz = q => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); };
+    puzzles.STAGES.forEach((S, si) => {
+      if (S.trick && !LAB.masse) return;
+      const qs = puzzles.of(si), done = qs.filter(q => z.stars[q.id]).length, open = pzOpen(si);
+      if (!LAB.stage) {   // the plain numbered board
+        box.appendChild(el('div', { class: 'lab', text: S.name }));
+        box.appendChild(el('div', { class: 'pzgrid' }, qs.map(q => el('button', { class: 'pz' + (z.stars[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.stars[q.id] ? '✓' : String(q.n), onclick: () => pickPz(q) }))));
+        return;
+      }
+      // a stage: its number, what it is about, how far along; opened, its puzzles as stops along a winding road
+      const shown = z.open === si;
+      box.appendChild(el('button', { class: 'stg' + (shown ? ' open' : '') + (open ? '' : ' locked') + (done === qs.length ? ' clear' : ''), style: `--h:${[212, 156, 28, 268, 348, 190, 42][si % 7]}`, onclick: () => {
+        SND.init(); SND.tap(); if (!open) return toast(`앞 스테이지에서 ${PZ_NEED}문제를 풀면 열립니다.`, '', 2200);
+        z.open = shown ? -1 : si; if (!shown && !qs.some(q => q.id === z.cur)) { z.cur = (qs.find(q => !z.stars[q.id]) || qs[0]).id; homePreview(); } savePrefs(); paintHome();
+      } }, [el('span', { class: 'no', text: open ? String(si + 1) : '🔒' }), el('span', { class: 'tx' }, [el('b', { text: S.name }), el('small', { text: open ? S.desc : `앞 스테이지 ${PZ_NEED}문제를 풀면 열립니다` })]),
+        el('span', { class: 'pg' }, [el('em', { text: `${done}/${qs.length}` }), el('i', null, el('u', { style: `width:${Math.round(done / qs.length * 100)}%` }))])]));
+      if (!shown || !open) return;
+      const road = el('div', { class: 'road', style: `--h:${[212, 156, 28, 268, 348, 190, 42][si % 7]}` }), next = qs.find(q => !z.stars[q.id]);
+      for (let r = 0; r * 5 < qs.length; r++) road.appendChild(el('div', { class: 'rw' + (r % 2 ? ' rev' : '') + ((r + 1) * 5 < qs.length ? ' more' : '') }, qs.slice(r * 5, r * 5 + 5).map(q => { const n = z.stars[q.id] || 0;
+        return el('button', { class: 'nd' + (n ? ' done' : '') + (next && next.id === q.id ? ' next' : ''), 'aria-pressed': String(z.cur === q.id), onclick: () => pickPz(q) }, [el('b', { text: String(q.n) }), el('span', { class: 'sr', text: '★'.repeat(n) + '☆'.repeat(3 - n) })]); })));
+      box.appendChild(road);
     });
     box.scrollTop = top;
+    const cur = puzzles.byId(z.cur); if (cur) $('#startBtn').textContent = `${cur.stage + 1}-${cur.n} 풀기`;
   }
   const sujiOn = prefs.mode === 'four' && LAB.suji, sj = i => sujiOn ? `수지 ${sujiOf(i) * 10} · ` : '';
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = sj(0) + recText(prefs.names[0]);
@@ -4397,7 +4535,7 @@ function homePreview() {
   PH.pool = poolOf(prefs.table); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
-  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.puz.cur) || puzzles.list[0]); return; }
+  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); scene.setIce(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
   if (prefs.mode === 'practice' && d.make) {
     game.start('practice', [prefs.names[0], ''], false, {}); scene.setTable(game.P);
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
@@ -4697,56 +4835,67 @@ const practice = {
 
 /* ================= flow: puzzle (one position, one shot to score with; solve it and the next one comes) ================= */
 const puzzle = {
-  quiet: false, save: false, cur: null, helped: false, streak: 0,
-  // the balls and barricades of a puzzle, onto the table
+  quiet: false, save: false, cur: null, helped: false, tries: 0,
+  stage: z => puzzles.STAGES[z.stage],
+  // the balls of a puzzle, onto the table
   put(z) {
-    const P = game.P, w = game.world;
+    const P = game.P, w = game.world, n = Math.hypot(z.balls[2][0] - z.balls[0][0], z.balls[2][1] - z.balls[0][1]) <= Math.hypot(z.balls[3][0] - z.balls[0][0], z.balls[3][1] - z.balls[0][1]) ? 2 : 3;
     z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
-    w.walls = z.walls.length ? z.walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; w.cue = 0;
-    scene.clearFalls(); scene.setZone(null); st.aim = Math.atan2(z.balls[2][1] - z.balls[0][1], z.balls[2][0] - z.balls[0][0]); st.rev++; scene.invalidate();
+    w.walls = null; w.cue = 0; game.goal = puzzle.stage(z).goal;
+    scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
   start(id) {
-    const z = puzzles.byId(id || prefs.puz.cur) || puzzles.list[0], p = puzzle;
-    if (!p.cur || p.cur.id !== z.id) p.helped = false;
-    p.cur = z; prefs.puz.cur = z.id; savePrefs();
+    const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
+    if (!p.cur || p.cur.id !== z.id) { p.helped = false; p.tries = 0; }
+    p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
     game.start('puzzle4', [prefs.names[0], ''], false, {});
-    flow = puzzle; scene.setTable(game.P); show('play'); p.bar(); p.again();
-    toast(`퍼즐 ${z.id} · ${puzzles.TIERS[z.tier]}. 한 번에 빨간 공 두 개를 맞히세요. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+    flow = puzzle; scene.setIce(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
+    toast(`${z.stage + 1}-${z.n} ${p.stage(z).name} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
   },
   restart() { puzzle.start(); },
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
-  // the next one not yet solved after this (or simply the next, when all are)
+  // the next one not yet solved after this (or simply the next, when all are), staying inside the stages that are open
   step(dir) {
-    const L = puzzles.list, i = L.indexOf(puzzle.cur); let k = i;
-    for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.puz.done[L[k].id]) break; }
+    const L = pzList().filter(q => pzOpen(q.stage)), i = Math.max(0, L.indexOf(puzzle.cur)); let k = i;
+    for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.pz.stars[L[k].id]) break; }
     if (k === i) k = (i + dir + L.length) % L.length;
     puzzle.start(L[k].id);
   },
   guide: () => prefs.guides[0],
   auto: () => null,
-  beforeShot() {},
+  beforeShot() { scene.setMarks(null); },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
-    if (!r.solved) { p.streak = 0; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
-    const first = !prefs.puz.done[z.id]; prefs.puz.done[z.id] = 1;
-    if (!p.helped && first) { p.streak++; prefs.puz.best = Math.max(prefs.puz.best || 0, p.streak); }
-    savePrefs();
-    const all = puzzles.list.every(q => prefs.puz.done[q.id]);
-    toast(all && first ? '정답! 퍼즐을 모두 풀었습니다.' : p.helped ? '정답!' : `정답! 연속 ${p.streak}`, 'good', 1900); SND.good();
-    hold(1.8, () => p.step(1));
+    if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
+    // three stars for the first try, two within three, one after that or with help
+    const stars = p.helped ? 1 : p.tries === 0 ? 3 : p.tries <= 2 ? 2 : 1, was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
+    prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
+    const now = pzList().filter(q => pzOpen(q.stage)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
+    toast(all && !was ? '정답! 퍼즐을 모두 풀었습니다.' : now > opened ? '정답! 다음 스테이지가 열렸습니다.' : '정답! ' + '★'.repeat(stars), 'good', 2000); SND.good();
+    hold(1.9, () => p.step(1));
   },
   hud() {
-    const p = puzzle, z = p.cur, n = puzzles.list.filter(q => prefs.puz.done[q.id]).length;
-    paintPill(0, { name: `퍼즐 ${z.id}`, on: true, sub: `${puzzles.TIERS[z.tier]} · 연속 ${p.streak}`, tray: [], pts: null });
-    paintBadge('4구 퍼즐', { text: `푼 퍼즐 ${n}/${puzzles.list.length}` }); setBusy();
+    const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
+    paintPill(0, { name: `${z.stage + 1}-${z.n} ${p.stage(z).name}`, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '첫 시도에 풀면 ★★★', tray: [], pts: null });
+    paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
+  },
+  // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
+  marks(z) {
+    const P = game.P, t = P.clone(game.world), out = []; t.snd = []; P.strike(t, z.sol[0], z.sol[1], z.sol[2], z.sol[3], z.sol[4], !!z.sol[5]);
+    for (let i = 0; i < 120 * 25 && !P.rest(t) && out.length < 9; i++) {
+      P.step(t, TICK);
+      for (const e of t.snd) { if (e.t === 'rail' && e.id === 0) out.push({ x: e.x, y: e.y }); else if (e.t === 'ball' && (e.ia === 0 || e.ib === 0)) out.push({ x: e.x, y: e.y }); }
+      t.snd.length = 0; if (t.ev.hits.includes(2) && t.ev.hits.includes(3)) break;
+    }
+    return out;
   },
   bar() {
     const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
     const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); };
-    // a hint rings the red to go for first and says how many cushions the answer uses; the answer is played out in full
-    btn('힌트', aiming(() => { const z = p.cur, b = z.balls[z.first]; p.helped = true; scene.setZone({ x: b[0], y: b[1], r: game.P.R * 2.1 }); toast(`힌트: 동그라미 친 공부터${z.cush ? `, 쿠션을 ${z.cush}번 거쳐 다음 공으로` : ' 맞히고 다음 공으로'}.`, '', 4200); }));
-    btn('정답', aiming(() => { const z = p.cur; p.helped = true; toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: 0, b: 0 }, { quiet: false, after: p.again }); }));
+    // a hint marks every place the cue ball touches on the way, numbered; the answer is played out in full
+    btn('힌트', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(p.marks(z)); const k = z.sol[5] ? ' 점프로 칩니다.' : z.sol[4] ? ' 맛세이로 칩니다.' : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); }));
+    btn('정답', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(null); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4], j: !!z.sol[5] }, { quiet: false, after: p.again }); }));
     btn('이전', aiming(() => p.step(-1)));
     btn('다음', aiming(() => p.step(1)));
   },
@@ -4760,7 +4909,7 @@ function playDemo(shot, opts) {
     quiet: !!opts.quiet, save: false,
     restart() { (back || practice).restart(); },
     guide: () => 3,
-    auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b }) }),
+    auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b, el: shot.el || 0, j: !!shot.j }) }),
     beforeShot() {},
     afterShot() { hold(1.3, opts.after); },
     hud() { if (back) back.hud(); setBusy(); },

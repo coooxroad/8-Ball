@@ -372,7 +372,7 @@ function createScene(canvas, app, PH) {
     g.fillStyle = '#15171c'; g.font = '800 54px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), 48, 52); return tex(c); };
   function setMarks(list) {
     while (marks.children.length) { const m = marks.children.pop(); m.material.map.dispose(); m.material.dispose(); }
-    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 2.2); m.scale.set(cur.R * 1.5, cur.R * 1.5, 1); marks.add(m); });
+    (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 1.1); m.scale.set(cur.R * 1.7, cur.R * 1.7, 1); marks.add(m); });
     dirty = 3;
   }
   let ppm = 200, guideKey = '', pathPts = [];

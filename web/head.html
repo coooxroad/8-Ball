@@ -581,6 +581,36 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
 @keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
 #league .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
+
+/* puzzle stages */
+.pzsum b.st{color:#f5a400}
+.stg{--c:hsl(var(--h) 78% 52%);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:10px 12px;border-radius:16px;background:var(--seg);border:2px solid transparent;flex:none}
+.stg .no{width:42px;height:42px;border-radius:13px;background:var(--c);color:#fff;font-family:var(--num);font-weight:800;font-size:20px;display:grid;place-items:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.stg .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stg .tx b{font-size:15.5px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg .tx small{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg .pg{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.stg .pg em{font-style:normal;font-family:var(--num);font-size:13px;color:var(--sub)}
+.stg .pg i{display:block;width:54px;height:6px;border-radius:3px;background:var(--bd);overflow:hidden}
+.stg .pg u{display:block;height:100%;background:var(--c);border-radius:3px}
+.stg.open{border-color:var(--c);background:var(--panel)}
+.stg.clear .pg em{color:var(--c);font-weight:700}
+.stg.locked{opacity:.55}.stg.locked .no{background:var(--bd);box-shadow:none;font-size:17px}
+.road{--c:hsl(var(--h) 78% 52%);display:flex;flex-direction:column;gap:14px;padding:8px 6px 10px;flex:none}
+.rw{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));justify-items:center}
+.rw.rev{direction:rtl}
+.rw::before{content:"";position:absolute;left:10%;right:10%;top:19px;border-top:3px dotted var(--bd)}
+.rw.more::after{content:"";position:absolute;right:10%;top:21px;height:62px;border-right:3px dotted var(--bd)}
+.rw.rev.more::after{right:auto;left:10%}
+.nd{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;direction:ltr}
+.nd b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--seg);border:2.5px solid var(--bd);font-family:var(--num);font-weight:700;font-size:15px;color:var(--sub)}
+.nd .sr{font-size:10px;letter-spacing:.5px;color:var(--bd)}
+.nd.done b{background:var(--c);border-color:var(--c);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.nd.done .sr{color:#f5a400}
+.nd.next b{border-color:var(--c);color:var(--c);animation:ndPulse 1.2s ease-in-out infinite}
+@keyframes ndPulse{50%{box-shadow:0 0 0 6px hsl(var(--h) 78% 52% / .22)}}
+.nd[aria-pressed="true"] b{outline:3px solid var(--fg);outline-offset:2px}
+@media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
 </style>
 
 <div id="app" class="busy" data-theme="light">

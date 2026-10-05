@@ -1,73 +1,120 @@
-/* Makes web/puzzles.js: the four-ball puzzles, each a position that has been checked to have a way to score.
-   Run by hand when the set should change:  node web/tools/gen-puzzles.js
-   A position is drawn at random to a tier's recipe, every direction at three speeds is played out on it, and it is kept
-   if the share of shots that score falls in the range that tier asks for (a smaller share is a harder puzzle). */
-const path = require('path'), fs = require('fs'), W = path.join(__dirname, '..');
-const createPhysics = require(path.join(W, 'physics.js'));
+/* Makes the four-ball puzzles, one stage at a time:   node web/tools/gen-puzzles.js <stage 0..6> <how many> [seed]
+   then  node web/tools/pack-puzzles.js  writes web/puzzles.js from what the stages produced (tools/out/s<stage>.json).
+
+   Positions come from games: two computer players play four-ball and every position one of them had to shoot from is kept
+   (tools/out/mined.json). A stage takes those positions - as they are, or with one ball moved to set up the shot the stage
+   is about - plays out every direction at several speeds on each, and keeps a position when the share of shots that do what
+   the stage asks falls in the stage's range (a smaller share is a harder puzzle) and one of them survives being played a
+   touch off. Nothing gets in without an answer that has been seen to work. */
+const path = require('path'), fs = require('fs'), W = path.join(__dirname, '..'), OUT = path.join(__dirname, 'out');
+const createPhysics = require(path.join(W, 'physics.js')), createGame = require(path.join(W, 'game.js'));
 const P = createPhysics({ R: 0.03275, pockets: false }), { R, HL, HW } = P;
-let seed = 20261005; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-const between = (a, b) => a + (b - a) * rnd(), NA = 720, VS = [2.4, 3.4, 4.6];
-const spot = () => [between(-HL + 0.12, HL - 0.12), between(-HW + 0.12, HW - 0.12)];
-const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-const segDist = (p, w) => { const dx = w[2] - w[0], dy = w[3] - w[1], l2 = dx * dx + dy * dy, u = Math.max(0, Math.min(1, ((p[0] - w[0]) * dx + (p[1] - w[1]) * dy) / l2)); return Math.hypot(p[0] - w[0] - dx * u, p[1] - w[1] - dy * u); };
-function world(balls, walls) { const w = P.makeWorld(4); balls.forEach((b, i) => P.place(w, i, b[0], b[1], () => 0.5)); w.walls = walls.length ? walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; return w; }
-// every direction at each speed: which score, how many, and the middle of the widest run of scoring directions
-function solve(balls, walls) {
-  const base = world(balls, walls); let hits = 0, best = null;
-  for (const V of VS) {
-    const ok = new Array(NA).fill(false), info = new Array(NA);
-    for (let i = 0; i < NA; i++) { const w = P.clone(base); P.strike(w, i * 2 * Math.PI / NA, V, 0, 0); const ev = P.run(w, 25); if (ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1)) { ok[i] = true; hits++; info[i] = { first: ev.hits[0], cush: ev.cushions }; } }
-    for (let i = 0; i < NA; i++) if (ok[i] && !ok[(i + NA - 1) % NA]) { let n = 1; while (n < NA && ok[(i + n) % NA]) n++; if (!best || n > best.n) { const m = (i + Math.floor((n - 1) / 2)) % NA; best = { n, angle: m * 2 * Math.PI / NA, V, first: info[m].first, cush: info[m].cush }; } }
+const G = createGame({ pool: createPhysics({ R: 0.028575, pockets: true, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }), carom: P });
+const judge = (goal, ev, w) => G.MODES.puzzle4.judge(goal, ev, w).ok;
+const stage = +process.argv[2], WANT = +process.argv[3] || 14;
+let seed = (+process.argv[4] || 20261006) + stage * 7919;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const between = (a, b) => a + (b - a) * rnd(), r3 = x => Math.round(x * 1000) / 1000, dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+if (!fs.existsSync(OUT)) fs.mkdirSync(OUT);
+
+/* ---- positions out of real games ---- */
+function mine(n) {
+  const out = []; let s2 = 99; const r2 = () => { s2 = (s2 * 1664525 + 1013904223) >>> 0; return s2 / 4294967296; };
+  while (out.length < n) {
+    G.start('four', ['A', 'B'], true, { level: 2, target: 12, rnd: r2, levels: [r2() < 0.5 ? 1 : 2, r2() < 0.5 ? 0 : 2] }); G.players[0].ai = true;
+    let k = 0;
+    while (!G.over && k < 60) {
+      const b = G.world.balls, me = G.turn;
+      if (k > 1) out.push([[b[me].x, b[me].y], [b[1 - me].x, b[1 - me].y], [b[2].x, b[2].y], [b[3].x, b[3].y]].map(q => q.map(r3)));   // the shooter's ball first
+      const pl = G.aiPlan(); G.beginShot(); P.strike(G.world, pl.angle, pl.V, 0, 0); P.run(G.world, 40); G.world.snd.length = 0; G.resolve(); k++;
+    }
   }
-  return { share: hits / (NA * VS.length), best };
+  return out;
 }
-// a bar across the line from a to b, somewhere along it
-function barAcross(a, b, len) { const k = between(0.35, 0.65), mx = a[0] + (b[0] - a[0]) * k, my = a[1] + (b[1] - a[1]) * k, l = dist(a, b) || 1, nx = -(b[1] - a[1]) / l, ny = (b[0] - a[0]) / l, tilt = between(-0.5, 0.5), c = Math.cos(tilt), s = Math.sin(tilt), ux = nx * c - ny * s, uy = nx * s + ny * c; return [mx - ux * len / 2, my - uy * len / 2, mx + ux * len / 2, my + uy * len / 2]; }
-const TIERS = [
-  { name: '가까운 두 공', lo: 0.04, hi: 0.2, make() { const r1 = spot(), a = between(0, 6.28), d = between(0.14, 0.32), r2 = [r1[0] + Math.cos(a) * d, r1[1] + Math.sin(a) * d]; return { balls: [spot(), spot(), r1, r2], walls: [] }; }, ok: b => dist(b[0], b[2]) > 0.45 && dist(b[0], b[2]) < 1.1 },
-  { name: '멀리 떨어진 두 공', lo: 0.012, hi: 0.04, make() { return { balls: [spot(), spot(), spot(), spot()], walls: [] }; }, ok: b => dist(b[2], b[3]) > 0.9 },
-  { name: '노란 공 피하기', lo: 0.006, hi: 0.03, make() { const c = spot(), r1 = spot(), k = between(0.35, 0.65), y = [c[0] + (r1[0] - c[0]) * k + between(-0.03, 0.03), c[1] + (r1[1] - c[1]) * k + between(-0.03, 0.03)]; return { balls: [c, y, r1, spot()], walls: [] }; }, ok: b => dist(b[0], b[2]) > 0.6 && dist(b[0], b[2]) < dist(b[0], b[3]) },
-  { name: '바리케이드', lo: 0.004, hi: 0.025, block: 0.6, make() { const c = spot(), r1 = spot(), r2 = spot(), mid = [(r1[0] + r2[0]) / 2, (r1[1] + r2[1]) / 2]; return { balls: [c, spot(), r1, r2], walls: [barAcross(c, mid, between(0.45, 0.8))] }; }, ok: b => dist(b[0], b[2]) > 0.55 && dist(b[0], b[3]) > 0.55 },
-  { name: '미로', lo: 0.002, hi: 0.03, block: 0.75, make() { const c = spot(), r1 = spot(), r2 = spot(); return { balls: [c, spot(), r1, r2], walls: [barAcross(c, r1, between(0.4, 0.7)), barAcross(r1, r2, between(0.35, 0.6))] }; }, ok: b => dist(b[0], b[2]) > 0.55 && dist(b[2], b[3]) > 0.5 },
+const minedFile = path.join(OUT, 'mined.json');
+if (!fs.existsSync(minedFile)) { process.stderr.write('mining positions from games...\n'); fs.writeFileSync(minedFile, JSON.stringify(mine(1500))); }
+const MINED = JSON.parse(fs.readFileSync(minedFile));
+G.start('four', ['A', 'B'], false, {});                             // so that speeds are turned into power the way a four-ball game does
+
+function world(balls) { const w = P.makeWorld(4); balls.forEach((b, i) => P.place(w, i, b[0], b[1], () => 0.5)); return w; }
+const valid = b => { for (let i = 0; i < 4; i++) { if (Math.abs(b[i][0]) > HL - R - 0.02 || Math.abs(b[i][1]) > HW - R - 0.02) return false; for (let j = 0; j < i; j++) if (dist(b[i], b[j]) < 2 * R + 0.03) return false; } return true; };
+// one shot: does it do what the stage asks?
+function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] || 0, !!s[5]); return judge(goal, P.run(w, 25), w); }
+// every direction in `angles` at each speed, with one way of striking: the share that works, and the middle of the widest run
+function sweep(base, goal, angles, Vs, a, b, el, j) {
+  let hits = 0, best = null; const n = angles.length, loop = angles.loop;
+  for (const V of Vs) {
+    const ok = angles.map(ang => tryShot(base, goal, [ang, V, a, b, el, j]));
+    for (let i = 0; i < n; i++) if (ok[i]) hits++;
+    for (let i = 0; i < n; i++) if (ok[i] && !(loop ? ok[(i + n - 1) % n] : i > 0 && ok[i - 1])) {
+      let m = 1; while (m < n && (loop ? ok[(i + m) % n] : i + m < n && ok[i + m])) m++;
+      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el, j ? 1 : 0] };
+    }
+  }
+  return { share: hits / (n * Vs.length), best };
+}
+const circle = n => { const a = []; for (let i = 0; i < n; i++) a.push(i * 2 * Math.PI / n); a.loop = true; return a; };
+const fan = (mid, half, step) => { const a = []; for (let x = -half; x <= half + 1e-9; x += step) a.push(mid + x); return a; };
+const ALL = circle(600);
+function sturdy(base, goal, s) {
+  for (const da of [0, 0.0025, -0.0025]) for (const k of [1, 0.985, 1.015]) if (!tryShot(base, goal, [s[0] + da, s[1] * k, s[2], s[3], s[4], s[5]])) return false;
+  // and through the app's power control, which is how the "answer" button plays it
+  return tryShot(base, goal, [s[0], G.vOf(G.powerOf(s[1])), s[2], s[3], s[4], s[5]]);
+}
+const pick = () => MINED[Math.floor(rnd() * MINED.length)].map(q => q.slice());
+const onLine = (a, b, k, j) => [a[0] + (b[0] - a[0]) * k + between(-j, j), a[1] + (b[1] - a[1]) * k + between(-j, j)];
+const near = (b, i) => dist(b[0], b[2]) <= dist(b[0], b[3]) ? (i ? 3 : 2) : (i ? 2 : 3);     // the red nearer the cue ball (i=0) or the other
+
+/* ---- the stages ---- each: goal, how to get a position, how to look for the answer, and the share that makes it fit */
+const STAGES = [
+  { name: '첫 득점', goal: 'score', lo: 0.05, hi: 0.2, make: pick, ok: b => dist(b[2], b[3]) < 0.55 && dist(b[0], b[near(b, 0)]) < 1.1,
+    solve: w => sweep(w, 'score', ALL, [2.4, 3.4, 4.6], 0, 0) },
+  { name: '모아치기', goal: 'gather', lo: 0.004, hi: 0.05, make: pick, ok: b => dist(b[2], b[3]) < 0.6 && dist(b[0], b[near(b, 0)]) < 0.9,
+    solve: w => sweep(w, 'gather', ALL, [1.5, 2.0, 2.6, 3.3], 0, 0) },
+  { name: '밀어치기 · 끌어치기', goal: 'direct', lo: 0.004, hi: 0.05,
+    // the second red straight on past the first (follow) or back behind the cue ball (draw); hit without spin the cue ball goes neither way
+    make() { const c = [between(-HL + 0.3, HL - 0.3), between(-HW + 0.25, HW - 0.25)], th = between(0, 6.28), d1 = between(0.22, 0.5), r1 = [c[0] + Math.cos(th) * d1, c[1] + Math.sin(th) * d1];
+      const draw = rnd() < 0.5, t2 = th + (draw ? Math.PI : 0) + between(-0.4, 0.4), d2 = between(0.3, 0.75), o = draw ? c : r1, r2 = [o[0] + Math.cos(t2) * d2, o[1] + Math.sin(t2) * d2];
+      let y; do { y = [between(-HL + 0.15, HL - 0.15), between(-HW + 0.15, HW - 0.15)]; } while (dist(y, c) < 0.4 || dist(y, r1) < 0.3 || dist(y, r2) < 0.3);
+      return [c, y, r1, r2].map(q => q.map(r3)); },
+    ok: () => true,
+    solve(w, b) {
+      const mid = Math.atan2(b[2][1] - b[0][1], b[2][0] - b[0][0]), half = Math.asin(Math.min(1, 2 * R / dist(b[0], b[2]))) * 1.05, A = fan(mid, half, half / 40), Vs = [2.6, 3.6, 4.8];
+      if (sweep(w, 'direct', A, Vs, 0, 0).share > 0.004) return null;                       // goes in without spin: not what this stage is for
+      let best = null; for (const sb of [0.36, -0.36, 0.25, -0.25]) { const s = sweep(w, 'direct', A, Vs, 0, sb); if (s.best && (!best || s.share > best.share)) best = s; }
+      return best; } },
+  { name: '빈쿠션', goal: 'bank', lo: 0.004, hi: 0.045, make: pick, ok: b => dist(b[2], b[3]) < 0.9,
+    solve: w => sweep(w, 'bank', ALL, [2.6, 3.6, 4.8], 0, 0) },
+  { name: '상대 공 피해 가기', goal: 'score', lo: 0.005, hi: 0.03,
+    make() { const b = pick(), n = near(b, 0); b[1] = onLine(b[0], b[n], between(0.35, 0.65), 0.025).map(r3); return b; }, ok: b => dist(b[0], b[near(b, 0)]) > 0.55,
+    solve: w => sweep(w, 'score', ALL, [2.4, 3.4, 4.6], 0, 0) },
+  { name: '돌려치기', goal: 'three', lo: 0.003, hi: 0.03, make: pick, ok: b => dist(b[2], b[3]) < 1.2,
+    solve: w => sweep(w, 'three', ALL, [4.2, 5.2, 6.2], 0, 0) },
+  { name: '맛세이 · 점프', goal: 'direct', lo: 0.01, hi: 0.5,
+    // the yellow ball right in front of the cue ball, the reds beyond it: over it or round it, with no cushion to help
+    make() { const b = pick(), n = near(b, 0), d = dist(b[0], b[n]); b[1] = onLine(b[0], b[n], between(0.2, 0.42) / d, 0.008).map(r3); const m = near(b, 1); if (dist(b[n], b[m]) > 0.45) { const t = between(0, 6.28), l = between(0.16, 0.36); b[m] = [r3(b[n][0] + Math.cos(t) * l), r3(b[n][1] + Math.sin(t) * l)]; } return b; },
+    ok: b => { const n = near(b, 0), d = dist(b[0], b[n]); return d > 0.75 && d < 1.5; },
+    solve(w, b) {
+      const n = near(b, 0), mid = Math.atan2(b[n][1] - b[0][1], b[n][0] - b[0][0]);
+      if (sweep(w, 'direct', fan(mid, 0.5, 0.004), [2.6, 3.6, 4.8], 0, 0).share > 0.002) return null;   // there is a plain way through
+      let best = sweep(w, 'direct', fan(mid, 0.2, 0.003), [4.4, 5.0, 5.6, 6.2], 0, 0, 0.7, true);
+      for (const a of [0.42, -0.42]) for (const el of [0.95, 1.2]) { const s = sweep(w, 'direct', fan(mid, 0.5, 0.005), [3.4, 4.4, 5.4], a, 0, el, false); if (s.best && (!best.best || s.best.n > best.best.n + 2)) best = s; }
+      return best; } },
 ];
-const valid = q => {
-  const b = q.balls;
-  for (let i = 0; i < 4; i++) { if (Math.abs(b[i][0]) > HL - R - 0.03 || Math.abs(b[i][1]) > HW - R - 0.03) return false; for (let j = 0; j < i; j++) if (dist(b[i], b[j]) < 2 * R + 0.05) return false; for (const w of q.walls) if (segDist(b[i], w) < R + 0.012 + 0.035) return false; }
-  for (const w of q.walls) { for (const k of [0, 2]) if (Math.abs(w[k]) > HL - 0.1 || Math.abs(w[k + 1]) > HW - 0.1) return false; }
-  if (q.walls.length === 2) { const [u, v] = q.walls; if (segDist([u[0], u[1]], v) < 0.12 || segDist([u[2], u[3]], v) < 0.12 || segDist([v[0], v[1]], u) < 0.12 || segDist([v[2], v[3]], u) < 0.12) return false; }
-  return true;
-};
-const PER = 8, out = [], r3 = x => Math.round(x * 1000) / 1000;
-// the stored answer has to survive being played a touch off: a hair either side, a little softer or harder
-function sturdy(q, best) {
-  const base = world(q.balls, q.walls);
-  for (const da of [0, 0.003, -0.003]) for (const k of [1, 0.985, 1.015]) { const w = P.clone(base); P.strike(w, best.angle + da, best.V * k, 0, 0); const ev = P.run(w, 25); if (!(ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1))) return false; }
-  return true;
+
+const T = STAGES[stage], found = [], seen = new Set(); let tries = 0; const t0 = Date.now();
+while (found.length < WANT && tries < 30000) {
+  tries++; const balls = T.make();
+  if (!valid(balls) || !T.ok(balls)) continue;
+  const key = balls.join(';'); if (seen.has(key)) continue; seen.add(key);
+  // not two puzzles that look the same: the reds and the cue ball each somewhere new
+  if (found.some(f => dist(f.balls[0], balls[0]) + dist(f.balls[2], balls[2]) + dist(f.balls[3], balls[3]) < 0.5)) continue;
+  const base = world(balls), s = T.solve(base, balls);
+  if (!s || !s.best || s.share < T.lo || s.share > T.hi || s.best.n < 3) continue;
+  const sol = s.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v);
+  if (!sturdy(base, T.goal, sol)) continue;
+  found.push({ share: s.share, balls, sol });
+  process.stderr.write(`stage ${stage} ${T.name}: ${found.length}/${WANT} after ${tries} tries, ${Math.round((Date.now() - t0) / 1000)}s (share ${(s.share * 100).toFixed(2)}%)\n`);
+  fs.writeFileSync(path.join(OUT, `s${stage}.json`), JSON.stringify({ name: T.name, goal: T.goal, list: found }));
 }
-TIERS.forEach((T, ti) => {
-  const found = []; let tries = 0;
-  while (found.length < PER && tries < 4000) {
-    tries++; const q = T.make(); q.balls = q.balls.map(b => b.map(r3)); q.walls = q.walls.map(w => w.map(r3));   // solved exactly as it will be stored
-    if (!valid(q) || !T.ok(q.balls)) continue;
-    const s = solve(q.balls, q.walls); if (!s.best || s.share < T.lo || s.share > T.hi || s.best.n < 3) continue;
-    s.best.angle = Math.round(s.best.angle * 1e5) / 1e5; if (!sturdy(q, s.best)) continue;
-    if (T.block) { const open = solve(q.balls, []); if (!(s.share < open.share * T.block)) continue; }   // the bars have to be what makes it hard
-    found.push({ share: s.share, balls: q.balls, walls: q.walls, sol: [s.best.angle, s.best.V], first: s.best.first, cush: s.best.cush });
-    process.stderr.write(`tier ${ti + 1}: ${found.length}/${PER} after ${tries} tries (share ${(s.share * 100).toFixed(2)}%)\n`);
-  }
-  found.sort((a, b) => b.share - a.share);                        // easiest first within a tier
-  for (const f of found) out.push({ id: out.length + 1, tier: ti, balls: f.balls, walls: f.walls, sol: f.sol, first: f.first, cush: f.cush });
-});
-const js = `/* Four-ball puzzles: positions with one shot to score. Made by tools/gen-puzzles.js, which checked that each has an answer
-   (sol: [direction, speed] of one that works, with no spin). balls: cue, yellow, red, red. walls: barricades as [x0, y0, x1, y1]. */
-function createPuzzles() {
-  const TIERS = ${JSON.stringify(TIERS.map(t => t.name))};
-  const list = [
-${out.map(p => '    ' + JSON.stringify(p)).join(',\n')},
-  ];
-  return { list, TIERS, byId: id => list.find(p => p.id === id) };
-}
-if (typeof module !== 'undefined') module.exports = createPuzzles;
-`;
-fs.writeFileSync(path.join(W, 'puzzles.js'), js);
-console.log(`wrote ${out.length} puzzles`);
+console.log(`stage ${stage}: ${found.length} puzzles`);
