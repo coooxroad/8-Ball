@@ -31,6 +31,7 @@ const prefs = (() => {
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
+  if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   return p;
 })();
@@ -100,13 +101,6 @@ function drawCue(cv, d, vertical) {
   const sh = g.createLinearGradient(0, 0, 0, T);
   sh.addColorStop(0, 'rgba(0,0,0,.42)'); sh.addColorStop(0.3, 'rgba(255,255,255,.26)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.46)');
   g.globalCompositeOperation = 'source-atop';
-  if (d.crystal) {
-    // glass: a rainbow along its length, slanted facets on the butt, and a bright thread through the middle
-    const rb = g.createLinearGradient(0, 0, L, 0); [['#bff0ff', 0], ['#e9fbff', 0.3], ['#cfe0ff', 0.55], ['#e2ccff', 0.75], ['#ffc9ef', 1]].forEach(([c, o]) => rb.addColorStop(o, c));
-    g.fillStyle = rb; g.fillRect(x(0.012), 0, L, T);
-    g.fillStyle = 'rgba(255,255,255,.5)'; for (let m = 0.77; m < 1.45; m += 0.045) { g.beginPath(); g.moveTo(x(m), 0); g.lineTo(x(m + 0.02), 0); g.lineTo(x(m + 0.02) - T * 0.9, T); g.lineTo(x(m) - T * 0.9, T); g.fill(); }
-    g.fillStyle = 'rgba(255,255,255,.9)'; g.fillRect(x(0.03), T * 0.44, L, T * 0.1);
-  }
   g.fillStyle = sh; g.fillRect(0, 0, L, T); g.globalCompositeOperation = 'source-over';
 }
 function paintPowerCue() { drawCue($('#powerCue'), CUES[prefs.cue] || CUES[0], !scene.portrait); }
@@ -156,13 +150,15 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  $('#home').hidden = screen !== 'home'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
+  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'league'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  layout();
+  paintNav(); layout();
 }
+// which place on the rail is lit: the league and the records have their own, otherwise play or practice
+function paintNav() { const v = st.screen === 'league' ? lgTab : prefs.mode === 'practice' ? 'practice' : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
@@ -322,7 +318,7 @@ const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1
 function paintHome() {
   const prac = prefs.mode === 'practice';
   $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
-  for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === (prac ? 'practice' : 'play')));
+  paintNav();
   if (prac) {
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
     for (const d of drills.list) box.appendChild(optBtn(prefs.drill === d.id,
@@ -514,7 +510,7 @@ const match = {
     for (const q of list) {
       const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
       const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
-      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q, best ? undefined : 'plain'); } }, [
+      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: () => { SND.init(); SND.tap(); playShot(q, best || worst ? undefined : 'plain'); } }, [
         el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
@@ -647,7 +643,7 @@ function leagueTable(cols, head, rows, topCount) {
 }
 function showLeague() { show('league'); st.phase = 'idle'; flow = null; paintLeague(); $('#league').scrollTop = 0; }
 function paintLeague() {
-  for (const b of $('#lgTabs').children) b.setAttribute('aria-pressed', String(b.dataset.v === lgTab));
+  $('#lgTitle').textContent = lgTab === 'all' ? '전적' : '리그'; paintNav();
   const body = $('#lgBody'); body.textContent = '';
   const add = (...kids) => { for (const k of kids) if (k) body.appendChild(k); };
   if (lgTab === 'all') {
@@ -695,12 +691,10 @@ function leagueSetup(add) {
     note(n < 2 ? '두 명 이상 넣어 주세요.' : `${n}명이 서로 ${d.legs === 1 ? '한 번씩' : '두 번씩'}, 모두 ${games}경기. 이기면 승점 ${league.WIN_PTS}점.`),
     el('button', { class: 'btn cta', text: '리그 시작', onclick: () => { if (d.names.length < 2) return toast('두 명 이상 넣어 주세요.', '', 1500); SND.tap(); lg = league.create(d.names, d.mode, prefs.target, d.legs); saveLeague(); lgDraft = null; paintLeague(); } }));
 }
-seg('#lgTabs', () => lgTab, v => { lgTab = v; paintLeague(); });
 
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-press('#lgBack', goHome);
-// the rail: play and practice change what the panel offers; league, records and settings open their own places
+// the rail: play and practice change what the panel offers; league and records are places of their own; settings is a sheet
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('.nv'); if (!b) return; SND.init(); SND.tap();
   const v = b.dataset.v;
@@ -708,8 +702,8 @@ $('#nav').addEventListener('click', e => {
   if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
   if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
   else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
-  else return;
-  modeOpen = false; savePrefs(); buildModes(); paintHome(); homePreview();
+  else if (st.screen === 'home') return;
+  modeOpen = false; savePrefs(); goHome();
 });
 press('#pc0', () => sheetName(0)); press('#pc1', () => sheetName(1));
 press('#menuBtn', sheetPause);
@@ -729,7 +723,7 @@ const reelFlow = { quiet: false, save: false, guide: () => 0, auto: () => null, 
 // one of the match's highlights, played as an edit: a good shot to the player's song, a bad one for laughs with no music
 async function playShot(shot, style) {
   if (!shot || st.screen !== 'result') return;
-  // only the best shot gets an edit and a song; every other highlight is simply shown again with one camera move
+  // the best shot gets an edit and a song, the worst its own joke edit; every other highlight is simply shown again with one camera move
   if (!shot.kind && style !== 'plain') { await SND.song.prepare(); if (st.screen !== 'result') return; }
   show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(shot, typeof style === 'string' ? style : shot.kind ? undefined : prefs.edit);
 }
@@ -869,7 +863,7 @@ window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
   if (st.screen === 'reel') { reel.skip(); return true; }
-  if (st.screen === 'result') { goHome(); return true; }
+  if (st.screen === 'result' || st.screen === 'league') { goHome(); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };

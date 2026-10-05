@@ -42,9 +42,9 @@ function createScene(canvas, app, PH) {
     scene.environment = sScene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
   })();
 
-  const lampObjs = [], hemis = [];
+  const lampObjs = [];
   for (const sc of [sScene, scene]) {
-    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi); hemis.push(hemi);
+    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi);
     for (const [x, y, z] of LAMPS) {
       const lamp = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1);
       lamp.position.set(x, y, z); lamp.target.position.set(x, y, 0);
@@ -83,20 +83,7 @@ function createScene(canvas, app, PH) {
     const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
     sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
   })();
-  // the room takes the colour of the UI theme - except with the lights down for the neon table, when it is always night
-  let themeBg = 0x101216, neonOn = false;
-  const NEON_A = 0x19e3ff, NEON_B = 0xff2bd6, NIGHT = 0x07060d;
-  function setBackdrop(hex) { if (hex != null) themeBg = hex; const h = neonOn ? NIGHT : themeBg; floorMat.color.copy(col(h)); sScene.background.copy(col(h)); clearCol.set(h); staticDirty = true; dirty = 3; }
-  // light spilling onto the floor from under the neon table
-  const neonFloor = (() => {
-    const c = mkCanvas(256, 160), g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 256, 0);
-    gr.addColorStop(0, '#ff2bd6'); gr.addColorStop(1, '#19e3ff'); g.filter = 'blur(22px)'; g.fillStyle = gr; g.fillRect(40, 34, 176, 92);
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    m.position.set(0, 0, -0.785); m.layers.set(1); m.visible = false; sScene.add(m); return m;
-  })();
-  const neonMat = h => new THREE.MeshBasicMaterial({ color: h, toneMapped: false });
-  const haloMat = (h, o) => new THREE.MeshBasicMaterial({ color: h, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
-  const tubeA = neonMat(NEON_A), tubeB = neonMat(NEON_B), haloA = haloMat(NEON_A, 0.2), haloB = haloMat(NEON_B, 0.3);
+  function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }
 
   /* shared table materials */
   const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
@@ -158,14 +145,7 @@ function createScene(canvas, app, PH) {
     g.filter = `blur(${Math.max(2, Math.round(0.02 * k))}px)`; g.strokeStyle = 'rgba(0,0,0,0.3)'; g.lineWidth = 0.06 * k; g.lineCap = 'round'; g.lineJoin = 'round';
     const X = x => (x + mx) * k, Y = y => (my - y) * k;
     for (const cu of P.CUSHIONS) { g.beginPath(); g.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g.lineTo(X(cu.a[0]), Y(cu.a[1])); g.lineTo(X(cu.b[0]), Y(cu.b[1])); g.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g.stroke(); }
-    // the same line in light instead of shade, for the neon table: a glow along the foot of every cushion
-    const c2 = mkCanvas(W, H), g2 = c2.getContext('2d'); g2.lineCap = 'round'; g2.lineJoin = 'round';
-    for (const [blur, lw, al] of [[0.03, 0.07, 0.55], [0.006, 0.012, 1]]) {
-      g2.filter = `blur(${Math.max(1, Math.round(blur * k))}px)`; g2.strokeStyle = `rgba(255,255,255,${al})`; g2.lineWidth = lw * k;
-      for (const cu of P.CUSHIONS) { g2.beginPath(); g2.moveTo(X(cu.ja[0]), Y(cu.ja[1])); g2.lineTo(X(cu.a[0]), Y(cu.a[1])); g2.lineTo(X(cu.b[0]), Y(cu.b[1])); g2.lineTo(X(cu.jb[0]), Y(cu.jb[1])); g2.stroke(); }
-    }
-    const glow = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c2), color: NEON_B, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
-    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), glow, w: 2 * mx, h: 2 * my };
+    return { mat: new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }), w: 2 * mx, h: 2 * my };
   }
 
   const lipMat = new THREE.MeshStandardMaterial({ color: col(0x131211), roughness: 0.45, metalness: 0, envMapIntensity: 0.5 });
@@ -181,20 +161,6 @@ function createScene(canvas, app, PH) {
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
     const bedMesh = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bedMesh.receiveShadow = true; grp.add(bedMesh);
     const shade = cushionShade(P), ao = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.mat); ao.position.z = 0.0007; grp.add(ao);
-    // everything that only shows with the lights down
-    const neon = new THREE.Group(); neon.visible = neonOn; grp.add(neon); grp.userData.neon = neon;
-    const lit = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.glow); lit.position.z = 0.0009; neon.add(lit);
-    // a tube of light round the top of the rail, with its halo
-    const band = (inset, w, z, mat) => {
-      const x = ox - inset, y = oy - inset, r = Math.max(0.01, rr - inset), sh = new THREE.Shape(), rect = (t, d) => {
-        const X = x + d, Y = y + d, R2 = Math.max(0.004, r + d);
-        t.moveTo(-X + R2, -Y); t.lineTo(X - R2, -Y); t.absarc(X - R2, -Y + R2, R2, -Math.PI / 2, 0, false); t.lineTo(X, Y - R2); t.absarc(X - R2, Y - R2, R2, 0, Math.PI / 2, false);
-        t.lineTo(-X + R2, Y); t.absarc(-X + R2, Y - R2, R2, Math.PI / 2, Math.PI, false); t.lineTo(-X, -Y + R2); t.absarc(-X + R2, -Y + R2, R2, Math.PI, Math.PI * 1.5, false);
-      };
-      rect(sh, w / 2); const h = new THREE.Path(); rect(h, -w / 2); sh.holes.push(h);
-      const m = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), mat); m.position.z = z; neon.add(m);
-    };
-    band(0.02, 0.006, RAIL_Z + 0.0014, tubeA); band(0.02, 0.034, RAIL_Z + 0.0011, haloA);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);
@@ -228,8 +194,6 @@ function createScene(canvas, app, PH) {
         // a brass plate let into the rail, a black rubber lip standing on its inner edge, and a leather liner down the cut
         const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.002, a.p.r + bev + 0.012, 48, 1, a.a1, len), metalMat);
         m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); grp.add(m);
-        const nr = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev + 0.004, a.p.r + bev + 0.008, 48, 1, a.a1, len), tubeB); nr.position.set(a.p.x, a.p.y, RAIL_Z + 0.0013); neon.add(nr);
-        const nh = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.006, a.p.r + bev + 0.02, 48, 1, a.a1, len), haloB); nh.position.set(a.p.x, a.p.y, RAIL_Z + 0.0012); neon.add(nh);
         const lip = new THREE.Mesh(new THREE.TorusGeometry(a.p.r + 0.0035, 0.006, 10, 48, len), lipMat);
         lip.rotation.z = a.a1; lip.position.set(a.p.x, a.p.y, RAIL_Z - 0.001); lip.castShadow = true; grp.add(lip);
         const lv = [], ln = [], seg = 32;
@@ -292,20 +256,12 @@ function createScene(canvas, app, PH) {
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     lampObjs.forEach((l, i) => { const x = LAMPS[i % 3][0]; l.position.x = x; l.target.position.x = x; l.target.updateMatrixWorld(); });
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
-    tableShadow.scale.set(ow * 1.59, oh * 1.8, 1); neonFloor.scale.set(ow * 1.9, oh * 2.3, 1);
+    tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
   }
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0], was = neonOn; neonOn = !!c.neon;
+    const c = CLOTHS[i] || CLOTHS[0];
     feltMat.color.copy(col(c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
-    // lights down for the neon table: dimmer, cooler lamps, glowing sights, and the room goes dark
-    for (const [, grp] of tables) grp.userData.neon.visible = neonOn;
-    neonFloor.visible = neonOn; tableShadow.visible = !neonOn;
-    lampObjs.forEach(l => { l.intensity = neonOn ? 0.4 : 0.58; l.color.set(neonOn ? 0xc9bcff : 0xfff1dc); });
-    hemis.forEach(h => { h.intensity = neonOn ? 0.2 : 0.27; h.color.set(neonOn ? 0x8f86ff : 0xe8ecf2); });
-    cushMat.emissive.copy(col(NEON_B)).multiplyScalar(neonOn ? 0.1 : 0); pearl.emissive.copy(col(NEON_A)).multiplyScalar(neonOn ? 0.9 : 0);
-    woodMat.envMapIntensity = neonOn ? 0.35 : 0.7;
-    if (was !== neonOn) { renderer.shadowMap.needsUpdate = true; setBackdrop(); }
     staticDirty = true; dirty = 3;
   }
 
@@ -369,18 +325,6 @@ function createScene(canvas, app, PH) {
       const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
       cue.add(new THREE.Mesh(g, mat));
     };
-    if (d.crystal) {
-      // cut glass: see-through, sharp reflections, the butt cut in flat faces, and a thread of light down the middle
-      const glass = h => new THREE.MeshStandardMaterial({ color: col(h), roughness: 0.04, metalness: 0.15, envMapIntensity: 2.6, transparent: true, opacity: 0.58, emissive: col(h), emissiveIntensity: 0.16 });
-      const cut = (x0, x1, r0, r1, h) => { const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 8, 1); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0); const m = glass(h); m.flatShading = true; cue.add(new THREE.Mesh(g, m)); };
-      part(0, 0.012, 0.006, 0.0062, new THREE.MeshStandardMaterial({ color: col(d.tip), roughness: 0.6, emissive: col(d.tip), emissiveIntensity: 0.5 }));
-      part(0.012, 0.04, 0.0062, 0.0064, glass(d.ferrule)); part(0.04, 0.74, 0.0064, 0.0104, glass(d.shaft));
-      part(0.74, 0.756, 0.0107, 0.0108, new THREE.MeshStandardMaterial({ color: col(0xffffff), roughness: 0.15, metalness: 1, envMapIntensity: 1.6 }));
-      cut(0.756, 1.03, 0.0106, 0.0124, d.fore); cut(1.03, 1.3, 0.0124, 0.0138, d.wrap); cut(1.3, 1.45, 0.0138, 0.0148, d.sleeve);
-      part(1.45, 1.47, 0.0148, 0.0142, new THREE.MeshStandardMaterial({ color: col(0xffffff), roughness: 0.15, metalness: 1, envMapIntensity: 1.6 }));
-      part(0.03, 1.45, 0.0018, 0.004, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, toneMapped: false }));
-      dirty = 3; return;
-    }
     const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
     part(0, 0.012, 0.006, 0.0062, std(d.tip, 0.9));
     part(0.012, 0.04, 0.0062, 0.0064, std(d.ferrule, 0.4));
