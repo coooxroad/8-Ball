@@ -106,5 +106,24 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
   }
 }
+// puzzles: every one is on the cloth, clear of its barricades, and the answer stored with it really does score -
+// played both straight from the stored speed and through the power control's rounding, as the app's "answer" button does
+{
+  const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  let bad = 0, walled = 0;
+  for (const z of Z.list) {
+    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world;
+    z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
+    w.walls = z.walls.length ? z.walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; w.cue = 0; if (w.walls) walled++;
+    for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
+      const t = P.clone(w); P.strike(t, z.sol[0], V, 0, 0); const ev = P.run(t, 30);
+      if (!g.MODES.puzzle4.evaluate(ev).solved) { bad++; fail(`puzzle ${z.id}: its stored answer does not score`); break; }
+      for (const b of t.balls) for (const s of t.walls || []) { const u = Math.max(0, Math.min(s.len, (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty)); if (Math.hypot(b.x - s.ax - s.tx * u, b.y - s.ay - s.ty * u) < P.R + s.r - 1e-3) fail(`puzzle ${z.id}: a ball ended inside a barricade`); }
+    }
+  }
+  if (Z.list.length < 20) fail('fewer than 20 puzzles');
+  console.log(`puzzles: ${Z.list.length} (${walled} with barricades), ${Z.list.length - bad} stored answers score`);
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

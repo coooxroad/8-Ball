@@ -148,6 +148,16 @@ function createGame(PH) {
     },
   };
 
+  // A four-ball puzzle: one player, one position, one shot to score with. The app puts the balls (and any barricades) down.
+  MODES.puzzle4 = {
+    id: 'puzzle4', name: '4구 퍼즐', blurb: '한 번에 빨간 공 두 개를 맞히세요', table: 'carom', n: 4, ballInHand: false, solo: true,
+    setup(g, rnd) { const P = g.P, w = g.world; P.place(w, 2, P.HL / 2, 0, rnd); P.place(w, 3, -P.HL / 2, 0, rnd); P.place(w, 1, -P.HL * 0.78, 0, rnd); P.place(w, 0, -P.HL * 0.78, -0.17, rnd); g.placing = null; g.isBreak = false; },
+    legal() { return [2, 3]; },
+    ctx(g) { return { turn: g.turn }; },
+    // solved: both reds, and never the yellow ball
+    evaluate(ev) { const ok = ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1); return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0, solved: ok, note: ev.hits.includes(1) ? '노란 공을 맞혔습니다' : ev.hits.length ? '빨간 공 하나만 맞혔습니다' : '아무 공도 맞히지 못했습니다' }; },
+  };
+
   // Practice: one player, no rules, no turns. The app decides what is on the table and what counts as success.
   MODES.practice = {
     id: 'practice', name: '연습', blurb: '자유 연습과 기술 훈련', table: 'pool', n: 16, ballInHand: false, solo: true,

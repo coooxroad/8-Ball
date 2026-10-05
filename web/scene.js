@@ -473,7 +473,29 @@ function createScene(canvas, app, PH) {
   }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
+  /* barricades (puzzles): striped bars standing on the cloth, kept in step with the world's list of walls */
+  const wallGrp = new THREE.Group(); scene.add(wallGrp); let wallRef = null;
+  const wallMat = (() => {
+    const c = mkCanvas(64, 64), g = c.getContext('2d'); g.fillStyle = '#f4efe2'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#e03a2f';
+    g.beginPath(); g.moveTo(0, 64); g.lineTo(32, 64); g.lineTo(64, 32); g.lineTo(64, 0); g.lineTo(0, 64); g.fill(); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 32); g.lineTo(32, 0); g.fill();
+    const t = tex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55, metalness: 0, envMapIntensity: 0.4 });
+  })();
+  const wallShade = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.26, depthWrite: false });
+  function syncWalls(list) {
+    wallRef = list;
+    while (wallGrp.children.length) { const m = wallGrp.children.pop(); m.geometry.dispose(); }
+    for (const s of list || []) {
+      const L = s.len + 2 * s.r, H = 0.046, geo = new THREE.BoxGeometry(L, 2 * s.r, H), uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L / 0.09);          // stripes the same size on every bar
+      const m = new THREE.Mesh(geo, wallMat); m.position.set((s.ax + s.bx) / 2, (s.ay + s.by) / 2, H / 2); m.rotation.z = Math.atan2(s.ty, s.tx); wallGrp.add(m);
+      const sh = new THREE.Mesh(new THREE.PlaneGeometry(L + 0.03, 2 * s.r + 0.04), wallShade); sh.position.set((s.ax + s.bx) / 2 + 0.006, (s.ay + s.by) / 2 - 0.008, 0.0012); sh.rotation.z = m.rotation.z; sh.renderOrder = 1; wallGrp.add(sh);
+    }
+    dirty = 3;
+  }
+
   function frame(v, dt) {
+    if (v.game.world.walls !== wallRef) syncWalls(v.game.world.walls);
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }

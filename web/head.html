@@ -114,6 +114,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #modeList:not(.open) .gcard .ck{display:none}
 #modeList.open .gcard .chev{display:none}
 .plist{background:var(--seg);border-radius:14px}
+/* lessons: a row each, with a bar for how far it has been taken */
+#pracList .lab,#puzBox .lab{margin-top:6px}
+#pracList .ls{display:flex;flex-direction:column;min-width:0;flex:1}
+.prog{display:block;height:5px;border-radius:3px;background:var(--hair);margin-top:7px;overflow:hidden}
+.prog i{display:block;height:100%;width:var(--w);border-radius:3px;background:#12b76a}
+/* puzzles: the count, the kinds, then a tile for every puzzle */
+#puzBox{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;flex:1 1 0;padding-right:2px}
+.compact #puzBox{flex:none;overflow:visible}
+.pzsum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pzsum>div{background:var(--seg);border-radius:14px;padding:10px 14px}
+.pzsum b{font-family:var(--num);font-weight:var(--num-w);font-size:26px}
+.pzsum span{font-family:var(--num);color:var(--sub);font-size:16px}
+.pzsum small{display:block;font-size:12.5px;color:var(--sub)}
+.pzkind{display:flex;gap:6px;flex-wrap:wrap}
+.pzkind span{font-size:13px;padding:6px 11px;border-radius:999px;background:var(--seg);color:var(--sub)}
+.pzkind span.on{background:var(--fg);color:var(--bg);font-weight:700}
+.pzgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.pz{aspect-ratio:1;border-radius:10px;background:var(--seg);color:var(--fg);font-family:var(--num);font-weight:600;font-size:14px;border:2px solid transparent}
+.pz.done{background:#12b76a;color:#fff}
+.pz[aria-pressed="true"]{border-color:var(--acc)}
 .gcard{background:var(--panel);border:2px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-card);padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}
 [data-theme="light"] .gcard{border-color:var(--panel)}
 .gcard:active{transform:scale(.985)}
@@ -249,7 +269,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .portrait #spinPop{left:10px;right:auto;bottom:112px}
 
 /* ---------- sheets ---------- */
-.scrim{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
+.scrim{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
 .sheet{width:min(100%,500px);background:var(--sheet);border:1px solid var(--bd);border-radius:24px;box-shadow:0 24px 64px rgba(0,0,0,.3);padding:20px;display:flex;flex-direction:column;gap:16px;
   animation:pop .16s ease-out}
 @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
@@ -488,7 +508,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
 .pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
-.dart{display:grid;place-items:center;width:40px;height:40px}
 .stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .stat .k{font-size:13px;color:var(--sub)}
 .stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
@@ -526,7 +545,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   <nav class="h-nav" id="nav">
     <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
     <button class="nv" data-v="play"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><circle cx="16.5" cy="8.5" r="3.5"/><path d="M13.5 20.5 21 13"/></svg><span>대결</span></button>
-    <button class="nv" data-v="practice"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13 19 5M17 3.5l3.5 3.5"/></svg><span>연습</span></button>
+    <button class="nv" data-v="puzzle"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13 19 5M17 3.5l3.5 3.5"/></svg><span>퍼즐</span></button>
+    <button class="nv" data-v="practice"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 4.5 21.5 9 12 13.5zM6.5 11.2V16c1.6 1.7 3.4 2.5 5.5 2.5s3.9-.8 5.5-2.5v-4.8M21.5 9v5"/></svg><span>레슨</span></button>
     <button class="nv" data-v="league"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 20h8"/></svg><span>리그</span></button>
     <button class="nv" data-v="all"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
     <button class="nv end" data-v="set"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
@@ -543,6 +563,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="h-title" id="rightLab">대결</div>
       <div id="modeBox"><div id="modeList"></div></div>
       <div id="pracList" hidden></div>
+      <div id="puzBox" hidden></div>
       <div id="vsBox">
       <div class="plist">
         <button class="prow" id="pc0"><i class="av">1</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>

@@ -27,10 +27,11 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random', rule3: 3 }, saved);
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: true, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
+  if (!p.puz || typeof p.puz !== 'object') p.puz = { cur: 1, done: {}, best: 0 };
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   return p;
@@ -41,7 +42,7 @@ const poolCache = {};
 const poolOf = id => poolCache[id] || (poolCache[id] = createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg)));
 const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pockets: false }) };
 const game = createGame(PH);
-const drills = createDrills();
+const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
 const league = createLeague();
 const highlights = createHighlights();
@@ -50,11 +51,7 @@ const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
-const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; if (!r.elo) r.elo = 1000; return r; };
-// A rating for every name, moved after each match the way chess ratings are: beating someone rated above you is worth more.
-// The computer's rating is fixed by its level.
-const AI_ELO = [700, 1000, 1300, 1900];
-const eloOf = n => (rec[n] && rec[n].elo) || 1000;
+const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
@@ -158,7 +155,7 @@ function show(screen) {
   paintNav(); layout();
 }
 // which place on the rail is lit: the league and the records have their own, otherwise play or practice
-function paintNav() { const v = st.screen === 'league' ? lgTab : prefs.mode === 'practice' ? 'practice' : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
+function paintNav() { const v = st.screen === 'league' ? lgTab : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
@@ -225,7 +222,7 @@ function sheetCue() {
 }
 // one guide length per player (a handicap); a single row when only one person is aiming
 function sheetGuide() {
-  const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' : flow !== match);
+  const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
   const row = i => segRow(solo ? '조준선' : st.screen === 'play' ? game.players[i].name : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
   openSheet('조준선 길이', [row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
@@ -284,7 +281,7 @@ function sheetPause() {
 }
 
 /* ================= home ================= */
-const isCarom = () => game.MODES[prefs.mode].table === 'carom';
+const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode] || {}).table === 'carom';
 const MODE_ICON = {
   eight: () => el('span', { class: 'ball', style: '--c:#111' }, el('i', { text: '8' })),
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
@@ -313,20 +310,43 @@ function buildModes() {
     } }, [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check(), chev]));
   }
 }
-function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이팅 1000 · 첫 판'; return `레이팅 ${r.elo || 1000} · ${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
+function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
+// lessons, grouped the way a course list is: what you learn first at the top
+const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
 function paintHome() {
-  const prac = prefs.mode === 'practice';
-  $('#vsBox').hidden = prac; $('#pracList').hidden = !prac; $('#modeBox').hidden = prac; $('#rightLab').textContent = prac ? '연습' : '대결';
+  const prac = prefs.mode === 'practice', puz = prefs.mode === 'puzzle';
+  $('#vsBox').hidden = prac || puz; $('#pracList').hidden = !prac; $('#puzBox').hidden = !puz; $('#modeBox').hidden = prac || puz;
+  $('#rightLab').textContent = prac ? '레슨' : puz ? '퍼즐' : '대결'; $('#startBtn').textContent = prac ? '레슨 시작' : puz ? '퍼즐 풀기' : '시작';
   paintNav();
   if (prac) {
+    // each lesson a row with how far it has been taken; a lesson is finished at its top level
     const box = $('#pracList'), top = box.scrollTop; box.textContent = '';
-    for (const d of drills.list) box.appendChild(optBtn(prefs.drill === d.id,
-      [optText(d.name, d.d), d.make ? el('span', { class: 'lv', text: levelOf(d.id) + '단계' }) : null], () => { prefs.drill = d.id; savePrefs(); paintHome(); homePreview(); }));
+    for (const [title, ids] of COURSES) {
+      box.appendChild(el('div', { class: 'lab', text: title }));
+      for (const id of ids) {
+        const d = drills.byId(id), lv = levelOf(id), frac = d.make ? (lv - 1) / (drills.LEVELS - 1) : 0;
+        box.appendChild(optBtn(prefs.drill === id, [el('span', { class: 'ls' }, [el('span', { class: 't', text: d.name }), el('span', { class: 'd', text: d.d }),
+          d.make ? el('span', { class: 'prog' }, el('i', { style: `--w:${Math.round(frac * 100)}%` })) : null]), d.make ? el('span', { class: 'lv', text: `${lv}/${drills.LEVELS}` }) : null],
+          () => { prefs.drill = id; savePrefs(); paintHome(); homePreview(); }));
+      }
+    }
+    box.scrollTop = top;
+  }
+  if (puz) {
+    // how many are solved, then every puzzle as a numbered tile under the name of its kind
+    const box = $('#puzBox'), top = box.scrollTop, z = prefs.puz, n = puzzles.list.filter(q => z.done[q.id]).length; box.textContent = '';
+    box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${n}` }), el('span', { text: ` / ${puzzles.list.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { text: `${z.best || 0}` }), el('small', { text: '최고 연속' })])]));
+    box.appendChild(el('div', { class: 'pzkind' }, [el('span', { class: 'on', text: '4구' }), el('span', { text: '3구 · 준비 중' }), el('span', { text: '8볼 · 준비 중' })]));
+    puzzles.TIERS.forEach((name, t) => {
+      box.appendChild(el('div', { class: 'lab', text: name }));
+      box.appendChild(el('div', { class: 'pzgrid' }, puzzles.list.filter(q => q.tier === t).map(q => el('button', { class: 'pz' + (z.done[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.done[q.id] ? '✓' : String(q.id),
+        onclick: () => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); } }))));
+    });
     box.scrollTop = top;
   }
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
-  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? `레이팅 ${AI_ELO[prefs.level]} · ${LEVELS[prefs.level]}` : recText(prefs.names[1]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom(); $('#segRule3').hidden = prefs.mode !== 'three';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
@@ -339,13 +359,14 @@ function homePreview() {
   PH.pool = poolOf(prefs.table); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
+  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.puz.cur) || puzzles.list[0]); return; }
   if (prefs.mode === 'practice' && d.make) {
     game.start('practice', [prefs.names[0], ''], false, {}); scene.setTable(game.P);
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
     if (L) { flow = null; putLayout(L); scene.setZone(L.zone); playDemo(L.demo, { quiet: true, after: homePreview }); return; }
   }
   flow = null;
-  game.start(prefs.mode === 'practice' ? 'eight' : prefs.mode, [prefs.names[0], oppName()], false, {});
+  game.start(game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', [prefs.names[0], oppName()], false, {});
   scene.setTable(game.P); st.rev++; scene.invalidate();
 }
 function goHome() {
@@ -396,7 +417,7 @@ function autoTick(dt) {
 function paintPill(i, s) {
   const box = $('#p' + i), tray = box.querySelector('.tray');
   box.classList.toggle('on', !!s.on);
-  const nm = box.querySelector('.nm'); nm.textContent = s.name; if (s.elo) nm.appendChild(el('small', { text: s.elo }));
+  box.querySelector('.nm').textContent = s.name;
   box.querySelector('.sub').textContent = s.sub;
   box.querySelector('.pts').textContent = s.pts == null ? '' : s.pts;
   tray.textContent = '';
@@ -465,7 +486,7 @@ const match = {
   },
   hud() {
     const m = game.mode;
-    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, elo: game.players[i].ai ? AI_ELO[game.level] : eloOf(game.players[i].name) }, m.status(game, i)));
+    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i }, m.status(game, i)));
     paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {
@@ -477,16 +498,13 @@ const match = {
     if (fix != null && lg && lg.fx[fix]) { league.record(lg, fix, w, target ? game.players[0].score : w === 0 ? 1 : 0, target ? game.players[1].score : w === 1 ? 1 : 0); saveLeague(); }
     $('#againBtn').textContent = fix != null ? '리그로' : '한 판 더';
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
-    // ratings move: more for beating a stronger player
-    const ew = pw.ai ? AI_ELO[game.level] : rw.elo, el0 = pl.ai ? AI_ELO[game.level] : rl.elo, gain = Math.max(1, Math.round(32 * (1 - 1 / (1 + Math.pow(10, (el0 - ew) / 400)))));
-    if (!pw.ai) rw.elo += gain; if (!pl.ai) rl.elo = Math.max(100, rl.elo - gain); store.set('rec', rec);
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     $('#rTitle').textContent = pw.name + ' 승리';
     for (let i = 0; i < 2; i++) {
       const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
       box.classList.toggle('won', won);
       box.querySelector('.nm').textContent = p.name;
-      box.querySelector('.rc').textContent = (p.ai ? `레이팅 ${AI_ELO[game.level]}` : `레이팅 ${r.elo} (${won ? '+' : '−'}${gain})`) + ` · ${r.w}승 ${r.l}패`;
+      box.querySelector('.rc').textContent = `${r.w}승 ${r.l}패` + (won && r.streak >= 2 ? ` · ${r.streak}연승 중` : '');
     }
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { text: series.s[0] }), ' : ', el(w === 1 ? 'b' : 'span', { text: series.s[1] }));
     const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
@@ -567,7 +585,7 @@ const practice = {
   hud() {
     const p = practice;
     paintPill(0, { name: p.drill.name, on: true, sub: p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
-    paintBadge('연습', { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
+    paintBadge('레슨', { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
   },
   // the row of buttons where the second player's panel would be
   bar() {
@@ -616,6 +634,63 @@ const practice = {
   },
 };
 
+/* ================= flow: puzzle (one position, one shot to score with; solve it and the next one comes) ================= */
+const puzzle = {
+  quiet: false, save: false, cur: null, helped: false, streak: 0,
+  // the balls and barricades of a puzzle, onto the table
+  put(z) {
+    const P = game.P, w = game.world;
+    z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
+    w.walls = z.walls.length ? z.walls.map(q => P.wall(q[0], q[1], q[2], q[3])) : null; w.cue = 0;
+    scene.clearFalls(); scene.setZone(null); st.aim = Math.atan2(z.balls[2][1] - z.balls[0][1], z.balls[2][0] - z.balls[0][0]); st.rev++; scene.invalidate();
+  },
+  start(id) {
+    const z = puzzles.byId(id || prefs.puz.cur) || puzzles.list[0], p = puzzle;
+    if (!p.cur || p.cur.id !== z.id) p.helped = false;
+    p.cur = z; prefs.puz.cur = z.id; savePrefs();
+    game.start('puzzle4', [prefs.names[0], ''], false, {});
+    flow = puzzle; scene.setTable(game.P); show('play'); p.bar(); p.again();
+    toast(`퍼즐 ${z.id} · ${puzzles.TIERS[z.tier]}. 한 번에 빨간 공 두 개를 맞히세요. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+  },
+  restart() { puzzle.start(); },
+  again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
+  // the next one not yet solved after this (or simply the next, when all are)
+  step(dir) {
+    const L = puzzles.list, i = L.indexOf(puzzle.cur); let k = i;
+    for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.puz.done[L[k].id]) break; }
+    if (k === i) k = (i + dir + L.length) % L.length;
+    puzzle.start(L[k].id);
+  },
+  guide: () => prefs.guides[0],
+  auto: () => null,
+  beforeShot() {},
+  afterShot() {
+    const p = puzzle, z = p.cur, r = game.resolve().r;
+    if (!r.solved) { p.streak = 0; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
+    const first = !prefs.puz.done[z.id]; prefs.puz.done[z.id] = 1;
+    if (!p.helped && first) { p.streak++; prefs.puz.best = Math.max(prefs.puz.best || 0, p.streak); }
+    savePrefs();
+    const all = puzzles.list.every(q => prefs.puz.done[q.id]);
+    toast(all && first ? '정답! 퍼즐을 모두 풀었습니다.' : p.helped ? '정답!' : `정답! 연속 ${p.streak}`, 'good', 1900); SND.good();
+    hold(1.8, () => p.step(1));
+  },
+  hud() {
+    const p = puzzle, z = p.cur, n = puzzles.list.filter(q => prefs.puz.done[q.id]).length;
+    paintPill(0, { name: `퍼즐 ${z.id}`, on: true, sub: `${puzzles.TIERS[z.tier]} · 연속 ${p.streak}`, tray: [], pts: null });
+    paintBadge('4구 퍼즐', { text: `푼 퍼즐 ${n}/${puzzles.list.length}` }); setBusy();
+  },
+  bar() {
+    const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
+    const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
+    const aiming = fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); };
+    // a hint rings the red to go for first and says how many cushions the answer uses; the answer is played out in full
+    btn('힌트', aiming(() => { const z = p.cur, b = z.balls[z.first]; p.helped = true; scene.setZone({ x: b[0], y: b[1], r: game.P.R * 2.1 }); toast(`힌트: 동그라미 친 공부터${z.cush ? `, 쿠션을 ${z.cush}번 거쳐 다음 공으로` : ' 맞히고 다음 공으로'}.`, '', 4200); }));
+    btn('정답', aiming(() => { const z = p.cur; p.helped = true; toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: 0, b: 0 }, { quiet: false, after: p.again }); }));
+    btn('이전', aiming(() => p.step(-1)));
+    btn('다음', aiming(() => p.step(1)));
+  },
+};
+
 /* ================= flow: demo (plays one given shot, then hands back) ================= */
 // shot: { angle, power, a, b }.  opts.after: what to do once the balls have stopped and been looked at.
 function playDemo(shot, opts) {
@@ -655,41 +730,13 @@ function paintLeague() {
       flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintLeague(); }));
     return;
   }
-  if (!lg) return leagueSetup(add);
-  const rows = league.standings(lg), over = league.done(lg), nextUp = league.next(lg);
-  if (over) add(el('div', { class: 'champ panel' }, [el('span', { class: 'k', text: '우승' }), el('b', { text: rows[0].name }), el('span', { class: 'k', text: `${rows[0].w}승 ${rows[0].l}패` })]));
-  add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 52px 124px',
-    [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승점', 'n pts'], ['최근 5경기', 'fc']],
-    rows.map(r => [r.pos, r.name, r.p, r.w, r.l, r.pts, formChips(r.form)]), 1));
-  let round = 0, box = null;
-  lg.fx.forEach((f, i) => {
-    if (f.r !== round) { round = f.r; add(el('div', { class: 'rd', text: `${round}라운드` })); box = el('div', { class: 'lt' }); add(box); }
-    const played = f.w != null;
-    const mid = played ? el('span', { class: 'sc', text: `${f.sa} : ${f.sb}` })
-      : el('button', { class: 'btn' + (i === nextUp ? ' cta' : ' flat'), text: '시작', onclick: () => { SND.init(); SND.tap(); match.start(0, { names: [lg.names[f.a], lg.names[f.b]], mode: lg.mode, ai: false, target: lg.target, fix: i }); } });
-    box.appendChild(el('div', { class: 'fx' }, [cell('a ' + (played ? f.w === 0 ? 'win' : 'lose' : ''), lg.names[f.a]), mid, cell('b ' + (played ? f.w === 1 ? 'win' : 'lose' : ''), lg.names[f.b])]));
-  });
-  add(flatBtn(over ? '새 리그 만들기' : '리그 끝내기', () => openSheet(over ? '새 리그' : '리그 끝내기', [note(over ? '이 리그의 순위표는 지워지고 새 리그를 만듭니다. 전체 전적은 그대로 남습니다.' : '남은 경기와 순위표가 지워집니다. 전체 전적은 그대로 남습니다.'),
-    el('button', { class: 'btn cta', text: '지우기', onclick: () => { lg = null; saveLeague(); closeSheet(); paintLeague(); } })])));
-}
-function leagueSetup(add) {
-  const d = lgDraft || (lgDraft = { names: prefs.names.slice(), mode: prefs.mode === 'practice' ? 'eight' : prefs.mode, legs: 1 });
-  const input = el('input', { class: 'txt', maxlength: '10', placeholder: '이름', 'aria-label': '참가자 이름', autocomplete: 'off' });
-  const addName = () => {
-    const v = input.value.trim().slice(0, 10); if (!v) return;
-    if (d.names.includes(v)) return toast('같은 이름이 이미 있습니다.', '', 1500);
-    if (d.names.length >= 12) return toast('열두 명까지 넣을 수 있습니다.', '', 1500);
-    d.names.push(v); paintLeague(); setTimeout(() => { const f = $('#lgBody input'); if (f) f.focus(); }, 30);
-  };
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') addName(); });
-  const n = d.names.length, games = n * (n - 1) / 2 * d.legs;
-  add(el('div', { class: 'lab', text: '참가자' }),
-    el('div', { class: 'chips' }, d.names.map((name, i) => el('span', { class: 'chipn' }, [document.createTextNode(name), el('button', { 'aria-label': name + ' 빼기', text: '×', onclick: () => { d.names.splice(i, 1); paintLeague(); } })]))),
-    el('div', { class: 'row addrow' }, [input, el('button', { class: 'btn flat', text: '추가', onclick: () => { SND.tap(); addName(); } })]),
-    segRow('게임', ['eight', 'nine', 'three', 'four'].map(id => [id, game.MODES[id].name]), d.mode, v => { d.mode = v; paintLeague(); }),
-    segRow('방식', [[1, '한 번씩'], [2, '두 번씩']], d.legs, v => { d.legs = v; paintLeague(); }),
-    note(n < 2 ? '두 명 이상 넣어 주세요.' : `${n}명이 서로 ${d.legs === 1 ? '한 번씩' : '두 번씩'}, 모두 ${games}경기. 이기면 승점 ${league.WIN_PTS}점.`),
-    el('button', { class: 'btn cta', text: '리그 시작', onclick: () => { if (d.names.length < 2) return toast('두 명 이상 넣어 주세요.', '', 1500); SND.tap(); lg = league.create(d.names, d.mode, prefs.target, d.legs); saveLeague(); lgDraft = null; paintLeague(); } }));
+  // The league is not built yet: this shows what it will look like, with made-up names and numbers.
+  add(el('div', { class: 'champ panel' }, [el('span', { class: 'k', text: '예시 화면' }), el('b', { text: '브론즈 리그 · 1주차' }), el('span', { class: 'k', text: '준비 중' })]));
+  const demo = [['한결', 9, 8, 1], ['서윤', 9, 7, 2], [prefs.names[0], 8, 6, 2], ['도현', 9, 5, 4], ['지안', 8, 4, 4], ['민재', 9, 3, 6], ['하린', 8, 2, 6], ['태오', 8, 1, 7]];
+  add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 52px',
+    [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승점', 'n pts']],
+    demo.map((r, k) => [k + 1, r[0], r[1], r[2], r[3], r[2] * league.WIN_PTS]), 3));
+  add(note('위 표는 실제 기록이 아닌 예시입니다. 위에서 세 명은 다음 리그로 올라가는 자리입니다. 진짜 리그는 나중에 열립니다. 지금까지의 실제 승패는 "전적"에 있습니다.'));
 }
 
 /* ================= buttons ================= */
@@ -700,8 +747,9 @@ $('#nav').addEventListener('click', e => {
   const v = b.dataset.v;
   if (v === 'set') return sheetSettings();
   if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
-  if (v === 'practice' && prefs.mode !== 'practice') { prefs.lastMode = prefs.mode; prefs.mode = 'practice'; }
-  else if (v === 'play' && prefs.mode === 'practice') prefs.mode = game.MODES[prefs.lastMode] && prefs.lastMode !== 'practice' ? prefs.lastMode : 'eight';
+  const game4 = m => game.MODES[m] && m !== 'practice' && m !== 'puzzle4';
+  if ((v === 'practice' || v === 'puzzle') && prefs.mode !== v) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = v; }
+  else if (v === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
   else if (st.screen === 'home') return;
   modeOpen = false; savePrefs(); goHome();
 });
@@ -714,7 +762,7 @@ function setView3D(on) {
   if (on) toast('큐를 잡고 끌면 조준, 빈 곳을 끌면 시점 회전, 두 손가락으로 확대·축소. 버튼을 다시 누르면 위에서 보는 화면으로 돌아옵니다.', '', 4800);
 }
 press('#viewBtn', () => setView3D(!scene.orbiting));
-press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else match.start(0); });
+press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else if (prefs.mode === 'puzzle') puzzle.start(); else match.start(0); });
 press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', goHome);
 // the best shot of the match, played again as an edited clip
@@ -950,7 +998,7 @@ function start(data) {
   } else goHome();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, scene, drills, practice, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 const hot = window.claude && window.claude.hot;
 if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
 })();
