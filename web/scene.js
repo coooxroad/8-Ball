@@ -565,7 +565,10 @@ function createScene(canvas, app, PH) {
       // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
       const e = v.jump ? 0.7 : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
       const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
-      cue.position.set(tx, ty, R + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -(0.085 + e), v.aim + Math.PI);
+      // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
+      // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
+      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(tx, ty, R + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -(0.085 + e), v.aim + Math.PI); }
+      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(tx, ty, R + 0.002 + (e ? R * 0.9 : 0)); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const sx = tx - dx * 0.735 * ce + 0.012, sy = ty - dy * 0.735 * ce - 0.014;
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }

@@ -452,7 +452,7 @@ function homePreview() {
 // The table on the first screen plays itself: two computers at the hard level, one game after another, without a sound.
 const homeDemo = {
   quiet: true, save: false, guide: () => 2, restart() {}, beforeShot() {}, hud() {},
-  auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, pos: p.pos }; } }),
+  auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, j: !!p.j, pos: p.pos }; } }),
   afterShot() { game.resolve(); if (st.screen !== 'home') return; if (game.over) return hold(2.2, () => { if (flow === homeDemo && st.screen === 'home') homePreview(); }); useCue(prefs.cues[prefs.vsAI ? 0 : game.turn]); beginTurn(false); },
 };
 // leaving a game: `keep` leaves it saved so that it can be picked up again from the first screen
@@ -568,7 +568,7 @@ const match = {
   cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   guide: () => prefs.guides[game.turn],
-  auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, pos: p.pos }; } } : null,
+  auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, j: !!p.j, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el, j) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, j, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, out = game.resolve();
@@ -603,7 +603,7 @@ const match = {
     $('#rTitle').textContent = pw.name + ' 승리';
     for (let i = 0; i < 2; i++) {
       const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
-      box.classList.toggle('won', won);
+      box.className = 'r-p' + (i ? ' two' : '') + (won ? ' won' + fireOf(r.streak) : '');
       box.querySelector('.nm').textContent = p.name;
       box.querySelector('.rc').textContent = `${r.w}승 ${r.l}패` + (won && r.streak >= 2 ? ` · ${r.streak}연승 중` : '');
     }
