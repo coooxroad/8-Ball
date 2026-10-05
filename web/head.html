@@ -418,8 +418,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-width:560px){.ltr .fc,.ltr .xs{display:none}.ltr{grid-template-columns:26px minmax(0,1fr) 34px 34px 34px 44px!important}.lg-top{flex-wrap:wrap}.lg-top h1{order:-1;flex-basis:100%}#lgTabs{flex:1}}
 
 /* ---------- result ---------- */
-#result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
-.r-title{font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
+#result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
+.r-title{margin-top:auto;font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
 .r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);flex-wrap:wrap}
 .r-win{display:flex;align-items:center;gap:16px;min-width:0}
 .r-win .av{width:64px;height:64px;font-size:28px;background:var(--on-av-bg);border-color:transparent;color:var(--on-av-fg)}
@@ -430,30 +430,48 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .r-score b{font-weight:inherit;color:var(--win)}
 .r-lose{display:flex;align-items:center;gap:10px;color:var(--sub);font-size:20px}
 .r-lose .av{width:40px;height:40px}
-#rStats{width:100%;max-width:720px;padding:6px 22px}
-.srow{display:grid;grid-template-columns:64px minmax(0,1fr) 96px minmax(0,1fr) 64px;align-items:center;gap:12px;padding:11px 0}
+#rStats{width:100%;max-width:760px;padding:2px 22px}
+.srow{display:grid;grid-template-columns:64px minmax(0,1fr) 112px minmax(0,1fr) 64px;align-items:center;gap:12px;padding:6px 0}
 .srow+.srow{border-top:1px solid var(--hair)}
 .srow .k{font-size:13px;color:var(--sub);text-align:center}
-.srow b,.srow span.n{font-family:var(--num);font-weight:var(--num-w);font-size:24px;color:var(--fg)}
+.srow b,.srow span.n{font-family:var(--num);font-weight:var(--num-w);font-size:21px;color:var(--fg)}
 .srow span.n{color:var(--sub);text-align:right}
 .srow .bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;display:flex}
 .srow .bar.l{justify-content:flex-end}
 .srow .bar i{display:block;height:100%;width:var(--w);border-radius:3px;background:var(--win)}
 .srow .bar.r i{background:var(--sub);opacity:.6}
-.r-shots{width:100%;max-width:720px;display:flex;gap:12px;flex-wrap:wrap}
-.r-shots:not(:has(.shotBtn:not([hidden]))){display:none}
-.shotBtn{flex:1 1 260px;min-width:0;display:flex;align-items:center;gap:12px;padding:14px 18px;text-align:left}
-.shotBtn .k{font-family:'Outfit',sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;color:var(--sub);white-space:nowrap}
-.shotBtn b{font-size:17px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em}
-.shotBtn .tg{font-size:13.5px;color:var(--sub);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shotBtn .go{font-weight:700;color:var(--win);white-space:nowrap}
-.shotBtn.worst .go,.shotBtn.worst .k{color:#e5484d}
+/* the match sheet: names across the top, the numbers, then the two shots to watch again */
+.shead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:12px 0 8px;border-bottom:1px solid var(--hair)}
+.shead b{font-size:16px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shead b:last-child{text-align:right;color:var(--sub)}
+.shead span{font-family:'Outfit','Gothic A1',sans-serif;font-size:12px;letter-spacing:.2em;color:var(--sub)}
+.srow.k-brill .k{color:#0ca678;font-weight:700}.srow.k-great .k{color:#2f6bff;font-weight:700}.srow.k-miss .k{color:#e8890c;font-weight:700}.srow.k-blunder .k{color:#e5484d;font-weight:700}
+.shots{display:flex;gap:10px;padding:12px 0 14px;border-top:1px solid var(--hair);flex-wrap:wrap}
+.shot{flex:1 1 250px;min-width:0;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border-radius:14px;border:1px solid var(--bd);background:var(--seg);text-align:left;color:var(--fg)}
+.shot .pic{flex:none;width:96px;height:54px;border-radius:8px;display:block}
+.shot .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.shot .k{font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;color:#b7791f}
+.shot.worst .k{color:#e5484d}
+.shot b{font-size:15.5px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot .tg{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot .go{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--win);color:#fff;font-size:13px;padding-left:2px}
+.shot.worst .go{background:#e5484d}
+.r-lose .rc{font-size:13px;margin-top:2px}
+/* a mark on the table for a shot worth one */
+.mk{position:absolute;z-index:6;pointer-events:none;display:flex;align-items:center;gap:7px;transform:translate(-50%,-150%);padding:5px 11px 5px 5px;border-radius:10px;background:var(--panel,#fff);box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;font-weight:700;color:var(--fg);white-space:nowrap;animation:mk 2.1s ease-out forwards}
+.mk b{display:grid;place-items:center;min-width:26px;height:26px;padding:0 5px;border-radius:7px;color:#fff;font:800 15px/1 'Outfit',sans-serif;background:#2f6bff}
+.mk.brill b{background:#0ca678}.mk.blunder b{background:#e5484d}
+@keyframes mk{0%{opacity:0;transform:translate(-50%,-110%) scale(.6)}10%{opacity:1;transform:translate(-50%,-150%) scale(1.08)}16%{transform:translate(-50%,-150%) scale(1)}82%{opacity:1}100%{opacity:0;transform:translate(-50%,-190%) scale(1)}}
+.pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
+.pill.on .nm small{color:inherit;opacity:.75}
+.dart{display:grid;place-items:center;width:40px;height:40px}
 .stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .stat .k{font-size:13px;color:var(--sub)}
 .stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
 .stat .v span{font-size:20px;color:var(--sub);margin-left:8px}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
-.r-btns{display:flex;gap:12px;width:100%;max-width:720px;margin-top:4px}
+.r-btns{display:flex;gap:12px;width:100%;max-width:760px;margin-top:4px;margin-bottom:auto;flex:none}
+#result>*{flex:none}
 .r-btns .btn{flex:1;height:60px;font-size:17px}.r-btns .btn.cta{flex:2}
 #nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:17px;line-height:1.6;background:#101216;color:#f3f5f7}
 
@@ -575,13 +593,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <div class="r-vs">
       <div class="r-win" id="rWin"><i class="av"></i><div><div class="nm"></div><div class="rc"></div></div></div>
       <div class="r-score" id="rScore"></div>
-      <div class="r-lose" id="rLose"><i class="av"></i><span class="nm"></span></div>
+      <div class="r-lose" id="rLose"><i class="av"></i><div><span class="nm"></span><div class="rc"></div></div></div>
     </div>
     <div id="rStats" class="panel"></div>
-    <div class="r-shots">
-      <button class="panel shotBtn" id="bestBtn" hidden><span class="k">BEST SHOT</span><b id="bestWho"></b><span class="tg" id="bestTag"></span><span class="go">▶</span></button>
-      <button class="panel shotBtn worst" id="worstBtn" hidden><span class="k">WORST SHOT</span><b id="worstWho"></b><span class="tg" id="worstTag"></span><span class="go">▶</span></button>
-    </div>
     <p id="rWhy"></p>
     <div class="r-btns"><button class="btn" id="homeBtn">처음으로</button><button class="btn cta" id="againBtn">한 판 더</button></div>
   </section>

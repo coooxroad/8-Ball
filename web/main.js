@@ -49,7 +49,11 @@ const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
-const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
+const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; if (!r.elo) r.elo = 1000; return r; };
+// A rating for every name, moved after each match the way chess ratings are: beating someone rated above you is worth more.
+// The computer's rating is fixed by its level.
+const AI_ELO = [700, 1000, 1300, 1900];
+const eloOf = n => (rec[n] && rec[n].elo) || 1000;
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
 
@@ -290,7 +294,7 @@ const MODE_ICON = {
   nine: () => el('span', { class: 'ball', style: '--c:#f2b705' }, el('i', { text: '9' })),
   four: () => el('span', { class: 'four' }, ['#d3241c', '#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
   three: () => el('span', { class: 'three' }, ['#d3241c', '#f4c20d', '#f4efe2'].map(c => el('i', { style: '--c:' + c }))),
-  practice: () => el('span', { class: 'target' }, el('i')),
+  practice: () => { const s = el('span', { class: 'dart' }); s.innerHTML = '<svg width="46" height="46" viewBox="0 3 40 40"><circle cx="19" cy="23" r="17" fill="#1f2a37"/><circle cx="19" cy="23" r="14" fill="#f4efe2"/><circle cx="19" cy="23" r="10.2" fill="#e5484d"/><circle cx="19" cy="23" r="6.4" fill="#f4efe2"/><circle cx="19" cy="23" r="2.8" fill="#e5484d"/><path d="M19.6 22.4 31 11" stroke="#1f2a37" stroke-width="2.4" stroke-linecap="round"/><path d="M29.2 9.2l5.6-4.4 1.4 4-4 1.4 1.4 1.4-4 1.4z" fill="#2f6bff" stroke="#1f2a37" stroke-width="1.2" stroke-linejoin="round"/></svg>'; return s; },
 };
 function check() {
   const s = el('span', { class: 'ck' });
@@ -305,7 +309,7 @@ function buildModes() {
       [el('span', { class: 'ic' }, MODE_ICON[id]()), el('span', null, [el('span', { class: 'nm', text: m.name }), el('span', { class: 'bl', text: m.blurb })]), check()]));
   }
 }
-function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
+function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '레이팅 1000 · 첫 판'; return `레이팅 ${r.elo || 1000} · ${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() {
   const prac = prefs.mode === 'practice';
@@ -317,7 +321,7 @@ function paintHome() {
     box.scrollTop = top;
   }
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = recText(prefs.names[0]);
-  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]);
+  $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = prefs.vsAI ? `레이팅 ${AI_ELO[prefs.level]} · ${LEVELS[prefs.level]}` : recText(prefs.names[1]);
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom(); $('#segRule3').hidden = prefs.mode !== 'three';
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
@@ -387,7 +391,8 @@ function autoTick(dt) {
 function paintPill(i, s) {
   const box = $('#p' + i), tray = box.querySelector('.tray');
   box.classList.toggle('on', !!s.on);
-  box.querySelector('.nm').textContent = s.name; box.querySelector('.sub').textContent = s.sub;
+  const nm = box.querySelector('.nm'); nm.textContent = s.name; if (s.elo) nm.appendChild(el('small', { text: s.elo }));
+  box.querySelector('.sub').textContent = s.sub;
   box.querySelector('.pts').textContent = s.pts == null ? '' : s.pts;
   tray.textContent = '';
   for (const t of s.tray || []) tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t));
@@ -399,17 +404,44 @@ function paintBadge(name, b) {
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
+// A mark for a shot, as in a chess review: !! and ! for the good ones, ?? for a blunder. It pops up where the cue ball was.
+const MARKS = { brill: ['!!', '기막힌 샷'], great: ['!', '좋은 샷'], blunder: ['??', '대실수'] };
+function showMark(kind, at) {
+  const p = scene.toScreen(at[0], at[1], game.P.R), n = el('div', { class: 'mk ' + kind, style: `left:${p.x}px;top:${p.y}px` }, [el('b', { text: MARKS[kind][0] }), el('span', { text: MARKS[kind][1] })]);
+  app.appendChild(n); setTimeout(() => n.remove(), 2100);
+}
+// A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.
+function drawShot(cv, shot) {
+  const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const g = cv.getContext('2d'), P = game.P, pad = 5 * dpr, k = Math.min((cv.width - 2 * pad) / (2 * P.HL), (cv.height - 2 * pad) / (2 * P.HW));
+  const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k, carom = game.mode.table === 'carom';
+  const colOf = i => carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i] : i === shot.snap.cue ? '#ffffff' : ballCss(i);
+  g.fillStyle = hex(CLOTHS[prefs.cloth].felt); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * dpr;
+  g.beginPath(); g.rect(X(-P.HL), Y(P.HW), 2 * P.HL * k, 2 * P.HW * k); g.fill(); g.stroke();
+  g.fillStyle = '#0b0b0d'; for (const p of P.POCKETS) { g.beginPath(); g.arc(X(p.x), Y(p.y), p.r * k * 0.8, 0, 6.3); g.fill(); }
+  let tape = null; try { tape = highlights.record(P, shot.snap.balls.length, shot); } catch (e) {}
+  const key = shot.kind ? shot.ball : shot.key >= 0 ? shot.key : shot.snap.cue;
+  if (tape) for (const id of [shot.snap.cue, key]) {
+    const pts = highlights.path(tape, id); if (!pts) continue;
+    g.beginPath(); for (let i = 0; i < pts.length; i += 3) { if (i) g.lineTo(X(pts[i]), Y(pts[i + 1])); else g.moveTo(X(pts[i]), Y(pts[i + 1])); }
+    g.lineJoin = g.lineCap = 'round'; g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 3.4 * dpr; g.stroke(); g.strokeStyle = colOf(id); g.lineWidth = 1.8 * dpr; g.stroke();
+    if (id === shot.snap.cue && id === key) break;
+  }
+  shot.snap.balls.forEach((b, i) => { if (!b[2]) return; g.beginPath(); g.arc(X(b[0]), Y(b[1]), Math.max(2.2 * dpr, P.R * k), 0, 6.3); g.fillStyle = colOf(i); g.fill(); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = dpr; g.stroke(); });
+}
+
 /* ================= flow: a match between two players (or one and the computer) ================= */
 const match = {
   quiet: false, save: true,
   ctx: null,                                              // who is playing what; fix: the league game this is, if any
-  pending: null, best: null, worst: null,                              // the shot in progress, and the best one of the match so far
+  pending: null, best: null, worst: null, tally: [{}, {}],                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3 }); match.best = null; match.worst = null; match.tally = [{}, {}];
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setTable(game.P); st.rev++; show('play'); beginTurn(true); },
@@ -423,13 +455,18 @@ const match = {
       const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
       if (r.score > (match.best ? match.best.score : 0)) match.best = Object.assign({}, shot, r);
       if (bad.score > (match.worst ? match.worst.score : 0)) match.worst = Object.assign({}, shot, bad);
+      // what kind of shot it was goes on that player's sheet; the ones worth a mark get one on the table, as in a chess review
+      const t = match.tally[shot.turn] || (match.tally[shot.turn] = {}), add = k => { t[k] = (t[k] || 0) + 1; };
+      if (r.score > 0) for (const k in r.kinds || {}) if (r.kinds[k]) add(k);
+      const mark = r.score >= 34 ? 'brill' : r.score >= 24 ? 'great' : bad.score >= 26 ? 'blunder' : bad.score > 0 ? 'miss' : null;
+      if (mark) { add(mark); if (mark !== 'miss' && !game.over) showMark(mark, shot.snap.balls[shot.snap.cue]); }
     }
     if (game.over) return match.finish();
     toast(out.msg, out.kind, out.dur); beginTurn(false);
   },
   hud() {
     const m = game.mode;
-    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i }, m.status(game, i)));
+    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, elo: game.players[i].ai ? AI_ELO[game.level] : eloOf(game.players[i].name) }, m.status(game, i)));
     paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {
@@ -441,27 +478,41 @@ const match = {
     if (fix != null && lg && lg.fx[fix]) { league.record(lg, fix, w, target ? game.players[0].score : w === 0 ? 1 : 0, target ? game.players[1].score : w === 1 ? 1 : 0); saveLeague(); }
     $('#againBtn').textContent = fix != null ? '리그로' : '한 판 더';
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
+    // ratings move: more for beating a stronger player
+    const ew = pw.ai ? AI_ELO[game.level] : rw.elo, el0 = pl.ai ? AI_ELO[game.level] : rl.elo, gain = Math.max(1, Math.round(32 * (1 - 1 / (1 + Math.pow(10, (el0 - ew) / 400)))));
+    if (!pw.ai) rw.elo += gain; if (!pl.ai) rl.elo = Math.max(100, rl.elo - gain); store.set('rec', rec);
     const win = $('#rWin'); win.className = 'r-win' + (w === 1 ? ' two' : '');
     win.querySelector('.av').textContent = w + 1; win.querySelector('.nm').textContent = pw.name;
-    win.querySelector('.rc').textContent = `${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
-    $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name;
+    win.querySelector('.rc').textContent = (pw.ai ? `레이팅 ${ew}` : `레이팅 ${rw.elo} (+${gain})`) + ` · ${rw.w}승 ${rw.l}패` + (rw.streak >= 2 ? ` · ${rw.streak}연승 중` : '');
+    $('#rLose .av').textContent = l + 1; $('#rLose .nm').textContent = pl.name; $('#rLose .rc').textContent = pl.ai ? `레이팅 ${el0}` : `레이팅 ${rl.elo} (−${gain})`;
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el('b', { text: series.s[w] }), ' : ' + series.s[l]);
-    const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
-    const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], ['친 횟수', pw.shots, pl.shots], ['파울', pw.fouls, pl.fouls]];
-    if (game.mode.target) rows[2] = ['점수', pw.score, pl.score];
-    // winner on the left, loser on the right, a bar each way showing the share
+    // The match sheet: winner on the left, loser on the right, a bar each way showing the share. The usual numbers first,
+    // then a count of each kind of shot that came up (rows nobody scored in are left out).
+    const pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%', tw = match.tally[w] || {}, tl = match.tally[l] || {}, n = (t, k) => t[k] || 0;
+    const rows = [['샷 성공률', pct(pw), pct(pl)], ['연속 성공', pw.best, pl.best], [game.mode.target ? '점수' : '친 횟수', game.mode.target ? pw.score : pw.shots, game.mode.target ? pl.score : pl.shots], ['파울', pw.fouls, pl.fouls]];
+    for (const [k, label] of [['brill', '기막힌 샷 !!'], ['great', '좋은 샷 !'], ['bank', '뱅크 샷'], ['rail', '쿠션 득점'], ['combo', '콤비네이션'], ['long', '장거리 샷'], ['thin', '얇은 컷'], ['multi', '한 번에 여러 개'], ['miss', '아쉬운 샷 ?'], ['blunder', '대실수 ??']])
+      if (n(tw, k) || n(tl, k)) rows.push([label, n(tw, k), n(tl, k), k]);
     const box = $('#rStats'); box.textContent = '';
-    for (const [k, a, b] of rows) {
+    box.appendChild(el('div', { class: 'shead' }, [el('b', { text: pw.name }), el('span', { text: '경기 기록' }), el('b', { text: pl.name })]));
+    for (const [k, a, b, kind] of rows) {
       const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
-      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+      box.appendChild(el('div', { class: 'srow' + (kind ? ' k-' + kind : '') }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
         el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
     }
-    const best = match.best; $('#bestBtn').hidden = !best;
-    if (best) { $('#bestWho').textContent = best.who; $('#bestTag').textContent = best.tag; }
-    const worst = match.worst; $('#worstBtn').hidden = !worst;
-    if (worst) { $('#worstWho').textContent = worst.who; $('#worstTag').textContent = worst.tag; }
+    // the two shots worth watching again sit on the same sheet, each with a small drawing of what happened
+    const tiles = el('div', { class: 'shots' });
+    for (const [shot, cls, label, play] of [[match.best, 'best', 'BEST SHOT', () => playBest()], [match.worst, 'worst', 'WORST SHOT', () => playWorst()]]) {
+      if (!shot) continue;
+      const cv = el('canvas', { class: 'pic' });
+      tiles.appendChild(el('button', { class: 'shot ' + cls, onclick: () => { SND.init(); SND.tap(); play(); } }, [cv,
+        el('span', { class: 'tx' }, [el('span', { class: 'k', text: label }), el('b', { text: shot.who }), el('span', { class: 'tg', text: shot.tag })]), el('span', { class: 'go', text: '▶' })]));
+      shot._pic = cv;
+    }
+    if (tiles.children.length) box.appendChild(tiles);
     $('#rWhy').textContent = game.over.why;
+    document.querySelectorAll('.mk').forEach(n => n.remove());
     show('result'); SND.win();
+    for (const shot of [match.best, match.worst]) if (shot && shot._pic) drawShot(shot._pic, shot);
   },
 };
 
@@ -667,7 +718,7 @@ function playWorst(style) {
   if (!match.worst || st.screen !== 'result') return;
   show('reel'); flow = reelFlow; st.phase = 'reel'; reel.play(match.worst, style);
 }
-press('#bestBtn', () => playBest()); press('#worstBtn', () => playWorst()); press('#reelSkip', () => reel.skip());
+ press('#reelSkip', () => reel.skip());
 seg('#segOpp', () => prefs.vsAI ? 1 : 0, v => { prefs.vsAI = v === '1'; savePrefs(); paintHome(); });
 slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); });
 seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); });

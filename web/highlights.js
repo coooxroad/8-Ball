@@ -19,7 +19,7 @@ function createHighlights() {
     if (mode.table === 'carom') {
       if (!(res.pts > 0)) return { score: 0 };
       const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1 };
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5, tag: cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -34,7 +34,7 @@ function createHighlights() {
     let score = 10 * many + 6 * (d1 + d2) + cut / 5 + (bank ? 14 : 0) + (combo ? 12 : 0) + (res.win === shot.turn ? 6 : 0);
     if (shot.isBreak) score *= 0.35;                                   // a break is mostly luck
     const tag = bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
-    return { score, tag, key: main.id };
+    return { score, tag, key: main.id, kinds: { bank, combo, long: d1 + d2 > 1.5, multi: many >= 2, thin: cut > 42 } };
   }
 
   // And how bad was that? 0 for a shot nobody would laugh at. `kind` says what went wrong and `ball` which ball did it:
