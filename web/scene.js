@@ -6,7 +6,7 @@ function createScene(canvas, app, PH) {
   if (!window.THREE) return null;
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
-  const RW = 0.095, RAIL_Z = 0.04, FOV = 40, FOV_TOP = 16;   // FOV_TOP: the view from straight above, taken from far off with a long lens
+  const RW = 0.095, RAIL_Z = 0.04, FOV = 40;
   const LAMPS = [[-0.78, 0, 1.05], [0, 0, 1.05], [0.78, 0, 1.05]];   // three shades hanging over the long axis
   const CW = PH.pool.CW;
   let cur = PH.pool;                                                  // the table being shown
@@ -452,19 +452,14 @@ function createScene(canvas, app, PH) {
     const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
     ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
     const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
-    // Straight above, a wide lens draws the balls near the ends of the table longer than the ones in the middle (a sphere off
-    // to the side of a wide view is stretched). So the top view uses a narrow lens from further away, where every ball is the
-    // same round size; tilting down into the 3D view opens the lens out again, and a scripted camera (the reels) is always wide.
-    const fov = !orbit.on ? FOV_TOP : orbit.cam ? FOV : FOV_TOP + (FOV - FOV_TOP) * Math.max(0, Math.min(1, (1.4 - orbit.el) / 0.5));
-    if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
-    const dist = fh / (2 * ppm * Math.tan(fov * Math.PI / 360));
+    const dist = fh / (2 * ppm * Math.tan(FOV * Math.PI / 360));
     camera.aspect = fw / fh;
     if (orbit.on) {
       // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
       const cam = orbit.cam, az = cam ? cam.az : orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
       const dir = fitV.set(ce * Math.sin(az), -ce * Math.cos(az), Math.sin(orbit.el));
       // step back until the whole table is inside the free part of the screen, whichever way it is turned
-      const tan = Math.tan(fov * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
+      const tan = Math.tan(FOV * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
       let d = dist; camera.up.set(0, 0, 1);
       for (let it = 0; it < 4; it++) {
         camera.position.copy(dir).multiplyScalar(d); camera.lookAt(0, 0, 0); camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();

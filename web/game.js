@@ -115,7 +115,8 @@ function createGame(PH) {
       setup(g, rnd) {
         const P = g.P, { HL } = P, w = g.world;
         P.place(w, 2, HL / 2, 0, rnd); P.place(w, 3, -HL / 2, 0, rnd);
-        P.place(w, 1, -HL * 0.78, 0, rnd); P.place(w, 0, -HL * 0.78, -0.17, rnd);
+        // whoever shoots first has their ball beside the line of the two reds, the other player's ball is on it
+        P.place(w, 1 - g.turn, -HL * 0.78, 0, rnd); P.place(w, g.turn, -HL * 0.78, -0.17, rnd);
         g.placing = null; g.isBreak = false;
       },
       intro: g => `${g.players[g.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.`,
@@ -138,11 +139,12 @@ function createGame(PH) {
   // Three balls, no pockets: each player has a cue ball (white, yellow) and there is one red. A point for making your cue
   // ball hit both of the others - after it has met as many cushions as the chosen rule asks for (0, 1, or the full three).
   const RULE3 = { 0: '쿠션 없이도 인정', 1: '쿠션 1번 이상', 3: '쿠션 3번 이상' };
+  // bed: three-ball is played on the match table - larger, with smaller balls - while four-ball keeps the medium one
   MODES.three = {
-    id: 'three', name: '3구', blurb: '내 공으로 나머지 두 공을 다 맞히면 1점', table: 'carom', n: 3, ballInHand: false, target: true, RULE3,
+    id: 'three', name: '3구', blurb: '내 공으로 나머지 두 공을 다 맞히면 1점', table: 'carom', bed: 'carom3', n: 3, ballInHand: false, target: true, RULE3,
     setup(g, rnd) {
       const P = g.P, { HL } = P, w = g.world;
-      P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1, -HL / 2, 0, rnd); P.place(w, 0, -HL / 2, -0.18, rnd);
+      P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1 - g.turn, -HL / 2, 0, rnd); P.place(w, g.turn, -HL / 2, -0.18, rnd);
       g.placing = null; g.isBreak = false;
     },
     intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
@@ -209,7 +211,7 @@ function createGame(PH) {
 
   g.start = function (modeId, names, ai, opts) {
     opts = opts || {};
-    g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.table];
+    g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.bed] || PH[g.mode.table];
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
     g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
@@ -555,7 +557,7 @@ function createGame(PH) {
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
-    g.modeId = d.modeId; g.mode = MODES[d.modeId]; g.P = PH[g.mode.table];
+    g.modeId = d.modeId; g.mode = MODES[d.modeId]; g.P = PH[g.mode.bed] || PH[g.mode.table];
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;

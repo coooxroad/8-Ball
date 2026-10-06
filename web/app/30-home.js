@@ -101,7 +101,7 @@ function paintHome() {
   $('#segFinish').hidden = prefs.mode !== 'four'; $('#segMasse').hidden = !LAB.masse;
   for (const f of segPaint) f();
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
-  $('#tableVal').textContent = (isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
+  $('#tableVal').textContent = (prefs.mode === 'three' ? '대대' : isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = prefs.cues[0] === prefs.cues[1] || prefs.vsAI || prac || puz ? CUES[prefs.cues[0]].name : '각자';
   const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
 }

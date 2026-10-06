@@ -178,5 +178,19 @@ for (const name of ['bar', 'pro', 'pub']) {
     if (!(high > 0.03)) fail('the tape of a jump has no height in it'); end.forEach((e, k) => { const b = w2.balls[k]; if (b.on !== e[2] || (e[2] && Math.hypot(b.x - e[0], b.y - e[1]) > 1e-3)) fail('the tape of a jump ends somewhere else'); }); }
   console.log('raised cue, handicaps, ice: checked');
 }
+// openings: whoever shoots first, their ball is never in line with the two reds; three-ball has its own table and balls
+{
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }), carom3: createPhysics({ R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }) });
+  for (const mode of ['four', 'three']) for (const first of [0, 1]) {
+    g.start(mode, ['A', 'B'], false, { first, rnd }); const b = g.world.balls, c = g.cueBall();
+    if (g.world.cue !== first || Math.abs(c.y) < 0.1 || Math.abs(b[1 - first].y) > 1e-3) fail(`${mode}, player ${first + 1} first: the shooter's ball is not on the spot beside the line`);
+  }
+  g.start('three', ['A', 'B'], true, { level: 2, target: 3, cushions: 1, rnd }); g.players[0].ai = true;
+  if (g.P.R !== 0.03075 || g.P.HL !== 1.42) fail('three-ball is not on the match table');
+  let n = 0; while (!g.over && n < 400) { const pl = g.aiPlan(); g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++; }
+  if (!g.over) fail('three-ball on the match table did not finish');
+  const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, {}); if (!g.restore(d) || g.P.HL !== 1.42) fail('a saved three-ball game came back on the wrong table');
+  console.log(`openings and the three-ball table: checked (${n} shots)`);
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

@@ -11,7 +11,7 @@ const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div'
 const note = text => el('p', { class: 'note', text });
 
 function sheetTable() {
-  const sizes = isCarom() ? [note('3구와 4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
+  const sizes = isCarom() ? [note(prefs.mode === 'three' ? '3구는 포켓 없는 대대(284×142cm, 공 61.5mm)로 고정입니다.' : '4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
     : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); homePreview(); sheetTable(); }));
   openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
