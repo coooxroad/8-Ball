@@ -6,8 +6,17 @@ set -e
 cd "$(dirname "$0")"
 A=../app/src/main/assets
 mkdir -p dist "$A/fonts"
-# every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped
-script() { echo '<script>'; cat physics.js game.js drills.js puzzles.js highlights.js look.js scene.js sounds.js audio.js reel.js main.js | grep -v '^if (typeof module'; echo '</script>'; }
+# Every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped.
+# Two parts are folders of small files that share one scope, in file-name order:
+#   reel/  the body of createReel(d) - the reel's machinery, then one file per edit, then playing one
+#   app/   the app itself - what it shares first (00-state.js), then one file per screen or concern
+script() {
+  echo '<script>'
+  cat physics.js game.js drills.js puzzles.js highlights.js look.js scene.js sounds.js audio.js | grep -v '^if (typeof module'
+  echo 'function createReel(d) {'; cat reel/*.js; echo '}'
+  echo "(() => {"; echo "'use strict';"; cat app/*.js; echo '})();'
+  echo '</script>'
+}
 
 { cat head.html; script; } > dist/artifact.html
 
