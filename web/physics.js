@@ -92,7 +92,7 @@ function createPhysics(cfg) {
     const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // a hop too small to see is swallowed by the cloth
     w.ev = newEv();
   }
-  const JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
+  const CREEP = 0.18, JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
     if (b.z > 0 || b.vz > 0) {
@@ -122,8 +122,10 @@ function createPhysics(cfg) {
         b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx;
       }
     } else {
-      const sp = Math.hypot(b.vx, b.vy), dec = MU_R * G * h;
-      if (sp <= dec || sp < 0.004) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
+      // The cloth holds a rolling ball back by the same amount at any speed - except over the last stretch, where it lets go a
+      // little, so the ball trickles to rest instead of stopping as if it had been switched off.
+      const sp = Math.hypot(b.vx, b.vy), dec = MU_R * G * h * (sp < CREEP ? 0.35 + 0.65 * sp / CREEP : 1);
+      if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
     const dz = (2.5 * MU_SP * G / R) * h;
@@ -382,6 +384,8 @@ function createPhysics(cfg) {
     return [x, y];
   }
 
-  return { R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
+  // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
+  const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
+  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

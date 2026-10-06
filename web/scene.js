@@ -260,32 +260,26 @@ function createScene(canvas, app, PH) {
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
     if (iced) setCloth(clothI);
   }
-  /* Ice, for the table that is a sheet of it: deep blue-green underneath, pale where the light catches, with the white
-     scratches skates leave, a few cracks that fork, trapped bubbles and frost creeping in from the edges. */
+  /* Ice, for the table that is a sheet of it: one even blue, a few cracks that fork, trapped bubbles, a little frost at the edges. */
   const iceTex = (() => {
     const W2 = 1024, H2 = 512, c = mkCanvas(W2, H2), g = c.getContext('2d');
     let sd = 7; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
-    const base = g.createLinearGradient(0, 0, W2, H2); base.addColorStop(0, '#8fd3f4'); base.addColorStop(0.35, '#4fa9de'); base.addColorStop(0.7, '#86cdf2'); base.addColorStop(1, '#3f97d2');
-    g.fillStyle = base; g.fillRect(0, 0, W2, H2);
-    // depth: darker pools under the surface
-    for (let k = 0; k < 26; k++) { const x = rnd() * W2, y = rnd() * H2, r = 60 + rnd() * 170, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(16,84,150,${0.16 + rnd() * 0.18})`); gr.addColorStop(1, 'rgba(16,84,150,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
-    // and lighter, milky patches
-    for (let k = 0; k < 18; k++) { const x = rnd() * W2, y = rnd() * H2, r = 40 + rnd() * 120, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(255,255,255,${0.10 + rnd() * 0.14})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    // one even colour all over, only just lighter towards the middle
+    g.fillStyle = '#6fbde8'; g.fillRect(0, 0, W2, H2);
+    const mid = g.createRadialGradient(W2 / 2, H2 / 2, 0, W2 / 2, H2 / 2, W2 * 0.6); mid.addColorStop(0, 'rgba(255,255,255,.16)'); mid.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = mid; g.fillRect(0, 0, W2, H2);
     // cracks: a jagged line that forks, bright with a dark edge beside it
     const crack = (x, y, a, len, wd, depth) => {
       g.beginPath(); g.moveTo(x, y); const pts = [[x, y]];
       for (let d = 0; d < len; d += 14) { a += (rnd() - 0.5) * 0.7; x += Math.cos(a) * 14; y += Math.sin(a) * 14; g.lineTo(x, y); pts.push([x, y, a]); }
-      g.strokeStyle = 'rgba(20,80,130,.35)'; g.lineWidth = wd + 1.6; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = wd; g.stroke();
+      g.strokeStyle = 'rgba(20,80,130,.3)'; g.lineWidth = wd + 1.4; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = wd; g.stroke();
       if (depth > 0) for (const p of pts) if (p[2] != null && rnd() < 0.16) crack(p[0], p[1], p[2] + (rnd() < 0.5 ? 1 : -1) * (0.5 + rnd() * 0.6), len * (0.25 + rnd() * 0.3), wd * 0.6, depth - 1);
     };
     g.lineCap = g.lineJoin = 'round';
-    for (let k = 0; k < 7; k++) crack(rnd() * W2, rnd() * H2, rnd() * 6.28, 180 + rnd() * 320, 1.5 + rnd(), 2);
-    // skate scratches: long, faint, gently curved
-    for (let k = 0; k < 150; k++) { const x = rnd() * W2, y = rnd() * H2, a = rnd() * 6.28, l = 40 + rnd() * 260, b = (rnd() - 0.5) * 60; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l / 2 - Math.sin(a) * b, y + Math.sin(a) * l / 2 + Math.cos(a) * b, x + Math.cos(a) * l, y + Math.sin(a) * l); g.strokeStyle = `rgba(255,255,255,${0.10 + rnd() * 0.22})`; g.lineWidth = 0.6 + rnd() * 0.9; g.stroke(); }
-    // bubbles caught in it
-    for (let k = 0; k < 260; k++) { const x = rnd() * W2, y = rnd() * H2, r = 0.8 + rnd() * 2.6; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.4})`; g.fill(); g.beginPath(); g.arc(x + r * 0.3, y + r * 0.3, r, 0, 6.3); g.strokeStyle = 'rgba(30,100,150,.25)'; g.lineWidth = 0.6; g.stroke(); }
+    for (let k = 0; k < 5; k++) crack(W2 * (0.1 + 0.2 * k + rnd() * 0.1), rnd() * H2, rnd() * 6.28, 160 + rnd() * 260, 1.2 + rnd() * 0.8, 2);
+    // bubbles caught in it, spread evenly
+    for (let k = 0; k < 320; k++) { const x = rnd() * W2, y = rnd() * H2, r = 0.8 + rnd() * 2.4; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fillStyle = `rgba(255,255,255,${0.22 + rnd() * 0.35})`; g.fill(); }
     // frost round the edge
-    for (const [x0, y0, x1, y1] of [[0, 0, 0, 70], [0, H2, 0, H2 - 70], [0, 0, 90, 0], [W2, 0, W2 - 90, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
+    for (const [x0, y0, x1, y1] of [[0, 0, 0, 40], [0, H2, 0, H2 - 40], [0, 0, 50, 0], [W2, 0, W2 - 50, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
   })();
   let clothI = 0, iced = false;

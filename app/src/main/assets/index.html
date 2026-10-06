@@ -569,12 +569,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #badge .mb{width:16px;height:16px}
 #kindBox{display:flex;flex-direction:column;gap:8px;width:190px}
 #kindBox .seg button{height:34px;font-size:13.5px}
-#elRow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
-#elRow input{flex:1;min-width:0;accent-color:#8a4dff}
-#elRow b{font-family:var(--num);color:var(--fg);min-width:30px;text-align:right}
+#kindBox .lab{display:flex;align-items:baseline;gap:8px;padding:0}
+#kindBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
+#kindBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#8a4dff}
+#elPad{width:190px;height:112px;border-radius:14px;background:var(--seg);touch-action:none;display:block}
 #spinBtn{overflow:visible}
-#spinTag{position:absolute;left:50%;top:-11px;transform:translateX(-50%);font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
-#spinTag[data-k="2"]{background:#ff7a1a}
+#spinTag{position:absolute;right:0;top:-13px;font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.portrait #spinTag{right:auto;left:0}
 /* a run of wins: the card catches fire */
 .fire{--f:#ff4433;--f2:#ffb08a}
 .fire.f3{--f:#ffc21a;--f2:#fff0a8}.fire.f4{--f:#19d6a5;--f2:#b6ffe9}.fire.f5{--f:#9a55ff;--f2:#e2c8ff}
@@ -689,7 +690,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   <div id="spinPop" hidden>
     <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
     <div id="spinHint"></div>
-    <div id="kindBox"><div id="elRow"><span>큐 각도</span><input type="range" id="elRange" min="0" max="85" value="0"><b id="elVal">0°</b></div></div>
+    <div id="kindBox"><div class="lab">큐 세우기 <b id="elVal">0°</b><span id="elSay"></span></div><canvas id="elPad" aria-label="큐 각도"></canvas></div>
     <button class="btn flat" id="spinReset">가운데로</button>
   </div>
 
@@ -830,7 +831,7 @@ function createPhysics(cfg) {
     const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // a hop too small to see is swallowed by the cloth
     w.ev = newEv();
   }
-  const JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
+  const CREEP = 0.18, JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
     if (b.z > 0 || b.vz > 0) {
@@ -860,8 +861,10 @@ function createPhysics(cfg) {
         b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx;
       }
     } else {
-      const sp = Math.hypot(b.vx, b.vy), dec = MU_R * G * h;
-      if (sp <= dec || sp < 0.004) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
+      // The cloth holds a rolling ball back by the same amount at any speed - except over the last stretch, where it lets go a
+      // little, so the ball trickles to rest instead of stopping as if it had been switched off.
+      const sp = Math.hypot(b.vx, b.vy), dec = MU_R * G * h * (sp < CREEP ? 0.35 + 0.65 * sp / CREEP : 1);
+      if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
     const dz = (2.5 * MU_SP * G / R) * h;
@@ -1120,7 +1123,9 @@ function createPhysics(cfg) {
     return [x, y];
   }
 
-  return { R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
+  // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
+  const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
+  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
 }
 /* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball, three-ball and four-ball carom. No DOM in here. */
 function createGame(PH) {
@@ -2504,32 +2509,26 @@ function createScene(canvas, app, PH) {
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
     if (iced) setCloth(clothI);
   }
-  /* Ice, for the table that is a sheet of it: deep blue-green underneath, pale where the light catches, with the white
-     scratches skates leave, a few cracks that fork, trapped bubbles and frost creeping in from the edges. */
+  /* Ice, for the table that is a sheet of it: one even blue, a few cracks that fork, trapped bubbles, a little frost at the edges. */
   const iceTex = (() => {
     const W2 = 1024, H2 = 512, c = mkCanvas(W2, H2), g = c.getContext('2d');
     let sd = 7; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
-    const base = g.createLinearGradient(0, 0, W2, H2); base.addColorStop(0, '#8fd3f4'); base.addColorStop(0.35, '#4fa9de'); base.addColorStop(0.7, '#86cdf2'); base.addColorStop(1, '#3f97d2');
-    g.fillStyle = base; g.fillRect(0, 0, W2, H2);
-    // depth: darker pools under the surface
-    for (let k = 0; k < 26; k++) { const x = rnd() * W2, y = rnd() * H2, r = 60 + rnd() * 170, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(16,84,150,${0.16 + rnd() * 0.18})`); gr.addColorStop(1, 'rgba(16,84,150,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
-    // and lighter, milky patches
-    for (let k = 0; k < 18; k++) { const x = rnd() * W2, y = rnd() * H2, r = 40 + rnd() * 120, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(255,255,255,${0.10 + rnd() * 0.14})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    // one even colour all over, only just lighter towards the middle
+    g.fillStyle = '#6fbde8'; g.fillRect(0, 0, W2, H2);
+    const mid = g.createRadialGradient(W2 / 2, H2 / 2, 0, W2 / 2, H2 / 2, W2 * 0.6); mid.addColorStop(0, 'rgba(255,255,255,.16)'); mid.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = mid; g.fillRect(0, 0, W2, H2);
     // cracks: a jagged line that forks, bright with a dark edge beside it
     const crack = (x, y, a, len, wd, depth) => {
       g.beginPath(); g.moveTo(x, y); const pts = [[x, y]];
       for (let d = 0; d < len; d += 14) { a += (rnd() - 0.5) * 0.7; x += Math.cos(a) * 14; y += Math.sin(a) * 14; g.lineTo(x, y); pts.push([x, y, a]); }
-      g.strokeStyle = 'rgba(20,80,130,.35)'; g.lineWidth = wd + 1.6; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = wd; g.stroke();
+      g.strokeStyle = 'rgba(20,80,130,.3)'; g.lineWidth = wd + 1.4; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = wd; g.stroke();
       if (depth > 0) for (const p of pts) if (p[2] != null && rnd() < 0.16) crack(p[0], p[1], p[2] + (rnd() < 0.5 ? 1 : -1) * (0.5 + rnd() * 0.6), len * (0.25 + rnd() * 0.3), wd * 0.6, depth - 1);
     };
     g.lineCap = g.lineJoin = 'round';
-    for (let k = 0; k < 7; k++) crack(rnd() * W2, rnd() * H2, rnd() * 6.28, 180 + rnd() * 320, 1.5 + rnd(), 2);
-    // skate scratches: long, faint, gently curved
-    for (let k = 0; k < 150; k++) { const x = rnd() * W2, y = rnd() * H2, a = rnd() * 6.28, l = 40 + rnd() * 260, b = (rnd() - 0.5) * 60; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l / 2 - Math.sin(a) * b, y + Math.sin(a) * l / 2 + Math.cos(a) * b, x + Math.cos(a) * l, y + Math.sin(a) * l); g.strokeStyle = `rgba(255,255,255,${0.10 + rnd() * 0.22})`; g.lineWidth = 0.6 + rnd() * 0.9; g.stroke(); }
-    // bubbles caught in it
-    for (let k = 0; k < 260; k++) { const x = rnd() * W2, y = rnd() * H2, r = 0.8 + rnd() * 2.6; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.4})`; g.fill(); g.beginPath(); g.arc(x + r * 0.3, y + r * 0.3, r, 0, 6.3); g.strokeStyle = 'rgba(30,100,150,.25)'; g.lineWidth = 0.6; g.stroke(); }
+    for (let k = 0; k < 5; k++) crack(W2 * (0.1 + 0.2 * k + rnd() * 0.1), rnd() * H2, rnd() * 6.28, 160 + rnd() * 260, 1.2 + rnd() * 0.8, 2);
+    // bubbles caught in it, spread evenly
+    for (let k = 0; k < 320; k++) { const x = rnd() * W2, y = rnd() * H2, r = 0.8 + rnd() * 2.4; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fillStyle = `rgba(255,255,255,${0.22 + rnd() * 0.35})`; g.fill(); }
     // frost round the edge
-    for (const [x0, y0, x1, y1] of [[0, 0, 0, 70], [0, H2, 0, H2 - 70], [0, 0, 90, 0], [W2, 0, W2 - 90, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
+    for (const [x0, y0, x1, y1] of [[0, 0, 0, 40], [0, H2, 0, H2 - 40], [0, 0, 50, 0], [W2, 0, W2 - 50, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
   })();
   let clothI = 0, iced = false;
@@ -5206,7 +5205,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const box = $('#power'); let id = null;
   const read = e => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); };
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
-  box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); scene.invalidate(); });
+  box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null;
     const p = st.power;
@@ -5230,32 +5229,56 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
-    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI();
+    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI(); setKindUI();
     $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
     x /= 0.72; y /= 0.72; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
-    st.spin = { x, y }; setSpinUI(); scene.invalidate();
+    st.spin = { x, y }; setSpinUI(); if (st.el) setKindUI(); scene.invalidate();
   };
   let id = null;
   pad.addEventListener('pointerdown', e => { id = e.pointerId; try { pad.setPointerCapture(id); } catch (err) {} set(e); e.preventDefault(); });
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
   pad.addEventListener('pointerup', () => { id = null; }); pad.addEventListener('pointercancel', () => { id = null; });
   $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; setSpinUI(); setKindUI(); scene.invalidate(); });
-  // the cue raised: one angle. Hit hard it jumps; with side on it the ball curves; steep and with side, a masse
-  $('#elRange').addEventListener('input', e => {
-    if (!humanAiming()) { e.target.value = Math.round(st.el * 180 / Math.PI); return; }
-    const was = st.el; st.el = (+e.target.value) * Math.PI / 180; setKindUI(); scene.invalidate();
+  // The cue raised: one angle, set on a picture of the shot seen from the side - the ball on the cloth and the cue leaning
+  // over it. Dragging anywhere in the picture swings the cue to point at the finger.
+  const padEl = $('#elPad'); let eid = null;
+  const setEl = e => {
+    const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
+    a = Math.max(0, Math.min(85 * Math.PI / 180, a)); if (a < 0.06) a = 0;
+    const was = st.el; st.el = Math.round(a * 180 / Math.PI) * Math.PI / 180; setKindUI(); scene.invalidate();
     if (!was && st.el && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
-  });
+  };
+  padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
+  padEl.addEventListener('pointermove', e => { if (eid === e.pointerId) setEl(e); });
+  padEl.addEventListener('pointerup', () => { eid = null; }); padEl.addEventListener('pointercancel', () => { eid = null; });
 })();
 const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
+// what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
+function elSay() { if (!st.el) return ''; const h = game.P.hop(game.vOf(st.power > 0.03 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
 function setKindUI() {
-  const deg = Math.round(st.el * 180 / Math.PI), ok = trickOK();
-  $('#kindBox').hidden = !ok; $('#elRange').value = deg; $('#elVal').textContent = deg + '°';
-  const tag = $('#spinTag'); tag.hidden = !deg; tag.textContent = '큐 ' + deg + '°';
+  const deg = Math.round(st.el * 180 / Math.PI), ok = trickOK(), say = elSay();
+  $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
+  const tag = $('#spinTag'); tag.hidden = !deg; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
+  // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
+  const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;
+  const dpr = Math.min(3, window.devicePixelRatio || 1); cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const g = cv.getContext('2d'), dark = prefs.theme !== 'light', ink = dark ? '#e8ebf0' : '#1f2630', dim = dark ? 'rgba(255,255,255,.28)' : 'rgba(25,31,40,.25)';
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); const bx = 34, by = ch - 26, R = 15, a = st.el;
+  g.fillStyle = hex(CLOTHS[iceOn() && flow === match ? ICE : iceOn() ? 0 : prefs.cloth].felt); g.fillRect(0, by + R, cw, ch - by - R);
+  g.strokeStyle = dim; g.lineWidth = 1.5; g.setLineDash([3, 4]); g.beginPath(); g.arc(bx, by, 96, -Math.PI / 2, 0); g.stroke(); g.setLineDash([]);
+  g.fillStyle = dim; g.font = '600 10px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const d of [0, 30, 60, 90]) { const t = d * Math.PI / 180; g.beginPath(); g.moveTo(bx + Math.cos(t) * 90, by - Math.sin(t) * 90); g.lineTo(bx + Math.cos(t) * 102, by - Math.sin(t) * 102); g.stroke(); g.fillText(d + '°', bx + Math.cos(t) * 116 - (d === 0 ? 6 : 0), by - Math.sin(t) * 112 + (d === 90 ? 4 : 0)); }
+  const ball = g.createRadialGradient(bx - 5, by - 6, 2, bx, by, R); ball.addColorStop(0, '#ffffff'); ball.addColorStop(1, '#cfc8b6'); g.fillStyle = ball; g.beginPath(); g.arc(bx, by, R, 0, 6.3); g.fill();
+  const ca = Math.cos(a), sa = Math.sin(a), tx = bx + ca * (R + 2), ty = by - sa * (R + 2), ex = bx + ca * 150, ey = by - sa * 150, nx = sa, ny = ca, c = CUES[cueNow] || CUES[0];
+  const seg = (f0, f1, w0, w1, col) => { const x0 = tx + (ex - tx) * f0, y0 = ty + (ey - ty) * f0, x1 = tx + (ex - tx) * f1, y1 = ty + (ey - ty) * f1; g.fillStyle = col; g.beginPath(); g.moveTo(x0 + nx * w0, y0 + ny * w0); g.lineTo(x1 + nx * w1, y1 + ny * w1); g.lineTo(x1 - nx * w1, y1 - ny * w1); g.lineTo(x0 - nx * w0, y0 - ny * w0); g.fill(); };
+  seg(0, 0.03, 2, 2, hex(c.tip)); seg(0.03, 0.08, 2, 2.2, hex(c.ferrule)); seg(0.08, 0.6, 2.2, 3.4, hex(c.shaft)); seg(0.6, 1, 3.4, 4.6, hex(c.fore));
+  g.strokeStyle = '#8a4dff'; g.lineWidth = 2.5; g.beginPath(); g.arc(bx, by, 44, -a, 0); if (a) g.stroke();
+  g.fillStyle = ink; g.font = '700 11px Outfit, sans-serif'; g.textAlign = 'left'; if (!a) g.fillText('끌어서 큐를 세웁니다', bx + 30, by - 34);
 }
+
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 // Android back button: close whatever is on top; false means "nothing left, leave the app".
