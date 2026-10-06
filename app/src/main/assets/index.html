@@ -103,7 +103,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* ---------- home ---------- */
 #home{position:absolute;inset:0 0 0 96px;display:grid;grid-template-columns:minmax(0,1fr) 372px;grid-template-rows:minmax(0,1fr);pointer-events:none}
 #home>*{pointer-events:auto}   /* the table behind shows through the middle; everything else takes taps */
-.h-top{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
 .logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
@@ -111,7 +110,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
 [data-theme="light"] .logo .en{display:none}
 @media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
-.h-actions{margin-left:auto;display:flex;gap:8px}
 /* the rail: logo, the places to go, settings at the foot */
 .h-nav{position:absolute;left:0;top:0;bottom:0;width:96px;z-index:4;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:18px 8px 14px;background:var(--panel);border-right:1px solid var(--hair);box-shadow:var(--sh)}
 .h-nav .logo{flex-direction:column;gap:6px;margin-bottom:14px}
@@ -144,9 +142,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .pzsum b{font-family:var(--num);font-weight:var(--num-w);font-size:26px}
 .pzsum span{font-family:var(--num);color:var(--sub);font-size:16px}
 .pzsum small{display:block;font-size:12.5px;color:var(--sub)}
-.pzkind{display:flex;gap:6px;flex-wrap:wrap}
-.pzkind span{font-size:13px;padding:6px 11px;border-radius:999px;background:var(--seg);color:var(--sub)}
-.pzkind span.on{background:var(--fg);color:var(--bg);font-weight:700}
 .pzgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
 .pz{aspect-ratio:1;border-radius:10px;background:var(--seg);color:var(--fg);font-family:var(--num);font-weight:600;font-size:14px;border:2px solid transparent}
 .pz.done{background:#12b76a;color:#fff}
@@ -193,7 +188,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* narrow screens: one column that scrolls, the rail turned into a bar along the bottom */
 .compact #home{inset:0 0 62px 0;display:flex;flex-direction:column;overflow:auto;pointer-events:auto;background:var(--bg)}
-.compact #league{inset:0 0 62px 0}
+.compact #records{inset:0 0 62px 0}
 .compact .h-right{order:1;margin:14px 14px 0;overflow:visible;flex:none}
 .compact .h-mid{order:2;padding:14px 14px 18px}
 .compact .h-nav{top:auto;width:auto;right:0;height:62px;flex-direction:row;justify-content:space-around;padding:5px 6px 6px;border-right:0;border-top:1px solid var(--hair)}
@@ -443,39 +438,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
 @keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
 
-/* ---------- league ---------- */
-#league{position:absolute;inset:0 0 0 96px;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
+/* ---------- records ---------- */
+#records{position:absolute;inset:0 0 0 96px;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
 .lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
 .lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
-#lgBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-.lt{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r-card);box-shadow:var(--sh);overflow:hidden}
-.ltr{display:grid;grid-template-columns:var(--cols);align-items:center;gap:6px;padding:11px 18px 11px 16px;font-size:15.5px;position:relative;color:var(--fg)}
-.ltr+.ltr,.fx+.fx{border-top:1px solid var(--hair)}
-.ltr.hd{font-size:11.5px;color:var(--sub);padding-block:9px}
-.ltr.hd span{font-family:inherit!important;font-weight:inherit!important}
-.ltr.top::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
-.ltr .pos{font-family:var(--num);color:var(--sub);font-size:14px}
-.ltr .nm{font-weight:var(--w-name);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ltr .n{font-family:var(--num);font-weight:var(--num-w);text-align:center}
-.ltr .pts{font-weight:700}
-.ltr .fc{text-align:right}
+#recBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .form{display:flex;gap:4px;justify-content:flex-end}
 .form i{width:20px;height:20px;border-radius:50%;font-style:normal;font-size:10.5px;font-weight:700;display:grid;place-items:center;color:#fff}
 .form .w{background:#1f9d6b}.form .l{background:var(--foul)}
-.rd{font-size:12px;color:var(--sub);padding:8px 4px 0}
-.fx{display:grid;grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);align-items:center;gap:14px;padding:9px 18px;font-size:16px}
-.fx .a{text-align:right}.fx .a,.fx .b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fx .sc{font-family:var(--num);font-weight:var(--num-w);font-size:18px;text-align:center}
-.fx .win{font-weight:700}.fx .lose{color:var(--sub)}
-.fx .btn{height:36px;padding:0;font-size:14px}.fx .btn.cta{height:36px;font-size:14px}
-.champ{display:flex;align-items:baseline;gap:12px;padding:16px 20px}
-.champ b{font-size:24px;font-weight:var(--w-title)}.champ .k{font-size:13px;color:var(--sub)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chipn{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:7px 7px 7px 15px;font-size:15px}
-.chipn button{width:26px;height:26px;border-radius:50%;background:var(--opt);color:var(--sub);font-size:16px;line-height:1}
-.addrow .txt{flex:3;font-size:17px;padding:9px 14px}.addrow .btn{flex:1}
-#league .btn.cta{margin-top:4px}
-@media (max-width:560px){.ltr .fc,.ltr .xs{display:none}.ltr{grid-template-columns:26px minmax(0,1fr) 34px 34px 34px 44px!important}}
 
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
@@ -525,10 +495,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
 .pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
-.stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.stat .k{font-size:13px;color:var(--sub)}
-.stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
-.stat .v span{font-size:20px;color:var(--sub);margin-left:8px}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
 .r-btns{display:flex;gap:12px;width:100%;max-width:760px;margin-top:4px;margin-bottom:auto;flex:none}
 #result>*{flex:none}
@@ -555,7 +521,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---- 2.0 ---- */
-#arcBox{display:flex;flex-direction:column;gap:6px}
 #resumeBox{display:flex;gap:8px;align-items:stretch}
 .resume{flex:1;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:baseline;text-align:left;padding:11px 14px;border-radius:14px;background:var(--sel-bg);border:2px solid var(--sel-bd)}
 .resume .k{grid-row:1/3;align-self:center;font-size:12.5px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;padding:5px 10px}
@@ -594,7 +559,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .prow.fire .rc{color:var(--f);font-weight:700}
 .prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
 @keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
-#league .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
+#records .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
 
 /* puzzle stages */
 .pzsum b.st{color:#f5a400}
@@ -715,11 +680,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </div>
   <input type="file" id="songFile" accept="audio/*" multiple hidden>
 
-  <section id="league" hidden>
-    <header class="lg-top">
-      <h1 id="lgTitle">리그</h1>
-    </header>
-    <div id="lgBody"></div>
+  <section id="records" hidden>
+    <header class="lg-top"><h1>전적</h1></header>
+    <div id="recBody"></div>
   </section>
 
   <section id="result" hidden>
@@ -800,11 +763,11 @@ function createPhysics(cfg) {
   function makeWorld(n) {
     const balls = [];
     for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls, ice: w.ice };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice };
   }
 
   function place(w, id, x, y, rnd) {
@@ -886,11 +849,8 @@ function createPhysics(cfg) {
     }
   }
 
-  // A barricade: a straight bar from (x0,y0) to (x1,y1), r thick either side of its line. Balls bounce off it as off a cushion.
-  function wall(x0, y0, x1, y1, r) { const l = Math.hypot(x1 - x0, y1 - y0); return { ax: x0, ay: y0, bx: x1, by: y1, len: l, tx: (x1 - x0) / l, ty: (y1 - y0) / l, r: r == null ? 0.012 : r, wall: true }; }
-
   function hitSeg(w, b, s) {
-    const R = RB + (s.r || 0);                                  // a bar with thickness is met that much sooner
+    const R = RB;
     let u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty;
     u = u < 0 ? 0 : u > s.len ? s.len : u;
     const cx = s.ax + s.tx * u, cy = s.ay + s.ty * u;
@@ -918,8 +878,8 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
-    if (!s.wall && b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
-    if (!s.wall && b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
+    if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
+    if (b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
@@ -950,7 +910,6 @@ function createPhysics(cfg) {
     }
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
-      if (w.walls && b.z < 0.046 && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
         if (b.z > CLEAR) {
           // over the cushion: once it is past the rail it is gone
@@ -1040,8 +999,8 @@ function createPhysics(cfg) {
       const t = rayCircle(ox, oy, dx, dy, b.x, b.y, 2 * R);
       if (t < best.t) best = { t, type: 'ball', ball: b.id };
     }
-    for (const s of w.walls ? SEGS.concat(w.walls) : SEGS) {
-      const R = RB + (s.r || 0);
+    for (const s of SEGS) {
+      const R = RB;
       for (const sg of [1, -1]) {
         const px = s.ax - s.ty * R * sg, py = s.ay + s.tx * R * sg;
         const den = dx * s.ty - dy * s.tx;
@@ -1110,7 +1069,6 @@ function createPhysics(cfg) {
       if (!b.on || b.id === skipId) continue;
       if ((b.x - x) ** 2 + (b.y - y) ** 2 < (2 * R + 0.0008) ** 2) return false;
     }
-    for (const q of w.walls || []) { const u = Math.max(0, Math.min(q.len, (x - q.ax) * q.tx + (y - q.ay) * q.ty)); if (Math.hypot(x - q.ax - q.tx * u, y - q.ay - q.ty * u) < R + q.r + 0.002) return false; }
     return true;
   }
 
@@ -1125,7 +1083,7 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
+  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
 }
 /* Rules, turn flow, statistics and the computer player for 8-ball, 9-ball, three-ball and four-ball carom. No DOM in here. */
 function createGame(PH) {
@@ -1333,7 +1291,7 @@ function createGame(PH) {
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
-    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true, goal: 'score',
+    tens: false, finish: false, potTray: false, ice: false, masse: true, goal: 'score',
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -1346,23 +1304,9 @@ function createGame(PH) {
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     g.mode.setup(g, opts.rnd || Math.random);
-    g.world.ice = g.ice; g.bars = opts.bars ? makeBars(opts.rnd || Math.random) : null; g.setBars();
+    g.world.ice = g.ice;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
-  // Arcade: two or three barricades standing on the cloth, clear of where the balls start and of the line of the break.
-  function makeBars(rnd) {
-    const { HL, HW, R } = g.P, out = [];
-    for (let k = 0; k < 60 && out.length < 3; k++) {
-      const cx = (rnd() - 0.5) * HL * 1.1, cy = (0.2 + rnd() * (HW - 0.38)) * (out.length % 2 ? -1 : 1), a = (rnd() - 0.5) * 2.2, l = 0.13 + rnd() * 0.1;
-      const q = [cx - Math.cos(a) * l, cy - Math.sin(a) * l, cx + Math.cos(a) * l, cy + Math.sin(a) * l].map(v => Math.round(v * 1000) / 1000), s = g.P.wall(q[0], q[1], q[2], q[3]);
-      const far = (x, y, min) => { const u = Math.max(0, Math.min(s.len, (x - s.ax) * s.tx + (y - s.ay) * s.ty)); return Math.hypot(x - s.ax - s.tx * u, y - s.ay - s.ty * u) > min; };
-      if (Math.abs(q[1]) > HW - 0.13 || Math.abs(q[3]) > HW - 0.13 || Math.abs(q[1]) < 0.12 || Math.abs(q[3]) < 0.12 || q[1] * q[3] < 0) continue;
-      if (!g.world.balls.every(b => !b.on || far(b.x, b.y, 3.2 * R)) || out.some(o => Math.hypot((o[0] + o[2]) / 2 - cx, (o[1] + o[3]) / 2 - cy) < 0.4)) continue;
-      out.push(q);
-    }
-    return out;
-  }
-  g.setBars = () => { g.world.walls = g.bars && g.bars.length ? g.bars.map(q => g.P.wall(q[0], q[1], q[2], q[3])) : null; };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
   g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
@@ -1694,7 +1638,7 @@ function createGame(PH) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
-    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, bars: g.bars, masse: g.masse,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -1704,7 +1648,7 @@ function createGame(PH) {
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
     g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
     g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
-    g.ice = !!d.ice; g.world.ice = g.ice; g.bars = d.bars || null; g.setBars(); g.masse = d.masse !== false;
+    g.ice = !!d.ice; g.world.ice = g.ice; g.masse = d.masse !== false;
     return true;
   };
   return g;
@@ -2022,52 +1966,14 @@ function createPuzzles() {
   ];
   return { list, STAGES, byId: id => list.find(p => p.id === id), of: s => list.filter(p => p.stage === s) };
 }
-/* League: everyone plays everyone, results make a table. Plain data in, plain data out; no DOM in here.
-   league = { mode, target, names: [...], fx: [{ r: round, a, b, w: null | 0 | 1, sa, sb }] }   (a, b: indexes into names; w: which of the two won) */
-function createLeague() {
-  const WIN_PTS = 3;
-  // Round-robin by the circle method: one player stays put, the rest rotate. An odd count gets a rest slot.
-  function fixtures(n, legs) {
-    const ids = []; for (let i = 0; i < n; i++) ids.push(i);
-    if (n % 2) ids.push(-1);
-    const m = ids.length, out = [];
-    for (let leg = 0; leg < (legs || 1); leg++) for (let r = 0; r < m - 1; r++) {
-      for (let k = 0; k < m / 2; k++) {
-        const x = ids[k], y = ids[m - 1 - k]; if (x < 0 || y < 0) continue;
-        const swap = (r + k + leg) % 2 === 1;                    // alternate who breaks
-        out.push({ r: leg * (m - 1) + r + 1, a: swap ? y : x, b: swap ? x : y, w: null, sa: 0, sb: 0 });
-      }
-      ids.splice(1, 0, ids.pop());
-    }
-    return out;
-  }
-  function create(names, mode, target, legs) { return { mode, target: target || 10, names: names.slice(), fx: fixtures(names.length, legs) }; }
-  // rows of the table, best first: points, then wins, then the result between the two, then fewer games played
-  function standings(lg) {
-    const rows = lg.names.map((name, i) => ({ i, name, p: 0, w: 0, l: 0, pts: 0, form: [] }));
-    for (const f of lg.fx) {
-      if (f.w == null) continue;
-      const win = rows[f.w === 0 ? f.a : f.b], lose = rows[f.w === 0 ? f.b : f.a];
-      win.p++; win.w++; win.pts += WIN_PTS; win.form.push('W'); lose.p++; lose.l++; lose.form.push('L');
-    }
-    const beat = (x, y) => lg.fx.some(f => f.w != null && ((f.a === x && f.b === y && f.w === 0) || (f.a === y && f.b === x && f.w === 1)));
-    rows.sort((x, y) => y.pts - x.pts || y.w - x.w || (beat(x.i, y.i) ? -1 : beat(y.i, x.i) ? 1 : 0) || x.l - y.l || x.i - y.i);
-    rows.forEach((r, k) => { r.pos = k + 1; r.form = r.form.slice(-5); });
-    return rows;
-  }
-  const next = lg => lg.fx.findIndex(f => f.w == null);            // -1 when every game has been played
-  const done = lg => lg.fx.every(f => f.w != null);
-  function record(lg, i, winner, sa, sb) { const f = lg.fx[i]; f.w = winner; f.sa = sa || 0; f.sb = sb || 0; }
-  return { create, fixtures, standings, next, done, record, WIN_PTS };
-}
 /* Picking the best shot of a match and preparing it for a replay. A shot is replayed by putting the balls back
    exactly as they were and striking again: the physics is deterministic, so nothing else needs to be stored.
    No DOM in here. */
 function createHighlights() {
   // everything the physics depends on, for every ball
-  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, walls: w.walls || null, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
+  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
   function restore(w, s) {
-    w.cue = s.cue; w.ice = !!s.ice; w.walls = s.walls || null;
+    w.cue = s.cue; w.ice = !!s.ice;
     s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -2510,7 +2416,8 @@ function createScene(canvas, app, PH) {
     if (iced) setCloth(clothI);
   }
   /* Ice, for the table that is a sheet of it: one even blue, a few cracks that fork, trapped bubbles, a little frost at the edges. */
-  const iceTex = (() => {
+  let iceTex = null;
+  const makeIce = () => {
     const W2 = 1024, H2 = 512, c = mkCanvas(W2, H2), g = c.getContext('2d');
     let sd = 7; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
     // one even colour all over, only just lighter towards the middle
@@ -2530,11 +2437,12 @@ function createScene(canvas, app, PH) {
     // frost round the edge
     for (const [x0, y0, x1, y1] of [[0, 0, 0, 40], [0, H2, 0, H2 - 40], [0, 0, 50, 0], [W2, 0, W2 - 50, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
-  })();
+  };
   let clothI = 0, iced = false;
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice;
     if (iced) {
+      if (!iceTex) iceTex = makeIce();
       // the picture is stretched once over the whole bed (the bed's texture coordinates are metres from the middle)
       iceTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); iceTex.offset.set(0.5, 0.5);
       feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
@@ -2770,29 +2678,7 @@ function createScene(canvas, app, PH) {
   function fly(P, e) { falls.push({ id: e.id, x: e.x, y: e.y, z: P.R + (e.z || 0), vx: e.vx, vy: e.vy, vz: e.vz || 0, p: null }); }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
-  /* barricades (puzzles): striped bars standing on the cloth, kept in step with the world's list of walls */
-  const wallGrp = new THREE.Group(); scene.add(wallGrp); let wallRef = null;
-  const wallMat = (() => {
-    const c = mkCanvas(64, 64), g = c.getContext('2d'); g.fillStyle = '#f4efe2'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#e03a2f';
-    g.beginPath(); g.moveTo(0, 64); g.lineTo(32, 64); g.lineTo(64, 32); g.lineTo(64, 0); g.lineTo(0, 64); g.fill(); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 32); g.lineTo(32, 0); g.fill();
-    const t = tex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55, metalness: 0, envMapIntensity: 0.4 });
-  })();
-  const wallShade = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.26, depthWrite: false });
-  function syncWalls(list) {
-    wallRef = list;
-    while (wallGrp.children.length) { const m = wallGrp.children.pop(); m.geometry.dispose(); }
-    for (const s of list || []) {
-      const L = s.len + 2 * s.r, H = 0.046, geo = new THREE.BoxGeometry(L, 2 * s.r, H), uv = geo.attributes.uv;
-      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L / 0.09);          // stripes the same size on every bar
-      const m = new THREE.Mesh(geo, wallMat); m.position.set((s.ax + s.bx) / 2, (s.ay + s.by) / 2, H / 2); m.rotation.z = Math.atan2(s.ty, s.tx); wallGrp.add(m);
-      const sh = new THREE.Mesh(new THREE.PlaneGeometry(L + 0.03, 2 * s.r + 0.04), wallShade); sh.position.set((s.ax + s.bx) / 2 + 0.006, (s.ay + s.by) / 2 - 0.008, 0.0012); sh.rotation.z = m.rotation.z; sh.renderOrder = 1; wallGrp.add(sh);
-    }
-    dirty = 3;
-  }
-
   function frame(v, dt) {
-    if (v.game.world.walls !== wallRef) syncWalls(v.game.world.walls);
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }
@@ -4152,7 +4038,7 @@ function createReel(d) {
      physics.js  how balls move            game.js    rules, turns, computer player
      drills.js   practice layouts          scene.js   drawing
      audio.js    sound                     look.js    colours and designs (data)
-     league.js   fixtures and tables        highlights.js, reel.js   best shot of a match and its replay
+     highlights.js, reel.js   the shots of a match worth watching again, and their replays
    What happens around a shot depends on what is being played, so that part lives in three small "flows"
    (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
@@ -4177,12 +4063,12 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null,
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
     pz: null, suji: {}, sujiAI: 5, finish: false, masse: true, cues: null, lab: null, v: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
-  if (!p.puz || typeof p.puz !== 'object') p.puz = { cur: 1, done: {}, best: 0 };
+  delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
@@ -4202,10 +4088,7 @@ const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pocke
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
-const league = createLeague();
 const highlights = createHighlights();
-let lg = store.get('league', null);                       // the league in progress, if any
-const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
@@ -4218,7 +4101,7 @@ const SUJI = [3, 5, 8, 10, 15, 20];
 const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result | league | reel
+   screen: home | play | result | records | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
 const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
@@ -4316,15 +4199,15 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'league'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
+  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'records'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   paintNav(); layout();
 }
-// which place on the rail is lit: the league and the records have their own, otherwise play or practice
-function paintNav() { const v = st.screen === 'league' ? lgTab : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
+// which place on the rail is lit
+function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
@@ -4640,7 +4523,7 @@ function resume(d) {
   st.phase = 'idle'; st.auto = null; st.afterHold = null; scene.clearFalls();
   if (!game.restore(d.game)) { store.set('save', null); return paintResume(); }
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
-  match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target, fix: null,
+  match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
     targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, masse: game.masse };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
@@ -4728,11 +4611,11 @@ function drawShot(cv, shot) {
 /* ================= flow: a match between two players (or one and the computer) ================= */
 const match = {
   quiet: false, save: true,
-  ctx: null,                                              // who is playing what; fix: the league game this is, if any
+  ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
-    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null,
+    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' && LAB.suji ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn(), masse: LAB.masse && prefs.masse };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
@@ -4771,9 +4654,6 @@ const match = {
     const rw = recOf(pw.name), rl = recOf(pl.name);
     rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
     rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
-    const fix = match.ctx ? match.ctx.fix : null, target = !!game.mode.target;
-    if (fix != null && lg && lg.fx[fix]) { league.record(lg, fix, w, target ? game.players[0].score : w === 0 ? 1 : 0, target ? game.players[1].score : w === 1 ? 1 : 0); saveLeague(); }
-    $('#againBtn').textContent = fix != null ? '리그로' : '한 판 더';
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     $('#rTitle').textContent = pw.name + ' 승리';
@@ -4919,7 +4799,7 @@ const puzzle = {
   put(z) {
     const P = game.P, w = game.world, n = Math.hypot(z.balls[2][0] - z.balls[0][0], z.balls[2][1] - z.balls[0][1]) <= Math.hypot(z.balls[3][0] - z.balls[0][0], z.balls[3][1] - z.balls[0][1]) ? 2 : 3;
     z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
-    w.walls = null; w.cue = 0; game.goal = puzzle.stage(z).goal;
+    w.cue = 0; game.goal = puzzle.stage(z).goal;
     scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
   start(id) {
@@ -4995,15 +4875,8 @@ function playDemo(shot, opts) {
   beginTurn(true);
 }
 
-/* ================= league and records (laid out like a football league table) ================= */
-let lgTab = 'league', lgDraft = null;
-const cell = (cls, text) => el('span', { class: cls, text: String(text) });
+/* ================= records: wins and losses by name ================= */
 const formChips = form => el('span', { class: 'form fc' }, (form || []).map(f => el('i', { class: f === 'W' ? 'w' : 'l', text: f === 'W' ? '승' : '패' })));
-// head: [[label, class]], rows: arrays of cells (text, or a ready element)
-function leagueTable(cols, head, rows, topCount) {
-  const mk = (cells, cls) => el('div', { class: 'ltr ' + cls, style: '--cols:' + cols }, cells.map((c, k) => c instanceof Node ? c : cell(head[k][1], c)));
-  return el('div', { class: 'lt' }, [mk(head.map(h => h[0]), 'hd')].concat(rows.map((r, k) => mk(r, k < (topCount || 0) ? 'top' : ''))));
-}
 /* A card on a run of wins burns: one flame the shape of the card, round its whole edge, drawn afresh every frame.
    The edge is walked point by point; at each point the fire stands as tall as a slowly drifting noise says, leaning upwards
    as fire does - long over the top, licking up the sides, low under the bottom. Three layers of it, outer colour to white heat. */
@@ -5013,7 +4886,7 @@ const fnoise = (() => { const T = new Float32Array(512); let sd = 99; for (let i
   return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); const a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1); return a + (b - a) * sx + (c - a + (a - b + d - c) * sx) * sy; }; })();
 let flameRaf = 0;
 function flames(now) {
-  flameRaf = 0; const list = document.querySelectorAll('#league canvas.flame'); if (!list.length || st.screen !== 'league') return;
+  flameRaf = 0; const list = document.querySelectorAll('#records canvas.flame'); if (!list.length || st.screen !== 'records') return;
   const t = now / 1000, dpr = Math.min(2, window.devicePixelRatio || 1), PAD = 34;
   for (const cv of list) {
     const card = cv.nextElementSibling, w = card.offsetWidth, h = card.offsetHeight, W = w + 2 * PAD, H = h + 2 * PAD; if (!w) continue;
@@ -5048,41 +4921,29 @@ function flames(now) {
   flameRaf = requestAnimationFrame(flames);
 }
 const lightFlames = () => { if (!flameRaf && LAB.fire) flameRaf = requestAnimationFrame(flames); };
-function showLeague() { show('league'); st.phase = 'idle'; flow = null; paintLeague(); $('#league').scrollTop = 0; }
-function paintLeague() {
-  $('#lgTitle').textContent = lgTab === 'all' ? '전적' : '리그'; paintNav();
-  const body = $('#lgBody'); body.textContent = '';
-  const add = (...kids) => { for (const k of kids) if (k) body.appendChild(k); };
-  if (lgTab === 'all') {
-    const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
-    if (!names.length) return add(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.'));
-    // one card a player; whoever is on a run of wins has a card on fire
-    add(el('div', { class: 'rcards' }, names.map((n, k) => { const r = recOf(n);
-      const card = el('div', { class: 'rcard' + fireOf(r.streak) }, [el('span', { class: 'pos', text: k + 1 }),
-        el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
-        formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]);
-      return el('div', { class: 'rwrap' }, [fireOf(r.streak) ? el('canvas', { class: 'flame', 'data-n': Math.min(5, r.streak) }) : null, card]); })),
-      flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintLeague(); }));
-    lightFlames();
-    return;
-  }
-  // The league is not built yet: this shows what it will look like, with made-up names and numbers.
-  add(el('div', { class: 'champ panel' }, [el('span', { class: 'k', text: '예시 화면' }), el('b', { text: '브론즈 리그 · 1주차' }), el('span', { class: 'k', text: '준비 중' })]));
-  const demo = [['한결', 9, 8, 1], ['서윤', 9, 7, 2], [prefs.names[0], 8, 6, 2], ['도현', 9, 5, 4], ['지안', 8, 4, 4], ['민재', 9, 3, 6], ['하린', 8, 2, 6], ['태오', 8, 1, 7]];
-  add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 52px',
-    [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승점', 'n pts']],
-    demo.map((r, k) => [k + 1, r[0], r[1], r[2], r[3], r[2] * league.WIN_PTS]), 3));
-  add(note('위 표는 실제 기록이 아닌 예시입니다. 위에서 세 명은 다음 리그로 올라가는 자리입니다. 진짜 리그는 나중에 열립니다. 지금까지의 실제 승패는 "전적"에 있습니다.'));
+function showRecords() { show('records'); st.phase = 'idle'; flow = null; paintRecords(); $('#records').scrollTop = 0; }
+function paintRecords() {
+  paintNav(); const body = $('#recBody'); body.textContent = '';
+  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
+  if (!names.length) { body.appendChild(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.')); return; }
+  // one card a player; whoever is on a run of wins has a card on fire
+  body.appendChild(el('div', { class: 'rcards' }, names.map((n, k) => { const r = recOf(n);
+    const card = el('div', { class: 'rcard' + fireOf(r.streak) }, [el('span', { class: 'pos', text: k + 1 }),
+      el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
+      formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]);
+    return el('div', { class: 'rwrap' }, [fireOf(r.streak) ? el('canvas', { class: 'flame', 'data-n': Math.min(5, r.streak) }) : null, card]); })));
+  body.appendChild(flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintRecords(); }));
+  lightFlames();
 }
 
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-// the rail: play and practice change what the panel offers; league and records are places of their own; settings is a sheet
+// the rail: play, puzzles and lessons change what the panel offers; records is a place of its own; settings is a sheet
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('.nv'); if (!b) return; SND.init(); SND.tap();
   const v = b.dataset.v;
   if (v === 'set') return sheetSettings();
-  if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
+  if (v === 'all') return showRecords();
   const game4 = m => game.MODES[m] && m !== 'practice' && m !== 'puzzle4';
   if ((v === 'practice' || v === 'puzzle') && prefs.mode !== v) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = v; }
   else if (v === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
@@ -5100,7 +4961,7 @@ function setView3D(on) {
 }
 press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else if (prefs.mode === 'puzzle') puzzle.start(); else match.start(0); });
-press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
+press('#againBtn', () => match.start(st.lastLoser == null ? 0 : st.lastLoser));
 press('#homeBtn', () => goHome());
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
@@ -5286,7 +5147,7 @@ window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
   if (st.screen === 'reel') { reel.skip(); return true; }
-  if (st.screen === 'result' || st.screen === 'league') { goHome(st.screen === 'league'); return true; }
+  if (st.screen === 'result' || st.screen === 'records') { goHome(st.screen === 'records'); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };
@@ -5358,23 +5219,17 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, fix: match.ctx ? match.ctx.fix : null, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
   store.set('save', d);
-  try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
-function start(data) {
-  SND.song.load();
-  if (!(data && data.v === 2)) data = store.get('save', null);
-  $('#fps').hidden = !prefs.fps;
-  if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
-  // a game left unfinished waits on the first screen as a card to carry on with
-  goHome(true);
+function start() {
+  SND.song.load(); $('#fps').hidden = !prefs.fps;
+  goHome(true);                                             // a game left unfinished waits on the first screen as a card to carry on with
   if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
-const hot = window.claude && window.claude.hot;
-if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+start();
 })();
 </script>
 </body></html>

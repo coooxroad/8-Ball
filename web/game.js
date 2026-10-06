@@ -204,7 +204,7 @@ function createGame(PH) {
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
-    tens: false, finish: false, potTray: false, ice: false, bars: null, masse: true, goal: 'score',
+    tens: false, finish: false, potTray: false, ice: false, masse: true, goal: 'score',
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -217,23 +217,9 @@ function createGame(PH) {
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     g.mode.setup(g, opts.rnd || Math.random);
-    g.world.ice = g.ice; g.bars = opts.bars ? makeBars(opts.rnd || Math.random) : null; g.setBars();
+    g.world.ice = g.ice;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
-  // Arcade: two or three barricades standing on the cloth, clear of where the balls start and of the line of the break.
-  function makeBars(rnd) {
-    const { HL, HW, R } = g.P, out = [];
-    for (let k = 0; k < 60 && out.length < 3; k++) {
-      const cx = (rnd() - 0.5) * HL * 1.1, cy = (0.2 + rnd() * (HW - 0.38)) * (out.length % 2 ? -1 : 1), a = (rnd() - 0.5) * 2.2, l = 0.13 + rnd() * 0.1;
-      const q = [cx - Math.cos(a) * l, cy - Math.sin(a) * l, cx + Math.cos(a) * l, cy + Math.sin(a) * l].map(v => Math.round(v * 1000) / 1000), s = g.P.wall(q[0], q[1], q[2], q[3]);
-      const far = (x, y, min) => { const u = Math.max(0, Math.min(s.len, (x - s.ax) * s.tx + (y - s.ay) * s.ty)); return Math.hypot(x - s.ax - s.tx * u, y - s.ay - s.ty * u) > min; };
-      if (Math.abs(q[1]) > HW - 0.13 || Math.abs(q[3]) > HW - 0.13 || Math.abs(q[1]) < 0.12 || Math.abs(q[3]) < 0.12 || q[1] * q[3] < 0) continue;
-      if (!g.world.balls.every(b => !b.on || far(b.x, b.y, 3.2 * R)) || out.some(o => Math.hypot((o[0] + o[2]) / 2 - cx, (o[1] + o[3]) / 2 - cy) < 0.4)) continue;
-      out.push(q);
-    }
-    return out;
-  }
-  g.setBars = () => { g.world.walls = g.bars && g.bars.length ? g.bars.map(q => g.P.wall(q[0], q[1], q[2], q[3])) : null; };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
   g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
@@ -565,7 +551,7 @@ function createGame(PH) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
-    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, bars: g.bars, masse: g.masse,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -575,7 +561,7 @@ function createGame(PH) {
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
     g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
     g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
-    g.ice = !!d.ice; g.world.ice = g.ice; g.bars = d.bars || null; g.setBars(); g.masse = d.masse !== false;
+    g.ice = !!d.ice; g.world.ice = g.ice; g.masse = d.masse !== false;
     return true;
   };
   return g;

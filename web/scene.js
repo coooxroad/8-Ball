@@ -261,7 +261,8 @@ function createScene(canvas, app, PH) {
     if (iced) setCloth(clothI);
   }
   /* Ice, for the table that is a sheet of it: one even blue, a few cracks that fork, trapped bubbles, a little frost at the edges. */
-  const iceTex = (() => {
+  let iceTex = null;
+  const makeIce = () => {
     const W2 = 1024, H2 = 512, c = mkCanvas(W2, H2), g = c.getContext('2d');
     let sd = 7; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
     // one even colour all over, only just lighter towards the middle
@@ -281,11 +282,12 @@ function createScene(canvas, app, PH) {
     // frost round the edge
     for (const [x0, y0, x1, y1] of [[0, 0, 0, 40], [0, H2, 0, H2 - 40], [0, 0, 50, 0], [W2, 0, W2 - 50, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
-  })();
+  };
   let clothI = 0, iced = false;
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice;
     if (iced) {
+      if (!iceTex) iceTex = makeIce();
       // the picture is stretched once over the whole bed (the bed's texture coordinates are metres from the middle)
       iceTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); iceTex.offset.set(0.5, 0.5);
       feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
@@ -521,29 +523,7 @@ function createScene(canvas, app, PH) {
   function fly(P, e) { falls.push({ id: e.id, x: e.x, y: e.y, z: P.R + (e.z || 0), vx: e.vx, vy: e.vy, vz: e.vz || 0, p: null }); }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
-  /* barricades (puzzles): striped bars standing on the cloth, kept in step with the world's list of walls */
-  const wallGrp = new THREE.Group(); scene.add(wallGrp); let wallRef = null;
-  const wallMat = (() => {
-    const c = mkCanvas(64, 64), g = c.getContext('2d'); g.fillStyle = '#f4efe2'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#e03a2f';
-    g.beginPath(); g.moveTo(0, 64); g.lineTo(32, 64); g.lineTo(64, 32); g.lineTo(64, 0); g.lineTo(0, 64); g.fill(); g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 32); g.lineTo(32, 0); g.fill();
-    const t = tex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55, metalness: 0, envMapIntensity: 0.4 });
-  })();
-  const wallShade = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.26, depthWrite: false });
-  function syncWalls(list) {
-    wallRef = list;
-    while (wallGrp.children.length) { const m = wallGrp.children.pop(); m.geometry.dispose(); }
-    for (const s of list || []) {
-      const L = s.len + 2 * s.r, H = 0.046, geo = new THREE.BoxGeometry(L, 2 * s.r, H), uv = geo.attributes.uv;
-      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L / 0.09);          // stripes the same size on every bar
-      const m = new THREE.Mesh(geo, wallMat); m.position.set((s.ax + s.bx) / 2, (s.ay + s.by) / 2, H / 2); m.rotation.z = Math.atan2(s.ty, s.tx); wallGrp.add(m);
-      const sh = new THREE.Mesh(new THREE.PlaneGeometry(L + 0.03, 2 * s.r + 0.04), wallShade); sh.position.set((s.ax + s.bx) / 2 + 0.006, (s.ay + s.by) / 2 - 0.008, 0.0012); sh.rotation.z = m.rotation.z; sh.renderOrder = 1; wallGrp.add(sh);
-    }
-    dirty = 3;
-  }
-
   function frame(v, dt) {
-    if (v.game.world.walls !== wallRef) syncWalls(v.game.world.walls);
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }

@@ -2,7 +2,7 @@
      physics.js  how balls move            game.js    rules, turns, computer player
      drills.js   practice layouts          scene.js   drawing
      audio.js    sound                     look.js    colours and designs (data)
-     league.js   fixtures and tables        highlights.js, reel.js   best shot of a match and its replay
+     highlights.js, reel.js   the shots of a match worth watching again, and their replays
    What happens around a shot depends on what is being played, so that part lives in three small "flows"
    (match, practice, demo) with the same handful of methods. The shot pipeline below never asks which one is active. */
 (() => {
@@ -27,12 +27,12 @@ const TABLES = [
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
-    guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3, puz: null,
+    guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
     pz: null, suji: {}, sujiAI: 5, finish: false, masse: true, cues: null, lab: null, v: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
-  if (!p.puz || typeof p.puz !== 'object') p.puz = { cur: 1, done: {}, best: 0 };
+  delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
@@ -52,10 +52,7 @@ const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pocke
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
-const league = createLeague();
 const highlights = createHighlights();
-let lg = store.get('league', null);                       // the league in progress, if any
-const saveLeague = () => store.set('league', lg);
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
 let rec = store.get('rec', {});
@@ -68,7 +65,7 @@ const SUJI = [3, 5, 8, 10, 15, 20];
 const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result | league | reel
+   screen: home | play | result | records | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
 const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
 let flow = null;
@@ -166,15 +163,15 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'league'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#league').hidden = screen !== 'league';
+  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'records'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   paintNav(); layout();
 }
-// which place on the rail is lit: the league and the records have their own, otherwise play or practice
-function paintNav() { const v = st.screen === 'league' ? lgTab : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
+// which place on the rail is lit
+function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
@@ -490,7 +487,7 @@ function resume(d) {
   st.phase = 'idle'; st.auto = null; st.afterHold = null; scene.clearFalls();
   if (!game.restore(d.game)) { store.set('save', null); return paintResume(); }
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
-  match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target, fix: null,
+  match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
     targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, masse: game.masse };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
@@ -578,11 +575,11 @@ function drawShot(cv, shot) {
 /* ================= flow: a match between two players (or one and the computer) ================= */
 const match = {
   quiet: false, save: true,
-  ctx: null,                                              // who is playing what; fix: the league game this is, if any
+  ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
     PH.pool = poolOf(prefs.table); scene.clearFalls();
-    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target, fix: null,
+    const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' && LAB.suji ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn(), masse: LAB.masse && prefs.masse };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
@@ -621,9 +618,6 @@ const match = {
     const rw = recOf(pw.name), rl = recOf(pl.name);
     rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
     rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
-    const fix = match.ctx ? match.ctx.fix : null, target = !!game.mode.target;
-    if (fix != null && lg && lg.fx[fix]) { league.record(lg, fix, w, target ? game.players[0].score : w === 0 ? 1 : 0, target ? game.players[1].score : w === 1 ? 1 : 0); saveLeague(); }
-    $('#againBtn').textContent = fix != null ? '리그로' : '한 판 더';
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     $('#rTitle').textContent = pw.name + ' 승리';
@@ -769,7 +763,7 @@ const puzzle = {
   put(z) {
     const P = game.P, w = game.world, n = Math.hypot(z.balls[2][0] - z.balls[0][0], z.balls[2][1] - z.balls[0][1]) <= Math.hypot(z.balls[3][0] - z.balls[0][0], z.balls[3][1] - z.balls[0][1]) ? 2 : 3;
     z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
-    w.walls = null; w.cue = 0; game.goal = puzzle.stage(z).goal;
+    w.cue = 0; game.goal = puzzle.stage(z).goal;
     scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
   start(id) {
@@ -845,15 +839,8 @@ function playDemo(shot, opts) {
   beginTurn(true);
 }
 
-/* ================= league and records (laid out like a football league table) ================= */
-let lgTab = 'league', lgDraft = null;
-const cell = (cls, text) => el('span', { class: cls, text: String(text) });
+/* ================= records: wins and losses by name ================= */
 const formChips = form => el('span', { class: 'form fc' }, (form || []).map(f => el('i', { class: f === 'W' ? 'w' : 'l', text: f === 'W' ? '승' : '패' })));
-// head: [[label, class]], rows: arrays of cells (text, or a ready element)
-function leagueTable(cols, head, rows, topCount) {
-  const mk = (cells, cls) => el('div', { class: 'ltr ' + cls, style: '--cols:' + cols }, cells.map((c, k) => c instanceof Node ? c : cell(head[k][1], c)));
-  return el('div', { class: 'lt' }, [mk(head.map(h => h[0]), 'hd')].concat(rows.map((r, k) => mk(r, k < (topCount || 0) ? 'top' : ''))));
-}
 /* A card on a run of wins burns: one flame the shape of the card, round its whole edge, drawn afresh every frame.
    The edge is walked point by point; at each point the fire stands as tall as a slowly drifting noise says, leaning upwards
    as fire does - long over the top, licking up the sides, low under the bottom. Three layers of it, outer colour to white heat. */
@@ -863,7 +850,7 @@ const fnoise = (() => { const T = new Float32Array(512); let sd = 99; for (let i
   return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); const a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1); return a + (b - a) * sx + (c - a + (a - b + d - c) * sx) * sy; }; })();
 let flameRaf = 0;
 function flames(now) {
-  flameRaf = 0; const list = document.querySelectorAll('#league canvas.flame'); if (!list.length || st.screen !== 'league') return;
+  flameRaf = 0; const list = document.querySelectorAll('#records canvas.flame'); if (!list.length || st.screen !== 'records') return;
   const t = now / 1000, dpr = Math.min(2, window.devicePixelRatio || 1), PAD = 34;
   for (const cv of list) {
     const card = cv.nextElementSibling, w = card.offsetWidth, h = card.offsetHeight, W = w + 2 * PAD, H = h + 2 * PAD; if (!w) continue;
@@ -898,41 +885,29 @@ function flames(now) {
   flameRaf = requestAnimationFrame(flames);
 }
 const lightFlames = () => { if (!flameRaf && LAB.fire) flameRaf = requestAnimationFrame(flames); };
-function showLeague() { show('league'); st.phase = 'idle'; flow = null; paintLeague(); $('#league').scrollTop = 0; }
-function paintLeague() {
-  $('#lgTitle').textContent = lgTab === 'all' ? '전적' : '리그'; paintNav();
-  const body = $('#lgBody'); body.textContent = '';
-  const add = (...kids) => { for (const k of kids) if (k) body.appendChild(k); };
-  if (lgTab === 'all') {
-    const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
-    if (!names.length) return add(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.'));
-    // one card a player; whoever is on a run of wins has a card on fire
-    add(el('div', { class: 'rcards' }, names.map((n, k) => { const r = recOf(n);
-      const card = el('div', { class: 'rcard' + fireOf(r.streak) }, [el('span', { class: 'pos', text: k + 1 }),
-        el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
-        formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]);
-      return el('div', { class: 'rwrap' }, [fireOf(r.streak) ? el('canvas', { class: 'flame', 'data-n': Math.min(5, r.streak) }) : null, card]); })),
-      flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintLeague(); }));
-    lightFlames();
-    return;
-  }
-  // The league is not built yet: this shows what it will look like, with made-up names and numbers.
-  add(el('div', { class: 'champ panel' }, [el('span', { class: 'k', text: '예시 화면' }), el('b', { text: '브론즈 리그 · 1주차' }), el('span', { class: 'k', text: '준비 중' })]));
-  const demo = [['한결', 9, 8, 1], ['서윤', 9, 7, 2], [prefs.names[0], 8, 6, 2], ['도현', 9, 5, 4], ['지안', 8, 4, 4], ['민재', 9, 3, 6], ['하린', 8, 2, 6], ['태오', 8, 1, 7]];
-  add(leagueTable('30px minmax(0,1fr) 44px 44px 44px 52px',
-    [['', 'pos'], ['이름', 'nm'], ['경기', 'n'], ['승', 'n'], ['패', 'n'], ['승점', 'n pts']],
-    demo.map((r, k) => [k + 1, r[0], r[1], r[2], r[3], r[2] * league.WIN_PTS]), 3));
-  add(note('위 표는 실제 기록이 아닌 예시입니다. 위에서 세 명은 다음 리그로 올라가는 자리입니다. 진짜 리그는 나중에 열립니다. 지금까지의 실제 승패는 "전적"에 있습니다.'));
+function showRecords() { show('records'); st.phase = 'idle'; flow = null; paintRecords(); $('#records').scrollTop = 0; }
+function paintRecords() {
+  paintNav(); const body = $('#recBody'); body.textContent = '';
+  const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
+  if (!names.length) { body.appendChild(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.')); return; }
+  // one card a player; whoever is on a run of wins has a card on fire
+  body.appendChild(el('div', { class: 'rcards' }, names.map((n, k) => { const r = recOf(n);
+    const card = el('div', { class: 'rcard' + fireOf(r.streak) }, [el('span', { class: 'pos', text: k + 1 }),
+      el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
+      formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]);
+    return el('div', { class: 'rwrap' }, [fireOf(r.streak) ? el('canvas', { class: 'flame', 'data-n': Math.min(5, r.streak) }) : null, card]); })));
+  body.appendChild(flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintRecords(); }));
+  lightFlames();
 }
 
 /* ================= buttons ================= */
 press('#tableBtn', sheetTable); press('#cueBtn', sheetCue); press('#guideBtn', sheetGuide);
-// the rail: play and practice change what the panel offers; league and records are places of their own; settings is a sheet
+// the rail: play, puzzles and lessons change what the panel offers; records is a place of its own; settings is a sheet
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('.nv'); if (!b) return; SND.init(); SND.tap();
   const v = b.dataset.v;
   if (v === 'set') return sheetSettings();
-  if (v === 'league' || v === 'all') { lgTab = v; return showLeague(); }
+  if (v === 'all') return showRecords();
   const game4 = m => game.MODES[m] && m !== 'practice' && m !== 'puzzle4';
   if ((v === 'practice' || v === 'puzzle') && prefs.mode !== v) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = v; }
   else if (v === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
@@ -950,7 +925,7 @@ function setView3D(on) {
 }
 press('#viewBtn', () => setView3D(!scene.orbiting));
 press('#startBtn', () => { if (prefs.mode === 'practice') practice.start(); else if (prefs.mode === 'puzzle') puzzle.start(); else match.start(0); });
-press('#againBtn', () => { if (match.ctx && match.ctx.fix != null) showLeague(); else match.start(st.lastLoser == null ? 0 : st.lastLoser); });
+press('#againBtn', () => match.start(st.lastLoser == null ? 0 : st.lastLoser));
 press('#homeBtn', () => goHome());
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });
@@ -1136,7 +1111,7 @@ window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
   if (st.screen === 'reel') { reel.skip(); return true; }
-  if (st.screen === 'result' || st.screen === 'league') { goHome(st.screen === 'league'); return true; }
+  if (st.screen === 'result' || st.screen === 'records') { goHome(st.screen === 'records'); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };
@@ -1208,21 +1183,15 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, fix: match.ctx ? match.ctx.fix : null, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
   store.set('save', d);
-  try { const h = window.claude && window.claude.hot; if (h && h.snapshot) h.snapshot(d); } catch (e) {}
 }
-function start(data) {
-  SND.song.load();
-  if (!(data && data.v === 2)) data = store.get('save', null);
-  $('#fps').hidden = !prefs.fps;
-  if (data && data.v === 2 && TABLES.some(t => t.id === data.tbl)) { prefs.table = data.tbl; PH.pool = poolOf(data.tbl); }
-  // a game left unfinished waits on the first screen as a card to carry on with
-  goHome(true);
+function start() {
+  SND.song.load(); $('#fps').hidden = !prefs.fps;
+  goHome(true);                                             // a game left unfinished waits on the first screen as a card to carry on with
   if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showLeague, league, get lg() { return lg; }, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
-const hot = window.claude && window.claude.hot;
-if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+start();
 })();

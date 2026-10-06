@@ -73,10 +73,10 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`${mode} on ${name}: ${N} games, ${Math.round(shots / N)} shots each`);
   }
 }
-// arcade: games on ice and among barricades finish too
+// games on the ice table finish too
 {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  for (const [mode, opt] of [['eight', { ice: true }], ['four', { ice: true }], ['eight', { bars: true }], ['four', { bars: true }], ['nine', { ice: true, bars: true }]]) {
+  for (const [mode, opt] of [['eight', { ice: true }], ['four', { ice: true }], ['nine', { ice: true }], ['three', { ice: true }]]) {
     let shots = 0; const N = 2;
     for (let i = 0; i < N; i++) {
       g.start(mode, ['A', 'B'], true, Object.assign({ level: 2, target: 4, rnd }, opt)); g.players[0].ai = true;
@@ -85,12 +85,12 @@ for (const name of ['bar', 'pro', 'pub']) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
         g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++;
-        for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`arcade ${mode}: ball position is not a number`); n = 999; break; }
+        for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`ice ${mode}: ball position is not a number`); n = 999; break; }
       }
-      if (!g.over) fail(`arcade ${mode} ${JSON.stringify(opt)}: game did not finish in 500 shots`);
+      if (!g.over) fail(`ice ${mode} ${JSON.stringify(opt)}: game did not finish in 500 shots`);
       shots += n;
     }
-    console.log(`arcade ${mode} ${JSON.stringify(opt)}: ${N} games, ${Math.round(shots / N)} shots each`);
+    console.log(`${mode} on ice: ${N} games, ${Math.round(shots / N)} shots each`);
   }
 }
 // highlights: every shot of a few games, in every mode, can be rated both ways, written down as a tape, and the tape ends
@@ -167,10 +167,10 @@ for (const name of ['bar', 'pro', 'pub']) {
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
   { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; const r = g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g); if (r.pts !== 0) fail('cushion finish: the last point counted without a cushion'); ev.cushions = 1; if (g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g).pts !== 1) fail('cushion finish: the last point off a cushion did not count'); }
   { g.players[0].score = 2; g.finish = false; g._ctx = g.MODES.four.ctx(g); const w = g.world; w.ev = P.newEv(); w.ev.firstHit = 2; w.ev.hits = [2, 3]; g.resolve(); if (!g.over || g.over.winner !== 0) fail('handicap: player with 30 did not go out on the third score'); }
-  // ice: the same shot runs longer, and a saved game comes back with its ice and its barricades
+  // ice: the same shot runs longer, and a saved game comes back still on ice
   { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; b.ice = true; let ta = 0, tb = 0; P.strike(a, 0.3, 3, 0, 0); while (!P.rest(a) && ta < 9000) { P.step(a, 1 / 120); ta++; } P.strike(b, 0.3, 3, 0, 0); while (!P.rest(b) && tb < 9000) { P.step(b, 1 / 120); tb++; } if (!(tb > ta * 1.2)) fail('ice is not slipperier than cloth'); }
-  g.start('eight', ['A', 'B'], false, { ice: true, bars: true, rnd }); const d = JSON.parse(JSON.stringify(g.serialize())); const n = g.bars.length; g.start('nine', ['A', 'B'], false, {});
-  if (!g.restore(d) || !g.world.ice || !g.world.walls || g.world.walls.length !== n || !n) fail('a saved arcade game lost its ice or its barricades');
+  g.start('eight', ['A', 'B'], false, { ice: true, rnd }); const d = JSON.parse(JSON.stringify(g.serialize())); g.start('nine', ['A', 'B'], false, {});
+  if (!g.restore(d) || !g.world.ice) fail('a saved game on ice came back on cloth');
   // a jump on the tape
   const H = require(path.join(W, 'highlights.js'))(); g.start('four', ['A', 'B'], false, { rnd });
   { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 6, a: 0, b: 0, el: 0.75, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 6, 0, 0, 0.75); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);

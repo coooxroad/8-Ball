@@ -86,7 +86,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* ---------- home ---------- */
 #home{position:absolute;inset:0 0 0 96px;display:grid;grid-template-columns:minmax(0,1fr) 372px;grid-template-rows:minmax(0,1fr);pointer-events:none}
 #home>*{pointer-events:auto}   /* the table behind shows through the middle; everything else takes taps */
-.h-top{grid-column:1/-1;display:flex;align-items:center;gap:12px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
 .logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
@@ -94,7 +93,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
 [data-theme="light"] .logo .en{display:none}
 @media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
-.h-actions{margin-left:auto;display:flex;gap:8px}
 /* the rail: logo, the places to go, settings at the foot */
 .h-nav{position:absolute;left:0;top:0;bottom:0;width:96px;z-index:4;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:18px 8px 14px;background:var(--panel);border-right:1px solid var(--hair);box-shadow:var(--sh)}
 .h-nav .logo{flex-direction:column;gap:6px;margin-bottom:14px}
@@ -127,9 +125,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .pzsum b{font-family:var(--num);font-weight:var(--num-w);font-size:26px}
 .pzsum span{font-family:var(--num);color:var(--sub);font-size:16px}
 .pzsum small{display:block;font-size:12.5px;color:var(--sub)}
-.pzkind{display:flex;gap:6px;flex-wrap:wrap}
-.pzkind span{font-size:13px;padding:6px 11px;border-radius:999px;background:var(--seg);color:var(--sub)}
-.pzkind span.on{background:var(--fg);color:var(--bg);font-weight:700}
 .pzgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
 .pz{aspect-ratio:1;border-radius:10px;background:var(--seg);color:var(--fg);font-family:var(--num);font-weight:600;font-size:14px;border:2px solid transparent}
 .pz.done{background:#12b76a;color:#fff}
@@ -176,7 +171,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* narrow screens: one column that scrolls, the rail turned into a bar along the bottom */
 .compact #home{inset:0 0 62px 0;display:flex;flex-direction:column;overflow:auto;pointer-events:auto;background:var(--bg)}
-.compact #league{inset:0 0 62px 0}
+.compact #records{inset:0 0 62px 0}
 .compact .h-right{order:1;margin:14px 14px 0;overflow:visible;flex:none}
 .compact .h-mid{order:2;padding:14px 14px 18px}
 .compact .h-nav{top:auto;width:auto;right:0;height:62px;flex-direction:row;justify-content:space-around;padding:5px 6px 6px;border-right:0;border-top:1px solid var(--hair)}
@@ -426,39 +421,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
 @keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
 
-/* ---------- league ---------- */
-#league{position:absolute;inset:0 0 0 96px;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
+/* ---------- records ---------- */
+#records{position:absolute;inset:0 0 0 96px;overflow:auto;background:var(--bg);padding:20px clamp(14px,4vw,40px) 32px}
 .lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
 .lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
-#lgBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-.lt{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r-card);box-shadow:var(--sh);overflow:hidden}
-.ltr{display:grid;grid-template-columns:var(--cols);align-items:center;gap:6px;padding:11px 18px 11px 16px;font-size:15.5px;position:relative;color:var(--fg)}
-.ltr+.ltr,.fx+.fx{border-top:1px solid var(--hair)}
-.ltr.hd{font-size:11.5px;color:var(--sub);padding-block:9px}
-.ltr.hd span{font-family:inherit!important;font-weight:inherit!important}
-.ltr.top::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 2px 2px 0;background:var(--acc)}
-.ltr .pos{font-family:var(--num);color:var(--sub);font-size:14px}
-.ltr .nm{font-weight:var(--w-name);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ltr .n{font-family:var(--num);font-weight:var(--num-w);text-align:center}
-.ltr .pts{font-weight:700}
-.ltr .fc{text-align:right}
+#recBody{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .form{display:flex;gap:4px;justify-content:flex-end}
 .form i{width:20px;height:20px;border-radius:50%;font-style:normal;font-size:10.5px;font-weight:700;display:grid;place-items:center;color:#fff}
 .form .w{background:#1f9d6b}.form .l{background:var(--foul)}
-.rd{font-size:12px;color:var(--sub);padding:8px 4px 0}
-.fx{display:grid;grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);align-items:center;gap:14px;padding:9px 18px;font-size:16px}
-.fx .a{text-align:right}.fx .a,.fx .b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fx .sc{font-family:var(--num);font-weight:var(--num-w);font-size:18px;text-align:center}
-.fx .win{font-weight:700}.fx .lose{color:var(--sub)}
-.fx .btn{height:36px;padding:0;font-size:14px}.fx .btn.cta{height:36px;font-size:14px}
-.champ{display:flex;align-items:baseline;gap:12px;padding:16px 20px}
-.champ b{font-size:24px;font-weight:var(--w-title)}.champ .k{font-size:13px;color:var(--sub)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chipn{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:7px 7px 7px 15px;font-size:15px}
-.chipn button{width:26px;height:26px;border-radius:50%;background:var(--opt);color:var(--sub);font-size:16px;line-height:1}
-.addrow .txt{flex:3;font-size:17px;padding:9px 14px}.addrow .btn{flex:1}
-#league .btn.cta{margin-top:4px}
-@media (max-width:560px){.ltr .fc,.ltr .xs{display:none}.ltr{grid-template-columns:26px minmax(0,1fr) 34px 34px 34px 44px!important}}
 
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
@@ -508,10 +478,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
 .pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
-.stat{padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.stat .k{font-size:13px;color:var(--sub)}
-.stat .v{font-family:var(--num);font-weight:var(--num-w);font-size:36px;line-height:1;white-space:nowrap;color:var(--fg)}
-.stat .v span{font-size:20px;color:var(--sub);margin-left:8px}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
 .r-btns{display:flex;gap:12px;width:100%;max-width:760px;margin-top:4px;margin-bottom:auto;flex:none}
 #result>*{flex:none}
@@ -538,7 +504,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---- 2.0 ---- */
-#arcBox{display:flex;flex-direction:column;gap:6px}
 #resumeBox{display:flex;gap:8px;align-items:stretch}
 .resume{flex:1;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:baseline;text-align:left;padding:11px 14px;border-radius:14px;background:var(--sel-bg);border:2px solid var(--sel-bd)}
 .resume .k{grid-row:1/3;align-self:center;font-size:12.5px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;padding:5px 10px}
@@ -577,7 +542,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .prow.fire .rc{color:var(--f);font-weight:700}
 .prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
 @keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
-#league .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
+#records .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
 
 /* puzzle stages */
 .pzsum b.st{color:#f5a400}
@@ -698,11 +663,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   </div>
   <input type="file" id="songFile" accept="audio/*" multiple hidden>
 
-  <section id="league" hidden>
-    <header class="lg-top">
-      <h1 id="lgTitle">리그</h1>
-    </header>
-    <div id="lgBody"></div>
+  <section id="records" hidden>
+    <header class="lg-top"><h1>전적</h1></header>
+    <div id="recBody"></div>
   </section>
 
   <section id="result" hidden>

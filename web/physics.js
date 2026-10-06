@@ -61,11 +61,11 @@ function createPhysics(cfg) {
   function makeWorld(n) {
     const balls = [];
     for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, walls: null, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, walls: w.walls, ice: w.ice };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice };
   }
 
   function place(w, id, x, y, rnd) {
@@ -147,11 +147,8 @@ function createPhysics(cfg) {
     }
   }
 
-  // A barricade: a straight bar from (x0,y0) to (x1,y1), r thick either side of its line. Balls bounce off it as off a cushion.
-  function wall(x0, y0, x1, y1, r) { const l = Math.hypot(x1 - x0, y1 - y0); return { ax: x0, ay: y0, bx: x1, by: y1, len: l, tx: (x1 - x0) / l, ty: (y1 - y0) / l, r: r == null ? 0.012 : r, wall: true }; }
-
   function hitSeg(w, b, s) {
-    const R = RB + (s.r || 0);                                  // a bar with thickness is met that much sooner
+    const R = RB;
     let u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty;
     u = u < 0 ? 0 : u > s.len ? s.len : u;
     const cx = s.ax + s.tx * u, cy = s.ay + s.ty * u;
@@ -179,8 +176,8 @@ function createPhysics(cfg) {
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
-    if (!s.wall && b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
-    if (!s.wall && b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
+    if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
+    if (b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
@@ -211,7 +208,6 @@ function createPhysics(cfg) {
     }
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
-      if (w.walls && b.z < 0.046 && (b.vx !== 0 || b.vy !== 0)) for (let k = 0; k < w.walls.length; k++) hitSeg(w, b, w.walls[k]);
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
         if (b.z > CLEAR) {
           // over the cushion: once it is past the rail it is gone
@@ -301,8 +297,8 @@ function createPhysics(cfg) {
       const t = rayCircle(ox, oy, dx, dy, b.x, b.y, 2 * R);
       if (t < best.t) best = { t, type: 'ball', ball: b.id };
     }
-    for (const s of w.walls ? SEGS.concat(w.walls) : SEGS) {
-      const R = RB + (s.r || 0);
+    for (const s of SEGS) {
+      const R = RB;
       for (const sg of [1, -1]) {
         const px = s.ax - s.ty * R * sg, py = s.ay + s.tx * R * sg;
         const den = dx * s.ty - dy * s.tx;
@@ -371,7 +367,6 @@ function createPhysics(cfg) {
       if (!b.on || b.id === skipId) continue;
       if ((b.x - x) ** 2 + (b.y - y) ** 2 < (2 * R + 0.0008) ** 2) return false;
     }
-    for (const q of w.walls || []) { const u = Math.max(0, Math.min(q.len, (x - q.ax) * q.tx + (y - q.ay) * q.ty)); if (Math.hypot(x - q.ax - q.tx * u, y - q.ay - q.ty * u) < R + q.r + 0.002) return false; }
     return true;
   }
 
@@ -386,6 +381,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, wall, cuePath, pathClear, isFree, findFree, newEv };
+  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

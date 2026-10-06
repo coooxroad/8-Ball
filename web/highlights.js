@@ -3,9 +3,9 @@
    No DOM in here. */
 function createHighlights() {
   // everything the physics depends on, for every ball
-  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, walls: w.walls || null, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
+  function snapshot(w) { return { cue: w.cue, ice: !!w.ice, balls: w.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.hot || 0, b.spit || 0, b.q.slice()]) }; }
   function restore(w, s) {
-    w.cue = s.cue; w.ice = !!s.ice; w.walls = s.walls || null;
+    w.cue = s.cue; w.ice = !!s.ice;
     s.balls.forEach((v, i) => { const b = w.balls[i]; b.x = b.px = v[0]; b.y = b.py = v[1]; b.on = !!v[2]; b.hot = v[3]; b.spit = v[4]; b.q = v[5].slice(); b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; });
   }
   const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
