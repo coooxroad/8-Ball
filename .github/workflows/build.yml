@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -13,14 +14,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Every push and every pull request: the rules, the computer player, the lessons and puzzles are checked, the page is
+  # built from its sources and checked too. A pull request stops here - nothing is released from one.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: node web/test/run.js
+      - name: Build the page
+        run: sh web/build.sh
+      - name: Check the page
+        run: node web/tools/check.js
+
+  # Only what lands on main becomes an APK and a release.
   apk:
+    needs: check
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # rules, computer player and every practice layout are checked before anything is built
-      - name: Test
-        run: node web/test/run.js
+      # the page inside the app is made here from web/, never committed
+      - name: Build the page
+        run: sh web/build.sh
 
       - uses: actions/setup-java@v4
         with:

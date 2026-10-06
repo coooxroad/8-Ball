@@ -6,3 +6,5 @@ local.properties
 web/dist/
 node_modules/
 .idea/
+# the page inside the app: made by web/build.sh (in CI too), never committed
+app/src/main/assets/
