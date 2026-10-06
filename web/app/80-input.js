@@ -1,5 +1,17 @@
 /* ================= input ================= */
 let drag = null;
+/* Touches meant for a control and landing on the table beside it used to swing the cue off a line already set. So the
+   table does not listen: while a finger is on the power bar, the fine-aim strip, the spin ball or the cue-angle picture,
+   and for a moment after it lifts; within a finger's width of any of those; and the first touch while the spin window is
+   open only closes the window. A tap on the table (aim straight at this point) also has to be a deliberate one. */
+const ctl = { n: 0, t: 0 }, GUARD = 22, SETTLE = 280;
+const ctlDown = () => { ctl.n++; }, ctlUp = () => { ctl.n = Math.max(0, ctl.n - 1); ctl.t = performance.now(); };
+function guarded(e) {
+  if (ctl.n > 0 || performance.now() - ctl.t < SETTLE) return true;
+  for (const id of ['#power', '#fine', '#spinBtn']) { const r = $(id).getBoundingClientRect(); if (r.width && e.clientX > r.left - GUARD && e.clientX < r.right + GUARD && e.clientY > r.top - GUARD && e.clientY < r.bottom + GUARD) return true; }
+  if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; ctl.t = performance.now(); return true; }
+  return false;
+}
 const humanAiming = () => st.screen === 'play' && st.phase === 'aim' && $('#sheet').hidden;
 // move a ball to where the finger is, sliding it round anything in the way
 function tryPlace(p, ball) {
@@ -32,13 +44,13 @@ canvas.addEventListener('pointerdown', e => {
     }
     orbitPts.set(e.pointerId, { x: e.clientX, y: e.clientY }); return;
   }
-  if (!humanAiming()) return;
+  if (!humanAiming() || guarded(e)) return;
   const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(), d = Math.hypot(p.x - c.x, p.y - c.y), reach = Math.max(0.075, 26 / scene.ppm);
   try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
   const moving = flow === practice && practice.edit ? ballUnder(p, reach) : null;
   if (moving) drag = { kind: 'ball', id: e.pointerId, ball: moving };
   else if (game.placing && d < reach) drag = { kind: 'cue', id: e.pointerId };
-  else drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 0 };
+  else drag = { kind: 'aim', id: e.pointerId, last: Math.atan2(p.y - c.y, p.x - c.x), sx: e.clientX, sy: e.clientY, moved: 0, t0: performance.now() };
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', e => {
@@ -62,7 +74,7 @@ canvas.addEventListener('pointermove', e => {
   } else {
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     const a = Math.atan2(p.y - c.y, p.x - c.x);
-    if (Math.hypot(p.x - c.x, p.y - c.y) > 0.07 && drag.moved > 6) {
+    if (Math.hypot(p.x - c.x, p.y - c.y) > 0.07 && drag.moved > 9) {
       let da = a - drag.last; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
       st.aim += da;
     }
@@ -73,7 +85,7 @@ canvas.addEventListener('pointermove', e => {
 const endDrag = e => {
   if (orbitPts.delete(e.pointerId)) return;
   if (!drag || drag.id !== e.pointerId) return;
-  if (drag.kind === 'aim' && drag.moved <= 6 && !drag.noTap && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
+  if (drag.kind === 'aim' && drag.moved <= 9 && !drag.noTap && performance.now() - (drag.t0 || 0) > 45 && performance.now() - drag.t0 < 600 && humanAiming()) { const R = game.P.R, p = scene.toTable(e, R), c = game.cueBall(); if (Math.hypot(p.x - c.x, p.y - c.y) > R) st.aim = Math.atan2(p.y - c.y, p.x - c.x); }
   drag = null; scene.invalidate(); snapshot();
 };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
@@ -81,10 +93,10 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 (function powerCtl() {
   const box = $('#power'); let id = null;
   const read = e => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); };
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
-    if (id !== e.pointerId) return; id = null;
+    if (id !== e.pointerId) return; id = null; ctlUp();
     const p = st.power;
     if (!cancel && p > 0.03 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
@@ -94,19 +106,19 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 (function fineCtl() {
   const box = $('#fine'); let id = null, last = 0, off = 0;
   const pos = e => scene.portrait ? e.clientX : e.clientY;
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; last = pos(e); try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
     box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; scene.invalidate();
   });
-  const up = e => { if (id === e.pointerId) id = null; };
+  const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
 })();
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
-    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; setSpinUI(); setKindUI();
+    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
     $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
   });
   const set = e => {
@@ -115,9 +127,10 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     st.spin = { x, y }; setSpinUI(); if (st.el) setKindUI(); scene.invalidate();
   };
   let id = null;
-  pad.addEventListener('pointerdown', e => { id = e.pointerId; try { pad.setPointerCapture(id); } catch (err) {} set(e); e.preventDefault(); });
+  pad.addEventListener('pointerdown', e => { id = e.pointerId; ctlDown(); try { pad.setPointerCapture(id); } catch (err) {} set(e); e.preventDefault(); });
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
-  pad.addEventListener('pointerup', () => { id = null; }); pad.addEventListener('pointercancel', () => { id = null; });
+  const padUp = () => { if (id != null) { id = null; ctlUp(); } };
+  pad.addEventListener('pointerup', padUp); pad.addEventListener('pointercancel', padUp);
   $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; setSpinUI(); setKindUI(); scene.invalidate(); });
   // The cue raised: one angle, set on a picture of the shot seen from the side - the ball on the cloth and the cue leaning
   // over it. Dragging anywhere in the picture swings the cue to point at the finger.
@@ -128,9 +141,10 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     const was = st.el; st.el = Math.round(a * 180 / Math.PI) * Math.PI / 180; setKindUI(); scene.invalidate();
     if (!was && st.el && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
   };
-  padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
+  padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; ctlDown(); try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
   padEl.addEventListener('pointermove', e => { if (eid === e.pointerId) setEl(e); });
-  padEl.addEventListener('pointerup', () => { eid = null; }); padEl.addEventListener('pointercancel', () => { eid = null; });
+  const elUp = () => { if (eid != null) { eid = null; ctlUp(); } };
+  padEl.addEventListener('pointerup', elUp); padEl.addEventListener('pointercancel', elUp);
 })();
 const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
