@@ -5,6 +5,7 @@ const CLOTHS = [
   { id: 'blue', name: '토너먼트 블루', felt: 0x2a78d2, wood: 0x15171c },
   { id: 'wine', name: '버건디', felt: 0x9a2536, wood: 0xa9743f },
   { id: 'charcoal', name: '차콜', felt: 0x4b5562, wood: 0x15171c },
+  { id: 'ice', name: '빙판', felt: 0x6fbbe8, wood: 0x2a5f9e, ice: true },      // not a cloth: a sheet of ice, and the balls slide on it
 ];
 const CUES = [
   { id: 'maple', name: '메이플 클래식', note: '단풍나무 상대에 흑단 하대, 네 갈래 포인트', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710 },

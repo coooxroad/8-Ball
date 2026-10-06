@@ -42,9 +42,9 @@ for (const name in TABLES) {
       while (!g.over && n < 400) {
         const who = g.turn, wasBreak = g.isBreak, t0 = Date.now(), pl = g.aiPlan(), ms = Date.now() - t0; worst = Math.max(worst, ms); sum += ms;
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0, !!pl.j); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         if (!wasBreak) { turns++; if (!g.over && g.turn !== who) missed++; else if (g.over && g.over.winner !== who) missed++; }
-        if (!wasBreak) { if (pl.a || pl.b) spun++; if (pl.pots > 1) multi++; if (pl.j || pl.el) tricks++; }
+        if (!wasBreak) { if (pl.a || pl.b) spun++; if (pl.pots > 1) multi++; if (pl.el) tricks++; }
       }
       if (!g.over) fail(`top level, ${mode}: game did not finish in 400 shots`);
       shots += n;
@@ -64,7 +64,7 @@ for (const name of ['bar', 'pro', 'pub']) {
       while (!g.over && n < 400) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0, !!pl.j); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`${name} ${mode}: ball position is not a number`); n = 999; break; }
       }
       if (!g.over) fail(`${name} ${mode}: game did not finish in 400 shots`);
@@ -84,7 +84,7 @@ for (const name of ['bar', 'pro', 'pub']) {
       while (!g.over && n < 500) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0, !!pl.j); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++;
         for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`arcade ${mode}: ball position is not a number`); n = 999; break; }
       }
       if (!g.over) fail(`arcade ${mode} ${JSON.stringify(opt)}: game did not finish in 500 shots`);
@@ -107,8 +107,8 @@ for (const name of ['bar', 'pro', 'pub']) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
         g.beginShot();
-        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: pl.a || 0, b: pl.b || 0, el: pl.el || 0, j: !!pl.j, turn: g.turn, isBreak: g.isBreak };
-        g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0, !!pl.j); g.P.run(g.world, 40); g.world.snd.length = 0;
+        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: pl.a || 0, b: pl.b || 0, el: pl.el || 0, turn: g.turn, isBreak: g.isBreak };
+        g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0;
         const ev = g.world.ev, end = g.world.balls.map(b => [b.x, b.y, b.on]), out = g.resolve(); n++;
         try {
           const good = H.rate(g.P, g.mode, shot, ev, out.r), bad = H.rateWorst(g.P, g.mode, shot, ev, out.r);
@@ -138,7 +138,7 @@ for (const name of ['bar', 'pro', 'pub']) {
     z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
     w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
-      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4], !!z.sol[5]); const ev = P.run(t, 30);
+      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4]); const ev = P.run(t, 30);
       if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; fail(`puzzle ${z.id} (${Z.STAGES[z.stage].name}): its stored answer does not work`); break; }
     }
   }
@@ -149,14 +149,20 @@ for (const name of ['bar', 'pro', 'pub']) {
 // a ball that goes over the rail is a foul and comes back; a shot replayed from its tape ends where it ended, in the air or not
 {
   const P = createPhysics({ R: 0.03275, pockets: false }), mk = () => { const w = P.makeWorld(4); [[-0.8, 0], [9, 9], [0.2, 0], [9, 9]].forEach((b, i) => P.place(w, i, b[0], b[1])); w.balls[1].on = w.balls[3].on = false; return w; };
-  for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, 1.0); for (let i = 0; i < 90; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.02)) fail(`masse with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
+  const deg = d => d * Math.PI / 180;
+  for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, deg(70)); for (let i = 0; i < 120; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.05)) fail(`a raised cue with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
   { const w = mk(); P.strike(w, 0, 3.5, 0.4, 0, 0); for (let i = 0; i < 60; i++) P.step(w, 1 / 120); if (Math.abs(w.balls[0].y) > 0.01) fail('a level cue curved the ball'); }
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0.7, true); let hit = false; for (let i = 0; i < 60; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit) fail('a hard jump did not clear the ball in front'); }
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0, false); P.run(w, 20); if (w.ev.firstHit !== 2) fail('a level shot went through a ball'); }
-  { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 6.5, 0, 0, 0.7, true); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
+  // the same angle, hard and soft: hard it clears the ball in front, soft it does not leave the cloth
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 6.2, 0, 0, deg(42)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > 0 || w.ev.firstHit !== 2) fail('a soft raised shot left the cloth'); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); P.run(w, 20); if (w.ev.firstHit !== 2 || w.ev.air > 0) fail('a level shot went through or over a ball'); }
+  // steeper is higher and shorter; a steep shot struck low comes back
+  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(60)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(b.ev.air > a.ev.air && b.balls[0].x < a.balls[0].x)) fail('a steeper cue did not jump higher and shorter'); }
+  { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let far = -9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); far = Math.max(far, w.balls[0].x); } if (!(w.balls[0].x < far - 0.05)) fail('a steep shot struck low did not come back'); }
+  { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 7, 0, 0, deg(45)); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
-  { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 6.5, 0, 0, 0.7, true); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
+  { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 7, 0, 0, deg(45)); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
   // handicaps: each player goes out at their own number, and the last point needs a cushion when that rule is on
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
   { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; const r = g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g); if (r.pts !== 0) fail('cushion finish: the last point counted without a cushion'); ev.cushions = 1; if (g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g).pts !== 1) fail('cushion finish: the last point off a cushion did not count'); }
@@ -167,7 +173,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   if (!g.restore(d) || !g.world.ice || !g.world.walls || g.world.walls.length !== n || !n) fail('a saved arcade game lost its ice or its barricades');
   // a jump on the tape
   const H = require(path.join(W, 'highlights.js'))(); g.start('four', ['A', 'B'], false, { rnd });
-  { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 5.5, a: 0, b: 0, el: 0.7, j: true, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 5.5, 0, 0, 0.7, true); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);
+  { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 6, a: 0, b: 0, el: 0.75, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 6, 0, 0, 0.75); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);
     const tape = H.record(g.P, 4, shot), w2 = g.P.makeWorld(4); let high = 0; for (let t = 0; t < 0.4; t += 0.02) { H.seek(w2, tape, t); high = Math.max(high, w2.balls[0].z); } H.seek(w2, tape, tape.dur);
     if (!(high > 0.03)) fail('the tape of a jump has no height in it'); end.forEach((e, k) => { const b = w2.balls[k]; if (b.on !== e[2] || (e[2] && Math.hypot(b.x - e[0], b.y - e[1]) > 1e-3)) fail('the tape of a jump ends somewhere else'); }); }
   console.log('raised cue, handicaps, ice: checked');

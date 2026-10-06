@@ -56,7 +56,7 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, off: [] }; }   // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [] }; }   // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -78,27 +78,33 @@ function createPhysics(cfg) {
     }
   }
 
-  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). A raised cue with side on it sets the
-     ball spinning about the line it travels along, and the cloth pushes back sideways: the ball curves (masse).
-     jump: struck down into the slate so that it leaves the cloth. */
-  function strike(w, ang, V, a, bb, el, jump) {
+  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). One angle does everything a raised cue does:
+       the ball leaves with only the level part of the blow (V cos el);
+       the downward part drives it into the slate, which throws it back up - hard enough and it jumps;
+       side on a raised cue sets the ball spinning about the line it travels along, and the cloth pushes back sideways, so it
+       curves (masse) - once it is on the cloth: in the air nothing turns it. */
+  function strike(w, ang, V, a, bb, el) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
-    el = el || 0; const ce = Math.cos(el), se = Math.sin(el), Vh = V * (jump ? Math.max(0.72, ce) : 0.35 + 0.65 * ce);
-    c.vx = Vh * dx; c.vy = Vh * dy;
-    const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R, tw = jump ? 0 : se;
-    c.wx = -dy * k + dx * ka * tw; c.wy = dx * k + dy * ka * tw; c.wz = ka * (jump ? 1 : ce);
-    c.z = 0; c.vz = jump ? JUMP * V * Math.max(se, 0.5) : 0;
+    el = el || 0; const ce = Math.cos(el), se = Math.sin(el);
+    c.vx = V * ce * dx; c.vy = V * ce * dy;
+    const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
+    c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
+    const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // a hop too small to see is swallowed by the cloth
     w.ev = newEv();
   }
-  const JUMP = 0.5, CLEAR = 0.034;                               // CLEAR: a ball this far off the cloth passes over a cushion
+  const JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
     if (b.z > 0 || b.vz > 0) {
       // in the air: nothing but gravity, until it comes down (and bounces once or twice if it came down hard)
       b.vz -= G * h; b.z += b.vz * h; b.x += b.vx * h; b.y += b.vy * h;
+      if (b.id === w.cue && b.z > w.ev.air) w.ev.air = b.z;
       if (b.z <= 0) {
         b.z = 0;
-        if (b.vz < -0.7) { if (w.snd) w.snd.push({ t: 'land', v: -b.vz, x: b.x, y: b.y, id: b.id }); b.vz = -b.vz * 0.42; b.vx *= 0.94; b.vy *= 0.94; } else b.vz = 0;
+        // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
+        const down = -b.vz, ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
+        if (us > 1e-4 && down > 0) { const dec = Math.min(MU_LAND * 1.42 * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
+        if (down > 0.7) { if (w.snd) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * 0.42; } else b.vz = 0;
       }
       if (w.track) turn(b, h);
       return;
@@ -330,8 +336,8 @@ function createPhysics(cfg) {
 
   // Where the cue ball travels after its first contact, for the long aiming guide. With `whole`, from the moment it is struck
   // (a curving or jumping shot has no straight line to draw) as [x, y, z, ...], and `first` is set to where the first contact came.
-  function cuePath(w, ang, V, a, bb, maxT, el, jump, whole) {
-    const w2 = clone(w); strike(w2, ang, V, a, bb, el, jump);
+  function cuePath(w, ang, V, a, bb, maxT, el, whole) {
+    const w2 = clone(w); strike(w2, ang, V, a, bb, el);
     const c = w2.balls[w2.cue], pts = [];
     let t = 0, started = false; pts.first = -1;
     while (t < (maxT || 2.2) && c.on) {

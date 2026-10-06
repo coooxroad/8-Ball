@@ -258,16 +258,52 @@ function createScene(canvas, app, PH) {
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
+    if (iced) setCloth(clothI);
   }
+  /* Ice, for the table that is a sheet of it: deep blue-green underneath, pale where the light catches, with the white
+     scratches skates leave, a few cracks that fork, trapped bubbles and frost creeping in from the edges. */
+  const iceTex = (() => {
+    const W2 = 1024, H2 = 512, c = mkCanvas(W2, H2), g = c.getContext('2d');
+    let sd = 7; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+    const base = g.createLinearGradient(0, 0, W2, H2); base.addColorStop(0, '#8fd3f4'); base.addColorStop(0.35, '#4fa9de'); base.addColorStop(0.7, '#86cdf2'); base.addColorStop(1, '#3f97d2');
+    g.fillStyle = base; g.fillRect(0, 0, W2, H2);
+    // depth: darker pools under the surface
+    for (let k = 0; k < 26; k++) { const x = rnd() * W2, y = rnd() * H2, r = 60 + rnd() * 170, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(16,84,150,${0.16 + rnd() * 0.18})`); gr.addColorStop(1, 'rgba(16,84,150,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    // and lighter, milky patches
+    for (let k = 0; k < 18; k++) { const x = rnd() * W2, y = rnd() * H2, r = 40 + rnd() * 120, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(255,255,255,${0.10 + rnd() * 0.14})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+    // cracks: a jagged line that forks, bright with a dark edge beside it
+    const crack = (x, y, a, len, wd, depth) => {
+      g.beginPath(); g.moveTo(x, y); const pts = [[x, y]];
+      for (let d = 0; d < len; d += 14) { a += (rnd() - 0.5) * 0.7; x += Math.cos(a) * 14; y += Math.sin(a) * 14; g.lineTo(x, y); pts.push([x, y, a]); }
+      g.strokeStyle = 'rgba(20,80,130,.35)'; g.lineWidth = wd + 1.6; g.stroke(); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = wd; g.stroke();
+      if (depth > 0) for (const p of pts) if (p[2] != null && rnd() < 0.16) crack(p[0], p[1], p[2] + (rnd() < 0.5 ? 1 : -1) * (0.5 + rnd() * 0.6), len * (0.25 + rnd() * 0.3), wd * 0.6, depth - 1);
+    };
+    g.lineCap = g.lineJoin = 'round';
+    for (let k = 0; k < 7; k++) crack(rnd() * W2, rnd() * H2, rnd() * 6.28, 180 + rnd() * 320, 1.5 + rnd(), 2);
+    // skate scratches: long, faint, gently curved
+    for (let k = 0; k < 150; k++) { const x = rnd() * W2, y = rnd() * H2, a = rnd() * 6.28, l = 40 + rnd() * 260, b = (rnd() - 0.5) * 60; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l / 2 - Math.sin(a) * b, y + Math.sin(a) * l / 2 + Math.cos(a) * b, x + Math.cos(a) * l, y + Math.sin(a) * l); g.strokeStyle = `rgba(255,255,255,${0.10 + rnd() * 0.22})`; g.lineWidth = 0.6 + rnd() * 0.9; g.stroke(); }
+    // bubbles caught in it
+    for (let k = 0; k < 260; k++) { const x = rnd() * W2, y = rnd() * H2, r = 0.8 + rnd() * 2.6; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.4})`; g.fill(); g.beginPath(); g.arc(x + r * 0.3, y + r * 0.3, r, 0, 6.3); g.strokeStyle = 'rgba(30,100,150,.25)'; g.lineWidth = 0.6; g.stroke(); }
+    // frost round the edge
+    for (const [x0, y0, x1, y1] of [[0, 0, 0, 70], [0, H2, 0, H2 - 70], [0, 0, 90, 0], [W2, 0, W2 - 90, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.75)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
+    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
+  })();
   let clothI = 0, iced = false;
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0]; clothI = i;
-    feltMat.color.copy(col(iced ? 0xb4e1f7 : c.felt)); cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
-    // ice: pale, smooth and shining where the cloth is matt
-    feltMat.roughness = iced ? 0.22 : 1; feltMat.envMapIntensity = iced ? 0.75 : 0.1; feltMat.bumpScale = iced ? 0.00012 : 0.0005; feltMat.needsUpdate = true;
+    const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice;
+    if (iced) {
+      // the picture is stretched once over the whole bed (the bed's texture coordinates are metres from the middle)
+      iceTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); iceTex.offset.set(0.5, 0.5);
+      feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
+      cushMat.color.copy(col(0xcfeaf8)); cushMat.roughness = 0.5;                            // packed snow along the rails
+    } else {
+      feltMat.map = feltTex; feltMat.bumpMap = feltTex; feltMat.color.copy(col(c.felt)); feltMat.roughness = 1; feltMat.envMapIntensity = 0.1;
+      cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); cushMat.roughness = 1;
+    }
+    feltMat.needsUpdate = true; woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    blobMat.opacity = iced ? 0.5 : 0.75;
     staticDirty = true; dirty = 3;
   }
-  function setIce(on) { if (iced === !!on) return; iced = !!on; setCloth(clothI); }
 
   /* balls */
   const sphere = new THREE.SphereGeometry(1, 40, 28);
@@ -359,6 +395,9 @@ function createScene(canvas, app, PH) {
   const dotGeo = new THREE.CircleGeometry(1, 14), dotMat = gMat(0.95), gDots = [];
   dotMat.color.copy(col(0xffd21f));
   for (let i = 0; i < 90; i++) { const d = new THREE.Mesh(dotGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gDots.push(d); }
+  // the same path where the ball is off the cloth: open rings, growing with the height
+  const airGeo = new THREE.RingGeometry(0.62, 1, 18), gAir = [];
+  for (let i = 0; i < 90; i++) { const d = new THREE.Mesh(airGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gAir.push(d); }
   for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
@@ -563,7 +602,7 @@ function createScene(canvas, app, PH) {
     if (cue.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
       // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
-      const e = v.jump ? 0.7 : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
+      const e = v.el || 0, ce = Math.cos(e), se = Math.sin(e);
       const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
       // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
       // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
@@ -574,19 +613,19 @@ function createScene(canvas, app, PH) {
     }
     if (guide.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim), lv = v.level;
-      const raised = v.jump || v.el > 0.02;
-      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, v.jump ? 'j' : (v.el || 0).toFixed(2)].join('|');
+      const raised = v.el > 0.02;
+      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(2)].join('|');
       if (key !== guideKey && raised) {
         // no straight line for a ball that curves or flies: the shot is played out and its path dotted, as far as the guide length allows
         guideKey = key;
         gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
-        for (const d of gDots) d.visible = false;
+        for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false;
         if (lv >= 1) {
-          const pts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, lv >= 3 ? 2.6 : 1.8, v.el || 0, !!v.jump, lv >= 3 ? 2 : 1);
+          const pts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, lv >= 3 ? 2.6 : 1.8, v.el || 0, lv >= 3 ? 2 : 1);
           let acc = 0, n = 0, lx = c.x, ly = c.y;
           for (let i = 0; i < pts.length && n < gDots.length; i += 3) {
             const x = pts[i], y = pts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
-            if (acc >= 0.036) { acc = 0; const d = gDots[n++]; d.visible = true; d.position.set(x, y, R + pts[i + 2]); d.scale.setScalar(Math.max(0.004, (pts.first >= 0 && i > pts.first ? 2.6 : 3.4) / ppm)); }
+            if (acc >= 0.036) { acc = 0; const up = pts[i + 2] > 0.003, d = (up ? gAir : gDots)[n++]; d.visible = true; d.position.set(x, y, R + pts[i + 2]); d.scale.setScalar(Math.max(0.004, (up ? 3.6 + pts[i + 2] * 60 : pts.first >= 0 && i > pts.first ? 2.6 : 3.4) / ppm)); }
           }
           if (pts.first >= 0 && pts.first < pts.length) {
             gRing.visible = true; gRing.position.set(pts[pts.first], pts[pts.first + 1], R + pts[pts.first + 2]); gRing.scale.setScalar(R);
@@ -598,7 +637,7 @@ function createScene(canvas, app, PH) {
         guideKey = key;
         const pr = P.cast(w, c.x, c.y, dx, dy, w.cue);
         gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
-        for (const d of gDots) d.visible = false;
+        for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false;
         if (lv >= 1) {
           setLine(gLine, c.x + dx * R, c.y + dy * R, pr.gx - dx * R * 0.9, pr.gy - dy * R * 0.9, 1.7, R);
           gRing.visible = pr.type !== 'none' && pr.type !== 'pocket'; gRing.position.set(pr.gx, pr.gy, R); gRing.scale.setScalar(R);
@@ -665,7 +704,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setIce, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

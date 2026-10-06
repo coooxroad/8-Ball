@@ -39,16 +39,16 @@ G.start('four', ['A', 'B'], false, {});                             // so that s
 function world(balls) { const w = P.makeWorld(4); balls.forEach((b, i) => P.place(w, i, b[0], b[1], () => 0.5)); return w; }
 const valid = b => { for (let i = 0; i < 4; i++) { if (Math.abs(b[i][0]) > HL - R - 0.02 || Math.abs(b[i][1]) > HW - R - 0.02) return false; for (let j = 0; j < i; j++) if (dist(b[i], b[j]) < 2 * R + 0.03) return false; } return true; };
 // one shot: does it do what the stage asks?
-function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] || 0, !!s[5]); return judge(goal, P.run(w, 25), w); }
+function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] || 0); return judge(goal, P.run(w, 25), w); }
 // every direction in `angles` at each speed, with one way of striking: the share that works, and the middle of the widest run
-function sweep(base, goal, angles, Vs, a, b, el, j) {
+function sweep(base, goal, angles, Vs, a, b, el) {
   let hits = 0, best = null; const n = angles.length, loop = angles.loop;
   for (const V of Vs) {
-    const ok = angles.map(ang => tryShot(base, goal, [ang, V, a, b, el, j]));
+    const ok = angles.map(ang => tryShot(base, goal, [ang, V, a, b, el]));
     for (let i = 0; i < n; i++) if (ok[i]) hits++;
     for (let i = 0; i < n; i++) if (ok[i] && !(loop ? ok[(i + n - 1) % n] : i > 0 && ok[i - 1])) {
       let m = 1; while (m < n && (loop ? ok[(i + m) % n] : i + m < n && ok[i + m])) m++;
-      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el, j ? 1 : 0] };
+      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el || 0] };
     }
   }
   return { share: hits / (n * Vs.length), best };
@@ -57,9 +57,9 @@ const circle = n => { const a = []; for (let i = 0; i < n; i++) a.push(i * 2 * M
 const fan = (mid, half, step) => { const a = []; for (let x = -half; x <= half + 1e-9; x += step) a.push(mid + x); return a; };
 const ALL = circle(600);
 function sturdy(base, goal, s) {
-  for (const da of [0, 0.0025, -0.0025]) for (const k of [1, 0.985, 1.015]) if (!tryShot(base, goal, [s[0] + da, s[1] * k, s[2], s[3], s[4], s[5]])) return false;
+  for (const da of [0, 0.0025, -0.0025]) for (const k of [1, 0.985, 1.015]) if (!tryShot(base, goal, [s[0] + da, s[1] * k, s[2], s[3], s[4]])) return false;
   // and through the app's power control, which is how the "answer" button plays it
-  return tryShot(base, goal, [s[0], G.vOf(G.powerOf(s[1])), s[2], s[3], s[4], s[5]]);
+  return tryShot(base, goal, [s[0], G.vOf(G.powerOf(s[1])), s[2], s[3], s[4]]);
 }
 const pick = () => MINED[Math.floor(rnd() * MINED.length)].map(q => q.slice());
 const onLine = (a, b, k, j) => [a[0] + (b[0] - a[0]) * k + between(-j, j), a[1] + (b[1] - a[1]) * k + between(-j, j)];
@@ -90,15 +90,17 @@ const STAGES = [
     solve: w => sweep(w, 'score', ALL, [2.4, 3.4, 4.6], 0, 0) },
   { name: '돌려치기', goal: 'three', lo: 0.003, hi: 0.03, make: pick, ok: b => dist(b[2], b[3]) < 1.2,
     solve: w => sweep(w, 'three', ALL, [4.2, 5.2, 6.2], 0, 0) },
-  { name: '맛세이 · 점프', goal: 'direct', lo: 0.01, hi: 0.5,
+  { name: '맛세이 · 점프', goal: 'direct', lo: 0.006, hi: 0.5,
     // the yellow ball right in front of the cue ball, the reds beyond it: over it or round it, with no cushion to help
     make() { const b = pick(), n = near(b, 0), d = dist(b[0], b[n]); b[1] = onLine(b[0], b[n], between(0.2, 0.42) / d, 0.008).map(r3); const m = near(b, 1); if (dist(b[n], b[m]) > 0.45) { const t = between(0, 6.28), l = between(0.16, 0.36); b[m] = [r3(b[n][0] + Math.cos(t) * l), r3(b[n][1] + Math.sin(t) * l)]; } return b; },
     ok: b => { const n = near(b, 0), d = dist(b[0], b[n]); return d > 0.75 && d < 1.5; },
     solve(w, b) {
       const n = near(b, 0), mid = Math.atan2(b[n][1] - b[0][1], b[n][0] - b[0][0]);
       if (sweep(w, 'direct', fan(mid, 0.5, 0.004), [2.6, 3.6, 4.8], 0, 0).share > 0.002) return null;   // there is a plain way through
-      let best = sweep(w, 'direct', fan(mid, 0.2, 0.003), [4.4, 5.0, 5.6, 6.2], 0, 0, 0.7, true);
-      for (const a of [0.42, -0.42]) for (const el of [0.95, 1.2]) { const s = sweep(w, 'direct', fan(mid, 0.5, 0.005), [3.4, 4.4, 5.4], a, 0, el, false); if (s.best && (!best.best || s.best.n > best.best.n + 2)) best = s; }
+      // over it: the cue raised to a whole number of degrees and struck hard. Round it: steeper, softer, with side on the ball
+      const D = Math.PI / 180; let best = { share: 0, best: null };
+      for (const dg of [40, 50]) { const s = sweep(w, 'direct', fan(mid, 0.2, 0.003), [5.6, 6.2, 6.8], 0, 0, dg * D); if (s.best && (!best.best || s.best.n > best.best.n)) best = s; }
+      for (const a of [0.42, -0.42]) for (const dg of [55, 70]) { const s = sweep(w, 'direct', fan(mid, 0.7, 0.006), [3.2, 4.2], a, 0, dg * D); if (s.best && (!best.best || s.best.n > best.best.n + 2)) best = s; }
       return best; } },
 ];
 
