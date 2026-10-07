@@ -13,7 +13,7 @@ const puzzle = {
     const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
     if (!p.cur || p.cur.id !== z.id) { p.helped = false; p.tries = 0; }
     p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
-    game.start('puzzle4', [prefs.names[0], ''], false, {});
+    usePhysics(false); game.start('puzzle4', [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
     toast(`${z.stage + 1}-${z.n} ${p.stage(z).name} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
   },

@@ -108,7 +108,7 @@ function paintHome() {
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
 // (a new layout each time, which is also what the drill itself does).
 function homePreview() {
-  PH.pool = poolOf(prefs.table); scene.clearFalls(); scene.setZone(null);
+  usePhysics(LAB.real && prefs.mode !== 'puzzle' && prefs.mode !== 'practice'); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
   if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
@@ -135,12 +135,13 @@ function goHome(keep) {
   show('home'); buildModes(); paintHome(); homePreview();
 }
 function resume(d) {
-  if (TABLES.some(t => t.id === d.tbl)) { prefs.table = d.tbl; PH.pool = poolOf(d.tbl); }
+  if (TABLES.some(t => t.id === d.tbl)) prefs.table = d.tbl;
+  usePhysics(!!d.real);                                     // the game comes back on the physics it was being played on
   st.phase = 'idle'; st.auto = null; st.afterHold = null; scene.clearFalls();
   if (!game.restore(d.game)) { store.set('save', null); return paintResume(); }
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
   match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
-    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, masse: game.masse };
+    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, masse: game.masse, real: !!d.real };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
 }

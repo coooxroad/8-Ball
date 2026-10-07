@@ -15,7 +15,7 @@ const practice = {
   quiet: false, save: false,
   drill: null, level: 1, streak: 0, tries: 0, ok: 0, layout: null, before: null, beforeAim: 0, edit: false,
   start(id) {
-    PH.pool = poolOf(prefs.table);
+    usePhysics(false);
     if (id) { prefs.drill = id; savePrefs(); }
     const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     game.start('practice', [prefs.names[0], ''], false, {});

@@ -12,7 +12,7 @@ const note = text => el('p', { class: 'note', text });
 
 function sheetTable() {
   const sizes = isCarom() ? [note(prefs.mode === 'three' ? '3구는 포켓 없는 대대(284×142cm, 공 61.5mm)로 고정입니다.' : '4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
-    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); PH.pool = poolOf(t.id); paintHome(); homePreview(); sheetTable(); }));
+    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); paintHome(); homePreview(); sheetTable(); }));
   openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
     el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
       [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); paintHome(); homePreview(); sheetTable(); }))),
@@ -71,6 +71,7 @@ function sheetLab() {
   const row = (k, name, d) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: name }), el('div', { class: 'seg' }, [[true, '켬'], [false, '끔']].map(([v, t]) => el('button', { 'aria-pressed': String(LAB[k] === v), text: t, onclick: () => { SND.tap(); LAB[k] = v; savePrefs(); labChanged(); sheetLab(); } }))), d ? note(d) : null]);
   openSheet('실험실', [
     note('2.0에서 새로 들어간 것들입니다. 마음에 안 드는 것은 여기서 끄면 1.x 때처럼 돌아갑니다.'),
+    row('real', '현실 물리 (시험판)', '대결에만 적용됩니다. 쿠션, 공끼리의 마찰, 옆 회전을 주면 공이 살짝 빗나가는 것, 4구·3구의 빠른 천까지 실제에 가깝게 계산합니다. 레슨과 퍼즐은 원래 물리 그대로입니다.'),
     row('masse', '큐 세우기 (맛세이 · 점프)', '끄면 회전 창에서 큐 각도가 사라집니다.'),
     row('suji', '수지 (4구)', '이름마다 자기 수지까지 칩니다. 끄면 둘 다 같은 점수까지.'),
     row('tray', '넣은 공 표시 (8볼)', '이름표에 넣은 공이 쌓입니다. 끄면 남은 공을 보여줍니다.'),

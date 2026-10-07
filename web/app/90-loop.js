@@ -65,7 +65,7 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, real: !!game.P.REAL, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
   store.set('save', d);
 }
 function start() {

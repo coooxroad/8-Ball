@@ -586,7 +586,7 @@ function createScene(canvas, app, PH) {
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }
     if (guide.visible) {
-      const dx = Math.cos(v.aim), dy = Math.sin(v.aim), lv = v.level;
+      const ga = v.aim + (P.squirt ? P.squirt(v.spin.x * 0.5) : 0), dx = Math.cos(ga), dy = Math.sin(ga), lv = v.level;   // with side on, a real cue ball leaves a little off the line of the cue
       const raised = v.el > 0.02;
       const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(2)].join('|');
       if (key !== guideKey && raised) {

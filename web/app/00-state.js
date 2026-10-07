@@ -47,16 +47,22 @@ const prefs = (() => {
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
-  p.lab = Object.assign({ masse: true, suji: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
+  p.lab = Object.assign({ real: false, masse: true, suji: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
   if (p.v < 2) { p.news = Object.keys(saved).length > 0; p.how = !!p.news; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
 
-const poolCache = {};
-const poolOf = id => poolCache[id] || (poolCache[id] = createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg)));
+/* Every table exists twice: with the physics the game has always had, and with the realistic one (physics.js, cfg.real).
+   Lessons and puzzles were made on the first and always use it; a game between players uses whichever is switched on.
+   usePhysics() puts the right set of tables where the game looks for them, and has to be called before a game is started. */
+const tableCache = {};
+const tableOf = (key, cfg, real) => tableCache[key + (real ? '+' : '')] || (tableCache[key + (real ? '+' : '')] = createPhysics(Object.assign({ real: !!real }, cfg)));
+const poolOf = (id, real) => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg), real);
 // carom: the medium table four-ball is played on (254x127cm, 65.5mm balls); carom3: the match table of three-cushion (284x142cm, 61.5mm)
-const PH = { pool: poolOf(prefs.table), carom: createPhysics({ R: 0.03275, pockets: false }), carom3: createPhysics({ R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }) };
+const PH = {};
+function usePhysics(real) { PH.pool = poolOf(prefs.table, real); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }, real); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }, real); }
+usePhysics(false);
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);

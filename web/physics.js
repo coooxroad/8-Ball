@@ -4,7 +4,15 @@
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
-  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.04, E_BALL = 0.96, MU_CUSH = 0.16;
+  /* cfg.real: the same table with the physics taken as far towards a real one as this engine goes (see the notes where each
+     is used): cushions worked out from where the rubber meets the ball, friction between balls, the cue ball pushed off
+     line by side, spin lost into the slate under a raised cue, cloth and cushions as fast as each kind of table really is,
+     and no easing of the last roll. Without it everything is as it has always been, which is what the lessons and puzzles
+     were made on. */
+  const REAL = !!cfg.real;
+  const MU_S0 = 0.2, MU_R0 = !REAL ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
+  // the nose of a cushion stands at 0.635 of a ball's height, so it meets the ball above the middle and pushes it down as well as back
+  const NOSE_S = 0.27, NOSE_C = Math.sqrt(1 - NOSE_S * NOSE_S);
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
   const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
@@ -86,13 +94,23 @@ function createPhysics(cfg) {
   function strike(w, ang, V, a, bb, el) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
     el = el || 0; const ce = Math.cos(el), se = Math.sin(el);
-    c.vx = V * ce * dx; c.vy = V * ce * dy;
+    // side on the cue ball sends it a little the other way from the side it was struck on (real tables only)
+    const sq = squirt(a) * ce, gx = Math.cos(ang + sq), gy = Math.sin(ang + sq);
+    c.vx = V * ce * gx; c.vy = V * ce * gy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
     const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // a hop too small to see is swallowed by the cloth
+    if (REAL && se > 0) {
+      // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
+      const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = Math.hypot(ux, uy);
+      if (us > 1e-4) { const dec = Math.min(MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
+    }
     w.ev = newEv();
   }
-  const CREEP = 0.18, JUMP = 0.36, HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
+  // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
+  const squirt = a => REAL ? 0.07 * a : 0;
+  const CREEP = REAL ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
+        HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
 
   function motion(w, b, h) {
     if (b.z > 0 || b.vz > 0) {
@@ -159,8 +177,27 @@ function createPhysics(cfg) {
     b.x = cx + nx * R; b.y = cy + ny * R;
     const vn = b.vx * nx + b.vy * ny;
     if (vn >= 0) return;
-    const e = Math.max(0.62, 0.87 - 0.035 * -vn);
     const tx = -ny, ty = nx;
+    if (REAL) {
+      /* The cushion touches the ball above its middle, so it pushes along a line that slopes down into the table. The push
+         straight back is what it always was. What is new is the grip at that raised point: it sees the ball's side spin,
+         its roll along the rail AND its roll into the rail, and answers each (up to what friction allows) - which is why a
+         rolling ball comes off a real cushion with its roll partly turned round, and why side lengthens or shortens the
+         angle. And being pushed down, the ball is gripped by the cloth for that instant too. */
+      const c = -vn, e = POCKETED ? Math.max(0.6, 0.85 - 0.035 * c) : Math.max(0.7, 0.9 - 0.03 * c), Jn = (1 + e) * c / NOSE_C;
+      let wn = b.wx * nx + b.wy * ny, wt = b.wx * tx + b.wy * ty;
+      const st = b.vx * tx + b.vy * ty - RB * (b.wz * NOSE_C + wn * NOSE_S), sp = vn * NOSE_S + wt * RB;   // slip of the touching point: along the rail, and up the face
+      let Jt = -st / 3.5, Jp = -sp / (2.5 + NOSE_S * NOSE_S); const jl = Math.hypot(Jt, Jp), lim = MU_CUSH * Jn;
+      if (jl > lim) { Jt *= lim / jl; Jp *= lim / jl; }
+      const dn = (1 + e) * c + Jp * NOSE_S;
+      b.vx += dn * nx + Jt * tx; b.vy += dn * ny + Jt * ty;
+      b.wz -= 2.5 * Jt * NOSE_C / RB; wn -= 2.5 * Jt * NOSE_S / RB; wt += 2.5 * Jp / RB;
+      b.wx = wn * nx + wt * tx; b.wy = wn * ny + wt * ty;
+      const down = Jn * NOSE_S - Jp * NOSE_C;                     // how hard it was pressed into the cloth
+      if (down > 0 && b.z === 0) { const ux = b.vx - RB * b.wy, uy = b.vy + RB * b.wx, us = Math.hypot(ux, uy); if (us > 1e-4) { const dec = Math.min(MU_S0 * down, (2 / 7) * us), ex = ux / us, ey = uy / us; b.vx -= dec * ex; b.vy -= dec * ey; b.wx -= (2.5 / RB) * dec * ey; b.wy += (2.5 / RB) * dec * ex; } }
+      noteRail(w, b, vn); return;
+    }
+    const e = Math.max(0.62, 0.87 - 0.035 * -vn);
     // side spin grips the cushion and bends the rebound
     const slip = b.vx * tx + b.vy * ty - RB * b.wz;
     const lim = MU_CUSH * (1 + e) * -vn;
@@ -174,6 +211,9 @@ function createPhysics(cfg) {
     const wn = b.wx * nx + b.wy * ny, wt = b.wx * tx + b.wy * ty;
     const wn2 = wn * 0.9, wt2 = wt * -0.15;
     b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
+    noteRail(w, b, vn);
+  }
+  function noteRail(w, b, vn) {
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
     if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
@@ -198,6 +238,17 @@ function createPhysics(cfg) {
         if (rel >= 0) continue;
         const jn = -(1 + E_BALL) / 2 * rel;
         a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
+        if (REAL && a.z === 0 && b.z === 0) {
+          /* Balls are not perfectly slippery. Where they touch, one surface is sliding across the other - from the angle of
+             the cut and from whatever spin they carry - and friction there throws the struck ball a degree or so off the
+             line through the centres and hands a little spin across. Slower, stickier: the faster the sliding, the less grip. */
+          const uh = (b.vx - a.vx) * -ny + (b.vy - a.vy) * nx - R * (b.wz + a.wz), uz = -R * ((b.wx + a.wx) * ny - (b.wy + a.wy) * nx), us = Math.hypot(uh, uz);
+          if (us > 1e-5) {
+            const J = Math.min((0.00995 + 0.108 * Math.exp(-1.088 * us)) * jn, us / 7), dh = -uh / us, dz = -uz / us;
+            b.vx += J * dh * -ny; b.vy += J * dh * nx; a.vx -= J * dh * -ny; a.vy -= J * dh * nx;
+            const k = 2.5 * J / R; a.wz -= k * dh; b.wz -= k * dh; a.wx += k * dz * -ny; a.wy += k * dz * nx; b.wx += k * dz * -ny; b.wy += k * dz * nx;
+          }
+        }
         if (i === cue || j === cue) {
           const o = i === cue ? j : i;
           if (w.ev.firstHit == null) w.ev.firstHit = o;
@@ -381,6 +432,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
+  return { hop, squirt, REAL, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;
