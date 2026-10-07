@@ -173,10 +173,22 @@ function createPhysics(cfg) {
     let nx = b.x - cx, ny = b.y - cy;
     const d2 = nx * nx + ny * ny;
     if (d2 >= R * R || d2 < 1e-14) return;
-    const d = Math.sqrt(d2); nx /= d; ny /= d;
+    let d = Math.sqrt(d2); nx /= d; ny /= d;
+    let vn = b.vx * nx + b.vy * ny, tau = 0;
+    if (vn < 0) {
+      // back to the instant it touched, so that the cushion is met where and how it really was met - then on from there
+      tau = Math.min(SUBH, (R - d) / -vn); b.x -= b.vx * tau; b.y -= b.vy * tau;
+      u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty; u = u < 0 ? 0 : u > s.len ? s.len : u;
+      const qx = s.ax + s.tx * u, qy = s.ay + s.ty * u, ex = b.x - qx, ey = b.y - qy, el = Math.hypot(ex, ey);
+      if (el > 1e-9) { nx = ex / el; ny = ey / el; if (el < R) { b.x = qx + nx * R; b.y = qy + ny * R; } }
+      vn = b.vx * nx + b.vy * ny;
+      if (vn >= 0) { b.x += b.vx * tau; b.y += b.vy * tau; return; }
+      hitRail(w, b, nx, ny, vn); b.x += b.vx * tau; b.y += b.vy * tau; return;
+    }
     b.x = cx + nx * R; b.y = cy + ny * R;
-    const vn = b.vx * nx + b.vy * ny;
-    if (vn >= 0) return;
+  }
+  let SUBH = 1 / 360;                                             // the length of the step being taken (for the rewinds above and below)
+  function hitRail(w, b, nx, ny, vn) {
     const tx = -ny, ty = nx;
     if (REAL) {
       /* The cushion touches the ball above its middle, so it pushes along a line that slopes down into the table. The push
@@ -221,21 +233,52 @@ function createPhysics(cfg) {
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
+  /* Two balls of which at least one is off the cloth. Everything in three dimensions: where they touched, how fast they were
+     closing, and the blow - so a ball coming down on another is thrown back up by it and knocks it on, and the meeting is
+     counted as a hit. A ball that is on the cloth cannot be driven down into it: the slate takes that. */
+  function hitAir(w, a, b, i, j, h) {
+    let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx * dx + dy * dy + dz * dz;
+    if (d2 >= 4 * R * R || d2 < 1e-14) return;
+    const rx = b.vx - a.vx, ry = b.vy - a.vy, rz = b.vz - a.vz, vv = rx * rx + ry * ry + rz * rz, dv = dx * rx + dy * ry + dz * rz;
+    if (dv >= 0 || vv < 1e-12) return;                             // already parting
+    const tau = Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv);
+    for (const q of [a, b]) { q.x -= q.vx * tau; q.y -= q.vy * tau; q.z = Math.max(0, q.z - q.vz * tau); }
+    dx = b.x - a.x; dy = b.y - a.y; dz = b.z - a.z; const d = Math.hypot(dx, dy, dz) || 1, nx = dx / d, ny = dy / d, nz = dz / d;
+    const rel = rx * nx + ry * ny + rz * nz;
+    if (rel < 0) {
+      const jn = -(1 + E_BALL) / 2 * rel;
+      a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
+      for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
+      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
+      if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
+    }
+    for (const q of [a, b]) { q.x += q.vx * tau; q.y += q.vy * tau; q.z = Math.max(0, q.z + q.vz * tau); }
+  }
   function sub(w, h) {
+    SUBH = h;
     const bs = w.balls, n = bs.length, cue = w.cue;
     for (let i = 0; i < n; i++) if (bs[i].on) motion(w, bs[i], h);
     for (let i = 0; i < n; i++) {
       const a = bs[i]; if (!a.on) continue;
       for (let j = i + 1; j < n; j++) {
         const b = bs[j]; if (!b.on) continue;
-        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
         if (d2 >= 4 * R * R || d2 < 1e-14) continue;
-        const dz = a.z - b.z, reach = dz === 0 ? 2 * R : Math.sqrt(Math.max(0, 4 * R * R - dz * dz));   // one of them in the air: they meet later, or not at all
-        if (dz !== 0 && d2 >= reach * reach) continue;
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (reach - d) / 2;
-        a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
+        if (a.z !== 0 || b.z !== 0 || a.vz !== 0 || b.vz !== 0) { hitAir(w, a, b, i, j, h); continue; }
+        /* They are found already overlapping, a little way into each other. The blow goes along the line of centres at the
+           instant they TOUCHED, so both are taken back to that instant first (and carried on from it afterwards). Without
+           this a thin cut came out degrees wrong, and differently at every step length. */
+        const rvx = b.vx - a.vx, rvy = b.vy - a.vy, vv = rvx * rvx + rvy * rvy, dv = dx * rvx + dy * rvy;
+        let tau = 0;
+        if (dv < 0 && vv > 1e-12) {
+          tau = Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv);
+          a.x -= a.vx * tau; a.y -= a.vy * tau; b.x -= b.vx * tau; b.y -= b.vy * tau;
+          dx = b.x - a.x; dy = b.y - a.y; d2 = dx * dx + dy * dy;
+        }
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
+        if (ov > 0) { a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov; }
         const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-        if (rel >= 0) continue;
+        if (rel >= 0) { if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; } continue; }
         const jn = -(1 + E_BALL) / 2 * rel;
         a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
         if (REAL && a.z === 0 && b.z === 0) {
@@ -249,6 +292,7 @@ function createPhysics(cfg) {
             const k = 2.5 * J / R; a.wz -= k * dh; b.wz -= k * dh; a.wx += k * dz * -ny; a.wy += k * dz * nx; b.wx += k * dz * -ny; b.wy += k * dz * nx;
           }
         }
+        if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; }
         if (i === cue || j === cue) {
           const o = i === cue ? j : i;
           if (w.ev.firstHit == null) w.ev.firstHit = o;

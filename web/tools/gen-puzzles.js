@@ -104,6 +104,33 @@ const STAGES = [
       return best; } },
 ];
 
+/* node web/tools/gen-puzzles.js resolve
+   After a change to the physics: every puzzle is played with its stored answer; one whose answer no longer works keeps its
+   position and gets a new answer looked for in the same way as the first. (Positions stay, so nobody's stars move.) */
+if (process.argv[2] === 'resolve') {
+  const file = path.join(W, 'puzzles.js'), Z = require(file)(), GEN = { '첫 득점': 0, '모아치기': 1, '밀어치기 · 끌어치기': 2, '빈쿠션': 3, '상대 공 피해 가기': 4, '돌려치기': 5, '맛세이 · 점프': 6 };
+  let src = fs.readFileSync(file, 'utf8'), fixed = 0, lost = 0;
+  for (const z of Z.list) {
+    const S = Z.STAGES[z.stage], base = world(z.balls);
+    if (sturdy(base, S.goal, z.sol)) continue;
+    const s = STAGES[GEN[S.name]].solve(base, z.balls), sol = s && s.best ? s.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v) : null;
+    if (sol && sturdy(base, S.goal, sol)) { const before = JSON.stringify(z), after = JSON.stringify(Object.assign({}, z, { sol })); if (!src.includes(before)) throw new Error('puzzle ' + z.id + ' not found as written'); src = src.replace(before, after); fixed++; console.log(`puzzle ${z.id} (${S.name}): new answer`); }
+    else {
+      // nothing works on this position any more: a new position of the same kind takes its place
+      const T2 = STAGES[GEN[S.name]]; let done = false; seed = 777 + z.id * 131;
+      for (let k = 0; k < 20000 && !done; k++) {
+        const balls = T2.make(); if (!valid(balls) || !T2.ok(balls)) continue;
+        if (Z.list.some(q => q.stage === z.stage && q !== z && dist(q.balls[0], balls[0]) + dist(q.balls[2], balls[2]) + dist(q.balls[3], balls[3]) < 0.5)) continue;
+        const b2 = world(balls), r = T2.solve(b2, balls); if (!r || !r.best || r.share < T2.lo || r.share > T2.hi || r.best.n < 3) continue;
+        const sol2 = r.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v); if (!sturdy(b2, T2.goal, sol2)) continue;
+        const before = JSON.stringify(z), after = JSON.stringify(Object.assign({}, z, { balls, sol: sol2 })); if (!src.includes(before)) throw new Error('puzzle ' + z.id + ' not found as written');
+        src = src.replace(before, after); z.balls = balls; done = true; fixed++; console.log(`puzzle ${z.id} (${S.name}): replaced by a new position`);
+      }
+      if (!done) { lost++; console.log(`puzzle ${z.id} (${S.name}): NO ANSWER FOUND and no replacement`); }
+    }
+  }
+  fs.writeFileSync(file, src); console.log(`${fixed} re-answered, ${lost} without an answer, ${Z.list.length - fixed - lost} unchanged`); process.exit(lost ? 1 : 0);
+}
 const T = STAGES[stage], found = [], seen = new Set(); let tries = 0; const t0 = Date.now();
 while (found.length < WANT && tries < 30000) {
   tries++; const balls = T.make();
