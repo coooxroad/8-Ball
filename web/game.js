@@ -224,8 +224,14 @@ function createGame(PH) {
   };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
-  g.vOf = power => (0.35 + 7.4 * Math.pow(power, 1.35)) * (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1);
-  g.powerOf = V => Math.pow(Math.max(0.0001, (V / (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1) - 0.35) / 7.4), 1 / 1.35);
+  /* How hard the cue ball is struck (m/s) for a power from 0 to 1. Above LOW it is the curve the game has always had. That
+     curve bottoms out at 0.35 m/s, which already rolls a ball most of half a metre - so nothing gentler could be played.
+     Below LOW it now bends down, smoothly (same value and slope where they join), to a touch that moves the ball millimetres. */
+  const LOW = 0.15, V_LOW = 0.35 + 7.4 * Math.pow(LOW, 1.35), S_LOW = 7.4 * 1.35 * Math.pow(LOW, 0.35), V_MIN = 0.03,
+        C_LOW = (S_LOW - (V_LOW - V_MIN) / LOW) / LOW, B_LOW = (V_LOW - V_MIN) / LOW - C_LOW * LOW;
+  const brk = () => g.isBreak && g.mode.table === 'pool' ? 1.42 : 1;
+  g.vOf = power => (power >= LOW ? 0.35 + 7.4 * Math.pow(power, 1.35) : V_MIN + (B_LOW + C_LOW * power) * Math.max(0, power)) * brk();
+  g.powerOf = V => { const v = V / brk(); return v >= V_LOW ? Math.pow((v - 0.35) / 7.4, 1 / 1.35) : v <= V_MIN ? 0 : (-B_LOW + Math.sqrt(B_LOW * B_LOW + 4 * C_LOW * (v - V_MIN))) / (2 * C_LOW); };
   g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };
 
   // Called once every ball has stopped. Applies the result and says what happened.

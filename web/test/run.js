@@ -220,5 +220,76 @@ for (const name of ['bar', 'pro', 'pub']) {
   }
   console.log(`realistic physics: checked (carom cloth runs ${roll(C).toFixed(1)} table lengths against ${roll(OLD).toFixed(1)} before; pool ${roll(PL).toFixed(1)})`);
 }
+/* What a simulation owes whoever plays it, on both physics: the same answer at any step length (a thin cut against theory);
+   the mirror image of a shot gives the mirror image of the result, and which ball has which number changes nothing; the aiming
+   guide's preview IS the shot; the gentlest touch and the smallest raise of the cue can be played; and on the realistic one
+   nothing jumps at a threshold, side dies at a measured rate, a ball landing on another is a real blow, and no shot - cushions,
+   balls, air and all - ever ends up with more energy than it was given. */
+{
+  const deg = 180 / Math.PI, both = [['usual', false], ['realistic', true]];
+  let worst = 0, gain = 0, shots = 0;
+  for (const [name, real] of both) {
+    const P = createPhysics(Object.assign({ real, pockets: true }, TABLES.bar)), R = P.R;
+    const lay = (list) => { const w = P.makeWorld(list.length); list.forEach((q, i) => P.place(w, i, q[0], q[1])); return w; };
+    const cut = dt => { const w = lay([[-0.4, 0], [0, 1.8 * R]]); P.strike(w, 0, 3, 0, 0); let n = 0; while (w.ev.firstHit == null && n++ < 1e6) P.step(w, dt); return Math.atan2(w.balls[1].vy, w.balls[1].vx) * deg; };
+    const a = cut(1 / 120), b = cut(1 / 1920); worst = Math.max(worst, Math.abs(a - b));
+    if (Math.abs(a - b) > 0.02) fail(`${name} physics: a thin cut depends on the step length (${a.toFixed(2)} against ${b.toFixed(2)} degrees)`);
+    if (!real && Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`usual physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
+    // mirror image
+    for (let k = 0; k < 40; k++) {
+      const ang = (k * 0.618 % 1 - 0.5) * 0.5, V = 1 + k % 7, sa = (k % 5 - 2) / 4 * 0.5, sb = (k % 3 - 1) * 0.3, el = k % 4 === 0 ? 0.5 : 0, pos = [[-0.4, 0.1], [0.1, 0.16], [0.5, -0.2], [-0.2, -0.3]];
+      const w = lay(pos), m = lay(pos.map(q => [q[0], -q[1]]));
+      P.strike(w, ang, V, sa, sb, el); P.strike(m, -ang, V, -sa, sb, el); P.run(w, 30); P.run(m, 30);
+      for (let i = 0; i < 4; i++) if (w.balls[i].on !== m.balls[i].on || (w.balls[i].on && Math.hypot(w.balls[i].x - m.balls[i].x, w.balls[i].y + m.balls[i].y) > 1e-6)) { fail(`${name} physics: a mirrored shot did not give the mirrored result (shot ${k}, ball ${i})`); break; }
+    }
+    // the same balls numbered the other way round
+    { const A = lay([[-0.4, 0], [0, 0.03], [0.5, 0.3], [0.3, -0.25]]), B = lay([[-0.4, 0], [0.3, -0.25], [0.5, 0.3], [0, 0.03]]);
+      P.strike(A, 0, 4, 0.2, 0.1); P.strike(B, 0, 4, 0.2, 0.1); P.run(A, 30); P.run(B, 30);
+      for (const [i, j] of [[0, 0], [1, 3], [2, 2], [3, 1]]) if (A.balls[i].on !== B.balls[j].on || Math.hypot(A.balls[i].x - B.balls[j].x, A.balls[i].y - B.balls[j].y) > 1e-6) fail(`${name} physics: renumbering the balls changed the shot`); }
+    // the preview is the shot
+    for (let k = 0; k < 60; k++) {
+      const pos = [[-0.5, 0.05], [0.1 + (k % 5) * 0.05, 0.1 - (k % 7) * 0.04], [0.5, -0.2]], ang = (k * 0.618 % 1 - 0.5) * 0.9, V = 0.6 + k % 6, sa = (k % 5 - 2) / 4 * 0.5, sb = (k % 3 - 1) * 0.3, el = k % 5 === 0 ? 0.6 : k % 5 === 1 ? 0.05 : 0;
+      const w = lay(pos), pv = P.preview(w, ang, V, sa, sb, el, 1);
+      if (w.balls.some((q, i) => q.x !== pos[i][0] || q.y !== pos[i][1] || q.vx !== 0) || w.ev.at) { fail(`${name} physics: looking at the guide moved the balls`); break; }
+      P.strike(w, ang, V, sa, sb, el); let t = 0, obj = null; const path = [];
+      while (t < 9 && w.balls[0].on && path.length < 90) { P.step(w, 1 / 120); t += 1 / 120; if (w.ev.at) { if (!path.length && w.ev.at[3] >= 0) { const o = w.balls[w.ev.at[3]]; obj = Math.atan2(o.vy, o.vx); } path.push(w.balls[0].x, w.balls[0].y, w.balls[0].z); } else if (!w.balls[0].vx && !w.balls[0].vy && !w.balls[0].z) break; }
+      const at = w.ev.at;
+      if (!at !== !pv.at || (at && (at[0] !== pv.at[0] || at[1] !== pv.at[1] || at[3] !== pv.at[3]))) { fail(`${name} physics: the guide's first contact is not the shot's (shot ${k})`); break; }
+      if (at && obj != null && (!pv.obj || Math.abs(Math.atan2(pv.obj.dy, pv.obj.dx) - obj) > 1e-9)) { fail(`${name} physics: the guide sends the struck ball another way than the shot does (shot ${k})`); break; }
+      if (at) for (let i = 0; i < Math.min(path.length, pv.post.length - 3); i++) if (path[i] !== pv.post[i + 3]) { fail(`${name} physics: the guide's cue ball path is not the shot's (shot ${k})`); k = 99; break; }
+    }
+    // energy, everything counted: travel, turning, height. (Striking the ball is where energy comes in; after that it only goes.)
+    if (real) for (let k = 0; k < 400; k++) {
+      const w = lay([[-0.5, 0.02], [0.05, 0.06 * (k % 3 - 1)], [0.3, 0.2], [0.11, 0.0], [-0.1, -0.3]]), el = k % 3 === 0 ? 0.2 + (k % 11) * 0.1 : 0;
+      P.strike(w, (k * 0.618 % 1 - 0.5) * 0.6, 1 + (k * 7 % 70) / 10, (k % 7 - 3) / 6 * 0.5, (k % 5 - 2) / 4 * 0.5, el); shots++;
+      const E = () => { let e = 0; for (const q of w.balls) if (q.on) e += 0.5 * (q.vx * q.vx + q.vy * q.vy + q.vz * q.vz) + 0.2 * R * R * (q.wx * q.wx + q.wy * q.wy + q.wz * q.wz) + 9.8 * q.z; return e; };
+      for (let i = 0; i < 600 && !P.rest(w); i++) { const e0 = E(); P.step(w, 1 / 120); if (E() > e0 * 1.0005 + 1e-7) gain++; }
+    }
+    if (real) {
+      // nothing switches on at a threshold: a hair more speed, a hair more air
+      const air = V => { const w = lay([[0, 0]]); P.strike(w, 0, V, 0, 0, Math.PI / 4); P.run(w, 20); return w.ev.air; };
+      for (let V = 0.2; V < 4; V += 0.02) { const d = air(V + 0.02) - air(V); if (!(d > 0 && d < 0.0012)) { fail(`realistic physics: the jump leaps between ${V.toFixed(2)} and ${(V + 0.02).toFixed(2)} m/s (${(d * 1000).toFixed(2)} mm)`); break; } }
+      const bounce = down => { const w = lay([[0, 0]]), q = w.balls[0]; q.z = 1e-5; q.vz = -down; let top = 0; for (let i = 0; i < 60; i++) { P.step(w, 1 / 960); top = Math.max(top, q.z); } return top; };
+      for (let d = 0.1; d < 2; d += 0.02) { const j = bounce(d + 0.02) - bounce(d); if (!(j > 0 && j < 0.002)) { fail(`realistic physics: the bounce leaps for a landing between ${d.toFixed(2)} and ${(d + 0.02).toFixed(2)} m/s`); break; } }
+      // a ball coming down on another: a hit, a blow both ways, and it is thrown back up
+      { const w = lay([[-0.03, 0], [0, 0]]), c = w.balls[0]; c.z = 1.9 * R; c.vz = -1.5; c.vx = 0.4; let up = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (c.vz > 0.2) up = true; }
+        if (w.ev.firstHit !== 1 || !up || !(Math.hypot(w.balls[1].vx, w.balls[1].vy) > 0.05 || w.balls[1].x > 0.001)) fail('realistic physics: a ball landing on another should strike it, move it and bounce off it'); }
+    }
+    // side dies at a rate tables are measured to have
+    { const w = lay([[0, 0]]), q = w.balls[0]; q.wz = 30; P.step(w, 1 / 120); const rate = (30 - q.wz) * 120; if (real && !(rate >= 5 && rate <= 15)) fail(`realistic physics: side dies at ${rate.toFixed(1)} rad/s2 (measured tables: 5 to 15)`);
+      if (!P.rest(w)) fail('a ball only turning on the spot should not hold up the game'); P.run(w, 1); if (q.wz !== 0) fail('the turning left over when a shot ends should be dropped'); }
+  }
+  if (gain) fail(`realistic physics: total energy went up on ${gain} steps`);
+  // power: the old curve from 15% up, and below it down to a touch - smooth, increasing, and the way back agrees
+  { const g = createGame({ pool: createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), carom: createPhysics({ real: true, R: 0.03275, pockets: false }) });
+    g.start('eight', ['A', 'B'], false, {}); g.isBreak = false;
+    let ok = true, last = g.vOf(0); for (let p = 0.001; p <= 1.0001; p += 0.001) { const v = g.vOf(p); if (!(v > last && v - last < 0.02) || Math.abs(g.powerOf(v) - p) > 1e-6) ok = false; last = v; }
+    if (!ok) fail('power: the curve should rise smoothly, and powerOf should undo vOf');
+    for (const p of [0.15, 0.3, 0.62, 1]) if (Math.abs(g.vOf(p) - (0.35 + 7.4 * Math.pow(p, 1.35))) > 1e-12) fail('power: the curve changed where lessons and answers use it');
+    const P = g.P, w = P.makeWorld(1); P.place(w, 0, 0, 0); P.strike(w, 0, g.vOf(0.002), 0, 0); P.run(w, 30);
+    if (!(w.balls[0].x > 0 && w.balls[0].x < 0.01)) fail(`power: the gentlest touch rolls ${(w.balls[0].x * 100).toFixed(1)} cm - it should be millimetres`);
+    console.log(`both physics: step length (worst ${worst.toFixed(4)} degrees), mirror, numbering, guide = shot, energy over ${shots} shots, thresholds, soft touch (${(w.balls[0].x * 1000).toFixed(1)} mm): checked`);
+  }
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

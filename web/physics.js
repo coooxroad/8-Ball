@@ -10,7 +10,11 @@ function createPhysics(cfg) {
      and no easing of the last roll. Without it everything is as it has always been, which is what the lessons and puzzles
      were made on. */
   const REAL = !!cfg.real;
-  const MU_S0 = 0.2, MU_R0 = !REAL ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
+  /* MU_SP: friction against turning on the spot. Side dies at 2.5 * MU_SP * g / R radians per second, every second. The
+     original 0.04 makes that 34; measured tables give 5 to 15 (Dr. Dave Alciatore's table of equipment properties). The
+     realistic physics takes the contact patch to grow with the ball, MU_SP = 4R/9, which is 10.9 for any ball - the same
+     assumption and value as the pooltool simulator. For a carom ball on carom cloth that is a guess, not a measurement. */
+  const MU_S0 = 0.2, MU_R0 = !REAL ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = REAL ? (4 / 9) * R : 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
   // the nose of a cushion stands at 0.635 of a ball's height, so it meets the ball above the middle and pushes it down as well as back
   const NOSE_S = 0.27, NOSE_C = Math.sqrt(1 - NOSE_S * NOSE_S);
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
@@ -64,7 +68,8 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [] }; }   // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+    // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -99,7 +104,7 @@ function createPhysics(cfg) {
     c.vx = V * ce * gx; c.vy = V * ce * gy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // a hop too small to see is swallowed by the cloth
+    const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // (original physics only) a hop too small to see is swallowed by the cloth
     if (REAL && se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
       const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = Math.hypot(ux, uy);
@@ -110,9 +115,33 @@ function createPhysics(cfg) {
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
   const squirt = a => REAL ? 0.07 * a : 0;
   const CREEP = REAL ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
-        HOP = 0.45, CLEAR = 0.034, MU_LAND = 0.25;        // CLEAR: a ball this far off the cloth passes over a cushion
+        CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
+        /* The original physics drops a hop below HOP and a bounce below LAND outright, so a little more cue speed can turn
+           "stays down" into a centimetre of air. The realistic one has no such step: every raised cue lifts the ball by what
+           it lifts it, and it goes on bouncing until the bounce is too small to matter (a twentieth of a millimetre). */
+        HOP = REAL ? 0 : 0.45, LAND = REAL ? 0.03 : 0.7, E_LAND = REAL ? 0.5 : 0.42;
 
   function motion(w, b, h) {
+    if (REAL && (b.z > 0 || b.vz > 0)) {
+      /* In the air: nothing but gravity - worked out exactly, landing at the instant it lands and bouncing on from there
+         within the same step. (Stepping it, a ball one hair off the cloth was handed a whole step of falling, and came
+         back up from that with more than it went down with: the smallest bounces never died.) */
+      let rem = h;
+      for (let k = 0; k < 12 && rem > 0; k++) {
+        const top = b.z + (b.vz > 0 ? b.vz * b.vz / (2 * G) : 0), tl = (b.vz + Math.sqrt(b.vz * b.vz + 2 * G * b.z)) / G;
+        if (b.id === w.cue && top > w.ev.air) w.ev.air = top;
+        if (tl > rem) { b.z += b.vz * rem - 0.5 * G * rem * rem; b.vz -= G * rem; b.x += b.vx * rem; b.y += b.vy * rem; break; }
+        const down = Math.sqrt(b.vz * b.vz + 2 * G * b.z), bounce = down > LAND;
+        b.x += b.vx * tl; b.y += b.vy * tl; b.z = 0; rem -= tl;
+        // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
+        const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
+        if (us > 1e-4) { const dec = Math.min(MU_LAND * (bounce ? 1 + E_LAND : 1) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
+        if (bounce) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; }
+        else { b.vz = 0; b.x += b.vx * rem; b.y += b.vy * rem; break; }
+      }
+      if (w.track) turn(b, h);
+      return;
+    }
     if (b.z > 0 || b.vz > 0) {
       // in the air: nothing but gravity, until it comes down (and bounces once or twice if it came down hard)
       b.vz -= G * h; b.z += b.vz * h; b.x += b.vx * h; b.y += b.vy * h;
@@ -121,8 +150,8 @@ function createPhysics(cfg) {
         b.z = 0;
         // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
         const down = -b.vz, ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
-        if (us > 1e-4 && down > 0) { const dec = Math.min(MU_LAND * 1.42 * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
-        if (down > 0.7) { if (w.snd) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * 0.42; } else b.vz = 0;
+        if (us > 1e-4 && down > 0) { const dec = Math.min(MU_LAND * (1 + E_LAND) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
+        if (down > LAND) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; } else b.vz = 0;
       }
       if (w.track) turn(b, h);
       return;
@@ -165,6 +194,14 @@ function createPhysics(cfg) {
     }
   }
 
+  // how long ago the ball met this face (0: resting against or leaving it); -1 when it is not touching
+  function segTime(b, s) {
+    let u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty; u = u < 0 ? 0 : u > s.len ? s.len : u;
+    const nx = b.x - (s.ax + s.tx * u), ny = b.y - (s.ay + s.ty * u), d2 = nx * nx + ny * ny;
+    if (d2 >= RB * RB - 1e-12 || d2 < 1e-14) return -1;
+    const d = Math.sqrt(d2), vn = (b.vx * nx + b.vy * ny) / d;
+    return vn < 0 ? Math.min(SUBH, (RB - d) / -vn) : 0;
+  }
   function hitSeg(w, b, s) {
     const R = RB;
     let u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty;
@@ -230,6 +267,7 @@ function createPhysics(cfg) {
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
     if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
     if (b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
+    if (b.id === w.cue && !w.ev.at) w.ev.at = [b.x, b.y, b.z, -1];
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
@@ -248,8 +286,21 @@ function createPhysics(cfg) {
     if (rel < 0) {
       const jn = -(1 + E_BALL) / 2 * rel;
       a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
+      if (REAL) {
+        // the same friction between the two surfaces as on the cloth (see below), in three dimensions
+        const wx = a.wx + b.wx, wy = a.wy + b.wy, wz = a.wz + b.wz;
+        let sx = b.vx - a.vx - R * (wy * nz - wz * ny), sy = b.vy - a.vy - R * (wz * nx - wx * nz), sz = b.vz - a.vz - R * (wx * ny - wy * nx);
+        const sn = sx * nx + sy * ny + sz * nz; sx -= sn * nx; sy -= sn * ny; sz -= sn * nz;
+        const us = Math.hypot(sx, sy, sz);
+        if (us > 1e-5) {
+          const J = Math.min((0.00995 + 0.108 * Math.exp(-1.088 * us)) * jn, us / 7), fx = -J * sx / us, fy = -J * sy / us, fz = -J * sz / us, k = 2.5 / R;
+          b.vx += fx; b.vy += fy; b.vz += fz; a.vx -= fx; a.vy -= fy; a.vz -= fz;
+          const tx = -(ny * fz - nz * fy) * k, ty = -(nz * fx - nx * fz) * k, tz = -(nx * fy - ny * fx) * k;   // the same turn for both: (-R n) x f on one, (R n) x (-f) on the other
+          a.wx += tx; a.wy += ty; a.wz += tz; b.wx += tx; b.wy += ty; b.wz += tz;
+        }
+      }
       for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
-      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
+      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
       if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
     }
     for (const q of [a, b]) { q.x += q.vx * tau; q.y += q.vy * tau; q.z = Math.max(0, q.z + q.vz * tau); }
@@ -292,6 +343,7 @@ function createPhysics(cfg) {
             const k = 2.5 * J / R; a.wz -= k * dh; b.wz -= k * dh; a.wx += k * dz * -ny; a.wy += k * dz * nx; b.wx += k * dz * -ny; b.wy += k * dz * nx;
           }
         }
+        if ((i === cue || j === cue) && !w.ev.at) { const c = i === cue ? a : b; w.ev.at = [c.x, c.y, 0, i === cue ? j : i]; }
         if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; }
         if (i === cue || j === cue) {
           const o = i === cue ? j : i;
@@ -313,7 +365,14 @@ function createPhysics(cfg) {
           }
           continue;
         }
-        if (b.vx !== 0 || b.vy !== 0) for (let k = 0; k < SEGS.length; k++) hitSeg(w, b, SEGS[k]);
+        // Where two faces are within reach at once (a pocket jaw, a corner), the one that was met first is dealt with first -
+        // not whichever comes first in the list, which made the left of the table play differently from the right.
+        if (b.vx !== 0 || b.vy !== 0) for (let pass = 0; pass < 4; pass++) {
+          let best = -1, bt = -1;
+          for (let k = 0; k < SEGS.length; k++) { const t = segTime(b, SEGS[k]); if (t > bt) { bt = t; best = k; } }
+          if (best < 0) break;
+          hitSeg(w, b, SEGS[best]);
+        }
         if (!POCKETED) continue;
         // A ball drops once its centre is far enough over the hole. A fast ball has to get deeper before it drops,
         // so a hard shot that is not centred hits the back of the pocket and can rattle out again.
@@ -335,7 +394,7 @@ function createPhysics(cfg) {
               b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; b.vx *= 0.88; b.vy *= 0.88; b.wx *= 0.5; b.wy *= 0.5;
               if (b.hot > 3.8) {
                 // thrown back towards the table, keeping a little of the angle it bounced at
-                const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = 0.4 * b.hot;
+                const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = REAL ? Math.min(0.4 * b.hot, s0) : 0.4 * b.hot;   // realistic: never faster than it came off the back
                 b.vx = ox / ol * out; b.vy = oy / ol * out;
               }
               if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6, x: b.x, y: b.y, id: b.id });
@@ -364,6 +423,9 @@ function createPhysics(cfg) {
     for (let i = 0; i < n; i++) sub(w, h);
   }
 
+  /* A shot is over when nothing is travelling. A ball can still be turning on the spot then (side dies last), but on a level
+     cloth that turning cannot move it, so nobody is kept waiting for it: it is dropped when the shot ends - here, in the
+     game (resolve) and in replays alike, so all three always agree. */
   function rest(w) {
     for (const b of w.balls) if (b.on && (b.vx !== 0 || b.vy !== 0 || b.wx !== 0 || b.wy !== 0 || b.z !== 0 || b.vz !== 0)) return false;
     return true;
@@ -427,21 +489,43 @@ function createPhysics(cfg) {
     return cast(w, c.x, c.y, Math.cos(ang), Math.sin(ang), w.cue);
   }
 
-  // Where the cue ball travels after its first contact, for the long aiming guide. With `whole`, from the moment it is struck
-  // (a curving or jumping shot has no straight line to draw) as [x, y, z, ...], and `first` is set to where the first contact came.
-  function cuePath(w, ang, V, a, bb, maxT, el, whole) {
+  /* The shot played out on a copy, for the aiming guide: the guide draws what this returns and nothing else, so what is shown
+     is what the same inputs will do. pre: the cue ball's path up to its first contact; at: where it was then ([x, y, z, ball
+     or -1]); post: its path afterwards, for `after` seconds; turn: where in post it next changed course; obj: the struck
+     ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1). */
+  function preview(w, ang, V, a, bb, el, after) {
     const w2 = clone(w); strike(w2, ang, V, a, bb, el);
-    const c = w2.balls[w2.cue], pts = [];
-    let t = 0, started = false; pts.first = -1;
-    while (t < (maxT || 2.2) && c.on) {
+    const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null };
+    let t = 0, tc = 0, o = null, oGo = false, ldx = 0, ldy = 0, cdx = 0, cdy = 0;
+    while (t < 9 && c.on) {
+      const lx = c.x, ly = c.y;
       step(w2, 1 / 120); t += 1 / 120;
-      if (!started && (w2.ev.firstHit != null || (whole && w2.ev.railed.length))) { started = true; pts.first = pts.length; pts.hit = w2.ev.firstHit; }
-      if (whole) { pts.push(c.x, c.y, c.z); if (started && whole === 1) break; }
-      else if (started) pts.push(c.x, c.y);
-      if (started && c.vx === 0 && c.vy === 0 && c.wx === 0 && c.wy === 0) break;
-      if (!started && c.vx === 0 && c.vy === 0 && c.z === 0) break;
+      if (!out.at) {
+        if (!w2.ev.at) { out.pre.push(c.x, c.y, c.z); if (c.vx === 0 && c.vy === 0 && c.z === 0 && c.vz === 0) break; continue; }
+        out.at = w2.ev.at; tc = t;
+        if (out.at[3] >= 0) {
+          out.hit = out.at[3]; o = w2.balls[out.hit]; const s = Math.hypot(o.vx, o.vy), b0 = w.balls[out.hit];
+          if (s > 1e-6) { out.obj = { x0: b0.x, y0: b0.y, dx: o.vx / s, dy: o.vy / s, x1: o.x, y1: o.y }; ldx = o.vx / s; ldy = o.vy / s; oGo = true; }
+        }
+        out.post.push(out.at[0], out.at[1], out.at[2], c.x, c.y, c.z);
+      } else {
+        out.post.push(c.x, c.y, c.z);
+        if (out.turn < 0) {
+          const mx = c.x - lx, my = c.y - ly, ml = Math.hypot(mx, my);
+          if (ml < 1e-7) out.turn = out.post.length - 3;
+          else { if ((cdx || cdy) && (mx * cdx + my * cdy) / ml < 0.9994) out.turn = out.post.length - 6; cdx = mx / ml; cdy = my / ml; }
+        }
+        if (oGo) {
+          const s = Math.hypot(o.vx, o.vy);
+          if (!o.on || s < 1e-6 || (o.vx * ldx + o.vy * ldy) / s < 0.9994) oGo = false;   // potted, stopped, or knocked off its line
+          else { out.obj.x1 = o.x; out.obj.y1 = o.y; ldx = o.vx / s; ldy = o.vy / s; }
+        }
+      }
+      const still = c.vx === 0 && c.vy === 0 && c.z === 0 && c.vz === 0;
+      if (t - tc > (after || 0.6) || (still && !oGo)) break;
     }
-    return pts;
+    if (out.turn < 0) out.turn = Math.max(0, out.post.length - 3);
+    return out;
   }
 
   function pathClear(w, x0, y0, x1, y1, skip, rad) {
@@ -476,6 +560,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, squirt, REAL, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, cuePath, pathClear, isFree, findFree, newEv };
+  return { hop, squirt, REAL, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

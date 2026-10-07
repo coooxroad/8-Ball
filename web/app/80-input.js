@@ -92,13 +92,16 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 
 (function powerCtl() {
   const box = $('#power'); let id = null;
-  const read = e => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); };
+  // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
+  // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
+  const CANCEL = 0.04;
+  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.max(0.002, (q - CANCEL) / (1 - CANCEL)); };
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null; ctlUp();
     const p = st.power;
-    if (!cancel && p > 0.03 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el); else { st.power = 0; setPowerUI(0); }
+    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -137,8 +140,9 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const padEl = $('#elPad'); let eid = null;
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
-    a = Math.max(0, Math.min(85 * Math.PI / 180, a)); if (a < 0.06) a = 0;
-    const was = st.el; st.el = Math.round(a * 180 / Math.PI) * Math.PI / 180; setKindUI(); scene.invalidate();
+    // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to
+    a = Math.max(0, Math.min(85 * Math.PI / 180, a)); if (a < 0.0175) a = 0;
+    const was = st.el; st.el = Math.round(a * 1800 / Math.PI) * Math.PI / 1800; setKindUI(); scene.invalidate();
     if (!was && st.el && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
   };
   padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; ctlDown(); try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
@@ -148,9 +152,9 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 })();
 const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
-function elSay() { if (!st.el) return ''; const h = game.P.hop(game.vOf(st.power > 0.03 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
+function elSay() { if (!st.el) return ''; const h = game.P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
 function setKindUI() {
-  const deg = Math.round(st.el * 180 / Math.PI), ok = trickOK(), say = elSay();
+  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
   const tag = $('#spinTag'); tag.hidden = !deg; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball

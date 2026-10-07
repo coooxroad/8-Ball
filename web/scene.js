@@ -410,7 +410,7 @@ function createScene(canvas, app, PH) {
     (list || []).forEach((q, i) => { const m = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ map: markTex(i + 1), transparent: true, depthTest: false, depthWrite: false, toneMapped: false })); m.renderOrder = 11; m.position.set(q.x, q.y, cur.R * 1.1); m.scale.set(cur.R * 1.7, cur.R * 1.7, 1); marks.add(m); });
     dirty = 3;
   }
-  let ppm = 200, guideKey = '', pathPts = [];
+  let ppm = 200, guideKey = '';
   function setLine(m, x0, y0, x1, y1, px, z) {
     const len = Math.hypot(x1 - x0, y1 - y0);
     if (len < 1e-4) { m.visible = false; return; }
@@ -586,61 +586,56 @@ function createScene(canvas, app, PH) {
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }
     if (guide.visible) {
-      const ga = v.aim + (P.squirt ? P.squirt(v.spin.x * 0.5) : 0), dx = Math.cos(ga), dy = Math.sin(ga), lv = v.level;   // with side on, a real cue ball leaves a little off the line of the cue
-      const raised = v.el > 0.02;
-      const key = [v.aim.toFixed(5), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(2), v.spin.x.toFixed(2), v.spin.y.toFixed(2), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(2)].join('|');
-      if (key !== guideKey && raised) {
-        // no straight line for a ball that curves or flies: the shot is played out and its path dotted, as far as the guide length allows
-        guideKey = key;
-        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
-        for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false;
-        if (lv >= 1) {
-          const pts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, lv >= 3 ? 2.6 : 1.8, v.el || 0, lv >= 3 ? 2 : 1);
-          let acc = 0, n = 0, lx = c.x, ly = c.y;
-          for (let i = 0; i < pts.length && n < gDots.length; i += 3) {
-            const x = pts[i], y = pts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
-            if (acc >= 0.036) { acc = 0; const up = pts[i + 2] > 0.003, d = (up ? gAir : gDots)[n++]; d.visible = true; d.position.set(x, y, R + pts[i + 2]); d.scale.setScalar(Math.max(0.004, (up ? 3.6 + pts[i + 2] * 60 : pts.first >= 0 && i > pts.first ? 2.6 : 3.4) / ppm)); }
-          }
-          if (pts.first >= 0 && pts.first < pts.length) {
-            gRing.visible = true; gRing.position.set(pts[pts.first], pts[pts.first + 1], R + pts[pts.first + 2]); gRing.scale.setScalar(R);
-            gRing.material.color.set(pts.hit == null || v.legalIds.indexOf(pts.hit) >= 0 ? 0xffffff : 0xff6a58);
-          }
-        }
-      }
+      const lv = v.level, raised = v.el > 0, chosen = v.power > 0;
+      const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4)].join('|');
       if (key !== guideKey) {
         guideKey = key;
-        const pr = P.cast(w, c.x, c.y, dx, dy, w.cue);
         gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
         for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false;
         if (lv >= 1) {
-          setLine(gLine, c.x + dx * R, c.y + dy * R, pr.gx - dx * R * 0.9, pr.gy - dy * R * 0.9, 1.7, R);
-          gRing.visible = pr.type !== 'none' && pr.type !== 'pocket'; gRing.position.set(pr.gx, pr.gy, R); gRing.scale.setScalar(R);
-          const legal = pr.type !== 'ball' || v.legalIds.indexOf(pr.ball) >= 0, tint = legal ? 0xffffff : 0xff6a58;
+          /* Nothing here is worked out by geometry any more: the shot is played out on a copy with the very inputs the stroke
+             will use, and the guide is drawn from what happened - so throw, the cushion's grip, squirt, follow and draw are in
+             it or they are not in the game. The level only decides how much of it is shown. */
+          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, v.el || 0, lv >= 3 ? 2.4 : 0.6);
+          const at = pv.at, pre = pv.pre, post = pv.post, ex = at ? at[0] : pre[pre.length - 3], ey = at ? at[1] : pre[pre.length - 2];
+          const tint = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0 ? 0xffffff : 0xff6a58;
           gRing.material.color.set(tint); gObj.material.color.set(tint);
-        }
-        if (lv >= 2 && pr.type === 'ball') {
-          const b = w.balls[pr.ball], co = Math.cos(pr.cut);
-          let l1 = 0.06 + 0.26 * co;
-          if (lv >= 3) { const h = P.cast(w, b.x, b.y, pr.nx, pr.ny, pr.ball); l1 = Math.max(0.02, h.t - R * 0.2); }
-          setLine(gObj, b.x + pr.nx * R, b.y + pr.ny * R, b.x + pr.nx * (R + l1), b.y + pr.ny * (R + l1), 2.1, R);
-          if (lv === 2) {
-            let tx = dx - co * pr.nx, ty = dy - co * pr.ny; const tl = Math.hypot(tx, ty);
-            if (tl > 0.02) { tx /= tl; ty /= tl; const l2 = 0.3 * tl; setLine(gCue, pr.gx + tx * R, pr.gy + ty * R, pr.gx + tx * (R + l2), pr.gy + ty * (R + l2), 1.5, R); }
+          // Until the cue is drawn back there is no power yet, and the guide plays a middling one. Whatever depends on the
+          // power is drawn faint till then, so a stand-in is not taken for the shot.
+          const dim = chosen ? 1 : 0.5;
+          gObj.material.opacity = 0.9 * (P.REAL ? dim : 1); gCue.material.opacity = 0.55 * dim; gBank.material.opacity = 0.6 * dim; dotMat.opacity = 0.95 * dim;
+          let n = 0;
+          const dots = (pts, gap, size) => {
+            let acc = 0, lx = pts[0], ly = pts[1];
+            for (let i = 3; i < pts.length && n < gDots.length; i += 3) {
+              const x = pts[i], y = pts[i + 1], z = pts[i + 2]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
+              if (acc >= gap) { acc = 0; const up = z > 0.003, d = (up ? gAir : gDots)[n++]; d.visible = true; d.position.set(x, y, R + z); d.scale.setScalar(Math.max(0.004, (up ? 3.6 + z * 60 : size) / ppm)); }
+            }
+          };
+          // which way it was travelling when it arrived
+          const k = Math.max(0, pre.length - (raised ? 9 : pre.length)); let ux = ex - pre[k], uy = ey - pre[k + 1]; const ul = Math.hypot(ux, uy);
+          if (ul > 1e-6) { ux /= ul; uy /= ul; } else { ux = Math.cos(v.aim); uy = Math.sin(v.aim); }
+          if (raised) { if (at) pre.push(at[0], at[1], at[2]); dots(pre, 0.036, 3.4); }   // a ball that curves or flies has no straight line to draw
+          else if (ul > R * 1.2) setLine(gLine, c.x + ux * R, c.y + uy * R, ex - ux * R * (at ? 0.9 : 0), ey - uy * R * (at ? 0.9 : 0), 1.7, R);
+          if (at) { gRing.visible = true; gRing.position.set(at[0], at[1], R + at[2]); gRing.scale.setScalar(R); }
+          let tl = 0;
+          if (lv >= 2 && pv.obj) {
+            const o = pv.obj, run = Math.hypot(o.x1 - o.x0, o.y1 - o.y0), co = Math.max(0, Math.min(1, (ux * (o.x0 - at[0]) + uy * (o.y0 - at[1])) / (2 * R)));
+            tl = Math.sqrt(1 - co * co);
+            let dx = o.dx, dy = o.dy, l1 = Math.min(0.06 + 0.26 * co, Math.max(0.02, run));
+            if (lv >= 3 && run > 0.02) { dx = (o.x1 - o.x0) / run; dy = (o.y1 - o.y0) / run; l1 = Math.max(0.02, run - R * 0.2); }
+            setLine(gObj, o.x0 + dx * R, o.y0 + dy * R, o.x0 + dx * (R + l1), o.y0 + dy * (R + l1), 2.1, R);
           }
-        }
-        if (lv >= 2 && pr.type === 'rail') {
-          const dn = dx * pr.nx + dy * pr.ny, rx = dx - 2 * dn * pr.nx, ry = dy - 2 * dn * pr.ny;
-          let l = 0.22;
-          if (lv >= 3) { const h = P.cast(w, pr.gx + rx * 0.001, pr.gy + ry * 0.001, rx, ry, w.cue); l = Math.min(h.t, 2.6); }
-          setLine(gBank, pr.gx, pr.gy, pr.gx + rx * l, pr.gy + ry * l, 1.5, R);
-        }
-        if (lv >= 3 && pr.type === 'ball') {
-          // where the cue ball goes afterwards, with the chosen spin
-          pathPts = P.cuePath(w, v.aim, g.vOf(v.power > 0.03 ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, 2.4);
-          let acc = 0, n = 0, lx = pathPts[0], ly = pathPts[1];
-          for (let i = 2; i < pathPts.length && n < gDots.length; i += 2) {
-            const x = pathPts[i], y = pathPts[i + 1]; acc += Math.hypot(x - lx, y - ly); lx = x; ly = y;
-            if (acc >= 0.042) { acc = 0; const d = gDots[n++]; d.visible = true; d.position.set(x, y, R); d.scale.setScalar(Math.max(0.004, 3.1 / ppm)); }
+          if (at && lv >= 3) dots(post, raised ? 0.036 : 0.042, raised ? 2.6 : 3.1);
+          else if (at && lv === 2 && !raised) {
+            // a short stub of where the cue ball really goes next: off a ball, or off the cushion
+            const want = pv.hit != null ? 0.1 + 0.2 * tl : 0.22, last = pv.hit != null ? post.length - 3 : Math.min(post.length - 3, pv.turn);
+            let acc = 0, i = 3; for (; i < last && acc < want; i += 3) acc += Math.hypot(post[i] - post[i - 3], post[i + 1] - post[i - 2]);
+            i = Math.min(i, post.length - 3);
+            if (i >= 3) {
+              const qx = post[i] - at[0], qy = post[i + 1] - at[1], ql = Math.hypot(qx, qy);
+              if (ql > 0.02) { if (pv.hit != null) setLine(gCue, at[0] + qx / ql * R, at[1] + qy / ql * R, at[0] + qx / ql * (R + ql), at[1] + qy / ql * (R + ql), 1.5, R); else setLine(gBank, at[0], at[1], post[i], post[i + 1], 1.5, R); }
+            }
           }
         }
       }

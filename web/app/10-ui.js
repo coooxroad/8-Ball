@@ -77,7 +77,7 @@ if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
   const tr = $('#power'), c = $('#powerCue'), REST = 10, END = 70;
-  $('#powerNum').textContent = Math.round(p * 100);
+  $('#powerNum').textContent = p > 0 ? Math.max(1, Math.round(p * 100)) : 0;
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
