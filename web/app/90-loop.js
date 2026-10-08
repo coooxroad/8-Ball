@@ -20,21 +20,32 @@ function drainFalls() {
   if (flow && !flow.quiet) for (const e of s) SND.drop(e.t, e.v, panOf(e.x, e.y));
   s.length = 0;
 }
-/* When, in steps, the cue ball will make its last contact with another ball this shot: the shot is played out on a copy
-   first (the physics gives the same answer every time). Not before 0.3 seconds in, so a shot that hits nothing still starts
-   at its own pace. */
-function lastCueHit(ca) {
-  const P = game.P, w2 = P.clone(game.world); w2.snd = []; P.strike(w2, st.aim, ca.V, ca.a, ca.b, ca.el);
-  let t = 0, last = 36;
-  while (!P.rest(w2) && t < 30 * 120) { P.step(w2, TICK); t++; for (const e of w2.snd) if (e.t === 'ball' && (e.ia === w2.cue || e.ib === w2.cue)) last = Math.max(last, t); w2.snd.length = 0; }
-  return last;
+/* Fast play needs to know when, in steps, the cue ball makes its last contact with another ball this shot. The shot is
+   played out on a copy alongside the real one (the physics gives the same answer every time) - a slice of it each frame, so
+   that working it out never costs a frame. Until the copy has finished, play stays at its own pace. Not before 0.3 seconds
+   in either, so a shot that hits nothing still starts at its own pace. */
+function aheadStart(ca) {
+  if (!prefs.fast || (flow && flow.quiet)) { st.ahead = null; return; }
+  const P = game.P, w = P.clone(game.world); w.snd = []; P.strike(w, st.aim, ca.V, ca.a, ca.b, ca.el);
+  st.ahead = { w, t: 0, last: 36, done: false };
+}
+function aheadStep() {
+  const a = st.ahead; if (!a || a.done) return;
+  const P = game.P, w = a.w;
+  const until = performance.now() + 3;                      // three milliseconds of it a frame at the most
+  for (let k = 0; k < 400 && !a.done && (k < 4 || performance.now() < until); k++) {
+    P.step(w, TICK); a.t++;
+    for (const e of w.snd) if (e.t === 'ball' && (e.ia === w.cue || e.ib === w.cue)) a.last = Math.max(a.last, a.t);
+    w.snd.length = 0;
+    if (P.rest(w) || a.t >= 30 * 120) a.done = true;
+  }
 }
 function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
   // fast play: once the cue ball has met every ball it is going to meet this shot, the rest runs at double speed
-  const fast = prefs.fast && !(flow && flow.quiet) && st.simTick > st.fastAt; bolts.set(fast);
+  aheadStep(); const fast = !!st.ahead && st.ahead.done && st.simTick > st.ahead.last; bolts.set(fast);
   acc += dt * (fast ? 2 : 1);
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; st.simTick++; }
   if (n === 30) acc = 0;
@@ -53,7 +64,7 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); st.fastAt = prefs.fast ? lastCueHit(ca) : 0; st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
@@ -86,5 +97,5 @@ function start() {
   if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();
