@@ -1,58 +1,57 @@
-/* ================= fast play: an electric frame round the screen while a shot runs at double speed ================= */
-/* Clean, like the win-streak card: a thin blue-white line round the edge of the screen with a soft glow, standing still.
-   Every second or so the current jumps: a short jagged bolt cracks along a stretch of the edge with a branch or two
-   stabbing inwards and a spark where it struck, flickers off and on once, and is gone in a fifth of a second.
-   Cheap on purpose: the frame is CSS, and the canvas is only drawn on while a bolt is alive. */
+/* ================= fast play: the sides of the screen turn to lightning while a shot runs at double speed ================= */
+/* The lightning IS the border: down the left and the right edge of the screen runs a strand of current fastened to the edge,
+   zigzagging out from it and back. Mostly it lies close and low; here and there a stretch flares - jumps further out, thicker
+   and brighter - and those flares drift along the edge. The shape is struck afresh about fifteen times a second, so it
+   crackles rather than flows, and every so often the whole thing flashes. White-hot core, pale-blue arc, blue haze.
+   Cheap on purpose: two narrow canvases down the sides only, no shadow blur (the haze is a wide faint stroke), and they are
+   redrawn only when the shape changes. */
 const bolts = (() => {
-  const frame = el('div', { class: 'zap' }), cv = el('canvas', { class: 'zapcv' }), g = cv.getContext('2d');
-  app.appendChild(frame); app.appendChild(cv);
-  let on = false, timer = 0, raf = 0, bolt = null;
-  const jag = (x, y, dx, dy, nx, ny, len, amp, step) => {        // a zigzag from (x, y) along (dx, dy), kicked sideways along (nx, ny)
-    const pts = [[x, y]];
-    for (let d = step; d <= len; d += step) { const k = (Math.random() - 0.5) * 2 * amp; pts.push([x + dx * d + nx * k, y + dy * d + ny * k]); }
-    return pts;
-  };
-  function strike() {
-    timer = 0; if (!on) return;
-    const W = app.clientWidth, H = app.clientHeight, side = Math.floor(Math.random() * 4), across = side % 2 ? H : W;
-    const at = 40 + Math.random() * (across - 80), len = 70 + Math.random() * 120, dir = Math.random() < 0.5 ? 1 : -1;
-    // where on the edge, which way along it, and which way is in
-    const [x0, y0, ax, ay, ix, iy] = [[at, 3, dir, 0, 0, 1], [W - 3, at, 0, dir, -1, 0], [at, H - 3, dir, 0, 0, -1], [3, at, 0, dir, 1, 0]][side];
-    const main = jag(x0, y0, ax, ay, ix, iy, len, 6, 8).map(p => [p[0] + ix * 5, p[1] + iy * 5]);
-    const branches = [];
-    for (let k = 0; k < 1 + Math.floor(Math.random() * 3); k++) {
-      const p = main[1 + Math.floor(Math.random() * (main.length - 2))], l = 16 + Math.random() * 34, s = (Math.random() - 0.5) * 0.9;
-      branches.push(jag(p[0], p[1], ix + ax * s, iy + ay * s, ax, ay, l, 4, 6));
+  const W = 46, sides = [0, 1].map(k => { const c = el('canvas', { class: 'zap ' + (k ? 'r' : 'l') }); app.appendChild(c); return { c, g: c.getContext('2d') }; });
+  let on = false, timer = 0, flash = 0, phase = 0;
+  // where along the edge the flares are now: a few bumps that wander
+  const flares = [{ at: 0.2, v: 0.11 }, { at: 0.65, v: -0.08 }, { at: 0.9, v: 0.06 }];
+  function strand(H, amp, step, jit) {
+    const pts = [];
+    for (let y = -10; y <= H + 10; y += step * (0.6 + Math.random() * 0.8)) {
+      let f = 0; for (const fl of flares) { const d = (y / H - fl.at) * 7; f = Math.max(f, Math.exp(-d * d)); }
+      const reach = amp * (0.22 + 0.78 * f) * (1 + flash * 0.6);
+      pts.push([2 + Math.random() * reach + (Math.random() < 0.08 ? reach * 0.6 : 0), y + (Math.random() - 0.5) * jit]);
     }
-    bolt = { main, branches, spark: main[Math.floor(Math.random() * main.length)], born: performance.now(), life: 210 };
-    frame.classList.remove('kick'); void frame.offsetWidth; frame.classList.add('kick');
-    if (!raf) raf = requestAnimationFrame(draw);
+    return pts;
   }
-  function line(pts, w, col) { g.lineWidth = w; g.strokeStyle = col; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); }
-  function draw(now) {
-    raf = 0;
-    const dpr = Math.min(1.5, window.devicePixelRatio || 1), W = app.clientWidth, H = app.clientHeight;
-    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
-    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    if (!bolt || !on) { bolt = null; if (on && !timer) timer = setTimeout(strike, 500 + Math.random() * 1100); return; }
-    const k = (now - bolt.born) / bolt.life;
-    if (k >= 1) { bolt = null; if (on) timer = setTimeout(strike, 500 + Math.random() * 1100); return; }
-    // lightning flickers: bright, almost out, bright again, then fading
-    const a = k < 0.22 ? 1 : k < 0.36 ? 0.15 : k < 0.55 ? 0.95 : (1 - k) / 0.45 * 0.95;
-    g.globalAlpha = a; g.lineJoin = 'round'; g.lineCap = 'round';
-    for (const pts of [bolt.main].concat(bolt.branches)) { const main = pts === bolt.main; line(pts, main ? 8 : 5, 'rgba(80,150,255,.28)'); line(pts, main ? 2.6 : 1.6, 'rgba(160,220,255,.95)'); line(pts, main ? 1.1 : 0.7, '#fff'); }
-    // the spark where it struck: a white-hot point with a blue halo
-    const [sx, sy] = bolt.spark, r = 14 * (1 - k * 0.5), gr = g.createRadialGradient(sx, sy, 0, sx, sy, r);
-    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(170,220,255,.8)'); gr.addColorStop(1, 'rgba(80,150,255,0)');
-    g.fillStyle = gr; g.beginPath(); g.arc(sx, sy, r, 0, 6.3); g.fill();
-    g.globalAlpha = 1;
-    raf = requestAnimationFrame(draw);
+  function line(g, pts, w, col) { g.lineWidth = w; g.strokeStyle = col; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); }
+  function draw() {
+    timer = 0; if (!on) return;
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1), H = app.clientHeight;
+    for (const fl of flares) { fl.at += fl.v * 0.07; if (fl.at < -0.1 || fl.at > 1.1) { fl.at = fl.v > 0 ? -0.1 : 1.1; } }
+    if (flash > 0) flash -= 0.34; else if (Math.random() < 0.06) flash = 1;
+    phase++;
+    for (const [k, s] of sides.entries()) {
+      const { c, g } = s;
+      if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+      if (k) { g.translate(W, 0); g.scale(-1, 1); }                    // the right side is the left one mirrored (and struck separately)
+      g.lineJoin = 'miter'; g.lineCap = 'round';
+      const a = 0.75 + 0.25 * Math.random() + flash * 0.25;
+      // the strand fastened to the edge: haze, arc, core
+      const main = strand(H, 15, 13, 5);
+      g.globalAlpha = Math.min(1, a);
+      line(g, main, 11, 'rgba(60,130,255,.22)'); line(g, main, 4.2, 'rgba(130,200,255,.75)'); line(g, main, 1.7, '#fdfdff');
+      // a second, finer strand crossing it, so it reads as current and not a line
+      const fine = strand(H, 10, 19, 8);
+      g.globalAlpha = 0.6 * a; line(g, fine, 2.4, 'rgba(150,215,255,.8)'); line(g, fine, 0.9, '#ffffff');
+      // the edge itself glows where the current runs
+      g.globalAlpha = 0.5 + flash * 0.4; const gr = g.createLinearGradient(0, 0, 14, 0); gr.addColorStop(0, 'rgba(120,190,255,.9)'); gr.addColorStop(1, 'rgba(120,190,255,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 14, H);
+      g.globalAlpha = 1;
+    }
+    timer = setTimeout(() => requestAnimationFrame(draw), 66);
   }
   return {
     set(v) {
-      if (v === on) return; on = v; frame.classList.toggle('on', v); cv.classList.toggle('on', v);
-      clearTimeout(timer); timer = 0;
-      if (v) timer = setTimeout(strike, 120); else { bolt = null; if (!raf) raf = requestAnimationFrame(draw); }
+      if (v === on) return; on = v;
+      for (const s of sides) s.c.classList.toggle('on', v);
+      if (v) { flash = 1; if (!timer) draw(); } else { clearTimeout(timer); timer = 0; for (const s of sides) { s.g.setTransform(1, 0, 0, 1, 0, 0); s.g.clearRect(0, 0, s.c.width, s.c.height); } }
     },
   };
 })();

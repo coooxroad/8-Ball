@@ -269,12 +269,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .portrait #spinPop{left:10px;right:auto;bottom:112px}
 
 /* ---------- sheets ---------- */
-.zap{position:absolute;inset:0;pointer-events:none;z-index:15;opacity:0;transition:opacity .3s;will-change:opacity;box-shadow:inset 0 0 0 1.5px rgba(170,220,255,.85),inset 0 0 14px rgba(70,140,255,.45)}
+.zap{position:absolute;top:0;width:46px;height:100%;pointer-events:none;z-index:15;opacity:0;transition:opacity .2s}
+.zap.l{left:0}
+.zap.r{right:0}
 .zap.on{opacity:1}
-.zap.kick{animation:zapkick .22s steps(1) 1}
-@keyframes zapkick{0%{box-shadow:inset 0 0 0 2.5px #fff,inset 0 0 26px rgba(90,160,255,.8)}22%{box-shadow:inset 0 0 0 1.5px rgba(170,220,255,.5),inset 0 0 8px rgba(70,140,255,.25)}36%{box-shadow:inset 0 0 0 2.2px #eaf6ff,inset 0 0 22px rgba(90,160,255,.7)}60%{box-shadow:inset 0 0 0 1.5px rgba(170,220,255,.85),inset 0 0 14px rgba(70,140,255,.45)}}
-.zapcv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:16;display:none}
-.zapcv.on{display:block}
 .scrim{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
 .sheet{width:min(100%,500px);background:var(--sheet);border:1px solid var(--bd);border-radius:24px;box-shadow:0 24px 64px rgba(0,0,0,.3);padding:20px;display:flex;flex-direction:column;gap:16px;
   animation:pop .16s ease-out}
