@@ -20,12 +20,23 @@ function drainFalls() {
   if (flow && !flow.quiet) for (const e of s) SND.drop(e.t, e.v, panOf(e.x, e.y));
   s.length = 0;
 }
+/* When, in steps, the cue ball will make its last contact with another ball this shot: the shot is played out on a copy
+   first (the physics gives the same answer every time). Not before 0.3 seconds in, so a shot that hits nothing still starts
+   at its own pace. */
+function lastCueHit(ca) {
+  const P = game.P, w2 = P.clone(game.world); w2.snd = []; P.strike(w2, st.aim, ca.V, ca.a, ca.b, ca.el);
+  let t = 0, last = 36;
+  while (!P.rest(w2) && t < 30 * 120) { P.step(w2, TICK); t++; for (const e of w2.snd) if (e.t === 'ball' && (e.ia === w2.cue || e.ib === w2.cue)) last = Math.max(last, t); w2.snd.length = 0; }
+  return last;
+}
 function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
-  acc += dt * (!prefs.fast ? 1 : vmax < 0.4 ? 2.1 : 1.12);
-  let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; }
+  // fast play: once the cue ball has met every ball it is going to meet this shot, the rest runs at double speed
+  const fast = prefs.fast && !(flow && flow.quiet) && st.simTick > st.fastAt; bolts.set(fast);
+  acc += dt * (fast ? 2 : 1);
+  let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; st.simTick++; }
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
   drain(); SND.rolling(flow.quiet ? 0 : Math.min(8, vmax));
@@ -42,9 +53,9 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); st.fastAt = prefs.fast ? lastCueHit(ca) : 0; st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
-    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') SND.rolling(0); }
+    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
@@ -56,7 +67,7 @@ function frame(now) {
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
-  if (paused && st.phase === 'sim') SND.rolling(0);
+  if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
   if (prefs.fps) {
     fpsN++; fpsT += dt;
     if (fpsT >= 0.5) { $('#fps').textContent = `${Math.round(fpsN / fpsT)} FPS · ${scene.pixelRatio.toFixed(2)}x` + (drew ? '' : ' · 대기'); fpsN = 0; fpsT = 0; }

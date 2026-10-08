@@ -4,12 +4,12 @@ const match = {
   ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
-    usePhysics(ctx ? !!ctx.real : LAB.real); scene.clearFalls();
+    usePhysics(); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
-      targets: prefs.mode === 'four' && LAB.suji ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn(), masse: LAB.masse && prefs.masse, real: LAB.real };
+      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn() };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: LAB.tray, ice: !!c.ice, masse: c.masse }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.enter(); toast(game.mode.intro(game), '', 3600);
     if (!prefs.how && !game.players[game.turn].ai) sheetHow();
   },
@@ -37,7 +37,7 @@ const match = {
   hud() {
     const m = game.mode, pop = st.phase === 'aim' || st.phase === 'auto' ? game.world.ev.pocketed.map(q => q.id) : null;
     for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, pop, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) }, m.status(game, i)));
-    paintBadge(m.name + (game.P.REAL ? ' · 현실 물리' : ''), m.badge(game)); setBusy();
+    paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {
     const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];

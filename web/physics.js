@@ -163,7 +163,8 @@ function createPhysics(cfg) {
       if (w.track) turn(b, h);
       return;
     }
-    const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? 0.0085 : MU_R0, MU_SP = w.ice ? 0.012 : MU_SP0;
+    // ice: as slippery against the cloth it replaces, on either physics (0.022, 0.0085 and 0.012 on the original)
+    const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? MU_R0 * 0.53 : MU_R0, MU_SP = w.ice ? MU_SP0 * 0.3 : MU_SP0;
     const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
     if (us > 1e-4) {
       const dec = MU_S * G * h;
@@ -499,12 +500,13 @@ function createPhysics(cfg) {
   /* The shot played out on a copy, for the aiming guide: the guide draws what this returns and nothing else, so what is shown
      is what the same inputs will do. pre: the cue ball's path up to its first contact; at: where it was then ([x, y, z, ball
      or -1]); post: its path afterwards, for `after` seconds; turn: where in post it next changed course; obj: the struck
-     ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1). */
+     ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1); objPath: the struck ball's whole way,
+     for as long as the preview runs. */
   function preview(w, ang, V, a, bb, el, after) {
     const w2 = clone(w); strike(w2, ang, V, a, bb, el);
-    const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null };
+    const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null, objPath: [] };
     let t = 0, tc = 0, o = null, oGo = false, ldx = 0, ldy = 0, cdx = 0, cdy = 0;
-    while (t < 9 && c.on) {
+    while (t < 9 + (after || 0) && c.on) {
       const lx = c.x, ly = c.y;
       step(w2, 1 / 120); t += 1 / 120;
       if (!out.at) {
@@ -512,7 +514,7 @@ function createPhysics(cfg) {
         out.at = w2.ev.at; tc = t;
         if (out.at[3] >= 0) {
           out.hit = out.at[3]; o = w2.balls[out.hit]; const s = Math.hypot(o.vx, o.vy), b0 = w.balls[out.hit];
-          if (s > 1e-6) { out.obj = { x0: b0.x, y0: b0.y, dx: o.vx / s, dy: o.vy / s, x1: o.x, y1: o.y }; ldx = o.vx / s; ldy = o.vy / s; oGo = true; }
+          if (s > 1e-6) { out.obj = { x0: b0.x, y0: b0.y, dx: o.vx / s, dy: o.vy / s, x1: o.x, y1: o.y }; ldx = o.vx / s; ldy = o.vy / s; oGo = true; out.objPath.push(b0.x, b0.y, 0, o.x, o.y, o.z); }
         }
         out.post.push(out.at[0], out.at[1], out.at[2], c.x, c.y, c.z);
       } else {
@@ -522,6 +524,7 @@ function createPhysics(cfg) {
           if (ml < 1e-7) out.turn = out.post.length - 3;
           else { if ((cdx || cdy) && (mx * cdx + my * cdy) / ml < 0.9994) out.turn = out.post.length - 6; cdx = mx / ml; cdy = my / ml; }
         }
+        if (o && o.on && (o.vx || o.vy || o.vz)) out.objPath.push(o.x, o.y, o.z);
         if (oGo) {
           const s = Math.hypot(o.vx, o.vy);
           if (!o.on || s < 1e-6 || (o.vx * ldx + o.vy * ldy) / s < 0.9994) oGo = false;   // potted, stopped, or knocked off its line
@@ -529,7 +532,7 @@ function createPhysics(cfg) {
         }
       }
       const still = c.vx === 0 && c.vy === 0 && c.z === 0 && c.vz === 0;
-      if (t - tc > (after || 0.6) || (still && !oGo)) break;
+      if (t - tc > (after || 0.6) || (still && !oGo && !(o && o.on && (o.vx || o.vy)))) break;
     }
     if (out.turn < 0) out.turn = Math.max(0, out.post.length - 3);
     return out;

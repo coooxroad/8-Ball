@@ -5,7 +5,7 @@ function playDemo(shot, opts) {
   flow = {
     quiet: !!opts.quiet, save: false,
     restart() { (back || practice).restart(); },
-    guide: () => 3,
+    guide: () => 0.75,
     auto: () => ({ think: 0.7, showSpin: true, plan: () => ({ angle: shot.angle, V: game.vOf(shot.power), a: shot.a, b: shot.b, el: shot.el || 0 }) }),
     beforeShot() {},
     afterShot() { hold(1.3, opts.after); },

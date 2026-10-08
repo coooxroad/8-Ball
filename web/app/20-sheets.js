@@ -25,12 +25,20 @@ function sheetCue() {
     [el('canvas', { class: 'cuepic' }), optText(c.name, c.note)], () => { prefs.cues[cueWho] = i; if (!cueWho) prefs.cue = i; savePrefs(); if (cueWho === 0) useCue(i); paintHome(); sheetCue(); }))));
   document.querySelectorAll('#sheetBody .cuepic').forEach((cv, i) => drawCue(cv, CUES[i], false));
 }
-// one guide length per player (a handicap); a single row when only one person is aiming
+// one guide length per player (a handicap); a single slider when only one person is aiming
+function guideSlider(label, value, set) {
+  const tag = el('span', { class: 'gtag' }), input = el('input', { type: 'range', min: '0', max: '100', step: '1', value: String(Math.round(value * 100)), class: 'gslide', 'aria-label': label });
+  const paint = () => { const g = input.value / 100; tag.textContent = guideName(g); tag.style.left = `calc(${g * 100}% + ${(0.5 - g) * 28}px)`; input.style.setProperty('--g', g); input.style.setProperty('--gc', `hsl(${Math.round(200 - 165 * g)} 85% 55%)`); };
+  input.addEventListener('input', () => { paint(); set(input.value / 100); });
+  input.addEventListener('change', () => SND.tap());
+  paint();
+  return el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }), el('div', { class: 'gwrap' }, [tag, input])]);
+}
 function sheetGuide() {
   const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
-  const row = i => segRow(solo ? '조준선' : st.screen === 'play' ? game.players[i].name : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
-  openSheet('조준선', [segRow('모양', [['dots', '점'], ['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
-    row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
+  const row = i => guideSlider(solo ? '길이' : st.screen === 'play' ? game.players[i].name : prefs.names[i], prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); });
+  openSheet('조준선', [segRow('모양', [['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
+    row(0), solo ? null : row(1), note('오른쪽으로 갈수록 길어집니다. 끝까지 밀면 공들이 멈출 때까지 다 보입니다.'),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
 }
 function sheetSettings() {
@@ -41,8 +49,7 @@ function sheetSettings() {
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
-    note('빠른 진행: 공이 느려지면 시간을 두 배로 돌려 마지막 구르기를 기다리지 않게 합니다. 화질을 낮추면 움직임이 더 부드러워집니다.'),
-    flatBtn('실험실 · 2.0에서 바뀐 것 끄고 켜기', sheetLab),
+    note('빠른 진행: 큐볼이 맞힐 공을 다 맞히고 나면 나머지를 두 배 빠르게 보여 줍니다(화면 테두리에 번개). 화질을 낮추면 움직임이 더 부드러워집니다.'),
     note('CUE 2.0'),
   ]);
 }
@@ -59,31 +66,13 @@ function sheetHow() {
 function sheetNews() {
   prefs.news = false; savePrefs();
   openSheet('CUE 2.0', [
-    ['큐 세우기', '회전 창의 큐 각도. 세워서 세게 치면 점프, 좌우 회전을 주면 휘고, 많이 세우면 맛세이. 시작 전에 허용/금지를 정합니다.'],
+    ['큐 세우기', '회전 창의 큐 각도. 세워서 세게 치면 점프, 좌우 회전을 주면 휘고, 많이 세우면 맛세이.'],
     ['수지', '4구에서 이름을 누르면 각자 수지를 정합니다. 50이면 다섯 번 득점.'],
     ['빙판 테이블', '테이블 고르는 곳에 새 스킨. 공이 미끄러집니다.'],
     ['퍼즐 스테이지', '4구 기술 일곱 가지, 105문제. 힌트는 흰 공이 닿는 곳을 번호로.'],
     ['이어하기 · 넣은 공 · 연승 불꽃 · 큐 각자', '하던 판은 첫 화면 카드로 남고, 이름표에 넣은 공이 쌓입니다.'],
-    ['실험실', '설정 맨 아래. 새 기능을 하나씩 끌 수 있습니다.'],
   ].map(([t, d]) => el('div', { class: 'opt' }, optText(t, d))).concat(el('button', { class: 'btn cta', text: '확인', onclick: () => { SND.tap(); closeSheet(); } })));
 }
-// every large change of 2.0 behind its own switch, so that one that turns out badly can be taken back without reinstalling
-function sheetLab() {
-  const row = (k, name, d) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: name }), el('div', { class: 'seg' }, [[true, '켬'], [false, '끔']].map(([v, t]) => el('button', { 'aria-pressed': String(LAB[k] === v), text: t, onclick: () => { SND.tap(); LAB[k] = v; savePrefs(); labChanged(); sheetLab(); } }))), d ? note(d) : null]);
-  openSheet('실험실', [
-    note('2.0에서 새로 들어간 것들입니다. 마음에 안 드는 것은 여기서 끄면 1.x 때처럼 돌아갑니다.'),
-    row('real', '현실 물리 (시험판)', '대결에만 적용됩니다. 쿠션, 공끼리의 마찰, 옆 회전을 주면 공이 살짝 빗나가는 것, 4구·3구의 빠른 천까지 실제에 가깝게 계산합니다. 큐는 실제처럼 5° 들려 있고(0~90°), 당점을 옮기면 큐가 나란히 옮겨 갑니다. 레슨과 퍼즐은 원래 물리 그대로입니다.'),
-    row('masse', '큐 세우기 (맛세이 · 점프)', '끄면 회전 창에서 큐 각도가 사라집니다.'),
-    row('suji', '수지 (4구)', '이름마다 자기 수지까지 칩니다. 끄면 둘 다 같은 점수까지.'),
-    row('tray', '넣은 공 표시 (8볼)', '이름표에 넣은 공이 쌓입니다. 끄면 남은 공을 보여줍니다.'),
-    row('demo', '첫 화면 자동 시연'),
-    row('fire', '연승 불꽃'),
-    row('stage', '퍼즐 스테이지 화면'),
-    row('resume', '이어하기', '끄면 처음으로 나갈 때 하던 판을 지웁니다.'),
-    flatBtn('설정으로', sheetSettings),
-  ]);
-}
-function labChanged() { if (st.screen === 'home') { paintHome(); homePreview(); } }
 // the best-shot reel: which edit it gets, and the songs it may use (picked from this device and kept on it)
 const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
 function sheetSong(busy) {
@@ -111,7 +100,7 @@ $('#songFile').addEventListener('change', async e => {
   sheetSong();
 });
 function sheetName(i, keep) {
-  const ai = i === 1 && prefs.vsAI, four = prefs.mode === 'four' && LAB.suji;
+  const ai = i === 1 && prefs.vsAI, four = prefs.mode === 'four';
   if (ai && !four) return;
   const input = ai ? null : el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: keep == null ? prefs.names[i] : keep, 'aria-label': '이름', autocomplete: 'off' });
   let suji = sujiOf(i);

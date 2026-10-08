@@ -42,4 +42,3 @@ slider('#segLvl', () => Math.min(3, prefs.level), v => { prefs.level = v; savePr
 segPaint.push(seg('#segTarget', () => prefs.target, v => { prefs.target = +v; savePrefs(); }));
 seg('#segRule3', () => prefs.rule3, v => { prefs.rule3 = +v; savePrefs(); });
 segPaint.push(seg('#segFinish', () => prefs.finish ? 1 : 0, v => { prefs.finish = v === '1'; savePrefs(); }));
-segPaint.push(seg('#segMasse', () => prefs.masse ? 1 : 0, v => { prefs.masse = v === '1'; savePrefs(); }));

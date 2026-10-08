@@ -17,7 +17,8 @@
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
-const GUIDE = [['끔', '조준선 없이 감으로 칩니다'], ['짧게', '큐볼이 처음 닿는 곳까지만'], ['보통', '맞은 공과 큐볼이 꺾이는 방향까지'], ['길게', '쿠션에 튕긴 뒤와 큐볼이 굴러갈 길까지']];
+// the aiming guide's length, 0 (none) to 1 (every ball's whole way): what each stretch of the slider is called
+const guideName = g => g <= 0.02 ? '끔' : g < 0.37 ? '짧게' : g < 0.63 ? '보통' : g < 0.9 ? '길게' : '전부';
 
 /* ================= settings and saved data ================= */
 const store = {
@@ -35,36 +36,36 @@ const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
-    pz: null, suji: {}, sujiAI: 5, finish: false, masse: true, cues: null, lab: null, v: 0,
-    aim: 'dots' }, saved);
+    pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
+    aim: 'line', gv: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
-  if (!['dots', 'line', 'rail'].includes(p.aim)) p.aim = p.aim === 'ghost' || p.aim === 'glow' ? 'line' : 'dots';   // looks tried and dropped
+  if (!['line', 'rail'].includes(p.aim)) p.aim = 'line';                    // looks tried and dropped
+  if (p.gv !== 2) { p.guides = p.guides.map(k => [0, 0.25, 0.5, 0.75][k] ?? 0.5); p.gv = 2; }   // guide lengths were four steps, now a slider
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
   p.cues = p.cues.map(i => CUES[i] ? i : 0);
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
-  // the laboratory: each of the big additions of 2.0 can be switched off again, one by one
-  p.lab = Object.assign({ real: false, masse: true, suji: true, tray: true, demo: true, fire: true, stage: true, resume: true }, p.lab || {});
+  delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
   if (p.v < 2) { p.news = Object.keys(saved).length > 0; p.how = !!p.news; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
 
-/* Every table exists twice: with the physics the game has always had, and with the realistic one (physics.js, cfg.real).
-   Lessons and puzzles were made on the first and always use it; a game between players uses whichever is switched on.
-   usePhysics() puts the right set of tables where the game looks for them, and has to be called before a game is started. */
+/* The game plays on the realistic physics (physics.js, cfg.real) everywhere: matches, lessons and puzzles. The physics the
+   game had before (cfg.real false) is still in physics.js but nothing here uses it.
+   usePhysics() puts the tables of the chosen size where the game looks for them; it is called before a game is started. */
 const tableCache = {};
-const tableOf = (key, cfg, real) => tableCache[key + (real ? '+' : '')] || (tableCache[key + (real ? '+' : '')] = createPhysics(Object.assign({ real: !!real }, cfg)));
-const poolOf = (id, real) => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg), real);
+const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysics(Object.assign({ real: true }, cfg)));
+const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
 // carom: the medium table four-ball is played on (254x127cm, 65.5mm balls); carom3: the match table of three-cushion (284x142cm, 61.5mm)
 const PH = {};
-function usePhysics(real) { PH.pool = poolOf(prefs.table, real); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }, real); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }, real); }
-usePhysics(false);
+function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
+usePhysics();
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
@@ -75,7 +76,6 @@ let rec = store.get('rec', {});
 const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
-const LAB = prefs.lab;
 // four-ball handicaps, the way a hall counts: 50 means five scores to go out. Kept per name.
 const SUJI = [3, 5, 8, 10, 15, 20];
 const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;

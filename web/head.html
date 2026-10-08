@@ -55,6 +55,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .seg{background:var(--seg);border:1px solid var(--bd);border-radius:var(--r-chip);padding:4px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
 .seg button{height:38px;border-radius:calc(var(--r-chip) - 3px);font-size:14.5px;color:var(--sub);transition:background .15s}
 .seg button[aria-pressed="true"]{background:var(--seg-on);box-shadow:var(--seg-sh);color:var(--fg);font-weight:700}
+.gwrap{position:relative;padding-top:26px}
+.gtag{position:absolute;top:0;transform:translateX(-50%);font-size:12.5px;font-weight:800;color:var(--fg);background:var(--seg-on);padding:2px 9px;border-radius:999px;box-shadow:var(--seg-sh);white-space:nowrap;pointer-events:none}
+.gslide{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0}
+.gslide::-webkit-slider-runnable-track{height:10px;border-radius:6px;background:linear-gradient(90deg,hsl(200 85% 55% / .9),hsl(120 75% 50% / .9) 45%,hsl(50 95% 55% / .95) 75%,hsl(25 95% 55%))}
+.gslide::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-8px;border-radius:50%;background:var(--gc,#4cf);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 /* a seg whose choice is a bar that can be dragged along; its colour says how hard the choice is */
 .seg.slide{position:relative;touch-action:none;--n:4;--i:1;--g:linear-gradient(135deg,#58b4ff,#1f6fe5)}
 .seg.slide::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px - (var(--n) - 1)*4px)/var(--n));border-radius:calc(var(--r-chip) - 3px);
@@ -264,6 +269,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .portrait #spinPop{left:10px;right:auto;bottom:112px}
 
 /* ---------- sheets ---------- */
+.bolts{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;opacity:0;transition:opacity .25s}
+.bolts.on{opacity:1}
 .scrim{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
 .sheet{width:min(100%,500px);background:var(--sheet);border:1px solid var(--bd);border-radius:24px;box-shadow:0 24px 64px rgba(0,0,0,.3);padding:20px;display:flex;flex-direction:column;gap:16px;
   animation:pop .16s ease-out}
@@ -611,7 +618,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <div class="seg" id="segRule3" hidden><button data-v="0">쿠션 자유</button><button data-v="1">원쿠션</button><button data-v="3">쓰리쿠션</button></div>
       <div class="seg" id="segTarget"><button data-v="3">3점</button><button data-v="5">5점</button><button data-v="10">10점</button></div>
       <div class="seg" id="segFinish" hidden><button data-v="0">마무리 자유</button><button data-v="1">쿠션 마무리</button></div>
-      <div class="seg" id="segMasse"><button data-v="1">큐 세우기 허용</button><button data-v="0">금지</button></div>
       </div>
       <button class="btn cta" id="startBtn">시작</button>
     </div>

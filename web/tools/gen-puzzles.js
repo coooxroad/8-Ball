@@ -7,7 +7,8 @@
    the stage asks falls in the stage's range (a smaller share is a harder puzzle) and one of them survives being played a
    touch off. Nothing gets in without an answer that has been seen to work. */
 const path = require('path'), fs = require('fs'), W = path.join(__dirname, '..'), OUT = path.join(__dirname, 'out');
-const createPhysics = require(path.join(W, 'physics.js')), createGame = require(path.join(W, 'game.js'));
+// on the physics the game plays on: the realistic one
+const createPhysics = cfg => require(path.join(W, 'physics.js'))(Object.assign({ real: true }, cfg)), createGame = require(path.join(W, 'game.js'));
 const P = createPhysics({ R: 0.03275, pockets: false }), { R, HL, HW } = P;
 const G = createGame({ pool: createPhysics({ R: 0.028575, pockets: true, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }), carom: P });
 const judge = (goal, ev, w) => G.MODES.puzzle4.judge(goal, ev, w).ok;
@@ -39,16 +40,20 @@ G.start('four', ['A', 'B'], false, {});                             // so that s
 function world(balls) { const w = P.makeWorld(4); balls.forEach((b, i) => P.place(w, i, b[0], b[1], () => 0.5)); return w; }
 const valid = b => { for (let i = 0; i < 4; i++) { if (Math.abs(b[i][0]) > HL - R - 0.02 || Math.abs(b[i][1]) > HW - R - 0.02) return false; for (let j = 0; j < i; j++) if (dist(b[i], b[j]) < 2 * R + 0.03) return false; } return true; };
 // one shot: does it do what the stage asks?
-function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] || 0); return judge(goal, P.run(w, 25), w); }
+// (no cue angle given: the ordinary stroke, a few degrees up - what a player gets without touching the angle)
+function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] == null ? P.BASE_EL : s[4]); return judge(goal, P.run(w, 25), w); }
 // every direction in `angles` at each speed, with one way of striking: the share that works, and the middle of the widest run
+// COARSE: a first look at a fraction of the directions, to turn away a position that cannot fit before the full sweep
+let COARSE = false;
 function sweep(base, goal, angles, Vs, a, b, el) {
+  if (COARSE) { const k = angles.loop ? 4 : 3, sub = angles.filter((_, i) => i % k === 0); sub.loop = angles.loop; angles = sub; }
   let hits = 0, best = null; const n = angles.length, loop = angles.loop;
   for (const V of Vs) {
     const ok = angles.map(ang => tryShot(base, goal, [ang, V, a, b, el]));
     for (let i = 0; i < n; i++) if (ok[i]) hits++;
     for (let i = 0; i < n; i++) if (ok[i] && !(loop ? ok[(i + n - 1) % n] : i > 0 && ok[i - 1])) {
       let m = 1; while (m < n && (loop ? ok[(i + m) % n] : i + m < n && ok[i + m])) m++;
-      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el || 0] };
+      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el == null ? +P.BASE_EL.toFixed(5) : el] };
     }
   }
   return { share: hits / (n * Vs.length), best };
@@ -70,7 +75,8 @@ const STAGES = [
   { name: '첫 득점', goal: 'score', lo: 0.05, hi: 0.2, make: pick, ok: b => dist(b[2], b[3]) < 0.55 && dist(b[0], b[near(b, 0)]) < 1.1,
     solve: w => sweep(w, 'score', ALL, [2.4, 3.4, 4.6], 0, 0) },
   { name: '모아치기', goal: 'gather', lo: 0.004, hi: 0.05, make: pick, ok: b => dist(b[2], b[3]) < 0.6 && dist(b[0], b[near(b, 0)]) < 0.9,
-    solve: w => sweep(w, 'gather', ALL, [1.5, 2.0, 2.6, 3.3], 0, 0) },
+    // (gentle: the realistic carom cloth lets balls run about twice as far, so the speeds that gather are lower)
+    solve: w => sweep(w, 'gather', ALL, [1.0, 1.3, 1.7, 2.2, 2.8], 0, 0) },
   { name: '밀어치기 · 끌어치기', goal: 'direct', lo: 0.004, hi: 0.05,
     // the second red straight on past the first (follow) or back behind the cue ball (draw); hit without spin the cue ball goes neither way
     make() { const c = [between(-HL + 0.3, HL - 0.3), between(-HW + 0.25, HW - 0.25)], th = between(0, 6.28), d1 = between(0.22, 0.5), r1 = [c[0] + Math.cos(th) * d1, c[1] + Math.sin(th) * d1];
@@ -112,6 +118,8 @@ if (process.argv[2] === 'resolve') {
   let src = fs.readFileSync(file, 'utf8'), fixed = 0, lost = 0;
   for (const z of Z.list) {
     const S = Z.STAGES[z.stage], base = world(z.balls);
+    // an answer made for a level cue is first tried as the ordinary stroke (a few degrees up), which is what a player gets
+    if (!S.trick && !z.sol[4]) { const s2 = z.sol.slice(0, 4).concat([+P.BASE_EL.toFixed(5)]); if (sturdy(base, S.goal, s2)) { const before = JSON.stringify(z); z.sol = s2; src = src.replace(before, JSON.stringify(z)); fixed++; continue; } }
     if (sturdy(base, S.goal, z.sol)) continue;
     const s = STAGES[GEN[S.name]].solve(base, z.balls), sol = s && s.best ? s.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v) : null;
     if (sol && sturdy(base, S.goal, sol)) { const before = JSON.stringify(z), after = JSON.stringify(Object.assign({}, z, { sol })); if (!src.includes(before)) throw new Error('puzzle ' + z.id + ' not found as written'); src = src.replace(before, after); fixed++; console.log(`puzzle ${z.id} (${S.name}): new answer`); }
@@ -121,13 +129,15 @@ if (process.argv[2] === 'resolve') {
       for (let k = 0; k < 20000 && !done; k++) {
         const balls = T2.make(); if (!valid(balls) || !T2.ok(balls)) continue;
         if (Z.list.some(q => q.stage === z.stage && q !== z && dist(q.balls[0], balls[0]) + dist(q.balls[2], balls[2]) + dist(q.balls[3], balls[3]) < 0.5)) continue;
-        const b2 = world(balls), r = T2.solve(b2, balls); if (!r || !r.best || r.share < T2.lo || r.share > T2.hi || r.best.n < 3) continue;
+        const b2 = world(balls); COARSE = true; const q = T2.solve(b2, balls); COARSE = false; if (!q || q.share < T2.lo * 0.4 || q.share > T2.hi * 2.5) continue;
+        const r = T2.solve(b2, balls); if (!r || !r.best || r.share < T2.lo || r.share > T2.hi || r.best.n < 3) continue;
         const sol2 = r.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v); if (!sturdy(b2, T2.goal, sol2)) continue;
         const before = JSON.stringify(z), after = JSON.stringify(Object.assign({}, z, { balls, sol: sol2 })); if (!src.includes(before)) throw new Error('puzzle ' + z.id + ' not found as written');
         src = src.replace(before, after); z.balls = balls; done = true; fixed++; console.log(`puzzle ${z.id} (${S.name}): replaced by a new position`);
       }
       if (!done) { lost++; console.log(`puzzle ${z.id} (${S.name}): NO ANSWER FOUND and no replacement`); }
     }
+    fs.writeFileSync(file, src);                                     // as it goes, so that a long run can be stopped and picked up again
   }
   fs.writeFileSync(file, src); console.log(`${fixed} re-answered, ${lost} without an answer, ${Z.list.length - fixed - lost} unchanged`); process.exit(lost ? 1 : 0);
 }
@@ -138,7 +148,8 @@ while (found.length < WANT && tries < 30000) {
   const key = balls.join(';'); if (seen.has(key)) continue; seen.add(key);
   // not two puzzles that look the same: the reds and the cue ball each somewhere new
   if (found.some(f => dist(f.balls[0], balls[0]) + dist(f.balls[2], balls[2]) + dist(f.balls[3], balls[3]) < 0.5)) continue;
-  const base = world(balls), s = T.solve(base, balls);
+  const base = world(balls); COARSE = true; const q = T.solve(base, balls); COARSE = false; if (!q || q.share < T.lo * 0.4 || q.share > T.hi * 2.5) continue;
+  const s = T.solve(base, balls);
   if (!s || !s.best || s.share < T.lo || s.share > T.hi || s.best.n < 3) continue;
   const sol = s.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v);
   if (!sturdy(base, T.goal, sol)) continue;

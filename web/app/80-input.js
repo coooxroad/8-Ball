@@ -122,7 +122,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 3 ? '노란 점이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.5 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
@@ -153,7 +153,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const elUp = () => { if (eid != null) { eid = null; ctlUp(); } };
   padEl.addEventListener('pointerup', elUp); padEl.addEventListener('pointercancel', elUp);
 })();
-const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
+const trickOK = () => !!flow && flow !== homeDemo;
 /* Realistic tables: the cue angle is the real one. What the player asked for (st.elWant: 5 degrees to begin with) is what
    is played - only, where raising the cue is not allowed, nothing above the ordinary 5. */
 function syncEl() {

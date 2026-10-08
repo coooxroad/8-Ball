@@ -2,7 +2,8 @@
    1. every practice drill, at every level, on every table size: the layout is valid and its reference shot passes
    2. computer-vs-computer games of every rule set finish, on every table size */
 const path = require('path'), W = path.join(__dirname, '..');
-const createPhysics = require(path.join(W, 'physics.js')), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
+// the game plays on the realistic physics, so that is what is checked; a check of the old one asks for it with real: false
+const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(Object.assign({ real: true }, cfg)), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
 const TABLES = {
   bar: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }, club: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 },
   pro: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 }, pub: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 },
@@ -42,7 +43,7 @@ for (const name in TABLES) {
       while (!g.over && n < 400) {
         const who = g.turn, wasBreak = g.isBreak, t0 = Date.now(), pl = g.aiPlan(), ms = Date.now() - t0; worst = Math.max(worst, ms); sum += ms;
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         if (!wasBreak) { turns++; if (!g.over && g.turn !== who) missed++; else if (g.over && g.over.winner !== who) missed++; }
         if (!wasBreak) { if (pl.a || pl.b) spun++; if (pl.pots > 1) multi++; if (pl.el) tricks++; }
       }
@@ -64,7 +65,7 @@ for (const name of ['bar', 'pro', 'pub']) {
       while (!g.over && n < 400) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve(); n++;
         for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`${name} ${mode}: ball position is not a number`); n = 999; break; }
       }
       if (!g.over) fail(`${name} ${mode}: game did not finish in 400 shots`);
@@ -84,7 +85,7 @@ for (const name of ['bar', 'pro', 'pub']) {
       while (!g.over && n < 500) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
-        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++;
+        g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++;
         for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y))) { fail(`ice ${mode}: ball position is not a number`); n = 999; break; }
       }
       if (!g.over) fail(`ice ${mode} ${JSON.stringify(opt)}: game did not finish in 500 shots`);
@@ -107,8 +108,8 @@ for (const name of ['bar', 'pro', 'pub']) {
         const pl = g.aiPlan();
         if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
         g.beginShot();
-        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: pl.a || 0, b: pl.b || 0, el: pl.el || 0, turn: g.turn, isBreak: g.isBreak };
-        g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 40); g.world.snd.length = 0;
+        const shot = { snap: H.snapshot(g.world), aim: pl.angle, V: pl.V, a: pl.a || 0, b: pl.b || 0, el: pl.el || null, turn: g.turn, isBreak: g.isBreak };
+        g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 40); g.world.snd.length = 0;
         const ev = g.world.ev, end = g.world.balls.map(b => [b.x, b.y, b.on]), out = g.resolve(); n++;
         try {
           const good = H.rate(g.P, g.mode, shot, ev, out.r), bad = H.rateWorst(g.P, g.mode, shot, ev, out.r);
@@ -151,14 +152,15 @@ for (const name of ['bar', 'pro', 'pub']) {
   const P = createPhysics({ R: 0.03275, pockets: false }), mk = () => { const w = P.makeWorld(4); [[-0.8, 0], [9, 9], [0.2, 0], [9, 9]].forEach((b, i) => P.place(w, i, b[0], b[1])); w.balls[1].on = w.balls[3].on = false; return w; };
   const deg = d => d * Math.PI / 180;
   for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, deg(70)); for (let i = 0; i < 120; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.05)) fail(`a raised cue with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
-  { const w = mk(); P.strike(w, 0, 3.5, 0.4, 0, 0); for (let i = 0; i < 60; i++) P.step(w, 1 / 120); if (Math.abs(w.balls[0].y) > 0.01) fail('a level cue curved the ball'); }
-  // the same angle, hard and soft: hard it clears the ball in front, soft it does not leave the cloth
+  // (level, side only pushes it a degree or two off the line of the cue - squirt - and it stays on that straight line)
+  { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0.4, 0, 0); const c = w.balls[0]; for (let i = 0; i < 30; i++) P.step(w, 1 / 120); const k = c.y / (c.x + 0.8); for (let i = 0; i < 30; i++) P.step(w, 1 / 120); if (Math.abs(c.y / (c.x + 0.8) - k) > 0.002 || Math.abs(k) > 0.05) fail('a level cue curved the ball'); }
+  // the same angle, hard and soft: hard it clears the ball in front, soft it barely lifts
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 6.2, 0, 0, deg(42)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > 0 || w.ev.firstHit !== 2) fail('a soft raised shot left the cloth'); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > P.R * 0.3 || w.ev.firstHit !== 2) fail('a soft raised shot jumped (it should barely lift and run into the ball)'); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); P.run(w, 20); if (w.ev.firstHit !== 2 || w.ev.air > 0) fail('a level shot went through or over a ball'); }
   // steeper is higher and shorter; a steep shot struck low comes back
   { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(60)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(b.ev.air > a.ev.air && b.balls[0].x < a.balls[0].x)) fail('a steeper cue did not jump higher and shorter'); }
-  { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let far = -9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); far = Math.max(far, w.balls[0].x); } if (!(w.balls[0].x < far - 0.05)) fail('a steep shot struck low did not come back'); }
+  { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let back = 9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); back = Math.min(back, w.balls[0].x); } if (!(back < -0.85)) fail('a steep shot struck low did not come back'); }
   { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 7, 0, 0, deg(45)); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
@@ -187,7 +189,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   }
   g.start('three', ['A', 'B'], true, { level: 2, target: 3, cushions: 1, rnd }); g.players[0].ai = true;
   if (g.P.R !== 0.03075 || g.P.HL !== 1.42) fail('three-ball is not on the match table');
-  let n = 0; while (!g.over && n < 400) { const pl = g.aiPlan(); g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++; }
+  let n = 0; while (!g.over && n < 400) { const pl = g.aiPlan(); g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 60); g.world.snd.length = 0; g.resolve(); n++; }
   if (!g.over) fail('three-ball on the match table did not finish');
   const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, {}); if (!g.restore(d) || g.P.HL !== 1.42) fail('a saved three-ball game came back on the wrong table');
   console.log(`openings and the three-ball table: checked (${n} shots)`);
@@ -196,7 +198,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // lengthens the angle off a cushion; a cut throws the struck ball off the line of centres towards the way the cue ball was going;
 // side sends the cue ball a little the other way; the carom cloth runs further than the pool cloth; and a raised cue costs spin
 {
-  const real = cfg => createPhysics(Object.assign({ real: true }, cfg)), C = real({ R: 0.03275, pockets: false }), PL = real(Object.assign({ pockets: true }, TABLES.bar)), OLD = createPhysics({ R: 0.03275, pockets: false });
+  const real = cfg => createPhysics(Object.assign({ real: true }, cfg)), C = real({ R: 0.03275, pockets: false }), PL = real(Object.assign({ pockets: true }, TABLES.bar)), OLD = createPhysics({ real: false, R: 0.03275, pockets: false });
   const one = (P, n) => { const w = P.makeWorld(n); for (let i = 1; i < n; i++) w.balls[i].on = false; P.place(w, 0, 0, 0); return w; };
   const energy = b => b.vx * b.vx + b.vy * b.vy + 0.4 * C.R * C.R * (b.wx * b.wx + b.wy * b.wy + b.wz * b.wz);
   let gain = 0;
@@ -214,7 +216,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   const g = createGame({ pool: PL, carom: C, carom3: real({ R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }) });
   for (const mode of ['eight', 'nine', 'four', 'three']) for (const level of [2, 3]) {
     g.start(mode, ['A', 'B'], true, { level, target: 3, cushions: 1, rnd }); g.players[0].ai = true; let n = 0;
-    while (!g.over && n < 400) { const pl = g.aiPlan(); if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; } g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || 0); g.P.run(g.world, 90); g.world.snd.length = 0; g.resolve(); n++;
+    while (!g.over && n < 400) { const pl = g.aiPlan(); if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; } g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 90); g.world.snd.length = 0; g.resolve(); n++;
       for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y) && Math.abs(b.x) <= g.P.HL + 0.2 && Math.abs(b.y) <= g.P.HW + 0.2)) { fail(`realistic physics, ${mode}: a ball is nowhere sensible`); n = 999; break; } }
     if (!g.over) fail(`realistic physics, ${mode} level ${level}: game did not finish`);
   }
@@ -294,7 +296,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // The cue's angle on the realistic tables: an ordinary stroke leans 5 degrees, a said 0 is level, straight down is allowed;
 // the original physics is level
 {
-  const RP = createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = Math.PI / 180;
+  const RP = createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ real: false, pockets: true }, TABLES.bar)), deg = Math.PI / 180;
   const at = (P, x, y) => { const w = P.makeWorld(1); P.place(w, 0, x, y); return w; };
   if (Math.abs(RP.restEl() - 5 * deg) > 1e-9 || OP.restEl() !== 0) fail('cue angle: an ordinary stroke should lean 5 degrees on the realistic tables and none on the others');
   const a = at(RP, -0.9, 0), b = at(RP, -0.9, 0), c = at(RP, -0.9, 0); RP.strike(a, 0, 6, 0, 0); RP.strike(b, 0, 6, 0, 0, RP.restEl()); RP.strike(c, 0, 6, 0, 0, 0);

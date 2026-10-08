@@ -43,7 +43,7 @@ function flames(now) {
   }
   flameRaf = requestAnimationFrame(flames);
 }
-const lightFlames = () => { if (!flameRaf && LAB.fire) flameRaf = requestAnimationFrame(flames); };
+const lightFlames = () => { if (!flameRaf) flameRaf = requestAnimationFrame(flames); };
 function showRecords() { show('records'); st.phase = 'idle'; flow = null; paintRecords(); $('#records').scrollTop = 0; }
 function paintRecords() {
   paintNav(); const body = $('#recBody'); body.textContent = '';

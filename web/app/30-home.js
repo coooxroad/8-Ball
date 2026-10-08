@@ -30,18 +30,18 @@ function buildModes() {
 }
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 // a run of wins burns: red at two, yellow at three, mint at four, purple from five on
-const fireOf = n => LAB.fire && n >= 2 ? ' fire f' + Math.min(5, n) : '';
+const fireOf = n => n >= 2 ? ' fire f' + Math.min(5, n) : '';
 const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구' };
 function paintResume() {
-  const box = $('#resumeBox'), d = LAB.resume ? store.get('save', null) : null, ok = !!(d && d.v === 2 && d.game && MODE_KO[d.game.modeId] && prefs.mode !== 'practice' && prefs.mode !== 'puzzle');
+  const box = $('#resumeBox'), d = store.get('save', null), ok = !!(d && d.v === 2 && d.game && MODE_KO[d.game.modeId] && prefs.mode !== 'practice' && prefs.mode !== 'puzzle');
   box.hidden = !ok; box.textContent = ''; if (!ok) return;
   const gm = d.game, ps = gm.players, tens = gm.tens ? 10 : 1, sc = gm.modeId === 'four' || gm.modeId === 'three' ? ` · ${ps[0].score * tens} : ${ps[1].score * tens}` : '';
   box.appendChild(el('button', { class: 'resume', onclick: () => { SND.init(); SND.tap(); resume(d); } }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
   box.appendChild(el('button', { class: 'resume-x', 'aria-label': '하던 판 지우기', text: '×', onclick: () => { SND.tap(); store.set('save', null); paintResume(); } }));
 }
-// the puzzles on offer (the masse and jump stage goes when those shots are switched off), and which stages are open
-const pzList = () => puzzles.list.filter(q => LAB.masse || !puzzles.STAGES[q.stage].trick), PZ_NEED = 5;
-const pzOpen = si => si === 0 || !LAB.stage || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
+// the puzzles on offer, and which stages are open
+const pzList = () => puzzles.list, PZ_NEED = 5;
+const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 // lessons, grouped the way a course list is: what you learn first at the top
 const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
@@ -70,13 +70,7 @@ function paintHome() {
     box.appendChild(el('div', { class: 'pzsum' }, [el('div', null, [el('b', { text: `${solved}` }), el('span', { text: ` / ${L.length}` }), el('small', { text: '푼 퍼즐' })]), el('div', null, [el('b', { class: 'st', text: '★ ' + stars }), el('span', { text: ` / ${L.length * 3}` }), el('small', { text: '모은 별' })])]));
     const pickPz = q => { SND.init(); SND.tap(); z.cur = q.id; savePrefs(); paintHome(); homePreview(); };
     puzzles.STAGES.forEach((S, si) => {
-      if (S.trick && !LAB.masse) return;
       const qs = puzzles.of(si), done = qs.filter(q => z.stars[q.id]).length, open = pzOpen(si);
-      if (!LAB.stage) {   // the plain numbered board
-        box.appendChild(el('div', { class: 'lab', text: S.name }));
-        box.appendChild(el('div', { class: 'pzgrid' }, qs.map(q => el('button', { class: 'pz' + (z.stars[q.id] ? ' done' : ''), 'aria-pressed': String(z.cur === q.id), text: z.stars[q.id] ? '✓' : String(q.n), onclick: () => pickPz(q) }))));
-        return;
-      }
       // a stage: its number, what it is about, how far along; opened, its puzzles as stops along a winding road
       const shown = z.open === si;
       box.appendChild(el('button', { class: 'stg' + (shown ? ' open' : '') + (open ? '' : ' locked') + (done === qs.length ? ' clear' : ''), style: `--h:${[212, 156, 28, 268, 348, 190, 42][si % 7]}`, onclick: () => {
@@ -93,22 +87,22 @@ function paintHome() {
     box.scrollTop = top;
     const cur = puzzles.byId(z.cur); if (cur) $('#startBtn').textContent = `${cur.stage + 1}-${cur.n} 풀기`;
   }
-  const sujiOn = prefs.mode === 'four' && LAB.suji, sj = i => sujiOn ? `수지 ${sujiOf(i) * 10} · ` : '';
+  const sujiOn = prefs.mode === 'four', sj = i => sujiOn ? `수지 ${sujiOf(i) * 10} · ` : '';
   $('#pc0 .nm').textContent = prefs.names[0]; $('#pc0 .rc').textContent = sj(0) + recText(prefs.names[0]);
   $('#pc1 .nm').textContent = oppName(); $('#pc1 .rc').textContent = sj(1) + (prefs.vsAI ? LEVELS[prefs.level] + ' 난이도' : recText(prefs.names[1]));
   for (let i = 0; i < 2; i++) { const r = rec[i === 1 && prefs.vsAI ? '컴퓨터' : prefs.names[i]]; $('#pc' + i).className = 'prow' + (i ? ' two' : '') + fireOf(r ? r.streak : 0); }
   $('#segLvl').hidden = !prefs.vsAI; $('#segTarget').hidden = !isCarom() || sujiOn; $('#segRule3').hidden = prefs.mode !== 'three';
-  $('#segFinish').hidden = prefs.mode !== 'four'; $('#segMasse').hidden = !LAB.masse;
+  $('#segFinish').hidden = prefs.mode !== 'four';
   for (const f of segPaint) f();
   $('#clothSw').style.setProperty('--c', hex(CLOTHS[prefs.cloth].felt));
   $('#tableVal').textContent = (prefs.mode === 'three' ? '대대' : isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = prefs.cues[0] === prefs.cues[1] || prefs.vsAI || prac || puz ? CUES[prefs.cues[0]].name : '각자';
-  const gs = prefs.guides; $('#guideVal').textContent = gs[0] === gs[1] || prefs.vsAI || prac ? GUIDE[gs[0]][0] : GUIDE[gs[0]][0] + ' · ' + GUIDE[gs[1]][0];
+  const gs = prefs.guides; $('#guideVal').textContent = guideName(gs[0]) === guideName(gs[1]) || prefs.vsAI || prac ? guideName(gs[0]) : guideName(gs[0]) + ' · ' + guideName(gs[1]);
 }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
 // (a new layout each time, which is also what the drill itself does).
 function homePreview() {
-  usePhysics(LAB.real && prefs.mode !== 'puzzle' && prefs.mode !== 'practice'); scene.clearFalls(); scene.setZone(null);
+  usePhysics(); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
   if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
@@ -121,27 +115,27 @@ function homePreview() {
   const mode = game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', ice = iceOn();
   game.start(mode, [prefs.names[0], oppName()], false, { ice, levels: [2, 2], target: 99 });
   dress(ice); scene.setTable(game.P); st.rev++; scene.invalidate();
-  if (LAB.demo) { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }
+  { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }
 }
 // The table on the first screen plays itself: two computers at the hard level, one game after another, without a sound.
 const homeDemo = {
-  quiet: true, save: false, guide: () => 2, restart() {}, beforeShot() {}, hud() {},
+  quiet: true, save: false, guide: () => 0.5, restart() {}, beforeShot() {}, hud() {},
   auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }),
   afterShot() { game.resolve(); if (st.screen !== 'home') return; if (game.over) return hold(2.2, () => { if (flow === homeDemo && st.screen === 'home') homePreview(); }); useCue(prefs.cues[prefs.vsAI ? 0 : game.turn]); beginTurn(false); },
 };
 // leaving a game: `keep` leaves it saved so that it can be picked up again from the first screen
 function goHome(keep) {
-  if (!(keep === true && LAB.resume)) store.set('save', null);
+  if (keep !== true) store.set('save', null);
   show('home'); buildModes(); paintHome(); homePreview();
 }
 function resume(d) {
   if (TABLES.some(t => t.id === d.tbl)) prefs.table = d.tbl;
-  usePhysics(!!d.real);                                     // the game comes back on the physics it was being played on
+  usePhysics();
   st.phase = 'idle'; st.auto = null; st.afterHold = null; scene.clearFalls();
   if (!game.restore(d.game)) { store.set('save', null); return paintResume(); }
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
   match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
-    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, masse: game.masse, real: !!d.real };
+    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
 }

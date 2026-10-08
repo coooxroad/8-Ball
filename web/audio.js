@@ -292,7 +292,7 @@ function createAudio(isOn) {
       const k = isOn() ? Math.min(1, amount / 6) : 0, t = ac.currentTime;
       if (Math.abs(k - roll.k) < 0.04 && !(k === 0 && roll.k !== 0)) return;                 // only re-aim the volume when it has really changed
       roll.k = k;
-      roll.g.gain.setTargetAtTime(0.0375 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
+      roll.g.gain.setTargetAtTime(0.03 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
     },
     tap() { uiHit('tick', 0.22, 5000, 0, 1); },
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
