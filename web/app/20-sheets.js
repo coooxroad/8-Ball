@@ -26,9 +26,10 @@ function sheetCue() {
   document.querySelectorAll('#sheetBody .cuepic').forEach((cv, i) => drawCue(cv, CUES[i], false));
 }
 // one guide length per player (a handicap); a single slider when only one person is aiming
+// the knob is a matte blue that deepens as the guide gets longer
 function guideSlider(label, value, set) {
   const tag = el('span', { class: 'gtag' }), input = el('input', { type: 'range', min: '0', max: '100', step: '1', value: String(Math.round(value * 100)), class: 'gslide', 'aria-label': label });
-  const paint = () => { const g = input.value / 100; tag.textContent = guideName(g); tag.style.left = `calc(${g * 100}% + ${(0.5 - g) * 28}px)`; input.style.setProperty('--g', g); input.style.setProperty('--gc', `hsl(${Math.round(200 - 165 * g)} 85% 55%)`); };
+  const paint = () => { const g = input.value / 100; tag.textContent = guideName(g); tag.style.left = `calc(${g * 100}% + ${(0.5 - g) * 28}px)`; input.style.setProperty('--g', g); input.style.setProperty('--gc', `hsl(${Math.round(208 + 6 * g)} ${Math.round(28 + 22 * g)}% ${Math.round(70 - 38 * g)}%)`); };
   input.addEventListener('input', () => { paint(); set(input.value / 100); });
   input.addEventListener('change', () => SND.tap());
   paint();
