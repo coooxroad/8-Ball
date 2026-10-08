@@ -29,7 +29,8 @@ function sheetCue() {
 function sheetGuide() {
   const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
   const row = i => segRow(solo ? '조준선' : st.screen === 'play' ? game.players[i].name : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
-  openSheet('조준선 길이', [row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
+  openSheet('조준선', [segRow('모양', [['dots', '점'], ['line', '선'], ['glow', '빛 리본'], ['ghost', '고스트 볼']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
+    row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
 }
 function sheetSettings() {
@@ -71,7 +72,7 @@ function sheetLab() {
   const row = (k, name, d) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: name }), el('div', { class: 'seg' }, [[true, '켬'], [false, '끔']].map(([v, t]) => el('button', { 'aria-pressed': String(LAB[k] === v), text: t, onclick: () => { SND.tap(); LAB[k] = v; savePrefs(); labChanged(); sheetLab(); } }))), d ? note(d) : null]);
   openSheet('실험실', [
     note('2.0에서 새로 들어간 것들입니다. 마음에 안 드는 것은 여기서 끄면 1.x 때처럼 돌아갑니다.'),
-    row('real', '현실 물리 (시험판)', '대결에만 적용됩니다. 쿠션, 공끼리의 마찰, 옆 회전을 주면 공이 살짝 빗나가는 것, 4구·3구의 빠른 천까지 실제에 가깝게 계산합니다. 큐는 실제처럼 5° 들려 있고(0~90°, 뒤 쿠션에 걸리면 그만큼 높아짐), 당점을 옮기면 큐가 나란히 옮겨 갑니다. 레슨과 퍼즐은 원래 물리 그대로입니다.'),
+    row('real', '현실 물리 (시험판)', '대결에만 적용됩니다. 쿠션, 공끼리의 마찰, 옆 회전을 주면 공이 살짝 빗나가는 것, 4구·3구의 빠른 천까지 실제에 가깝게 계산합니다. 큐는 실제처럼 5° 들려 있고(0~90°), 당점을 옮기면 큐가 나란히 옮겨 갑니다. 레슨과 퍼즐은 원래 물리 그대로입니다.'),
     row('masse', '큐 세우기 (맛세이 · 점프)', '끄면 회전 창에서 큐 각도가 사라집니다.'),
     row('suji', '수지 (4구)', '이름마다 자기 수지까지 칩니다. 끄면 둘 다 같은 점수까지.'),
     row('tray', '넣은 공 표시 (8볼)', '이름표에 넣은 공이 쌓입니다. 끄면 남은 공을 보여줍니다.'),

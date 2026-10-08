@@ -114,29 +114,11 @@ function createPhysics(cfg) {
     w.ev = newEv();
   }
   /* A real cue is never level: the hand behind it is up on the rail, so it leans down onto the ball by a few degrees. On the
-     realistic tables the cue angle is that real angle - BASE_EL when nobody raises it - and it can go as low as the rail lets
-     it: the cue, as thick as it is along its length, has to pass over the rail behind the ball (RAIL_TOP high, from the
-     cushion's nose to the outer edge of the wood, RAIL_OUT), unless the rail is beyond the end of the cue. Hitting high on the
-     ball lifts the tip, so a level cue can clear a rail it would otherwise hit. These are the sizes the table is drawn at. */
-  const BASE_EL = REAL ? 5 * Math.PI / 180 : 0, CUE_LEN = 1.47, RAIL_TOP = 0.04, RAIL_OUT = CW + 0.095;
-  function cueFloor(w, ang, bb) {
-    if (!REAL) return 0;
-    const c = w.balls[w.cue], dx = -Math.cos(ang), dy = -Math.sin(ang);
-    const reach = (ex, ey) => Math.min(dx > 1e-9 ? (ex - c.x) / dx : dx < -1e-9 ? (-ex - c.x) / dx : Infinity, dy > 1e-9 ? (ey - c.y) / dy : dy < -1e-9 ? (-ey - c.y) / dy : Infinity);
-    const s1 = reach(HL, HW), s2 = reach(HL + RAIL_OUT, HW + RAIL_OUT), b = bb || 0, s0 = R * Math.sqrt(Math.max(0, 1 - b * b)), h0 = R + b * R;
-    const clears = el => {
-      const ce = Math.cos(el), te = Math.tan(el), end = s0 + CUE_LEN * ce;
-      if (s1 >= end) return true;                                   // the rail is past the butt
-      for (const s of [s1, Math.min(s2, end)]) { const r = 0.0065 + 0.008 * Math.min(1, (s - s0) / ce / CUE_LEN); if (h0 + (s - s0) * te - r / ce < RAIL_TOP) return false; }
-      return true;
-    };
-    if (clears(0)) return 0;
-    let lo = 0, hi = Math.PI / 2;
-    for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (clears(m)) hi = m; else lo = m; }
-    return hi;
-  }
-  // the angle of an ordinary stroke here: BASE_EL, or more if the rail is in the way (0 in the original physics)
-  const restEl = (w, ang, bb) => REAL ? Math.max(BASE_EL, cueFloor(w, ang, bb)) : 0;
+     realistic tables the cue angle is that real angle, BASE_EL when nobody raises it - and anything from level to straight
+     down when somebody does (the rail is not allowed to get in the way: that was no fun). */
+  const BASE_EL = REAL ? 5 * Math.PI / 180 : 0;
+  // the angle of an ordinary stroke here (0 in the original physics)
+  const restEl = () => BASE_EL;
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
   const squirt = a => REAL ? 0.07 * a : 0;
   const CREEP = REAL ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
@@ -585,6 +567,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, squirt, REAL, BASE_EL, cueFloor, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
+  return { hop, squirt, REAL, BASE_EL, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

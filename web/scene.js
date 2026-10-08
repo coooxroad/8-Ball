@@ -395,6 +395,82 @@ function createScene(canvas, app, PH) {
   const airGeo = new THREE.RingGeometry(0.62, 1, 18), gAir = [];
   for (let i = 0; i < 90; i++) { const d = new THREE.Mesh(airGeo, dotMat); d.renderOrder = 10; d.visible = false; guide.add(d); gAir.push(d); }
   for (const m of [gLine, gObj, gCue, gBank, gRing, gHand]) { m.renderOrder = 10; guide.add(m); }
+  /* The other looks of the guide draw a path as a ribbon that follows it - bending where the ball bends, lifting where it
+     flies (with its shadow left on the cloth), fading towards its end, whole, dashed or dotted. One strip per part. */
+  const RIB_MAX = 400;
+  const ribVS = 'attribute float a; attribute float s; attribute float e; varying float va; varying float vs; varying float ve;' +
+    'void main() { va = a; vs = s; ve = e; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+  const ribFS = 'uniform vec3 col; uniform float op; uniform float mode; uniform float per; uniform float on; uniform float hw;' +
+    'varying float va; varying float vs; varying float ve;' +
+    'void main() { float k = 1.0 - smoothstep(0.55, 1.0, abs(ve));' +
+    ' if (mode > 1.5) { float u = mod(vs, per) - 0.5 * per; float d = length(vec2(u, ve * hw)) / hw; if (d > 1.0) discard; k = 1.0 - smoothstep(0.6, 1.0, d); }' +
+    ' else if (mode > 0.5) { if (mod(vs, per) > on) discard; }' +
+    ' gl_FragColor = vec4(col, va * op * k); }';
+  function makeRibbon() {
+    const g = new THREE.BufferGeometry(), e = new Float32Array(RIB_MAX * 2), idx = [];
+    for (let i = 0; i < RIB_MAX - 1; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    for (let i = 0; i < RIB_MAX; i++) { e[2 * i] = -1; e[2 * i + 1] = 1; }
+    g.setIndex(idx); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RIB_MAX * 6), 3));
+    g.setAttribute('a', new THREE.BufferAttribute(new Float32Array(RIB_MAX * 2), 1)); g.setAttribute('s', new THREE.BufferAttribute(new Float32Array(RIB_MAX * 2), 1)); g.setAttribute('e', new THREE.BufferAttribute(e, 1));
+    const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms: { col: { value: new THREE.Color(1, 1, 1) }, op: { value: 1 }, mode: { value: 0 }, per: { value: 0.03 }, on: { value: 0.02 }, hw: { value: 0.002 } },
+      vertexShader: ribVS, fragmentShader: ribFS, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+    m.frustumCulled = false; m.renderOrder = 10; m.visible = false; guide.add(m); return m;
+  }
+  const rGlow = makeRibbon(), rShadow = makeRibbon(), rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), RIBS = [rGlow, rShadow, rPre, rObj, rPost];
+  const gDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40), gMat(0.3)), arrowGeo = new THREE.BufferGeometry();
+  arrowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([1, 0, 0, -0.4, 0.62, 0, -0.4, -0.62, 0]), 3));
+  const gArrow = new THREE.Mesh(arrowGeo, gMat(0.95));
+  for (const m of [gDisc, gArrow]) { m.renderOrder = 10; m.visible = false; guide.add(m); }
+  // pts: [x, y, height above the cloth, ...]. o: px (width on screen), color, op, alpha(t along 0..1, height), mode (0 whole,
+  // 1 dashes of `on` every `per` metres, 2 round dots every `per`), flat (drawn on the cloth itself: a shadow)
+  function ribbon(m, pts, o, R) {
+    const xs = [], ys = [], zs = [];
+    for (let i = 0; i < pts.length; i += 3) {
+      const n = xs.length;
+      if (n && i < pts.length - 3 && Math.hypot(pts[i] - xs[n - 1], pts[i + 1] - ys[n - 1]) < 0.002) continue;
+      if (n >= RIB_MAX) break; xs.push(pts[i]); ys.push(pts[i + 1]); zs.push(pts[i + 2]);
+    }
+    const n = xs.length; if (n < 2) { m.visible = false; return; }
+    let L = 0; for (let i = 1; i < n; i++) L += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+    if (L < 0.004) { m.visible = false; return; }
+    const g = m.geometry, P = g.attributes.position.array, A = g.attributes.a.array, S = g.attributes.s.array, hw = o.px / ppm / 2;
+    let s = 0;
+    for (let i = 0; i < n; i++) {
+      if (i) s += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+      const i0 = Math.max(0, i - 1), i1 = Math.min(n - 1, i + 1); let tx = xs[i1] - xs[i0], ty = ys[i1] - ys[i0]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+      // seen from above, height does not show: so a path in the air is drawn wider the higher it is, and its shadow falls
+      // away from it the way the balls' shadows do
+      const h = zs[i], z = o.flat ? 0.0015 : R + h, al = o.alpha ? Math.max(0, o.alpha(s / L, h)) : 1, w = hw * (o.flat ? 1 : 1 + h * 30);
+      const cx = xs[i] + (o.flat ? h * 0.45 : 0), cy = ys[i] - (o.flat ? h * 0.5 : 0);
+      P.set([cx + ty * w, cy - tx * w, z, cx - ty * w, cy + tx * w, z], i * 6);
+      A[2 * i] = A[2 * i + 1] = al; S[2 * i] = S[2 * i + 1] = s;
+    }
+    g.attributes.position.needsUpdate = g.attributes.a.needsUpdate = g.attributes.s.needsUpdate = true;
+    g.setDrawRange(0, (n - 1) * 6);
+    const u = m.material.uniforms; u.col.value.setHex(o.color); u.op.value = o.op == null ? 1 : o.op; u.mode.value = o.mode || 0; u.per.value = o.per || 0.03; u.on.value = o.on || 0.02; u.hw.value = hw;
+    m.visible = true;
+  }
+  // a copy of the path with `a` metres taken off its start and `b` off its end
+  function trimPath(pts, a, b) {
+    let L = 0; for (let i = 3; i < pts.length; i += 3) L += Math.hypot(pts[i] - pts[i - 3], pts[i + 1] - pts[i - 2]);
+    const from = a, to = L - b, out = []; if (to <= from) return out;
+    let s = 0;
+    for (let i = 0; i < pts.length; i += 3) {
+      const d = i ? Math.hypot(pts[i] - pts[i - 3], pts[i + 1] - pts[i - 2]) : 0, s0 = s; s += d;
+      const at = (q) => { const f = d ? (q - s0) / d : 0; out.push(pts[i - 3] + (pts[i] - pts[i - 3]) * f, pts[i - 2] + (pts[i + 1] - pts[i - 2]) * f, pts[i - 1] + (pts[i + 2] - pts[i - 1]) * f); };
+      if (i && s0 < from && s >= from) at(from);
+      if (s > from && s < to) out.push(pts[i], pts[i + 1], pts[i + 2]);
+      if (i && s0 < to && s >= to) { at(to); break; }
+    }
+    return out;
+  }
+  /* The looks to choose from. pre: the cue ball's way to its first contact; obj: the struck ball's line; post: the cue ball
+     afterwards (yellow). Widths in screen pixels. */
+  const AIMS = {
+    line: { pre: 2.8, preOp: 0.95, preFade: 0.25, obj: 2.8, objFade: 0.6, post: 2.6, postMode: 0 },
+    glow: { pre: 2.2, glow: 12, preOp: 1, obj: 2.8, arrow: true, post: 2.8, postMode: 1, per: 0.036, on: 0.022 },
+    ghost: { pre: 1.8, preOp: 0.6, disc: true, obj: 3.4, objFade: 0.45, arrow: true, post: 5.4, postMode: 2, per: 0.032 },
+  };
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
   zone.add(new THREE.Mesh(new THREE.CircleGeometry(1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false })));
@@ -590,11 +666,11 @@ function createScene(canvas, app, PH) {
     }
     if (guide.visible) {
       const lv = v.level, chosen = v.power > 0;
-      const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4)].join('|');
+      const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4), v.aimStyle].join('|');
       if (key !== guideKey) {
         guideKey = key;
-        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = false;
-        for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false;
+        gLine.visible = gRing.visible = gObj.visible = gCue.visible = gBank.visible = gDisc.visible = gArrow.visible = false;
+        for (const d of gDots) d.visible = false; for (const d of gAir) d.visible = false; for (const m of RIBS) m.visible = false;
         if (lv >= 1) {
           /* Nothing here is worked out by geometry any more: the shot is played out on a copy with the very inputs the stroke
              will use, and the guide is drawn from what happened - so throw, the cushion's grip, squirt, follow and draw are in
@@ -622,6 +698,38 @@ function createScene(canvas, app, PH) {
           // which way it was travelling when it arrived
           const k = Math.max(0, pre.length - (raised ? 9 : pre.length)); let ux = ex - pre[k], uy = ey - pre[k + 1]; const ul = Math.hypot(ux, uy);
           if (ul > 1e-6) { ux /= ul; uy /= ul; } else { ux = Math.cos(v.aim); uy = Math.sin(v.aim); }
+          const look = AIMS[v.aimStyle];
+          if (look) {
+            const pOp = raised ? dim : 1, path = pre.slice(); if (at) path.push(at[0], at[1], at[2]);
+            const main = trimPath(path, R, at ? R * 0.9 : 0);
+            if (look.glow) ribbon(rGlow, main, { px: look.glow, color: 0xffffff, op: 0.22 * pOp }, R);
+            ribbon(rPre, main, { px: look.pre, color: 0xffffff, op: look.preOp * pOp, alpha: look.preFade ? t => 1 - look.preFade * t : null }, R);
+            let flies = false; for (let i = 2; i < path.length; i += 3) if (path[i] > 0.003) { flies = true; break; }
+            if (flies) ribbon(rShadow, path, { px: look.pre + 1.5, color: 0x000000, op: 0.4 * pOp, flat: true, alpha: (t, z) => Math.min(1, z / 0.006) }, R);
+            if (at) {
+              gRing.visible = true; gRing.position.set(at[0], at[1], R + at[2]); gRing.scale.setScalar(R);
+              if (look.disc) { gDisc.visible = true; gDisc.position.set(at[0], at[1], R + at[2]); gDisc.scale.setScalar(R); gDisc.material.color.set(tint); }
+            }
+            let tl = 0;
+            if (lv >= 2 && pv.obj) {
+              const o = pv.obj, run = Math.hypot(o.x1 - o.x0, o.y1 - o.y0), co = Math.max(0, Math.min(1, (ux * (o.x0 - at[0]) + uy * (o.y0 - at[1])) / (2 * R)));
+              tl = Math.sqrt(1 - co * co);
+              let dx = o.dx, dy = o.dy, l1 = Math.min(0.06 + 0.26 * co, Math.max(0.02, run));
+              if (lv >= 3 && run > 0.02) { dx = (o.x1 - o.x0) / run; dy = (o.y1 - o.y0) / run; l1 = Math.max(0.02, run - R * 0.2); }
+              const oOp = 0.92 * (P.REAL ? dim : 1), endL = look.arrow ? l1 - 7 / ppm : l1;
+              ribbon(rObj, [o.x0 + dx * R, o.y0 + dy * R, 0, o.x0 + dx * (R + endL), o.y0 + dy * (R + endL), 0], { px: look.obj, color: tint, op: oOp, alpha: look.objFade ? t => 1 - look.objFade * t : null }, R);
+              if (look.arrow) { gArrow.visible = true; gArrow.material.color.set(tint); gArrow.material.opacity = oOp * (look.objFade ? 1 - look.objFade : 1) + 0.2; gArrow.position.set(o.x0 + dx * (R + l1), o.y0 + dy * (R + l1), R); gArrow.rotation.set(0, 0, Math.atan2(dy, dx)); gArrow.scale.setScalar(9 / ppm); }
+            }
+            if (at && lv >= 2) {
+              let pts = post;
+              if (lv === 2) {
+                const want = pv.hit != null ? 0.1 + 0.2 * tl : 0.22, last = pv.hit != null ? post.length - 3 : Math.min(post.length - 3, pv.turn);
+                let acc = 0, i = 3; for (; i < last && acc < want; i += 3) acc += Math.hypot(post[i] - post[i - 3], post[i + 1] - post[i - 2]);
+                pts = post.slice(0, Math.min(i, post.length - 3) + 3);
+              }
+              ribbon(rPost, trimPath(pts, R, 0), { px: look.post, color: 0xffd21f, op: 0.95 * dim, mode: look.postMode, per: look.per, on: look.on, alpha: t => 1 - 0.8 * t }, R);
+            }
+          } else {
           if (raised) { if (at) pre.push(at[0], at[1], at[2]); dots(pre, 0.036, 3.4); }   // a ball that curves or flies has no straight line to draw
           else if (ul > R * 1.2) setLine(gLine, c.x + ux * R, c.y + uy * R, ex - ux * R * (at ? 0.9 : 0), ey - uy * R * (at ? 0.9 : 0), 1.7, R);
           if (at) { gRing.visible = true; gRing.position.set(at[0], at[1], R + at[2]); gRing.scale.setScalar(R); }
@@ -643,6 +751,7 @@ function createScene(canvas, app, PH) {
               const qx = post[i] - at[0], qy = post[i + 1] - at[1], ql = Math.hypot(qx, qy);
               if (ql > 0.02) { if (pv.hit != null) setLine(gCue, at[0] + qx / ql * R, at[1] + qy / ql * R, at[0] + qx / ql * (R + ql), at[1] + qy / ql * (R + ql), 1.5, R); else setLine(gBank, at[0], at[1], post[i], post[i + 1], 1.5, R); }
             }
+          }
           }
         }
       }

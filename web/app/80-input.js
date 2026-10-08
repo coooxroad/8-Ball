@@ -141,7 +141,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
     // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to.
-    // On the realistic tables this is the cue's real angle, up to straight down; the rail may hold it higher (syncEl).
+    // On the realistic tables this is the cue's real angle, from level to straight down.
     const real = game.P.REAL;
     a = Math.max(0, Math.min((real ? 90 : 85) * Math.PI / 180, a)); if (a < (real ? 0.0087 : 0.0175)) a = 0;
     a = Math.round(a * 1800 / Math.PI) * Math.PI / 1800;
@@ -154,13 +154,11 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   padEl.addEventListener('pointerup', elUp); padEl.addEventListener('pointercancel', elUp);
 })();
 const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
-/* Realistic tables: the cue angle is the real one. What the player asked for (st.elWant: 5 degrees to begin with, nothing
-   above that when raising the cue is not allowed) is what is played, unless the rail behind the ball holds the cue higher -
-   which changes as the aim swings round, so it is worked out again every frame while aiming. */
+/* Realistic tables: the cue angle is the real one. What the player asked for (st.elWant: 5 degrees to begin with) is what
+   is played - only, where raising the cue is not allowed, nothing above the ordinary 5. */
 function syncEl() {
   const P = game.P; if (!P.REAL || !game.world) return;
-  st.elFloor = P.cueFloor(game.world, st.aim, st.spin.y * 0.5);
-  const want = trickOK() ? st.elWant : Math.min(st.elWant, P.BASE_EL), el = Math.max(st.elFloor, want || 0);
+  const el = Math.max(0, (trickOK() ? st.elWant : Math.min(st.elWant, P.BASE_EL)) || 0);
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
@@ -184,7 +182,6 @@ function setKindUI() {
   seg(0, 0.03, 2, 2, hex(c.tip)); seg(0.03, 0.08, 2, 2.2, hex(c.ferrule)); seg(0.08, 0.6, 2.2, 3.4, hex(c.shaft)); seg(0.6, 1, 3.4, 4.6, hex(c.fore));
   g.strokeStyle = '#8a4dff'; g.lineWidth = 2.5; g.beginPath(); g.arc(bx, by, 44, -a, 0); if (a) g.stroke();
   g.fillStyle = ink; g.font = '700 11px Outfit, sans-serif'; g.textAlign = 'left'; if (!a) g.fillText('끌어서 큐를 세웁니다', bx + 30, by - 34);
-  if (game.P.REAL && st.elFloor > 0.001) { g.fillStyle = '#ff8a5c'; g.font = '700 10px Outfit, sans-serif'; g.fillText('뒤 쿠션: 최소 ' + (Math.round(st.elFloor * 1800 / Math.PI) / 10).toFixed(1) + '°', 8, 12); }
 }
 
 document.addEventListener('contextmenu', e => e.preventDefault());

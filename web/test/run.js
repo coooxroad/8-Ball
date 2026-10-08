@@ -291,26 +291,18 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`both physics: step length (worst ${worst.toFixed(4)} degrees), mirror, numbering, guide = shot, energy over ${shots} shots, thresholds, soft touch (${(w.balls[0].x * 1000).toFixed(1)} mm): checked`);
   }
 }
-// The cue's angle on the realistic tables: an ordinary stroke leans 5 degrees; the rail behind the ball holds the cue up when
-// it is close, and not when it is beyond the end of the cue; hitting high lets the cue come lower; the original physics is level.
+// The cue's angle on the realistic tables: an ordinary stroke leans 5 degrees, a said 0 is level, straight down is allowed;
+// the original physics is level
 {
   const RP = createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = Math.PI / 180;
   const at = (P, x, y) => { const w = P.makeWorld(1); P.place(w, 0, x, y); return w; };
-  if (Math.abs(RP.restEl(at(RP, 0, 0), 0, 0) - 5 * deg) > 1e-9) fail('realistic cue: an ordinary stroke from the middle should lean 5 degrees');
-  if (OP.restEl(at(OP, -0.9, 0), 0, 0) !== 0 || OP.cueFloor(at(OP, -0.9, 0), 0, 0) !== 0) fail('original physics: the cue stays level whatever the rail');
-  const near = RP.cueFloor(at(RP, -0.9, 0), 0, 0), far = RP.cueFloor(at(RP, 0.95, 0), 0, 0), high = RP.cueFloor(at(RP, -0.9, 0), 0, 0.5), mid = RP.cueFloor(at(RP, 0, 0), 0, 0);
-  if (!(near > 5 * deg && near < 25 * deg)) fail(`realistic cue: next to the rail the cue should be held up a few degrees (${(near / deg).toFixed(1)})`);
-  if (far !== 0) fail('realistic cue: with the rail behind beyond the end of the cue, a level cue should be possible');
-  if (!(high < near)) fail('realistic cue: hitting high should let the cue come lower over the rail');
-  if (!(mid > 0 && mid < near)) fail('realistic cue: from the middle a level cue still meets the rail, but needs less lift than up against it');
-  // an unsaid angle is the ordinary stroke; a said 0 is level
-  const a = at(RP, -0.9, 0), b = at(RP, -0.9, 0), c = at(RP, -0.9, 0); RP.strike(a, 0, 6, 0, 0); RP.strike(b, 0, 6, 0, 0, RP.restEl(b, 0, 0)); RP.strike(c, 0, 6, 0, 0, 0);
-  if (a.balls[0].vx !== b.balls[0].vx || a.balls[0].vz !== b.balls[0].vz || c.balls[0].vz !== 0) fail('realistic cue: strike without an angle should be the ordinary stroke');
+  if (Math.abs(RP.restEl() - 5 * deg) > 1e-9 || OP.restEl() !== 0) fail('cue angle: an ordinary stroke should lean 5 degrees on the realistic tables and none on the others');
+  const a = at(RP, -0.9, 0), b = at(RP, -0.9, 0), c = at(RP, -0.9, 0); RP.strike(a, 0, 6, 0, 0); RP.strike(b, 0, 6, 0, 0, RP.restEl()); RP.strike(c, 0, 6, 0, 0, 0);
+  if (a.balls[0].vx !== b.balls[0].vx || a.balls[0].vz !== b.balls[0].vz || c.balls[0].vz !== 0) fail('realistic cue: strike without an angle should be the ordinary stroke, and 0 should be level');
   const o1 = at(OP, 0, 0), o2 = at(OP, 0, 0); OP.strike(o1, 0.3, 4, 0.2, 0.1); OP.strike(o2, 0.3, 4, 0.2, 0.1, 0);
   if (o1.balls[0].vx !== o2.balls[0].vx || o1.balls[0].wz !== o2.balls[0].wz) fail('original physics: strike without an angle must stay level');
-  // straight down is allowed
   const v = at(RP, 0, 0); RP.strike(v, 0, 4, 0.4, 0, Math.PI / 2); if (!(Math.abs(v.balls[0].vx) < 1e-9 && v.balls[0].vz > 0)) fail('realistic cue: a vertical cue should drive the ball straight down into the slate');
-  console.log(`realistic cue angle: checked (rail behind: ${(near / deg).toFixed(1)} degrees at the least, ${(high / deg).toFixed(1)} hitting high, ${(mid / deg).toFixed(1)} from the middle)`);
+  console.log('realistic cue angle: checked');
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
