@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CUE 메뉴 시안 B · 테이블이 메뉴</title>
+<style>
+@font-face{font-family:Jua;src:url(../../web/fonts/Jua-Regular.woff2)}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Medium.woff2);font-weight:500}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Bold.woff2);font-weight:700}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-ExtraBold.woff2);font-weight:800}
+:root{--felt:#1aa0ad;--felt2:#0f7f8b;--rail:#7a4128;--rail2:#5a2d1a;--brass:#e3c26a;--ivory:#fbf6ea;--ink:#20140d}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:Gothic,sans-serif;background:#e9eef0;color:var(--ink)}
+.rail{position:absolute;inset:14px;border-radius:40px;background:linear-gradient(135deg,#8a4a2e,var(--rail) 40%,var(--rail2));box-shadow:0 16px 40px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.2)}
+.felt{position:absolute;inset:62px;border-radius:8px;background:radial-gradient(ellipse 65% 60% at 55% 45%,#27b6c2,var(--felt) 50%,var(--felt2));box-shadow:inset 0 0 0 7px #0d6f79,inset 0 0 50px rgba(0,0,0,.25)}
+.dia{position:absolute;width:8px;height:8px;background:#f6ead0;transform:rotate(45deg)}
+.pocket{position:absolute;width:64px;height:64px;border-radius:50%;background:radial-gradient(#000 58%,#1d0f08);box-shadow:0 0 0 7px #e7d9b8,0 0 0 9px #3a1d10}
+/* each pocket is a door: its brass tag says where it goes */
+.tag{position:absolute;padding:6px 14px;border-radius:8px;background:linear-gradient(#f1d483,#c79c3c);font:17px Jua;color:var(--ink);box-shadow:0 2px 0 #7d5b1d,0 6px 12px rgba(0,0,0,.35);white-space:nowrap}
+.tag small{font:700 11px Gothic;opacity:.7;margin-left:6px}
+.ball{position:absolute;border-radius:50%;box-shadow:inset -6px -8px 12px rgba(0,0,0,.28),inset 4px 4px 8px rgba(255,255,255,.35),0 8px 12px rgba(0,0,0,.28);display:grid;place-items:center}
+.num{width:46%;height:46%;border-radius:50%;background:#fbf6ea;display:grid;place-items:center;font:800 15px Gothic;color:#111}
+.lbl{position:absolute;transform:translateX(-50%);font:20px Jua;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.35);white-space:nowrap;text-align:center;line-height:1.1}
+.lbl small{display:block;font:700 12px Gothic;opacity:.85;margin-top:3px}
+.sel{position:absolute;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(255,255,255,.25)}
+.aim{position:absolute;height:3px;background:repeating-linear-gradient(90deg,#fff 0 10px,transparent 10px 18px);transform-origin:0 50%;opacity:.9}
+.ghost{position:absolute;border-radius:50%;border:2.5px solid #fff;background:rgba(255,255,255,.22)}
+.cue{position:absolute;height:14px;border-radius:7px;transform-origin:100% 50%;background:linear-gradient(90deg,#2a1608 0 34%,#d9b27a 34% 90%,#f3ead7 90% 97%,#4a83d6 97%)}
+/* pull the cue to start: the same move as a shot */
+.pull{position:absolute;left:96px;top:250px;width:150px;height:300px;border-radius:22px;background:rgba(0,0,0,.22);border:1.5px dashed rgba(255,255,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px;color:#fff;text-align:center}
+.pull b{font:24px Jua}
+.pull span{font-size:12.5px;opacity:.9;margin-top:4px}
+.pull .arrow{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:18px solid rgba(255,255,255,.85);margin-bottom:auto;margin-top:8px}
+.who{position:absolute;right:96px;top:96px;text-align:right;color:#fff}
+.who b{font:26px Jua;display:block}
+.who span{font-size:13px;opacity:.9}
+.who .c{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 12px;border-radius:999px;background:rgba(0,0,0,.25);font-weight:800;font-size:14px}
+.who .c i{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#c9a24b)}
+.chalk{position:absolute;left:300px;bottom:96px;color:#fff;font-size:14px;opacity:.92}
+.chalk b{font:22px Jua;display:block;margin-bottom:2px}
+.logo{position:absolute;left:50%;top:22px;transform:translateX(-50%);font:30px Jua;letter-spacing:.1em;color:#f6e7bf;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+</style></head><body>
+<div class="rail"></div>
+<div class="felt">
+  <div class="dia" style="left:25%;top:-31px"></div><div class="dia" style="left:75%;top:-31px"></div><div class="dia" style="left:25%;bottom:-31px"></div><div class="dia" style="left:75%;bottom:-31px"></div>
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:210px Jua;letter-spacing:.12em;color:rgba(255,255,255,.07)">CUE</div>
+  <div class="dia" style="left:-31px;top:50%"></div><div class="dia" style="right:-31px;top:50%"></div>
+</div>
+<!-- six pockets, six places to go -->
+<div class="pocket" style="left:34px;top:34px"></div><div class="tag" style="left:104px;top:22px">퍼즐<small>7단계 · 41/105</small></div>
+<div class="pocket" style="left:608px;top:26px"></div><div class="tag" style="left:682px;top:20px;background:linear-gradient(#9cc2ff,#4d84d6);color:#fff;box-shadow:0 2px 0 #2b5aa0,0 6px 12px rgba(0,0,0,.35)">온라인 대전<small style="color:#fff">23명 대기</small></div>
+<div class="pocket" style="right:34px;top:34px"></div><div class="tag" style="right:104px;top:22px">레슨</div>
+<div class="pocket" style="left:34px;bottom:34px"></div><div class="tag" style="left:104px;bottom:22px">큐 가방</div>
+<div class="pocket" style="left:608px;bottom:26px"></div><div class="tag" style="left:682px;bottom:20px">전적<small>3연승 중</small></div>
+<div class="pocket" style="right:34px;bottom:34px"></div><div class="tag" style="right:104px;bottom:22px">설정</div>
+
+<!-- the games are balls on the table; the chosen one is aimed at -->
+<div class="ball" style="left:790px;top:300px;width:76px;height:76px;background:#141414"><div class="num">8</div></div>
+<div class="sel" style="left:780px;top:290px;width:96px;height:96px"></div>
+<div class="lbl" style="left:828px;top:392px">8볼<small>3연승 중</small></div>
+<div class="ball" style="left:930px;top:200px;width:62px;height:62px;background:linear-gradient(#fbf6ea 26%,#e8b100 26% 74%,#fbf6ea 74%)"><div class="num">9</div></div>
+<div class="lbl" style="left:961px;top:270px">9볼</div>
+<div class="ball" style="left:960px;top:430px;width:62px;height:62px;background:#d3241c"></div>
+<div class="lbl" style="left:991px;top:500px">4구<small>수지 30</small></div>
+<div class="ball" style="left:780px;top:500px;width:62px;height:62px;background:#f4c20d"></div>
+<div class="lbl" style="left:811px;top:570px">3구</div>
+
+<div class="ghost" style="left:722px;top:309px;width:58px;height:58px"></div>
+<div class="aim" style="left:468px;top:337px;width:255px"></div>
+<div class="ball" style="left:410px;top:308px;width:58px;height:58px;background:radial-gradient(circle at 35% 30%,#fff,#f4efe2 50%,#cfc6b0)"></div>
+<div class="cue" style="left:-60px;top:330px;width:458px"></div>
+
+<div class="pull"><div class="arrow"></div><b>당겨서 시작</b><span>8볼 · 컴퓨터 정석형<br>큐를 아래로 당겼다 놓기</span></div>
+<div class="who"><b>플레이어 1</b><span>14승 6패</span><br><span class="c"><i></i>1,250</span></div>
+<div class="chalk"><b>하던 판이 있어요</b>4구 · 플레이어 2와 20 : 10 <span style="display:inline-block;margin-left:10px;padding:6px 14px;border-radius:8px;background:#fff;color:#0f7f8b;font:16px Jua">이어서 치기</span></div>
+</body></html>

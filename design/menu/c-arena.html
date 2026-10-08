@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CUE 메뉴 시안 C · 온라인 아레나</title>
+<style>
+@font-face{font-family:Jua;src:url(../../web/fonts/Jua-Regular.woff2)}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Medium.woff2);font-weight:500}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Bold.woff2);font-weight:700}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-ExtraBold.woff2);font-weight:800}
+:root{--deep:#142233;--deep2:#1c3047;--felt:#1aa0ad;--chalk:#4f8be0;--ivory:#f4efe2;--bead:#c63b2d;--brass:#d6b25e;--sub:#9fb2c6}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:Gothic,sans-serif;color:var(--ivory);background:linear-gradient(115deg,var(--deep) 0 58%,var(--deep2) 58%)}
+.top{position:absolute;left:40px;right:40px;top:24px;display:flex;align-items:center;gap:14px}
+.me{display:flex;align-items:center;gap:12px}
+.me .av{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e9e2cf 55%,#b9ae94);box-shadow:inset -4px -5px 8px rgba(0,0,0,.2)}
+.me b{font:22px Jua;display:block}
+.me span{font-size:12.5px;color:var(--sub)}
+.streak{margin-left:6px;padding:5px 11px;border-radius:999px;background:linear-gradient(#ff8a3c,#ff2d1a);font:14px Jua;box-shadow:0 0 14px rgba(255,90,40,.5)}
+.logo{margin:0 auto;font:34px Jua;letter-spacing:.12em}
+.coin{display:flex;align-items:center;gap:8px;font:800 17px Gothic}
+.coin i{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff1b8,var(--brass) 55%,#8c6a2a)}
+/* online: the hero */
+.hero{position:absolute;left:40px;top:104px;width:640px}
+.hero h1{font:52px Jua;line-height:1.05}
+.hero p{margin-top:10px;color:var(--sub);font-size:15px}
+.games{display:flex;gap:10px;margin-top:24px}
+.g{display:flex;align-items:center;gap:9px;padding:9px 16px 9px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);font:18px Jua}
+.g.on{border-color:var(--felt);background:rgba(26,160,173,.18)}
+.g i{width:26px;height:26px;border-radius:50%;box-shadow:inset -3px -4px 6px rgba(0,0,0,.3)}
+/* the stake, set like a carom hall's score beads: slide beads across the wire */
+.stake{margin-top:30px}
+.stake .lab{font-size:13px;color:var(--sub);margin-bottom:12px}
+.wire{position:relative;height:44px;display:flex;align-items:center;gap:6px;padding:0 14px;border-radius:10px;background:linear-gradient(#2b1a12,#3d2619);box-shadow:inset 0 2px 6px rgba(0,0,0,.5)}
+.wire::before{content:"";position:absolute;left:10px;right:10px;top:50%;height:3px;background:linear-gradient(#e8d9b0,#9c8a5e);border-radius:2px}
+.bead{position:relative;width:34px;height:30px;border-radius:45%;background:radial-gradient(circle at 40% 30%,#ff7b6a,var(--bead) 55%,#7d1d14);box-shadow:inset -2px -3px 4px rgba(0,0,0,.35)}
+.bead.w{background:radial-gradient(circle at 40% 30%,#fff,#e6dcc4 55%,#a99b78)}
+.bead.gap{margin-left:auto}
+.stake .val{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--sub)}
+.stake .val b{font:22px Jua;color:var(--ivory)}
+/* the button is a cue: the tip end is what you press */
+.find{position:relative;margin-top:34px;width:640px;height:76px;display:flex;align-items:center}
+.find .butt{height:30px;width:250px;border-radius:15px 0 0 15px;background:linear-gradient(90deg,#1a0e06,#3a2212 60%,#6a4426);box-shadow:inset 0 2px 0 rgba(255,255,255,.12)}
+.find .shaft{flex:1;height:76px;border-radius:12px 38px 38px 12px;background:linear-gradient(#f1d9a6,#d9b47a);display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 28px;color:#2a170a;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.find .shaft b{font:30px Jua}
+.find .shaft small{font:700 13px Gothic;opacity:.7;margin-left:10px}
+.find .tip{width:52px;height:52px;border-radius:50%;background:var(--chalk);box-shadow:inset 0 -4px 0 rgba(0,0,0,.2);display:grid;place-items:center;color:#fff;font:22px Jua}
+.friends{display:flex;gap:12px;margin-top:16px}
+.friends div{padding:11px 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.18);font:17px Jua}
+.friends span{font:700 12.5px Gothic;color:var(--sub);margin-left:6px}
+/* practice partners: each shown by the kind of shot it likes */
+.side{position:absolute;left:770px;right:40px;top:104px}
+.side h2{font:24px Jua}
+.side p{font-size:13px;color:var(--sub);margin:4px 0 16px}
+.bot{display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.bot:last-child{border-bottom:0}
+.bot .ball{width:44px;height:44px;border-radius:50%;flex:none;box-shadow:inset -4px -5px 8px rgba(0,0,0,.3);display:grid;place-items:center}
+.bot .ball span{width:20px;height:20px;border-radius:50%;background:var(--ivory);font:800 11px Gothic;color:#111;display:grid;place-items:center}
+.bot b{font:20px Jua;display:block}
+.bot .t{font-size:12.5px;color:var(--sub)}
+.bot svg{margin-left:auto;flex:none}
+.bot.on{background:rgba(255,255,255,.05);border-radius:12px}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:72px;display:flex;justify-content:center;gap:58px;align-items:center;background:rgba(0,0,0,.25)}
+.tabs div{display:flex;flex-direction:column;align-items:center;gap:5px;font:15px Jua;color:var(--sub)}
+.tabs div.on{color:var(--ivory)}
+.tabs i{width:22px;height:22px;border-radius:50%;border:2.5px solid currentColor}
+.tabs div.on i{background:var(--felt);border-color:var(--felt)}
+</style></head><body>
+<div class="top">
+  <div class="me"><div class="av"></div><div><b>플레이어 1</b><span>온라인 9승 4패</span></div><span class="streak">3연승</span></div>
+  <div class="logo">CUE</div>
+  <div class="coin"><i></i>1,250</div>
+</div>
+<div class="hero">
+  <h1>지금 붙을 상대,<br>23명이 기다려요</h1>
+  <p>같은 판돈을 건 사람끼리 바로 붙습니다. 이기면 판돈의 두 배.</p>
+  <div class="games">
+    <div class="g on"><i style="background:#141414"></i>8볼</div>
+    <div class="g"><i style="background:linear-gradient(#f4efe2 28%,#e8b100 28% 72%,#f4efe2 72%)"></i>9볼</div>
+    <div class="g"><i style="background:#d3241c"></i>4구</div>
+    <div class="g"><i style="background:#f4c20d"></i>3구</div>
+  </div>
+  <div class="stake"><div class="lab">판돈: 구슬을 밀어서 정합니다</div>
+    <div class="wire"><i class="bead"></i><i class="bead"></i><i class="bead"></i><i class="bead w"></i><i class="bead gap w"></i><i class="bead w"></i><i class="bead w"></i><i class="bead w"></i><i class="bead w"></i><i class="bead w"></i></div>
+    <div class="val"><span>100</span><b>300 코인</b><span>1,000</span></div>
+  </div>
+  <div class="find"><div class="butt"></div><div class="shaft"><div><b>상대 찾기</b><small>8볼 · 300코인</small></div><div class="tip">▶</div></div></div>
+  <div class="friends"><div>친구 방 만들기<span>코드로 초대</span></div><div>코드 입력</div></div>
+</div>
+<div class="side">
+  <h2>연습 상대</h2><p>온라인에 사람이 없을 때도 이 친구들이 받아 줍니다.</p>
+  <div class="bot on"><i class="ball" style="background:#c62a1d"><span>3</span></i><div><b>불도저</b><span class="t">세게, 어려운 공도 일단 노림</span></div>
+    <svg width="96" height="34"><circle cx="8" cy="17" r="5" fill="#f4efe2"/><line x1="14" y1="17" x2="90" y2="17" stroke="#ff8a6a" stroke-width="3"/></svg></div>
+  <div class="bot"><i class="ball" style="background:#1b3a9c"><span>2</span></i><div><b>철벽</b><span class="t">못 넣으면 어려운 자리를 남김</span></div>
+    <svg width="96" height="34"><circle cx="8" cy="17" r="5" fill="#f4efe2"/><line x1="14" y1="17" x2="44" y2="17" stroke="#8fb3ff" stroke-width="3"/><line x1="86" y1="2" x2="86" y2="32" stroke="#6b4426" stroke-width="5"/></svg></div>
+  <div class="bot"><i class="ball" style="background:#5a2a86"><span>4</span></i><div><b>마술사</b><span class="t">맛세이, 점프, 쿠션 돌리기</span></div>
+    <svg width="96" height="34"><circle cx="8" cy="26" r="5" fill="#f4efe2"/><path d="M14 26 C40 26 50 4 90 8" stroke="#c79bff" stroke-width="3" fill="none"/></svg></div>
+  <div class="bot"><i class="ball" style="background:#1f7a3a"><span>6</span></i><div><b>교과서</b><span class="t">무리 안 하고 다음 공 자리를 챙김</span></div>
+    <svg width="96" height="34"><circle cx="8" cy="17" r="5" fill="#f4efe2"/><line x1="14" y1="17" x2="62" y2="17" stroke="#7fe0a0" stroke-width="3"/><circle cx="72" cy="17" r="6" fill="none" stroke="#7fe0a0" stroke-width="2"/></svg></div>
+  <div class="bot"><i class="ball" style="background:#e8b100"><span>1</span></i><div><b>새내기</b><span class="t">세기 조절이 서툴러 실수가 잦음</span></div>
+    <svg width="96" height="34"><circle cx="8" cy="17" r="5" fill="#f4efe2"/><path d="M14 17 L30 12 L44 21 L58 13 L72 22 L88 15" stroke="#ffd36a" stroke-width="3" fill="none"/></svg></div>
+</div>
+<div class="tabs"><div class="on"><i></i>대전</div><div><i></i>퍼즐</div><div><i></i>레슨</div><div><i></i>큐 가방</div><div><i></i>전적</div><div><i></i>설정</div></div>
+</body></html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CUE 메뉴 시안 A · 당구장</title>
+<style>
+@font-face{font-family:Jua;src:url(../../web/fonts/Jua-Regular.woff2)}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Medium.woff2);font-weight:500}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-Bold.woff2);font-weight:700}
+@font-face{font-family:Gothic;src:url(../../web/fonts/GothicA1-ExtraBold.woff2);font-weight:800}
+:root{--wall:#24160f;--wall2:#3a2418;--felt:#1d5a44;--felt2:#174a38;--brass:#c9a24b;--brass2:#8c6a2a;--chalk:#5b8fd6;--ivory:#f1e8d4;--ink:#1a120d}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:Gothic,sans-serif;color:var(--ivory);
+  background:radial-gradient(ellipse 60% 55% at 50% 18%,rgba(255,214,140,.16),transparent 70%),repeating-linear-gradient(90deg,var(--wall) 0 46px,#2a1a12 46px 92px),var(--wall)}
+/* the lamp over the table */
+.lamp{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:300px;height:74px;display:grid;place-items:center;font:38px Jua;letter-spacing:.08em;color:#f6e7bf;text-shadow:0 1px 0 #000;border-radius:0 0 40px 40px;background:linear-gradient(#1f3d2f,#0f2219);box-shadow:0 30px 90px 30px rgba(255,210,130,.18)}
+.lamp::after{content:"";position:absolute;left:30px;right:30px;bottom:6px;height:6px;border-radius:3px;background:#ffe2a6;filter:blur(2px);opacity:.85}
+.top{position:absolute;left:36px;right:36px;top:22px;display:flex;align-items:center;gap:16px}
+.plate{display:flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;border-radius:12px;background:linear-gradient(#d8b65e,#a8822f);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 0 #6b4f1c,0 8px 18px rgba(0,0,0,.4)}
+.plate .av{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e9e2cf 60%,#bfb59c);box-shadow:inset -3px -4px 6px rgba(0,0,0,.18);display:grid;place-items:center;font:700 11px Gothic;color:#c8201b}
+.plate b{font:22px Jua;display:block;line-height:1}
+.plate small{font-size:12px;font-weight:700;opacity:.75}
+.logo{margin:0 auto;font:44px Jua;letter-spacing:.06em;color:var(--ivory);text-shadow:0 2px 0 #000,0 0 24px rgba(255,214,140,.35)}
+.coins{display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(201,162,75,.5);font-weight:800;font-size:16px}
+.coins i{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#c9a24b 60%,#8c6a2a)}
+/* the table: the game is chosen on it */
+.table{position:absolute;left:150px;top:108px;width:770px;height:580px;border-radius:34px;padding:30px;
+  background:linear-gradient(#6b3a22,#4a2716);box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 24px 50px rgba(0,0,0,.55)}
+.felt{position:relative;height:100%;border-radius:10px;background:radial-gradient(ellipse 70% 60% at 50% 40%,#23704f,var(--felt) 55%,var(--felt2));box-shadow:inset 0 0 0 6px #154632,inset 0 0 40px rgba(0,0,0,.35);padding:34px 40px}
+.dia{position:absolute;width:7px;height:7px;background:#f3e6c8;transform:rotate(45deg);opacity:.9}
+.pk{position:absolute;width:44px;height:44px;border-radius:50%;background:radial-gradient(#000 55%,#1b0e08);box-shadow:0 0 0 5px #3b2113}
+.felt h2{font:26px Jua;color:#e8f2ea;margin-bottom:4px}
+.felt p.sub{font-size:14px;color:#b8d4c4;margin-bottom:22px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mode{position:relative;height:178px;border-radius:14px;padding:18px 20px;background:rgba(0,0,0,.16);border:1.5px solid rgba(255,255,255,.08);overflow:hidden}
+.mode.on{background:rgba(0,0,0,.28);border-color:var(--brass);box-shadow:0 0 0 3px rgba(201,162,75,.25)}
+.mode b{font:30px Jua;display:block}
+.mode span{font-size:13.5px;color:#cfe2d6}
+.mode .rack{position:absolute;right:18px;bottom:16px;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.mode .row{display:flex;gap:2px}
+.ball{width:22px;height:22px;border-radius:50%;box-shadow:inset -3px -4px 5px rgba(0,0,0,.28),inset 2px 2px 3px rgba(255,255,255,.35)}
+.mode .last{position:absolute;left:20px;bottom:16px;font-size:12px;font-weight:700;color:var(--brass)}
+/* the right side: what you do next */
+.side{position:absolute;right:40px;top:108px;width:290px;display:flex;flex-direction:column;gap:14px}
+.go{position:relative;height:300px;border-radius:24px;background:linear-gradient(160deg,#2a1b13,#1a110c);border:1px solid rgba(201,162,75,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.cueball{width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0,#f4efe2 45%,#cfc6b0 100%);box-shadow:inset -10px -14px 20px rgba(0,0,0,.18),0 14px 30px rgba(0,0,0,.5);display:grid;place-items:center;position:relative}
+.cueball::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--chalk);opacity:.8;left:59px;top:30px;filter:blur(.5px)}
+.cueball b{font:27px Jua;color:var(--ink);margin-top:22px}
+.go small{font-size:13px;color:#d8c9a6}
+.opt{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.08)}
+.opt .dot{width:34px;height:34px;border-radius:50%;flex:none}
+.opt b{font:20px Jua;display:block}
+.opt span{font-size:12.5px;color:#cbbfa6}
+.resume{border-color:rgba(91,143,214,.6)}
+.left{position:absolute;left:36px;top:150px;width:92px;display:flex;flex-direction:column;gap:12px}
+.left .tag{height:84px;border-radius:14px;background:linear-gradient(#d8b65e,#a8822f);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:16px Jua;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 0 #6b4f1c}
+.left .tag i{width:26px;height:26px;border-radius:50%;border:3px solid var(--ink)}
+.left .tag.cue i{border-radius:3px;width:6px;height:28px;background:var(--ink);border:0;transform:rotate(30deg)}
+.foot{position:absolute;left:150px;right:40px;bottom:30px;display:flex;justify-content:space-between;align-items:center;color:#cbbfa6;font-size:13px}
+.foot .settings{padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.18);color:var(--ivory);font-weight:700}
+</style></head><body>
+<div class="lamp">CUE</div>
+<div class="top">
+  <div class="plate"><div class="av">1</div><div><b>플레이어 1</b><small>14승 6패 · 3연승 중</small></div></div>
+  <div style="flex:1"></div>
+  <div class="coins"><i></i>1,250</div>
+</div>
+<div class="left">
+  <div class="tag"><i></i>퍼즐</div>
+  <div class="tag"><i style="border-style:dashed"></i>레슨</div>
+  <div class="tag cue"><i></i>큐 가방</div>
+  <div class="tag"><i style="border-width:2px;background:repeating-linear-gradient(90deg,var(--ink) 0 3px,transparent 3px 6px)"></i>전적</div>
+</div>
+<div class="table"><div class="felt">
+  <div class="pk" style="left:-24px;top:-24px"></div><div class="pk" style="right:-24px;top:-24px"></div><div class="pk" style="left:-24px;bottom:-24px"></div><div class="pk" style="right:-24px;bottom:-24px"></div>
+  <div class="pk" style="left:calc(50% - 22px);top:-30px"></div><div class="pk" style="left:calc(50% - 22px);bottom:-30px"></div>
+  <h2>어떤 판을 칠까요?</h2><p class="sub">고른 종목으로 빠른 대전, 온라인, 친구와 대전이 열립니다.</p>
+  <div class="modes">
+    <div class="mode on"><b>8볼</b><span>솔리드와 스트라이프, 마지막에 8번</span>
+      <div class="rack"><div class="row"><i class="ball" style="background:#e8b100"></i></div><div class="row"><i class="ball" style="background:#1b3a9c"></i><i class="ball" style="background:#c62a1d"></i></div><div class="row"><i class="ball" style="background:#5a2a86"></i><i class="ball" style="background:#111"></i><i class="ball" style="background:#e06a12"></i></div></div>
+      <div class="last">최근 · 3연승</div></div>
+    <div class="mode"><b>9볼</b><span>낮은 번호부터, 9번을 넣으면 끝</span>
+      <div class="rack"><div class="row"><i class="ball" style="background:#e8b100"></i></div><div class="row"><i class="ball" style="background:#1b3a9c"></i><i class="ball" style="background:#c62a1d"></i></div><div class="row"><i class="ball" style="background:linear-gradient(#f4efe2 28%,#e8b100 28% 72%,#f4efe2 72%)"></i></div></div></div>
+    <div class="mode"><b>4구</b><span>빨간 공 둘을 맞히기 · 수지 30</span>
+      <div class="rack"><div class="row"><i class="ball" style="background:#d3241c"></i><i class="ball" style="background:#d3241c"></i></div><div class="row"><i class="ball" style="background:#f4efe2"></i><i class="ball" style="background:#f4c20d"></i></div></div></div>
+    <div class="mode"><b>3구</b><span>쿠션 세 번 · 대대 테이블</span>
+      <div class="rack"><div class="row"><i class="ball" style="background:#d3241c"></i></div><div class="row"><i class="ball" style="background:#f4efe2"></i><i class="ball" style="background:#f4c20d"></i></div></div></div>
+  </div>
+  <div class="dia" style="left:25%;top:-19px"></div><div class="dia" style="left:75%;top:-19px"></div><div class="dia" style="left:25%;bottom:-19px"></div><div class="dia" style="left:75%;bottom:-19px"></div>
+</div></div>
+<div class="side">
+  <div class="go"><div class="cueball"><b>빠른 대전</b></div><small>8볼 · 컴퓨터 정석형 · 보통</small></div>
+  <div class="opt"><i class="dot" style="background:radial-gradient(circle at 35% 30%,#9cc2ff,#2f62b8)"></i><div><b>온라인 대전</b><span>판돈 100코인 · 지금 23명 대기</span></div></div>
+  <div class="opt resume"><i class="dot" style="background:radial-gradient(circle at 35% 30%,#fff,#cfc6b0)"></i><div><b>이어하기</b><span>4구 · 플레이어 2와 · 20 : 10</span></div></div>
+</div>
+<div class="foot"><span>오늘의 퍼즐 · 돌려치기 3번 아직 안 풂</span><span class="settings">설정</span></div>
+</body></html>
