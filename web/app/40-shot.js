@@ -1,6 +1,6 @@
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
-  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
+  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = 0; st.elWant = game.P.BASE_EL; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {
@@ -30,13 +30,13 @@ function autoTick(dt) {
     if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
-    st.el = a.plan.el || 0; setKindUI(); flow.hud();
+    st.el = a.plan.el || game.P.restEl(game.world, a.plan.angle, a.plan.b || 0); setKindUI(); flow.hud();
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
   st.aim = a.from + a.delta * e(t / 0.75);
   st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
-  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, a.plan.el); }
+  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }
 }
 
 /* ================= scoreboard ================= */

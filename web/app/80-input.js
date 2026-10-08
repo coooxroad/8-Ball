@@ -134,16 +134,19 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
   const padUp = () => { if (id != null) { id = null; ctlUp(); } };
   pad.addEventListener('pointerup', padUp); pad.addEventListener('pointercancel', padUp);
-  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; setSpinUI(); setKindUI(); scene.invalidate(); });
+  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; st.elWant = game.P.BASE_EL; syncEl(); setSpinUI(); setKindUI(); scene.invalidate(); });
   // The cue raised: one angle, set on a picture of the shot seen from the side - the ball on the cloth and the cue leaning
   // over it. Dragging anywhere in the picture swings the cue to point at the finger.
   const padEl = $('#elPad'); let eid = null;
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
-    // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to
-    a = Math.max(0, Math.min(85 * Math.PI / 180, a)); if (a < 0.0175) a = 0;
-    const was = st.el; st.el = Math.round(a * 1800 / Math.PI) * Math.PI / 1800; setKindUI(); scene.invalidate();
-    if (!was && st.el && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
+    // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to.
+    // On the realistic tables this is the cue's real angle, up to straight down; the rail may hold it higher (syncEl).
+    const real = game.P.REAL;
+    a = Math.max(0, Math.min((real ? 90 : 85) * Math.PI / 180, a)); if (a < (real ? 0.0087 : 0.0175)) a = 0;
+    a = Math.round(a * 1800 / Math.PI) * Math.PI / 1800;
+    const was = st.el; if (real) { st.elWant = a; syncEl(); } else st.el = a; setKindUI(); scene.invalidate();
+    if (!was && st.el && !game.P.REAL && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
   };
   padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; ctlDown(); try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
   padEl.addEventListener('pointermove', e => { if (eid === e.pointerId) setEl(e); });
@@ -151,10 +154,19 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   padEl.addEventListener('pointerup', elUp); padEl.addEventListener('pointercancel', elUp);
 })();
 const trickOK = () => LAB.masse && (flow === match ? game.masse : !!flow && flow !== homeDemo);
+/* Realistic tables: the cue angle is the real one. What the player asked for (st.elWant: 5 degrees to begin with, nothing
+   above that when raising the cue is not allowed) is what is played, unless the rail behind the ball holds the cue higher -
+   which changes as the aim swings round, so it is worked out again every frame while aiming. */
+function syncEl() {
+  const P = game.P; if (!P.REAL || !game.world) return;
+  st.elFloor = P.cueFloor(game.world, st.aim, st.spin.y * 0.5);
+  const want = trickOK() ? st.elWant : Math.min(st.elWant, P.BASE_EL), el = Math.max(st.elFloor, want || 0);
+  if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
+}
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
 function elSay() { if (!st.el) return ''; const h = game.P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
 function setKindUI() {
-  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
+  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK() || (game.P.REAL && !!flow && flow !== homeDemo), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
   const tag = $('#spinTag'); tag.hidden = !deg; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
@@ -172,6 +184,7 @@ function setKindUI() {
   seg(0, 0.03, 2, 2, hex(c.tip)); seg(0.03, 0.08, 2, 2.2, hex(c.ferrule)); seg(0.08, 0.6, 2.2, 3.4, hex(c.shaft)); seg(0.6, 1, 3.4, 4.6, hex(c.fore));
   g.strokeStyle = '#8a4dff'; g.lineWidth = 2.5; g.beginPath(); g.arc(bx, by, 44, -a, 0); if (a) g.stroke();
   g.fillStyle = ink; g.font = '700 11px Outfit, sans-serif'; g.textAlign = 'left'; if (!a) g.fillText('끌어서 큐를 세웁니다', bx + 30, by - 34);
+  if (game.P.REAL && st.elFloor > 0.001) { g.fillStyle = '#ff8a5c'; g.font = '700 10px Outfit, sans-serif'; g.fillText('뒤 쿠션: 최소 ' + (Math.round(st.elFloor * 1800 / Math.PI) / 10).toFixed(1) + '°', 8, 12); }
 }
 
 document.addEventListener('contextmenu', e => e.preventDefault());

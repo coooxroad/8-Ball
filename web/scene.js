@@ -580,13 +580,16 @@ function createScene(canvas, app, PH) {
       const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
       // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
       // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
-      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(tx, ty, R + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -(0.085 + e), v.aim + Math.PI); }
-      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(tx, ty, R + 0.002 + (e ? R * 0.9 : 0)); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
-      const sx = tx - dx * 0.735 * ce + 0.012, sy = ty - dy * 0.735 * ce - 0.014;
+      // On the realistic tables the cue is drawn where it really is: at its real angle (no extra lean for looks) and moved
+      // sideways and up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
+      const real = P.REAL, off = real ? v.spin.x * 0.5 * R : 0, lift = real ? v.spin.y * 0.5 * R * ce : 0, px = tx + dy * off, py = ty - dx * off;
+      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -((real ? 0 : 0.085) + e), v.aim + Math.PI); }
+      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(px, py, R + lift + 0.002 + (e && !real ? R * 0.9 : 0)); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
+      const sx = px - dx * 0.735 * ce + 0.012, sy = py - dy * 0.735 * ce - 0.014;
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }
     if (guide.visible) {
-      const lv = v.level, raised = v.el > 0, chosen = v.power > 0;
+      const lv = v.level, chosen = v.power > 0;
       const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), lv, v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4)].join('|');
       if (key !== guideKey) {
         guideKey = key;
@@ -598,6 +601,10 @@ function createScene(canvas, app, PH) {
              it or they are not in the game. The level only decides how much of it is shown. */
           const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, v.el || 0, lv >= 3 ? 2.4 : 0.6);
           const at = pv.at, pre = pv.pre, post = pv.post, ex = at ? at[0] : pre[pre.length - 3], ey = at ? at[1] : pre[pre.length - 2];
+          // a path that bends or leaves the cloth is dotted; one that runs straight (a cue a few degrees up does not bend it
+          // enough to see) is a line
+          let raised = false;
+          if (v.el > 0) { const qx = ex - pre[0], qy = ey - pre[1], ql = Math.hypot(qx, qy) || 1; for (let i = 3; i < pre.length && !raised; i += 3) if (pre[i + 2] > 0.003 || Math.abs((pre[i] - pre[0]) * qy - (pre[i + 1] - pre[1]) * qx) / ql > 0.0015) raised = true; }
           const tint = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0 ? 0xffffff : 0xff6a58;
           gRing.material.color.set(tint); gObj.material.color.set(tint);
           // Until the cue is drawn back there is no power yet, and the guide plays a middling one. Whatever depends on the

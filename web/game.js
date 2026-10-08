@@ -315,7 +315,7 @@ function createGame(PH) {
     const tryShot = (angle, V, pos, flair, a, b, el) => {
       sims++; const w2 = P.clone(w);
       if (pos) { const c2 = w2.balls[w2.cue]; c2.x = c2.px = pos[0]; c2.y = c2.py = pos[1]; }
-      P.strike(w2, angle, V, a || 0, b || 0, el || 0);
+      P.strike(w2, angle, V, a || 0, b || 0, el || null);   // no angle planned: the ordinary stroke
       const r = g.mode.evaluate(P.run(w2, 20), ctx, g); if (!good(r) || w2.ev.off.length) return false;
       // only its own balls count toward "two at once"; knocking the other player's in for them counts against the shot
       const down = w2.ev.pocketed.filter(q => q.id !== w2.cue), pots = g.modeId === 'nine' ? down.length : down.filter(q => targets.includes(q.id)).length, gift = down.length - pots;
