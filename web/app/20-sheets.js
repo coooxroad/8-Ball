@@ -29,7 +29,7 @@ function sheetCue() {
 function sheetGuide() {
   const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
   const row = i => segRow(solo ? '조준선' : st.screen === 'play' ? game.players[i].name : prefs.names[i], GUIDE.map((gd, k) => [k, gd[0]]), prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); sheetGuide(); });
-  openSheet('조준선', [segRow('모양', [['dots', '점'], ['line', '선'], ['glow', '빛 리본'], ['ghost', '고스트 볼']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
+  openSheet('조준선', [segRow('모양', [['dots', '점'], ['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
     row(0), solo ? null : row(1), note(GUIDE.map(gd => gd[0] + ': ' + gd[1]).join(' · ')),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
 }

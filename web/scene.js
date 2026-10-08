@@ -403,7 +403,8 @@ function createScene(canvas, app, PH) {
   const ribFS = 'uniform vec3 col; uniform float op; uniform float mode; uniform float per; uniform float on; uniform float hw;' +
     'varying float va; varying float vs; varying float ve;' +
     'void main() { float k = 1.0 - smoothstep(0.55, 1.0, abs(ve));' +
-    ' if (mode > 1.5) { float u = mod(vs, per) - 0.5 * per; float d = length(vec2(u, ve * hw)) / hw; if (d > 1.0) discard; k = 1.0 - smoothstep(0.6, 1.0, d); }' +
+    ' if (mode > 2.5) { float q = abs(ve); k = max(0.16, smoothstep(1.0 - 2.0 * on, 1.0 - on, q)) * (1.0 - smoothstep(1.0 - 0.35 * on, 1.0, q)); }' +
+    ' else if (mode > 1.5) { float u = mod(vs, per) - 0.5 * per; float d = length(vec2(u, ve * hw)) / hw; if (d > 1.0) discard; k = 1.0 - smoothstep(0.6, 1.0, d); }' +
     ' else if (mode > 0.5) { if (mod(vs, per) > on) discard; }' +
     ' gl_FragColor = vec4(col, va * op * k); }';
   function makeRibbon() {
@@ -416,13 +417,13 @@ function createScene(canvas, app, PH) {
       vertexShader: ribVS, fragmentShader: ribFS, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
     m.frustumCulled = false; m.renderOrder = 10; m.visible = false; guide.add(m); return m;
   }
-  const rGlow = makeRibbon(), rShadow = makeRibbon(), rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), RIBS = [rGlow, rShadow, rPre, rObj, rPost];
+  const rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), RIBS = [rPre, rObj, rPost];
   const gDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40), gMat(0.3)), arrowGeo = new THREE.BufferGeometry();
   arrowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([1, 0, 0, -0.4, 0.62, 0, -0.4, -0.62, 0]), 3));
   const gArrow = new THREE.Mesh(arrowGeo, gMat(0.95));
   for (const m of [gDisc, gArrow]) { m.renderOrder = 10; m.visible = false; guide.add(m); }
-  // pts: [x, y, height above the cloth, ...]. o: px (width on screen), color, op, alpha(t along 0..1, height), mode (0 whole,
-  // 1 dashes of `on` every `per` metres, 2 round dots every `per`), flat (drawn on the cloth itself: a shadow)
+  // pts: [x, y, height above the cloth, ...]. o: px (width on screen) or m (width in metres), color, op, alpha(t along 0..1,
+  // height), mode (0 whole, 1 dashes of `on` every `per` metres, 2 round dots every `per`, 3 a band with bright edges `on` wide)
   function ribbon(m, pts, o, R) {
     const xs = [], ys = [], zs = [];
     for (let i = 0; i < pts.length; i += 3) {
@@ -433,21 +434,19 @@ function createScene(canvas, app, PH) {
     const n = xs.length; if (n < 2) { m.visible = false; return; }
     let L = 0; for (let i = 1; i < n; i++) L += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
     if (L < 0.004) { m.visible = false; return; }
-    const g = m.geometry, P = g.attributes.position.array, A = g.attributes.a.array, S = g.attributes.s.array, hw = o.px / ppm / 2;
+    const g = m.geometry, P = g.attributes.position.array, A = g.attributes.a.array, S = g.attributes.s.array, hw = o.m ? o.m / 2 : o.px / ppm / 2;
     let s = 0;
     for (let i = 0; i < n; i++) {
       if (i) s += Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
       const i0 = Math.max(0, i - 1), i1 = Math.min(n - 1, i + 1); let tx = xs[i1] - xs[i0], ty = ys[i1] - ys[i0]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-      // seen from above, height does not show: so a path in the air is drawn wider the higher it is, and its shadow falls
-      // away from it the way the balls' shadows do
-      const h = zs[i], z = o.flat ? 0.0015 : R + h, al = o.alpha ? Math.max(0, o.alpha(s / L, h)) : 1, w = hw * (o.flat ? 1 : 1 + h * 30);
-      const cx = xs[i] + (o.flat ? h * 0.45 : 0), cy = ys[i] - (o.flat ? h * 0.5 : 0);
-      P.set([cx + ty * w, cy - tx * w, z, cx - ty * w, cy + tx * w, z], i * 6);
+      // seen from above, height does not show: so a path in the air is drawn wider the higher it is
+      const h = zs[i], z = R + h, al = o.alpha ? Math.max(0, o.alpha(s / L, h)) : 1, w = hw * (1 + h * (o.m ? 8 : 30));
+      P.set([xs[i] + ty * w, ys[i] - tx * w, z, xs[i] - ty * w, ys[i] + tx * w, z], i * 6);
       A[2 * i] = A[2 * i + 1] = al; S[2 * i] = S[2 * i + 1] = s;
     }
     g.attributes.position.needsUpdate = g.attributes.a.needsUpdate = g.attributes.s.needsUpdate = true;
     g.setDrawRange(0, (n - 1) * 6);
-    const u = m.material.uniforms; u.col.value.setHex(o.color); u.op.value = o.op == null ? 1 : o.op; u.mode.value = o.mode || 0; u.per.value = o.per || 0.03; u.on.value = o.on || 0.02; u.hw.value = hw;
+    const u = m.material.uniforms; u.col.value.setHex(o.color); u.op.value = o.op == null ? 1 : o.op; u.mode.value = o.mode || 0; u.per.value = o.per || 0.03; u.on.value = o.mode === 3 ? Math.min(0.5, 1.4 / ppm / hw) : o.on || 0.02; u.hw.value = hw;
     m.visible = true;
   }
   // a copy of the path with `a` metres taken off its start and `b` off its end
@@ -467,9 +466,9 @@ function createScene(canvas, app, PH) {
   /* The looks to choose from. pre: the cue ball's way to its first contact; obj: the struck ball's line; post: the cue ball
      afterwards (yellow). Widths in screen pixels. */
   const AIMS = {
-    line: { pre: 2.8, preOp: 0.95, preFade: 0.25, obj: 2.8, objFade: 0.6, post: 2.6, postMode: 0 },
-    glow: { pre: 2.2, glow: 12, preOp: 1, obj: 2.8, arrow: true, post: 2.8, postMode: 1, per: 0.036, on: 0.022 },
-    ghost: { pre: 1.8, preOp: 0.6, disc: true, obj: 3.4, objFade: 0.45, arrow: true, post: 5.4, postMode: 2, per: 0.032 },
+    line: { pre: 2.8, preOp: 0.95, preFade: 0.25, disc: true, obj: 2.8, objFade: 0.6, post: 2.6, postMode: 0 },
+    // rails: each ball's path drawn as wide as the ball, so you can see what it will brush past
+    rail: { band: true, preOp: 0.9, preFade: 0.2, disc: true, objFade: 0.5, arrow: true, postOp: 0.9 },
   };
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
@@ -701,11 +700,8 @@ function createScene(canvas, app, PH) {
           const look = AIMS[v.aimStyle];
           if (look) {
             const pOp = raised ? dim : 1, path = pre.slice(); if (at) path.push(at[0], at[1], at[2]);
-            const main = trimPath(path, R, at ? R * 0.9 : 0);
-            if (look.glow) ribbon(rGlow, main, { px: look.glow, color: 0xffffff, op: 0.22 * pOp }, R);
-            ribbon(rPre, main, { px: look.pre, color: 0xffffff, op: look.preOp * pOp, alpha: look.preFade ? t => 1 - look.preFade * t : null }, R);
-            let flies = false; for (let i = 2; i < path.length; i += 3) if (path[i] > 0.003) { flies = true; break; }
-            if (flies) ribbon(rShadow, path, { px: look.pre + 1.5, color: 0x000000, op: 0.4 * pOp, flat: true, alpha: (t, z) => Math.min(1, z / 0.006) }, R);
+            const band = look.band, main = trimPath(path, R, at ? (band ? R : R * 0.9) : 0);
+            ribbon(rPre, main, { px: look.pre, m: band ? 2 * R : 0, mode: band ? 3 : 0, color: 0xffffff, op: look.preOp * pOp, alpha: look.preFade ? t => 1 - look.preFade * t : null }, R);
             if (at) {
               gRing.visible = true; gRing.position.set(at[0], at[1], R + at[2]); gRing.scale.setScalar(R);
               if (look.disc) { gDisc.visible = true; gDisc.position.set(at[0], at[1], R + at[2]); gDisc.scale.setScalar(R); gDisc.material.color.set(tint); }
@@ -717,7 +713,8 @@ function createScene(canvas, app, PH) {
               let dx = o.dx, dy = o.dy, l1 = Math.min(0.06 + 0.26 * co, Math.max(0.02, run));
               if (lv >= 3 && run > 0.02) { dx = (o.x1 - o.x0) / run; dy = (o.y1 - o.y0) / run; l1 = Math.max(0.02, run - R * 0.2); }
               const oOp = 0.92 * (P.REAL ? dim : 1), endL = look.arrow ? l1 - 7 / ppm : l1;
-              ribbon(rObj, [o.x0 + dx * R, o.y0 + dy * R, 0, o.x0 + dx * (R + endL), o.y0 + dy * (R + endL), 0], { px: look.obj, color: tint, op: oOp, alpha: look.objFade ? t => 1 - look.objFade * t : null }, R);
+              const o0 = R;
+              ribbon(rObj, [o.x0 + dx * o0, o.y0 + dy * o0, 0, o.x0 + dx * (R + endL), o.y0 + dy * (R + endL), 0], { px: look.obj, m: band ? 2 * R : 0, mode: band ? 3 : 0, color: tint, op: oOp, alpha: look.objFade ? t => 1 - look.objFade * t : null }, R);
               if (look.arrow) { gArrow.visible = true; gArrow.material.color.set(tint); gArrow.material.opacity = oOp * (look.objFade ? 1 - look.objFade : 1) + 0.2; gArrow.position.set(o.x0 + dx * (R + l1), o.y0 + dy * (R + l1), R); gArrow.rotation.set(0, 0, Math.atan2(dy, dx)); gArrow.scale.setScalar(9 / ppm); }
             }
             if (at && lv >= 2) {
@@ -727,7 +724,7 @@ function createScene(canvas, app, PH) {
                 let acc = 0, i = 3; for (; i < last && acc < want; i += 3) acc += Math.hypot(post[i] - post[i - 3], post[i + 1] - post[i - 2]);
                 pts = post.slice(0, Math.min(i, post.length - 3) + 3);
               }
-              ribbon(rPost, trimPath(pts, R, 0), { px: look.post, color: 0xffd21f, op: 0.95 * dim, mode: look.postMode, per: look.per, on: look.on, alpha: t => 1 - 0.8 * t }, R);
+              ribbon(rPost, trimPath(pts, R, 0), { px: look.post, m: band ? 2 * R : 0, color: 0xffd21f, op: (look.postOp || 0.95) * dim, mode: band ? 3 : look.postMode, per: look.per, on: look.on, alpha: t => 1 - 0.8 * t }, R);
             }
           } else {
           if (raised) { if (at) pre.push(at[0], at[1], at[2]); dots(pre, 0.036, 3.4); }   // a ball that curves or flies has no straight line to draw

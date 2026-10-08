@@ -43,6 +43,7 @@ const prefs = (() => {
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
+  if (!['dots', 'line', 'rail'].includes(p.aim)) p.aim = p.aim === 'ghost' || p.aim === 'glow' ? 'line' : 'dots';   // looks tried and dropped
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
   p.cues = p.cues.map(i => CUES[i] ? i : 0);
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
