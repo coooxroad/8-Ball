@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CUE 메뉴 시안 · 나이트 매치</title>
+<script src="../../../web/three.min.js"></script><script src="balls.js"></script>
+<style>
+@font-face{font-family:Outfit;src:url(../../../web/fonts/Outfit.woff2);font-weight:100 900}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-Medium.woff2);font-weight:500}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-Bold.woff2);font-weight:700}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-ExtraBold.woff2);font-weight:800}
+:root{--ink:#0a1322;--ink2:#10203a;--cloth:#14a3ad;--chalk:#3d8bff;--ivory:#f4efe2;--sub:#93a6bf;--live:#ff4d3d;--gold:#f2c14e;--line:rgba(244,239,226,.12)}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:G,sans-serif;color:var(--ivory);background:var(--ink)}
+/* the room: dark, one pool of light where the balls are, the cloth's weave just visible */
+.room{position:absolute;inset:0;background:
+  radial-gradient(ellipse 46% 60% at 74% 38%,rgba(20,163,173,.38),rgba(20,163,173,.08) 55%,transparent 75%),
+  radial-gradient(ellipse 30% 22% at 74% 6%,rgba(255,255,255,.12),transparent 70%),
+  linear-gradient(160deg,var(--ink2),var(--ink) 60%)}
+.weave{position:absolute;inset:0;opacity:.35;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+.top{position:absolute;left:56px;right:40px;top:26px;display:flex;align-items:center;gap:14px}
+.logo{font:800 34px Outfit;letter-spacing:.14em}
+.logo i{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ivory);margin-left:4px;box-shadow:inset -2px -2px 3px rgba(0,0,0,.3)}
+.sp{flex:1}
+.pill{display:flex;align-items:center;gap:9px;height:44px;padding:0 16px;border-radius:22px;background:rgba(255,255,255,.06);border:1px solid var(--line);font:700 16px G}
+.pill .coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2c0,var(--gold) 55%,#a4781f)}
+.pill .num{font:700 17px Outfit}
+.me .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3d8bff,#14a3ad);display:grid;place-items:center;font:800 14px G;margin-left:-8px}
+.gear{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+/* the hero: the chosen game, and the one thing to do */
+.hero{position:absolute;left:56px;top:118px;width:560px}
+.resume{display:inline-flex;align-items:center;gap:10px;height:38px;padding:0 16px 0 8px;border-radius:19px;background:rgba(61,139,255,.14);border:1px solid rgba(61,139,255,.45);font:700 14.5px G;color:#cfe0ff}
+.resume b{padding:4px 10px;border-radius:12px;background:var(--chalk);color:#fff;font-weight:800}
+.hero h1{margin-top:22px;font:800 112px/0.95 Outfit;letter-spacing:-.02em}
+.hero h1 small{font:800 40px G;letter-spacing:0;margin-left:10px;vertical-align:18px;color:var(--sub)}
+.hero p{margin-top:14px;font:500 18px/1.5 G;color:#c7d3e2;max-width:30em}
+.cta{display:flex;gap:14px;margin-top:30px}
+.go{position:relative;height:76px;padding:0 34px 0 30px;border-radius:20px;border:0;display:flex;align-items:center;gap:16px;color:#fff;font:800 26px G;
+  background:linear-gradient(180deg,#5aa0ff,var(--chalk) 55%,#2a6fe0);box-shadow:0 12px 30px rgba(61,139,255,.45),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -3px 0 rgba(0,0,0,.18);overflow:hidden}
+.go::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='80' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");mix-blend-mode:soft-light}
+.go .play{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.95);display:grid;place-items:center}
+.go .play::after{content:"";margin-left:4px;border-left:13px solid var(--chalk);border-top:8px solid transparent;border-bottom:8px solid transparent}
+.go span{font:700 14px G;opacity:.85;margin-left:-6px}
+.online{height:76px;padding:0 24px;border-radius:20px;border:1.5px solid rgba(244,239,226,.22);background:rgba(255,255,255,.05);display:flex;flex-direction:column;justify-content:center;gap:3px}
+.online b{font:800 20px G}
+.online span{font:700 14px G;color:var(--sub);display:flex;align-items:center;gap:7px}
+.online span i{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 10px var(--live)}
+#hero{position:absolute;left:600px;top:70px;width:660px;height:440px}
+/* the four games */
+.modes{position:absolute;left:56px;right:56px;top:536px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.m{position:relative;height:118px;border-radius:22px;padding:18px 18px 0 104px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid var(--line)}
+.m canvas{position:absolute;left:12px;top:15px;width:88px;height:88px;filter:drop-shadow(4px 8px 8px rgba(0,0,0,.45))}
+.m b{display:block;font:800 30px G}
+.m span{display:block;margin-top:4px;font:700 14px/1.35 G;color:var(--sub)}
+.m.on{background:linear-gradient(180deg,rgba(61,139,255,.24),rgba(61,139,255,.08));border:2px solid var(--chalk)}
+/* a diamond sight marks the chosen one, as on a rail */
+.m.on::after{content:"";position:absolute;left:50%;bottom:-13px;width:12px;height:12px;background:var(--ivory);transform:translateX(-50%) rotate(45deg);box-shadow:0 0 12px rgba(255,255,255,.6)}
+.nav{position:absolute;left:0;right:0;bottom:0;height:104px;display:flex;justify-content:center;gap:12px;align-items:center;border-top:1px solid var(--line);background:rgba(5,10,20,.55)}
+.nav div{width:150px;height:72px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:800 16px G;color:#d6e0ec}
+.nav svg{width:28px;height:28px;stroke:#d6e0ec;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.nav small{font:700 12px G;color:var(--sub);margin-top:-4px}
+.nav .badge{position:relative}
+.nav .badge::after{content:"";position:absolute;right:-6px;top:-2px;width:9px;height:9px;border-radius:50%;background:var(--live)}
+</style></head><body>
+<div class="room"></div><div class="weave"></div>
+<div class="top">
+  <div class="logo">CUE<i></i></div><div class="sp"></div>
+  <div class="pill"><i class="coin"></i><span class="num">1,250</span></div>
+  <div class="pill me"><i class="av">1</i>플레이어 1</div>
+  <div class="gear"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d6e0ec" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></div>
+</div>
+<canvas id="hero"></canvas>
+<div class="hero">
+  <div class="resume"><b>이어하기</b>4구 · 플레이어 2와 20 : 10</div>
+  <h1>8 BALL<small>8볼</small></h1>
+  <p>내 공을 모두 넣고 마지막에 8번을 넣으면 이깁니다.</p>
+  <div class="cta">
+    <div class="go"><i class="play"></i>대전 시작<span>컴퓨터 · 보통</span></div>
+    <div class="online"><b>온라인 대전</b><span><i></i>23명 대기 중</span></div>
+  </div>
+</div>
+<div class="modes">
+  <div class="m on"><canvas data-ball="8"></canvas><b>8볼</b><span>포켓 · 가장 인기</span></div>
+  <div class="m"><canvas data-ball="9"></canvas><b>9볼</b><span>포켓 · 번호 순서대로</span></div>
+  <div class="m"><canvas data-ball="red"></canvas><b>4구</b><span>캐롬 · 빨간 공 둘</span></div>
+  <div class="m"><canvas data-ball="yellow"></canvas><b>3구</b><span>캐롬 · 쿠션 세 번</span></div>
+</div>
+<div class="nav">
+  <div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>퍼즐<small>41 / 105</small></div>
+  <div><svg viewBox="0 0 24 24"><circle cx="16" cy="8" r="3"/><path d="M3 21l9.5-9.5"/></svg>레슨</div>
+  <div><svg viewBox="0 0 24 24"><path d="M5 20L19 4"/><path d="M17 4h2v2"/></svg>큐 가방</div>
+  <div class="badge"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/></svg>전적<small>3연승 중</small></div>
+  <div><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>하이라이트</div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+  // the hero: a few balls under the lamp, the cue ball in front lined up on the 8, the guide drawn between them
+  const h = document.getElementById('hero');
+  // soft shadows on the cloth under each ball, drawn first so the balls sit on them
+  const sh = document.createElement('canvas'); sh.width = 1320; sh.height = 880; sh.style.cssText = 'position:absolute;left:600px;top:70px;width:660px;height:440px'; h.parentNode.insertBefore(sh, h);
+  const sc = sh.getContext('2d'); sc.scale(2, 2); sc.filter = 'blur(14px)'; sc.fillStyle = 'rgba(0,0,0,.55)';
+  for (const [x, y, r] of [[590, 95, 50], [520, 150, 56], [430, 205, 104], [175, 330, 92]]) { sc.beginPath(); sc.ellipse(x + r * 0.35, y + r * 0.7, r * 0.95, r * 0.45, 0, 0, 7); sc.fill(); }
+  renderBalls(h, { floor: false, balls: [{ id: '3', x: 590, y: 95, r: 50 }, { id: '11', x: 520, y: 150, r: 56, spin: 0.6 }, { id: '8', x: 430, y: 205, r: 104 }, { id: 'cue', x: 175, y: 330, r: 92, spin: 0.15, tilt: -0.5 }] });
+  const g = document.createElement('canvas'); g.width = 1320; g.height = 880; g.style.cssText = 'position:absolute;left:600px;top:70px;width:660px;height:440px;pointer-events:none'; document.body.appendChild(g);
+  const c = g.getContext('2d'); c.scale(2, 2);
+  c.strokeStyle = 'rgba(244,239,226,.8)'; c.lineWidth = 3; c.setLineDash([1, 10]); c.lineCap = 'round'; c.beginPath(); c.moveTo(262, 296); c.lineTo(332, 250); c.stroke();
+  document.querySelectorAll('canvas[data-ball]').forEach(cv => renderBalls(cv, { floor: false, balls: [{ id: cv.dataset.ball, x: 44, y: 42, r: 34 }] }));
+  document.body.dataset.ready = 1;
+});
+</script>
+</body></html>

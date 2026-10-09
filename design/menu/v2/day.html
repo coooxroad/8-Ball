@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CUE 메뉴 시안 · 데이 클럽</title>
+<script src="../../../web/three.min.js"></script><script src="balls.js"></script>
+<style>
+@font-face{font-family:Outfit;src:url(../../../web/fonts/Outfit.woff2);font-weight:100 900}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-Medium.woff2);font-weight:500}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-Bold.woff2);font-weight:700}
+@font-face{font-family:G;src:url(../../../web/fonts/GothicA1-ExtraBold.woff2);font-weight:800}
+:root{--bg:#e9eef1;--ink:#101820;--sub:#5b6875;--pool:#0f8f8a;--pool2:#0a6b67;--carom:#1d4fa3;--carom2:#143a7c;--chalk:#2f7bff;--live:#ff4d3d;--gold:#f2b632}
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:800px;overflow:hidden;font-family:G,sans-serif;color:var(--ink);background:radial-gradient(ellipse 80% 60% at 50% 0,#fff,var(--bg) 70%)}
+.top{position:absolute;left:56px;right:40px;top:24px;display:flex;align-items:center;gap:12px}
+.logo{font:800 32px Outfit;letter-spacing:.14em}
+.sp{flex:1}
+.pill{display:flex;align-items:center;gap:9px;height:44px;padding:0 16px;border-radius:22px;background:#fff;box-shadow:0 2px 8px rgba(16,24,32,.08);font:800 16px G}
+.pill .coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff2c0,var(--gold) 55%,#a4781f)}
+.pill .num{font:700 17px Outfit}
+.pill .av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font:800 14px G;margin-left:-8px}
+.ask{position:absolute;left:56px;top:96px;font:800 34px G;letter-spacing:-.01em}
+.ask span{font:700 16px G;color:var(--sub);margin-left:14px;letter-spacing:0}
+/* the four games, chosen like players: each card is its own cloth, its ball big on it */
+.cards{position:absolute;left:56px;right:56px;top:156px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{position:relative;height:350px;border-radius:28px;overflow:hidden;color:#fff;padding:0 24px 24px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:0 10px 24px rgba(16,24,32,.12)}
+.card.pool{background:radial-gradient(ellipse 90% 60% at 50% 30%,#18b3ac,var(--pool) 55%,var(--pool2))}
+.card.carom{background:radial-gradient(ellipse 90% 60% at 50% 30%,#2d6ad1,var(--carom) 55%,var(--carom2))}
+.card::before{content:"";position:absolute;inset:0;opacity:.3;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E")}
+.card canvas{position:absolute;left:0;top:0;width:100%;height:240px}
+.card b{position:relative;font:800 40px G}
+.card span{position:relative;display:block;margin-top:6px;font:700 15px/1.4 G;opacity:.9}
+.card .tag{position:absolute;left:20px;top:18px;padding:5px 11px;border-radius:12px;background:rgba(255,255,255,.18);font:800 13px G}
+.card.on{transform:translateY(-8px);box-shadow:0 0 0 4px #fff,0 0 0 7px var(--ink),0 22px 40px rgba(16,24,32,.28)}
+.card.on::after{content:"";position:absolute;left:50%;bottom:12px;width:10px;height:10px;background:#fff;transform:translateX(-50%) rotate(45deg)}
+/* what to do with it */
+.act{position:absolute;left:56px;right:56px;top:548px;display:flex;gap:16px;align-items:stretch}
+.go{flex:0 0 420px;height:84px;border-radius:24px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:18px;padding:0 30px;box-shadow:0 14px 28px rgba(16,24,32,.28)}
+.go .play{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e9e2d0 60%,#bdb39a);display:grid;place-items:center;position:relative}
+.go .play::after{content:"";margin-left:4px;border-left:14px solid var(--ink);border-top:9px solid transparent;border-bottom:9px solid transparent}
+.go b{font:800 28px G}
+.go span{font:700 14px G;color:#aab6c2;margin-left:auto}
+.on2{flex:1;height:84px;border-radius:24px;background:#fff;display:flex;align-items:center;gap:16px;padding:0 24px;box-shadow:0 6px 16px rgba(16,24,32,.08)}
+.on2 .dot{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--chalk),#7a5cff);display:grid;place-items:center;color:#fff;font:800 13px G}
+.on2 b{font:800 21px G;display:block}
+.on2 span{font:700 14px G;color:var(--sub);display:flex;align-items:center;gap:6px}
+.on2 span i{width:8px;height:8px;border-radius:50%;background:var(--live)}
+.nav{position:absolute;left:56px;right:56px;bottom:26px;height:72px;display:flex;justify-content:space-between;gap:12px}
+.nav div{flex:1;border-radius:20px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;gap:12px;font:800 18px G}
+.nav svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.nav small{font:700 13px G;color:var(--sub)}
+</style></head><body>
+<div class="top"><div class="logo">CUE</div><div class="sp"></div>
+  <div class="pill"><i class="coin"></i><span class="num">1,250</span></div>
+  <div class="pill"><i class="av">1</i>플레이어 1</div>
+</div>
+<div class="ask">무엇을 칠까요?<span>이어하기: 4구, 플레이어 2와 20 : 10</span></div>
+<div class="cards">
+  <div class="card pool on"><canvas data-balls="8"></canvas><i class="tag">3연승 중</i><b>8볼</b><span>내 공을 다 넣고<br>마지막에 8번</span></div>
+  <div class="card pool"><canvas data-balls="9"></canvas><b>9볼</b><span>번호 순서대로,<br>9번을 넣으면 승리</span></div>
+  <div class="card carom"><canvas data-balls="red"></canvas><b>4구</b><span>빨간 공 둘을 맞히기<br>수지 30</span></div>
+  <div class="card carom"><canvas data-balls="yellow"></canvas><b>3구</b><span>쿠션 세 번 돌아서<br>대대 테이블</span></div>
+</div>
+<div class="act">
+  <div class="go"><i class="play"></i><b>대전 시작</b><span>8볼 · 컴퓨터 보통</span></div>
+  <div class="on2"><i class="dot">LIVE</i><div><b>온라인 대전</b><span><i></i>23명이 상대를 찾는 중</span></div></div>
+</div>
+<div class="nav">
+  <div><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>퍼즐<small>41/105</small></div>
+  <div><svg viewBox="0 0 24 24"><circle cx="16" cy="8" r="3"/><path d="M3 21l9.5-9.5"/></svg>레슨</div>
+  <div><svg viewBox="0 0 24 24"><path d="M5 20L19 4"/><path d="M17 4h2v2"/></svg>큐 가방</div>
+  <div><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/></svg>전적</div>
+  <div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>설정</div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+  const sets = { 8: [['15', 70, 150, 34], ['8', 140, 118, 72]], 9: [['1', 66, 150, 34], ['9', 140, 118, 72]], red: [['white', 70, 150, 34], ['red', 140, 118, 72]], yellow: [['red', 66, 150, 34], ['yellow', 140, 118, 72]] };
+  document.querySelectorAll('canvas[data-balls]').forEach(cv => {
+    const w = cv.clientWidth, k = w / 270;
+    renderBalls(cv, { balls: sets[cv.dataset.balls].map(([id, x, y, r]) => ({ id, x: x * k + 20, y, r: r * k })) });
+  });
+  document.body.dataset.ready = 1;
+});
+</script>
+</body></html>
