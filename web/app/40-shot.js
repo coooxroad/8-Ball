@@ -1,6 +1,6 @@
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
-  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = 0; st.elWant = game.P.BASE_EL; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
+  st.phase = 'aim'; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = game.P.BASE_EL || 0; $('#kindBox').classList.remove('open'); setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {

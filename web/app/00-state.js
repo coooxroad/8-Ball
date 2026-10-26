@@ -56,15 +56,18 @@ const prefs = (() => {
 })();
 const savePrefs = () => store.set('prefs', prefs);
 
-/* The game plays on the realistic physics (physics.js, cfg.real) everywhere: matches, lessons and puzzles. The physics the
-   game had before (cfg.real false) is still in physics.js but nothing here uses it.
-   usePhysics() puts the tables of the chosen size where the game looks for them; it is called before a game is started. */
+/* Matches, lessons and the first screen play on the game's physics (physics.js, cfg.real + cfg.play: what you picture is
+   what happens). The puzzles stay on the realistic physics without it, which their answers were found on, until they are
+   made again. The original physics (no cfg.real) is still in physics.js but nothing here uses it.
+   usePhysics(kind) puts the tables of the chosen size, on the 'play' or the 'real' physics, where the game looks for them;
+   it is called before a game is started. */
 const tableCache = {};
-const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysics(Object.assign({ real: true }, cfg)));
+let physKind = 'play';
+const tableOf = (key, cfg) => { const k = key + '/' + physKind; return tableCache[k] || (tableCache[k] = createPhysics(Object.assign({ real: true, play: physKind === 'play' }, cfg))); };
 const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
 // carom: the medium table four-ball is played on (254x127cm, 65.5mm balls); carom3: the match table of three-cushion (284x142cm, 61.5mm)
 const PH = {};
-function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
+function usePhysics(kind) { physKind = kind || 'play'; PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
 usePhysics();
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();

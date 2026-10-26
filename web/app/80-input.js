@@ -138,6 +138,8 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   // The cue raised: one angle, set on a picture of the shot seen from the side - the ball on the cloth and the cue leaning
   // over it. Dragging anywhere in the picture swings the cue to point at the finger.
   const padEl = $('#elPad'); let eid = null;
+  // the cue angle is folded away until asked for: most shots only need the spin
+  $('#elOpen').addEventListener('click', () => { SND.tap(); const box = $('#kindBox'), open = !box.classList.contains('open'); box.classList.toggle('open', open); $('#elOpen').setAttribute('aria-expanded', String(open)); setKindUI(); });
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
     // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to.
@@ -162,11 +164,14 @@ function syncEl() {
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
-function elSay() { if (!st.el) return ''; const h = game.P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
+function elSay() { if (!st.el || Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009) return ''; const h = game.P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
 function setKindUI() {
   const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK() || (game.P.REAL && !!flow && flow !== homeDemo), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
-  const tag = $('#spinTag'); tag.hidden = !deg; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
+  // the ordinary stroke says nothing; a cue set any other way is shown on the spin button, and keeps its picture open
+  const plain = Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009;
+  if (!plain) $('#kindBox').classList.add('open');
+  const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1); cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);

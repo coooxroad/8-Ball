@@ -10,11 +10,19 @@ function createPhysics(cfg) {
      and no easing of the last roll. Without it everything is as it has always been, which is what the lessons and puzzles
      were made on. */
   const REAL = !!cfg.real;
+  /* cfg.play (on top of cfg.real): the physics the game is played on. The rule for it: what a player pictures is what
+     happens. Everything a player draws in their head stays and is made plain and steady - follow and draw, side opening or
+     closing the angle off a cushion, a raised cue curving or jumping the ball. Everything real that nobody pictures is
+     taken out: the cue ball pushed off line by side (squirt), the struck ball dragged off the line of centres (throw), the
+     ordinary few-degrees-raised stroke curving the ball, the angle off a cushion changing with the pace, side lingering for
+     cushion after cushion. And balls stop in good time. The realistic physics without it is kept as it was (the puzzles'
+     answers were found on it). */
+  const PLAY = REAL && !!cfg.play;
   /* MU_SP: friction against turning on the spot. Side dies at 2.5 * MU_SP * g / R radians per second, every second. The
      original 0.04 makes that 34; measured tables give 5 to 15 (Dr. Dave Alciatore's table of equipment properties). The
      realistic physics takes the contact patch to grow with the ball, MU_SP = 4R/9, which is 10.9 for any ball - the same
      assumption and value as the pooltool simulator. For a carom ball on carom cloth that is a guess, not a measurement. */
-  const MU_S0 = 0.2, MU_R0 = !REAL ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = REAL ? (4 / 9) * R : 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
+  const MU_S0 = 0.2, MU_R0 = !REAL || PLAY ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = REAL && !PLAY ? (4 / 9) * R : 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
   // the nose of a cushion stands at 0.635 of a ball's height, so it meets the ball above the middle and pushes it down as well as back
   const NOSE_S = 0.27, NOSE_C = Math.sqrt(1 - NOSE_S * NOSE_S);
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
@@ -99,6 +107,7 @@ function createPhysics(cfg) {
   function strike(w, ang, V, a, bb, el) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
+    el = physEl(el);
     const ce = Math.cos(el), se = Math.sin(el);
     // side on the cue ball sends it a little the other way from the side it was struck on (real tables only)
     const sq = squirt(a) * ce, gx = Math.cos(ang + sq), gy = Math.sin(ang + sq);
@@ -119,9 +128,13 @@ function createPhysics(cfg) {
   const BASE_EL = REAL ? 5 * Math.PI / 180 : 0;
   // the angle of an ordinary stroke here (0 in the original physics)
   const restEl = () => BASE_EL;
+  // On the game's physics the ordinary stroke is shown and set at its 5 degrees but plays as a level cue - nobody pictures
+  // their everyday stroke curving the ball. Raising the cue counts from there: 5 degrees plays as 0, 90 as 90.
+  const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
+  const physEl = el => PLAY ? Math.max(0, (el - BASE_EL) * (Math.PI / 2) / (Math.PI / 2 - BASE_EL)) : el;
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
-  const squirt = a => REAL ? 0.07 * a : 0;
-  const CREEP = REAL ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
+  const squirt = a => REAL && !PLAY ? 0.07 * a : 0;
+  const CREEP = REAL && !PLAY ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
         /* The original physics drops a hop below HOP and a bounce below LAND outright, so a little more cue speed can turn
            "stays down" into a centimetre of air. The realistic one has no such step: every raised cue lifts the ball by what
@@ -183,8 +196,19 @@ function createPhysics(cfg) {
       if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
-    const dz = (2.5 * MU_SP * G / R) * h;
-    if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
+    if (PLAY && !w.ice) {
+      /* The game's side fades with the distance the ball runs, not with time: the same share of it is left at the cushion
+         however hard the ball was hit (and twice the pace put twice the side on), so a given side bends a given cushion by
+         the same amount at any pace. A third of it is gone after a metre; after three cushions or so it is all but spent.
+         A ball turning on the spot still winds down at the old rate. */
+      const run = Math.hypot(b.vx, b.vy) * h;
+      b.wz *= Math.exp(-run / SIDE_RUN);
+      const dz = (2.5 * MU_SP * G / R) * h * 0.25;
+      if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
+    } else {
+      const dz = (2.5 * MU_SP * G / R) * h;
+      if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
+    }
     b.x += b.vx * h; b.y += b.vy * h;
     const spd = Math.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
     if (b.spit > 0) b.spit -= h;
@@ -235,6 +259,21 @@ function createPhysics(cfg) {
   let SUBH = 1 / 360;                                             // the length of the step being taken (for the rewinds above and below)
   function hitRail(w, b, nx, ny, vn) {
     const tx = -ny, ty = nx;
+    if (PLAY) {
+      /* The game's cushion: a mirror, with side as the one thing that bends it. The ball comes off at the same angle at any
+         pace (the bounce takes the same share of its speed every time), side grips the rail and opens or closes that angle
+         in proportion to how much there is, and the ball leaves rolling the way it now goes - no drifting off its line
+         afterwards from roll it carried in. */
+      // the plain bounce takes the same share of the speed along the rail as across it (so no side, no change of angle);
+      // side adds its own push along the rail, as much one way as the other, up to what the grip allows
+      const e = POCKETED ? 0.72 : 0.76, vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + e) * -vn;
+      let ds = (2 / 7) * RB * b.wz; if (ds > lim) ds = lim; else if (ds < -lim) ds = -lim;
+      const dvt = -(1 - e) * vt + ds;
+      b.vx += -(1 + e) * vn * nx + dvt * tx; b.vy += -(1 + e) * vn * ny + dvt * ty;
+      b.wz -= (2.5 / RB) * ds;
+      if (b.z === 0) { b.wx = -b.vy / RB; b.wy = b.vx / RB; }
+      noteRail(w, b, vn); return;
+    }
     if (REAL) {
       /* The cushion touches the ball above its middle, so it pushes along a line that slopes down into the table. The push
          straight back is what it always was. What is new is the grip at that raised point: it sees the ball's side spin,
@@ -294,7 +333,7 @@ function createPhysics(cfg) {
     if (rel < 0) {
       const jn = -(1 + E_BALL) / 2 * rel;
       a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
-      if (REAL) {
+      if (REAL && !PLAY) {
         // the same friction between the two surfaces as on the cloth (see below), in three dimensions
         const wx = a.wx + b.wx, wy = a.wy + b.wy, wz = a.wz + b.wz;
         let sx = b.vx - a.vx - R * (wy * nz - wz * ny), sy = b.vy - a.vy - R * (wz * nx - wx * nz), sz = b.vz - a.vz - R * (wx * ny - wy * nx);
@@ -340,7 +379,7 @@ function createPhysics(cfg) {
         if (rel >= 0) { if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; } continue; }
         const jn = -(1 + E_BALL) / 2 * rel;
         a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
-        if (REAL && a.z === 0 && b.z === 0) {
+        if (REAL && !PLAY && a.z === 0 && b.z === 0) {
           /* Balls are not perfectly slippery. Where they touch, one surface is sliding across the other - from the angle of
              the cut and from whatever spin they carry - and friction there throws the struck ball a degree or so off the
              line through the centres and hands a little spin across. Slower, stickier: the faster the sliding, the less grip. */
@@ -569,7 +608,7 @@ function createPhysics(cfg) {
   }
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
-  const hop = (V, el) => { const up = JUMP * V * Math.sin(el || 0); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, squirt, REAL, BASE_EL, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
+  const hop = (V, el) => { const up = JUMP * V * Math.sin(physEl(el || 0)); return up > HOP ? up * up / (2 * G) : 0; };
+  return { hop, squirt, REAL, PLAY, BASE_EL, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

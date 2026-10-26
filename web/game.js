@@ -229,7 +229,10 @@ function createGame(PH) {
      Below LOW it now bends down, smoothly (same value and slope where they join), to a touch that moves the ball millimetres. */
   const LOW = 0.15, V_LOW = 0.35 + 7.4 * Math.pow(LOW, 1.35), S_LOW = 7.4 * 1.35 * Math.pow(LOW, 0.35), V_MIN = 0.03,
         C_LOW = (S_LOW - (V_LOW - V_MIN) / LOW) / LOW, B_LOW = (V_LOW - V_MIN) / LOW - C_LOW * LOW;
-  const brk = () => g.isBreak && g.mode.table === 'pool' ? 1.42 : 1;
+  /* On the game's physics a power means a distance: the same pull sends a ball the same number of table lengths on any
+     table, so a bigger table gets a little more speed for it (distance goes with speed squared, so the square root of the
+     length). The 7-foot pool table is where the power curve was made. */
+  const brk = () => (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1) * (g.P && g.P.PLAY ? Math.sqrt(g.P.HL / 0.99) : 1);
   g.vOf = power => (power >= LOW ? 0.35 + 7.4 * Math.pow(power, 1.35) : V_MIN + (B_LOW + C_LOW * power) * Math.max(0, power)) * brk();
   g.powerOf = V => { const v = V / brk(); return v >= V_LOW ? Math.pow((v - 0.35) / 7.4, 1 / 1.35) : v <= V_MIN ? 0 : (-B_LOW + Math.sqrt(B_LOW * B_LOW + 4 * C_LOW * (v - V_MIN))) / (2 * C_LOW); };
   g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };

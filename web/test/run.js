@@ -2,8 +2,9 @@
    1. every practice drill, at every level, on every table size: the layout is valid and its reference shot passes
    2. computer-vs-computer games of every rule set finish, on every table size */
 const path = require('path'), W = path.join(__dirname, '..');
-// the game plays on the realistic physics, so that is what is checked; a check of the old one asks for it with real: false
-const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(Object.assign({ real: true }, cfg)), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
+// the game plays on the game physics (real + play), so that is what is checked by default; a check of another asks for it
+// (real: false for the original, play: false for the realistic one the puzzles were made on)
+const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(Object.assign({ real: true, play: true }, cfg)), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
 const TABLES = {
   bar: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }, club: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 },
   pro: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 }, pub: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 },
@@ -132,7 +133,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // played both straight from the stored speed and through the power control's rounding, as the app's "answer" button does
 {
   const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
-  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  const g = createGame({ pool: createPhysics(Object.assign({ play: false, pockets: true }, TABLES.bar)), carom: createPhysics({ play: false, R: 0.03275, pockets: false }) });
   let bad = 0;
   for (const z of Z.list) {
     g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
@@ -198,7 +199,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // lengthens the angle off a cushion; a cut throws the struck ball off the line of centres towards the way the cue ball was going;
 // side sends the cue ball a little the other way; the carom cloth runs further than the pool cloth; and a raised cue costs spin
 {
-  const real = cfg => createPhysics(Object.assign({ real: true }, cfg)), C = real({ R: 0.03275, pockets: false }), PL = real(Object.assign({ pockets: true }, TABLES.bar)), OLD = createPhysics({ real: false, R: 0.03275, pockets: false });
+  const real = cfg => createPhysics(Object.assign({ real: true, play: false }, cfg)), C = real({ R: 0.03275, pockets: false }), PL = real(Object.assign({ pockets: true }, TABLES.bar)), OLD = createPhysics({ real: false, R: 0.03275, pockets: false });
   const one = (P, n) => { const w = P.makeWorld(n); for (let i = 1; i < n; i++) w.balls[i].on = false; P.place(w, 0, 0, 0); return w; };
   const energy = b => b.vx * b.vx + b.vy * b.vy + 0.4 * C.R * C.R * (b.wx * b.wx + b.wy * b.wy + b.wz * b.wz);
   let gain = 0;
@@ -228,15 +229,15 @@ for (const name of ['bar', 'pro', 'pub']) {
    nothing jumps at a threshold, side dies at a measured rate, a ball landing on another is a real blow, and no shot - cushions,
    balls, air and all - ever ends up with more energy than it was given. */
 {
-  const deg = 180 / Math.PI, both = [['usual', false], ['realistic', true]];
+  const deg = 180 / Math.PI, both = [['usual', { real: false }], ['realistic', { play: false }], ['game', {}]];
   let worst = 0, gain = 0, shots = 0;
-  for (const [name, real] of both) {
-    const P = createPhysics(Object.assign({ real, pockets: true }, TABLES.bar)), R = P.R;
+  for (const [name, kind] of both) {
+    const P = createPhysics(Object.assign({ pockets: true }, kind, TABLES.bar)), R = P.R, real = P.REAL;
     const lay = (list) => { const w = P.makeWorld(list.length); list.forEach((q, i) => P.place(w, i, q[0], q[1])); return w; };
     const cut = dt => { const w = lay([[-0.4, 0], [0, 1.8 * R]]); P.strike(w, 0, 3, 0, 0); let n = 0; while (w.ev.firstHit == null && n++ < 1e6) P.step(w, dt); return Math.atan2(w.balls[1].vy, w.balls[1].vx) * deg; };
     const a = cut(1 / 120), b = cut(1 / 1920); worst = Math.max(worst, Math.abs(a - b));
     if (Math.abs(a - b) > 0.02) fail(`${name} physics: a thin cut depends on the step length (${a.toFixed(2)} against ${b.toFixed(2)} degrees)`);
-    if (!real && Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`usual physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
+    if ((!real || P.PLAY) && Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`${name} physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
     // mirror image
     for (let k = 0; k < 40; k++) {
       const ang = (k * 0.618 % 1 - 0.5) * 0.5, V = 1 + k % 7, sa = (k % 5 - 2) / 4 * 0.5, sb = (k % 3 - 1) * 0.3, el = k % 4 === 0 ? 0.5 : 0, pos = [[-0.4, 0.1], [0.1, 0.16], [0.5, -0.2], [-0.2, -0.3]];
