@@ -224,17 +224,24 @@ function createGame(PH) {
   };
   g.cueBall = () => g.world.balls[g.world.cue];
   g.legal = () => g.mode.legal(g, g.turn);
-  /* How hard the cue ball is struck (m/s) for a power from 0 to 1. Above LOW it is the curve the game has always had. That
-     curve bottoms out at 0.35 m/s, which already rolls a ball most of half a metre - so nothing gentler could be played.
-     Below LOW it now bends down, smoothly (same value and slope where they join), to a touch that moves the ball millimetres. */
-  const LOW = 0.15, V_LOW = 0.35 + 7.4 * Math.pow(LOW, 1.35), S_LOW = 7.4 * 1.35 * Math.pow(LOW, 0.35), V_MIN = 0.03,
-        C_LOW = (S_LOW - (V_LOW - V_MIN) / LOW) / LOW, B_LOW = (V_LOW - V_MIN) / LOW - C_LOW * LOW;
-  /* On the game's physics a power means a distance: the same pull sends a ball the same number of table lengths on any
-     table, so a bigger table gets a little more speed for it (distance goes with speed squared, so the square root of the
-     length). The 7-foot pool table is where the power curve was made. */
-  const brk = () => (g.isBreak && g.mode.table === 'pool' ? 1.42 : 1) * (g.P && g.P.PLAY ? Math.sqrt(g.P.HL / 0.99) : 1);
-  g.vOf = power => (power >= LOW ? 0.35 + 7.4 * Math.pow(power, 1.35) : V_MIN + (B_LOW + C_LOW * power) * Math.max(0, power)) * brk();
-  g.powerOf = V => { const v = V / brk(); return v >= V_LOW ? Math.pow((v - 0.35) / 7.4, 1 / 1.35) : v <= V_MIN ? 0 : (-B_LOW + Math.sqrt(B_LOW * B_LOW + 4 * C_LOW * (v - V_MIN))) / (2 * C_LOW); };
+  /* How hard the cue ball is struck (m/s) for a power from 0 to 1: 0.35 + B * power^E above LOW. That curve bottoms out at
+     0.35 m/s, which already rolls a ball most of half a metre - so below LOW it bends down, smoothly (same value and slope
+     where they join), to a touch that moves the ball millimetres.
+     The realistic physics (puzzles) keeps the curve the game has always had. The game's physics has a calmer one: half
+     power is about two and a half table lengths on a carom table, full power still six; the same curve on every table. */
+  const curve = (B, E) => {
+    const LOW = 0.15, V_LOW = 0.35 + B * Math.pow(LOW, E), S_LOW = B * E * Math.pow(LOW, E - 1), V_MIN = 0.03,
+          C_LOW = (S_LOW - (V_LOW - V_MIN) / LOW) / LOW, B_LOW = (V_LOW - V_MIN) / LOW - C_LOW * LOW;
+    return {
+      v: power => power >= LOW ? 0.35 + B * Math.pow(power, E) : V_MIN + (B_LOW + C_LOW * power) * Math.max(0, power),
+      p: v => v >= V_LOW ? Math.pow((v - 0.35) / B, 1 / E) : v <= V_MIN ? 0 : (-B_LOW + Math.sqrt(B_LOW * B_LOW + 4 * C_LOW * (v - V_MIN))) / (2 * C_LOW)
+    };
+  };
+  const CLASSIC = curve(7.4, 1.35), CALM = curve(6.4, 1.6);
+  const cv = () => g.P && g.P.PLAY ? CALM : CLASSIC;
+  const brk = () => g.isBreak && g.mode.table === 'pool' ? 1.42 : 1;
+  g.vOf = power => cv().v(power) * brk();
+  g.powerOf = V => cv().p(V / brk());
   g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };
 
   // Called once every ball has stopped. Applies the result and says what happened.
@@ -358,8 +365,8 @@ function createGame(PH) {
           let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
           if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55) || !P.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
           const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R; if (!inside(gx, gy)) continue;
-          // a ball in the way of the cue ball, and jumping allowed: over it
-          if (g.masse) { const jx = gx - c.x, jy = gy - c.y, jl = Math.hypot(jx, jy); if (jl > 0.5 && (jx * dx + jy * dy) / jl > 0.6 && !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) tricks.push({ angle: Math.atan2(jy, jx), len: jl + dTP - 1, flair: 4.5, Vs: [5.4, 6.0, 6.6], step: 0.004, el: 0.75 }); }
+          // a ball in the way of the cue ball, and jumping allowed: over it (a jump is a hard stroke at about 55 degrees)
+          if (g.masse) { const jx = gx - c.x, jy = gy - c.y, jl = Math.hypot(jx, jy); if (jl > 0.5 && (jx * dx + jy * dy) / jl > 0.6 && !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) tricks.push({ angle: Math.atan2(jy, jx), len: jl + dTP - 1, flair: 4.5, Vs: [6.0, 6.4, 6.75], step: 0.004, el: 0.96 }); }
           // the cue ball off a cushion first
           for (const rl of rails) {
             const m = mirror(gx, gy, rl), B = bounce(c.x, c.y, m[0], m[1], rl); if (!B) continue;
@@ -521,12 +528,13 @@ function createGame(PH) {
         const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g), railed = w2.ev.railed.includes(w2.cue);
         if (r.pts > 0) { const showy = railed && (sp[0] || sp[1]); flair.push({ angle: all[i][0], V: all[i][1], a: sp[0], b: sp[1], s: (railed ? 3 : 0) + (sp[0] || sp[1] ? 1.5 : 0) + Math.min(3, w2.ev.cushions) * 0.6 + Math.random() }); if (showy) fancy++; }
       }
-      // when the raised cue is allowed it likes to use it: a jump straight at a red, or a masse bending in from the side
+      // when the raised cue is allowed it likes to use it: a jump straight at a red (55 degrees, hard), or a masse bending in
+      // from the side (66 to 77 degrees, soft enough to stay on the cloth)
       if (g.masse && flair.length && Math.random() < 0.6) {
         const trick = (angle, V, a, el) => { const w2 = g.P.clone(w); g.P.strike(w2, angle, V, a, 0, el); const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g); if (r.pts > 0 && !w2.ev.off.length) { flair.push({ angle, V, a, b: 0, el, s: 9 + Math.random() }); return true; } return false; };
         search: for (const id of g.mode.legal(g, g.turn)) { const T = w.balls[id], base = Math.atan2(T.y - c.y, T.x - c.x), far = Math.hypot(T.x - c.x, T.y - c.y);
-          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [5.6, 6.4]) if (trick(base + da, V, 0, 0.75)) break search;
-          for (let i = 0; i < 12; i++) { const side = i % 2 ? 0.42 : -0.42; if (trick(base - Math.sign(side) * (0.05 + 0.05 * (i >> 1)), 3.6, side, 0.8 + 0.1 * (i % 3))) break search; } }
+          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [6.0, 6.6]) if (trick(base + da, V, 0, 0.96)) break search;
+          for (let i = 0; i < 12; i++) { const side = i % 2 ? 0.42 : -0.42; if (trick(base - Math.sign(side) * (0.05 + 0.05 * (i >> 1)), 3.6, side, 1.15 + 0.1 * (i % 3))) break search; } }
       }
       // nothing yet: look again between the angles already tried, at other speeds
       if (!flair.length) again: for (const V of need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {

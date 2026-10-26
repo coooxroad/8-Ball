@@ -526,10 +526,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #badge .mb{width:16px;height:16px}
 #kindBox{display:flex;flex-direction:column;gap:8px;width:190px}
 #kindBox .seg button{height:34px;font-size:13.5px}
-#kindBox .lab{display:flex;align-items:baseline;gap:8px;padding:0;background:none;border:0;color:inherit;font:inherit;text-align:left;width:100%}
-#kindBox .chev{margin-left:6px;width:8px;height:8px;border-right:2px solid var(--sub);border-bottom:2px solid var(--sub);transform:rotate(45deg) translateY(-3px);transition:transform .15s}
-#kindBox.open .chev{transform:rotate(-135deg)}
-#kindBox:not(.open) #elPad{display:none}
+#kindBox .lab{display:flex;align-items:baseline;gap:8px}
 #kindBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
 #kindBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#8a4dff}
 #elPad{width:190px;height:112px;border-radius:14px;background:var(--seg);touch-action:none;display:block}
@@ -649,7 +646,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   <div id="spinPop" hidden>
     <div id="spinPad"><i class="sdot" id="spinPadDot"></i></div>
     <div id="spinHint"></div>
-    <div id="kindBox"><button class="lab" id="elOpen" aria-expanded="false">큐 세우기 <b id="elVal">0°</b><span id="elSay"></span><i class="chev"></i></button><canvas id="elPad" aria-label="큐 각도"></canvas></div>
+    <div id="kindBox"><div class="lab">큐 세우기 <b id="elVal">0°</b><span id="elSay"></span></div><canvas id="elPad" aria-label="큐 각도"></canvas></div>
     <button class="btn flat" id="spinReset">가운데로</button>
   </div>
 

@@ -114,11 +114,11 @@ function createPhysics(cfg) {
     c.vx = V * ce * gx; c.vy = V * ce * gy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;       // (original physics only) a hop too small to see is swallowed by the cloth
+    const up = PLAY ? lift(V, el) : JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;   // (original physics only) a hop too small to see is swallowed by the cloth
     if (REAL && se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
       const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = Math.hypot(ux, uy);
-      if (us > 1e-4) { const dec = Math.min(MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
+      if (us > 1e-4) { const dec = Math.min(PINCH * MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
     }
     w.ev = newEv();
   }
@@ -130,6 +130,15 @@ function createPhysics(cfg) {
   const restEl = () => BASE_EL;
   // On the game's physics the ordinary stroke is shown and set at its 5 degrees but plays as a level cue - nobody pictures
   // their everyday stroke curving the ball. Raising the cue counts from there: 5 degrees plays as 0, 90 as 90.
+  /* The game's physics, raised cue. How high a ball leaves the cloth is what a real one does, not more: a jump is a hard
+     stroke at forty to sixty degrees - the angle jump shots are played at - that clears a ball only near full power, a few
+     centimetres up and never a quarter of a metre. Steeper than that the cue is on top of the ball and holds it down (a
+     masse, played softly, stays on the cloth and bends); flatter, the slate gives back too little to see.
+     And the pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a
+     third of the realistic one: a masse goes out along the cue first and bends after, as it does in slow motion. */
+  const PEAK = 50 * Math.PI / 180, PINCH = PLAY ? 0.35 : 1;
+  const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
+  const lift = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);       // a carom ball, heavier, a little less
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const physEl = el => PLAY ? Math.max(0, (el - BASE_EL) * (Math.PI / 2) / (Math.PI / 2 - BASE_EL)) : el;
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
@@ -608,7 +617,7 @@ function createPhysics(cfg) {
   }
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
-  const hop = (V, el) => { const up = JUMP * V * Math.sin(physEl(el || 0)); return up > HOP ? up * up / (2 * G) : 0; };
+  const hop = (V, el) => { const e = physEl(el || 0), up = PLAY ? lift(V, e) : JUMP * V * Math.sin(e); return up > HOP ? up * up / (2 * G) : 0; };
   return { hop, squirt, REAL, PLAY, BASE_EL, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

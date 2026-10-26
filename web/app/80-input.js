@@ -122,7 +122,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.5 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 큐볼이 갈 길이 보입니다.');
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
@@ -139,7 +139,6 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   // over it. Dragging anywhere in the picture swings the cue to point at the finger.
   const padEl = $('#elPad'); let eid = null;
   // the cue angle is folded away until asked for: most shots only need the spin
-  $('#elOpen').addEventListener('click', () => { SND.tap(); const box = $('#kindBox'), open = !box.classList.contains('open'); box.classList.toggle('open', open); $('#elOpen').setAttribute('aria-expanded', String(open)); setKindUI(); });
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
     // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to.
@@ -168,9 +167,8 @@ function elSay() { if (!st.el || Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009
 function setKindUI() {
   const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK() || (game.P.REAL && !!flow && flow !== homeDemo), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
-  // the ordinary stroke says nothing; a cue set any other way is shown on the spin button, and keeps its picture open
+  // the ordinary stroke says nothing; a cue set any other way is shown on the spin button
   const plain = Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009;
-  if (!plain) $('#kindBox').classList.add('open');
   const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;

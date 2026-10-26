@@ -39,7 +39,7 @@ function sheetGuide() {
   const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
   const row = i => guideSlider(solo ? '길이' : st.screen === 'play' ? game.players[i].name : prefs.names[i], prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); });
   openSheet('조준선', [segRow('모양', [['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
-    row(0), solo ? null : row(1), note('오른쪽으로 갈수록 길어집니다. 끝까지 밀면 공들이 멈출 때까지 다 보입니다.'),
+    row(0), solo ? null : row(1), note('첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보입니다. 보통까지는 그 뒤가 짧은 직선(예상 방향)이고, 길게부터는 회전까지 반영된 실제 경로입니다. 끝까지 밀면 공들이 멈출 때까지 다 보입니다.'),
     solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
 }
 function sheetSettings() {
@@ -67,7 +67,7 @@ function sheetHow() {
 function sheetNews() {
   prefs.news = false; savePrefs();
   openSheet('CUE 2.0', [
-    ['큐 세우기', '회전 창의 큐 각도. 세워서 세게 치면 점프, 좌우 회전을 주면 휘고, 많이 세우면 맛세이.'],
+    ['큐 세우기', '회전 창의 큐 각도. 50° 안팎으로 세워 세게 치면 점프, 많이 세우고 좌우 회전을 섞어 부드럽게 치면 맛세이.'],
     ['수지', '4구에서 이름을 누르면 각자 수지를 정합니다. 50이면 다섯 번 득점.'],
     ['빙판 테이블', '테이블 고르는 곳에 새 스킨. 공이 미끄러집니다.'],
     ['퍼즐 스테이지', '4구 기술 일곱 가지, 105문제. 힌트는 흰 공이 닿는 곳을 번호로.'],

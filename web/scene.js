@@ -447,7 +447,7 @@ function createScene(canvas, app, PH) {
       const d = i ? Math.hypot(pts[i] - pts[i - 3], pts[i + 1] - pts[i - 2]) : 0, s0 = s; s += d;
       const at = (q) => { const f = d ? (q - s0) / d : 0; out.push(pts[i - 3] + (pts[i] - pts[i - 3]) * f, pts[i - 2] + (pts[i + 1] - pts[i - 2]) * f, pts[i - 1] + (pts[i + 2] - pts[i - 1]) * f); };
       if (i && s0 < from && s >= from) at(from);
-      if (s > from && s < to) out.push(pts[i], pts[i + 1], pts[i + 2]);
+      if ((s > from || (!i && from <= 0)) && s < to) out.push(pts[i], pts[i + 1], pts[i + 2]);   // (nothing taken off the start: the start itself)
       if (i && s0 < to && s >= to) { at(to); break; }
     }
     return out;
@@ -455,9 +455,17 @@ function createScene(canvas, app, PH) {
   // length of a path, and the path cut off at `len` metres along it
   const pathLen = pts => { let L = 0; for (let i = 3; i < pts.length; i += 3) L += Math.hypot(pts[i] - pts[i - 3], pts[i + 1] - pts[i - 2]); return L; };
   const cutPath = (pts, len) => trimPath(pts, 0, Math.max(0, pathLen(pts) - len));
-  /* How far each part reaches for a guide length g (0 off .. 1 everything): nothing below a quarter; then growing through
-     a stub (the old "보통", at a half), the first stretch (the old "길게", at three quarters) to the whole way (at 1). */
-  const reach = (g, stub, first, whole) => g < 0.25 ? 0 : g <= 0.5 ? stub * (g - 0.25) / 0.25 : g <= 0.75 ? stub + (first - stub) * (g - 0.5) / 0.25 : first + (whole - first) * (g - 0.75) / 0.25;
+  /* How much is shown for a guide length g (0 off .. 1 everything). Up to the first thing the cue ball touches, the way is
+     always the one it will really take. After that:
+     - up to "보통" (g below SIM), only what one would expect, the old way: a short straight line each, the object ball along
+       the line of centres and the cue ball along the tangent (or, off a cushion, straight back off it as from a mirror) -
+       growing from nothing at a quarter to full at a half. What spin and the cloth will make of it is the player's to judge.
+     - from "길게" on, the paths as they will really go: from the stub, through the first stretch (at three quarters) to the
+       whole way (at 1). */
+  const SIM = 0.63;
+  const grow = g => g < 0.25 ? 0 : Math.min(1, (g - 0.25) / 0.25);
+  const reach = (g, stub, first, whole) => g <= 0.75 ? stub + (first - stub) * (g - SIM) / (0.75 - SIM) : first + (whole - first) * (g - 0.75) / 0.25;
+  const line = (x, y, z, dx, dy, len) => [x, y, z, x + dx * len, y + dy * len, z];
   // the colour a ball's path is drawn in: the ball's own, lifted a little towards white so that a dark ball still shows
   const lift = (h, k) => { const r = h >> 16 & 255, g = h >> 8 & 255, b = h & 255; return Math.round(r + (255 - r) * k) << 16 | Math.round(g + (255 - g) * k) << 8 | Math.round(b + (255 - b) * k); };
   const pathCol = (table, id) => lift(table === 'carom' ? [0xf4efe2, 0xf4c20d, 0xd3241c, 0xd3241c][id] : id === 0 ? 0xf4efe2 : ballHex(id), 0.22);
@@ -658,7 +666,7 @@ function createScene(canvas, app, PH) {
         if (gl > 0.001) {
           /* Nothing here is worked out by geometry: the shot is played out on a copy with the very inputs the stroke will use,
              and the guide is drawn from what happened. The length setting only decides how much of it is shown. */
-          const after = gl < 0.5 ? 0.6 : gl <= 0.75 ? 2.4 : 2.4 + (gl - 0.75) / 0.25 * 12.6;
+          const after = gl < SIM ? 0.05 : gl <= 0.75 ? 2.4 : 2.4 + (gl - 0.75) / 0.25 * 12.6;
           const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, v.el || 0, after);
           const at = pv.at, pre = pv.pre, post = pv.post, rail = v.aimStyle === 'rail', kind = g.mode.table;
           // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
@@ -677,18 +685,38 @@ function createScene(canvas, app, PH) {
             gDisc.position.set(at[0], at[1], R + at[2]); gDisc.scale.setScalar(R); gDisc.material.color.set(cCol);
           }
           if (at && gl >= 0.25) {
-            let tl = 0;
-            if (pv.obj) {
-              const o = pv.obj, run = Math.hypot(o.x1 - o.x0, o.y1 - o.y0);
-              let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
-              const co = Math.max(0, Math.min(1, (ux * (o.x0 - at[0]) + uy * (o.y0 - at[1])) / (2 * R))); tl = Math.sqrt(1 - co * co);
-              const op = pv.objPath, len = reach(gl, Math.min(0.06 + 0.26 * co, run), run, pathLen(op));
-              ribbon(rObj, trimPath(cutPath(op, len + R), rail ? 0 : R, 0), look({ color: oCol, op: 0.92 * dim, alpha: t => 1 - t }), R);
+            // the cue ball's heading as it arrives
+            let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
+            let tl = 0, nx = 0, ny = 0;
+            if (pv.hit != null) { const b0 = w.balls[pv.hit]; nx = b0.x - at[0]; ny = b0.y - at[1]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; tl = Math.sqrt(Math.max(0, 1 - Math.pow(ux * nx + uy * ny, 2))); }
+            if (gl < SIM) {
+              const k = grow(gl);
+              if (pv.hit != null) {
+                // the object ball: along the line of centres, longer the fuller the hit
+                const b0 = w.balls[pv.hit], co = Math.max(0, ux * nx + uy * ny);
+                if (pv.obj) ribbon(rObj, trimPath(line(b0.x, b0.y, 0, nx, ny, R + k * (0.04 + 0.12 * co)), rail ? 0 : R, 0), look({ color: oCol, op: 0.92, alpha: t => 1 - t }), R);
+                // the cue ball: along the tangent, longer the thinner the hit (a full hit leaves it where it is)
+                let sx = ux - (ux * nx + uy * ny) * nx, sy = uy - (ux * nx + uy * ny) * ny; const sl = Math.hypot(sx, sy);
+                if (sl > 0.05) { sx /= sl; sy /= sl; ribbon(rPost, line(at[0], at[1], 0, sx, sy, k * 0.16 * tl), look({ color: cCol, op: 0.85, alpha: t => 1 - t }), R); }
+              } else {
+                // a cushion first: straight back off it, angle in = angle out
+                const fx = Math.abs(Math.abs(at[0]) - (P.HL - R)) < 0.012, fy = Math.abs(Math.abs(at[1]) - (P.HW - R)) < 0.012;
+                let rx = ux, ry = uy;
+                if (fx) rx = -ux; if (fy) ry = -uy;
+                if (!fx && !fy) { const q = post.length >= 6 ? Math.hypot(post[3] - post[0], post[4] - post[1]) : 0; if (q > 1e-6) { rx = (post[3] - post[0]) / q; ry = (post[4] - post[1]) / q; } }
+                ribbon(rPost, line(at[0], at[1], 0, rx, ry, k * 0.14), look({ color: cCol, op: 0.85, alpha: t => 1 - t }), R);
+              }
+            } else {
+              if (pv.obj) {
+                const o = pv.obj, run = Math.hypot(o.x1 - o.x0, o.y1 - o.y0), co = Math.sqrt(1 - tl * tl);
+                const op = pv.objPath, len = reach(gl, Math.min(0.04 + 0.12 * co, run), run, pathLen(op));
+                ribbon(rObj, trimPath(cutPath(op, len + R), rail ? 0 : R, 0), look({ color: oCol, op: 0.92 * dim, alpha: t => 1 - t }), R);
+              }
+              // the cue ball afterwards, from the middle of the ghost ball
+              const stub = pv.hit != null ? 0.16 * tl : Math.min(0.14, pathLen(post.slice(0, pv.turn + 3)));
+              const len = reach(gl, stub, pathLen(post.slice(0, 288 * 3 + 6)), pathLen(post));
+              ribbon(rPost, cutPath(post, len), look({ color: cCol, op: 0.85 * dim, alpha: t => 1 - t }), R);
             }
-            // the cue ball afterwards, from the middle of the ghost ball
-            const stub = pv.hit != null ? 0.1 + 0.2 * tl : Math.min(0.22, pathLen(post.slice(0, pv.turn + 3)));
-            const len = reach(gl, stub, pathLen(post.slice(0, 288 * 3 + 6)), pathLen(post));
-            ribbon(rPost, cutPath(post, len), look({ color: cCol, op: 0.85 * dim, alpha: t => 1 - t }), R);
           }
         }
       }
