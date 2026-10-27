@@ -163,7 +163,17 @@ function syncEl() {
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
-function elSay() { if (!st.el || Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009) return ''; const h = game.P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el); return h > game.P.R * 2 ? '공을 넘는 점프' : h > 0.012 ? '낮게 뜸' : Math.abs(st.spin.x) > 0.15 ? '휘어 감' : '안 뜸'; }
+// (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found; steep,
+// the tip holds the ball down - the masse angles)
+function elSay() {
+  const P = game.P; if (!st.el || Math.abs(st.el - (P.BASE_EL || 0)) < 0.009) return '';
+  const h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
+  if (h > P.R * 2) return '공을 넘는 점프';
+  if (P.hop(game.vOf(1), st.el) > P.R * 2) return '세게 치면 점프';
+  if (h > 0.012) return '낮게 뜸';
+  if (steep) return side ? '맛세이 · 휘어 감' : '눌려서 안 뜸';
+  return side ? '휘어 감' : '안 뜸';
+}
 function setKindUI() {
   const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK() || (game.P.REAL && !!flow && flow !== homeDemo), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
