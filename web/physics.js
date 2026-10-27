@@ -269,18 +269,22 @@ function createPhysics(cfg) {
   function hitRail(w, b, nx, ny, vn) {
     const tx = -ny, ty = nx;
     if (PLAY) {
-      /* The game's cushion: a mirror, with side as the one thing that bends it. The ball comes off at the same angle at any
-         pace (the bounce takes the same share of its speed every time), side grips the rail and opens or closes that angle
-         in proportion to how much there is, and the ball leaves rolling the way it now goes - no drifting off its line
-         afterwards from roll it carried in. */
-      // the plain bounce takes the same share of the speed along the rail as across it (so no side, no change of angle);
-      // side adds its own push along the rail, as much one way as the other, up to what the grip allows
-      const e = POCKETED ? 0.72 : 0.76, vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + e) * -vn;
+      /* The game's cushion: a mirror, with side as the one thing that bends it off the rail - and with the ball's roll left
+         as it was, as on a real table. Off the rail itself, angle in = angle out at an ordinary pace (a hard ball sinks into
+         the rubber and comes off a touch wider, a slow one a touch narrower); side grips the rail and opens or closes that
+         angle in proportion to how much there is.
+         The roll: the cushion's nose, above the ball's middle, takes off the roll the ball had INTO the rail, so it leaves
+         the rail with none across (a stun), while the roll it had ALONG the rail stays. So afterwards the cloth bends it:
+         a rolling ball runs on a little longer along the rail (wider), follow more so, draw the other way (narrower), a
+         stunned ball not at all - and a masse keeps curving. That bend is what a player learns to read; the guide shows
+         it from "길게" on. */
+      const c = -vn, eT = POCKETED ? 0.8 : 0.84, eN = Math.min(eT + 0.05, Math.max(eT - 0.08, eT + 0.02 * (2.5 - c)));
+      const vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + eT) * c;
       let ds = (2 / 7) * RB * b.wz; if (ds > lim) ds = lim; else if (ds < -lim) ds = -lim;
-      const dvt = -(1 - e) * vt + ds;
-      b.vx += -(1 + e) * vn * nx + dvt * tx; b.vy += -(1 + e) * vn * ny + dvt * ty;
+      const dvt = -(1 - eT) * vt + ds;
+      b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
       b.wz -= (2.5 / RB) * ds;
-      if (b.z === 0) { b.wx = -b.vy / RB; b.wy = b.vx / RB; }
+      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
       noteRail(w, b, vn); return;
     }
     if (REAL) {
@@ -448,8 +452,9 @@ function createPhysics(cfg) {
               const e = 0.35 + 0.5 * Math.min(1, Math.max(0, (b.hot - 2.5) / 4.5));
               if (b.hot > 3.8) b.spit = 0.22;   // too hard and off-centre: the pocket spits it back out
               b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; b.vx *= 0.88; b.vy *= 0.88; b.wx *= 0.5; b.wy *= 0.5;
-              if (b.hot > 3.8) {
-                // thrown back towards the table, keeping a little of the angle it bounced at
+              if (b.hot > 3.8 && !PLAY) {
+                // thrown back towards the table, keeping a little of the angle it bounced at (the realistic tables, where the
+                // puzzle answers were made; on the game's it simply comes off the back of the pocket the way it hit it)
                 const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = REAL ? Math.min(0.4 * b.hot, s0) : 0.4 * b.hot;   // realistic: never faster than it came off the back
                 b.vx = ox / ol * out; b.vy = oy / ol * out;
               }
