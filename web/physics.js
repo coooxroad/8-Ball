@@ -123,13 +123,13 @@ function createPhysics(cfg) {
     w.ev = newEv();
   }
   /* A real cue is never level: the hand behind it is up on the rail, so it leans down onto the ball by a few degrees. On the
-     realistic tables the cue angle is that real angle, BASE_EL when nobody raises it - and anything from level to straight
-     down when somebody does (the rail is not allowed to get in the way: that was no fun). */
-  const BASE_EL = REAL ? 5 * Math.PI / 180 : 0;
-  // the angle of an ordinary stroke here (0 in the original physics)
+     realistic tables (the puzzles) the cue angle is that real angle, BASE_EL when nobody raises it - and anything from level
+     to straight down when somebody does (the rail is not allowed to get in the way: that was no fun).
+     On the game's physics the ordinary stroke is level, 0 degrees, shown as 0 and played as 0 - nobody pictures their
+     everyday stroke curving the ball - and the angle set is the angle played. (The cue is still drawn leaning a little.) */
+  const BASE_EL = REAL && !PLAY ? 5 * Math.PI / 180 : 0;
+  // the angle of an ordinary stroke here
   const restEl = () => BASE_EL;
-  // On the game's physics the ordinary stroke is shown and set at its 5 degrees but plays as a level cue - nobody pictures
-  // their everyday stroke curving the ball. Raising the cue counts from there: 5 degrees plays as 0, 90 as 90.
   /* The game's physics, raised cue. How high a ball leaves the cloth is what a real one does, not more: a jump is a hard
      stroke at forty to sixty degrees - the angle jump shots are played at - that clears a ball only near full power, a few
      centimetres up and never a quarter of a metre. Steeper than that the cue is on top of the ball and holds it down (a
@@ -140,7 +140,7 @@ function createPhysics(cfg) {
   const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
   const lift = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);       // a carom ball, heavier, a little less
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
-  const physEl = el => PLAY ? Math.max(0, (el - BASE_EL) * (Math.PI / 2) / (Math.PI / 2 - BASE_EL)) : el;
+  const physEl = el => el;                                       // (was a 5-degree offset on the game's physics)
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
   const squirt = a => REAL && !PLAY ? 0.07 * a : 0;
   const CREEP = REAL && !PLAY ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily

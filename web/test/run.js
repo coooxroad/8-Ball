@@ -302,9 +302,9 @@ for (const name of ['bar', 'pro', 'pub']) {
 // The cue's angle on the realistic tables: an ordinary stroke leans 5 degrees, a said 0 is level, straight down is allowed;
 // the original physics is level
 {
-  const RP = createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ real: false, pockets: true }, TABLES.bar)), deg = Math.PI / 180;
+  const RP = createPhysics(Object.assign({ real: true, play: false, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ real: false, pockets: true }, TABLES.bar)), GP = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = Math.PI / 180;
   const at = (P, x, y) => { const w = P.makeWorld(1); P.place(w, 0, x, y); return w; };
-  if (Math.abs(RP.restEl() - 5 * deg) > 1e-9 || OP.restEl() !== 0) fail('cue angle: an ordinary stroke should lean 5 degrees on the realistic tables and none on the others');
+  if (Math.abs(RP.restEl() - 5 * deg) > 1e-9 || OP.restEl() !== 0 || GP.restEl() !== 0) fail('cue angle: an ordinary stroke should lean 5 degrees on the realistic tables and none on the others (the game\'s is level)');
   const a = at(RP, -0.9, 0), b = at(RP, -0.9, 0), c = at(RP, -0.9, 0); RP.strike(a, 0, 6, 0, 0); RP.strike(b, 0, 6, 0, 0, RP.restEl()); RP.strike(c, 0, 6, 0, 0, 0);
   if (a.balls[0].vx !== b.balls[0].vx || a.balls[0].vz !== b.balls[0].vz || c.balls[0].vz !== 0) fail('realistic cue: strike without an angle should be the ordinary stroke, and 0 should be level');
   const o1 = at(OP, 0, 0), o2 = at(OP, 0, 0); OP.strike(o1, 0.3, 4, 0.2, 0.1); OP.strike(o2, 0.3, 4, 0.2, 0.1, 0);

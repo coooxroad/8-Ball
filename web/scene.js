@@ -649,10 +649,11 @@ function createScene(canvas, app, PH) {
       const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
       // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
       // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
-      // On the realistic tables the cue is drawn where it really is: at its real angle (no extra lean for looks) and moved
+      // On the realistic tables the cue is drawn where it really is: at its real angle (no extra lean for looks; on the game's
+      // physics, whose ordinary stroke is a level 0, the same small lean as the original's) and moved
       // sideways and up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
       const real = P.REAL, off = real ? v.spin.x * 0.5 * R : 0, lift = real ? v.spin.y * 0.5 * R * ce : 0, px = tx + dy * off, py = ty - dx * off;
-      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -((real ? 0 : 0.085) + e), v.aim + Math.PI); }
+      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -Math.min(Math.PI / 2, (real && !P.PLAY ? 0 : 0.085) + e), v.aim + Math.PI); }
       else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(px, py, R + lift + 0.002 + (e && !real ? R * 0.9 : 0)); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const sx = px - dx * 0.735 * ce + 0.012, sy = py - dy * 0.735 * ce - 0.014;
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
