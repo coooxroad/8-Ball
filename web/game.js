@@ -365,8 +365,8 @@ function createGame(PH) {
           let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
           if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55) || !P.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
           const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R; if (!inside(gx, gy)) continue;
-          // a ball in the way of the cue ball, and jumping allowed: over it (a jump is a hard stroke at about 55 degrees)
-          if (g.masse) { const jx = gx - c.x, jy = gy - c.y, jl = Math.hypot(jx, jy); if (jl > 0.5 && (jx * dx + jy * dy) / jl > 0.6 && !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) tricks.push({ angle: Math.atan2(jy, jx), len: jl + dTP - 1, flair: 4.5, Vs: [6.0, 6.4, 6.75], step: 0.004, el: 0.96 }); }
+          // a ball in the way of the cue ball, and jumping allowed: over it (with a house cue a jump is a hard stroke at about 40 degrees)
+          if (g.masse) { const jx = gx - c.x, jy = gy - c.y, jl = Math.hypot(jx, jy); if (jl > 0.5 && (jx * dx + jy * dy) / jl > 0.6 && !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) tricks.push({ angle: Math.atan2(jy, jx), len: jl + dTP - 1, flair: 4.5, Vs: [5.4, 6.0, 6.75], step: 0.004, el: 0.7 }); }
           // the cue ball off a cushion first
           for (const rl of rails) {
             const m = mirror(gx, gy, rl), B = bounce(c.x, c.y, m[0], m[1], rl); if (!B) continue;
@@ -528,12 +528,12 @@ function createGame(PH) {
         const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g), railed = w2.ev.railed.includes(w2.cue);
         if (r.pts > 0) { const showy = railed && (sp[0] || sp[1]); flair.push({ angle: all[i][0], V: all[i][1], a: sp[0], b: sp[1], s: (railed ? 3 : 0) + (sp[0] || sp[1] ? 1.5 : 0) + Math.min(3, w2.ev.cushions) * 0.6 + Math.random() }); if (showy) fancy++; }
       }
-      // when the raised cue is allowed it likes to use it: a jump straight at a red (55 degrees, hard), or a masse bending in
+      // when the raised cue is allowed it likes to use it: a jump straight at a red (40 degrees, hard), or a masse bending in
       // from the side (66 to 77 degrees, soft enough to stay on the cloth)
       if (g.masse && flair.length && Math.random() < 0.6) {
         const trick = (angle, V, a, el) => { const w2 = g.P.clone(w); g.P.strike(w2, angle, V, a, 0, el); const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g); if (r.pts > 0 && !w2.ev.off.length) { flair.push({ angle, V, a, b: 0, el, s: 9 + Math.random() }); return true; } return false; };
         search: for (const id of g.mode.legal(g, g.turn)) { const T = w.balls[id], base = Math.atan2(T.y - c.y, T.x - c.x), far = Math.hypot(T.x - c.x, T.y - c.y);
-          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [6.0, 6.6]) if (trick(base + da, V, 0, 0.96)) break search;
+          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [5.6, 6.6]) if (trick(base + da, V, 0, 0.7)) break search;
           for (let i = 0; i < 12; i++) { const side = i % 2 ? 0.42 : -0.42; if (trick(base - Math.sign(side) * (0.05 + 0.05 * (i >> 1)), 3.6, side, 1.15 + 0.1 * (i % 3))) break search; } }
       }
       // nothing yet: look again between the angles already tried, at other speeds

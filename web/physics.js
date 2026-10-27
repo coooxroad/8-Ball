@@ -130,15 +130,29 @@ function createPhysics(cfg) {
   const BASE_EL = REAL && !PLAY ? 5 * Math.PI / 180 : 0;
   // the angle of an ordinary stroke here
   const restEl = () => BASE_EL;
-  /* The game's physics, raised cue. How high a ball leaves the cloth is what a real one does, not more: a jump is a hard
-     stroke at forty to sixty degrees - the angle jump shots are played at - that clears a ball only near full power, a few
-     centimetres up and never a quarter of a metre. Steeper than that the cue is on top of the ball and holds it down (a
-     masse, played softly, stays on the cloth and bends); flatter, the slate gives back too little to see.
+  /* The game's physics, raised cue: how fast the ball leaves the cloth, upwards.
+     JUMP_MODEL 'contact' works it out from the three bodies in the strike - cue, ball, slate - and their masses and
+     bounces, with one number fitted:
+       - the cue hits the ball along its own line, so the ball goes off at V along it: V cos(el) forward, V sin(el) down;
+       - the slate sends the downward part back up, E_SLATE of it;
+       - but the cue is still coming. After the hit it moves on at K_U times the ball's speed (momentum and the tip's
+         bounce: a heavy cue keeps more of its speed than a light one). If the ball, bouncing up, does not get out of the
+         cue's way faster than that, the tip catches it and drives it back down - BLOCK is how much of that catch-up the
+         tip (soft leather, a flexing shaft, a hand) really does.
+     What comes out, for a house cue: the slate's rebound grows with the angle, the tip's catch grows faster, so a jump
+     is played flat-ish and hard (30 to 50 degrees), a steep stroke is held on the cloth (a masse bends instead of hopping),
+     and a ball right in front cannot be jumped - as with a real house cue. A jump cue would be a lighter CUE_M.
+     'shape' is the curve used before (a hand-made shape peaking at 50 degrees), kept to go back to.
      And the pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a
      third of the realistic one: a masse goes out along the cue first and bends after, as it does in slow motion. */
+  const JUMP_MODEL = 'contact';
+  const CUE_M = POCKETED ? 0.54 : 0.5, BALL_M = POCKETED ? 0.17 : 0.21, E_TIP = 0.75, E_SLATE = 0.4, BLOCK = 0.75;
+  const K_U = (CUE_M - E_TIP * BALL_M) / ((1 + E_TIP) * CUE_M);
+  const liftContact = (V, el) => { const s = Math.sin(el), c = Math.cos(el), behind = Math.max(0, K_U - c * c + E_SLATE * s * s); return Math.max(0, V * s * (E_SLATE - BLOCK * behind)); };
   const PEAK = 50 * Math.PI / 180, PINCH = PLAY ? 0.35 : 1;
   const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
-  const lift = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);       // a carom ball, heavier, a little less
+  const liftShape = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);
+  const lift = (V, el) => JUMP_MODEL === 'shape' ? liftShape(V, el) : liftContact(V, el);
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const physEl = el => el;                                       // (was a 5-degree offset on the game's physics)
   // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)

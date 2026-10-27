@@ -155,14 +155,16 @@ for (const name of ['bar', 'pro', 'pub']) {
   for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, deg(70)); for (let i = 0; i < 120; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.05)) fail(`a raised cue with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
   // (level, side only pushes it a degree or two off the line of the cue - squirt - and it stays on that straight line)
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0.4, 0, 0); const c = w.balls[0]; for (let i = 0; i < 30; i++) P.step(w, 1 / 120); const k = c.y / (c.x + 0.8); for (let i = 0; i < 30; i++) P.step(w, 1 / 120); if (Math.abs(c.y / (c.x + 0.8) - k) > 0.002 || Math.abs(k) > 0.05) fail('a level cue curved the ball'); }
-  // the same angle, hard and soft: hard it clears the ball in front, soft it barely lifts (a jump is played at about 55 degrees)
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.35; P.strike(w, 0, 6.6, 0, 0, deg(55)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
+  // the same angle, hard and soft: hard it clears the ball in front, soft it barely lifts (with a house cue a jump is
+  // played flat-ish and hard, about 40 degrees, at a ball some way off)
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.35; P.strike(w, 0, 6.6, 0, 0, deg(40)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > P.R * 0.3 || w.ev.firstHit !== 2) fail('a soft raised shot jumped (it should barely lift and run into the ball)'); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); P.run(w, 20); if (w.ev.firstHit !== 2 || w.ev.air > 0) fail('a level shot went through or over a ball'); }
-  // steeper is higher and shorter; a steep shot struck low comes back
-  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(60)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(b.ev.air > a.ev.air && b.balls[0].x < a.balls[0].x)) fail('a steeper cue did not jump higher and shorter'); }
+  // with a house cue a raised stroke jumps, a steep one is held on the cloth by the tip (a masse bends, it does not hop);
+  // a steep shot struck low comes back
+  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(40)); P.strike(b, 0, 5, 0, 0, deg(70)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(a.ev.air > 0.01 && b.ev.air < 0.002)) fail(`a 40-degree stroke should jump and a 70-degree one stay down (${a.ev.air.toFixed(3)}, ${b.ev.air.toFixed(3)})`); }
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let back = 9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); back = Math.min(back, w.balls[0].x); } if (!(back < -0.85)) fail('a steep shot struck low did not come back'); }
-  { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 7, 0, 0, deg(55)); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
+  { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 7, 0, 0, deg(40)); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 7, 0, 0, deg(45)); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
@@ -176,7 +178,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   if (!g.restore(d) || !g.world.ice) fail('a saved game on ice came back on cloth');
   // a jump on the tape
   const H = require(path.join(W, 'highlights.js'))(); g.start('four', ['A', 'B'], false, { rnd });
-  { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 6, a: 0, b: 0, el: 0.96, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 6, 0, 0, 0.96); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);
+  { g.beginShot(); const shot = { snap: H.snapshot(g.world), aim: 0.2, V: 6.5, a: 0, b: 0, el: 0.7, turn: 0, isBreak: false, key: -1 }; g.P.strike(g.world, 0.2, 6.5, 0, 0, 0.7); g.P.run(g.world, 40); const end = g.world.balls.map(b => [b.x, b.y, b.on]);
     const tape = H.record(g.P, 4, shot), w2 = g.P.makeWorld(4); let high = 0; for (let t = 0; t < 0.4; t += 0.02) { H.seek(w2, tape, t); high = Math.max(high, w2.balls[0].z); } H.seek(w2, tape, tape.dur);
     if (!(high > 0.03)) fail('the tape of a jump has no height in it'); end.forEach((e, k) => { const b = w2.balls[k]; if (b.on !== e[2] || (e[2] && Math.hypot(b.x - e[0], b.y - e[1]) > 1e-3)) fail('the tape of a jump ends somewhere else'); }); }
   console.log('raised cue, handicaps, ice: checked');
