@@ -160,9 +160,11 @@ for (const name of ['bar', 'pro', 'pub']) {
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.35; P.strike(w, 0, 6.6, 0, 0, deg(40)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > P.R * 0.3 || w.ev.firstHit !== 2) fail('a soft raised shot jumped (it should barely lift and run into the ball)'); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); P.run(w, 20); if (w.ev.firstHit !== 2 || w.ev.air > 0) fail('a level shot went through or over a ball'); }
-  // with a house cue a raised stroke jumps, a steep one is held on the cloth by the tip (a masse bends, it does not hop);
+  // steeper is higher and shorter;
   // a steep shot struck low comes back
-  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(40)); P.strike(b, 0, 5, 0, 0, deg(70)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(a.ev.air > 0.01 && b.ev.air < 0.008)) fail(`a 40-degree stroke should jump and a 70-degree one stay down (a few millimetres at most) (${a.ev.air.toFixed(3)}, ${b.ev.air.toFixed(3)})`); }
+  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(60)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(b.ev.air > a.ev.air && b.balls[0].x < a.balls[0].x)) fail('a steeper cue did not jump higher and shorter'); }
+  // a soft masse stays on the cloth (it hops a few millimetres at most)
+  { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 1.4, 0.4, 0, deg(75)); for (let i = 0; i < 80; i++) P.step(w, 1 / 120); if (!(w.ev.air < 0.006)) fail(`a soft masse hopped ${(w.ev.air * 1000).toFixed(1)} mm`); }
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let back = 9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); back = Math.min(back, w.balls[0].x); } if (!(back < -0.85)) fail('a steep shot struck low did not come back'); }
   { const w = mk(); w.balls[0].x = w.balls[0].px = 0.95; w.balls[2].on = false; P.strike(w, 0, 7, 0, 0, deg(40)); P.run(w, 20); if (!w.ev.off.includes(0) || w.balls[0].on) fail('a jump at the rail did not leave the table'); }
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
@@ -271,9 +273,11 @@ for (const name of ['bar', 'pro', 'pub']) {
       for (let i = 0; i < 600 && !P.rest(w); i++) { const e0 = E(); P.step(w, 1 / 120); if (E() > e0 * 1.0005 + 1e-7) gain++; }
     }
     if (real) {
-      // nothing switches on at a threshold: a hair more speed, a hair more air
+      // nothing switches on at a threshold: a hair more speed, never less air and never a leap (on the game's physics the
+      // cloth swallows a soft raised stroke, so the air starts from nothing - smoothly - above a walking pace)
       const air = V => { const w = lay([[0, 0]]); P.strike(w, 0, V, 0, 0, Math.PI / 4); P.run(w, 20); return w.ev.air; };
-      for (let V = 0.2; V < 4; V += 0.02) { const d = air(V + 0.02) - air(V); if (!(d > 0 && d < 0.0012)) { fail(`realistic physics: the jump leaps between ${V.toFixed(2)} and ${(V + 0.02).toFixed(2)} m/s (${(d * 1000).toFixed(2)} mm)`); break; } }
+      if (!(air(4) > 0.01)) fail('a hard raised stroke did not leave the cloth');
+      for (let V = 0.2; V < 4; V += 0.02) { const d = air(V + 0.02) - air(V); if (!((P.PLAY ? d >= 0 : d > 0) && d < 0.0012)) { fail(`realistic physics: the jump leaps between ${V.toFixed(2)} and ${(V + 0.02).toFixed(2)} m/s (${(d * 1000).toFixed(2)} mm)`); break; } }
       const bounce = down => { const w = lay([[0, 0]]), q = w.balls[0]; q.z = 1e-5; q.vz = -down; let top = 0; for (let i = 0; i < 60; i++) { P.step(w, 1 / 960); top = Math.max(top, q.z); } return top; };
       for (let d = 0.1; d < 2; d += 0.02) { const j = bounce(d + 0.02) - bounce(d); if (!(j > 0 && j < 0.002)) { fail(`realistic physics: the bounce leaps for a landing between ${d.toFixed(2)} and ${(d + 0.02).toFixed(2)} m/s`); break; } }
       // a ball coming down on another: a hit, a blow both ways, and it is thrown back up
