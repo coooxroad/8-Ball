@@ -146,9 +146,11 @@ function createPhysics(cfg) {
      And the pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a
      third of the realistic one: a masse goes out along the cue first and bends after, as it does in slow motion. */
   const JUMP_MODEL = 'contact';
-  const CUE_M = POCKETED ? 0.54 : 0.5, BALL_M = POCKETED ? 0.17 : 0.21, E_TIP = 0.75, E_SLATE = 0.4, BLOCK = 0.75;
+  // LEAK: a tip never holds the ball perfectly - the leather gives, the shaft bends - so even pinned, a little of the slate's
+  // rebound gets out: a hard steep stroke hops a few millimetres, a soft one stays down
+  const CUE_M = POCKETED ? 0.54 : 0.5, BALL_M = POCKETED ? 0.17 : 0.21, E_TIP = 0.75, E_SLATE = 0.4, BLOCK = 0.75, LEAK = 0.15;
   const K_U = (CUE_M - E_TIP * BALL_M) / ((1 + E_TIP) * CUE_M);
-  const liftContact = (V, el) => { const s = Math.sin(el), c = Math.cos(el), behind = Math.max(0, K_U - c * c + E_SLATE * s * s); return Math.max(0, V * s * (E_SLATE - BLOCK * behind)); };
+  const liftContact = (V, el) => { const s = Math.sin(el), c = Math.cos(el), behind = Math.max(0, K_U - c * c + E_SLATE * s * s); return V * s * Math.max(LEAK * E_SLATE, E_SLATE - BLOCK * behind); };
   const PEAK = 50 * Math.PI / 180, PINCH = PLAY ? 0.35 : 1;
   const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
   const liftShape = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);

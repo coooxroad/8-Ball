@@ -171,7 +171,7 @@ function elSay() {
   if (h > P.R * 2) return '공을 넘는 점프';
   if (P.hop(game.vOf(1), st.el) > P.R * 2) return '세게 치면 점프';
   if (h > 0.012) return '낮게 뜸';
-  if (steep) return side ? '맛세이 · 휘어 감' : '눌려서 안 뜸';
+  if (steep) return side ? '맛세이 · 휘어 감' : '눌려서 거의 안 뜸';
   return side ? '휘어 감' : '안 뜸';
 }
 function setKindUI() {
