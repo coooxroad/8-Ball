@@ -582,10 +582,131 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes ndPulse{50%{box-shadow:0 0 0 6px hsl(var(--h) 78% 52% / .22)}}
 .nd[aria-pressed="true"] b{outline:3px solid var(--fg);outline-offset:2px}
 @media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
+
+/* ================= the lobby (4.0 home; prefs.ui 'lobby', the old home is 'classic') =================
+   A night in a billiard hall: the room dark, one lamp over the live table, the games laid out along the bottom as the
+   balls they are played with - every choice in sight, nothing behind a menu - and one big lit button to play.
+   It always wears the night look, whatever the theme of the game itself. */
+#app.lobby #home,#app.lobby #topbar,#app.lobby #dock,#app.lobby #records{
+  --bg:#0d1014;--fg:#f3f5f7;--fg2:#c9d0d8;--sub:#98a2ae;
+  --panel:rgba(18,22,28,.78);--bd:rgba(255,255,255,.09);--sh:0 18px 40px rgba(0,0,0,.35);
+  --hair:rgba(255,255,255,.07);--opt:rgba(255,255,255,.06);
+  --acc:var(--mc);--sel-bg:color-mix(in srgb,var(--mc) 14%,transparent);--sel-bd:var(--mc);
+  --seg:rgba(255,255,255,.06);--seg-on:rgba(255,255,255,.16);--seg-sh:none;
+  --av1-bg:transparent;--av1-bd:#36c5d8;--av1-fg:#7fe0ee;--av2-bg:transparent;--av2-bd:#f0a96b;--av2-fg:#f6c79b;
+  --r-card:22px;--r-chip:14px;--w-text:500;--w-name:700;color:var(--fg)}
+#app.lobby{--mc:#36c5d8;--mc2:#1d8fa3}
+#app.lobby[data-mode="nine"]{--mc:#f2b705;--mc2:#c98a00}
+#app.lobby[data-mode="four"]{--mc:#ff5a52;--mc2:#c92a2a}
+#app.lobby[data-mode="three"]{--mc:#ff9a3d;--mc2:#d4621a}
+#app.lobby[data-mode="puzzle"]{--mc:#a07cff;--mc2:#6a46e0}
+#app.lobby[data-mode="practice"]{--mc:#3ddc84;--mc2:#1aa35a}
+/* the room: dark all round, a pool of lamplight on the table, breathing very slowly */
+#room{position:absolute;inset:0;pointer-events:none;display:none;
+  background:radial-gradient(ellipse 46% 52% at var(--lx,36%) 46%,transparent 0 55%,rgba(6,8,11,.55) 80%,rgba(4,6,8,.92) 100%),
+             linear-gradient(180deg,rgba(4,6,8,.75),transparent 18%,transparent 70%,rgba(4,6,8,.85))}
+#room .lamp{position:absolute;left:var(--lx,36%);top:-22%;width:62%;height:70%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,236,200,.13),rgba(255,236,200,.04) 60%,transparent);animation:lampBreath 7s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes lampBreath{0%,100%{opacity:.75}50%{opacity:1}}
+#app.lobby #room{display:block}
+#app.lobby.compact #room{background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(40,48,58,.5),transparent 70%),rgba(8,10,13,.93)}
+#app.lobby.compact #room .lamp{left:50%;width:120%;height:45%}
+#app.lobby #nav{display:none!important}
+#app.lobby .h-mid{display:none}
+#app.lobby #modeBox{display:none}
+/* the bar along the top: who you are, and the two places that are not a game */
+#topbar{position:absolute;left:0;right:0;top:0;height:76px;z-index:5;display:flex;align-items:center;gap:12px;padding:0 22px;box-sizing:border-box;pointer-events:none}
+#topbar>*{pointer-events:auto}
+#topbar .logo .word{font-size:22px}
+#topbar .logo .mark{background:var(--mc);box-shadow:0 0 16px color-mix(in srgb,var(--mc) 60%,transparent)}
+#topbar .logo .mark i{background:#0d1014;color:var(--mc)}
+#topbar .sp{flex:1}
+.me{display:flex;align-items:center;gap:11px;height:50px;padding:0 18px 0 6px;border-radius:999px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:left;transition:transform .1s}
+.me:active,.tb:active{transform:scale(.96)}
+.me .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:16px;color:#0d1014;background:linear-gradient(135deg,#7fe0ee,#36c5d8)}
+.me b{display:block;font-size:15.5px;font-weight:800;line-height:1.15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me small{display:block;font-size:12.5px;color:var(--sub);font-weight:600}
+.me.fire{box-shadow:0 0 0 2px #ff7a3c,0 0 22px rgba(255,110,40,.45)}
+.tb{display:flex;align-items:center;gap:8px;height:50px;padding:0 18px;border-radius:999px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:15px;font-weight:700;color:var(--fg2);transition:transform .1s}
+.tb svg{flex:none}
+.tb[aria-pressed="true"]{color:#0d1014;background:var(--mc);border-color:transparent}
+/* the games, as balls on a strip of cloth */
+#dock{position:absolute;left:22px;bottom:20px;right:430px;z-index:4;display:flex;gap:12px;align-items:flex-end}
+#dock .grp{display:flex;gap:10px;padding:10px;border-radius:26px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--sh)}
+.gt{position:relative;width:96px;height:112px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding-bottom:10px;box-sizing:border-box;
+  color:var(--fg2);transition:transform .16s cubic-bezier(.3,1.6,.5,1),background .15s;animation:gtIn .5s cubic-bezier(.2,1.3,.4,1) both;animation-delay:calc(var(--k) * 45ms)}
+@keyframes gtIn{from{opacity:0;transform:translateY(26px) scale(.9)}}
+.gt:active{transform:scale(.93)}
+.gt .bl3{position:absolute;top:12px;left:50%;width:54px;height:54px;transform:translateX(-50%);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.gt b{font-size:15.5px;font-weight:800;color:var(--fg)}
+.gt small{font-size:11.5px;font-weight:600;color:var(--sub);white-space:nowrap}
+.gt[aria-pressed="true"]{background:color-mix(in srgb,var(--mc) 16%,transparent);box-shadow:inset 0 0 0 2px var(--mc),0 0 24px color-mix(in srgb,var(--mc) 35%,transparent)}
+.gt[aria-pressed="true"] .bl3{transform:translateX(-50%) translateY(-4px) scale(1.08)}
+.gt[aria-pressed="true"] small{color:var(--mc)}
+/* balls drawn in CSS: a coloured sphere with its light, a stripe, a number disc */
+.sph{position:absolute;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),radial-gradient(circle at 50% 50%,var(--c) 58%,color-mix(in srgb,var(--c) 55%,#000) 100%);box-shadow:0 6px 10px rgba(0,0,0,.45)}
+.sph.st{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),linear-gradient(180deg,#f4efe2 0 27%,var(--c) 27% 73%,#f4efe2 73%)}
+.sph em{position:absolute;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);border-radius:50%;background:#f4efe2;color:#111;font-style:normal;font-weight:800;font-size:13px;display:grid;place-items:center;font-family:'Outfit',sans-serif}
+.gt .ico{position:absolute;inset:0;display:grid;place-items:center;color:var(--fg)}
+/* the panel: the chosen game's settings, and the button */
+#app.lobby #home{inset:0;grid-template-columns:minmax(0,1fr) 392px}
+#app.lobby .h-right{grid-column:2;margin:88px 22px 20px 0;padding:20px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--sh)}
+#app.lobby .h-right .h-chips{justify-content:stretch;gap:8px;flex-wrap:nowrap;margin-top:auto}
+#app.lobby .h-right .h-chips .btn{flex:1;min-width:0;height:auto;padding:9px 6px;flex-direction:column;gap:2px;border-radius:14px;background:var(--opt);border-color:transparent;box-shadow:none}
+#app.lobby .h-right .h-chips .btn .k{font-size:11.5px}
+#app.lobby .h-right .h-chips .btn .v{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#app.lobby .h-right .h-chips .chip-sw{display:none}
+#app.lobby #startBtn{margin-top:4px;position:relative;overflow:hidden;height:74px;border-radius:22px;flex-direction:column;gap:2px;
+  background:linear-gradient(180deg,var(--mc),var(--mc2));color:#0b0e12;box-shadow:0 10px 26px color-mix(in srgb,var(--mc) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.4);animation:ctaGlow 2.8s ease-in-out infinite}
+#app.lobby #startBtn b{font-size:23px;font-weight:800;letter-spacing:.02em}
+#app.lobby #startBtn small{font-size:12.5px;font-weight:700;opacity:.72}
+#app.lobby #startBtn::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);animation:ctaShine 3.6s ease-in-out infinite}
+@keyframes ctaShine{0%,62%{left:-40%}100%{left:130%}}
+@keyframes ctaGlow{0%,100%{box-shadow:0 10px 26px color-mix(in srgb,var(--mc) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}50%{box-shadow:0 12px 34px color-mix(in srgb,var(--mc) 58%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}}
+#app.lobby .resume{border:1px solid color-mix(in srgb,var(--mc) 50%,transparent)}
+#app.lobby #records{inset:76px 0 0 0;background:rgba(9,11,14,.86)}
+#app.lobby.compact #records{inset:62px 0 0 0}
+#app.lobby #rightLab{display:flex;align-items:center;gap:12px;font-size:26px;font-weight:800}
+#app.lobby #rightLab small{display:block;font-size:13.5px;font-weight:600;color:var(--sub);margin-top:3px;letter-spacing:0}
+#app.lobby #rightLab .bl3{position:relative;flex:none;width:54px;height:54px;top:auto;left:auto;transform:scale(.88);margin:-4px}
+/* narrow: the bar, the balls in a row that scrolls, then the panel, the button always in reach */
+#app.lobby.compact #topbar{height:62px;padding:0 12px;gap:8px}
+#app.lobby.compact #topbar .logo .word{font-size:18px}
+#app.lobby.compact .tb{height:42px;padding:0 13px;font-size:13.5px}
+#app.lobby.compact .tb span{display:none}
+#app.lobby.compact .me{height:42px;padding-right:14px}
+#app.lobby.compact .me .av{width:32px;height:32px;font-size:14px}
+#app.lobby.compact #dock{left:0;right:0;top:62px;bottom:auto;padding:4px 10px 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+#app.lobby.compact #dock::-webkit-scrollbar{display:none}
+#app.lobby.compact #dock .grp{padding:8px;gap:6px;flex:none}
+#app.lobby.compact .gt{width:76px;height:94px;padding-bottom:8px}
+#app.lobby.compact .gt .bl3{width:44px;height:44px;top:10px}
+#app.lobby.compact .gt b{font-size:14px}
+#app.lobby.compact .gt small{display:none}
+#app.lobby.compact #home{inset:184px 0 0 0;background:transparent}
+#app.lobby.compact .h-right{margin:4px 12px 0;padding:16px}
+#app.lobby.compact #startBtn{position:sticky;bottom:12px;height:66px}
+@media (prefers-reduced-motion:reduce){.gt,#app.lobby #startBtn,#app.lobby #startBtn::after,#room .lamp{animation:none}}
+/* a tablet held upright: the games along the top, the table lit in the middle, the panel at the foot */
+#app.lobby.tallp #home{inset:auto 0 0 0;overflow:visible}
+#app.lobby.tallp .h-right{margin:0 16px 16px}
+#app.lobby.tallp #room{background:radial-gradient(ellipse 52% 26% at 50% 37%,transparent 0 60%,rgba(6,8,11,.6) 88%,rgba(4,6,8,.92) 100%),linear-gradient(180deg,rgba(4,6,8,.8),transparent 16%,transparent 60%,rgba(4,6,8,.9) 75%)}
+#app.lobby.tallp #room .lamp{left:50%;top:5%;width:90%;height:55%}
+#app.lobby.tallp #dock{justify-content:center}
+@media (max-width:520px){#app.lobby.compact .gt{width:56px;height:84px}#app.lobby.compact .gt .bl3{width:38px;height:38px}#app.lobby.compact #dock .grp{padding:6px;gap:4px}#app.lobby.compact #dock{gap:8px;padding:4px 8px 8px}#app.lobby.compact #home{inset:170px 0 0 0}}
 </style>
 
 <div id="app" class="busy" data-theme="light">
   <canvas id="gl"></canvas>
+  <div id="room" aria-hidden="true"><i class="lamp"></i></div>
+  <header id="topbar" hidden>
+    <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
+    <button class="me" id="meBtn"><i class="av">1</i><span><b class="nm"></b><small class="rc"></small></span></button>
+    <span class="sp"></span>
+    <button class="tb" id="tbRec"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
+    <button class="tb" id="tbSet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
+  </header>
+  <div id="dock" hidden></div>
 
   <!-- the way round the app: a rail down the side on a wide screen, a bar along the bottom on a narrow one -->
   <nav class="h-nav" id="nav">

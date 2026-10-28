@@ -37,7 +37,7 @@ const prefs = (() => {
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
     pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
-    aim: 'line', gv: 0 }, saved);
+    aim: 'line', gv: 0, ui: 'lobby' }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -101,10 +101,10 @@ scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
 function dress(ice) { scene.setCloth(ice ? ICE : iceOn() ? 0 : prefs.cloth); }
 function applyTheme() {
-  const light = prefs.theme === 'light';
+  const light = prefs.theme === 'light', night = prefs.ui !== 'classic' && (st.screen === 'home' || st.screen === 'records');   // the lobby is always night
   app.dataset.theme = light ? 'light' : 'dark';
-  document.body.style.background = light ? '#eef0f3' : '#101216';
-  scene.setBackdrop(light ? 0xeef0f3 : 0x101216);
+  document.body.style.background = night ? '#0d1014' : light ? '#eef0f3' : '#101216';
+  scene.setBackdrop(night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
 }
 applyTheme();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,

@@ -45,10 +45,11 @@ function show(screen) {
   st.screen = screen;
   $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'records'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
+  const lob = prefs.ui !== 'classic'; $('#topbar').hidden = !lob || (screen !== 'home' && screen !== 'records'); $('#dock').hidden = !lob || screen !== 'home'; $('#room').hidden = screen !== 'home' && screen !== 'records';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  paintNav(); layout();
+  paintNav(); applyTheme(); layout();
 }
 // which place on the rail is lit
 function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
@@ -57,9 +58,12 @@ function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
+  const tallp = portrait && !wide && H >= 900 && prefs.ui !== 'classic'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
+  if (st.screen === 'home' && wide && prefs.ui !== 'classic') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
+  else if (st.screen === 'home' && tallp) scene.setInsets({ t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 });
+  else if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
   if (st.screen === 'play') paintPowerCue();

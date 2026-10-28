@@ -98,6 +98,7 @@ function paintHome() {
   $('#tableVal').textContent = (prefs.mode === 'three' ? '대대' : isCarom() ? '중대' : TABLES.find(t => t.id === prefs.table).short) + ' · ' + CLOTHS[prefs.cloth].name;
   $('#cueVal').textContent = prefs.cues[0] === prefs.cues[1] || prefs.vsAI || prac || puz ? CUES[prefs.cues[0]].name : '각자';
   const gs = prefs.guides; $('#guideVal').textContent = guideName(gs[0]) === guideName(gs[1]) || prefs.vsAI || prac ? guideName(gs[0]) : guideName(gs[0]) + ' · ' + guideName(gs[1]);
+  lobbyPaint();
 }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
 // (a new layout each time, which is also what the drill itself does).

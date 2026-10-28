@@ -44,6 +44,7 @@ function sheetGuide() {
 }
 function sheetSettings() {
   openSheet('설정', [
+    segRow('첫 화면', [['lobby', '새 로비'], ['classic', '이전 화면']], prefs.ui === 'classic' ? 'classic' : 'lobby', v => { prefs.ui = v; savePrefs(); applyUI(); closeSheet(); goHome(true); }),
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
     flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
