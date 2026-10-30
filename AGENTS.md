@@ -35,10 +35,13 @@ node web/tools/check.js   # 만든 페이지 검사: 문법, 이름 겹침, 생�
 | `web/audio.js`, `web/sounds.js` | 소리 (전부 합성, 파일 없음) | 모름 |
 | `web/look.js` | 천·큐·공 색 (데이터) | 모름 |
 | `web/reel/` | 하이라이트 재생. 편집 하나당 파일 하나 | 앎 |
-| `web/app/` | 앱: 화면, 입력, 프레임 루프 | 앎 |
-| `web/head.html` | 스타일과 마크업 | — |
+| `web/app/` | 앱: 화면, 입력, 프레임 루프. 파일별 내용은 `web/app/00-state.js` 맨 위 목록 | 앎 |
+| `web/app/32-desk.js` | 책상 첫 화면(4.0): 네 자리(플레이·훈련·내 장비·상점), 책상 기울이기(`deskLean`)와 테이블 창(`deskWindow`) | 앎 |
+| `web/head.html` | 스타일과 마크업. 책상 스타일은 "the desk" 구역 한 곳에 조각 순서대로 | — |
+| `web/ui/` | 책상의 재료와 버튼 그림(WebP). 파일별 쓰임과 9-slice 값은 `web/ui/README.md` | — |
 | `web/test/run.js` | 브라우저 없이 도는 검사 | — |
 | `web/tools/` | 퍼즐 생성기, 페이지 검사 | — |
+| `design/` | 화면 설계 메모와 시안, 작업 기록 | — |
 | `app/` (최상위) | 안드로이드 껍데기 (WebView) | — |
 
 "모름"이라고 적힌 파일에는 `document`, `window`를 쓰지 않는다. 테스트가 node에서 이 파일들을 그대로 돌린다.

@@ -2,7 +2,10 @@
 
 Made to order by image generation from the owner's mockups, converted here to WebP. The desk pieces (A–E) are drawn
 seen from a little in front (only front lips and far walls show) with one light from the upper right and no cast
-shadows (CSS draws those, to the lower left). Copied next to index.html by build.sh and used from CSS as `url(ui/<name>.webp)`.
+shadows (CSS draws those, to the lower left). On the home screen the whole desk is then laid out flat and leans away
+from the eye in CSS 3D (`deskLean`/`deskWindow` in `web/app/32-desk.js`, the rules in `web/head.html`'s desk section); the
+art itself never changes with it. Copied next to index.html by build.sh and used from CSS as `url(ui/<name>.webp)`, or
+from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photographs by id).
 
 | file | from | use | 9-slice (image px: slice t r b l / transparent margin) |
 |---|---|---|---|
