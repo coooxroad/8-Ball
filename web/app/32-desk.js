@@ -23,6 +23,9 @@ const dkStep = (vals, cur, fmt, fn, mini) => { const i = Math.max(0, vals.indexO
     el('button', { 'aria-label': '늘리기', text: '+', disabled: i >= vals.length - 1 ? '' : null, onclick: () => { SND.tap(); fn(vals[i + 1]); } })]); };
 const dkMain = (t, sub, fn, off) => el('button', { class: 'dk-main', disabled: off ? '' : null, onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(t), sub ? el('small', { text: sub }) : null]);
 const dkSec = (t, fn, sub) => el('button', { class: 'dk-sec', onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(t), sub ? el('small', { text: sub }) : null]);
+// the things laid on it: a cue as its photograph, the little cream tab on what is in use
+const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
+const eqTag = () => el('span', { class: 'eq', text: '장착' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: () => { SND.init(); SND.tap(); fn(); } })]);
 const guideRow = () => dkRow('조준선', guideName(prefs.guides[0]) === guideName(prefs.guides[1]) || prefs.vsAI ? guideName(prefs.guides[0]) : guideName(prefs.guides[0]) + ' · ' + guideName(prefs.guides[1]), sheetGuide);
 
@@ -93,10 +96,10 @@ function deskPaint() {
       put(foot, puzzles.STAGES.map((s, si) => { const qs = puzzles.of(si), done = qs.filter(q => z.stars[q.id]).length, open = pzOpen(si);
         return el('button', { class: 'dk-pill' + (open ? '' : ' lock'), 'aria-pressed': String(si === cur.stage), onclick: () => { SND.init(); SND.tap();
           if (!open) return toast(`앞 스테이지에서 ${PZ_NEED}문제를 풀면 열립니다.`, '', 2200);
-          const q = qs.find(x => !z.stars[x.id]) || qs[0]; z.cur = q.id; z.open = si; savePrefs(); paintHome(); homePreview(); } }, [document.createTextNode(`${si + 1}단계`), el('small', { text: open ? `${done}/${qs.length}` : '잠김' })]); }));
+          const q = qs.find(x => !z.stars[x.id]) || qs[0]; z.cur = q.id; z.open = si; savePrefs(); paintHome(); homePreview(); } }, [document.createTextNode(`${si + 1}단계`), open ? el('small', { text: `${done}/${qs.length}` }) : el('img', { class: 'lock', src: 'ui/lock.webp', alt: '잠김' })]); }));
       const stars = z.stars[cur.id] || 0;
       put(slate, dkH1(S.name, `${cur.stage + 1}-${cur.n}번 문제`));
-      put(slate, [dkHr(), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + '. 노란 공은 건드리면 안 됩니다.'), dkHr(), dkLab('이 문제'), dkTxt(stars ? '★'.repeat(stars) + '☆'.repeat(3 - stars) + ' 받음' : '아직 안 풂'), dkHr(), guideRow()]);
+      put(slate, [dkHr(), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + '. 노란 공은 건드리면 안 됩니다.'), dkHr(), dkLab('이 문제'), el('div', { class: 'dk-stars', 'aria-label': stars ? `별 ${stars}개 받음` : '아직 안 풂' }, [0, 1, 2].map(k => el('img', { src: k < stars ? 'ui/star.webp' : 'ui/star-off.webp', alt: '' })).concat(el('span', { text: stars ? '받음' : '아직 안 풂' }))), dkHr(), guideRow()]);
       put(slate, el('div', { class: 'dk-acts' }, [dkMain('퍼즐 풀기', `${cur.stage + 1}-${cur.n} ${S.name}`, () => puzzle.start())]));
     } else if (t === 'lesson') {
       const ids = LESSONS(), id = ids.includes(prefs.drill) ? prefs.drill : ids[0], dr = drills.byId(id), lv = levelOf(id);
@@ -124,9 +127,8 @@ function deskPaint() {
     if (gearSel === 'cue') {
       const i = gearCue == null ? prefs.cues[0] : gearCue, c = CUES[i];
       put(head, el('div', { class: 'tt' }, [el('h2', { text: '큐 살펴보기' }), el('small', { text: `${i + 1} / ${CUES.length}` })]));
-      const cv = el('canvas', { class: 'cuebig' }); stage.dataset.win = '0'; put(stage, cv);
-      put(foot, CUES.map((q, k) => { const sw = el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCue = k; paintHome(); } }, [k === prefs.cues[0] ? el('span', { class: 'eq', text: '장착' }) : null, el('i', { class: 'cuebox' }, el('canvas')), document.createTextNode(q.name)]); return sw; }));
-      requestAnimationFrame(() => { drawCue(cv, c, false); foot.querySelectorAll('.dk-sw canvas').forEach((x, k) => drawCue(x, CUES[k], false)); });
+      stage.dataset.win = '0'; put(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]);
+      put(foot, CUES.map((q, k) => el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCue = k; paintHome(); } }, [k === prefs.cues[0] ? eqTag() : null, el('i', { class: 'cuebox' }, cueImg(q)), document.createTextNode(q.name)])));
       const own = i === prefs.cues[0];
       put(slate, dkH1(c.name, '큐 외형'));
       put(slate, [dkHr(), dkTxt(c.note), dkHr(), dkTxt('플레이 성능은 모두 같습니다.'), dkHr(), dkTxt('현재 장착: ', CUES[prefs.cues[0]].name)]);
@@ -136,7 +138,7 @@ function deskPaint() {
       const i = gearCloth == null ? prefs.cloth : gearCloth, c = CLOTHS[i], carom = isCarom();
       put(head, [el('div', { class: 'tt' }, [el('h2', { text: '내 테이블' }), el('small', { text: carom ? (prefs.mode === 'three' ? '대대 284×142cm' : '중대 254×127cm') : TABLES.find(t => t.id === prefs.table).name })])]);
       put(foot, CLOTHS.map((q, k) => el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCloth = k === prefs.cloth ? null : k; paintHome(); } },
-        [k === prefs.cloth ? el('span', { class: 'eq', text: '장착' }) : null, el('i', { style: `background:${hex(q.felt)};border:5px solid ${hex(q.wood)}` }), document.createTextNode(q.name)])));
+        [k === prefs.cloth ? eqTag() : null, el('i', { class: 'cloth', style: `background:${hex(q.felt)} url(ui/cloth-${q.id}.webp) 0 0/128px;border:5px solid ${hex(q.wood)}` }), document.createTextNode(q.name)])));
       scene.setCloth(i);
       const own = i === prefs.cloth;
       put(slate, dkH1(c.name, '테이블 천'));

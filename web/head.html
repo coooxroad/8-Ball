@@ -880,6 +880,37 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-sec{--s:.33}
 #app.desk.compact .dk-tab{--s:.45}
 #app.desk.compact .dk-acts{background:none}
+/* the brass and ivory bits: name plates, the avatar's ring, the "in use" tab, the cue as a photograph, stars, a lock */
+#app.desk .dk-plate{--s:.42;border:0 solid transparent;border-radius:calc(13px*var(--s) + 4px);background:none;border-image:url(ui/plate.webp) 40 fill/calc(40px*var(--s))/calc(16px*var(--s)) stretch}
+#app.desk .dk-plate .av,#app.desk .dk-me .av{position:relative;overflow:visible}
+#app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
+#app.desk .dk-plate .av{margin:0 6px}
+#app.desk .dk-sw .eq{--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
+/* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
+   lies under it; a swatch shows just the butt */
+#app.desk .dk-sw i.cuebox{position:relative;overflow:hidden;padding:0;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
+#app.desk .dk-sw i.cuebox img{position:absolute;left:-6%;top:50%;width:364%;height:auto;transform:translateY(-44.5%);filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+#app.desk .dk-stage img.cuebig{position:absolute;left:2%;top:34%;width:96%;height:auto;transform:translateY(-50%) rotate(-12deg);filter:drop-shadow(0 16px 8px rgba(0,0,0,.45));pointer-events:none}
+#app.desk .dk-stage .cuezoom{position:absolute;left:3%;right:3%;bottom:6%;aspect-ratio:1210/110;overflow:hidden;pointer-events:none;filter:drop-shadow(0 12px 8px rgba(0,0,0,.5))}
+#app.desk .dk-stage .cuezoom img{position:absolute;left:-3.3%;top:0;width:198.3%;height:auto}
+.dk-stars{display:flex;align-items:center;gap:4px;font:600 15px 'Gothic A1',sans-serif;color:#cfc8ba}
+.dk-stars img{width:30px;height:30px}
+.dk-stars span{margin-left:8px}
+.dk-pill img.lock{width:22px;height:22px}
+#app.desk .dk-pill.lock{opacity:.7}
+/* things left on the desk: a plant leaning in at the top right, a towel under the rail, chalk on the rail */
+.dk-prop,#app.desk #desk>.dk-prop{position:absolute;pointer-events:none;background-position:center;background-size:contain;background-repeat:no-repeat}
+.dk-prop.plant{right:-34px;top:-40px;width:210px;height:210px;background-image:url(ui/plant.webp);z-index:3}
+.dk-prop.towel{left:-28px;bottom:-26px;width:230px;height:161px;background-image:url(ui/towel.webp);z-index:0!important}
+#app.desk .dk-rail{position:relative}
+#app.desk:not(.compact) .dk-rail::after{content:"";position:absolute;left:50%;bottom:20px;width:104px;height:75px;margin-left:-52px;background:url(ui/chalk.webp) center/contain no-repeat;pointer-events:none}
+@media (max-height:700px){#app.desk .dk-rail::after{display:none}}
+/* on a phone the props tuck under the panels, peeking out at the corners; held on its side there is no room for them */
+#app.desk.compact .dk-prop{z-index:0!important}
+#app.desk.compact .dk-prop.plant{width:130px;height:130px;right:-30px;top:-34px}
+#app.desk.compact .dk-prop.towel{width:150px;height:105px;left:-26px;bottom:-30px}
+#app.desk.compact:not(.portrait) .dk-prop{display:none}
+#app.desk.compact .dk-sw{font-size:12px;white-space:nowrap}
 /* the outline each piece's side (drawn in deskDepth as box-shadows) follows: the corners of its art, at its scale */
 #app.desk .dk-rail,#app.desk .dk-slate{border-radius:calc(22px*var(--s))}
 #app.desk .dk-tray{border-radius:calc(44px*var(--s))}
@@ -943,6 +974,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <div class="dk-rail" id="dkRail"></div>
     <div class="dk-tray"><div class="dk-head" id="dkHead"></div><div class="dk-stage" id="dkStage"></div><div class="dk-foot" id="dkFoot"></div></div>
     <div class="dk-slate" id="dkSlate"></div>
+    <i class="dk-prop towel" aria-hidden="true"></i><i class="dk-prop plant" aria-hidden="true"></i>
   </section>
 
   <!-- the way round the app: a rail down the side on a wide screen, a bar along the bottom on a narrow one -->
