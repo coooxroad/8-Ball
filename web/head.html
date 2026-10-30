@@ -697,116 +697,39 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* ================= the desk (4.0 first screen; prefs.ui 'desk') =================
    Everything is a thing on a wooden desk: an ivory rail of choices on the left, a felt tray in the middle with the live
-   table in it, a slate board on the right with what the choice needs and the one button to go. These rules lay the
-   pieces out; what they look like (the made-to-order images) is in the block "the desk, seen from the front" below. */
-#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2}
-#app.desk #nav,#app.desk #home,#app.desk #topbar,#app.desk #dock,#app.desk #room{display:none!important}
-#deskBar{position:absolute;left:0;right:0;top:0;height:62px;z-index:6;display:flex;align-items:center;gap:8px;padding:0 18px;box-sizing:border-box}
-.dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
-.dk-tabs{display:flex;gap:6px;min-width:0}
-.dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px 'Gothic A1',sans-serif}
-.dk-tab[aria-selected="true"]{color:#fff}
-#deskBar .sp{flex:1}
-.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px 'Gothic A1',sans-serif}
-#desk{position:absolute;z-index:5;display:grid;grid-template-columns:minmax(190px,18%) minmax(0,1fr) minmax(300px,25%);gap:20px;padding:18px 20px 20px;box-sizing:border-box}
-.dk-rail{display:flex;flex-direction:column;overflow:auto;min-height:0}
-.dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif}
-.dk-rb small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7;margin-top:4px}
-.dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%}
-.dk-rb.soon{opacity:.55}
-.dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
-.dk-head{display:flex;align-items:center;gap:12px;min-height:58px;color:#f3eee3}
-.dk-head .tt{flex:1;min-width:0}
-.dk-head h2{margin:0;font:800 30px 'Gothic A1',sans-serif;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dk-head small{display:block;font:600 15px 'Gothic A1',sans-serif;color:#c3cedd;margin-top:3px}
-.dk-head.nav .tt{text-align:center}
-.dk-arrow{flex:none;width:56px;height:56px;color:#eee8dc;display:grid;place-items:center}
-.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif}
-.dk-stage{position:relative;flex:1;min-height:0;margin:10px 0}
-.dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
-.dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
-.dk-foot{display:flex;gap:12px;align-items:stretch;justify-content:safe center;min-height:0;overflow-x:auto;scrollbar-width:none}
-.dk-foot::-webkit-scrollbar{display:none}
-.dk-plate{flex:1;max-width:260px;display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 16px;color:var(--ivory-ink);text-align:left;transition:transform 90ms ease-out}
-.dk-plate:active{transform:translateY(2px)}
-.dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px Outfit,sans-serif;font-style:normal;color:#fff;background:#3b3229}
-.dk-plate.two .av{background:#8f1414}
-.dk-plate b{display:block;font:800 17px 'Gothic A1',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dk-plate small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7}
-.dk-vs{align-self:center;font:600 16px Outfit,sans-serif;color:#c3cedd;letter-spacing:.1em}
-.dk-sw{flex:none;width:clamp(96px,11vw,150px);display:flex;flex-direction:column;align-items:center;gap:8px;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif}
-.dk-sw i{display:block;width:100%;height:clamp(48px,7vh,70px)}
-.dk-sw i.cuebox{display:flex;align-items:center;box-sizing:border-box}
-.dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
-.dk-pill[aria-pressed="true"] small{color:#6b5f4e}
-.dk-dots{display:flex;align-items:center;gap:10px;color:#d9e2ee;font:700 15px 'Gothic A1',sans-serif}
-.dk-dots i{width:14px;height:14px;border-radius:50%;background:#0a3566;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
-.dk-dots i.on{background:#e9dfcc;box-shadow:0 1px 2px rgba(0,0,0,.5)}
-.dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink)}
+   table in it, a slate board on the right with what the choice needs and the one button to go.
+   The rules go piece by piece, in the order the eye meets them: the desk itself and the room's light, the bar along the
+   top, the rail, the tray, the slate, and last the square keys several of them share. Each piece says, in one place,
+   how it is laid out, what it looks like, how it looks pressed, and how it changes on a phone (.compact: upright is
+   .portrait, on its side :not(.portrait)).
+   What a piece looks like is its made-to-order image (ui/*.webp), 9-sliced. The desk is seen from above and a little in
+   front (about 8 degrees): every piece shows its front edge - the lip at its foot - and wells show their far wall. The
+   light comes from the upper right: the pieces carry it in their art, and each throws its shadow down to the lower left
+   onto what it stands on. Each image is drawn round the element at a scale --s, the transparent margin drawn outside the
+   box (outset), so the element's box is the piece's top face plus its lip; --lip is padded at the foot so the content
+   sits in the middle of the top face, and pressed pieces move it down as far as their top face went. */
+#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--es:.42;--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
+#app.desk.compact{--es:.3;--bar:56px;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px}
+#app.desk.compact:not(.portrait){--es:.22;--bar:48px;--tilt:11deg;--ovh:40px;--ovw:50px}
+#app.desk #nav,#app.desk #home,#app.desk #topbar,#app.desk #dock,#app.desk #room{display:none}
+#app.desk #records{inset:var(--bar) 0 0 0}
 
-.dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
-.dk-body::-webkit-scrollbar{display:none}
-.dk-step.mini{grid-template-columns:44px 56px 44px}
-.dk-step.mini button{height:42px;font-size:22px}
-.dk-step.mini b{font-size:24px}
-.dk-slate h1{margin:0;font:800 40px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
-.dk-slate .sub{font:700 18px 'Gothic A1',sans-serif;color:#cfc8ba;margin-top:-6px}
-.dk-hr{flex:none;height:1px;background:rgba(255,255,255,.1)}
-.dk-lab{font:700 14px 'Gothic A1',sans-serif;color:var(--slate-sub)}
-.dk-txt{font:500 16px/1.55 'Gothic A1',sans-serif;color:#e3ddd1;word-break:keep-all}
-.dk-txt b{color:#7fb1ef;font-weight:700}
-.dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.dk-row .dk-chip{height:42px}
-.dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
-.dk-seg button{height:44px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
-.dk-seg button[aria-pressed="true"]{color:#2b241c}
-.dk-seg button:disabled{opacity:.38}
-.dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px}
-.dk-step button{height:52px;color:#eee8dc;font:500 28px Outfit,sans-serif}
-.dk-step button:disabled{opacity:.35}
-.dk-step b{text-align:center;font:600 34px Outfit,sans-serif}
-.dk-acts{flex:none;display:flex;flex-direction:column;gap:12px;padding-top:4px}
-.dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif}
-.dk-main small{display:block;font:700 13px 'Gothic A1',sans-serif;opacity:.8;margin:2px 0 8px}
-.dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif}
-#app.desk #records{inset:62px 0 0 0}
-/* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away */
-#app.desk.compact #deskBar{height:56px;padding:0 8px;gap:6px}
-#app.desk.compact .dk-logo{display:none}
-#app.desk.compact .dk-tab{min-width:0;height:40px;padding:0 11px;font-size:14px}
-#app.desk.compact .dk-top{height:40px;padding:0 11px}
-#app.desk.compact .dk-top span{display:none}
-#app.desk.compact #desk{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px}
-#app.desk.compact #records{inset:56px 0 0 0}
-#app.desk.compact .dk-rail{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none}
-#app.desk.compact .dk-rb small{display:none}
-#app.desk.compact .dk-tray{border-radius:16px}
-#app.desk.compact .dk-head h2{font-size:21px}
-#app.desk.compact .dk-head small{font-size:13px}
-#app.desk.compact .dk-arrow{width:44px;height:44px}
-#app.desk.compact .dk-plate{min-width:0;gap:8px}
-#app.desk.compact .dk-plate .av{width:28px;height:28px;font-size:13px}
-#app.desk.compact .dk-plate b{font-size:15px}
-#app.desk.compact .dk-plate small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#app.desk.compact .dk-plate>span{min-width:0}
-#app.desk.compact .dk-slate{max-height:48vh;gap:10px}
-#app.desk.compact .dk-slate h1{font-size:28px}
-#app.desk.compact .dk-slate .sub{font-size:15px}
-#app.desk.compact .dk-acts{padding-top:2px}
-#app.desk.compact .dk-main{height:64px;font-size:22px}
-#app.desk.compact .dk-main small{margin-bottom:0}
-
-/* ---------- the desk, seen from the front and lit from the upper right (ui/*.webp, 9-sliced) ----------
-   The camera is above the desk and a little in front of it (about 8 degrees): every piece shows its front edge - the lip at
-   its foot - and wells show their far wall. The light comes from the upper right: the pieces carry it in their art, and
-   each throws its shadow down to the lower left onto what it stands on. Each piece is its made-to-order image drawn
-   round the element at a scale --s, the transparent margin drawn outside the box (outset), so the element's box is the
-   piece's top face plus its lip; --lip is padded at the foot so the content sits in the middle of the top face, and
-   pressed pieces move it down as far as their top face went. */
-#app.desk{--felt-tile:300px;--desk-tile:640px;--es:.42}
-#app.desk #desk{padding-bottom:calc(130px*var(--es) + 16px)}
-#app.desk #deskBar{background:#26292d url(ui/bar.webp) 0 0/auto 100% repeat-x;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+/* ---------- the desk as a plane seen from above and a little behind ----------
+   The whole desk - wood, rail, tray, slate, the things on it - is laid out flat in #desk, and #deskPlane, a little bigger
+   all round so its far corners still reach the edges, leans away from the eye about its bottom edge (CSS 3D). The canvas
+   with the live table under it leans exactly the same way (same transform, same origin: the middle of the bottom edge),
+   so the table sits in the tray as one picture. Beyond the desk's far edge is the dark of the room; the wood runs on
+   under the far edge and the sides. (The sizes are worked out in layout(); the desk fills the plane top to bottom, so
+   it reaches the bar.) */
+#deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat}
+#app.desk.tilt{background:#0b0806}
+#app.desk.tilt #deskPlane,#app.desk.tilt #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
+#app.desk #gl{transition:transform .35s ease}
+/* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
+   On its side, the three columns again, narrow. */
+#desk{position:absolute;inset:0 var(--ovw);z-index:5;display:grid;grid-template-columns:minmax(190px,18%) minmax(0,1fr) minmax(300px,25%);gap:20px;padding:18px 20px calc(130px*var(--es) + 16px);box-sizing:border-box}
+#app.desk.compact.portrait #desk{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(220px,1fr) auto;padding:14px 16px 18px;gap:14px}
+#app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px}
 /* the room's light, warm from the upper right and falling away to the lower left; under the pieces on the desk, and
    (much fainter) over everything, as light is */
 #app.desk #desk::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
@@ -815,111 +738,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk #desk>*{position:relative;z-index:1}
 /* the desk's own front edge along the bottom, and the dark floor beyond it */
 #app.desk #desk>.dk-edge{position:absolute;z-index:0;left:0;right:0;bottom:0;height:calc(200px*var(--es));background:url(ui/edge.webp) 0 0/auto 100% repeat-x;-webkit-mask-image:linear-gradient(#0000,#000 22%);mask-image:linear-gradient(#0000,#000 22%);pointer-events:none}
-#app.desk .dk-row .dk-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-#dkShade{position:absolute;border-radius:12px;box-shadow:-12px 18px 26px rgba(0,0,0,.55),-3px 5px 8px rgba(0,0,0,.35);pointer-events:none}
-.dk-rail,.dk-tray,.dk-slate,.dk-slot,.dk-rb,.dk-main,.dk-sec,.dk-seg,.dk-seg button[aria-pressed="true"],.dk-tab,.dk-arrow,.dk-step,.dk-step button,.dk-top,.dk-chip,.dk-plate,.dk-pill{border-style:solid!important;border-color:transparent!important}
-/* the three slabs */
-#app.desk .dk-rail{--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/rail.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));gap:14px;padding:22px 16px calc(20px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
-#app.desk .dk-slate{--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
-#app.desk .dk-tray{--s:.4;border:0 solid transparent;background:#0e4c8e url(ui/felt.webp) 0 0/var(--felt-tile) repeat;border-radius:calc(36px*var(--s));border-image:url(ui/tray.webp) 112 92 108 92/calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(26px*var(--s));padding:calc(78px*var(--s) + 12px) calc(58px*var(--s) + 14px) calc(48px*var(--s) + var(--lip) + 12px);box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
-/* the rail: a slot cut into it for each choice, and the key sitting down in the slot */
-#app.desk .dk-slot{--s:.42;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s)) calc(14px*var(--s)) calc(6px*var(--s))}
-#app.desk .dk-rb{--s:.4;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;padding:0 0 var(--lip);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
-#app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);padding:calc(12px*var(--s)) 0 calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
-#app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);padding:calc(6px*var(--s)) 0 calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
-#app.desk .dk-rb[aria-pressed="true"]::before{width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
-/* the buttons: the big blue one, the dark ones, the square ones */
-#app.desk .dk-main{--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));padding:0 0 var(--lip);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
-#app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);padding:calc(14px*var(--s)) 0 calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
-#app.desk .dk-main:disabled{opacity:.5}
-#app.desk .dk-sec{--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding:0 10px var(--lip);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
-#app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp);padding-top:calc(8px*var(--s));padding-bottom:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
-#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));padding-top:0;padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
-#app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);padding-top:calc(7px*var(--s));padding-bottom:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
-#app.desk .dk-top[aria-pressed="true"]{color:#9cc3f5}
-/* wells cut into the slate: the segmented choice and the stepper; the chosen segment an ivory piece standing in it */
-#app.desk .dk-seg,#app.desk .dk-step{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}
-#app.desk .dk-seg button[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-3px 4px 6px rgba(0,0,0,.4)}
-#app.desk .dk-tab{--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none}
-#app.desk .dk-tab[aria-selected="true"]{border-image-source:url(ui/tab-on.webp)}
-#app.desk .dk-tab:active{transform:translateY(2px)}
-/* in the tray: the players' plates, the puzzle stages, the swatches each down in a well of the felt */
-#app.desk .dk-plate{--s:.42;border:0 solid transparent;background:none;border-radius:calc(18px*var(--s));border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(30px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:calc(10px + var(--lip));box-shadow:-6px 9px 12px rgba(0,0,0,.4)}
-#app.desk .dk-pill{--s:.36;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4)}
-#app.desk .dk-pill[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));color:#2b241c;padding-bottom:var(--lip)}
-#app.desk .dk-sw i{--s:.4;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/well.webp) 50 48 48 48/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));border-width:calc(20px*var(--s)) calc(8px*var(--s)) calc(8px*var(--s));background-clip:padding-box;box-shadow:inset -3px 5px 7px rgba(0,0,0,.5)}
-/* things on the desk: leaves leaning in at the top right, a towel over the front-left corner, a cube of chalk */
+/* things on the desk: leaves leaning in at the top right, a towel over the front-left corner, a cube of chalk; on a phone
+   they lie under the panels, peeking out, and on its side there is no room for them */
 #app.desk #desk>.dk-prop{position:absolute;z-index:3;pointer-events:none;background-position:center;background-size:contain;background-repeat:no-repeat}
 #app.desk #desk>.dk-prop.plant{right:-44px;top:-58px;width:190px;height:190px;background-image:url(ui/plant.webp)}
 #app.desk #desk>.dk-prop.towel{left:0;bottom:0;width:270px;height:193px;background-image:url(ui/towel.webp)}
 #app.desk #desk>.dk-prop.chalk{left:258px;bottom:calc(130px*var(--es) - 22px);width:92px;height:80px;background-image:url(ui/chalk.webp)}
-/* a swatch: the chosen one framed, the one in use badged */
-.dk-sw{position:relative}
-#app.desk .dk-sw[aria-pressed="true"] i{box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
-#app.desk .dk-sw[aria-pressed="true"]::after{content:"";position:absolute;left:-7px;right:-7px;top:-7px;height:calc(100% - 12px);background:url(ui/swframe.webp) center/100% 100% no-repeat;pointer-events:none}
-.dk-sw .eq{position:absolute;left:6px;top:6px;padding:2px 8px;border-radius:6px;background:#e9dfcc;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;box-shadow:0 1px 2px rgba(0,0,0,.45);z-index:1}
-/* the player at the top */
-.dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
-.dk-me .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
-.dk-me b{display:block;font:800 14.5px 'Gothic A1',sans-serif;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dk-me small{display:block;font:600 12px 'Gothic A1',sans-serif;color:#b9b2a5}
-#app.desk.compact .dk-me{display:none}
-/* the brass and ivory bits: name plates, the avatar's ring, the "in use" tab, the cue as a photograph, stars, a lock */
-#app.desk .dk-plate .av,#app.desk .dk-me .av{position:relative;overflow:visible}
-#app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
-#app.desk .dk-plate .av{margin:0 6px}
-#app.desk .dk-sw .eq{--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
-/* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
-   lies under it; a swatch shows just the butt */
-#app.desk .dk-sw i.cuebox{position:relative;overflow:hidden;padding:0;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
-#app.desk .dk-sw i.cuebox img{position:absolute;left:-6%;top:50%;width:364%;height:auto;transform:translateY(-44.5%);filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
-#app.desk .dk-stage img.cuebig{position:absolute;left:2%;top:34%;width:96%;height:auto;transform:translateY(-50%) rotate(-12deg);filter:drop-shadow(0 16px 8px rgba(0,0,0,.45));pointer-events:none}
-#app.desk .dk-stage .cuezoom{position:absolute;left:3%;right:3%;bottom:6%;aspect-ratio:1210/110;overflow:hidden;pointer-events:none;filter:drop-shadow(0 12px 8px rgba(0,0,0,.5))}
-#app.desk .dk-stage .cuezoom img{position:absolute;left:-3.3%;top:0;width:198.3%;height:auto}
-.dk-stars{display:flex;align-items:center;gap:4px;font:600 15px 'Gothic A1',sans-serif;color:#cfc8ba}
-.dk-stars img{width:30px;height:30px}
-.dk-stars span{margin-left:8px}
-.dk-pill img.lock{width:22px;height:22px}
-#app.desk .dk-pill.lock{opacity:.7}
-#app.desk.compact .dk-sw{font-size:12px;white-space:nowrap}
-/* a phone: the table gets the room. The tray never shrinks below a table you can see; the slate drops the title the rail
-   and the tray already say, its options scroll, and its buttons sit side by side at the foot */
-#app.desk.compact .dk-body>h1,#app.desk.compact .dk-body>.sub,#app.desk.compact .dk-body>h1+.dk-hr,#app.desk.compact .dk-body>.sub+.dk-hr{display:none}
-#app.desk.compact .dk-head:not(.nav) small{display:none}
-#app.desk.compact .dk-head{min-height:34px}
-#app.desk.compact .dk-acts{flex-direction:row}
-#app.desk.compact .dk-acts>*{flex:1 1 0;min-width:0}
-#app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
-.dk-sec small{display:block;font:600 11.5px 'Gothic A1',sans-serif;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#app.desk.compact .dk-plate{min-height:46px}
-#app.desk.compact.portrait #desk{grid-template-rows:auto minmax(220px,1fr) auto;padding:14px 16px 18px;gap:14px}
-#app.desk.compact.portrait .dk-slate{max-height:36vh}
-/* a phone on its side: the three columns again, narrow */
-#app.desk.compact:not(.portrait) #deskBar{height:48px}
-#app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
-#app.desk.compact:not(.portrait) #records{inset:48px 0 0 0}
-#app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px}
-#app.desk.compact:not(.portrait) .dk-main{height:54px}
-#app.desk.compact:not(.portrait) .dk-seg button{height:38px}
-#app.desk.compact:not(.portrait) .dk-step button{height:40px}
-/* ---------- the desk as a plane seen from above and a little behind ----------
-   The whole desk - wood, rail, tray, slate, the things on it - is laid out flat in #desk, and #deskPlane, a little bigger
-   all round so its far corners still reach the edges, leans away from the eye about its bottom edge (CSS 3D). The canvas
-   with the live table under it leans exactly the same way (same transform, same origin: the middle of the bottom edge),
-   so the table sits in the tray as one picture. Beyond the desk's far edge is the dark of the room. */
-#app.desk{--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
-#app.desk.compact{--bar:56px;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px}
-#app.desk.compact:not(.portrait){--bar:48px;--tilt:11deg;--pp:1500px;--ovh:40px;--ovw:50px}
-#deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0}
-#app.desk.tilt{background:#0b0806}
-#app.desk.tilt #deskPlane,#app.desk.tilt #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
-#app.desk #gl{transition:transform .35s ease}
-#app.desk #deskPlane>#desk{inset:0 var(--ovw)!important}           /* (the sizes are worked out in layout(); the desk fills the plane top to bottom, so it reaches the bar) */
-/* the wood runs on under the far edge and the sides */
-#app.desk #deskPlane{background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat}
-#app.desk #deskPlane>#desk{background:none}
-/* the near rail's front, under the table's window */
-#dkShade>i{position:absolute;left:6px;right:6px;top:100%;height:var(--tl,9px);margin-top:-2px;border-radius:0 0 10px 10px;background:linear-gradient(#7a4c2c,#3a2212 70%,#24150b)}
+#app.desk.compact #desk>.dk-prop{z-index:0}
+#app.desk.compact #desk>.dk-prop.plant{width:140px;height:140px;right:-20px;top:-30px}
+#app.desk.compact #desk>.dk-prop.towel{width:180px;height:128px}
+#app.desk.compact #desk>.dk-prop.chalk{display:none}
+#app.desk.compact:not(.portrait) #desk>.dk-prop{display:none}
 /* light from the window at the upper right: soft beams falling across the desk to the lower left, over everything */
 #dkBeams{position:absolute;inset:var(--bar) 0 0 0;z-index:5;pointer-events:none;overflow:hidden}
 #dkBeams i{position:absolute;top:-30%;height:170%;transform-origin:50% 0;transform:rotate(36deg);background:linear-gradient(90deg,rgba(255,232,188,0),rgba(255,232,188,var(--a)) 30% 70%,rgba(255,232,188,0));
@@ -928,31 +757,169 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #dkBeams i:nth-child(2){right:16%;width:90px;--a:.16}
 #dkBeams i:nth-child(3){right:25%;width:240px;--a:.12}
 #dkBeams i:nth-child(4){right:45%;width:110px;--a:.09}
-/* ---------- the desk seen from the front, on a phone: the same pieces, smaller ---------- */
-#app.desk.compact{--es:.3}
-#app.desk.compact #desk{padding-bottom:calc(130px*var(--es) + 10px)}
-#app.desk.compact .dk-rail{--s:.34;gap:8px;padding:10px 10px calc(10px + var(--lip))}
+
+/* ---------- the bar along the top: the places, the player, records and settings ---------- */
+#deskBar{position:absolute;left:0;right:0;top:0;height:var(--bar);z-index:6;display:flex;align-items:center;gap:8px;padding:0 18px;box-sizing:border-box;background:#26292d url(ui/bar.webp) 0 0/auto 100% repeat-x;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+#app.desk.compact #deskBar{padding:0 8px;gap:6px}
+#deskBar .sp{flex:1}
+.dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
+#app.desk.compact .dk-logo{display:none}
+.dk-tabs{display:flex;gap:6px;min-width:0}
+#app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px 'Gothic A1',sans-serif;--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none}
+#app.desk .dk-tab[aria-selected="true"]{color:#fff;border-image-source:url(ui/tab-on.webp)}
+#app.desk .dk-tab:active{transform:translateY(2px)}
+#app.desk.compact .dk-tab{--s:.42;min-width:0;height:40px;padding:0 11px;font-size:14px}
+/* the player: an ivory counter in a brass ring (the plates in the tray wear the same ring) */
+.dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
+#app.desk .dk-me .av{position:relative;overflow:visible;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
+#app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
+.dk-me b{display:block;font:800 14.5px 'Gothic A1',sans-serif;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-me small{display:block;font:600 12px 'Gothic A1',sans-serif;color:#b9b2a5}
+#app.desk.compact .dk-me{display:none}
+/* records and settings are square keys (below) */
+.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px 'Gothic A1',sans-serif}
+#app.desk.compact .dk-top{height:40px;padding:0 11px}
+#app.desk.compact .dk-top span{display:none}
+#app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
+
+/* ---------- the rail: a slot cut into it for each choice, and the key sitting down in the slot ---------- */
+#app.desk .dk-rail{display:flex;flex-direction:column;overflow:auto;min-height:0;--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/rail.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));gap:14px;padding:22px 16px calc(20px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk.compact .dk-rail{--s:.34;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none;gap:8px;padding:10px 10px calc(10px + var(--lip))}
+#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:10px 8px calc(8px + var(--lip))}
+#app.desk .dk-slot{--s:.42;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s)) calc(14px*var(--s)) calc(6px*var(--s))}
 #app.desk.compact .dk-slot{--s:.28;flex:1 0 auto;min-width:80px;height:58px}
+#app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
+#app.desk .dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;padding:0 0 var(--lip);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
+#app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);padding:calc(12px*var(--s)) 0 calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
+#app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);padding:calc(6px*var(--s)) 0 calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
+#app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
+.dk-rb.soon{opacity:.55}
+.dk-rb small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7;margin-top:4px}
 #app.desk.compact .dk-rb{--s:.26;font-size:17px}
 #app.desk.compact .dk-rb[aria-pressed="true"]::before{width:12px;height:12px;left:9px;top:calc(50% - 6px - 4px*var(--s))}
-#app.desk.compact .dk-tray{--s:.28;padding:calc(78px*var(--s) + 6px) calc(58px*var(--s) + 8px) calc(48px*var(--s) + var(--lip) + 6px)}
-#app.desk.compact .dk-slate{--s:.36;padding:16px 16px calc(14px + var(--lip))}
-#app.desk.compact .dk-main{--s:.34}
+#app.desk.compact .dk-rb small{display:none}
+#app.desk.compact:not(.portrait) .dk-rb{font-size:16px}
+
+/* ---------- the tray: felt in a frame, the live table (or a cue) in the middle, a head above it and a foot below ---------- */
+#app.desk .dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;--s:.4;border:0 solid transparent;background:#0e4c8e url(ui/felt.webp) 0 0/var(--felt-tile) repeat;border-radius:calc(36px*var(--s));border-image:url(ui/tray.webp) 112 92 108 92/calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(26px*var(--s));padding:calc(78px*var(--s) + 12px) calc(58px*var(--s) + 14px) calc(48px*var(--s) + var(--lip) + 12px);box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk.compact .dk-tray{--s:.28;border-radius:16px;padding:calc(78px*var(--s) + 6px) calc(58px*var(--s) + 8px) calc(48px*var(--s) + var(--lip) + 6px)}
+.dk-head{display:flex;align-items:center;gap:12px;min-height:58px;color:#f3eee3}
+.dk-head .tt{flex:1;min-width:0}
+.dk-head h2{margin:0;font:800 30px 'Gothic A1',sans-serif;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-head small{display:block;font:600 15px 'Gothic A1',sans-serif;color:#c3cedd;margin-top:3px}
+.dk-head.nav .tt{text-align:center}
+#app.desk.compact .dk-head{min-height:34px}
+#app.desk.compact .dk-head h2{font-size:21px}
+#app.desk.compact .dk-head small{font-size:13px}
+#app.desk.compact .dk-head:not(.nav) small{display:none}
+.dk-arrow{flex:none;width:56px;height:56px;color:#eee8dc;display:grid;place-items:center}
+#app.desk.compact .dk-arrow{width:44px;height:44px}
+.dk-stage{position:relative;flex:1;min-height:0;margin:10px 0}
+.dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
+.dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
+/* the table's shadow on the felt, and the near rail's front under the table's window (#dkShade is laid by layout()) */
+#dkShade{position:absolute;border-radius:12px;box-shadow:-12px 18px 26px rgba(0,0,0,.55),-3px 5px 8px rgba(0,0,0,.35);pointer-events:none}
+#dkShade>i{position:absolute;left:6px;right:6px;top:100%;height:var(--tl,9px);margin-top:-2px;border-radius:0 0 10px 10px;background:linear-gradient(#7a4c2c,#3a2212 70%,#24150b)}
+/* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
+   lies under it; a swatch shows just the butt */
+#app.desk .dk-stage img.cuebig{position:absolute;left:2%;top:34%;width:96%;height:auto;transform:translateY(-50%) rotate(-12deg);filter:drop-shadow(0 16px 8px rgba(0,0,0,.45));pointer-events:none}
+#app.desk .dk-stage .cuezoom{position:absolute;left:3%;right:3%;bottom:6%;aspect-ratio:1210/110;overflow:hidden;pointer-events:none;filter:drop-shadow(0 12px 8px rgba(0,0,0,.5))}
+#app.desk .dk-stage .cuezoom img{position:absolute;left:-3.3%;top:0;width:198.3%;height:auto}
+.dk-foot{display:flex;gap:12px;align-items:stretch;justify-content:safe center;min-height:0;overflow-x:auto;scrollbar-width:none}
+.dk-foot::-webkit-scrollbar{display:none}
+/* in the foot: the players' plates, the puzzle stages, the swatches each down in a well of the felt */
+#app.desk .dk-plate{flex:1;max-width:260px;display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 16px;color:var(--ivory-ink);text-align:left;transition:transform 90ms ease-out;--s:.42;border:0 solid transparent;background:none;border-radius:calc(18px*var(--s));border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(30px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:calc(10px + var(--lip));box-shadow:-6px 9px 12px rgba(0,0,0,.4)}
+.dk-plate:active{transform:translateY(2px)}
+#app.desk .dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px Outfit,sans-serif;font-style:normal;color:#fff;background:#3b3229;position:relative;overflow:visible;margin:0 6px}
+#app.desk .dk-plate.two .av{background:#8f1414}
+.dk-plate b{display:block;font:800 17px 'Gothic A1',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-plate small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7}
+#app.desk.compact .dk-plate{--s:.34;min-width:0;gap:8px;min-height:46px;padding:6px 10px calc(6px + var(--lip))}
+#app.desk.compact .dk-plate .av{width:28px;height:28px;font-size:13px}
+#app.desk.compact .dk-plate b{font-size:15px}
+#app.desk.compact .dk-plate small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.desk.compact .dk-plate>span{min-width:0}
+.dk-vs{align-self:center;font:600 16px Outfit,sans-serif;color:#c3cedd;letter-spacing:.1em}
+#app.desk .dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;--s:.36;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4)}
+#app.desk .dk-pill[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));color:#2b241c;padding-bottom:var(--lip)}
+#app.desk .dk-pill.lock{opacity:.7}
+.dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
+.dk-pill[aria-pressed="true"] small{color:#6b5f4e}
+.dk-pill img.lock{width:22px;height:22px}
+.dk-dots{display:flex;align-items:center;gap:10px;color:#d9e2ee;font:700 15px 'Gothic A1',sans-serif}
+.dk-dots i{width:14px;height:14px;border-radius:50%;background:#0a3566;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.dk-dots i.on{background:#e9dfcc;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* a swatch: the chosen one framed, the one in use badged */
+#app.desk .dk-sw{position:relative;flex:none;width:clamp(96px,11vw,150px);display:flex;flex-direction:column;align-items:center;gap:8px;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif}
+#app.desk.compact .dk-sw{font-size:12px;white-space:nowrap}
+#app.desk .dk-sw i{display:block;width:100%;height:clamp(48px,7vh,70px);--s:.4;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/well.webp) 50 48 48 48/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));border-width:calc(20px*var(--s)) calc(8px*var(--s)) calc(8px*var(--s));background-clip:padding-box;box-shadow:inset -3px 5px 7px rgba(0,0,0,.5)}
+#app.desk .dk-sw[aria-pressed="true"] i{box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+#app.desk .dk-sw[aria-pressed="true"]::after{content:"";position:absolute;left:-7px;right:-7px;top:-7px;height:calc(100% - 12px);background:url(ui/swframe.webp) center/100% 100% no-repeat;pointer-events:none}
+#app.desk .dk-sw i.cuebox{display:flex;align-items:center;box-sizing:border-box;position:relative;overflow:hidden;padding:0;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
+#app.desk .dk-sw i.cuebox img{position:absolute;left:-6%;top:50%;width:364%;height:auto;transform:translateY(-44.5%);filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+#app.desk .dk-sw .eq{position:absolute;left:6px;top:6px;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;z-index:1;--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
+
+/* ---------- the slate: the options, which scroll if they must, and the buttons, which stay put at the foot ---------- */
+#app.desk .dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk.compact .dk-slate{--s:.36;max-height:48vh;gap:10px;padding:16px 16px calc(14px + var(--lip))}
+#app.desk.compact.portrait .dk-slate{max-height:36vh}
+#app.desk.compact:not(.portrait) .dk-slate{max-height:none;padding:12px 14px calc(10px + var(--lip))}
+.dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.dk-body::-webkit-scrollbar{display:none}
+.dk-slate h1{margin:0;font:800 40px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
+.dk-slate .sub{font:700 18px 'Gothic A1',sans-serif;color:#cfc8ba;margin-top:-6px}
+#app.desk.compact .dk-slate h1{font-size:28px}
+#app.desk.compact .dk-slate .sub{font-size:15px}
+/* a phone drops the title the rail and the tray already say */
+#app.desk.compact .dk-body>h1,#app.desk.compact .dk-body>.sub,#app.desk.compact .dk-body>h1+.dk-hr,#app.desk.compact .dk-body>.sub+.dk-hr{display:none}
+.dk-hr{flex:none;height:1px;background:rgba(255,255,255,.1)}
+.dk-lab{font:700 14px 'Gothic A1',sans-serif;color:var(--slate-sub)}
+.dk-txt{font:500 16px/1.55 'Gothic A1',sans-serif;color:#e3ddd1;word-break:keep-all}
+.dk-txt b{color:#7fb1ef;font-weight:700}
+.dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#app.desk .dk-row .dk-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif}
+.dk-row .dk-chip{height:42px}
+/* wells cut into the slate: the segmented choice and the stepper; the chosen segment an ivory piece standing in it */
+#app.desk .dk-seg,#app.desk .dk-step{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}
+.dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.dk-seg button{height:44px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
+#app.desk .dk-seg button[aria-pressed="true"]{color:#2b241c;--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-3px 4px 6px rgba(0,0,0,.4)}
+.dk-seg button:disabled{opacity:.38}
+#app.desk.compact:not(.portrait) .dk-seg button{height:38px}
+.dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px}
+.dk-step button{height:52px;color:#eee8dc;font:500 28px Outfit,sans-serif}
+.dk-step button:disabled{opacity:.35}
+.dk-step b{text-align:center;font:600 34px Outfit,sans-serif}
+.dk-step.mini{grid-template-columns:44px 56px 44px}
+.dk-step.mini button{height:42px;font-size:22px}
+.dk-step.mini b{font-size:24px}
+#app.desk.compact:not(.portrait) .dk-step button{height:40px}
+/* the buttons at the foot: the big blue one and a dark one under it, side by side on a phone */
+.dk-acts{flex:none;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+#app.desk.compact .dk-acts{padding-top:2px;flex-direction:row}
+#app.desk.compact .dk-acts>*{flex:1 1 0;min-width:0}
+#app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
+#app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif;--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));padding:0 0 var(--lip);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
+#app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);padding:calc(14px*var(--s)) 0 calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
+#app.desk .dk-main:disabled{opacity:.5}
+.dk-main small{display:block;font:700 13px 'Gothic A1',sans-serif;opacity:.8;margin:2px 0 8px}
+#app.desk.compact .dk-main{--s:.34;height:64px;font-size:22px}
+#app.desk.compact .dk-main small{margin-bottom:0}
+#app.desk.compact:not(.portrait) .dk-main{height:54px}
+#app.desk .dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding:0 10px var(--lip);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
+#app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp);padding-top:calc(8px*var(--s));padding-bottom:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
+.dk-sec small{display:block;font:600 11.5px 'Gothic A1',sans-serif;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app.desk.compact .dk-sec{--s:.32;height:auto;min-height:48px;padding:4px 8px calc(4px + var(--lip));font-size:15px;line-height:1.2}
 #app.desk.compact .dk-sec:active{padding-top:calc(4px + 8px*var(--s));padding-bottom:calc(4px + 6px*var(--s))}
-#app.desk.compact .dk-tab{--s:.42}
-#app.desk.compact .dk-plate{--s:.34;padding:6px 10px calc(6px + var(--lip))}
-#app.desk.compact #desk>.dk-prop{z-index:0}                           /* on a phone they lie under the panels, peeking out */
-#app.desk.compact #desk>.dk-prop.plant{width:140px;height:140px;right:-20px;top:-30px}
-#app.desk.compact #desk>.dk-prop.towel{width:180px;height:128px}
-#app.desk.compact #desk>.dk-prop.chalk{display:none}
-/* on its side there is no room for things on the desk */
-#app.desk.compact:not(.portrait){--es:.22}
-#app.desk.compact:not(.portrait) #desk>.dk-prop{display:none}
-#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:10px 8px calc(8px + var(--lip))}
-#app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
-#app.desk.compact:not(.portrait) .dk-rb{font-size:16px}
-#app.desk.compact:not(.portrait) .dk-slate{max-height:none;padding:12px 14px calc(10px + var(--lip))}
+.dk-stars{display:flex;align-items:center;gap:4px;font:600 15px 'Gothic A1',sans-serif;color:#cfc8ba}
+.dk-stars img{width:30px;height:30px}
+.dk-stars span{margin-left:8px}
+
+/* ---------- the square keys: the tray's arrows, the steppers, the chips, records and settings ---------- */
+#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));padding-top:0;padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
+#app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);padding-top:calc(7px*var(--s));padding-bottom:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
+#app.desk .dk-top[aria-pressed="true"]{color:#9cc3f5}
 </style>
 
 <div id="app" class="busy" data-theme="light">
