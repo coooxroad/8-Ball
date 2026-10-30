@@ -72,6 +72,10 @@ function layout() {
     const x1 = tr.x + ox - 1, y1 = tr.y + oy - 1, x2 = tr.x + tr.w + ox + 1, y2 = tr.y + tr.h + oy + 1;
     $('#desk').style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
     let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
+    // the vanishing point: the middle of the table's window, at the table camera's distance
+    const vx = tr.x + tr.w / 2 + ox, vy = tr.y + tr.h / 2 + oy, dk = $('#desk');
+    dk.style.setProperty('--vpx', vx + 'px'); dk.style.setProperty('--vpy', vy + 'px'); dk.style.setProperty('--pd', Math.round(0.5 * Math.max(a.height, 400) / Math.tan(20 * Math.PI / 180)) + 'px');
+    deskWalls();
     sh.hidden = !win; Object.assign(sh.style, { left: (tr.x + a.left - r.left) + 'px', top: (tr.y + a.top - r.top) + 'px', width: tr.w + 'px', height: tr.h + 'px' });
   }
   else if (st.screen === 'home' && wide && prefs.ui === 'lobby') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
@@ -107,4 +111,21 @@ function setSpinUI() {
   const s = st.spin, k = 0.36;
   $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
   $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
+}
+
+// the sides of the raised panels: four walls each, standing from the desk up to the panel's top (only those that face the
+// middle of the view show past the panel; the light comes from the upper left, so the walls facing it are lighter)
+function deskWalls() {
+  const dk = $('#desk'), L = parseFloat(getComputedStyle(app).getPropertyValue('--lift')) || 36;
+  for (const w of dk.querySelectorAll('.dk-wall')) w.remove();
+  for (const [sel, lit, dim] of [['.dk-rail', '#d9ccb2', '#a8987b'], ['.dk-slate', '#2a3433', '#0b0f0f']]) {
+    const p = $(sel), x = p.offsetLeft, y = p.offsetTop, w = p.offsetWidth, h = p.offsetHeight;
+    const wall = (css, tf, col) => { const d = el('div', { class: 'dk-wall' }); d.style.cssText += css + `;transform:${tf};background:${col}`; dk.insertBefore(d, dk.firstChild); };
+    // (each wall hinges on the panel's edge and swings back, away from the eye, down to the desk)
+    const r = 14;                                                       // keep clear of the rounded corners
+    wall(`left:${x + r}px;top:${y + h}px;width:${w - 2 * r}px;height:${L}px;transform-origin:50% 0`, 'rotateX(-90deg)', dim);
+    wall(`left:${x + r}px;top:${y - L}px;width:${w - 2 * r}px;height:${L}px;transform-origin:50% 100%`, 'rotateX(90deg)', lit);
+    wall(`left:${x + w}px;top:${y + r}px;width:${L}px;height:${h - 2 * r}px;transform-origin:0 50%`, 'rotateY(90deg)', dim);
+    wall(`left:${x - L}px;top:${y + r}px;width:${L}px;height:${h - 2 * r}px;transform-origin:100% 50%`, 'rotateY(-90deg)', lit);
+  }
 }
