@@ -697,48 +697,37 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* ================= the desk (4.0 first screen; prefs.ui 'desk') =================
    Everything is a thing on a wooden desk: an ivory rail of choices on the left, a felt tray in the middle with the live
-   table in it, a slate board on the right with what the choice needs and the one button to go. The materials are flat
-   colours for now; each has a --tex-* slot that takes the texture image when it comes (background-image on top). */
-#app.desk{--wood:#6b4527;--ivory:#e8dfcd;--ivory-face:#ddd2bd;--ivory-ink:#3b3229;--felt:#0e4c8e;--felt-rim:#06264c;
-  --slate:#172020;--slate-edge:#2c3636;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--blue:#2f72c4;--blue-deep:#1f529a;--darkbtn:#1d2323;--bar:#26292d;--dot:#dd2c2f;
-  --tex-desk:none;--tex-felt:none;--tex-bar:none;--tex-ivory:none;--tex-slate:none}
+   table in it, a slate board on the right with what the choice needs and the one button to go. These rules lay the
+   pieces out; what they look like (the made-to-order images) is in the block "the desk, seen from the front" below. */
+#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2}
 #app.desk #nav,#app.desk #home,#app.desk #topbar,#app.desk #dock,#app.desk #room{display:none!important}
-#deskBar{position:absolute;left:0;right:0;top:0;height:62px;z-index:6;display:flex;align-items:center;gap:8px;padding:0 18px;box-sizing:border-box;background:var(--bar);background-image:var(--tex-bar);box-shadow:0 3px 8px rgba(0,0,0,.35)}
+#deskBar{position:absolute;left:0;right:0;top:0;height:62px;z-index:6;display:flex;align-items:center;gap:8px;padding:0 18px;box-sizing:border-box}
 .dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
 .dk-tabs{display:flex;gap:6px;min-width:0}
-.dk-tab{height:44px;min-width:128px;padding:0 18px;border-radius:10px;background:#1b1d20;border:1px solid #33373c;color:#e9e4da;font:700 16px 'Gothic A1',sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 2px 3px rgba(0,0,0,.4);transition:transform 90ms ease-out}
-.dk-tab[aria-selected="true"]{background:var(--blue);border-color:var(--blue-deep);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 3px rgba(0,0,0,.4)}
-.dk-tab:active,.dk-top:active,.dk-sec:active,.dk-arrow:active{transform:translateY(2px)}
+.dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px 'Gothic A1',sans-serif}
+.dk-tab[aria-selected="true"]{color:#fff}
 #deskBar .sp{flex:1}
-.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:10px;background:#1b1d20;border:1px solid #33373c;color:#e9e4da;font:700 15px 'Gothic A1',sans-serif;transition:transform 90ms ease-out}
-.dk-top[aria-pressed="true"]{background:var(--blue);border-color:var(--blue-deep)}
-#desk{position:absolute;inset:62px 0 0 0;z-index:5;display:grid;grid-template-columns:minmax(190px,18%) minmax(0,1fr) minmax(300px,25%);gap:20px;padding:18px 20px 20px;box-sizing:border-box;background:var(--wood);background-image:var(--tex-desk)}
-.dk-rail{display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:18px;background:var(--ivory);background-image:var(--tex-ivory);overflow:auto;min-height:0;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.08),0 8px 16px rgba(0,0,0,.35)}
-.dk-rb{position:relative;flex:none;height:clamp(78px,13vh,118px);border-radius:16px;background:var(--ivory-face);color:var(--ivory-ink);font:800 28px 'Gothic A1',sans-serif;transition:transform 90ms ease-out;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.7),inset 0 -4px 0 rgba(0,0,0,.08),0 0 0 6px rgba(0,0,0,.035),0 3px 4px rgba(0,0,0,.18)}
-.dk-rb:active{transform:translateY(2px)}
+.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px 'Gothic A1',sans-serif}
+#desk{position:absolute;z-index:5;display:grid;grid-template-columns:minmax(190px,18%) minmax(0,1fr) minmax(300px,25%);gap:20px;padding:18px 20px 20px;box-sizing:border-box}
+.dk-rail{display:flex;flex-direction:column;overflow:auto;min-height:0}
+.dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif}
 .dk-rb small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7;margin-top:4px}
-.dk-rb[aria-pressed="true"]{background:var(--felt);background-image:var(--tex-felt);color:#f3eee3;box-shadow:inset 0 3px 8px rgba(0,0,0,.45),0 0 0 6px rgba(0,0,0,.05)}
-.dk-rb[aria-pressed="true"]::before,.dk-main::after{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a80,var(--dot) 55%,#8f1414);box-shadow:0 1px 2px rgba(0,0,0,.5)}
-.dk-rb[aria-pressed="true"]::before{left:20px;top:50%;margin-top:-6px}
+.dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%}
 .dk-rb.soon{opacity:.55}
-.dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;padding:22px 26px;border-radius:22px;background:var(--felt);background-image:var(--tex-felt);
-  box-shadow:inset 0 0 0 10px var(--felt-rim),inset 0 0 0 12px rgba(255,255,255,.06),inset 0 14px 26px rgba(0,0,0,.35),0 10px 22px rgba(0,0,0,.4)}
+.dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
 .dk-head{display:flex;align-items:center;gap:12px;min-height:58px;color:#f3eee3}
 .dk-head .tt{flex:1;min-width:0}
 .dk-head h2{margin:0;font:800 30px 'Gothic A1',sans-serif;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dk-head small{display:block;font:600 15px 'Gothic A1',sans-serif;color:#c3cedd;margin-top:3px}
 .dk-head.nav .tt{text-align:center}
-.dk-arrow{flex:none;width:56px;height:56px;border-radius:12px;background:#15191b;border:1px solid #2f3538;color:#eee8dc;display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 3px 5px rgba(0,0,0,.45);transition:transform 90ms ease-out}
-.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;border-radius:999px;background:#15191b;border:1px solid #2f3538;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif}
+.dk-arrow{flex:none;width:56px;height:56px;color:#eee8dc;display:grid;place-items:center}
+.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif}
 .dk-stage{position:relative;flex:1;min-height:0;margin:10px 0}
 .dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
 .dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
-.dk-stage canvas.cuebig{position:absolute;left:4%;top:50%;width:92%;height:22px;transform:translateY(-50%) rotate(-22deg);filter:drop-shadow(0 18px 12px rgba(0,0,0,.5))}
 .dk-foot{display:flex;gap:12px;align-items:stretch;justify-content:safe center;min-height:0;overflow-x:auto;scrollbar-width:none}
 .dk-foot::-webkit-scrollbar{display:none}
-.dk-plate{flex:1;max-width:260px;display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 16px;border-radius:14px;background:var(--ivory-face);color:var(--ivory-ink);text-align:left;box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 3px 5px rgba(0,0,0,.35);transition:transform 90ms ease-out}
+.dk-plate{flex:1;max-width:260px;display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 16px;color:var(--ivory-ink);text-align:left;transition:transform 90ms ease-out}
 .dk-plate:active{transform:translateY(2px)}
 .dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px Outfit,sans-serif;font-style:normal;color:#fff;background:#3b3229}
 .dk-plate.two .av{background:#8f1414}
@@ -746,24 +735,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-plate small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7}
 .dk-vs{align-self:center;font:600 16px Outfit,sans-serif;color:#c3cedd;letter-spacing:.1em}
 .dk-sw{flex:none;width:clamp(96px,11vw,150px);display:flex;flex-direction:column;align-items:center;gap:8px;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif}
-.dk-sw i{display:block;width:100%;height:clamp(48px,7vh,70px);border-radius:10px;box-shadow:inset 0 2px 6px rgba(0,0,0,.45),0 2px 3px rgba(0,0,0,.4)}
-.dk-sw[aria-pressed="true"] i{box-shadow:0 0 0 3px #e9dfcc,0 4px 8px rgba(0,0,0,.5)}
-.dk-sw i.cuebox{display:flex;align-items:center;padding:0 8px;box-sizing:border-box;background:#0b3b70}
-.dk-sw i.cuebox canvas{display:block;width:100%;height:12px}
-.dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;border-radius:12px;background:#15191b;border:1px solid #2f3538;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.dk-sw i{display:block;width:100%;height:clamp(48px,7vh,70px)}
+.dk-sw i.cuebox{display:flex;align-items:center;box-sizing:border-box}
+.dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
-.dk-pill[aria-pressed="true"]{background:#e9dfcc;color:#2b241c;border-color:transparent}
 .dk-pill[aria-pressed="true"] small{color:#6b5f4e}
-.dk-pill.lock{opacity:.45}
 .dk-dots{display:flex;align-items:center;gap:10px;color:#d9e2ee;font:700 15px 'Gothic A1',sans-serif}
 .dk-dots i{width:14px;height:14px;border-radius:50%;background:#0a3566;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
 .dk-dots i.on{background:#e9dfcc;box-shadow:0 1px 2px rgba(0,0,0,.5)}
-.dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;padding:26px 24px 24px;border-radius:16px;background:var(--slate);background-image:var(--tex-slate);color:var(--slate-ink);
-  box-shadow:inset 0 0 0 2px var(--slate-edge),inset 0 2px 0 rgba(255,255,255,.04),0 10px 22px rgba(0,0,0,.45)}
+.dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink)}
 
 .dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
 .dk-body::-webkit-scrollbar{display:none}
-.dk-step.mini{grid-template-columns:44px 56px 44px;padding:5px 7px}
+.dk-step.mini{grid-template-columns:44px 56px 44px}
 .dk-step.mini button{height:42px;font-size:22px}
 .dk-step.mini b{font-size:24px}
 .dk-slate h1{margin:0;font:800 40px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
@@ -774,22 +758,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-txt b{color:#7fb1ef;font-weight:700}
 .dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .dk-row .dk-chip{height:42px}
-.dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:5px;border-radius:14px;background:#0e1313;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+.dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
 .dk-seg button{height:44px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
-.dk-seg button[aria-pressed="true"]{background:#e9dfcc;color:#2b241c;box-shadow:inset 0 1px 0 #fff,0 2px 3px rgba(0,0,0,.4)}
+.dk-seg button[aria-pressed="true"]{color:#2b241c}
 .dk-seg button:disabled{opacity:.38}
-.dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px;padding:5px;border-radius:14px;background:#0e1313;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
-.dk-step button{height:52px;border-radius:10px;background:#252b2b;color:#eee8dc;font:500 28px Outfit,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 3px rgba(0,0,0,.5)}
+.dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px}
+.dk-step button{height:52px;color:#eee8dc;font:500 28px Outfit,sans-serif}
 .dk-step button:disabled{opacity:.35}
 .dk-step b{text-align:center;font:600 34px Outfit,sans-serif}
 .dk-acts{flex:none;display:flex;flex-direction:column;gap:12px;padding-top:4px}
-.dk-main{position:relative;height:88px;border-radius:18px;background:var(--blue);color:#fff;font:800 28px 'Gothic A1',sans-serif;transition:transform 90ms ease-out;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.25),0 6px 12px rgba(0,0,0,.45)}
-.dk-main::after{left:50%;bottom:12px;margin-left:-6px}
-.dk-main:active{transform:translateY(3px)}
-.dk-main:disabled{opacity:.45}
+.dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif}
 .dk-main small{display:block;font:700 13px 'Gothic A1',sans-serif;opacity:.8;margin:2px 0 8px}
-.dk-sec{height:58px;border-radius:14px;background:var(--darkbtn);border:1px solid #384040;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif;transition:transform 90ms ease-out;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 3px 5px rgba(0,0,0,.45)}
+.dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif}
 #app.desk #records{inset:62px 0 0 0}
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away */
 #app.desk.compact #deskBar{height:56px;padding:0 8px;gap:6px}
@@ -797,28 +777,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-tab{min-width:0;height:40px;padding:0 11px;font-size:14px}
 #app.desk.compact .dk-top{height:40px;padding:0 11px}
 #app.desk.compact .dk-top span{display:none}
-#app.desk.compact #desk{inset:56px 0 0 0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px}
+#app.desk.compact #desk{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px}
 #app.desk.compact #records{inset:56px 0 0 0}
-#app.desk.compact .dk-rail{flex-direction:row;gap:8px;padding:8px;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none}
+#app.desk.compact .dk-rail{flex-direction:row;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none}
 #app.desk.compact .dk-rb small{display:none}
-#app.desk.compact .dk-tray{padding:12px 14px;border-radius:16px}
-#app.desk.compact .dk-head{min-height:44px}
+#app.desk.compact .dk-tray{border-radius:16px}
 #app.desk.compact .dk-head h2{font-size:21px}
 #app.desk.compact .dk-head small{font-size:13px}
 #app.desk.compact .dk-arrow{width:44px;height:44px}
-#app.desk.compact .dk-plate{min-height:52px;padding:6px 10px;min-width:0;gap:8px}
+#app.desk.compact .dk-plate{min-width:0;gap:8px}
 #app.desk.compact .dk-plate .av{width:28px;height:28px;font-size:13px}
 #app.desk.compact .dk-plate b{font-size:15px}
 #app.desk.compact .dk-plate small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app.desk.compact .dk-plate>span{min-width:0}
-#app.desk.compact .dk-slate{max-height:48vh;padding:16px;gap:10px}
+#app.desk.compact .dk-slate{max-height:48vh;gap:10px}
 #app.desk.compact .dk-slate h1{font-size:28px}
 #app.desk.compact .dk-slate .sub{font-size:15px}
 #app.desk.compact .dk-acts{padding-top:2px}
 #app.desk.compact .dk-main{height:64px;font-size:22px}
-#app.desk.compact .dk-main::after{left:auto;right:20px;top:50%;bottom:auto;margin:-6px 0 0}
 #app.desk.compact .dk-main small{margin-bottom:0}
-#app.desk.compact .dk-sec{height:48px}
 
 /* ---------- the desk, seen from the front and lit from the upper right (ui/*.webp, 9-sliced) ----------
    The camera is above the desk and a little in front of it (about 8 degrees): every piece shows its front edge - the lip at
@@ -853,7 +830,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-rb[aria-pressed="true"]::before{width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
 /* the buttons: the big blue one, the dark ones, the square ones */
 #app.desk .dk-main{--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));padding:0 0 var(--lip);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
-#app.desk .dk-main::after{display:none}                       /* the red ball means "chosen" and only that (it is on the rail) */
 #app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);padding:calc(14px*var(--s)) 0 calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
 #app.desk .dk-main:disabled{opacity:.5}
 #app.desk .dk-sec{--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding:0 10px var(--lip);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
@@ -861,7 +837,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));padding-top:0;padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
 #app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);padding-top:calc(7px*var(--s));padding-bottom:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
 #app.desk .dk-top[aria-pressed="true"]{color:#9cc3f5}
-#app.desk .dk-step button:disabled{opacity:.35}
 /* wells cut into the slate: the segmented choice and the stepper; the chosen segment an ivory piece standing in it */
 #app.desk .dk-seg,#app.desk .dk-step{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}
 #app.desk .dk-seg button[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-3px 4px 6px rgba(0,0,0,.4)}
@@ -889,8 +864,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-me b{display:block;font:800 14.5px 'Gothic A1',sans-serif;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dk-me small{display:block;font:600 12px 'Gothic A1',sans-serif;color:#b9b2a5}
 #app.desk.compact .dk-me{display:none}
-/* narrow: the same pieces, smaller */
-#app.desk.compact .dk-acts{background:none}
 /* the brass and ivory bits: name plates, the avatar's ring, the "in use" tab, the cue as a photograph, stars, a lock */
 #app.desk .dk-plate .av,#app.desk .dk-me .av{position:relative;overflow:visible}
 #app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
@@ -908,8 +881,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-stars span{margin-left:8px}
 .dk-pill img.lock{width:22px;height:22px}
 #app.desk .dk-pill.lock{opacity:.7}
-/* things left on the desk: a plant leaning in at the top right, a towel under the rail, chalk on the rail */
-/* on a phone the props tuck under the panels, peeking out at the corners; held on its side there is no room for them */
 #app.desk.compact .dk-sw{font-size:12px;white-space:nowrap}
 /* a phone: the table gets the room. The tray never shrinks below a table you can see; the slate drops the title the rail
    and the tray already say, its options scroll, and its buttons sit side by side at the foot */
@@ -926,9 +897,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* a phone on its side: the three columns again, narrow */
 #app.desk.compact:not(.portrait) #deskBar{height:48px}
 #app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
-#app.desk.compact:not(.portrait) #desk,#app.desk.compact:not(.portrait) #records{inset:48px 0 0 0}
+#app.desk.compact:not(.portrait) #records{inset:48px 0 0 0}
 #app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px}
-#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:12px 8px}
 #app.desk.compact:not(.portrait) .dk-main{height:54px}
 #app.desk.compact:not(.portrait) .dk-seg button{height:38px}
 #app.desk.compact:not(.portrait) .dk-step button{height:40px}
