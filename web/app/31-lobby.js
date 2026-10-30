@@ -2,7 +2,7 @@
    The same home underneath - the panel, its choices, the live table - laid out as a game's lobby: every game in sight as
    the ball it is played with, the player at the top left, records and settings at the top right where anyone looks for
    them, and one big lit button. Switching back to 'classic' in the settings puts the old screen back exactly. */
-const lobbyOn = () => prefs.ui !== 'classic';
+const lobbyOn = () => prefs.ui === 'lobby';
 const DOCK = [
   ['eight', '8볼', '포켓볼', () => sph('#141418', '8', 54)],
   ['nine', '9볼', '포켓볼', () => sph('#f2b705', '9', 54, true)],
@@ -76,7 +76,7 @@ function lobbyPaint() {
 }
 // put the lobby on or off: the pieces it adds, the equipment buttons moved into the panel and back
 function applyUI() {
-  const on = lobbyOn(); app.classList.toggle('lobby', on);
+  const on = lobbyOn(); app.classList.toggle('lobby', on); app.classList.toggle('desk', prefs.ui === 'desk');
   const chips = $('.h-chips');
   if (on) { if (!$('#dock').children.length) buildDock(); $('.h-right').insertBefore(chips, $('#startBtn')); }
   else { $('.h-mid').appendChild(chips); delete app.dataset.mode; $('#startBtn').textContent = '시작'; }

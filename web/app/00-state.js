@@ -37,7 +37,7 @@ const prefs = (() => {
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
     pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
-    aim: 'line', gv: 0, ui: 'lobby' }, saved);
+    aim: 'line', gv: 0, ui: 'desk', uiv: 0 }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
@@ -52,6 +52,8 @@ const prefs = (() => {
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
   if (p.v < 2) { p.news = Object.keys(saved).length > 0; p.how = !!p.news; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
+  if (p.uiv !== 4) { p.ui = 'desk'; p.uiv = 4; }                       // 4.0: the desk is the first screen (the lobby and the old one stay in the settings)
+  if (!['desk', 'lobby', 'classic'].includes(p.ui)) p.ui = 'desk';
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
@@ -101,10 +103,10 @@ scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
 function dress(ice) { scene.setCloth(ice ? ICE : iceOn() ? 0 : prefs.cloth); }
 function applyTheme() {
-  const light = prefs.theme === 'light', night = prefs.ui !== 'classic' && (st.screen === 'home' || st.screen === 'records');   // the lobby is always night
+  const light = prefs.theme === 'light', away = st.screen === 'home' || st.screen === 'records', night = prefs.ui === 'lobby' && away, desk = prefs.ui === 'desk' && st.screen === 'home';   // the lobby is always night; on the desk the table sits on felt
   app.dataset.theme = light ? 'light' : 'dark';
-  document.body.style.background = night ? '#0d1014' : light ? '#eef0f3' : '#101216';
-  scene.setBackdrop(night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
+  document.body.style.background = desk ? '#6b4527' : night ? '#0d1014' : light ? '#eef0f3' : '#101216';
+  scene.setBackdrop(desk ? 0x0e4c8e : night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
 }
 applyTheme();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,

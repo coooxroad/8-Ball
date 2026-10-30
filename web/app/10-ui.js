@@ -2,6 +2,7 @@
 function el(tag, attrs, kids) {
   const n = document.createElement(tag);
   if (attrs) for (const k in attrs) {
+    if (attrs[k] == null) continue;                                  // an attribute given as null is left off (disabled: null = enabled)
     if (k === 'class') n.className = attrs[k]; else if (k === 'text') n.textContent = attrs[k];
     else if (k === 'style') n.style.cssText = attrs[k]; else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), attrs[k]); else n.setAttribute(k, attrs[k]);
   }
@@ -45,7 +46,7 @@ function show(screen) {
   st.screen = screen;
   $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'records'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
-  const lob = prefs.ui !== 'classic'; $('#topbar').hidden = !lob || (screen !== 'home' && screen !== 'records'); $('#dock').hidden = !lob || screen !== 'home'; $('#room').hidden = screen !== 'home' && screen !== 'records';
+  const lob = prefs.ui === 'lobby', dk = prefs.ui === 'desk'; $('#deskBar').hidden = !dk || (screen !== 'home' && screen !== 'records'); $('#desk').hidden = !dk || screen !== 'home'; $('#topbar').hidden = !lob || (screen !== 'home' && screen !== 'records'); $('#dock').hidden = !lob || screen !== 'home'; $('#room').hidden = screen !== 'home' && screen !== 'records';
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
@@ -58,10 +59,17 @@ function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
-  const tallp = portrait && !wide && H >= 900 && prefs.ui !== 'classic'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
+  const tallp = portrait && !wide && H >= 900 && prefs.ui === 'lobby'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  if (st.screen === 'home' && wide && prefs.ui !== 'classic') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
+  if (st.screen === 'home' && prefs.ui === 'desk') {
+    // the table inside the felt tray: the desk has a window cut in it there, through which the live table shows
+    const sg = $('#dkStage'), r = sg.getBoundingClientRect(), a = app.getBoundingClientRect(), d = $('#desk').getBoundingClientRect();
+    scene.setInsets({ t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 });
+    const x1 = r.left - d.left, y1 = r.top - d.top, x2 = r.right - d.left, y2 = r.bottom - d.top;
+    $('#desk').style.clipPath = sg.dataset.win === '1' ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+  }
+  else if (st.screen === 'home' && wide && prefs.ui === 'lobby') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
   else if (st.screen === 'home' && tallp) scene.setInsets({ t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 });
   else if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
