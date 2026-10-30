@@ -833,13 +833,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk #desk::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(ellipse 75% 70% at 16% 0%,rgba(255,224,168,.20),rgba(255,224,168,0) 62%),radial-gradient(ellipse 130% 110% at 45% 35%,rgba(0,0,0,0) 55%,rgba(18,9,3,.62) 100%)}
 #app.desk #desk>*{position:relative;z-index:1}
-/* one-point perspective, as if looking straight down at the middle of the tray from where the table's own camera is:
-   the rail and the slate are thick slabs standing on the desk; their tops stay where the layout puts them (so the
-   pieces on them are drawn pixel for pixel), and their sides run down and in towards the vanishing point, so the
-   sides facing the middle show, foreshortened, as in the table's own 3D picture */
-#app.desk #desk{perspective:var(--pd,1100px);perspective-origin:var(--vpx,50%) var(--vpy,50%)}
 #app.desk .dk-row .dk-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-#app.desk #desk>.dk-wall{position:absolute;z-index:0;pointer-events:none}
 #dkShade{position:absolute;border-radius:12px;box-shadow:0 16px 28px rgba(0,0,0,.55),0 4px 8px rgba(0,0,0,.35);pointer-events:none}
 .dk-rail,.dk-tray,.dk-slate,.dk-rb,.dk-main,.dk-sec,.dk-seg,.dk-seg button[aria-pressed="true"],.dk-tab,.dk-arrow,.dk-step button,.dk-top,.dk-chip{border-style:solid!important;border-color:transparent!important}
 #app.desk .dk-rail{--s:.5;border-width:0;padding:28px 24px;border-radius:15px;background:#e8dfcd;box-shadow:none;border-image:url(ui/rail.webp) 76 fill/calc(76px*var(--s))/calc(26px*var(--s)) stretch}
@@ -886,6 +880,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-sec{--s:.33}
 #app.desk.compact .dk-tab{--s:.45}
 #app.desk.compact .dk-acts{background:none}
+/* the outline each piece's side (drawn in deskDepth as box-shadows) follows: the corners of its art, at its scale */
+#app.desk .dk-rail,#app.desk .dk-slate{border-radius:calc(22px*var(--s))}
+#app.desk .dk-tray{border-radius:calc(44px*var(--s))}
+#app.desk .dk-rb{border-radius:calc(34px*var(--s))}
+#app.desk .dk-main{border-radius:calc(36px*var(--s))}
+#app.desk .dk-sec{border-radius:calc(20px*var(--s))}
+#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-chip{border-radius:calc(17px*var(--s))}
+#app.desk .dk-seg button[aria-pressed="true"]{border-radius:calc(17px*var(--s))}
 /* a phone: the table gets the room. The tray never shrinks below a table you can see; the slate drops the title the rail
    and the tray already say, its options scroll, and its buttons sit side by side at the foot */
 #app.desk.compact .dk-body>h1,#app.desk.compact .dk-body>.sub,#app.desk.compact .dk-body>h1+.dk-hr,#app.desk.compact .dk-body>.sub+.dk-hr{display:none}
