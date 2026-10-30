@@ -67,7 +67,8 @@ function layout() {
     // (cut to the table's own outline, rails and all, so the felt of the tray runs right up to it; a shade under the window
     // edge lays the table's shadow on the felt)
     const sg = $('#dkStage'), r = sg.getBoundingClientRect(), a = app.getBoundingClientRect(), d = $('#desk').getBoundingClientRect(), win = sg.dataset.win === '1';
-    const ins = { t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 }; scene.setInsets(ins);
+    const ins = { t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 };
+    ins.lie = portrait && r.width > r.height; scene.setInsets(ins);       // a phone held upright: the tray is wider than tall, so the table lies down in it
     const tr = scene.tableRect(ins), ox = a.left - d.left, oy = a.top - d.top;
     const x1 = tr.x + ox - 1, y1 = tr.y + oy - 1, x2 = tr.x + tr.w + ox + 1, y2 = tr.y + tr.h + oy + 1;
     $('#desk').style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';

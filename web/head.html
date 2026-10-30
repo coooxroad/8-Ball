@@ -886,6 +886,34 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-sec{--s:.33}
 #app.desk.compact .dk-tab{--s:.45}
 #app.desk.compact .dk-acts{background:none}
+/* a phone: the table gets the room. The tray never shrinks below a table you can see; the slate drops the title the rail
+   and the tray already say, its options scroll, and its buttons sit side by side at the foot */
+#app.desk.compact .dk-body>h1,#app.desk.compact .dk-body>.sub,#app.desk.compact .dk-body>h1+.dk-hr,#app.desk.compact .dk-body>.sub+.dk-hr{display:none}
+#app.desk.compact .dk-head:not(.nav) small{display:none}
+#app.desk.compact .dk-head{min-height:34px}
+#app.desk.compact .dk-acts{flex-direction:row}
+#app.desk.compact .dk-acts>*{flex:1 1 0;min-width:0}
+#app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
+#app.desk.compact .dk-sec{height:auto;min-height:48px;padding:4px 8px;font-size:15px;line-height:1.2}
+.dk-sec small{display:block;font:600 11.5px 'Gothic A1',sans-serif;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.desk.compact .dk-plate{min-height:46px}
+#app.desk.compact.portrait #desk{grid-template-rows:auto minmax(220px,1fr) auto;padding:14px 16px 18px;gap:14px}
+/* upright, the light still comes from the upper left, and it falls off harder: the desk is a thing in a room */
+#app.desk.compact.portrait #desk::before{background:radial-gradient(ellipse 110% 55% at 10% 0%,rgba(255,224,168,.24),rgba(255,224,168,0) 60%),radial-gradient(ellipse 120% 90% at 50% 40%,rgba(0,0,0,0) 50%,rgba(18,9,3,.7) 100%)}
+#app.desk.compact.portrait .dk-slate{max-height:36vh}
+/* a phone on its side: the three columns again, narrow */
+#app.desk.compact:not(.portrait) #deskBar{height:48px}
+#app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
+#app.desk.compact:not(.portrait) #desk,#app.desk.compact:not(.portrait) #records{inset:48px 0 0 0}
+#app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px}
+#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:12px 8px}
+#app.desk.compact:not(.portrait) .dk-rb{flex:none;height:46px;min-width:0;padding:0 6px 0 22px}
+#app.desk.compact:not(.portrait) .dk-rb[aria-pressed="true"]::before{left:8px}
+#app.desk.compact:not(.portrait) .dk-tray{padding:14px 18px}
+#app.desk.compact:not(.portrait) .dk-slate{max-height:none;padding:14px 16px}
+#app.desk.compact:not(.portrait) .dk-main{height:54px}
+#app.desk.compact:not(.portrait) .dk-seg button{height:38px}
+#app.desk.compact:not(.portrait) .dk-step button{height:40px}
 </style>
 
 <div id="app" class="busy" data-theme="light">

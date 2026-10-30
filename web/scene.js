@@ -487,7 +487,7 @@ function createScene(canvas, app, PH) {
   let ppm = 200, guideKey = '';
 
   /* layout: the table is fitted inside the insets; the insets ease when the screen changes */
-  let portrait = false, dirty = 3, quality = 'auto', W = 0, H = 0;
+  let portrait = false, lying = false, dirty = 3, quality = 'auto', W = 0, H = 0;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
@@ -550,7 +550,7 @@ function createScene(canvas, app, PH) {
   }
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
-    portrait = H > W;
+    portrait = H > W && !lying;                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
     renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
     renderer.setSize(W, H, false);
@@ -571,8 +571,9 @@ function createScene(canvas, app, PH) {
     return { x: cx - w / 2, y: cy - h / 2, w, h };
   }
   function setInsets(t, instant) {
-    Object.assign(insTo, t);
-    if (instant) { Object.assign(ins, t); applyCamera(); }
+    const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; staticDirty = true; } instant = true; }
+    insTo.t = t.t; insTo.l = t.l; insTo.r = t.r; insTo.b = t.b;
+    if (instant) { Object.assign(ins, insTo); applyCamera(); }
     dirty = 3;
   }
   function setQuality(q) { quality = q; resize(); }

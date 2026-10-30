@@ -22,7 +22,7 @@ const dkStep = (vals, cur, fmt, fn, mini) => { const i = Math.max(0, vals.indexO
   return el('div', { class: 'dk-step' + (mini ? ' mini' : '') }, [el('button', { 'aria-label': '줄이기', text: '−', disabled: i <= 0 ? '' : null, onclick: () => { SND.tap(); fn(vals[i - 1]); } }), el('b', { text: fmt(vals[i]) }),
     el('button', { 'aria-label': '늘리기', text: '+', disabled: i >= vals.length - 1 ? '' : null, onclick: () => { SND.tap(); fn(vals[i + 1]); } })]); };
 const dkMain = (t, sub, fn, off) => el('button', { class: 'dk-main', disabled: off ? '' : null, onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(t), sub ? el('small', { text: sub }) : null]);
-const dkSec = (t, fn) => el('button', { class: 'dk-sec', text: t, onclick: () => { SND.init(); SND.tap(); fn(); } });
+const dkSec = (t, fn, sub) => el('button', { class: 'dk-sec', onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(t), sub ? el('small', { text: sub }) : null]);
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: () => { SND.init(); SND.tap(); fn(); } })]);
 const guideRow = () => dkRow('조준선', guideName(prefs.guides[0]) === guideName(prefs.guides[1]) || prefs.vsAI ? guideName(prefs.guides[0]) : guideName(prefs.guides[0]) + ' · ' + guideName(prefs.guides[1]), sheetGuide);
 
@@ -75,7 +75,7 @@ function deskPaint() {
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; savePrefs(); paintHome(); })]);
     put(slate, [dkHr(), guideRow()]);
     const gm = canResume && d.game, rs = gm ? `${MODE_KO[gm.modeId]} · ${gm.players[0].name} vs ${gm.players[1].name}` : '';
-    put(slate, el('div', { class: 'dk-acts' }, [dkMain('시작', `${MODE_KO[m]} · ${prefs.vsAI ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}`, () => match.start(0)), canResume ? dkSec('이어서 하기 · ' + rs, () => resume(d)) : null]));
+    put(slate, el('div', { class: 'dk-acts' }, [dkMain('시작', `${MODE_KO[m]} · ${prefs.vsAI ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}`, () => match.start(0)), canResume ? dkSec('이어서 하기', () => resume(d), rs) : null]));
   }
 
   if (deskTab === 'train') {
