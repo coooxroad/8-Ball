@@ -3,7 +3,7 @@ function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b 
 function closeSheet() { $('#sheet').hidden = true; }
 $('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
 $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
-const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: () => { SND.init(); SND.tap(); fn(); } }, kids);
+const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: onTap(fn) }, kids);
 const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
 const flatBtn = (text, fn) => el('button', { class: 'btn flat', text, onclick: () => { SND.tap(); fn(); } });
 const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),

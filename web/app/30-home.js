@@ -36,7 +36,7 @@ function paintResume() {
   const box = $('#resumeBox'), d = store.get('save', null), ok = !!(d && d.v === 2 && d.game && MODE_KO[d.game.modeId] && prefs.mode !== 'practice' && prefs.mode !== 'puzzle');
   box.hidden = !ok; box.textContent = ''; if (!ok) return;
   const gm = d.game, ps = gm.players, tens = gm.tens ? 10 : 1, sc = gm.modeId === 'four' || gm.modeId === 'three' ? ` · ${ps[0].score * tens} : ${ps[1].score * tens}` : '';
-  box.appendChild(el('button', { class: 'resume', onclick: () => { SND.init(); SND.tap(); resume(d); } }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
+  box.appendChild(el('button', { class: 'resume', onclick: onTap(() => resume(d)) }, [el('span', { class: 'k', text: '이어하기' }), el('b', { text: `${ps[0].name} vs ${ps[1].name}` }), el('span', { class: 'd', text: `${MODE_KO[gm.modeId]}${sc} · ${ps[gm.turn].name} 차례` })]));
   box.appendChild(el('button', { class: 'resume-x', 'aria-label': '하던 판 지우기', text: '×', onclick: () => { SND.tap(); store.set('save', null); paintResume(); } }));
 }
 // the puzzles on offer, and which stages are open
