@@ -123,6 +123,8 @@ function createScene(canvas, app, PH) {
   const woodTex = tex(wc, 1);
   const woodU = { uOuter: { value: new THREE.Vector2(1, 1) } };                      // outer half-size of the table currently shown
   const woodMat = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: 0.36, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
+  // the cabinet under the rails: the same wood, matt and a shade darker (it stands in the rail's shadow and has no lacquer)
+  const bodyMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x8c6c58, roughness: 0.7, metalness: 0, envMapIntensity: 0.3 });
   woodMat.onBeforeCompile = sh => {
     sh.uniforms.uOuter = woodU.uOuter;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocal = position;');
@@ -218,7 +220,7 @@ function createScene(canvas, app, PH) {
     body.lineTo(-bxo, -byo + br); body.absarc(-bxo + br, -byo + br, br, Math.PI, Math.PI * 1.5, false);
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r + 0.002, 0, Math.PI * 2, true); body.holes.push(h); }   // the pockets go down through it
     const bg = new THREE.ExtrudeGeometry(body, { depth: 0.72, bevelEnabled: false, curveSegments: 12 }); bg.translate(0, 0, -0.8);
-    const bodyMesh = new THREE.Mesh(bg, woodMat); bodyMesh.castShadow = true; grp.add(bodyMesh);
+    const bodyMesh = new THREE.Mesh(bg, bodyMat); bodyMesh.castShadow = true; grp.add(bodyMesh);
     // sights
     const dg = new THREE.CircleGeometry(0.0095, 4);
     const sight = (x, y, turn) => { const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m); };
@@ -252,9 +254,8 @@ function createScene(canvas, app, PH) {
     const set = sets[P.POCKETED ? 'pool' : 'carom'];
     for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
     // the lamps hang over this table's long axis
-    [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * P.HL; });
+    placeLamps();
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
-    lampObjs.forEach((l, i) => { const x = LAMPS[i % 3][0]; l.position.x = x; l.target.position.x = x; l.target.updateMatrixWorld(); });
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
@@ -487,6 +488,21 @@ function createScene(canvas, app, PH) {
   let ppm = 200, guideKey = '';
 
   /* layout: the table is fitted inside the insets; the insets ease when the screen changes */
+  // The front view (the desk's home screen): the camera comes down a few degrees from straight overhead towards the
+  // viewer, so the table's near rail shows its front, and the lamps move up and to the right of the screen, so the balls'
+  // shadows fall to the lower left like everything else on the desk. Off, it is the straight-down game view.
+  let front = 0, lampShift = [0, 0]; const FRONT_FOV = 18;
+  function placeLamps() {
+    if (!cur) return;
+    [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * cur.HL + lampShift[0]; LAMPS[i][1] = lampShift[1]; });
+    lampObjs.forEach((l, i) => { const L = LAMPS[i % 3]; l.position.x = L[0]; l.position.y = L[1]; l.target.position.set(L[0] - lampShift[0] * 0.5, -lampShift[1] * 0.5, 0); l.target.updateMatrixWorld(); });
+  }
+  function setFront(deg) {
+    const t = (deg || 0) * Math.PI / 180; if (t === front) return;
+    front = t; applyLook(); applyCamera(); renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
+  // the lamps' shift is in screen terms (right, up), so it follows the table's turn on an upright screen
+  function applyLook() { const r = front ? 0.8 : 0, u = front ? 0.6 : 0; lampShift = portrait ? [u, -r] : [r, u]; placeLamps(); }
   let portrait = false, lying = false, dirty = 3, quality = 'auto', W = 0, H = 0;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
@@ -521,7 +537,10 @@ function createScene(canvas, app, PH) {
     const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
     ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
     const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
-    const dist = fh / (2 * ppm * Math.tan(FOV * Math.PI / 360));
+    // (the front view uses a longer lens, from further off: the table keeps its shape and the front of its cabinet shows)
+    const fov = front && !orbit.on ? FRONT_FOV : FOV, dist = fh / (2 * ppm * Math.tan(fov * Math.PI / 360));
+    if (camera.fov !== fov) camera.fov = fov;
+    camera.far = Math.max(30, dist * 1.6 + 4);                          // (a small table on a phone is a long way off down that lens)
     camera.aspect = fw / fh;
     if (orbit.on) {
       // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
@@ -542,6 +561,11 @@ function createScene(canvas, app, PH) {
       // a scripted camera may come in very close, so what it can see starts nearer to it
       if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); camera.near = Math.max(0.05, Math.min(0.5, d * cam.zoom * 0.3)); }
       else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
+    } else if (front) {
+      // the front view: the same distance, swung down towards the screen's bottom edge, a little further out for the near side
+      const d = dist * 1.04, sn = Math.sin(front) * d, cs = Math.cos(front) * d;
+      camera.near = Math.max(0.5, d * 0.5); fitP.set(0, 0, 0); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0);   // (from so far off, a near plane close by would leave the depth too coarse: the cloth and the bed under it would fight)
+      if (portrait) camera.position.set(-sn, 0, cs); else camera.position.set(0, -sn, cs);
     } else { camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
@@ -550,7 +574,7 @@ function createScene(canvas, app, PH) {
   }
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
-    portrait = H > W && !lying;                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
+    portrait = H > W && !lying; if (front) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
     renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
     renderer.setSize(W, H, false);
@@ -570,8 +594,26 @@ function createScene(canvas, app, PH) {
     const p = portrait ? Math.min(sw / THf, sh / TWf) : Math.min(sw / TWf, sh / THf), w = (portrait ? TH : TW) * p, h = (portrait ? TW : TH) * p;
     return { x: cx - w / 2, y: cy - h / 2, w, h };
   }
+  // the table's outline on the screen once the insets t are reached (in the front view, the hull of its rail tops and the
+  // foot of its cabinet): a polygon, and its box
+  function tableOutline(t) {
+    const r = tableRect(t);
+    if (!front || orbit.on || !cur) return { pts: [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]], ...r };
+    const keep = { ...ins }; Object.assign(ins, { t: t.t, l: t.l, r: t.r, b: t.b }); applyCamera(); proj.begin();
+    const ex = cur.HL + CW + RW, ey = cur.HW + CW + RW, bx = ex - 0.035, by = ey - 0.035, P = [], o = [0, 0];
+    for (const [x, y, z] of [[ex, ey, RAIL_Z], [bx, by, -0.8]]) for (const sx of [-1, 1]) for (const sy of [-1, 1]) { proj.at(sx * x, sy * y, z, o); P.push([o[0], o[1]]); }
+    Object.assign(ins, keep); applyCamera();
+    // convex hull (monotone chain)
+    P.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+    for (const p of P) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (const p of P.slice().reverse()) { while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+    const pts = lo.slice(0, -1).concat(hi.slice(0, -1)), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    return { pts, x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+  }
   function setInsets(t, instant) {
-    const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; staticDirty = true; } instant = true; }
+    const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; if (front) applyLook(); staticDirty = true; } instant = true; }
     insTo.t = t.t; insTo.l = t.l; insTo.r = t.r; insTo.b = t.b;
     if (instant) { Object.assign(ins, insTo); applyCamera(); }
     dirty = 3;
@@ -763,7 +805,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setFront, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
