@@ -62,7 +62,7 @@ function layout() {
   const tallp = portrait && !wide && H >= 900 && prefs.ui === 'lobby'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
-  scene.setFront(0, st.screen === 'home' && prefs.ui === 'desk');      // on the desk the lamps move up and right, so shadows fall as the desk's do
+  scene.setFront(st.screen === 'home' && prefs.ui === 'desk');      // on the desk the lamps move up and right, so shadows fall as the desk's do
   const tilt = st.screen === 'home' && prefs.ui === 'desk'; app.classList.toggle('tilt', tilt);
   if (tilt) {
     // How far it leans, and how much bigger than the screen the plane must be: a point h up the plane from its bottom edge
