@@ -563,6 +563,13 @@ function createScene(canvas, app, PH) {
     }
     applyCamera();
   }
+  // where the table will sit for these insets once they have eased in: its outer edge (rails included), in pixels
+  function tableRect(t) {
+    const sw = Math.max(40, W - t.l - t.r), sh = Math.max(40, H - t.t - t.b), cx = t.l + sw / 2, cy = t.t + sh / 2;
+    const TW = 2 * (cur.HL + CW + RW), TH = 2 * (cur.HW + CW + RW), TWf = TW + 0.03, THf = TH + 0.03;
+    const p = portrait ? Math.min(sw / THf, sh / TWf) : Math.min(sw / TWf, sh / THf), w = (portrait ? TH : TW) * p, h = (portrait ? TW : TH) * p;
+    return { x: cx - w / 2, y: cy - h / 2, w, h };
+  }
   function setInsets(t, instant) {
     Object.assign(insTo, t);
     if (instant) { Object.assign(ins, t); applyCamera(); }
@@ -755,7 +762,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, toScreen, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

@@ -49,5 +49,7 @@ HTML
 cp three.min.js "$A/three.min.js"
 rm -f "$A"/fonts/*
 cp fonts/*.woff2 "$A/fonts/"
+# the desk's materials and controls (images made to order, see ui/README.md)
+rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c dist/artifact.html "$A/index.html"

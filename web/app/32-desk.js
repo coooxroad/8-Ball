@@ -18,8 +18,8 @@ const dkLab = t => el('div', { class: 'dk-lab', text: t });
 const dkTxt = (t, hi) => { const p = el('div', { class: 'dk-txt' }); p.textContent = t; if (hi) p.appendChild(el('b', { text: hi })); return p; };
 const dkSeg = (opts, cur, fn) => el('div', { class: 'dk-seg' }, opts.map(([v, t, off]) => el('button', { 'aria-pressed': String(v === cur), text: t, disabled: off ? '' : null,
   onclick: () => { SND.init(); SND.tap(); fn(v); } })));
-const dkStep = (vals, cur, fmt, fn) => { const i = Math.max(0, vals.indexOf(cur));
-  return el('div', { class: 'dk-step' }, [el('button', { 'aria-label': '줄이기', text: '−', disabled: i <= 0 ? '' : null, onclick: () => { SND.tap(); fn(vals[i - 1]); } }), el('b', { text: fmt(vals[i]) }),
+const dkStep = (vals, cur, fmt, fn, mini) => { const i = Math.max(0, vals.indexOf(cur));
+  return el('div', { class: 'dk-step' + (mini ? ' mini' : '') }, [el('button', { 'aria-label': '줄이기', text: '−', disabled: i <= 0 ? '' : null, onclick: () => { SND.tap(); fn(vals[i - 1]); } }), el('b', { text: fmt(vals[i]) }),
     el('button', { 'aria-label': '늘리기', text: '+', disabled: i >= vals.length - 1 ? '' : null, onclick: () => { SND.tap(); fn(vals[i + 1]); } })]); };
 const dkMain = (t, sub, fn, off) => el('button', { class: 'dk-main', disabled: off ? '' : null, onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(t), sub ? el('small', { text: sub }) : null]);
 const dkSec = (t, fn) => el('button', { class: 'dk-sec', text: t, onclick: () => { SND.init(); SND.tap(); fn(); } });
@@ -45,8 +45,10 @@ function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));
-  const rail = $('#dkRail'), head = $('#dkHead'), stage = $('#dkStage'), foot = $('#dkFoot'), slate = $('#dkSlate'), top = slate.scrollTop;
-  for (const n of [rail, head, stage, foot, slate]) n.textContent = '';
+  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = recText(prefs.names[0]);
+  const rail = $('#dkRail'), head = $('#dkHead'), stage = $('#dkStage'), foot = $('#dkFoot'), slate = $('#dkSlate'), top = (slate.querySelector('.dk-body') || slate).scrollTop;
+  for (const n of [rail, head, foot, slate]) n.textContent = '';
+  for (const k of [...stage.children]) if (k.id !== 'dkShade') k.remove();
   stage.dataset.win = '1';                                           // the live table shows through, unless something else is laid in the tray
   head.className = 'dk-head';
   const put = (node, kids) => { for (const k of [].concat(kids)) if (k) node.appendChild(k); };
@@ -65,7 +67,9 @@ function deskPaint() {
     put(slate, dkH1(MODE_KO[m], GAME_SUB[m]));
     put(slate, [dkHr(), dkLab('상대'), dkSeg([['net', '온라인', true], ['friend', '친구'], ['ai', '컴퓨터']], prefs.vsAI ? 'ai' : 'friend', v => { prefs.vsAI = v === 'ai'; savePrefs(); paintHome(); })]);
     if (prefs.vsAI) put(slate, [dkLab('난이도'), dkSeg(LEVELS.map((t, i) => [i, t]), Math.min(3, prefs.level), v => { prefs.level = v; savePrefs(); paintHome(); })]);
-    if (m === 'four') put(slate, [dkLab('내 수지'), dkStep(SUJI, sujiOf(0), v => String(v * 10), v => { prefs.suji[prefs.names[0]] = v; savePrefs(); paintHome(); }),
+    if (m === 'four') put(slate, [dkLab('수지 (각자 정하기)'),
+      el('div', { class: 'dk-row' }, [el('span', { class: 'dk-txt', text: prefs.names[0] }), dkStep(SUJI, sujiOf(0), v => String(v * 10), v => { prefs.suji[prefs.names[0]] = v; savePrefs(); paintHome(); }, true)]),
+      el('div', { class: 'dk-row' }, [el('span', { class: 'dk-txt', text: oppName() }), dkStep(SUJI, sujiOf(1), v => String(v * 10), v => { if (prefs.vsAI) prefs.sujiAI = v; else prefs.suji[prefs.names[1]] = v; savePrefs(); paintHome(); }, true)]),
       dkSeg([[0, '마무리 자유'], [1, '쿠션 마무리']], prefs.finish ? 1 : 0, v => { prefs.finish = v === 1; savePrefs(); paintHome(); })]);
     if (m === 'three') put(slate, [dkLab('목표 점수'), dkStep([3, 5, 10], [3, 5, 10].includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; savePrefs(); paintHome(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; savePrefs(); paintHome(); })]);
@@ -121,7 +125,7 @@ function deskPaint() {
       const i = gearCue == null ? prefs.cues[0] : gearCue, c = CUES[i];
       put(head, el('div', { class: 'tt' }, [el('h2', { text: '큐 살펴보기' }), el('small', { text: `${i + 1} / ${CUES.length}` })]));
       const cv = el('canvas', { class: 'cuebig' }); stage.dataset.win = '0'; put(stage, cv);
-      put(foot, CUES.map((q, k) => { const sw = el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCue = k; paintHome(); } }, [el('i', { class: 'cuebox' }, el('canvas')), document.createTextNode(q.name)]); return sw; }));
+      put(foot, CUES.map((q, k) => { const sw = el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCue = k; paintHome(); } }, [k === prefs.cues[0] ? el('span', { class: 'eq', text: '장착' }) : null, el('i', { class: 'cuebox' }, el('canvas')), document.createTextNode(q.name)]); return sw; }));
       requestAnimationFrame(() => { drawCue(cv, c, false); foot.querySelectorAll('.dk-sw canvas').forEach((x, k) => drawCue(x, CUES[k], false)); });
       const own = i === prefs.cues[0];
       put(slate, dkH1(c.name, '큐 외형'));
@@ -130,10 +134,9 @@ function deskPaint() {
         gearCue != null && !own ? dkSec('미리보기 취소', () => { gearCue = null; paintHome(); }) : null]));
     } else {
       const i = gearCloth == null ? prefs.cloth : gearCloth, c = CLOTHS[i], carom = isCarom();
-      put(head, [el('div', { class: 'tt' }, [el('h2', { text: '내 테이블' }), el('small', { text: carom ? (prefs.mode === 'three' ? '대대 284×142cm' : '중대 254×127cm') : TABLES.find(t => t.id === prefs.table).name })]),
-        gearCloth != null ? el('span', { class: 'dk-chip', text: '미리보기' }) : null]);
+      put(head, [el('div', { class: 'tt' }, [el('h2', { text: '내 테이블' }), el('small', { text: carom ? (prefs.mode === 'three' ? '대대 284×142cm' : '중대 254×127cm') : TABLES.find(t => t.id === prefs.table).name })])]);
       put(foot, CLOTHS.map((q, k) => el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCloth = k === prefs.cloth ? null : k; paintHome(); } },
-        [el('i', { style: `background:${hex(q.felt)};border:5px solid ${hex(q.wood)}` }), document.createTextNode(q.name)])));
+        [k === prefs.cloth ? el('span', { class: 'eq', text: '장착' }) : null, el('i', { style: `background:${hex(q.felt)};border:5px solid ${hex(q.wood)}` }), document.createTextNode(q.name)])));
       scene.setCloth(i);
       const own = i === prefs.cloth;
       put(slate, dkH1(c.name, '테이블 천'));
@@ -154,9 +157,11 @@ function deskPaint() {
     put(slate, [dkHr(), dkTxt('지금 가진 큐와 천은 내 장비에서 바꿀 수 있습니다.')]);
     put(slate, el('div', { class: 'dk-acts' }, [dkMain('준비 중', null, () => {}, true), dkSec('내 장비로', () => deskGo('gear'))]));
   }
-  slate.scrollTop = top;
+  // the slate: its options scroll if they must, its buttons stay put at the foot
+  { const acts = slate.querySelector('.dk-acts'), body = el('div', { class: 'dk-body' }); while (slate.firstChild && slate.firstChild !== acts) body.appendChild(slate.firstChild); slate.insertBefore(body, acts); body.scrollTop = top; }
   if (st.screen === 'home') requestAnimationFrame(layout);          // the table sits in the tray, whose size the content just set
 }
 $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-tab'); if (!b) return; SND.init(); SND.tap(); deskGo(b.dataset.t); });
 press('#dkSet', sheetSettings);
 press('#dkRec', () => { if (st.screen === 'records') goHome(true); else { showRecords(); deskPaint(); } });
+press('#dkMe', () => sheetName(0));

@@ -64,10 +64,15 @@ function layout() {
   scene.resize();
   if (st.screen === 'home' && prefs.ui === 'desk') {
     // the table inside the felt tray: the desk has a window cut in it there, through which the live table shows
-    const sg = $('#dkStage'), r = sg.getBoundingClientRect(), a = app.getBoundingClientRect(), d = $('#desk').getBoundingClientRect();
-    scene.setInsets({ t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 });
-    const x1 = r.left - d.left, y1 = r.top - d.top, x2 = r.right - d.left, y2 = r.bottom - d.top;
-    $('#desk').style.clipPath = sg.dataset.win === '1' ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+    // (cut to the table's own outline, rails and all, so the felt of the tray runs right up to it; a shade under the window
+    // edge lays the table's shadow on the felt)
+    const sg = $('#dkStage'), r = sg.getBoundingClientRect(), a = app.getBoundingClientRect(), d = $('#desk').getBoundingClientRect(), win = sg.dataset.win === '1';
+    const ins = { t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 }; scene.setInsets(ins);
+    const tr = scene.tableRect(ins), ox = a.left - d.left, oy = a.top - d.top;
+    const x1 = tr.x + ox - 1, y1 = tr.y + oy - 1, x2 = tr.x + tr.w + ox + 1, y2 = tr.y + tr.h + oy + 1;
+    $('#desk').style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+    let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
+    sh.hidden = !win; Object.assign(sh.style, { left: (tr.x + a.left - r.left) + 'px', top: (tr.y + a.top - r.top) + 'px', width: tr.w + 'px', height: tr.h + 'px' });
   }
   else if (st.screen === 'home' && wide && prefs.ui === 'lobby') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
   else if (st.screen === 'home' && tallp) scene.setInsets({ t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 });

@@ -758,9 +758,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-dots{display:flex;align-items:center;gap:10px;color:#d9e2ee;font:700 15px 'Gothic A1',sans-serif}
 .dk-dots i{width:14px;height:14px;border-radius:50%;background:#0a3566;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
 .dk-dots i.on{background:#e9dfcc;box-shadow:0 1px 2px rgba(0,0,0,.5)}
-.dk-slate{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;padding:26px 24px 24px;border-radius:16px;background:var(--slate);background-image:var(--tex-slate);color:var(--slate-ink);
+.dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;padding:26px 24px 24px;border-radius:16px;background:var(--slate);background-image:var(--tex-slate);color:var(--slate-ink);
   box-shadow:inset 0 0 0 2px var(--slate-edge),inset 0 2px 0 rgba(255,255,255,.04),0 10px 22px rgba(0,0,0,.45)}
-.dk-slate h1{margin:0;font:800 44px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
+
+.dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.dk-body::-webkit-scrollbar{display:none}
+.dk-step.mini{grid-template-columns:44px 56px 44px;padding:5px 7px}
+.dk-step.mini button{height:42px;font-size:22px}
+.dk-step.mini b{font-size:24px}
+.dk-slate h1{margin:0;font:800 40px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
 .dk-slate .sub{font:700 18px 'Gothic A1',sans-serif;color:#cfc8ba;margin-top:-6px}
 .dk-hr{flex:none;height:1px;background:rgba(255,255,255,.1)}
 .dk-lab{font:700 14px 'Gothic A1',sans-serif;color:var(--slate-sub)}
@@ -769,14 +775,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .dk-row .dk-chip{height:42px}
 .dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:5px;border-radius:14px;background:#0e1313;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
-.dk-seg button{height:48px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
+.dk-seg button{height:44px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
 .dk-seg button[aria-pressed="true"]{background:#e9dfcc;color:#2b241c;box-shadow:inset 0 1px 0 #fff,0 2px 3px rgba(0,0,0,.4)}
 .dk-seg button:disabled{opacity:.38}
 .dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px;padding:5px;border-radius:14px;background:#0e1313;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
 .dk-step button{height:52px;border-radius:10px;background:#252b2b;color:#eee8dc;font:500 28px Outfit,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 3px rgba(0,0,0,.5)}
 .dk-step button:disabled{opacity:.35}
 .dk-step b{text-align:center;font:600 34px Outfit,sans-serif}
-.dk-acts{display:flex;flex-direction:column;gap:12px;margin-top:auto;padding-top:6px}
+.dk-acts{flex:none;display:flex;flex-direction:column;gap:12px;padding-top:4px}
 .dk-main{position:relative;height:88px;border-radius:18px;background:var(--blue);color:#fff;font:800 28px 'Gothic A1',sans-serif;transition:transform 90ms ease-out;
   box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -5px 0 rgba(0,0,0,.25),0 6px 12px rgba(0,0,0,.45)}
 .dk-main::after{left:50%;bottom:12px;margin-left:-6px}
@@ -802,15 +808,77 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-head h2{font-size:21px}
 #app.desk.compact .dk-head small{font-size:13px}
 #app.desk.compact .dk-arrow{width:44px;height:44px}
-#app.desk.compact .dk-plate{min-height:52px;padding:6px 10px}
+#app.desk.compact .dk-plate{min-height:52px;padding:6px 10px;min-width:0;gap:8px}
+#app.desk.compact .dk-plate .av{width:28px;height:28px;font-size:13px}
+#app.desk.compact .dk-plate b{font-size:15px}
+#app.desk.compact .dk-plate small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.desk.compact .dk-plate>span{min-width:0}
 #app.desk.compact .dk-slate{max-height:48vh;padding:16px;gap:10px}
 #app.desk.compact .dk-slate h1{font-size:28px}
 #app.desk.compact .dk-slate .sub{font-size:15px}
-#app.desk.compact .dk-acts{position:sticky;bottom:-16px;padding:8px 0 4px;background:var(--slate)}
+#app.desk.compact .dk-acts{padding-top:2px}
 #app.desk.compact .dk-main{height:64px;font-size:22px}
 #app.desk.compact .dk-main::after{left:auto;right:20px;top:50%;bottom:auto;margin:-6px 0 0}
 #app.desk.compact .dk-main small{margin-bottom:0}
 #app.desk.compact .dk-sec{height:48px}
+
+/* ---------- the desk's real materials (ui/*.webp, 9-sliced; flat colours above stay as the fallback) ----------
+   Each piece is the made-to-order image drawn round the element at a scale --s, its shadow margin drawn outside the
+   box (outset) so the element's box is the body of the piece. Pressed and selected states are their own images; the
+   pieces carry their own shadows and light, so nothing is added on top in CSS. */
+#app.desk{--felt-tile:300px;--desk-tile:640px}
+#app.desk #desk{background:#6b4527 url(ui/desk.webp) 0 0/var(--desk-tile) repeat}
+#app.desk #deskBar{background:#26292d url(ui/bar.webp) 0 0/auto 100% repeat-x;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+/* light over the desk: warm from the upper left, falling off to the far corner - the room the desk sits in */
+#app.desk #desk::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 75% 70% at 16% 0%,rgba(255,224,168,.20),rgba(255,224,168,0) 62%),radial-gradient(ellipse 130% 110% at 45% 35%,rgba(0,0,0,0) 55%,rgba(18,9,3,.62) 100%)}
+#app.desk #desk>*{position:relative;z-index:1}
+#dkShade{position:absolute;border-radius:12px;box-shadow:0 16px 28px rgba(0,0,0,.55),0 4px 8px rgba(0,0,0,.35);pointer-events:none}
+.dk-rail,.dk-tray,.dk-slate,.dk-rb,.dk-main,.dk-sec,.dk-seg,.dk-seg button[aria-pressed="true"],.dk-tab,.dk-arrow,.dk-step button,.dk-top,.dk-chip{border-style:solid!important;border-color:transparent!important}
+#app.desk .dk-rail{--s:.5;border-width:0;padding:28px 24px;border-radius:15px;background:#e8dfcd;box-shadow:none;border-image:url(ui/rail.webp) 76 fill/calc(76px*var(--s))/calc(26px*var(--s)) stretch}
+#app.desk .dk-tray{--s:.34;border-width:0;border-radius:18px;background:#0e4c8e url(ui/felt.webp) 0 0/var(--felt-tile) repeat;box-shadow:none;padding:34px 42px;border-image:url(ui/tray.webp) 170/calc(170px*var(--s))/calc(55px*var(--s)) stretch}
+#app.desk .dk-slate{--s:.45;border-width:0;padding:32px 30px 30px;border-radius:13px;background:#172020;box-shadow:none;border-image:url(ui/slate.webp) 94 fill/calc(94px*var(--s))/calc(34px*var(--s)) stretch}
+#app.desk .dk-rb{--s:.5;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/rb.webp) 79 fill/calc(79px*var(--s))/calc(16px*var(--s)) stretch;transition:none}
+#app.desk .dk-rb:active{transform:none;border-image-source:url(ui/rb-press.webp)}
+#app.desk .dk-rb[aria-pressed="true"]{background:none;box-shadow:none;border-image-source:url(ui/rb-on.webp)}
+#app.desk .dk-rb[aria-pressed="true"]::before{width:20px;height:20px;margin-top:-10px;left:26px;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
+#app.desk .dk-main{--s:.47;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/main.webp) 84 fill/calc(84px*var(--s))/calc(16px*var(--s)) stretch;text-shadow:0 1px 2px rgba(0,0,0,.35);transition:none}
+#app.desk .dk-main::after{display:none}                       /* the red ball means "chosen" and only that (it is on the rail) */
+#app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp)}
+#app.desk .dk-main:disabled{opacity:.5}
+#app.desk .dk-sec{--s:.44;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/sec.webp) 54 fill/calc(54px*var(--s))/calc(14px*var(--s)) stretch;transition:none}
+#app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp)}
+#app.desk .dk-seg{--s:.5;border-width:0;border-radius:0;background:none;box-shadow:none;padding:7px 9px;border-image:url(ui/seg.webp) 50 fill/calc(50px*var(--s))/calc(10px*var(--s)) stretch}
+#app.desk .dk-seg button[aria-pressed="true"]{--s:.5;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/seg-on.webp) 44 fill/calc(44px*var(--s))/calc(10px*var(--s)) stretch}
+#app.desk .dk-tab{--s:.55;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tab.webp) 36 fill/calc(36px*var(--s))/calc(10px*var(--s)) stretch;transition:none}
+#app.desk .dk-tab[aria-selected="true"]{background:none;border-image-source:url(ui/tab-on.webp)}
+#app.desk .dk-tab:active{transform:none}
+#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.4;border-width:0;border-radius:0;background:none;box-shadow:none;border-image:url(ui/sq.webp) 46 fill/calc(46px*var(--s))/calc(12px*var(--s)) stretch;transition:none}
+#app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active{transform:none;border-image-source:url(ui/sq-press.webp)}
+#app.desk .dk-top[aria-pressed="true"]{border-image-source:url(ui/sq-press.webp);color:#9cc3f5}
+#app.desk .dk-step{background:none;box-shadow:none;--s:.5;border:0 solid transparent;border-radius:0;border-image:url(ui/seg.webp) 50 fill/calc(50px*var(--s))/calc(10px*var(--s)) stretch;padding:7px 9px}
+#app.desk .dk-step button:disabled{opacity:.35}
+/* a swatch: the chosen one framed, the one in use badged */
+.dk-sw{position:relative}
+#app.desk .dk-sw[aria-pressed="true"] i{box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+#app.desk .dk-sw[aria-pressed="true"]::after{content:"";position:absolute;left:-7px;right:-7px;top:-7px;height:calc(100% - 12px);background:url(ui/swframe.webp) center/100% 100% no-repeat;pointer-events:none}
+.dk-sw .eq{position:absolute;left:6px;top:6px;padding:2px 8px;border-radius:6px;background:#e9dfcc;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;box-shadow:0 1px 2px rgba(0,0,0,.45);z-index:1}
+/* the player at the top */
+.dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
+.dk-me .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
+.dk-me b{display:block;font:800 14.5px 'Gothic A1',sans-serif;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-me small{display:block;font:600 12px 'Gothic A1',sans-serif;color:#b9b2a5}
+#app.desk.compact .dk-me{display:none}
+/* narrow: the same pieces, smaller */
+#app.desk.compact .dk-rb{--s:.26}
+#app.desk.compact .dk-rb[aria-pressed="true"]::before{width:14px;height:14px;margin-top:-7px;left:11px}
+#app.desk.compact .dk-tray{--s:.24;padding:20px 24px}
+#app.desk.compact .dk-slate{--s:.32;padding:20px 20px 18px}
+#app.desk.compact .dk-rail{--s:.32;padding:14px 14px}
+#app.desk.compact .dk-main{--s:.36}
+#app.desk.compact .dk-sec{--s:.33}
+#app.desk.compact .dk-tab{--s:.45}
+#app.desk.compact .dk-acts{background:none}
 </style>
 
 <div id="app" class="busy" data-theme="light">
@@ -830,6 +898,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
       <button class="dk-tab" role="tab" data-t="play">플레이</button><button class="dk-tab" role="tab" data-t="train">훈련</button><button class="dk-tab" role="tab" data-t="gear">내 장비</button><button class="dk-tab" role="tab" data-t="shop">상점</button>
     </div>
     <span class="sp"></span>
+    <button class="dk-me" id="dkMe" aria-label="이름 바꾸기"><i class="av">1</i><span><b class="nm"></b><small class="rc"></small></span></button>
     <button class="dk-top" id="dkRec"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
     <button class="dk-top" id="dkSet"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg><span>설정</span></button>
   </header>

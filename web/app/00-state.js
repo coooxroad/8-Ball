@@ -106,7 +106,7 @@ function applyTheme() {
   const light = prefs.theme === 'light', away = st.screen === 'home' || st.screen === 'records', night = prefs.ui === 'lobby' && away, desk = prefs.ui === 'desk' && st.screen === 'home';   // the lobby is always night; on the desk the table sits on felt
   app.dataset.theme = light ? 'light' : 'dark';
   document.body.style.background = desk ? '#6b4527' : night ? '#0d1014' : light ? '#eef0f3' : '#101216';
-  scene.setBackdrop(desk ? 0x0e4c8e : night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
+  scene.setBackdrop(desk ? 0x034db0 : night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
 }
 applyTheme();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,
