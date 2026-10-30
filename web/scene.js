@@ -497,7 +497,7 @@ function createScene(canvas, app, PH) {
     lampObjs.forEach((l, i) => { const L = LAMPS[i % 3]; l.position.x = L[0]; l.position.y = L[1]; l.target.position.set(L[0] - lampShift[0] * 0.5, -lampShift[1] * 0.5, 0); l.target.updateMatrixWorld(); });
   }
   let lampsOn = false;
-  function setFront(lamps) {
+  function setDeskLight(lamps) {
     const l = !!lamps; if (l === lampsOn) return;
     lampsOn = l; applyLook(); applyCamera(); renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
   }
@@ -775,7 +775,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, setFront, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

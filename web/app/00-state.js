@@ -6,10 +6,11 @@
    00-state    what is shared                         50-match     a game between two players (or one and the computer)
    10-ui       small DOM helpers, screens, layout     51-practice  lessons
    20-sheets   every sheet that slides up             52-puzzle    puzzles
-   30-home     the first screen                       53-demo      one given shot, played by the app
-   40-shot     the shot pipeline and the scoreboard   60-records   wins and losses, and the burning cards
-   70-buttons  what each button does                  80-input     aiming, power, spin, cue angle
-   90-loop     the frame loop, saving, start
+   30-home     the home screen underneath all three   53-demo      one given shot, played by the app
+   31-lobby    the lobby home, and which home is on   60-records   wins and losses, and the burning cards
+   32-desk     the desk home (4.0) and its lean       62-bolts     the lightning border while play runs fast
+   40-shot     the shot pipeline and the scoreboard   70-buttons   what each button does
+   80-input    aiming, power, spin, cue angle         90-loop      the frame loop, saving, start
    Around a shot, what happens depends on what is being played; that part lives in "flows" (match, practice, puzzle, demo)
    with the same handful of methods, and the shot pipeline never asks which one is active.
    The rest of the game is outside this folder and knows nothing of the page: physics.js, game.js, drills.js, puzzles.js,

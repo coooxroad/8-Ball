@@ -74,7 +74,8 @@ function lobbyPaint() {
   $('#room').style.setProperty('--lx', wide ? `calc((100% - 400px) / 2 + 10px)` : '50%');
   if (app.classList.contains('tallp')) layoutSoon();                 // upright, the table sits above the panel, whose height just changed
 }
-// put the lobby on or off: the pieces it adds, the equipment buttons moved into the panel and back
+// put on the home screen chosen in the settings: the .lobby or .desk class (neither is the classic one), and for the
+// lobby the pieces it adds and the equipment buttons moved into its panel and back
 function applyUI() {
   const on = lobbyOn(); app.classList.toggle('lobby', on); app.classList.toggle('desk', prefs.ui === 'desk');
   const chips = $('.h-chips');

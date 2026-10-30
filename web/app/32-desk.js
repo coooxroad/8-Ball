@@ -198,6 +198,35 @@ function deskShop({ rail, head, stage, slate }) {
   dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('내 장비로', () => deskGo('gear'))));
 }
 
+/* ---- the desk as a leaning plane: layout() in 10-ui.js calls these two on the desk's home ---- */
+// How far the desk leans, and how much bigger than the screen the plane must be: a point h up the plane from its bottom
+// edge shows Y = h cos(t) P / (P + h sin(t)) up the screen, so the plane is made tall enough that its far edge reaches the
+// top bar, its sides wide enough that the far corners still reach the screen's edges, and the desk on it starts just
+// under the bar.
+function deskLean(W, H, portrait) {
+  const t = (wide ? 15 : portrait ? 12 : 10) * Math.PI / 180, P = 2.8 * Math.max(H, 600), c = Math.cos(t), sn = Math.sin(t);
+  const bar = wide ? 62 : portrait ? 56 : 48, up = Y => Y * P / (c * P - Y * sn), hb = up(H - bar), k = P / (P + hb * sn);
+  app.style.setProperty('--tilt', t + 'rad');
+  app.style.setProperty('--pp', P + 'px');
+  app.style.setProperty('--ovh', (hb - (H - bar)).toFixed(1) + 'px');
+  app.style.setProperty('--ovw', Math.ceil(W / 2 * (1 / k - 1) + 2) + 'px');
+}
+// The desk is a plane seen from above and a little behind: it is laid out flat and then leans away from the eye (CSS
+// 3D, about its bottom edge), and the canvas with the live table under it leans exactly the same way, so the table
+// sits in the tray as one picture. A window is cut in the desk where the table is, worked out in the desk's own flat
+// coordinates (the transform carries it along); a shade under the window edge lays the table's shadow on the felt,
+// and a strip below it is the near rail's front.
+function deskWindow(W, H, portrait) {
+  const pl = $('#deskPlane'), dk = $('#desk'), sg = $('#dkStage'), win = sg.dataset.win === '1';
+  let x = dk.offsetLeft, y = dk.offsetTop; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+  const dx = pl.offsetLeft, dy = pl.offsetTop, sw = sg.offsetWidth, sh0 = sg.offsetHeight;   // (x, y: the stage in the plane; dx, dy: the plane in the app)
+  const ins = { t: dy + y + 4, l: dx + x + 4, r: W - (dx + x + sw) + 4, b: H - (dy + y + sh0) + 4 };
+  ins.lie = portrait && sw > sh0; scene.setInsets(ins);              // a phone held upright: the tray is wider than tall, so the table lies down in it
+  const tr = scene.tableRect(ins), x1 = tr.x - dx - 1, y1 = tr.y - dy - 1, x2 = tr.x + tr.w - dx + 1, y2 = tr.y + tr.h - dy + 1;
+  pl.style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+  let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }, el('i')); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
+  sh.hidden = !win; Object.assign(sh.style, { left: (tr.x - dx - x) + 'px', top: (tr.y - dy - y) + 'px', width: tr.w + 'px', height: tr.h + 'px' }); sh.style.setProperty('--tl', Math.max(5, Math.round(tr.h * 0.045)) + 'px');
+}
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 function deskPaint() {
   if (!deskOn()) return;

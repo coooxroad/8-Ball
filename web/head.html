@@ -702,9 +702,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    top, the rail, the tray, the slate, and last the square keys several of them share. Each piece says, in one place,
    how it is laid out, what it looks like, how it looks pressed, and how it changes on a phone (.compact: upright is
    .portrait, on its side :not(.portrait)).
-   What a piece looks like is its made-to-order image (ui/*.webp), 9-sliced. The desk is seen from above and a little in
-   front (about 8 degrees): every piece shows its front edge - the lip at its foot - and wells show their far wall. The
-   light comes from the upper right: the pieces carry it in their art, and each throws its shadow down to the lower left
+   What a piece looks like is its made-to-order image (ui/*.webp), 9-sliced. The art is drawn seen from a little in
+   front: every piece shows its front edge - the lip at its foot - and wells show their far wall (the lean of the whole
+   desk is CSS 3D, below). The light comes from the upper right: the pieces carry it in their art, and each throws its shadow down to the lower left
    onto what it stands on. Each image is drawn round the element at a scale --s, the transparent margin drawn outside the
    box (outset), so the element's box is the piece's top face plus its lip; --lip is padded at the foot so the content
    sits in the middle of the top face, and pressed pieces move it down as far as their top face went. */
@@ -719,7 +719,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    all round so its far corners still reach the edges, leans away from the eye about its bottom edge (CSS 3D). The canvas
    with the live table under it leans exactly the same way (same transform, same origin: the middle of the bottom edge),
    so the table sits in the tray as one picture. Beyond the desk's far edge is the dark of the room; the wood runs on
-   under the far edge and the sides. (The sizes are worked out in layout(); the desk fills the plane top to bottom, so
+   under the far edge and the sides. (The sizes are worked out in deskLean(), 32-desk.js; the desk fills the plane top to bottom, so
    it reaches the bar.) */
 #deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat}
 #app.desk.tilt{background:#0b0806}
@@ -817,7 +817,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-stage{position:relative;flex:1;min-height:0;margin:10px 0}
 .dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
 .dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
-/* the table's shadow on the felt, and the near rail's front under the table's window (#dkShade is laid by layout()) */
+/* the table's shadow on the felt, and the near rail's front under the table's window (#dkShade is laid by deskWindow() in 32-desk.js) */
 #dkShade{position:absolute;border-radius:12px;box-shadow:-12px 18px 26px rgba(0,0,0,.55),-3px 5px 8px rgba(0,0,0,.35);pointer-events:none}
 #dkShade>i{position:absolute;left:6px;right:6px;top:100%;height:var(--tl,9px);margin-top:-2px;border-radius:0 0 10px 10px;background:linear-gradient(#7a4c2c,#3a2212 70%,#24150b)}
 /* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
