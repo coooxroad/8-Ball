@@ -497,12 +497,14 @@ function createScene(canvas, app, PH) {
     [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * cur.HL + lampShift[0]; LAMPS[i][1] = lampShift[1]; });
     lampObjs.forEach((l, i) => { const L = LAMPS[i % 3]; l.position.x = L[0]; l.position.y = L[1]; l.target.position.set(L[0] - lampShift[0] * 0.5, -lampShift[1] * 0.5, 0); l.target.updateMatrixWorld(); });
   }
-  function setFront(deg) {
-    const t = (deg || 0) * Math.PI / 180; if (t === front) return;
-    front = t; applyLook(); applyCamera(); renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  // lamps: move the lamps up and right of the screen even with the camera straight overhead (the desk tilts the picture itself)
+  let lampsOn = false;
+  function setFront(deg, lamps) {
+    const t = (deg || 0) * Math.PI / 180, l = !!lamps || t > 0; if (t === front && l === lampsOn) return;
+    front = t; lampsOn = l; applyLook(); applyCamera(); renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
   }
   // the lamps' shift is in screen terms (right, up), so it follows the table's turn on an upright screen
-  function applyLook() { const r = front ? 0.8 : 0, u = front ? 0.6 : 0; lampShift = portrait ? [u, -r] : [r, u]; placeLamps(); }
+  function applyLook() { const r = lampsOn ? 0.8 : 0, u = lampsOn ? 0.6 : 0; lampShift = portrait ? [u, -r] : [r, u]; placeLamps(); }
   let portrait = false, lying = false, dirty = 3, quality = 'auto', W = 0, H = 0;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
@@ -574,7 +576,7 @@ function createScene(canvas, app, PH) {
   }
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
-    portrait = H > W && !lying; if (front) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
+    portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
     renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
     renderer.setSize(W, H, false);
@@ -613,7 +615,7 @@ function createScene(canvas, app, PH) {
     return { pts, x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
   }
   function setInsets(t, instant) {
-    const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; if (front) applyLook(); staticDirty = true; } instant = true; }
+    const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; if (lampsOn) applyLook(); staticDirty = true; } instant = true; }
     insTo.t = t.t; insTo.l = t.l; insTo.r = t.r; insTo.b = t.b;
     if (instant) { Object.assign(ins, insTo); applyCamera(); }
     dirty = 3;

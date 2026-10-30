@@ -828,7 +828,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    piece's top face plus its lip; --lip is padded at the foot so the content sits in the middle of the top face, and
    pressed pieces move it down as far as their top face went. */
 #app.desk{--felt-tile:300px;--desk-tile:640px;--es:.42}
-#app.desk #desk{background:#6b4527 url(ui/desk.webp) 0 0/var(--desk-tile) repeat;padding-bottom:calc(130px*var(--es) + 16px)}
+#app.desk #desk{padding-bottom:calc(130px*var(--es) + 16px)}
 #app.desk #deskBar{background:#26292d url(ui/bar.webp) 0 0/auto 100% repeat-x;box-shadow:0 6px 16px rgba(0,0,0,.5)}
 /* the room's light, warm from the upper right and falling away to the lower left; under the pieces on the desk, and
    (much fainter) over everything, as light is */
@@ -932,6 +932,32 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact:not(.portrait) .dk-main{height:54px}
 #app.desk.compact:not(.portrait) .dk-seg button{height:38px}
 #app.desk.compact:not(.portrait) .dk-step button{height:40px}
+/* ---------- the desk as a plane seen from above and a little behind ----------
+   The whole desk - wood, rail, tray, slate, the things on it - is laid out flat in #desk, and #deskPlane, a little bigger
+   all round so its far corners still reach the edges, leans away from the eye about its bottom edge (CSS 3D). The canvas
+   with the live table under it leans exactly the same way (same transform, same origin: the middle of the bottom edge),
+   so the table sits in the tray as one picture. Beyond the desk's far edge is the dark of the room. */
+#app.desk{--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
+#app.desk.compact{--bar:56px;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px}
+#app.desk.compact:not(.portrait){--bar:48px;--tilt:11deg;--pp:1500px;--ovh:40px;--ovw:50px}
+#deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0}
+#app.desk.tilt{background:#0b0806}
+#app.desk.tilt #deskPlane,#app.desk.tilt #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
+#app.desk #gl{transition:transform .35s ease}
+#app.desk #deskPlane>#desk{inset:0 var(--ovw)!important}           /* (the sizes are worked out in layout(); the desk fills the plane top to bottom, so it reaches the bar) */
+/* the wood runs on under the far edge and the sides */
+#app.desk #deskPlane{background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat}
+#app.desk #deskPlane>#desk{background:none}
+/* the near rail's front, under the table's window */
+#dkShade>i{position:absolute;left:6px;right:6px;top:100%;height:var(--tl,9px);margin-top:-2px;border-radius:0 0 10px 10px;background:linear-gradient(#7a4c2c,#3a2212 70%,#24150b)}
+/* light from the window at the upper right: soft beams falling across the desk to the lower left, over everything */
+#dkBeams{position:absolute;inset:var(--bar) 0 0 0;z-index:5;pointer-events:none;overflow:hidden}
+#dkBeams i{position:absolute;top:-30%;height:170%;transform-origin:50% 0;transform:rotate(36deg);background:linear-gradient(90deg,rgba(255,232,188,0),rgba(255,232,188,var(--a)) 30% 70%,rgba(255,232,188,0));
+  -webkit-mask-image:linear-gradient(#000,#0000 78%);mask-image:linear-gradient(#000 10%,#0000 90%);filter:blur(12px)}
+#dkBeams i:nth-child(1){right:0;width:190px;--a:.20}
+#dkBeams i:nth-child(2){right:16%;width:90px;--a:.16}
+#dkBeams i:nth-child(3){right:25%;width:240px;--a:.12}
+#dkBeams i:nth-child(4){right:45%;width:110px;--a:.09}
 /* ---------- the desk seen from the front, on a phone: the same pieces, smaller ---------- */
 #app.desk.compact{--es:.3}
 #app.desk.compact #desk{padding-bottom:calc(130px*var(--es) + 10px)}
@@ -980,12 +1006,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <button class="dk-top" id="dkRec"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
     <button class="dk-top" id="dkSet"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg><span>설정</span></button>
   </header>
-  <section id="desk" hidden>
+  <div id="deskPlane" hidden><section id="desk">
     <div class="dk-rail" id="dkRail"></div>
     <div class="dk-tray"><div class="dk-head" id="dkHead"></div><div class="dk-stage" id="dkStage"></div><div class="dk-foot" id="dkFoot"></div></div>
     <div class="dk-slate" id="dkSlate"></div>
     <i class="dk-edge" aria-hidden="true"></i><i class="dk-prop towel" aria-hidden="true"></i><i class="dk-prop chalk" aria-hidden="true"></i><i class="dk-prop plant" aria-hidden="true"></i>
-  </section>
+  </section></div>
+  <div id="dkBeams" hidden aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
   <!-- the way round the app: a rail down the side on a wide screen, a bar along the bottom on a narrow one -->
   <nav class="h-nav" id="nav">
