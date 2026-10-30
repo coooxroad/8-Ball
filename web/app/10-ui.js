@@ -55,6 +55,7 @@ function show(screen) {
 // which place on the rail is lit
 function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
+const FRONT_DEG = 9;                                                // how far the desk's camera leans in from overhead
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
@@ -62,6 +63,7 @@ function layout() {
   const tallp = portrait && !wide && H >= 900 && prefs.ui === 'lobby'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
   const hud = H <= 520 ? 50 : 60;
   scene.resize();
+  scene.setFront(st.screen === 'home' && prefs.ui === 'desk' ? FRONT_DEG : 0);   // on the desk the table is seen as the desk is, from a little in front
   if (st.screen === 'home' && prefs.ui === 'desk') {
     // the table inside the felt tray: the desk has a window cut in it there, through which the live table shows
     // (cut to the table's own outline, rails and all, so the felt of the tray runs right up to it; a shade under the window
@@ -69,13 +71,11 @@ function layout() {
     const sg = $('#dkStage'), r = sg.getBoundingClientRect(), a = app.getBoundingClientRect(), d = $('#desk').getBoundingClientRect(), win = sg.dataset.win === '1';
     const ins = { t: r.top - a.top + 4, l: r.left - a.left + 4, r: a.right - r.right + 4, b: a.bottom - r.bottom + 4 };
     ins.lie = portrait && r.width > r.height; scene.setInsets(ins);       // a phone held upright: the tray is wider than tall, so the table lies down in it
-    const tr = scene.tableRect(ins), ox = a.left - d.left, oy = a.top - d.top;
-    const x1 = tr.x + ox - 1, y1 = tr.y + oy - 1, x2 = tr.x + tr.w + ox + 1, y2 = tr.y + tr.h + oy + 1;
-    $('#desk').style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+    const tr = scene.tableOutline(ins), ox = a.left - d.left, oy = a.top - d.top, cx = tr.x + tr.w / 2, cy = tr.y + tr.h / 2;
+    // (the window is cut 1px proud of the outline all round)
+    const pts = tr.pts.map(([x, y]) => `${(x + ox + Math.sign(x - cx)).toFixed(1)}px ${(y + oy + Math.sign(y - cy)).toFixed(1)}px`);
+    $('#desk').style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${pts.join(', ')}, ${pts[0]})` : 'none';
     let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
-    // the vanishing point: the middle of the table's window, at the table camera's distance
-    const vx = tr.x + tr.w / 2 + ox, vy = tr.y + tr.h / 2 + oy;
-    deskDepth(vx, vy, 0.5 * Math.max(a.height, 400) / Math.tan(20 * Math.PI / 180));
     sh.hidden = !win; Object.assign(sh.style, { left: (tr.x + a.left - r.left) + 'px', top: (tr.y + a.top - r.top) + 'px', width: tr.w + 'px', height: tr.h + 'px' });
   }
   else if (st.screen === 'home' && wide && prefs.ui === 'lobby') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
@@ -112,34 +112,3 @@ function setSpinUI() {
   $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
   $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
 }
-
-// One-point perspective, seen from where the table's own camera is: everything on the desk is a slab of some thickness T,
-// and its base, T further from the eye than its top, lands nearer the vanishing point by (vp - c)·T/(D + T). So each
-// slab shows the sides that face the middle of the view - the rail its right side, the slate its left, what is above
-// the table its bottom - drawn as a stack of copies of the outline stepped from the top down to the base, lit at the
-// top edge and darkening to the desk. The tops stay exactly where the layout puts them.
-const DEPTH = [                                                     // selector, thickness, side at the top, side at the desk
-  ['.dk-rail', 30, '#d3c5a8', '#6f624c'], ['.dk-slate', 30, '#2e3a39', '#050707'], ['.dk-tray', 12, '#0b3a72', '#020d1c'],
-  ['.dk-rb', 9, '#cbbd9f', '#8d7f66'], ['.dk-rb[aria-pressed="true"]', 4, '#0b3a78', '#04193a'],
-  ['.dk-main', 10, '#0c49a3', '#04214f'], ['.dk-main:disabled', 10, '#203752', '#0d1828'],
-  ['.dk-sec', 7, '#20272a', '#030404'], ['.dk-arrow', 7, '#20272a', '#030404'], ['.dk-chip', 6, '#20272a', '#030404'], ['.dk-step button', 5, '#2a3233', '#050606'],
-  ['.dk-plate', 8, '#c6b89b', '#857760'], ['.dk-pill', 6, '#20272a', '#030404'], ['.dk-pill[aria-pressed="true"]', 6, '#c6b89b', '#857760'],
-  ['.dk-sw i', 5, '#0a2a52', '#020b18'], ['.dk-seg button[aria-pressed="true"]', 3, '#c6b89b', '#857760'],
-];
-const mixHex = (a, b, t) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const A = p(a), B = p(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`; };
-let depthAt = null;
-function deskDepth(vx, vy, D) {
-  if (vx != null) depthAt = { vx, vy, D }; if (!depthAt || !deskOn() || st.screen !== 'home') return;
-  const dk = $('#desk'), o = dk.getBoundingClientRect(), { vx: X, vy: Y, D: d } = depthAt, use = new Map();
-  for (const [sel, T, c0, c1] of DEPTH) for (const e of dk.querySelectorAll(sel)) use.set(e, [T, c0, c1]);
-  for (const [e, [T, c0, c1]] of use) {
-    const r = e.getBoundingClientRect(); if (!r.width) continue;
-    const k = T / (d + T), ex = (X - (r.left + r.width / 2 - o.left)) * k, ey = (Y - (r.top + r.height / 2 - o.top)) * k;
-    const n = Math.min(28, Math.max(1, Math.round(Math.hypot(ex, ey)))), sh = [];
-    for (let i = 1; i <= n; i++) sh.push(`${(ex * i / n).toFixed(1)}px ${(ey * i / n).toFixed(1)}px 0 ${mixHex(c0, c1, i / n)}`);
-    sh.push(`${(ex * 1.15).toFixed(1)}px ${(ey * 1.15 + 3).toFixed(1)}px 8px rgba(0,0,0,.4)`);    // and where it meets the desk, a soft contact shadow
-    e.style.boxShadow = sh.join(',');
-  }
-}
-// things scroll on the desk (the rail, the slate's options): their sides turn as they move
-{ let q = 0; document.addEventListener('scroll', e => { if (!e.target.closest || !e.target.closest('#desk') || q) return; q = requestAnimationFrame(() => { q = 0; deskDepth(); }); }, true); }

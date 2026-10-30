@@ -39,9 +39,9 @@ function deskGo(tab) {
   if (st.screen !== 'home') return goHome(true);
   paintHome(); if (was === 'gear' || tab === 'play' || tab === 'train') homePreview();
 }
-// the rail: one button per choice, the chosen one inlaid with felt and its red dot
+// the rail: a slot for each choice with its key down in it, the chosen key inlaid with felt and its red dot
 function railBtn(on, label, sub, fn, soon) {
-  return el('button', { class: 'dk-rb' + (soon ? ' soon' : ''), 'aria-pressed': String(on), onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(label), sub ? el('small', { text: sub }) : null]);
+  return el('div', { class: 'dk-slot' }, el('button', { class: 'dk-rb' + (soon ? ' soon' : ''), 'aria-pressed': String(on), onclick: () => { SND.init(); SND.tap(); fn(); } }, [document.createTextNode(label), sub ? el('small', { text: sub }) : null]));
 }
 function deskPaint() {
   if (!deskOn()) return;
@@ -138,7 +138,7 @@ function deskPaint() {
       const i = gearCloth == null ? prefs.cloth : gearCloth, c = CLOTHS[i], carom = isCarom();
       put(head, [el('div', { class: 'tt' }, [el('h2', { text: '내 테이블' }), el('small', { text: carom ? (prefs.mode === 'three' ? '대대 284×142cm' : '중대 254×127cm') : TABLES.find(t => t.id === prefs.table).name })])]);
       put(foot, CLOTHS.map((q, k) => el('button', { class: 'dk-sw', 'aria-pressed': String(k === i), onclick: () => { SND.init(); SND.tap(); gearCloth = k === prefs.cloth ? null : k; paintHome(); } },
-        [k === prefs.cloth ? eqTag() : null, el('i', { class: 'cloth', style: `background:${hex(q.felt)} url(ui/cloth-${q.id}.webp) 0 0/128px;border:5px solid ${hex(q.wood)}` }), document.createTextNode(q.name)])));
+        [k === prefs.cloth ? eqTag() : null, el('i', { class: 'cloth', style: `background-color:${hex(q.felt)};background-image:url(ui/cloth-${q.id}.webp);background-size:128px` }), document.createTextNode(q.name)])));
       scene.setCloth(i);
       const own = i === prefs.cloth;
       put(slate, dkH1(c.name, '테이블 천'));
