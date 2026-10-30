@@ -11,7 +11,8 @@ function el(tag, attrs, kids) {
 }
 const hex = n => '#' + n.toString(16).padStart(6, '0');
 // every button press: wake the audio (browsers only allow that inside a tap), click, then act
-const press = (id, fn) => $(id).addEventListener('click', () => { SND.init(); SND.tap(); fn(); });
+const onTap = fn => () => { SND.init(); SND.tap(); fn(); };
+const press = (id, fn) => $(id).addEventListener('click', onTap(fn));
 const LEVELS = ['쉬움', '보통', '어려움', '미친'];
 // a seg whose choice can also be dragged along: the bar follows the finger and settles on the nearest choice
 function slider(id, get, set) {
@@ -44,9 +45,12 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  $('#home').hidden = screen !== 'home'; $('#nav').hidden = screen !== 'home' && screen !== 'records'; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
+  const home = screen === 'home', away = home || screen === 'records', lob = prefs.ui === 'lobby', dk = prefs.ui === 'desk';
+  $('#home').hidden = !home; $('#nav').hidden = !away; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
-  const lob = prefs.ui === 'lobby', dk = prefs.ui === 'desk'; $('#deskBar').hidden = !dk || (screen !== 'home' && screen !== 'records'); $('#deskPlane').hidden = $('#dkBeams').hidden = !dk || screen !== 'home'; $('#topbar').hidden = !lob || (screen !== 'home' && screen !== 'records'); $('#dock').hidden = !lob || screen !== 'home'; $('#room').hidden = screen !== 'home' && screen !== 'records';
+  // the desk and the lobby each bring their own bar along the top (kept over the records), and the desk its leaning plane
+  $('#deskBar').hidden = !dk || !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !dk || !home;
+  $('#topbar').hidden = !lob || !away; $('#dock').hidden = !lob || !home; $('#room').hidden = !away;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
@@ -60,40 +64,56 @@ function layout() {
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const tallp = portrait && !wide && H >= 900 && prefs.ui === 'lobby'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
-  const hud = H <= 520 ? 50 : 60;
   scene.resize();
   scene.setFront(st.screen === 'home' && prefs.ui === 'desk');      // on the desk the lamps move up and right, so shadows fall as the desk's do
   const tilt = st.screen === 'home' && prefs.ui === 'desk'; app.classList.toggle('tilt', tilt);
-  if (tilt) {
-    // How far it leans, and how much bigger than the screen the plane must be: a point h up the plane from its bottom edge
-    // shows Y = h cos(t) P / (P + h sin(t)) up the screen, so the plane is made tall enough that its far edge reaches the
-    // top bar, its sides wide enough that the far corners still reach the screen's edges, and the desk on it starts just
-    // under the bar.
-    const t = (wide ? 15 : portrait ? 12 : 10) * Math.PI / 180, P = 2.8 * Math.max(H, 600), c = Math.cos(t), sn = Math.sin(t);
-    const bar = wide ? 62 : portrait ? 56 : 48, up = Y => Y * P / (c * P - Y * sn), hb = up(H - bar), k = P / (P + hb * sn);
-    for (const [v, x] of [['--tilt', t + 'rad'], ['--pp', P + 'px'], ['--ovh', (hb - (H - bar)).toFixed(1) + 'px'], ['--ovw', Math.ceil(W / 2 * (1 / k - 1) + 2) + 'px']]) app.style.setProperty(v, x);
-    // The desk is a plane seen from above and a little behind: it is laid out flat and then leans away from the eye (CSS
-    // 3D, about its bottom edge), and the canvas with the live table under it leans exactly the same way, so the table
-    // sits in the tray as one picture. A window is cut in the desk where the table is, worked out in the desk's own flat
-    // coordinates (the transform carries it along); a shade under the window edge lays the table's shadow on the felt,
-    // and a strip below it is the near rail's front.
-    const pl = $('#deskPlane'), dk = $('#desk'), sg = $('#dkStage'), win = sg.dataset.win === '1';
-    let x = dk.offsetLeft, y = dk.offsetTop; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
-    const dx = pl.offsetLeft, dy = pl.offsetTop, sw = sg.offsetWidth, sh0 = sg.offsetHeight;   // (x, y: the stage in the plane; dx, dy: the plane in the app)
-    const ins = { t: dy + y + 4, l: dx + x + 4, r: W - (dx + x + sw) + 4, b: H - (dy + y + sh0) + 4 };
-    ins.lie = portrait && sw > sh0; scene.setInsets(ins);              // a phone held upright: the tray is wider than tall, so the table lies down in it
-    const tr = scene.tableRect(ins), x1 = tr.x - dx - 1, y1 = tr.y - dy - 1, x2 = tr.x + tr.w - dx + 1, y2 = tr.y + tr.h - dy + 1;
-    pl.style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
-    let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }, el('i')); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
-    sh.hidden = !win; Object.assign(sh.style, { left: (tr.x - dx - x) + 'px', top: (tr.y - dy - y) + 'px', width: tr.w + 'px', height: tr.h + 'px' }); sh.style.setProperty('--tl', Math.max(5, Math.round(tr.h * 0.045)) + 'px');
-  }
-  else if (st.screen === 'home' && wide && prefs.ui === 'lobby') scene.setInsets({ t: 92, l: 40, r: 432, b: 168 });
-  else if (st.screen === 'home' && tallp) scene.setInsets({ t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 });
-  else if (st.screen === 'home' && wide) scene.setInsets({ t: 40, l: 126, r: 412, b: 104 });
+  if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
-  else scene.setInsets(portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 });
+  else scene.setInsets(homeInsets(tallp) || playInsets(H, portrait));
   if (st.screen === 'play') paintPowerCue();
   setPowerUI(st.power);
+}
+// How far the desk leans, and how much bigger than the screen the plane must be: a point h up the plane from its bottom
+// edge shows Y = h cos(t) P / (P + h sin(t)) up the screen, so the plane is made tall enough that its far edge reaches the
+// top bar, its sides wide enough that the far corners still reach the screen's edges, and the desk on it starts just
+// under the bar.
+function deskLean(W, H, portrait) {
+  const t = (wide ? 15 : portrait ? 12 : 10) * Math.PI / 180, P = 2.8 * Math.max(H, 600), c = Math.cos(t), sn = Math.sin(t);
+  const bar = wide ? 62 : portrait ? 56 : 48, up = Y => Y * P / (c * P - Y * sn), hb = up(H - bar), k = P / (P + hb * sn);
+  app.style.setProperty('--tilt', t + 'rad');
+  app.style.setProperty('--pp', P + 'px');
+  app.style.setProperty('--ovh', (hb - (H - bar)).toFixed(1) + 'px');
+  app.style.setProperty('--ovw', Math.ceil(W / 2 * (1 / k - 1) + 2) + 'px');
+}
+// The desk is a plane seen from above and a little behind: it is laid out flat and then leans away from the eye (CSS
+// 3D, about its bottom edge), and the canvas with the live table under it leans exactly the same way, so the table
+// sits in the tray as one picture. A window is cut in the desk where the table is, worked out in the desk's own flat
+// coordinates (the transform carries it along); a shade under the window edge lays the table's shadow on the felt,
+// and a strip below it is the near rail's front.
+function deskWindow(W, H, portrait) {
+  const pl = $('#deskPlane'), dk = $('#desk'), sg = $('#dkStage'), win = sg.dataset.win === '1';
+  let x = dk.offsetLeft, y = dk.offsetTop; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+  const dx = pl.offsetLeft, dy = pl.offsetTop, sw = sg.offsetWidth, sh0 = sg.offsetHeight;   // (x, y: the stage in the plane; dx, dy: the plane in the app)
+  const ins = { t: dy + y + 4, l: dx + x + 4, r: W - (dx + x + sw) + 4, b: H - (dy + y + sh0) + 4 };
+  ins.lie = portrait && sw > sh0; scene.setInsets(ins);              // a phone held upright: the tray is wider than tall, so the table lies down in it
+  const tr = scene.tableRect(ins), x1 = tr.x - dx - 1, y1 = tr.y - dy - 1, x2 = tr.x + tr.w - dx + 1, y2 = tr.y + tr.h - dy + 1;
+  pl.style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x1}px ${y1}px, ${x2}px ${y1}px, ${x2}px ${y2}px, ${x1}px ${y2}px, ${x1}px ${y1}px)` : 'none';
+  let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }, el('i')); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
+  sh.hidden = !win; Object.assign(sh.style, { left: (tr.x - dx - x) + 'px', top: (tr.y - dy - y) + 'px', width: tr.w + 'px', height: tr.h + 'px' }); sh.style.setProperty('--tl', Math.max(5, Math.round(tr.h * 0.045)) + 'px');
+}
+// The other homes keep the table clear of their panels (the room left round it, in pixels from each edge); null when the
+// home is narrow enough that the table simply takes the screen as in play.
+function homeInsets(tallp) {
+  if (st.screen !== 'home') return null;
+  if (wide && prefs.ui === 'lobby') return { t: 92, l: 40, r: 432, b: 168 };
+  if (tallp) return { t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 };
+  if (wide) return { t: 40, l: 126, r: 412, b: 104 };                // the classic home: rail on the left, panel on the right
+  return null;
+}
+// in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
+function playInsets(H, portrait) {
+  const hud = H <= 520 ? 50 : 60;
+  return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
 let layoutT = 0;
