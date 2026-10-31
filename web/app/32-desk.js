@@ -164,9 +164,8 @@ let shelfOpen = null;                                                 // the car
 const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 // a set of balls as three balls (carom: white, yellow, red; else the cue ball, the 1 and the 3)
 function ballTrio(k, v) {
-  const c = isCarom(), pal = n => k.pal ? hx6(k.pal[(n - 1) % 8]) : ballCss(n);
-  const cols = c ? [hx6(k.cue), hx6(k.yel), hx6(k.red)] : [hx6(k.cue), k.noir ? '#141416' : pal(1), pal(3)];
-  return el('i', { class: 'btrio' + (v ? ' v' : '') + (k.mat ? ' m-' + k.mat : '') }, cols.map(cc => el('b', { style: `--c:${cc}` })));
+  const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool';
+  return el('i', { class: 'btrio' + (v ? ' v' : '') }, ids.map(n => el('img', { src: scene.ballPortrait(k.id, kind, n), alt: '', draggable: 'false' })));
 }
 const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
@@ -201,8 +200,8 @@ function shelfPage(d, shop) {
     // the cards
     shelfOpen = null; d.stage.dataset.win = '0';
     dkPut(d.head, dkTitle(shop ? `${K.name} 진열대` : `내 ${K.name}`, `${list.length}개${worn >= 0 ? ' · 장착: ' + list[worn].name : ''}`));
-    dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, list.map((q, i) => el('button', { class: 'dk-card', 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-      [i === worn ? eqTag() : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
+    dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, list.map((q, i) => el('button', { class: 'dk-card' + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
+      [i === worn ? el('span', { class: 'wtag', text: '장착 중' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     dkPut(d.slate, [dkHr(), dkTxt(shop ? '큐, 공, 테이블, 트레일, 장갑을 코인과 다이아로 살 수 있게 됩니다. 지금은 구경만 할 수 있습니다.' : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
       dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt('플레이 성능은 모두 같습니다.')]);

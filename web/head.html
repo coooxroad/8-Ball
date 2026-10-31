@@ -1142,7 +1142,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-rb{font-size:14px}
 /* 내 장비 · 상점: the cards in the felt tray, and one card opened (X back to the cards) */
 #app.desk .dk-cards{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,calc(50% - 8px));gap:16px 14px;
-  overflow-y:auto;scrollbar-width:none;padding:2px 2px 8px}
+  overflow-y:auto;scrollbar-width:none;padding:16px 8px 8px}
 #app.desk .dk-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-height:0;padding:10px 6px 8px;
   border:0 solid transparent;--s:.4;border-image:url(ui/well.webp) 50 48 48 48 fill/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) stretch;
   background:none;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif;cursor:pointer}
@@ -1278,6 +1278,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.portrait .r-vs{flex-wrap:wrap}
 #app.desk.portrait .r-score{order:-1;flex:0 0 auto;margin:0 auto}
 #app.desk.portrait .r-vs .r-p{flex:1 1 40%}
+/* the card worn: ringed in light, with a tag hanging over its top edge; a table card is a small table inside the card;
+   ball cards hold photographs of the balls (scene.ballPortrait) */
+#app.desk .dk-card.worn::after{content:"";position:absolute;inset:-5px;border:3px solid #fff4d6;border-radius:14px;box-shadow:0 0 14px rgba(255,232,170,.75),inset 0 0 10px rgba(255,232,170,.35);pointer-events:none}
+#app.desk .dk-card .wtag{position:absolute;left:50%;top:-13px;transform:translateX(-50%);z-index:3;white-space:nowrap;padding:3px 12px 4px;border-radius:0 0 9px 9px;
+  background:linear-gradient(#fffaf0,#efe3c4);color:#2b241c;font:800 12px 'Gothic A1',sans-serif;box-shadow:-2px 4px 6px rgba(0,0,0,.45)}
+#app.desk .dk-card .wtag::before{content:"";position:absolute;left:-6px;right:-6px;top:0;height:5px;border-radius:3px;background:#d9b65c}
+#app.desk.compact .dk-card .wtag{font-size:9.5px;padding:2px 7px 3px;top:-10px}
+#app.desk .dk-card .clothcard{flex:none;width:auto;height:68%;aspect-ratio:1/2;margin:auto;border-radius:7px;
+  box-shadow:inset 0 0 0 6px var(--w),inset 0 0 0 8px rgba(0,0,0,.4),inset 0 0 12px 8px rgba(0,0,0,.25),-4px 7px 8px rgba(0,0,0,.45)}
+#app.desk .dk-card i.btrio img{display:block;height:28%;max-height:66px;aspect-ratio:1;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.45))}
+#app.desk .dk-card i.btrio.v{gap:4%}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">

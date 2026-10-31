@@ -503,6 +503,32 @@ function createScene(canvas, app, PH) {
     if (m in mats) return mats[m]; mats[m] = null; const u = TEXS['ball-' + m]; if (!u) return null;
     const im = new Image(); im.onload = () => { mats[m] = im; if (skin.mat === m) { const k = skin.id; skin = null; setBalls(k); } }; im.src = u; return null;
   }
+  /* A photograph of one ball of a set, for the shelf cards: the ball drawn by this renderer into a small target, lit by
+     the same room (so it looks as it will on the table), its number turned to the camera; kept once made. */
+  const shots = {}; let shotRT = null, shotScene = null, shotBall = null, shotCam = null;
+  function ballPortrait(id, kind, n) {
+    const key = id + '/' + kind + '/' + n; if (shots[key]) return shots[key];
+    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0];
+    if (!shotRT) {
+      shotRT = new THREE.WebGLRenderTarget(160, 160); shotRT.texture.encoding = THREE.sRGBEncoding;
+      shotScene = new THREE.Scene(); shotScene.environment = scene.environment;
+      shotScene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.35));
+      const key = new THREE.DirectionalLight(0xfff4e6, 0.85); key.position.set(2.2, 2.4, 3); shotScene.add(key);
+      shotBall = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({ roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.9 }));
+      shotScene.add(shotBall); shotCam = new THREE.PerspectiveCamera(17, 1, 0.5, 20); shotCam.position.set(0, 0, 7); shotCam.lookAt(0, 0, 0);
+    }
+    const keep = skin; skin = k; const t = ballTexture(kind, n); skin = keep;
+    const done = !k.mat || !!mats[k.mat];
+    shotBall.material.map = t; shotBall.material.color.setScalar(0.72); shotBall.material.needsUpdate = true;   // (no tone mapping off screen: a shade darker to match the table) shotBall.rotation.set(0.25, -0.18, 0);
+    const prev = renderer.getRenderTarget(), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
+    renderer.setRenderTarget(shotRT); renderer.setClearColor(0x000000, 0); unmask(); renderer.clear(); renderer.render(shotScene, shotCam);
+    const px = new Uint8Array(160 * 160 * 4); renderer.readRenderTargetPixels(shotRT, 0, 0, 160, 160, px);
+    renderer.setRenderTarget(prev); renderer.setClearColor(cc, ca); t.dispose();
+    const c = mkCanvas(160, 160), g = c.getContext('2d'), im = g.createImageData(160, 160);
+    for (let y = 0; y < 160; y++) im.data.set(px.subarray((159 - y) * 640, (160 - y) * 640), y * 640);   // (the target is upside down)
+    g.putImageData(im, 0, 0); const url = c.toDataURL('image/png'); if (done) shots[key] = url; dirty = 3; staticDirty = true;
+    return url;
+  }
   function ballSet(kind, n, R) {
     const mesh = [], blob = [];
     for (let i = 0; i < n; i++) {
@@ -978,7 +1004,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBalls, setTrail, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBalls, setTrail, ballPortrait, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
