@@ -45,6 +45,7 @@ const prefs = (() => {
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
+  p.ui = 'desk'; p.theme = 'dark';                                      // the desk is the only first screen now, and it is dark
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
