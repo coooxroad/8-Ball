@@ -110,41 +110,17 @@ function createPhysics(cfg) {
   /* The ordinary stroke is level, 0 degrees, shown as 0 and played as 0 - nobody pictures their everyday stroke curving the
      ball - and the angle set is the angle played. (The cue is still drawn leaning a little, as a real one does.) */
   const restEl = () => 0;
-  /* The game's physics, raised cue: how fast the ball leaves the cloth, upwards.
-     JUMP_MODEL 'contact' works it out from the three bodies in the strike - cue, ball, slate - and their masses and
-     bounces, with one number fitted:
-       - the cue hits the ball along its own line, so the ball goes off at V along it: V cos(el) forward, V sin(el) down;
-       - the slate sends the downward part back up, E_SLATE of it;
-       - but the cue is still coming. After the hit it moves on at K_U times the ball's speed (momentum and the tip's
-         bounce: a heavy cue keeps more of its speed than a light one). If the ball, bouncing up, does not get out of the
-         cue's way faster than that, the tip catches it and drives it back down - BLOCK is how much of that catch-up the
-         tip (soft leather, a flexing shaft, a hand) really does.
-     What comes out, for a house cue: the slate's rebound grows with the angle, the tip's catch grows faster, so a jump
-     is played flat-ish and hard (30 to 50 degrees), a steep stroke is held on the cloth (a masse bends instead of hopping),
-     and a ball right in front cannot be jumped - as with a real house cue. A jump cue would be a lighter CUE_M.
-     'shape' is the curve used before (a hand-made shape peaking at 50 degrees), kept to go back to.
-     And the pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a
-     third of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
-  /* JUMP_MODEL 'angle' (in use): the plainest picture - the steeper the cue, the higher the ball goes, as players
-     expect and as a jump cue really does (a ball close in front is jumped at sixty degrees or more, one further off at
-     forty). Three numbers, each a thing: ANG_K how much of the downward drive the slate gives back up; ANG_C what the
-     cloth swallows (a soft stroke, a masse, stays down); ANG_Z the most a ball can be sent up at all - the cue is still on
-     top of it - so that full power is a high jump, not a flight off the table. Fitted so that, on a pool table: a ball
-     6 cm in front is jumped at 60 degrees from about three-quarter power, 3 cm in front at 70; one a quarter of a metre
-     off at 45; half a metre off at 40, or 30 at full power; full power goes 10-14 cm up; a 30% masse hops 3 mm.
-     'contact' (the house-cue model before it: peaks at 40 degrees, a steep stroke is pinned) and 'shape' (the first
-     hand-made curve) are kept to go back to. */
-  const JUMP_MODEL = 'angle', ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7;
-  const liftAngle = (V, el) => { const u = Math.max(0, ANG_K * V * Math.sin(el) - ANG_C); return ANG_Z * Math.tanh(u / ANG_Z); };
-  // LEAK: a tip never holds the ball perfectly - the leather gives, the shaft bends - so even pinned, a little of the slate's
-  // rebound gets out: a hard steep stroke hops a few millimetres, a soft one stays down
-  const CUE_M = POCKETED ? 0.54 : 0.5, BALL_M = POCKETED ? 0.17 : 0.21, E_TIP = 0.75, E_SLATE = 0.4, BLOCK = 0.75, LEAK = 0.15;
-  const K_U = (CUE_M - E_TIP * BALL_M) / ((1 + E_TIP) * CUE_M);
-  const liftContact = (V, el) => { const s = Math.sin(el), c = Math.cos(el), behind = Math.max(0, K_U - c * c + E_SLATE * s * s); return V * s * Math.max(LEAK * E_SLATE, E_SLATE - BLOCK * behind); };
-  const PEAK = 50 * Math.PI / 180, PINCH = 0.35;
-  const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
-  const liftShape = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);
-  const lift = (V, el) => JUMP_MODEL === 'shape' ? liftShape(V, el) : JUMP_MODEL === 'contact' ? liftContact(V, el) : liftAngle(V, el);
+  /* The raised cue: how fast the ball leaves the cloth, upwards - the plainest picture: the steeper the cue, the higher the
+     ball goes, as players expect and as a jump cue really does (a ball close in front is jumped at sixty degrees or more,
+     one further off at forty). Three numbers, each a thing: ANG_K how much of the downward drive the slate gives back up;
+     ANG_C what the cloth swallows (a soft stroke, a masse, stays down); ANG_Z the most a ball can be sent up at all - the
+     cue is still on top of it - so that full power is a high jump, not a flight off the table. Fitted so that, on a pool
+     table: a ball 6 cm in front is jumped at 60 degrees from about three-quarter power, 3 cm in front at 70; one a quarter
+     of a metre off at 45; half a metre off at 40, or 30 at full power; full power goes 10-14 cm up; a 30% masse hops 3 mm.
+     The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
+     of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
+  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35;
+  const lift = (V, el) => { const u = Math.max(0, ANG_K * V * Math.sin(el) - ANG_C); return ANG_Z * Math.tanh(u / ANG_Z); };
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion

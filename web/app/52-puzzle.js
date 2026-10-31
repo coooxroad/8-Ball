@@ -10,6 +10,7 @@ const puzzle = {
     scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
   start(id) {
+    if (!puzzles.list.length) return toast('새 퍼즐을 만드는 중입니다.', '', 2200);
     const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
     if (!p.cur || p.cur.id !== z.id) { p.helped = false; p.tries = 0; }
     p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();

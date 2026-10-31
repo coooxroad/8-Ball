@@ -118,7 +118,16 @@ function deskTrain(d) {
   if (t === 'puzzle') deskPuzzle(d); else if (t === 'lesson') deskLesson(d); else deskFree(d);
 }
 // the puzzle in hand: the head steps through the open puzzles, the foot's pills jump to a stage
-function deskPuzzle({ head, foot, slate }) {
+function deskPuzzle(d) {
+  const { head, foot, slate } = d;
+  // (the puzzles are being made again on the game's physics: until then the place is kept, empty)
+  if (!puzzles.list.length) {
+    dkPut(head, dkTitle('퍼즐', '새로 만드는 중'));
+    dkPut(slate, dkH1('퍼즐', '새로 만드는 중'));
+    dkPut(slate, [dkHr(), dkTxt('지금 물리에 맞춰 퍼즐을 새로 만들고 있습니다. 단계는 그대로 ' + puzzles.STAGES.length + '단계입니다.')]);
+    dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true)));
+    return;
+  }
   const z = prefs.pz, L = puzzles.list.filter(q => pzOpen(q.stage)), cur = puzzles.byId(z.cur) || puzzles.list[0], S = puzzles.STAGES[cur.stage];
   const go = dir => () => { const i = Math.max(0, L.indexOf(cur)), q = L[(i + dir + L.length) % L.length]; z.cur = q.id; z.open = q.stage; repaintLive(); };
   const solved = qs => qs.filter(q => z.stars[q.id]).length, here = puzzles.of(cur.stage);
@@ -139,15 +148,26 @@ function deskPuzzle({ head, foot, slate }) {
   dkPut(slate, [dkHr(), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + '. 노란 공은 건드리면 안 됩니다.'), dkHr(), dkLab('이 문제'), starRow, dkHr(), guideRow()]);
   dkPut(slate, dkActs(dkMain('퍼즐 풀기', `${cur.stage + 1}-${cur.n} ${S.name}`, () => puzzle.start())));
 }
-// the lesson in hand: the head steps through the lessons, the foot shows how far up its levels it has got
-function deskLesson({ head, foot, slate }) {
-  const ids = LESSONS(), id = ids.includes(prefs.drill) ? prefs.drill : ids[0], dr = drills.byId(id), lv = levelOf(id);
-  const go = dir => () => { prefs.drill = ids[(ids.indexOf(id) + dir + ids.length) % ids.length]; repaintLive(); };
-  dkNavHead(head, '레슨', dr.name, `${ids.indexOf(id) + 1} / ${ids.length}`, go);
-  dkPut(foot, el('div', { class: 'dk-dots' }, [document.createTextNode('단계'), ...Array.from({ length: drills.LEVELS }, (_, i) => el('i', { class: i < lv ? 'on' : '' })), document.createTextNode(`${lv} / ${drills.LEVELS}`)]));
-  dkPut(slate, dkH1(dr.name, (COURSES.find(c => c[1].includes(id)) || ['레슨'])[0]));
-  dkPut(slate, [dkHr(), dkTxt(dr.d), dr.tip ? dkHr() : null, dr.tip ? dkLab('요령') : null, dr.tip ? dkTxt(dr.tip) : null, dkHr(), guideRow()]);
-  dkPut(slate, dkActs(dkMain('레슨 시작', `${dr.name} · ${lv}단계`, () => practice.start())));
+// the lessons as a shelf of textbooks, one book a lesson, coloured by its course; tapping a book starts that lesson
+function deskLesson({ head, stage, slate }) {
+  const ids = LESSONS(), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0], top = drills.LEVELS;
+  const books = COURSES.flatMap(([course, list], ci) => list.filter(id => drills.byId(id).make).map(id => [course, ci, id]));
+  const done = ids.filter(id => levelOf(id) >= top).length;
+  stage.dataset.win = '0';
+  dkPut(head, dkTitle('교본', `${ids.length}권 · 다 뗀 교본 ${done}권`));
+  dkPut(stage, el('div', { class: 'dk-cards books' }, books.map(([course, ci, id], i) => {
+    const dr = drills.byId(id), lv = levelOf(id);
+    return el('button', { class: 'dk-card book' + (id === cur ? ' last' : '') + (lv >= top ? ' done' : ''), 'aria-label': dr.name, onclick: onTap(() => { prefs.lastTrain = 'practice'; prefs.mode = 'practice'; practice.start(id); }) }, [
+      el('i', { class: 'cover c' + ci }, [el('small', { text: course }), el('b', { text: dr.name }), el('em', { text: String(i + 1) })]),
+      el('span', { class: 'lvl' }, Array.from({ length: top }, (_, k) => el('i', { class: k < lv ? 'on' : '' })))]);
+  })));
+  const dr = drills.byId(cur);
+  dkPut(slate, dkH1('교본', '레슨'));
+  dkPut(slate, [dkHr(), dkTxt('교본을 누르면 그 레슨이 바로 시작됩니다. 단계를 다 떼면 표지에 금박이 들어갑니다.'), dkHr()]);
+  for (const [course, list] of COURSES) { const l = list.filter(id => drills.byId(id).make); if (!l.length) continue;
+    dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: course }), el('b', { text: `${l.filter(id => levelOf(id) >= top).length} / ${l.length}권` })])); }
+  dkPut(slate, [dkHr(), guideRow()]);
+  dkPut(slate, dkActs(dkMain('이어서 하기', `${dr.name} · ${levelOf(cur)}단계`, () => practice.start(cur))));
 }
 function deskFree({ head, slate }) {
   const dr = drills.byId('free');
@@ -166,9 +186,9 @@ const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 // a set of balls as three balls (carom: white, yellow, red; else the cue ball, the 1 and the 3)
 function ballTrio(k, v) {
   const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool', shot = n => scene.ballPortrait(k.id, kind, n);
-  // on a card: the set in its open case, a ball in each cup (cup centres 36.3, 58.3 and 80.3% down the case and its lid)
-  if (v) return el('i', { class: 'bcase' }, [el('img', { class: 'lid', src: 'ui/ball-case-lid.webp', alt: '' }), el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
-    ...ids.map((n, j) => el('img', { class: 'b', src: shot(n), alt: '', style: `top:${[36.3, 58.3, 80.3][j]}%` }))]);
+  // on a card: the set in its case, a ball in each cup (cup centres 23.6, 50 and 76.4% down)
+  if (v) return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
+    ...ids.map((n, j) => el('img', { class: 'b', src: shot(n), alt: '', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
   return el('i', { class: 'btrio' }, ids.map(n => el('img', { src: shot(n), alt: '', draggable: 'false' })));
 }
 const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
@@ -205,7 +225,7 @@ function shelfPage(d, shop) {
     shelfOpen = null; d.stage.dataset.win = '0';
     dkPut(d.head, dkTitle(shop ? `${K.name} 진열대` : `내 ${K.name}`, `${list.length}개${worn >= 0 ? ' · 장착: ' + list[worn].name : ''}`));
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, list.map((q, i) => el('button', { class: 'dk-card' + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-      [i === worn ? el('span', { class: 'wtag', text: '장착 중' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
+      [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     dkPut(d.slate, [dkHr(), dkTxt(shop ? '큐, 공, 테이블, 트레일, 장갑을 코인과 다이아로 살 수 있게 됩니다. 지금은 구경만 할 수 있습니다.' : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
       dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt('플레이 성능은 모두 같습니다.')]);

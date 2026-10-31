@@ -1211,6 +1211,35 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card i.bcase .lid{left:0;top:0;width:100%;height:18.5%}
 #app.desk .dk-card i.bcase .box{left:0;top:16.7%;width:100%;height:83.3%}
 #app.desk .dk-card i.bcase .b{width:38%;left:31%;aspect-ratio:1;transform:translateY(-50%);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.5))}
+/* the worn card, second look: an ivory line hugging the card's edge, and at the top middle an ivory tab saying 장착 with a
+   point under it, aimed down into the card (no glow) */
+#app.desk .dk-card.worn::after{inset:0;border:3px solid #f4ecd8;border-radius:10px;box-shadow:none}
+#app.desk .dk-card .wtag{top:-12px;padding:3px 14px 4px;border-radius:9px;background:#f4ecd8;color:#2b241c;font:800 12.5px 'Gothic A1',sans-serif;box-shadow:-2px 3px 4px rgba(0,0,0,.35)}
+#app.desk .dk-card .wtag::before{content:"";position:absolute;left:50%;top:100%;right:auto;width:12px;height:7px;margin-left:-6px;border-radius:0;background:#f4ecd8;clip-path:polygon(0 0,100% 0,50% 100%)}
+#app.desk.compact .dk-card .wtag{top:-10px;padding:2px 9px 3px;font-size:10px}
+#app.desk .dk-card i.bcase{aspect-ratio:1/2}
+#app.desk .dk-card i.bcase .box{top:0;height:100%}
+/* the lessons' textbooks: a leather cover per course with a gold-blocked title; gold edging once every level is done */
+#app.desk .dk-cards.books{grid-auto-rows:minmax(0,calc(50% - 8px))}
+#app.desk .dk-card.book{justify-content:flex-start;gap:6px;padding:8px 8px 8px}
+#app.desk .dk-card.book .cover{position:relative;flex:1;min-height:0;width:84%;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
+  border-radius:3px 7px 7px 3px;padding:10px 8px 10px 14px;box-sizing:border-box;color:#e9cf8a;
+  background:linear-gradient(90deg,rgba(0,0,0,.45) 0 9px,rgba(255,255,255,.12) 9px 10px,transparent 10px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.14),transparent 60%),var(--lc,#1d3a6b);
+  box-shadow:inset 0 0 0 2px rgba(233,207,138,.35),inset -3px 0 0 rgba(255,255,255,.08),-5px 7px 8px rgba(0,0,0,.5)}
+#app.desk .dk-card.book .cover.c0{--lc:#1c3a6e}#app.desk .dk-card.book .cover.c1{--lc:#6e1c24}#app.desk .dk-card.book .cover.c2{--lc:#1d5a3a}#app.desk .dk-card.book .cover.c3{--lc:#4a2f1c}
+#app.desk .dk-card.book .cover small{font:700 10.5px 'Gothic A1',sans-serif;letter-spacing:.12em;opacity:.85}
+#app.desk .dk-card.book .cover b{font:800 17px/1.25 'Gothic A1',sans-serif;color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.5)}
+#app.desk .dk-card.book .cover em{position:absolute;bottom:8px;font:700 12px 'Outfit',sans-serif;font-style:normal;opacity:.7}
+#app.desk .dk-card.book.done .cover{box-shadow:inset 0 0 0 3px #e3c066,inset 0 0 0 5px rgba(0,0,0,.25),-5px 7px 8px rgba(0,0,0,.5)}
+#app.desk .dk-card.book .lvl{display:flex;gap:4px}
+#app.desk .dk-card.book .lvl i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}
+#app.desk .dk-card.book .lvl i.on{background:#e9c46a}
+#app.desk.compact .dk-card.book .cover b{font-size:12.5px}
+#app.desk.compact .dk-card.book .cover small{font-size:8.5px}
+#app.desk.compact .dk-cards.books{grid-auto-rows:136px}
+#app.desk.compact.portrait .dk-cards{grid-auto-rows:minmax(150px,calc(50% - 8px))}
+#app.desk.compact.portrait .dk-cards.books{grid-template-columns:repeat(3,minmax(0,1fr))}
+#app.desk.compact .dk-card.book .cover{padding:8px 4px 8px 12px;width:90%}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">
@@ -1222,7 +1251,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     </div>
     <span class="sp"></span>
     <button class="dk-me" id="dkMe" aria-label="이름 바꾸기"><i class="av">1</i><span><b class="nm"></b><small class="rc"></small></span></button>
-    <div class="dk-wallet" id="dkWallet" aria-label="재화"><span class="dk-cur coin" title="코인"><i></i><b>0</b></span><span class="dk-cur dia" title="다이아"><i></i><b>0</b></span></div>
+    <div class="dk-wallet" id="dkWallet" aria-label="재화"><span class="dk-cur dia" title="다이아"><i></i><b>0</b></span><span class="dk-cur coin" title="코인"><i></i><b>0</b></span></div>
     <button class="dk-top" id="dkRec"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
     <button class="dk-top" id="dkSet"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg><span>설정</span></button>
   </header>

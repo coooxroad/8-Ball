@@ -17,14 +17,14 @@ function homePreview() {
   usePhysics(); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
-  if (prefs.mode === 'puzzle') { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
+  if (prefs.mode === 'puzzle' && puzzles.list.length) { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
   if (prefs.mode === 'practice' && d.make) {
     game.start('practice', [prefs.names[0], ''], false, {}); dress(false); scene.setTable(game.P);
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);
     if (L) { flow = null; putLayout(L); scene.setZone(L.zone); playDemo(L.demo, { quiet: true, after: homePreview }); return; }
   }
   flow = null; scene.setMarks(null); useCue(prefs.cues[0]);
-  const mode = game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', ice = iceOn();
+  const mode = prefs.mode === 'puzzle' ? 'four' : game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', ice = iceOn();
   game.start(mode, [prefs.names[0], oppName()], false, { ice, levels: [2, 2], target: 99 });
   dress(ice); scene.setTable(game.P); st.rev++; scene.invalidate();
   { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }

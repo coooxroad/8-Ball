@@ -1,11 +1,10 @@
 #!/bin/sh
-# Builds the game page twice from the same sources:
-#   web/dist/artifact.html            - page fragment for the claude.ai artifact (three.js and fonts from CDNs)
+# Builds the game page from the sources:
 #   app/src/main/assets/index.html    - full offline page bundled into the Android app
 set -e
 cd "$(dirname "$0")"
 A=../app/src/main/assets
-mkdir -p dist "$A/fonts"
+mkdir -p "$A/fonts"
 # Every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped.
 # Two parts are folders of small files that share one scope, in file-name order:
 #   reel/  the body of createReel(d) - the reel's machinery, then one file per edit, then playing one
@@ -19,8 +18,6 @@ script() {
   echo "(() => {"; echo "'use strict';"; cat app/*.js; echo '})();'
   echo '</script>'
 }
-
-{ cat head.html; script; } > dist/artifact.html
 
 {
   cat <<'HTML'
@@ -58,4 +55,4 @@ rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
-wc -c dist/artifact.html "$A/index.html"
+wc -c "$A/index.html"

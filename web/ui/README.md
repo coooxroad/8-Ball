@@ -37,10 +37,9 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | cue-maple … cue-sport | 25a–e | the cues (ids as in look.js CUES); 2400×110, butt left, tip right, centre line y 49 | – |
 | coin | 18-brass-coin-128 | the coin, in the wallet on the top bar | – |
 | dia | F2-diamond 160 | the diamond, the rare currency, in the wallet | – |
-| chip, chip-glow | F3, F4 currency chip 300x96 | the wallet's wells (glow not used yet: for when an amount rises) | slice 44 / 4 |
+| chip | F3, F4 currency chip 300x96 | the wallet's wells | slice 44 / 4 |
 | mode-three … mode-nine | H1 mode icons 128 | beside each game's name on the rail keys | – |
 | toggle-off, toggle-on | S1 200×96 | the settings' on/off switch (knob 45,45 → 155,45) | – |
-| slider-track, slider-knob | S2 | (not used yet: for a slider) | slice 28 l r |
 | divider | S3 600×12 | the brass line between settings rows | slice 6 l r |
 | rank-1 … rank-3 | R1 128 | the first three in the records (number in 30,28–98,96) | – |
 | res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
@@ -75,13 +74,6 @@ T2 (cloth detail) is not used: at table scale it only showed as blocks; the draw
 | knob, knob-press | K5 | pause, 3D, the shelves' X | – |
 | angle-arc | K6 | (not used yet: the cue-angle pad) | – |
 | glove-black … glove-camo | G1–G6 | gloves (look.js GLOVES) | – |
-| trophy-gold, trophy-silver | R5, R6 | the winner's cup after a match (silver not used yet) | – |
-| scoresheet | R7 | the match's numbers on a clipboard | 160 50 60 50 |
-| rosette | R8 | by the winner; the best highlight | – |
-| stamp | R9 | the winner's stamp on the score sheet | – |
-| photo | R10 | a highlight as an instant photo | 48 48 118 48 |
-| chalkboard | R11 (scaled ¾) | the score after a match | 52 |
-| shelf | R12 | (not used yet) | 60 l r |
 | tour-logo | L2 | the score bar's tab | – |
 
 `web/tex/ball-marble … ball-vintage` (BL1–BL5, 512×256 grey) are the ball sets' surfaces, worked over the painted colours
