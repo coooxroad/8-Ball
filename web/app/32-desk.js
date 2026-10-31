@@ -6,7 +6,7 @@
 const deskOn = () => prefs.ui === 'desk';
 const GAME4 = ['three', 'four', 'eight', 'nine'];
 const GAME_SUB = { three: '쓰리쿠션', four: '사구 · 수지 대결', eight: '에잇볼', nine: '나인볼' };
-let deskTab = null, gearSel = 'cue', gearCue = null, gearCloth = null, shopSel = 'cue';
+let deskTab = null, gearSel = 'cue', gearCue = null, gearCloth = null, gearBall = null, gearTrail = null, gearGlove = null, shopSel = 'cue';
 const LESSONS = () => COURSES.flatMap(c => c[1]).filter(id => drills.byId(id).make);
 const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.drill === 'free' ? 'free' : 'lesson') : null;
 const svgArrow = d => { const s = el('span'); s.innerHTML = `<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="${d ? 'M8 4.5v15L19 12z' : 'M16 4.5v15L5 12z'}"/></svg>`; return s.firstChild; };
@@ -54,7 +54,7 @@ const dkSwatch = (on, worn, pic, name, fn) => el('button', { class: 'dk-sw', 'ar
 
 function deskGo(tab) {
   if (tab === deskTab && st.screen === 'home') return;
-  const was = deskTab; deskTab = tab; gearCue = gearCloth = null;
+  const was = deskTab; deskTab = tab; gearOff();
   const game4 = m => GAME4.includes(m);
   if (tab === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
   if (tab === 'train' && !trainOf()) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = prefs.lastTrain === 'practice' ? 'practice' : 'puzzle'; }
@@ -156,11 +156,51 @@ function deskFree({ head, slate }) {
   dkPut(slate, dkActs(dkMain('연습 시작', null, () => practice.start())));
 }
 
-// 내 장비: the cue or the cloth. Choosing one in the foot only tries it on (gearCue, gearCloth); the button wears it.
+// 내 장비: the cue, the balls, the cloth, the trail or the glove. Choosing one in the foot only tries it on (gearCue,
+// gearBall, gearCloth, gearTrail, gearGlove); the button wears it.
+const GEAR = [['cue', '큐'], ['ball', '공'], ['table', '테이블'], ['trail', '트레일'], ['glove', '장갑']];
+function gearOff() {                                                  // put back what was only being tried on
+  if (gearCloth != null) dress(iceOn()); if (gearBall != null) scene.setBalls(prefs.ballSkin); if (gearTrail != null) scene.setTrail(prefs.trail);
+  gearCue = gearCloth = gearBall = gearTrail = gearGlove = null;
+}
 function deskGear(d) {
-  dkPut(d.rail, [railBtn(gearSel === 'cue', '큐', null, () => { gearSel = 'cue'; gearCloth = null; dress(iceOn()); paintHome(); }),
-    railBtn(gearSel === 'table', '테이블', null, () => { gearSel = 'table'; gearCue = null; paintHome(); })]);
-  if (gearSel === 'cue') deskCue(d); else deskCloth(d);
+  dkPut(d.rail, GEAR.map(([k, t]) => railBtn(gearSel === k, t, null, () => { gearOff(); gearSel = k; paintHome(); })));
+  ({ cue: deskCue, ball: deskBalls, table: deskCloth, trail: deskTrail, glove: deskGlove })[gearSel](d);
+}
+// a set of balls as three little balls side by side (carom: white, yellow, red; else the cue ball, the 1 and the 11)
+const hx6 = h => '#' + h.toString(16).padStart(6, '0');
+function ballTrio(k) {
+  const c = isCarom(), pal = n => k.pal ? hx6(k.pal[(n - 1) % 8]) : ballCss(n);
+  const cols = c ? [hx6(k.cue), hx6(k.yel), hx6(k.red)] : [hx6(k.cue), k.noir ? '#141416' : pal(1), pal(3)];
+  return el('i', { class: 'btrio' }, cols.map(cc => el('b', { style: `--c:${cc}` })));
+}
+function deskBalls({ head, foot, slate }) {
+  const cur = BALLSKINS.findIndex(b => b.id === prefs.ballSkin), i = gearBall == null ? cur : gearBall, k = BALLSKINS[i], own = i === cur;
+  dkPut(head, dkTitle('공 살펴보기', `${i + 1} / ${BALLSKINS.length}`));
+  dkPut(foot, BALLSKINS.map((q, n) => dkSwatch(n === i, n === cur, ballTrio(q), q.name, () => { gearBall = n === cur ? null : n; scene.setBalls(q.id); paintHome(); })));
+  dkPut(slate, dkH1(k.name, '공 세트'));
+  dkPut(slate, [dkHr(), dkTxt(k.note), dkHr(), dkTxt('보기만 다르고 공은 똑같이 구릅니다.'), dkHr(), dkTxt('현재 장착: ', BALLSKINS[cur].name)]);
+  dkPut(slate, dkActs(dkMain(own ? '장착 중' : '이 공 장착', null, () => { prefs.ballSkin = k.id; savePrefs(); gearBall = null; paintHome(); toast(`${k.name} 공을 꺼냈습니다.`); }, own),
+    gearBall != null ? dkSec('미리보기 취소', () => { gearOff(); paintHome(); }) : null));
+}
+function deskTrail({ head, foot, slate }) {
+  const cur = Math.max(0, TRAILS.findIndex(t => t.id === prefs.trail)), i = gearTrail == null ? cur : gearTrail, t = TRAILS[i], own = i === cur;
+  dkPut(head, dkTitle('트레일', '큐볼이 지나간 자국'));
+  const streak = q => el('i', { class: 'trl' + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
+  dkPut(foot, TRAILS.map((q, n) => dkSwatch(n === i, n === cur, streak(q), q.name, () => { gearTrail = n === cur ? null : n; scene.setTrail(q.id); paintHome(); })));
+  dkPut(slate, dkH1(t.name, '트레일'));
+  dkPut(slate, [dkHr(), dkTxt(t.note), dkHr(), dkTxt('큐볼이 구르는 동안 뒤로 짧게 남고 곧 사라집니다. 경기에는 영향이 없습니다.'), dkHr(), dkTxt('현재 장착: ', TRAILS[cur].name)]);
+  dkPut(slate, dkActs(dkMain(own ? '장착 중' : '이 트레일 장착', null, () => { prefs.trail = t.id; savePrefs(); gearTrail = null; paintHome(); }, own),
+    gearTrail != null ? dkSec('미리보기 취소', () => { gearOff(); paintHome(); }) : null));
+}
+// gloves: their pictures are still being made, so they can be looked at but not worn yet
+function deskGlove({ head, stage, foot, slate }) {
+  const i = gearGlove == null ? Math.max(0, GLOVES.findIndex(g => g.id === prefs.glove)) : gearGlove, g = GLOVES[i];
+  dkPut(head, dkTitle('장갑', '브리지 손에 끼는 세 손가락 장갑'));
+  dkPut(foot, GLOVES.map((q, n) => dkSwatch(n === i, q.id === prefs.glove, el('i', { class: 'glv g-' + q.id }), q.name, () => { gearGlove = n; paintHome(); })));
+  dkPut(slate, dkH1(g.name, '장갑'));
+  dkPut(slate, [dkHr(), dkTxt('장갑 그림을 준비하고 있습니다. 그림이 들어오면 끼울 수 있습니다.')]);
+  dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true)));
 }
 // the cue tried on is laid in the tray in place of the table, whole and with its butt close up
 function deskCue({ head, stage, foot, slate }) {
@@ -191,11 +231,11 @@ function deskCloth({ head, foot, slate }) {
 
 // 상점: a placeholder, laid out like the others so the place is there when it opens
 function deskShop({ rail, head, stage, slate }) {
-  const SHOP = [['cue', '큐', '큐 진열대'], ['ball', '공', '공 진열대'], ['table', '테이블', '테이블 천 진열대']];
+  const SHOP = [['cue', '큐', '큐 진열대'], ['ball', '공', '공 진열대'], ['table', '테이블', '테이블 천 진열대'], ['trail', '트레일', '트레일 진열대'], ['glove', '장갑', '장갑 진열대']];
   dkPut(rail, SHOP.map(([k, t]) => railBtn(shopSel === k, t, '준비 중', () => { shopSel = k; paintHome(); }, true)));
   dkPut(head, dkTitle((SHOP.find(x => x[0] === shopSel) || SHOP[0])[2], '곧 열립니다'));
   stage.dataset.win = '0';
-  dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '상점 준비 중' }), el('span', { text: '큐, 공, 테이블 외형을 코인과 다이아로 살 수 있게 됩니다.' }), el('span', { text: '플레이 성능은 모두 같습니다.' })]));
+  dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '상점 준비 중' }), el('span', { text: '큐, 공, 테이블, 트레일, 장갑을 코인과 다이아로 살 수 있게 됩니다.' }), el('span', { text: '플레이 성능은 모두 같습니다.' })]));
   dkPut(slate, dkH1('상점', '곧 열립니다'));
   dkPut(slate, [dkHr(), dkTxt('지금 가진 큐와 천은 내 장비에서 바꿀 수 있습니다.')]);
   dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('내 장비로', () => deskGo('gear'))));

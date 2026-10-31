@@ -1126,6 +1126,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.bcast.compact:not(.portrait) #toast{font-size:13.5px;padding:7px 14px 7px 18px;bottom:calc(var(--bb) + 6px + var(--bh) + 22px)}
 #app.bcast.compact:not(.portrait) #hud::before{font-size:9px;padding:2px 9px 1px}
 #app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
+/* 내 장비: a ball set as three balls, a trail as its streak, a glove (picture to come) as its colour */
+#app.desk .dk-sw i.btrio{display:flex;align-items:center;justify-content:center;gap:6%;box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
+#app.desk .dk-sw i.btrio b{width:24%;aspect-ratio:1;max-width:30px;border-radius:50%;background:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),var(--c);
+  box-shadow:inset -3px -4px 6px rgba(0,0,0,.35),-2px 3px 3px rgba(0,0,0,.4)}
+#app.desk .dk-sw i.trl{box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px;position:relative;overflow:hidden}
+#app.desk .dk-sw i.trl::before{content:"";position:absolute;left:8%;right:30%;top:50%;height:22%;transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,transparent,var(--c))}
+#app.desk .dk-sw i.trl::after{content:"";position:absolute;right:16%;top:50%;width:22%;aspect-ratio:1;max-width:24px;transform:translateY(-50%);border-radius:50%;background:radial-gradient(circle at 62% 30%,#fff,#f1ece0 45%,#b9b1a0)}
+#app.desk .dk-sw i.trl.rb::before{background:linear-gradient(90deg,transparent,#ff3b30,#ffcc00,#34c759,#0a84ff,#bf5af2)}
+#app.desk .dk-sw i.trl.none::before{display:none}
+#app.desk .dk-sw i.glv{box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px;position:relative}
+#app.desk .dk-sw i.glv::after{content:"";position:absolute;left:50%;top:50%;width:34%;aspect-ratio:3/4;max-height:80%;transform:translate(-50%,-50%);border-radius:40% 40% 30% 30%;background:var(--g);box-shadow:-2px 3px 3px rgba(0,0,0,.4)}
+.g-black{--g:#1b1c1f}.g-white{--g:#eef0f3}.g-red{--g:#c8161d}.g-blue{--g:#1f4fd1}.g-gold{--g:linear-gradient(#1b1c1f 60%,#d9a514 60%)}.g-camo{--g:repeating-radial-gradient(circle at 30% 30%,#5d6b4a 0 5px,#3e4a32 5px 9px,#7a7f5e 9px 12px)}
+#app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-slot{min-width:0;flex:1 1 0}               /* (five keys: they share the row) */
+#app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-rb{font-size:14px}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">

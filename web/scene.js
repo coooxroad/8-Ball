@@ -465,26 +465,31 @@ function createScene(canvas, app, PH) {
   const blobMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, opacity: 0.75, depthWrite: false });
   const lampShadowMat = new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, opacity: 0.42, depthWrite: false });
   const unitPlane = new THREE.PlaneGeometry(1, 1);
+  let skin = BALLSKINS[0];
   function ballTexture(kind, n) {
-    const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = '#f4efe2';
+    const hex = h => '#' + h.toString(16).padStart(6, '0'), sk = skin, colOf = k => sk.pal ? hex(sk.pal[(k - 1) % 8]) : ballCss(k);
+    const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = hex(sk.cue);
     const dots = (bgc, dc, rad) => {
       g.fillStyle = bgc; g.fillRect(0, 0, W, H); g.fillStyle = dc;
       for (const u of [0, 0.25, 0.5, 0.75, 1]) { g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill(); }
       g.fillRect(0, 0, W, rad); g.fillRect(0, H - rad, W, rad);
     };
+    const plain = bgc => { g.fillStyle = bgc; g.fillRect(0, 0, W, H); };
     if (kind === 'carom') {
-      if (n === 0) dots(ivory, '#c8201b', 0.11 / Math.PI * H);
-      else if (n === 1) dots('#f4c20d', '#b3261e', 0.11 / Math.PI * H);
-      else dots('#d3241c', '#9c1712', 0.2 / Math.PI * H);
-    } else if (n === 0) dots(ivory, '#c8201b', 0.13 / Math.PI * H);
+      if (n === 0) sk.dots ? dots(ivory, '#c8201b', 0.11 / Math.PI * H) : plain(ivory);
+      else if (n === 1) sk.dots ? dots(hex(sk.yel), '#b3261e', 0.11 / Math.PI * H) : plain(hex(sk.yel));
+      else sk.dots ? dots(hex(sk.red), '#00000033', 0.2 / Math.PI * H) : plain(hex(sk.red));
+    } else if (n === 0) sk.dots ? dots(ivory, '#c8201b', 0.13 / Math.PI * H) : plain(ivory);
     else {
-      const stripe = n > 8;
-      g.fillStyle = stripe ? ivory : ballCss(n); g.fillRect(0, 0, W, H);
-      if (stripe) { g.fillStyle = ballCss(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
+      const stripe = n > 8, base = sk.noir ? '#141416' : ivory;
+      g.fillStyle = stripe ? base : sk.noir ? '#141416' : colOf(n); g.fillRect(0, 0, W, H);
+      if (stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
+      if (sk.noir && !stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.44, W, H * 0.12); }   // (a thin coloured belt round a solid)
       const rad = 0.5 / Math.PI * H;
       for (const u of [0.25, 0.75]) {
-        g.fillStyle = ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
-        g.fillStyle = '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillStyle = sk.noir ? '#141416' : ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
+        if (sk.noir) { g.strokeStyle = colOf(n); g.lineWidth = 6; g.stroke(); }
+        g.fillStyle = sk.noir ? colOf(n) : '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.fillText(String(n), u * W, H / 2 + 6);
         if (n === 6 || n === 9) g.fillRect(u * W - 22, H / 2 + 46, 44, 7);
       }
@@ -503,6 +508,12 @@ function createScene(canvas, app, PH) {
     return { mesh, blob, R };
   }
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
+  // another ball set: each ball's picture drawn again (the meshes stay)
+  function setBalls(id) {
+    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0]; if (k === skin) return; skin = k;
+    for (const [kind, set] of [['pool', sets.pool], ['carom', sets.carom]]) set.mesh.forEach((m, i) => { const old = m.material.map; m.material.map = ballTexture(kind, i); m.material.needsUpdate = true; old.dispose(); });
+    dirty = 3;
+  }
 
   /* cue stick */
   const cue = new THREE.Group(); cue.rotation.order = 'ZYX'; scene.add(cue);
@@ -564,6 +575,24 @@ function createScene(canvas, app, PH) {
     m.frustumCulled = false; m.renderOrder = 10; m.visible = false; guide.add(m); return m;
   }
   const rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), RIBS = [rPre, rObj, rPost];
+  // The cue ball's trail (내 장비 · 트레일): where it has been in the last moment, as a ribbon fading behind it.
+  const rTrail = makeRibbon(); scene.add(rTrail); rTrail.renderOrder = 2; rTrail.material.depthTest = true;
+  let trail = null, trailT = 0; const trailPts = [];
+  function setTrail(id) { const t = TRAILS.find(x => x.id === id); trail = t && t.color ? t : null; trailPts.length = 0; rTrail.visible = false; }
+  function trailTick(c, R, dt) {
+    trailT += dt;
+    if (trail && c && c.on && !c.z) {
+      const l = trailPts.length;
+      if (!l || Math.hypot(c.x - trailPts[l - 1].x, c.y - trailPts[l - 1].y) > 0.006) trailPts.push({ x: c.x, y: c.y, t: trailT });
+    }
+    while (trailPts.length && trailT - trailPts[0].t > 0.9) trailPts.shift();
+    if (!trail || trailPts.length < 2) { rTrail.visible = false; return false; }
+    const pts = []; for (const p of trailPts) pts.push(p.x, p.y, -R + 0.0015);
+    pts.push(c.x, c.y, -R + 0.0015);
+    const color = trail.color === 'rainbow' ? new THREE.Color().setHSL((trailT * 0.35) % 1, 0.9, 0.58).getHex() : trail.color;
+    ribbon(rTrail, pts, { m: R * 1.6, color, op: trail.id === 'chalk' ? 0.5 : 0.9, alpha: t => t * t }, R);
+    return true;
+  }
   const gDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40), gMat(0.3)); gDisc.renderOrder = 10; gDisc.visible = false; guide.add(gDisc);
   // pts: [x, y, height above the cloth, ...]. o: px (width on screen) or m (width in metres), color, op, alpha(t along 0..1,
   // height), mode (0 a line, 3 a band with bright edges), ch (how strongly the band's arrowheads show)
@@ -828,6 +857,7 @@ function createScene(canvas, app, PH) {
       if (f.z <= -0.11) { fallEvents.push({ t: 'land', v: Math.hypot(f.vx, f.vy, f.vz), x: f.x, y: f.y }); falls.splice(i, 1); }
     }
     const c = w.balls[w.cue];
+    if (trailTick(c, R, dt)) dirty = Math.max(dirty, 2);
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
     if (cue.visible) {
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
@@ -941,7 +971,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBalls, setTrail, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };

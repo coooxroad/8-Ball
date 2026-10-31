@@ -17,3 +17,27 @@ const CUES = [
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
 const ballHex = n => BALL_HEX[n === 0 ? 0 : n <= 8 ? n : n - 8];
 const ballCss = n => '#' + ballHex(n).toString(16).padStart(6, '0');
+/* Ball sets (내 장비 · 공): drawn in code, the same on every table. pal: the colours of balls 1-8 (stripes repeat them),
+   cue / yel / red: the carom balls; dots: whether the white (and yellow) carry the red dots TV balls have; num: the
+   number disc's colour and its figures'. More (marble, pearl, carbon...) come with their surface pictures. */
+const BALLSKINS = [
+  { id: 'classic', name: '클래식', note: '중계에서 보는 공: 흰 공과 노란 공에 빨간 점', pal: null, cue: 0xf4efe2, yel: 0xf4c20d, red: 0xd3241c, dots: true },
+  { id: 'plain', name: '매끈한 공', note: '점 없는 흰 공, 맑은 색', pal: null, cue: 0xf7f3ea, yel: 0xf6c514, red: 0xd8261e, dots: false },
+  { id: 'neon', name: '네온', note: '형광처럼 쨍한 색', pal: [0xffe600, 0x1f6bff, 0xff2a3d, 0xa13bff, 0xff7a00, 0x00d26a, 0xff2d95, 0x111111], cue: 0xffffff, yel: 0xffe600, red: 0xff1f3d, dots: false },
+  { id: 'pastel', name: '파스텔', note: '부드러운 파스텔 색', pal: [0xf6d776, 0x8fb4f0, 0xf39a9a, 0xbba3e6, 0xf6b98a, 0x93d3a8, 0xe8a0b4, 0x3a3a44], cue: 0xfbf8f1, yel: 0xf6d776, red: 0xef8a8a, dots: false },
+  { id: 'noir', name: '블랙 에디션', note: '검은 공에 색 띠와 색 숫자', pal: [0xf2b705, 0x2f6fe0, 0xe0342b, 0x8a4fd1, 0xf08a24, 0x1fa463, 0xc23a5a, 0xd9d9d9], cue: 0xf4efe2, yel: 0xd9a514, red: 0x8e1b20, dots: true, noir: true },
+];
+/* Trails (내 장비 · 트레일): a fading streak behind the cue ball while it rolls. */
+const TRAILS = [
+  { id: 'none', name: '없음', note: '자국 없이', color: null },
+  { id: 'chalk', name: '초크 가루', note: '희미한 흰 자국', color: 0xf3f6ff },
+  { id: 'fire', name: '불꽃', note: '주황빛 불꽃 꼬리', color: 0xff7a1a },
+  { id: 'neon', name: '네온', note: '파랗게 빛나는 줄', color: 0x2ee6ff },
+  { id: 'gold', name: '골드', note: '금빛 꼬리', color: 0xffcf3a },
+  { id: 'rainbow', name: '무지개', note: '색이 바뀌며 흐르는 꼬리', color: 'rainbow' },
+];
+/* Gloves (내 장비 · 장갑): pictures come as ui/glove-<id>.webp. */
+const GLOVES = [
+  { id: 'black', name: '블랙' }, { id: 'white', name: '화이트' }, { id: 'red', name: '레드' },
+  { id: 'blue', name: '블루' }, { id: 'gold', name: '골드' }, { id: 'camo', name: '카모' },
+];

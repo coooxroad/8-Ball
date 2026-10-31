@@ -41,6 +41,7 @@ const prefs = (() => {
     aim: 'line', gv: 0, ui: 'desk', uiv: 0,
     music: true,
     shotClock: 40,
+    ballSkin: 'classic', trail: 'none', glove: null,
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -142,6 +143,7 @@ if (!scene) {
   app.textContent = ''; app.appendChild(d); return;
 }
 scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs.quality);
+scene.setBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 // The ice table is a cloth like the others to choose, but it plays differently (everything slides), so lessons and puzzles -
 // whose shots were worked out on cloth - are always shown and played on the ordinary one.
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
