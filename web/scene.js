@@ -29,6 +29,19 @@ function createScene(canvas, app, PH) {
     return t;
   };
 
+  /* Pictures of real materials (web/tex, carried inside the page as data, so WebGL may read them): each takes the place
+     of its drawn stand-in once it has loaded; without them the drawn ones stay. */
+  const TEXS = typeof TEXTURES !== 'undefined' ? TEXTURES : {}, loader = new THREE.TextureLoader(), made = {};
+  function loadTex(name, rep, done) {
+    if (!TEXS[name]) return;
+    loader.load(TEXS[name], t => {
+      t.encoding = THREE.sRGBEncoding; t.anisotropy = aniso;
+      if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); }
+      made[name] = t; if (done) done(t);
+      renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+    });
+  }
+
   /* reflections for the balls: a dim room with three lamp panels overhead */
   (function env() {
     const es = new THREE.Scene(); es.background = new THREE.Color(0x0c0b0a);
@@ -71,19 +84,57 @@ function createScene(canvas, app, PH) {
   const depthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
   const unmask = () => { const b = renderer.state.buffers; b.color.setMask(true); b.depth.setMask(true); };
 
-  /* floor under the table: one flat colour chosen by the UI theme, plus the table's own soft shadow */
-  const floorMat = new THREE.MeshBasicMaterial({ color: col(0x101216), toneMapped: false });
+  /* The hall's floor under the table: carpet tiles, lit by the table's lamps (so it falls off into the dark of the room
+     away from the table) and taking the table's shadow. Drawn once into the still layer, so it costs nothing a frame.
+     Until a carpet texture is supplied, a quiet one is drawn here: dark navy pile with a faint pattern and tile seams. */
+  const carpet = (() => {
+    const c = mkCanvas(512, 512), g = c.getContext('2d'), id = g.createImageData(512, 512), d = id.data;
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+      const i = (y * 512 + x) * 4, n = rnd() * 0.16 - 0.08;
+      // a faint lozenge pattern, and the seams between the four tiles
+      const u = (x % 256) / 256, v = (y % 256) / 256, lz = Math.abs(u - 0.5) + Math.abs(v - 0.5), pat = Math.abs(lz - 0.32) < 0.012 || Math.abs(lz - 0.16) < 0.008 ? 0.035 : 0;
+      const seam = x % 256 < 1 || y % 256 < 1 ? -0.06 : 0, k = 1 + n + seam;
+      d[i] = (50 + pat * 420) * k; d[i + 1] = (56 + pat * 90) * k; d[i + 2] = (84 + pat * 110) * k; d[i + 3] = 255;
+    }
+    g.putImageData(id, 0, 0); return tex(c, 9);
+  })();
+  const floorMat = new THREE.MeshLambertMaterial({ map: carpet });
+  // the made carpets: grey checks under a pool table, the big triangles under a carom one (each a 2m square of tiles)
+  const floorOf = () => made[cur.POCKETED ? 'carpet-checker' : 'carpet-geo'] || carpet;
+  const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 0.62); floorMat.needsUpdate = true; } };
+  loadTex('carpet-checker', 9, putFloor); loadTex('carpet-geo', 9, putFloor);
   let tableShadow = null;
   (function backdrop() {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; m.layers.set(1); sScene.add(m);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; m.receiveShadow = true; m.layers.set(1); sScene.add(m);
     const s = mkCanvas(512, 320), sg = s.getContext('2d');
     sg.shadowColor = 'rgba(0,0,0,0.8)'; sg.shadowBlur = 52; sg.fillStyle = 'rgba(0,0,0,0.8)';
     const rr = (x, y, w, h, r) => { sg.beginPath(); sg.moveTo(x + r, y); sg.arcTo(x + w, y, x + w, y + h, r); sg.arcTo(x + w, y + h, x, y + h, r); sg.arcTo(x, y + h, x, y, r); sg.arcTo(x, y, x + w, y, r); sg.fill(); };
     rr(70, 60, 372, 200, 26);
     const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
     sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
+    // the room beyond the lamps' reach: the floor darkens away from the table into the dark of the hall
+    const v = mkCanvas(256, 256), vg = v.getContext('2d'), gr = vg.createRadialGradient(128, 128, 18, 128, 128, 128);
+    gr.addColorStop(0, 'rgba(4,4,6,0)'); gr.addColorStop(0.22, 'rgba(4,4,6,0)'); gr.addColorStop(0.55, 'rgba(4,4,6,0.55)'); gr.addColorStop(0.85, 'rgba(4,4,6,0.95)'); gr.addColorStop(1, 'rgba(4,4,6,1)');
+    vg.fillStyle = gr; vg.fillRect(0, 0, 256, 256);
+    const dk = new THREE.Mesh(new THREE.PlaneGeometry(17.5, 12), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
+    dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk);
   })();
-  function setBackdrop(hex) { floorMat.color.copy(col(hex)); sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }
+  /* The hall's light over the table: a long black box hung on two wires, its underside a lit acrylic panel. Only seen
+     when the camera looks round from low enough (from higher up it would hang between the camera and the cloth); it
+     lights nothing itself - the lamps above do that. Scaled along the table in setTable. */
+  const hall = new THREE.Group();
+  (function hallLight() {
+    const frame = new THREE.MeshStandardMaterial({ color: col(0x141518), roughness: 0.5, metalness: 0.6, envMapIntensity: 0.6 });
+    const box = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.56, 0.11), frame); box.position.z = 1.115; hall.add(box);
+    const glow = new THREE.MeshBasicMaterial({ color: col(0xfff6e8), toneMapped: false });
+    loadTex('diffuser', 0, t => { t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1); glow.map = t; glow.needsUpdate = true; });
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.5), glow); panel.rotation.x = Math.PI; panel.position.z = 1.059; hall.add(panel);
+    const wire = new THREE.CylinderGeometry(0.003, 0.003, 3, 6).rotateX(Math.PI / 2);
+    for (const x of [-0.42, 0.42]) { const w = new THREE.Mesh(wire, frame); w.position.set(x, 0, 2.67); hall.add(w); }
+    hall.visible = false; sScene.add(hall);
+  })();
+  function setBackdrop(hex) { sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }   // (beyond the floor, and behind the desk's window)
 
   /* shared table materials */
   const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
@@ -91,6 +142,7 @@ function createScene(canvas, app, PH) {
   for (let i = 0; i < fid.data.length; i += 4) { const v = 226 + (Math.random() * 30 - 15); fid.data[i] = fid.data[i + 1] = fid.data[i + 2] = v; fid.data[i + 3] = 255; }
   fg.putImageData(fid, 0, 0);
   const feltTex = tex(fc, 9);
+
   const feltMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1 });
   const cushMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1, side: THREE.DoubleSide });
   /* Wood. The picture is a plank seen along the grain: growth rings stretched into long wavy bands, fine pores,
@@ -125,6 +177,14 @@ function createScene(canvas, app, PH) {
   const woodMat = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: 0.36, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
   // the cabinet under the rails: the same wood, matt and a shade darker (it stands in the rail's shadow and has no lacquer)
   const bodyMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x8c6c58, roughness: 0.7, metalness: 0, envMapIntensity: 0.3 });
+  // a carom table's two pedestals: the wood quarter-cut, its grain running up and down
+  const pedMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x8c6c58, roughness: 0.55, metalness: 0, envMapIntensity: 0.35 });
+  // a pool table's cabinet and legs: black lacquer; chrome on the feet and round a carom table's rails
+  const lacMat = new THREE.MeshStandardMaterial({ color: col(0x050506), roughness: 0.38, metalness: 0, envMapIntensity: 0.22 });
+  const chromeMat = new THREE.MeshStandardMaterial({ color: col(0xd9dcdf), roughness: 0.16, metalness: 1, envMapIntensity: 1.4 });
+  // the made woods: mahogany or walnut along the rails (cloth by cloth, look.js), and the mahogany cut across for the pedestals
+  loadTex('wood-mahogany', 1, () => setCloth(clothI)); loadTex('wood-walnut', 1, () => setCloth(clothI));
+  loadTex('wood-end', 1.7, () => setCloth(clothI));
   woodMat.onBeforeCompile = sh => {
     sh.uniforms.uOuter = woodU.uOuter;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocal = position;');
@@ -154,7 +214,22 @@ function createScene(canvas, app, PH) {
   const linerMat = new THREE.MeshStandardMaterial({ color: col(0x1d1815), roughness: 0.7, metalness: 0, envMapIntensity: 0.3, side: THREE.DoubleSide });
   const pearl = new THREE.MeshStandardMaterial({ color: col(0xf6efdc), roughness: 0.3, metalness: 0, envMapIntensity: 0.8 });
   const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false });
+  // the made sight: a long mother-of-pearl diamond, pointing along its rail (hidden until the picture is in)
+  const sightMat = new THREE.MeshStandardMaterial({ color: col(0xffffff), roughness: 0.3, metalness: 0, envMapIntensity: 0.8, alphaTest: 0.4, visible: false });
+  loadTex('sight', 0, t => { sightMat.map = t; sightMat.visible = true; sightMat.needsUpdate = true; pearl.visible = false; });
+  const SIGHT = new THREE.PlaneGeometry(0.03, 0.03);
+  const badgeMat = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.55, envMapIntensity: 1.1, alphaTest: 0.4, visible: false });
+  loadTex('badge', 0, t => { badgeMat.map = t; badgeMat.visible = true; badgeMat.needsUpdate = true; });
+  const BADGE = new THREE.PlaneGeometry(0.15, 0.075);
+  // a rounded rectangle, as a shape or a hole
+  const rrect = (sh, x, y, r) => {
+    sh.moveTo(-x + r, -y); sh.lineTo(x - r, -y); sh.absarc(x - r, -y + r, r, -Math.PI / 2, 0, false);
+    sh.lineTo(x, y - r); sh.absarc(x - r, y - r, r, 0, Math.PI / 2, false);
+    sh.lineTo(-x + r, y); sh.absarc(-x + r, y - r, r, Math.PI / 2, Math.PI, false);
+    sh.lineTo(-x, -y + r); sh.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5, false); return sh;
+  };
 
+  const LEG = new THREE.CylinderGeometry(0.062, 0.05, 0.5, 4, 1).rotateY(Math.PI / 4).rotateX(Math.PI / 2), FOOT = new THREE.CylinderGeometry(0.046, 0.05, 0.03, 16).rotateX(Math.PI / 2);
   function buildTable(P) {
     const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
     // cloth bed
@@ -175,11 +250,7 @@ function createScene(canvas, app, PH) {
       const b = new THREE.Mesh(new THREE.CircleGeometry(p.r, 28), pitB); b.position.set(p.x, p.y, -0.16); grp.add(b);
     }
     // rails
-    const rail = new THREE.Shape();
-    rail.moveTo(-ox + rr, -oy); rail.lineTo(ox - rr, -oy); rail.absarc(ox - rr, -oy + rr, rr, -Math.PI / 2, 0, false);
-    rail.lineTo(ox, oy - rr); rail.absarc(ox - rr, oy - rr, rr, 0, Math.PI / 2, false);
-    rail.lineTo(-ox + rr, oy); rail.absarc(-ox + rr, oy - rr, rr, Math.PI / 2, Math.PI, false);
-    rail.lineTo(-ox, -oy + rr); rail.absarc(-ox + rr, -oy + rr, rr, Math.PI, Math.PI * 1.5, false);
+    const rail = rrect(new THREE.Shape(), ox, oy, rr);
     const hole = new THREE.Path();
     if (P.POCKETED) {
       const arcs = POCKETS.map(p => {
@@ -212,18 +283,51 @@ function createScene(canvas, app, PH) {
     const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
     rg.translate(0, 0, RAIL_Z - 0.12 - bev);
     const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
-    // the cabinet under the playing surface (only seen when looking from the side)
-    const body = new THREE.Shape(), bxo = ox - 0.035, byo = oy - 0.035, br = 0.07;
-    body.moveTo(-bxo + br, -byo); body.lineTo(bxo - br, -byo); body.absarc(bxo - br, -byo + br, br, -Math.PI / 2, 0, false);
-    body.lineTo(bxo, byo - br); body.absarc(bxo - br, byo - br, br, 0, Math.PI / 2, false);
-    body.lineTo(-bxo + br, byo); body.absarc(-bxo + br, byo - br, br, Math.PI / 2, Math.PI, false);
-    body.lineTo(-bxo, -byo + br); body.absarc(-bxo + br, -byo + br, br, Math.PI, Math.PI * 1.5, false);
+    // Under the rails, as on a real table: a skirt (apron) all round under the rail, and below it what carries it -
+    //   carom: two broad pedestals of the same wood, waisted and flaring to a plinth, across the table near each end,
+    //          and a chrome band let into the rails' outer face;
+    //   pool:  black lacquer, with six legs splayed a little outwards to chrome feet.
+    // Seen from the side, in the 3D view and the highlights; from overhead the rails hide them.
+    const bxo = ox - 0.035, byo = oy - 0.035, br = 0.07, carom = !P.POCKETED, under = carom ? bodyMat : lacMat;
+    const body = rrect(new THREE.Shape(), bxo, byo, br);
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r + 0.002, 0, Math.PI * 2, true); body.holes.push(h); }   // the pockets go down through it
-    const bg = new THREE.ExtrudeGeometry(body, { depth: 0.72, bevelEnabled: false, curveSegments: 12 }); bg.translate(0, 0, -0.8);
-    const bodyMesh = new THREE.Mesh(bg, bodyMat); bodyMesh.castShadow = true; grp.add(bodyMesh);
+    const bg = new THREE.ExtrudeGeometry(body, { depth: 0.17, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelOffset: -0.012, bevelSegments: 3, curveSegments: 12 });
+    bg.translate(0, 0, -0.27);
+    const bodyMesh = new THREE.Mesh(bg, under); bodyMesh.castShadow = true; grp.add(bodyMesh);
+    // the maker's plate on the middle of each long side of the apron
+    for (const sy of [-1, 1]) { const m = new THREE.Mesh(BADGE, badgeMat); m.rotation.set(Math.PI / 2, 0, sy > 0 ? Math.PI : 0); m.position.set(0, sy * (byo + 0.0015), -0.19); grp.add(m); }
+    if (carom) {
+      // a pedestal's outline across the table (y) and down (z), drawn on one side and mirrored
+      const wt = byo * 0.66, ww = byo * 0.4, wf = byo * 0.74, D = 0.3, F = -0.8;
+      const ped = new THREE.Shape(); ped.moveTo(-wf, F); ped.lineTo(wf, F); ped.lineTo(wf, F + 0.05); ped.lineTo(wf - 0.03, F + 0.075);
+      ped.quadraticCurveTo(ww, F + 0.11, ww, F + 0.24); ped.lineTo(ww, -0.38); ped.quadraticCurveTo(ww, -0.3, wt, -0.27);
+      ped.lineTo(-wt, -0.27); ped.quadraticCurveTo(-ww, -0.3, -ww, -0.38); ped.lineTo(-ww, F + 0.24); ped.quadraticCurveTo(-ww, F + 0.11, -wf + 0.03, F + 0.075);
+      ped.lineTo(-wf, F + 0.05); ped.closePath();
+      const pg = new THREE.ExtrudeGeometry(ped, { depth: D, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelOffset: -0.01, bevelSegments: 2, curveSegments: 12 });
+      pg.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, -D / 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1));   // shape (y, z), extruded along x
+      // a plinth of black under each, and a chrome line round its top
+      const plinth = new THREE.BoxGeometry(D + 0.06, 2 * wf + 0.06, 0.03);
+      for (const sx of [-1, 1]) {
+        const m = new THREE.Mesh(pg, pedMat); m.position.x = sx * HL * 0.56; m.castShadow = true; m.receiveShadow = true; grp.add(m);
+        const pl = new THREE.Mesh(plinth, lacMat); pl.position.set(sx * HL * 0.56, 0, F + 0.015); grp.add(pl);
+      }
+      const band = rrect(new THREE.Shape(), ox + 0.0012, oy + 0.0012, rr + 0.0012); band.holes.push(rrect(new THREE.Path(), ox - 0.004, oy - 0.004, rr - 0.004));
+      const bandG = new THREE.ExtrudeGeometry(band, { depth: 0.014, bevelEnabled: false, curveSegments: 28 }); bandG.translate(0, 0, RAIL_Z - 0.078);
+      grp.add(new THREE.Mesh(bandG, chromeMat));
+    } else {
+      const lx = bxo - 0.12, ly = byo - 0.1, tilt = 0.1;
+      for (const [sx, sy] of [[-1, -1], [-1, 1], [1, -1], [1, 1], [0, -1], [0, 1]]) {
+        const piv = new THREE.Group(); piv.position.set(sx * lx, sy * ly, -0.27); piv.rotation.set(sy * tilt, -sx * tilt, 0); grp.add(piv);
+        const leg = new THREE.Mesh(LEG, lacMat); leg.position.z = -0.25; leg.castShadow = true; piv.add(leg);
+        const foot = new THREE.Mesh(FOOT, chromeMat); foot.position.z = -0.515; piv.add(foot);
+      }
+    }
     // sights
     const dg = new THREE.CircleGeometry(0.0095, 4);
-    const sight = (x, y, turn) => { const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m); };
+    const sight = (x, y, turn) => {
+      const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m);
+      const n = new THREE.Mesh(SIGHT, sightMat); if (!turn) n.rotation.z = Math.PI / 2; n.position.set(x, y, RAIL_Z + 0.0007); grp.add(n);
+    };
     for (const k of P.POCKETED ? [-3, -2, -1, 1, 2, 3] : [-3, -2, -1, 0, 1, 2, 3]) for (const sy of [-1, 1]) sight(k * HL / 4, sy * (Yb + RW * 0.52));
     for (const k of [-1, 0, 1]) for (const sx of [-1, 1]) sight(sx * (Xb + RW * 0.52), k * HW / 2, true);
     // cushions
@@ -254,7 +358,7 @@ function createScene(canvas, app, PH) {
     const set = sets[P.POCKETED ? 'pool' : 'carom'];
     for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
     // the lamps hang over this table's long axis
-    placeLamps();
+    placeLamps(); putFloor(); hall.scale.set(2 * P.HL * 0.92, 1, 1);
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
@@ -294,10 +398,16 @@ function createScene(canvas, app, PH) {
       feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
       cushMat.color.copy(col(0xcfeaf8)); cushMat.roughness = 0.5;                            // packed snow along the rails
     } else {
-      feltMat.map = feltTex; feltMat.bumpMap = feltTex; feltMat.color.copy(col(c.felt)); feltMat.roughness = 1; feltMat.envMapIntensity = 0.1;
+      feltMat.map = feltMat.bumpMap = cushMat.map = cushMat.bumpMap = feltTex; feltMat.color.copy(col(c.felt)); feltMat.roughness = 1; feltMat.envMapIntensity = 0.1;
       cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); cushMat.roughness = 1;
     }
-    feltMat.needsUpdate = true; woodMat.color.copy(col(c.wood)).multiplyScalar(2.1);
+    feltMat.needsUpdate = true;
+    // a cloth with a real wood (look.js grain) shows the made planks as they are; the others tint the drawn plank
+    const plank = c.grain && made['wood-' + c.grain], end = plank && made['wood-end'];
+    if (plank) { woodMat.map = plank; woodMat.color.setScalar(1.05); } else { woodMat.map = woodTex; woodMat.color.copy(col(c.wood)).multiplyScalar(2.1); }
+    bodyMat.map = plank || woodTex; bodyMat.color.copy(woodMat.color).multiplyScalar(plank ? 0.62 : 0.55);
+    pedMat.map = end || plank || woodTex; pedMat.color.copy(woodMat.color).multiplyScalar(c.grain === 'walnut' ? 0.42 : 0.7);
+    renderer.shadowMap.needsUpdate = true;
     blobMat.opacity = iced ? 0.5 : 0.75;
     staticDirty = true; dirty = 3;
   }
@@ -554,7 +664,8 @@ function createScene(canvas, app, PH) {
       // a scripted camera may come in very close, so what it can see starts nearer to it
       if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); camera.near = Math.max(0.05, Math.min(0.5, d * cam.zoom * 0.3)); }
       else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
-    } else { camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
+      hall.visible = orbit.el < 1.05;
+    } else { hall.visible = false; camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;
@@ -682,12 +793,11 @@ function createScene(canvas, app, PH) {
       const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
       // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
       // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
-      // On the realistic tables the cue is drawn where it really is: at its real angle (no extra lean for looks; on the game's
-      // physics, whose ordinary stroke is a level 0, the same small lean as the original's) and moved
-      // sideways and up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
-      const real = P.REAL, off = real ? v.spin.x * 0.5 * R : 0, lift = real ? v.spin.y * 0.5 * R * ce : 0, px = tx + dy * off, py = ty - dx * off;
-      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -Math.min(Math.PI / 2, (real && !P.PLAY ? 0 : 0.085) + e), v.aim + Math.PI); }
-      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(px, py, R + lift + 0.002 + (e && !real ? R * 0.9 : 0)); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
+      // The cue is drawn at its angle with a small lean for looks (the ordinary stroke is a level 0), and moved sideways and
+      // up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
+      const off = v.spin.x * 0.5 * R, lift = v.spin.y * 0.5 * R * ce, px = tx + dy * off, py = ty - dx * off;
+      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -Math.min(Math.PI / 2, 0.085 + e), v.aim + Math.PI); }
+      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const sx = px - dx * 0.735 * ce + 0.012, sy = py - dy * 0.735 * ce - 0.014;
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
     }

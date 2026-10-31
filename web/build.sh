@@ -12,6 +12,8 @@ mkdir -p dist "$A/fonts"
 #   app/   the app itself - what it shares first (00-state.js), then one file per screen or concern
 script() {
   echo '<script>'
+  # the table's material pictures (tex/), carried as data so WebGL may read them from a page opened as a file
+  echo 'const TEXTURES = {'; for f in tex/*.webp; do printf "'%s': 'data:image/webp;base64,%s',\n" "$(basename "$f" .webp)" "$(base64 -w0 "$f")"; done; echo '};'
   cat physics.js game.js drills.js puzzles.js highlights.js look.js scene.js sounds.js audio.js | grep -v '^if (typeof module'
   echo 'function createReel(d) {'; cat reel/*.js; echo '}'
   echo "(() => {"; echo "'use strict';"; cat app/*.js; echo '})();'

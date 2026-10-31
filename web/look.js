@@ -1,7 +1,7 @@
 /* How things look: cloth colours, cue designs, ball colours. Plain data, shared by the 3D scene and the menus. */
 const CLOTHS = [
-  { id: 'teal', name: '딥 틸', felt: 0x0e8ba3, wood: 0x6a3a20 },
-  { id: 'green', name: '클래식 그린', felt: 0x17894e, wood: 0x5a2f1a },
+  { id: 'teal', name: '딥 틸', felt: 0x0e8ba3, wood: 0x6a3a20, grain: 'mahogany' },
+  { id: 'green', name: '클래식 그린', felt: 0x17894e, wood: 0x5a2f1a, grain: 'walnut' },
   { id: 'blue', name: '토너먼트 블루', felt: 0x2a78d2, wood: 0x15171c },
   { id: 'wine', name: '버건디', felt: 0x9a2536, wood: 0xa9743f },
   { id: 'charcoal', name: '차콜', felt: 0x4b5562, wood: 0x15171c },
