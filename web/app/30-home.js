@@ -8,8 +8,6 @@ const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구' };
 const pzList = () => puzzles.list, PZ_NEED = 5;
 const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
-// lessons, grouped the way a course list is: what you learn first at the top
-const COURSES = [['기본기', ['straight', 'cut', 'thin', 'side']], ['큐볼 다루기', ['stop', 'follow', 'draw', 'spin', 'position']], ['응용', ['bank', 'break']], ['자유롭게', ['free']]];
 function paintHome() { deskPaint(); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
 // (a new layout each time, which is also what the drill itself does).

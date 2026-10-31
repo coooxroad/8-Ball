@@ -64,7 +64,8 @@ function stepSim(dt) {
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
-  const paused = !$('#sheet').hidden;
+  // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
+  const paused = !$('#sheet').hidden || (st.screen === 'home' && !deskTableShown());
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }

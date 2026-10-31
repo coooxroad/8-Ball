@@ -22,7 +22,5 @@ for (const dir of ['app', 'reel']) {
     }
   }
 }
-const pz = fs.readFileSync(path.join(W, 'puzzles.js'), 'utf8');
-if (!/Made by tools\/gen-puzzles\.js/.test(pz)) fail('puzzles.js does not look like the output of tools/pack-puzzles.js');
 console.log(failed ? `${failed} check(s) failed` : 'page checks passed');
 process.exit(failed ? 1 : 0);

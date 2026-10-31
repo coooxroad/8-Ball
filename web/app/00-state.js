@@ -41,7 +41,7 @@ const prefs = (() => {
     aim: 'line', gv: 0,
     music: true,
     shotClock: 40,
-    ballSkin: 'classic', trail: 'none', glove: null,
+    ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
