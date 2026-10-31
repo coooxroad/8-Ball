@@ -1264,6 +1264,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-stat small.up{color:#6fe39a}#app.desk .dk-stat small.dn{color:#ff8a80}
 #app.desk .dk-card.worn::after{inset:3px 2px 1px}
 #app.desk .dk-card .wtag,#app.desk.compact .dk-card .wtag{bottom:calc(100% - 6px)}
+/* the game volumes: thick leather tomes with brass corners and the game's balls on the cover */
+#app.desk .dk-cards.vols{grid-auto-rows:auto;align-content:center}
+#app.desk .dk-card.vol{justify-content:center;gap:10px;padding:16px 8px 12px}
+#app.desk .dk-card.vol .tome{position:relative;flex:none;width:92%;aspect-ratio:3/4;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:4px 9px 9px 4px;
+  color:#f1d993;background:linear-gradient(90deg,rgba(0,0,0,.5) 0 13px,rgba(255,255,255,.14) 13px 14px,transparent 14px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.16),transparent 60%),var(--lc);
+  box-shadow:inset 0 0 0 3px rgba(233,207,138,.45),inset 0 0 0 6px rgba(0,0,0,.2),inset -4px 0 0 rgba(255,255,255,.08),-7px 10px 12px rgba(0,0,0,.5)}
+#app.desk .dk-card.vol .tome::before,#app.desk .dk-card.vol .tome::after{content:"";position:absolute;right:0;width:18px;height:18px;background:linear-gradient(135deg,#f3d27a,#a77a24)}
+#app.desk .dk-card.vol .tome::before{top:0;border-radius:0 9px 0 0;clip-path:polygon(0 0,100% 0,100% 100%)}
+#app.desk .dk-card.vol .tome::after{bottom:0;border-radius:0 0 9px 0;clip-path:polygon(100% 0,100% 100%,0 100%)}
+#app.desk .dk-card.vol .tome.v0{--lc:#1d4d3a}#app.desk .dk-card.vol .tome.v1{--lc:#6e1c24}#app.desk .dk-card.vol .tome.v2{--lc:#1a1c24}#app.desk .dk-card.vol .tome.v3{--lc:#7a5a12}
+#app.desk .dk-card.vol .tome .mi{width:42%;aspect-ratio:1;background:center/contain no-repeat;filter:drop-shadow(-2px 3px 3px rgba(0,0,0,.5))}
+#app.desk .dk-card.vol .tome b{font:900 26px 'Gothic A1',sans-serif;color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+#app.desk .dk-card.vol .tome small{font:700 12px 'Gothic A1',sans-serif;letter-spacing:.4em;opacity:.8}
+#app.desk .dk-card.vol.empty .tome{filter:saturate(.5) brightness(.8)}
+#app.desk.compact .dk-card.vol .tome b{font-size:16px}
+#app.desk.compact .dk-card.vol .tome small{font-size:9px}
+#app.desk.compact.portrait .dk-cards.vols{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:190px}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">

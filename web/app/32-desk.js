@@ -148,13 +148,38 @@ function deskPuzzle(d) {
   dkPut(slate, [dkHr(), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + '. 노란 공은 건드리면 안 됩니다.'), dkHr(), dkLab('이 문제'), starRow, dkHr(), guideRow()]);
   dkPut(slate, dkActs(dkMain('퍼즐 풀기', `${cur.stage + 1}-${cur.n} ${S.name}`, () => puzzle.start())));
 }
-// the lessons as a shelf of textbooks, one book a lesson, coloured by its course; tapping a book starts that lesson
+// The lessons as volumes and books: four game volumes on the shelf (3구, 4구, 8볼, 9볼); opening one shows its textbooks,
+// one a lesson, coloured by its course, with an X back to the volumes; tapping a book starts that lesson.
+// (The lessons there are now are all on the pool table, so they sit in 8볼; the others wait for theirs.)
+let lessonVol = null;
+const VOLUMES = [['three', '3구'], ['four', '4구'], ['eight', '8볼'], ['nine', '9볼']];
+const volLessons = v => v === 'eight' ? LESSONS() : [];
 function deskLesson({ head, stage, slate }) {
-  const ids = LESSONS(), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0], top = drills.LEVELS;
-  const books = COURSES.flatMap(([course, list], ci) => list.filter(id => drills.byId(id).make).map(id => [course, ci, id]));
-  const done = ids.filter(id => levelOf(id) >= top).length;
-  stage.dataset.win = '0';
-  dkPut(head, dkTitle('교본', `${ids.length}권 · 다 뗀 교본 ${done}권`));
+  const top = drills.LEVELS; stage.dataset.win = '0';
+  const doneOf = ids => ids.filter(id => levelOf(id) >= top).length;
+  if (lessonVol == null) {
+    dkPut(head, dkTitle('교본', '종목을 고르세요'));
+    dkPut(stage, el('div', { class: 'dk-cards vols' }, VOLUMES.map(([v, name], i) => { const ids = volLessons(v);
+      return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
+        el('i', { class: 'tome v' + i }, [el('i', { class: 'mi', style: `background-image:url(ui/mode-${v}.webp)` }), el('b', { text: name }), el('small', { text: '교본' })]),
+        el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' })]); })));
+    dkPut(slate, dkH1('교본', '레슨'));
+    dkPut(slate, [dkHr(), dkTxt('종목 교본을 펼치면 그 안에 레슨 교본이 있습니다. 교본을 누르면 그 레슨이 바로 시작됩니다.'), dkHr()]);
+    for (const [v, name] of VOLUMES) { const ids = volLessons(v); dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: name }), el('b', { text: ids.length ? `${doneOf(ids)} / ${ids.length}권` : '준비 중' })])); }
+    const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
+    dkPut(slate, dkActs(dkMain('이어서 하기', `${drills.byId(cur).name} · ${levelOf(cur)}단계`, () => practice.start(cur))));
+    return;
+  }
+  const vol = VOLUMES.find(x => x[0] === lessonVol), ids = volLessons(lessonVol), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0];
+  head.className = 'dk-head open';
+  dkPut(head, [el('button', { class: 'dk-x', 'aria-label': '종목 교본으로', onclick: () => { SND.tap(); lessonVol = null; paintHome(); } }, el('i')), dkTitle(`${vol[1]} 교본`, ids.length ? `${ids.length}권 · 다 뗀 교본 ${doneOf(ids)}권` : '준비 중')]);
+  if (!ids.length) {
+    dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: `${vol[1]} 교본 준비 중` }), el('span', { text: '이 종목의 레슨을 만들고 있습니다.' })]));
+    dkPut(slate, dkH1(`${vol[1]} 교본`, '준비 중')); dkPut(slate, [dkHr(), dkTxt('이 종목의 레슨을 만들고 있습니다.')]);
+    dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('종목 교본으로', () => { lessonVol = null; paintHome(); })));
+    return;
+  }
+  const books = COURSES.flatMap(([course, list], ci) => list.filter(id => ids.includes(id)).map(id => [course, ci, id]));
   dkPut(stage, el('div', { class: 'dk-cards books' }, books.map(([course, ci, id], i) => {
     const dr = drills.byId(id), lv = levelOf(id);
     return el('button', { class: 'dk-card book' + (id === cur ? ' last' : '') + (lv >= top ? ' done' : ''), 'aria-label': dr.name, onclick: onTap(() => { prefs.lastTrain = 'practice'; prefs.mode = 'practice'; practice.start(id); }) }, [
@@ -162,10 +187,10 @@ function deskLesson({ head, stage, slate }) {
       el('span', { class: 'lvl' }, Array.from({ length: top }, (_, k) => el('i', { class: k < lv ? 'on' : '' })))]);
   })));
   const dr = drills.byId(cur);
-  dkPut(slate, dkH1('교본', '레슨'));
+  dkPut(slate, dkH1(`${vol[1]} 교본`, '레슨'));
   dkPut(slate, [dkHr(), dkTxt('교본을 누르면 그 레슨이 바로 시작됩니다. 단계를 다 떼면 표지에 금박이 들어갑니다.'), dkHr()]);
-  for (const [course, list] of COURSES) { const l = list.filter(id => drills.byId(id).make); if (!l.length) continue;
-    dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: course }), el('b', { text: `${l.filter(id => levelOf(id) >= top).length} / ${l.length}권` })])); }
+  for (const [course, list] of COURSES) { const l = list.filter(id => ids.includes(id)); if (!l.length) continue;
+    dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: course }), el('b', { text: `${doneOf(l)} / ${l.length}권` })])); }
   dkPut(slate, [dkHr(), guideRow()]);
   dkPut(slate, dkActs(dkMain('이어서 하기', `${dr.name} · ${levelOf(cur)}단계`, () => practice.start(cur))));
 }
