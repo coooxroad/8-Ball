@@ -82,6 +82,9 @@ const match = {
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
     $('#rWhy').textContent = game.over.why;
+    // on the desk the two buttons are the desk's own keys, and the stamp on the score sheet names the winner
+    const dk = deskOn(); $('#againBtn').classList.toggle('dk-main', dk); $('#homeBtn').classList.toggle('dk-sec', dk);
+    $('#rStats').dataset.won = w; $('#rStats').dataset.stamp = pw.name + ' 승';
     show('result'); SND.win();
     MUSIC.play(!match.ctx.ai || w === 0 ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);

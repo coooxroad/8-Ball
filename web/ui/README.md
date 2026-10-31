@@ -62,3 +62,27 @@ hand its own images to WebGL. Each replaces a drawn stand-in in scene.js once lo
 | badge | B1 256×128 | the maker's plate on the apron |
 
 T2 (cloth detail) is not used: at table scale it only showed as blocks; the drawn cloth stays.
+
+## Batch 5 (controls, gloves, after the match)
+
+| file | from | use | 9-slice |
+|---|---|---|---|
+| power-rail, power-rail-h | K1, K1h | the power control's walnut trough (cue lies in the groove) | 120 ends |
+| power-scale | K2 | brass scale beside it | – |
+| wheel-box, wheel-box-h | K3, K3h | the fine-aim wheel's slot (window transparent) | 140 45 / 45 140 |
+| wheel-ridges, wheel-ridges-h | K3s (and turned) | the wheel's rubber, rolled by moving its background | tiles |
+| spin-ball, spin-bezel, chalk-mark | K4, K4c, K4b | the spin control and its pad | – |
+| knob, knob-press | K5 | pause, 3D, the shelves' X | – |
+| angle-arc | K6 | (not used yet: the cue-angle pad) | – |
+| glove-black … glove-camo | G1–G6 | gloves (look.js GLOVES) | – |
+| trophy-gold, trophy-silver | R5, R6 | the winner's cup after a match (silver not used yet) | – |
+| scoresheet | R7 | the match's numbers on a clipboard | 160 50 60 50 |
+| rosette | R8 | by the winner; the best highlight | – |
+| stamp | R9 | the winner's stamp on the score sheet | – |
+| photo | R10 | a highlight as an instant photo | 48 48 118 48 |
+| chalkboard | R11 (scaled ¾) | the score after a match | 52 |
+| shelf | R12 | (not used yet) | 60 l r |
+| tour-logo | L2 | the score bar's tab | – |
+
+`web/tex/ball-marble … ball-vintage` (BL1–BL5, 512×256 grey) are the ball sets' surfaces, worked over the painted colours
+in scene.js; build.sh also copies them to the app's `tex/` for the shelf cards.
