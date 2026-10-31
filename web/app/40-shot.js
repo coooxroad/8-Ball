@@ -64,6 +64,7 @@ function drawShot(cv, shot) {
   const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k, carom = game.mode.table === 'carom';
   const colOf = i => carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i < 2 && game.yellow === 0 ? 1 - i : i] : i === shot.snap.cue ? '#ffffff' : ballCss(i);
   g.fillStyle = hex(CLOTHS[prefs.cloth].felt); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * dpr;
+  g.fillRect(0, 0, cv.width, cv.height);                             // (the cloth right up to the little table's frame)
   g.beginPath(); g.rect(X(-P.HL), Y(P.HW), 2 * P.HL * k, 2 * P.HW * k); g.fill(); g.stroke();
   g.fillStyle = '#0b0b0d'; for (const p of P.POCKETS) { g.beginPath(); g.arc(X(p.x), Y(p.y), p.r * k * 0.8, 0, 6.3); g.fill(); }
   let tape = null; try { tape = highlights.record(P, shot.snap.balls.length, shot); } catch (e) {}
