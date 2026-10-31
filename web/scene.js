@@ -102,7 +102,7 @@ function createScene(canvas, app, PH) {
   const floorMat = new THREE.MeshLambertMaterial({ map: carpet });
   // the made carpets: grey checks under a pool table, the big triangles under a carom one (each a 2m square of tiles)
   const floorOf = () => made[cur.POCKETED ? 'carpet-checker' : 'carpet-geo'] || carpet;
-  const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 0.62); floorMat.needsUpdate = true; } };
+  const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 1.05); floorMat.needsUpdate = true; } };
   loadTex('carpet-checker', 9, putFloor); loadTex('carpet-geo', 9, putFloor);
   let tableShadow = null;
   (function backdrop() {
@@ -120,28 +120,53 @@ function createScene(canvas, app, PH) {
     const dk = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
     dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk);
   })();
-  /* The hall's light over the table: a long black box hung on two wires, its underside a lit acrylic panel. Only seen
-     when the camera looks round from below it (from higher up it would hang between the camera and the cloth); it
-     lights nothing itself - the lamps above do that. Scaled along the table in setTable. */
-  const hall = new THREE.Group();
+  /* The table's own light, as in a billiard hall: a long box hung on two wires over the table, its underside a lit
+     acrylic panel and its sides glowing through frosted panels, so it reads as a light from any side. It lights nothing
+     itself (the lamps under it do that). Shown when the camera looks round, unless on screen it would hang over the
+     table (tableClear in applyCamera). Scaled along the table in setTable. */
+  const hall = new THREE.Group(), HALL_Z = 1.25;
   (function hallLight() {
-    const frame = new THREE.MeshStandardMaterial({ color: col(0x141518), roughness: 0.5, metalness: 0.6, envMapIntensity: 0.6 });
-    const box = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.56, 0.11), frame); box.position.z = 1.115; hall.add(box);
+    const top = new THREE.MeshStandardMaterial({ color: col(0x16171a), roughness: 0.5, metalness: 0.6, envMapIntensity: 0.6 });
+    const side = new THREE.MeshBasicMaterial({ color: col(0xcfc6b4), toneMapped: false });
     const glow = new THREE.MeshBasicMaterial({ color: col(0xfff6e8), toneMapped: false });
     loadTex('diffuser', 0, t => { t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1); glow.map = t; glow.needsUpdate = true; });
-    const panel = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.5), glow); panel.rotation.x = Math.PI; panel.position.z = 1.059; hall.add(panel);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.56, 0.12), [side, side, side, side, top, glow]); box.position.z = HALL_Z + 0.06; hall.add(box);
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(1.06, 0.58, 0.02), top); rim.position.z = HALL_Z + 0.125; hall.add(rim);
     const wire = new THREE.CylinderGeometry(0.003, 0.003, 3, 6).rotateX(Math.PI / 2);
-    for (const x of [-0.42, 0.42]) { const w = new THREE.Mesh(wire, frame); w.position.set(x, 0, 2.67); hall.add(w); }
+    for (const x of [-0.42, 0.42]) { const w = new THREE.Mesh(wire, top); w.position.set(x, 0, HALL_Z + 1.6); hall.add(w); }
     hall.visible = false; sScene.add(hall);
   })();
+  // whether the light box, seen from the camera, keeps clear of the table (screen rectangles of the two do not meet)
+  const hv = new THREE.Vector3();
+  function hallClear() {
+    const box = (pts) => { let x0 = 9, x1 = -9, y0 = 9, y1 = -9; for (const p of pts) { hv.set(p[0], p[1], p[2]).project(camera); if (hv.z > 1) return null; x0 = Math.min(x0, hv.x); x1 = Math.max(x1, hv.x); y0 = Math.min(y0, hv.y); y1 = Math.max(y1, hv.y); } return [x0, x1, y0, y1]; };
+    const ex = cur.HL + CW + RW, ey = cur.HW + CW + RW, hx = 0.53 * hall.scale.x, hy = 0.29, c = [];
+    const t = [], h = [];
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) { t.push([sx * ex, sy * ey, RAIL_Z], [sx * ex, sy * ey, -0.8]); h.push([sx * hx, sy * hy, HALL_Z], [sx * hx, sy * hy, HALL_Z + 0.14]); }
+    const a = box(t), b = box(h); if (!a || !b) return false;
+    return a[1] < b[0] || b[1] < a[0] || a[3] < b[2] || b[3] < a[2];
+  }
   function setBackdrop(hex) { sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }   // (beyond the floor, and behind the desk's window)
 
   /* shared table materials */
-  const fc = mkCanvas(256, 256), fg = fc.getContext('2d');
-  const fid = fg.createImageData(256, 256);
-  for (let i = 0; i < fid.data.length; i += 4) { const v = 226 + (Math.random() * 30 - 15); fid.data[i] = fid.data[i + 1] = fid.data[i + 2] = v; fid.data[i + 3] = 255; }
+  // Cloth: worsted wool - fine fibre speckle, a slight brushed streak along the nap (the table's length), and a faint
+  // uneven mottle, all on a light grey the cloth colour multiplies; repeating, so the 9 repeats over the bed do not show.
+  const fc = mkCanvas(512, 512), fg = fc.getContext('2d');
+  const fid = fg.createImageData(512, 512);
+  (function cloth() {
+    const N = 32, lat = new Float32Array(N * N); for (let i = 0; i < N * N; i++) lat[i] = Math.random();
+    const sm = t => t * t * (3 - 2 * t);
+    const noise = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), a = ((xi % N) + N) % N, b = ((yi % N) + N) % N, a1 = (a + 1) % N, b1 = (b + 1) % N;
+      return (lat[b * N + a] * (1 - fx) + lat[b * N + a1] * fx) * (1 - fy) + (lat[b1 * N + a] * (1 - fx) + lat[b1 * N + a1] * fx) * fy; };
+    const streak = new Float32Array(512); for (let y = 0; y < 512; y++) streak[y] = noise(3.7, y / 512 * N * 2) - 0.5;
+    for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+      const u = x / 512 * N, v = y / 512 * N, mott = noise(u * 0.25, v * 0.25) + 0.5 * noise(u * 0.5, v * 0.5) - 0.75;
+      const val = 224 + (Math.random() * 24 - 12) + 5 * streak[y] * (0.6 + 0.8 * noise(u * 0.125, v)) + 4 * mott;
+      const i = (y * 512 + x) * 4; fid.data[i] = fid.data[i + 1] = fid.data[i + 2] = val; fid.data[i + 3] = 255;
+    }
+  })();
   fg.putImageData(fid, 0, 0);
-  const feltTex = tex(fc, 9);
+  const feltTex = tex(fc, 6);
 
   const feltMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1 });
   const cushMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1, side: THREE.DoubleSide });
@@ -229,7 +254,7 @@ function createScene(canvas, app, PH) {
     sh.lineTo(-x, -y + r); sh.absarc(-x + r, -y + r, r, Math.PI, Math.PI * 1.5, false); return sh;
   };
 
-  const LEG = new THREE.CylinderGeometry(0.062, 0.05, 0.5, 4, 1).rotateY(Math.PI / 4).rotateX(Math.PI / 2), FOOT = new THREE.CylinderGeometry(0.046, 0.05, 0.03, 16).rotateX(Math.PI / 2);
+  const LEVELER = new THREE.CylinderGeometry(0.035, 0.045, 0.05, 20).rotateX(Math.PI / 2);   // a pool table's chrome levelling foot
   function buildTable(P) {
     const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
     // cloth bed
@@ -283,44 +308,62 @@ function createScene(canvas, app, PH) {
     const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
     rg.translate(0, 0, RAIL_Z - 0.12 - bev);
     const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
-    // Under the rails, as on a real table: a skirt (apron) all round under the rail, and below it what carries it -
-    //   carom: two broad pedestals of the same wood, waisted and flaring to a plinth, across the table near each end,
-    //          and a chrome band let into the rails' outer face;
-    //   pool:  black lacquer, with six legs splayed a little outwards to chrome feet.
+    // Under the rails, as on a real table: a skirt (apron) all round under the rail, then the cabinet down to the floor,
+    // of the same wood: its long sides lean in towards the floor and its ends slope, and it stands on its feet through
+    // thick arches cut in the long sides -
+    //   carom: two arches, so it stands on three broad feet (the ends and the middle), each on a dark plinth, with a chrome
+    //          line round the top of the cabinet and a chrome band round the rails;
+    //   pool:  one wide arch between flared corner feet on chrome levelling feet, a chrome line round the top.
     // Seen from the side, in the 3D view and the highlights; from overhead the rails hide them.
-    const bxo = ox - 0.035, byo = oy - 0.035, br = 0.07, carom = !P.POCKETED, under = carom ? bodyMat : lacMat;
+    const bxo = ox - 0.035, byo = oy - 0.035, br = 0.07, carom = !P.POCKETED;
     const body = rrect(new THREE.Shape(), bxo, byo, br);
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r + 0.002, 0, Math.PI * 2, true); body.holes.push(h); }   // the pockets go down through it
     const bg = new THREE.ExtrudeGeometry(body, { depth: 0.17, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelOffset: -0.012, bevelSegments: 3, curveSegments: 12 });
     bg.translate(0, 0, -0.27);
-    const bodyMesh = new THREE.Mesh(bg, under); bodyMesh.castShadow = true; grp.add(bodyMesh);
+    const bodyMesh = new THREE.Mesh(bg, bodyMat); bodyMesh.castShadow = true; grp.add(bodyMesh);
     // the maker's plate on the middle of each long side of the apron
     for (const sy of [-1, 1]) { const m = new THREE.Mesh(BADGE, badgeMat); m.rotation.set(Math.PI / 2, 0, sy > 0 ? Math.PI : 0); m.position.set(0, sy * (byo + 0.0015), -0.19); grp.add(m); }
-    if (carom) {
-      // a pedestal's outline across the table (y) and down (z), drawn on one side and mirrored
-      const wt = byo * 0.66, ww = byo * 0.4, wf = byo * 0.74, D = 0.3, F = -0.8;
-      const ped = new THREE.Shape(); ped.moveTo(-wf, F); ped.lineTo(wf, F); ped.lineTo(wf, F + 0.05); ped.lineTo(wf - 0.03, F + 0.075);
-      ped.quadraticCurveTo(ww, F + 0.11, ww, F + 0.24); ped.lineTo(ww, -0.38); ped.quadraticCurveTo(ww, -0.3, wt, -0.27);
-      ped.lineTo(-wt, -0.27); ped.quadraticCurveTo(-ww, -0.3, -ww, -0.38); ped.lineTo(-ww, F + 0.24); ped.quadraticCurveTo(-ww, F + 0.11, -wf + 0.03, F + 0.075);
-      ped.lineTo(-wf, F + 0.05); ped.closePath();
-      const pg = new THREE.ExtrudeGeometry(ped, { depth: D, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelOffset: -0.01, bevelSegments: 2, curveSegments: 12 });
-      pg.applyMatrix4(new THREE.Matrix4().set(0, 0, 1, -D / 2, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1));   // shape (y, z), extruded along x
-      // a plinth of black under each, and a chrome line round its top
-      const plinth = new THREE.BoxGeometry(D + 0.06, 2 * wf + 0.06, 0.03);
-      for (const sx of [-1, 1]) {
-        const m = new THREE.Mesh(pg, pedMat); m.position.x = sx * HL * 0.56; m.castShadow = true; m.receiveShadow = true; grp.add(m);
-        const pl = new THREE.Mesh(plinth, lacMat); pl.position.set(sx * HL * 0.56, 0, F + 0.015); grp.add(pl);
+    {
+      // the cabinet's side outline (x along the table, z up), drawn once and pushed through the table's width (y)
+      const T = -0.27, F = carom ? -0.77 : -0.75, X0 = bxo - 0.01, X1 = X0 - (carom ? 0.16 : 0.1), slope = x => X0 + (X1 - X0) * 0;   // (slope: kept straight below)
+      const sh = new THREE.Shape(); sh.moveTo(-X1, F); sh.lineTo(-X0, T); sh.lineTo(X0, T); sh.lineTo(X1, F);
+      const arch = (x0, x1, top) => {                                     // an arch from the floor, rounded over the top
+        const w = (x1 - x0) / 2, r = Math.min(w, (top - F) * 0.8), xm = (x0 + x1) / 2;
+        sh.lineTo(x1, F); sh.lineTo(x1, top - r);
+        sh.absellipse(xm, top - r, w, r, 0, Math.PI, false); sh.lineTo(x0, F);
+      };
+      if (carom) { const e = X1 - 0.34; arch(0.17, e, F + 0.36); arch(-e, -0.17, F + 0.36); }   // (right to left, as the outline runs)
+      else { const e = X1 - 0.26; arch(-e, e, F + 0.4); }
+      sh.lineTo(-X1, F);
+      const Y0 = byo - 0.01, D = 2 * Y0;
+      const cg = new THREE.ExtrudeGeometry(sh, { depth: D, bevelEnabled: false, curveSegments: 20 });
+      cg.applyMatrix4(new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, -1, Y0, 0, 1, 0, 0, 0, 0, 0, 1));   // shape (x, z), pushed through y
+      // lean the long sides in: the width narrows towards the floor
+      const pos = cg.attributes.position, k = (Y0 - (carom ? 0.13 : 0.08)) / Y0;
+      for (let i = 0; i < pos.count; i++) { const t = (T - pos.getZ(i)) / (T - F); pos.setY(i, pos.getY(i) * (1 - t * (1 - k))); }
+      cg.computeVertexNormals();
+      const cab = new THREE.Mesh(cg, bodyMat); cab.castShadow = true; cab.receiveShadow = true; grp.add(cab);
+      // a chrome line round the top of the cabinet, just under the apron
+      const line = rrect(new THREE.Shape(), X0 + 0.004, Y0 + 0.004, 0.02); line.holes.push(rrect(new THREE.Path(), X0 - 0.01, Y0 - 0.01, 0.01));
+      const lg = new THREE.ExtrudeGeometry(line, { depth: 0.008, bevelEnabled: false, curveSegments: 6 }); lg.translate(0, 0, T - 0.016);
+      grp.add(new THREE.Mesh(lg, chromeMat));
+      const Y1 = Y0 * k;
+      if (carom) {
+        // each foot on a dark plinth, edged in chrome
+        const e = X1 - 0.34;
+        for (const [x0, x1] of [[-X1, -e], [-0.17, 0.17], [e, X1]]) {
+          const w = x1 - x0 + 0.04, pl = new THREE.Mesh(new THREE.BoxGeometry(w, 2 * Y1 + 0.04, 0.03), lacMat); pl.position.set((x0 + x1) / 2, 0, F - 0.015); grp.add(pl);
+          const cl = new THREE.Mesh(new THREE.BoxGeometry(w + 0.004, 2 * Y1 + 0.044, 0.006), chromeMat); cl.position.set((x0 + x1) / 2, 0, F - 0.003); grp.add(cl);
+        }
+      } else {
+        // chrome levelling feet under the four corners
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const f = new THREE.Mesh(LEVELER, chromeMat); f.position.set(sx * (X1 - 0.12), sy * (Y1 - 0.09), F - 0.025); grp.add(f); }
       }
+    }
+    if (carom) {
       const band = rrect(new THREE.Shape(), ox + 0.0012, oy + 0.0012, rr + 0.0012); band.holes.push(rrect(new THREE.Path(), ox - 0.004, oy - 0.004, rr - 0.004));
       const bandG = new THREE.ExtrudeGeometry(band, { depth: 0.014, bevelEnabled: false, curveSegments: 28 }); bandG.translate(0, 0, RAIL_Z - 0.078);
       grp.add(new THREE.Mesh(bandG, chromeMat));
-    } else {
-      const lx = bxo - 0.12, ly = byo - 0.1, tilt = 0.1;
-      for (const [sx, sy] of [[-1, -1], [-1, 1], [1, -1], [1, 1], [0, -1], [0, 1]]) {
-        const piv = new THREE.Group(); piv.position.set(sx * lx, sy * ly, -0.27); piv.rotation.set(sy * tilt, -sx * tilt, 0); grp.add(piv);
-        const leg = new THREE.Mesh(LEG, lacMat); leg.position.z = -0.25; leg.castShadow = true; piv.add(leg);
-        const foot = new THREE.Mesh(FOOT, chromeMat); foot.position.z = -0.515; piv.add(foot);
-      }
     }
     // sights
     const dg = new THREE.CircleGeometry(0.0095, 4);
@@ -666,8 +709,8 @@ function createScene(canvas, app, PH) {
       else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
     } else { hall.visible = false; camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
-    hall.visible = orbit.on && camera.position.z < 0.98;                // only from under it, where its lit face shows (from higher it would hang between the camera and the cloth)
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
+    hall.visible = false; if (orbit.on) { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); hall.visible = hallClear(); }
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
