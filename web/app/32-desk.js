@@ -3,7 +3,8 @@
    ivory rail, what it looks like in the felt tray (the live table, a cue, the swatches), and on the slate what it needs
    and the one button that does it. It is the same home underneath (prefs.mode, homePreview, the flows); only the way
    it is laid out is new. 상점 is a placeholder until there is something to sell. */
-const deskOn = () => prefs.ui === 'desk';
+const deskOn = () => true;                                           // (the desk is the only first screen; the lobby and the classic home are gone)
+app.classList.add('desk');
 const GAME4 = ['three', 'four', 'eight', 'nine'];
 const GAME_SUB = { three: '쓰리쿠션', four: '사구 · 수지 대결', eight: '에잇볼', nine: '나인볼' };
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';

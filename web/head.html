@@ -5,19 +5,7 @@
    leave during play, when only a slim scoreboard and the edge controls remain.
    Two looks share the layout: "light" (white cards on pale grey, one blue) and "dark" (glass panels on near-black, one cyan). */
 :root{color-scheme:light;--hud-h:60px}
-#app[data-theme="light"]{
-  --bg:#eef0f3;--fg:#191f28;--fg2:#333d4b;--sub:#6b7684;
-  --panel:#ffffff;--bd:transparent;--sh:0 1px 2px rgba(25,31,40,.06),0 6px 16px rgba(25,31,40,.08);
-  --hair:#f2f4f6;--opt:#f2f4f6;--sheet:#ffffff;--scrim:rgba(25,31,40,.42);
-  --acc:#2f6bff;--acc-fg:#ffffff;--sel-bg:#ffffff;--sel-bd:#2f6bff;
-  --seg:#e2e6ea;--seg-on:#ffffff;--seg-sh:0 1px 3px rgba(25,31,40,.14);
-  --cta:#2f6bff;--cta-fg:#ffffff;
-  --av1-bg:#e8f0ff;--av1-bd:transparent;--av1-fg:#2f6bff;--av2-bg:#ffeceb;--av2-bd:transparent;--av2-fg:#d6362c;
-  --on-bg:#2f6bff;--on-bd:transparent;--on-fg:#ffffff;--on-sub:#dbe6ff;--on-av-bg:#ffffff;--on-av-fg:#2f6bff;
-  --tick:#e2e6ea;--fill:#dbe6ff;--foul:#e5382f;--win:#2f6bff;
-  --r-card:18px;--r-pill:14px;--r-ctl:16px;--r-chip:12px;--r-cta:16px;
-  --num:'Gothic A1','Apple SD Gothic Neo',sans-serif;--num-w:800;--w-title:800;--w-text:500;--w-name:700;
-}
+
 #app[data-theme="dark"]{
   --bg:#101216;--fg:#f3f5f7;--fg2:#c3cad3;--sub:#9aa3af;
   --panel:rgba(31,35,42,.9);--bd:rgba(255,255,255,.12);--sh:none;
@@ -89,60 +77,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .two .av{background:var(--av2-bg);border-color:var(--av2-bd);color:var(--av2-fg)}
 
 /* ---------- home ---------- */
-#home{position:absolute;inset:0 0 0 96px;display:grid;grid-template-columns:minmax(0,1fr) 372px;grid-template-rows:minmax(0,1fr);pointer-events:none}
-#home>*{pointer-events:auto}   /* the table behind shows through the middle; everything else takes taps */
-.logo{display:flex;align-items:center;gap:10px}
-.logo .mark{width:30px;height:30px;border-radius:50%;background:var(--fg);display:grid;place-items:center}
-.logo .mark i{width:15px;height:15px;border-radius:50%;background:var(--bg);color:var(--fg);font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
-.logo .word{font-family:'Outfit',sans-serif;font-size:24px;font-weight:600;letter-spacing:.14em;white-space:nowrap}
-.logo .en{font-family:'Outfit',sans-serif;font-weight:500;font-size:11px;letter-spacing:.34em;color:var(--sub);margin-left:6px}
-[data-theme="light"] .logo .en{display:none}
-@media (max-width:520px){.logo .en{display:none}.logo .mark{flex:none}}
+
+   /* the table behind shows through the middle; everything else takes taps */
+
 /* the rail: logo, the places to go, settings at the foot */
-.h-nav{position:absolute;left:0;top:0;bottom:0;width:96px;z-index:4;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:18px 8px 14px;background:var(--panel);border-right:1px solid var(--hair);box-shadow:var(--sh)}
-.h-nav .logo{flex-direction:column;gap:6px;margin-bottom:14px}
-.h-nav .logo .word{font-size:15px;letter-spacing:.2em;margin-right:-.2em}
-.nv{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 2px 9px;border-radius:14px;color:var(--sub);font-size:12.5px;font-weight:600;transition:background .12s,color .12s}
-.nv svg{display:block}
-.nv[aria-pressed="true"]{background:rgba(47,107,255,.12);color:var(--acc)}
-.nv:active{background:var(--seg)}
-.nv.end{margin-top:auto}
+
 /* the panel on the right: what the chosen place offers, with its one big button at the bottom */
-.h-right{display:flex;flex-direction:column;gap:12px;min-height:0;margin:20px 22px 22px 0;padding:18px 18px 18px;overflow:auto}
-.h-title{font-size:22px;font-weight:var(--w-title);letter-spacing:-.01em}
-#modeList{display:flex;flex-direction:column;gap:8px}
-#modeList .gcard{width:100%;padding:12px 14px;border-radius:14px;background:var(--seg);border-color:transparent;box-shadow:none}
-#modeList .gcard[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
-#modeList .gcard .chev{margin-left:auto;flex:none;color:var(--sub)}
-#modeList:not(.open) .gcard .ck{display:none}
-#modeList.open .gcard .chev{display:none}
+
 .plist{background:var(--seg);border-radius:14px}
 /* lessons: a row each, with a bar for how far it has been taken */
-#pracList .lab,#puzBox .lab{margin-top:6px}
-#pracList .ls{display:flex;flex-direction:column;min-width:0;flex:1}
+
 .prog{display:block;height:5px;border-radius:3px;background:var(--hair);margin-top:7px;overflow:hidden}
 .prog i{display:block;height:100%;width:var(--w);border-radius:3px;background:#12b76a}
 /* puzzles: the count, the kinds, then a tile for every puzzle */
-#puzBox{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;flex:1 1 0;padding-right:2px}
-.compact #puzBox{flex:none;overflow:visible}
-.pzsum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.pzsum>div{background:var(--seg);border-radius:14px;padding:10px 14px}
-.pzsum b{font-family:var(--num);font-weight:var(--num-w);font-size:26px}
-.pzsum span{font-family:var(--num);color:var(--sub);font-size:16px}
-.pzsum small{display:block;font-size:12.5px;color:var(--sub)}
+
 .pzgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
 .pz{aspect-ratio:1;border-radius:10px;background:var(--seg);color:var(--fg);font-family:var(--num);font-weight:600;font-size:14px;border:2px solid transparent}
 .pz.done{background:#12b76a;color:#fff}
 .pz[aria-pressed="true"]{border-color:var(--acc)}
-.gcard{background:var(--panel);border:2px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-card);padding:14px 16px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}
-[data-theme="light"] .gcard{border-color:var(--panel)}
-.gcard:active{transform:scale(.985)}
-.gcard[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
-.gcard .ic{flex:none;width:40px;height:40px;display:grid;place-items:center}
-.gcard .nm{display:block;font-size:19px;font-weight:var(--w-name);color:var(--fg)}
-.gcard .bl{display:block;font-size:13.5px;color:var(--sub);margin-top:2px}
-.gcard .ck{margin-left:auto;flex:none;color:var(--acc);visibility:hidden}
-.gcard[aria-pressed="true"] .ck{visibility:visible}
+
 .ball{display:grid;place-items:center;border-radius:50%;background:var(--c,#111);width:40px;height:40px;box-sizing:border-box}
 [data-theme="dark"] .ball{border:1px solid rgba(255,255,255,.22)}
 .ball i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:#111;font-style:normal;font-family:var(--num);font-weight:800;font-size:13px}
@@ -151,39 +104,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .three{position:relative;width:40px;height:40px}
 .three i{position:absolute;width:19px;height:19px;border-radius:50%;background:var(--c)}
 .three i:nth-child(1){left:10.5px;top:1px}.three i:nth-child(2){left:0;bottom:2px}.three i:nth-child(3){right:0;bottom:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-.h-mid{display:flex;align-items:flex-end;justify-content:center;pointer-events:none!important;min-width:0;padding:0 16px 26px}
-.h-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
-.chip-sw{width:16px;height:16px;border-radius:5px;background:var(--c)}
+
 .plist{padding:4px 16px;display:flex;flex-direction:column}
-.prow{display:flex;align-items:center;gap:12px;padding:12px 0;text-align:left;min-width:0}
-.prow+.prow{border-top:1px solid var(--hair)}
-.prow .who{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
-.prow .nm{font-size:18px;font-weight:var(--w-name);color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prow .rc{font-size:13.5px;color:var(--sub)}
-.prow svg{flex:none;color:var(--sub);opacity:.7}
-#startBtn{margin-top:auto}
-#vsBox{display:flex;flex-direction:column;gap:10px}
-#pracList{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;flex:1 1 0;padding-right:2px}
-#pracList .opt{padding:10px 14px;flex:none}
-#pracList .opt .t{font-size:15.5px}
-#pracList .opt .d{font-size:12.5px;margin-top:1px}
-#pracList .opt>span:first-child{flex:1;min-width:0}
+
 .lv{flex:none;font-family:var(--num);font-size:12px;color:var(--sub);border:1px solid var(--bd);border-radius:999px;padding:3px 9px;white-space:nowrap}
-[data-theme="light"] .lv{background:var(--bg)}
-.compact #pracList{flex:none;max-height:none;overflow:visible}
+
 .target{width:40px;height:40px;border-radius:50%;border:3px solid var(--acc);display:grid;place-items:center;box-sizing:border-box}
 .target i{width:14px;height:14px;border-radius:50%;background:var(--acc)}
 
 /* narrow screens: one column that scrolls, the rail turned into a bar along the bottom */
-.compact #home{inset:0 0 62px 0;display:flex;flex-direction:column;overflow:auto;pointer-events:auto;background:var(--bg)}
+
 .compact #records{inset:0 0 62px 0}
-.compact .h-right{order:1;margin:14px 14px 0;overflow:visible;flex:none}
-.compact .h-mid{order:2;padding:14px 14px 18px}
-.compact .h-nav{top:auto;width:auto;right:0;height:62px;flex-direction:row;justify-content:space-around;padding:5px 6px 6px;border-right:0;border-top:1px solid var(--hair)}
-.compact .h-nav .logo{display:none}
-.compact .nv{flex:1;padding:6px 2px 4px;font-size:11.5px;gap:3px}
-.compact .nv.end{margin-top:0}
-.compact #startBtn{margin-top:6px;position:sticky;bottom:10px;z-index:2;box-shadow:0 8px 24px rgba(0,0,0,.22)}   /* always in reach, however long the options above it get */
+
+   /* always in reach, however long the options above it get */
 
 /* ---------- in-game scoreboard ---------- */
 #hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
@@ -192,7 +125,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
 #menuBtn,#viewBtn{width:46px;height:46px;border-radius:var(--r-pill)}
-[data-theme="light"] #menuBtn,[data-theme="light"] #viewBtn{border-radius:13px}
+
 #viewBtn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
 .pill{justify-self:start;max-width:100%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);
   border-radius:var(--r-pill);padding:5px 15px 5px 6px;color:var(--sub);transition:background .2s,border-color .2s,color .2s}
@@ -210,8 +143,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .mb.st{background:linear-gradient(#f1efe8 0 25%,var(--c) 25% 75%,#f1efe8 75%)}
 .mb.slot{background:none;border:1.5px solid currentColor;opacity:.45}
 .mb.e8{background:#0b0b0d;border:1.5px solid var(--acc)}
-[data-theme="light"] .pill.on .mb{border:1.5px solid #fff}
-[data-theme="light"] .mb.st{border:1px solid #d5dae0}
+
 .pts{font-family:var(--num);font-weight:var(--num-w);font-size:26px;line-height:1;min-width:24px;text-align:center;color:var(--fg)}
 .pill.on .pts{color:var(--on-fg)}
 #badge{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--sub);white-space:nowrap}
@@ -237,7 +169,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
 #power::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--heat,transparent),transparent var(--reach,0%));pointer-events:none}
 #powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px}
-[data-theme="light"] #powerNum{--chip-bg:#f2f4f6}
+
 #powerLab{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10.5px;color:var(--sub);z-index:1}
 #fine{right:10px;top:calc(var(--hud-h) + 12px);bottom:90px;width:48px;overflow:hidden;
   background-image:repeating-linear-gradient(180deg,transparent 0 10px,var(--tick) 10px 11.5px)}
@@ -286,9 +218,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .opt[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
 .opt .t{display:block;font-size:16.5px;font-weight:var(--w-name);color:var(--fg)}
 .opt .d{display:block;font-size:13px;color:var(--sub);margin-top:2px;line-height:1.4}
-.sw{flex:none;width:56px;height:36px;border-radius:8px;background:var(--c);border:5px solid var(--w);box-sizing:border-box}
-.cuepic{flex:none;width:150px;height:11px}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
 .txt{font:inherit;font-size:20px;font-weight:700;color:var(--fg);background:var(--opt);border:2px solid transparent;border-radius:14px;padding:12px 14px;width:100%;box-sizing:border-box;
   -webkit-user-select:text;user-select:text}
 .txt:focus{border-color:var(--acc);outline:none}
@@ -485,7 +415,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .hcard.worst .rib{background:#e5484d;color:#fff}
 .hcard.bad .tag,.hcard.worst .tag{color:#e5484d}
 @media (max-width:560px){#rHl{grid-template-columns:1fr 1fr}.hcard{padding:10px}.hcard .pic{width:70px;height:42px}.hcard .tag{font-size:15px}}
-.pill .nm small,.prow .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
+.pill .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
 .pill.on .nm small{color:inherit;opacity:.75}
 #rWhy{font-size:15px;color:var(--sub);margin:0;text-align:center}
 .r-btns{display:flex;gap:12px;width:100%;max-width:760px;margin-top:4px;margin-bottom:auto;flex:none}
@@ -508,17 +438,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   #pracBar{gap:4px}#pracBar .btn{padding:0 10px;font-size:13px;height:42px}
   .pill{gap:6px;padding-right:9px}.pill.r{padding-left:9px}
   .mb{width:11px;height:11px}.tray{gap:2px}
-  .grid2{grid-template-columns:minmax(0,1fr)}
+  
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---- 2.0 ---- */
-#resumeBox{display:flex;gap:8px;align-items:stretch}
-.resume{flex:1;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:baseline;text-align:left;padding:11px 14px;border-radius:14px;background:var(--sel-bg);border:2px solid var(--sel-bd)}
-.resume .k{grid-row:1/3;align-self:center;font-size:12.5px;font-weight:800;color:#fff;background:var(--acc);border-radius:999px;padding:5px 10px}
-.resume b{font-size:15.5px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.resume .d{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.resume-x{flex:none;width:40px;border-radius:14px;background:var(--seg);color:var(--sub);font-size:20px}
+
 .pill.think .sub::after{content:"";display:inline-block;width:1.1em;text-align:left;animation:dots 1s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 .mb.pop{animation:mbPop .7s cubic-bezier(.2,1.6,.4,1) both}
@@ -543,157 +468,59 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .rcard .who b{font-size:18px;font-weight:var(--w-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rcard .who span{font-size:13px;color:var(--sub)}
 .rcard .run{font-size:13px;font-weight:800;color:#fff;background:var(--f);border-radius:999px;padding:5px 11px;white-space:nowrap}
-.rcard.fire,.prow.fire{border-color:var(--f)}
+.rcard.fire{border-color:var(--f)}
 .rwrap{position:relative}
 .rwrap .flame{position:absolute;left:-34px;top:-34px;pointer-events:none}
 .rwrap .rcard{position:relative}
 .rcard.fire{border-color:var(--f);box-shadow:0 0 0 1px var(--f)}
-.prow.fire .rc{color:var(--f);font-weight:700}
-.prow.fire .av{box-shadow:0 0 0 2px var(--f),0 0 14px var(--f);animation:fireGlow2 .9s ease-in-out infinite alternate}
+
 @keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
 #records .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
 
 /* puzzle stages */
-.pzsum b.st{color:#f5a400}
-.stg{--c:hsl(var(--h) 78% 52%);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:10px 12px;border-radius:16px;background:var(--seg);border:2px solid transparent;flex:none}
-.stg .no{width:42px;height:42px;border-radius:13px;background:var(--c);color:#fff;font-family:var(--num);font-weight:800;font-size:20px;display:grid;place-items:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
-.stg .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
-.stg .tx b{font-size:15.5px;font-weight:var(--w-name);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stg .tx small{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stg .pg{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.stg .pg em{font-style:normal;font-family:var(--num);font-size:13px;color:var(--sub)}
-.stg .pg i{display:block;width:54px;height:6px;border-radius:3px;background:var(--bd);overflow:hidden}
-.stg .pg u{display:block;height:100%;background:var(--c);border-radius:3px}
-.stg.open{border-color:var(--c);background:var(--panel)}
-.stg.clear .pg em{color:var(--c);font-weight:700}
-.stg.locked{opacity:.55}.stg.locked .no{background:var(--bd);box-shadow:none;font-size:17px}
-.road{--c:hsl(var(--h) 78% 52%);display:flex;flex-direction:column;gap:14px;padding:8px 6px 10px;flex:none}
+
 .rw{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));justify-items:center}
 .rw.rev{direction:rtl}
 .rw::before{content:"";position:absolute;left:10%;right:10%;top:19px;border-top:3px dotted var(--bd)}
 .rw.more::after{content:"";position:absolute;right:10%;top:21px;height:62px;border-right:3px dotted var(--bd)}
 .rw.rev.more::after{right:auto;left:10%}
-.nd{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;direction:ltr}
-.nd b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--seg);border:2.5px solid var(--bd);font-family:var(--num);font-weight:700;font-size:15px;color:var(--sub)}
-.nd .sr{font-size:10px;letter-spacing:.5px;color:var(--bd)}
-.nd.done b{background:var(--c);border-color:var(--c);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
-.nd.done .sr{color:#f5a400}
-.nd.next b{border-color:var(--c);color:var(--c);animation:ndPulse 1.2s ease-in-out infinite}
+
 @keyframes ndPulse{50%{box-shadow:0 0 0 6px hsl(var(--h) 78% 52% / .22)}}
-.nd[aria-pressed="true"] b{outline:3px solid var(--fg);outline-offset:2px}
+
 @media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
 
 /* ================= the lobby (4.0 home; prefs.ui 'lobby', the old home is 'classic') =================
    A night in a billiard hall: the room dark, one lamp over the live table, the games laid out along the bottom as the
    balls they are played with - every choice in sight, nothing behind a menu - and one big lit button to play.
    It always wears the night look, whatever the theme of the game itself. */
-#app.lobby #home,#app.lobby #topbar,#app.lobby #dock,#app.lobby #records{
-  --bg:#0d1014;--fg:#f3f5f7;--fg2:#c9d0d8;--sub:#98a2ae;
-  --panel:rgba(18,22,28,.78);--bd:rgba(255,255,255,.09);--sh:0 18px 40px rgba(0,0,0,.35);
-  --hair:rgba(255,255,255,.07);--opt:rgba(255,255,255,.06);
-  --acc:var(--mc);--sel-bg:color-mix(in srgb,var(--mc) 14%,transparent);--sel-bd:var(--mc);
-  --seg:rgba(255,255,255,.06);--seg-on:rgba(255,255,255,.16);--seg-sh:none;
-  --av1-bg:transparent;--av1-bd:#36c5d8;--av1-fg:#7fe0ee;--av2-bg:transparent;--av2-bd:#f0a96b;--av2-fg:#f6c79b;
-  --r-card:22px;--r-chip:14px;--w-text:500;--w-name:700;color:var(--fg)}
-#app.lobby{--mc:#36c5d8;--mc2:#1d8fa3}
-#app.lobby[data-mode="nine"]{--mc:#f2b705;--mc2:#c98a00}
-#app.lobby[data-mode="four"]{--mc:#ff5a52;--mc2:#c92a2a}
-#app.lobby[data-mode="three"]{--mc:#ff9a3d;--mc2:#d4621a}
-#app.lobby[data-mode="puzzle"]{--mc:#a07cff;--mc2:#6a46e0}
-#app.lobby[data-mode="practice"]{--mc:#3ddc84;--mc2:#1aa35a}
+
 /* the room: dark all round, a pool of lamplight on the table, breathing very slowly */
-#room{position:absolute;inset:0;pointer-events:none;display:none;
-  background:radial-gradient(ellipse 46% 52% at var(--lx,36%) 46%,transparent 0 55%,rgba(6,8,11,.55) 80%,rgba(4,6,8,.92) 100%),
-             linear-gradient(180deg,rgba(4,6,8,.75),transparent 18%,transparent 70%,rgba(4,6,8,.85))}
-#room .lamp{position:absolute;left:var(--lx,36%);top:-22%;width:62%;height:70%;transform:translateX(-50%);border-radius:50%;
-  background:radial-gradient(closest-side,rgba(255,236,200,.13),rgba(255,236,200,.04) 60%,transparent);animation:lampBreath 7s ease-in-out infinite;mix-blend-mode:screen}
+
 @keyframes lampBreath{0%,100%{opacity:.75}50%{opacity:1}}
-#app.lobby #room{display:block}
-#app.lobby.compact #room{background:radial-gradient(ellipse 90% 60% at 50% 0%,rgba(40,48,58,.5),transparent 70%),rgba(8,10,13,.93)}
-#app.lobby.compact #room .lamp{left:50%;width:120%;height:45%}
-#app.lobby #nav{display:none!important}
-#app.lobby .h-mid{display:none}
-#app.lobby #modeBox{display:none}
+
 /* the bar along the top: who you are, and the two places that are not a game */
-#topbar{position:absolute;left:0;right:0;top:0;height:76px;z-index:5;display:flex;align-items:center;gap:12px;padding:0 22px;box-sizing:border-box;pointer-events:none}
-#topbar>*{pointer-events:auto}
-#topbar .logo .word{font-size:22px}
-#topbar .logo .mark{background:var(--mc);box-shadow:0 0 16px color-mix(in srgb,var(--mc) 60%,transparent)}
-#topbar .logo .mark i{background:#0d1014;color:var(--mc)}
-#topbar .sp{flex:1}
+
 .me{display:flex;align-items:center;gap:11px;height:50px;padding:0 18px 0 6px;border-radius:999px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:left;transition:transform .1s}
-.me:active,.tb:active{transform:scale(.96)}
+.me:active{transform:scale(.96)}
 .me .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:16px;color:#0d1014;background:linear-gradient(135deg,#7fe0ee,#36c5d8)}
 .me b{display:block;font-size:15.5px;font-weight:800;line-height:1.15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .me small{display:block;font-size:12.5px;color:var(--sub);font-weight:600}
 .me.fire{box-shadow:0 0 0 2px #ff7a3c,0 0 22px rgba(255,110,40,.45)}
-.tb{display:flex;align-items:center;gap:8px;height:50px;padding:0 18px;border-radius:999px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:15px;font-weight:700;color:var(--fg2);transition:transform .1s}
-.tb svg{flex:none}
-.tb[aria-pressed="true"]{color:#0d1014;background:var(--mc);border-color:transparent}
+
 /* the games, as balls on a strip of cloth */
-#dock{position:absolute;left:22px;bottom:20px;right:430px;z-index:4;display:flex;gap:12px;align-items:flex-end}
-#dock .grp{display:flex;gap:10px;padding:10px;border-radius:26px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--sh)}
-.gt{position:relative;width:96px;height:112px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding-bottom:10px;box-sizing:border-box;
-  color:var(--fg2);transition:transform .16s cubic-bezier(.3,1.6,.5,1),background .15s;animation:gtIn .5s cubic-bezier(.2,1.3,.4,1) both;animation-delay:calc(var(--k) * 45ms)}
+
 @keyframes gtIn{from{opacity:0;transform:translateY(26px) scale(.9)}}
-.gt:active{transform:scale(.93)}
-.gt .bl3{position:absolute;top:12px;left:50%;width:54px;height:54px;transform:translateX(-50%);transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
-.gt b{font-size:15.5px;font-weight:800;color:var(--fg)}
-.gt small{font-size:11.5px;font-weight:600;color:var(--sub);white-space:nowrap}
-.gt[aria-pressed="true"]{background:color-mix(in srgb,var(--mc) 16%,transparent);box-shadow:inset 0 0 0 2px var(--mc),0 0 24px color-mix(in srgb,var(--mc) 35%,transparent)}
-.gt[aria-pressed="true"] .bl3{transform:translateX(-50%) translateY(-4px) scale(1.08)}
-.gt[aria-pressed="true"] small{color:var(--mc)}
+
 /* balls drawn in CSS: a coloured sphere with its light, a stripe, a number disc */
-.sph{position:absolute;border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),radial-gradient(circle at 50% 50%,var(--c) 58%,color-mix(in srgb,var(--c) 55%,#000) 100%);box-shadow:0 6px 10px rgba(0,0,0,.45)}
-.sph.st{background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),linear-gradient(180deg,#f4efe2 0 27%,var(--c) 27% 73%,#f4efe2 73%)}
-.sph em{position:absolute;left:50%;top:50%;width:46%;height:46%;transform:translate(-50%,-50%);border-radius:50%;background:#f4efe2;color:#111;font-style:normal;font-weight:800;font-size:13px;display:grid;place-items:center;font-family:'Outfit',sans-serif}
-.gt .ico{position:absolute;inset:0;display:grid;place-items:center;color:var(--fg)}
+
 /* the panel: the chosen game's settings, and the button */
-#app.lobby #home{inset:0;grid-template-columns:minmax(0,1fr) 392px}
-#app.lobby .h-right{grid-column:2;margin:88px 22px 20px 0;padding:20px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--sh)}
-#app.lobby .h-right .h-chips{justify-content:stretch;gap:8px;flex-wrap:nowrap;margin-top:auto}
-#app.lobby .h-right .h-chips .btn{flex:1;min-width:0;height:auto;padding:9px 6px;flex-direction:column;gap:2px;border-radius:14px;background:var(--opt);border-color:transparent;box-shadow:none}
-#app.lobby .h-right .h-chips .btn .k{font-size:11.5px}
-#app.lobby .h-right .h-chips .btn .v{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-#app.lobby .h-right .h-chips .chip-sw{display:none}
-#app.lobby #startBtn{margin-top:4px;position:relative;overflow:hidden;height:74px;border-radius:22px;flex-direction:column;gap:2px;
-  background:linear-gradient(180deg,var(--mc),var(--mc2));color:#0b0e12;box-shadow:0 10px 26px color-mix(in srgb,var(--mc) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.4);animation:ctaGlow 2.8s ease-in-out infinite}
-#app.lobby #startBtn b{font-size:23px;font-weight:800;letter-spacing:.02em}
-#app.lobby #startBtn small{font-size:12.5px;font-weight:700;opacity:.72}
-#app.lobby #startBtn::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);animation:ctaShine 3.6s ease-in-out infinite}
+
 @keyframes ctaShine{0%,62%{left:-40%}100%{left:130%}}
 @keyframes ctaGlow{0%,100%{box-shadow:0 10px 26px color-mix(in srgb,var(--mc) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}50%{box-shadow:0 12px 34px color-mix(in srgb,var(--mc) 58%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}}
-#app.lobby .resume{border:1px solid color-mix(in srgb,var(--mc) 50%,transparent)}
-#app.lobby #records{inset:76px 0 0 0;background:rgba(9,11,14,.86)}
-#app.lobby.compact #records{inset:62px 0 0 0}
-#app.lobby #rightLab{display:flex;align-items:center;gap:12px;font-size:26px;font-weight:800}
-#app.lobby #rightLab small{display:block;font-size:13.5px;font-weight:600;color:var(--sub);margin-top:3px;letter-spacing:0}
-#app.lobby #rightLab .bl3{position:relative;flex:none;width:54px;height:54px;top:auto;left:auto;transform:scale(.88);margin:-4px}
+
 /* narrow: the bar, the balls in a row that scrolls, then the panel, the button always in reach */
-#app.lobby.compact #topbar{height:62px;padding:0 12px;gap:8px}
-#app.lobby.compact #topbar .logo .word{font-size:18px}
-#app.lobby.compact .tb{height:42px;padding:0 13px;font-size:13.5px}
-#app.lobby.compact .tb span{display:none}
-#app.lobby.compact .me{height:42px;padding-right:14px}
-#app.lobby.compact .me .av{width:32px;height:32px;font-size:14px}
-#app.lobby.compact #dock{left:0;right:0;top:62px;bottom:auto;padding:4px 10px 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
-#app.lobby.compact #dock::-webkit-scrollbar{display:none}
-#app.lobby.compact #dock .grp{padding:8px;gap:6px;flex:none}
-#app.lobby.compact .gt{width:76px;height:94px;padding-bottom:8px}
-#app.lobby.compact .gt .bl3{width:44px;height:44px;top:10px}
-#app.lobby.compact .gt b{font-size:14px}
-#app.lobby.compact .gt small{display:none}
-#app.lobby.compact #home{inset:184px 0 0 0;background:transparent}
-#app.lobby.compact .h-right{margin:4px 12px 0;padding:16px}
-#app.lobby.compact #startBtn{position:sticky;bottom:12px;height:66px}
-@media (prefers-reduced-motion:reduce){.gt,#app.lobby #startBtn,#app.lobby #startBtn::after,#room .lamp{animation:none}}
+
 /* a tablet held upright: the games along the top, the table lit in the middle, the panel at the foot */
-#app.lobby.tallp #home{inset:auto 0 0 0;overflow:visible}
-#app.lobby.tallp .h-right{margin:0 16px 16px}
-#app.lobby.tallp #room{background:radial-gradient(ellipse 52% 26% at 50% 37%,transparent 0 60%,rgba(6,8,11,.6) 88%,rgba(4,6,8,.92) 100%),linear-gradient(180deg,rgba(4,6,8,.8),transparent 16%,transparent 60%,rgba(4,6,8,.9) 75%)}
-#app.lobby.tallp #room .lamp{left:50%;top:5%;width:90%;height:55%}
-#app.lobby.tallp #dock{justify-content:center}
-@media (max-width:520px){#app.lobby.compact .gt{width:56px;height:84px}#app.lobby.compact .gt .bl3{width:38px;height:38px}#app.lobby.compact #dock .grp{padding:6px;gap:4px}#app.lobby.compact #dock{gap:8px;padding:4px 8px 8px}#app.lobby.compact #home{inset:170px 0 0 0}}
 
 /* ================= the desk (4.0 first screen; prefs.ui 'desk') =================
    Everything is a thing on a wooden desk: an ivory rail of choices on the left, a felt tray in the middle with the live
@@ -711,7 +538,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--es:.42;--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
 #app.desk.compact{--es:.3;--bar:56px;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px}
 #app.desk.compact:not(.portrait){--es:.22;--bar:48px;--tilt:11deg;--ovh:40px;--ovw:50px}
-#app.desk #nav,#app.desk #home,#app.desk #topbar,#app.desk #dock,#app.desk #room{display:none}
+
 #app.desk #records{inset:var(--bar) 0 0 0}
 
 /* ---------- the desk as a plane seen from above and a little behind ----------
@@ -1386,17 +1213,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card i.bcase .b{width:38%;left:31%;aspect-ratio:1;transform:translateY(-50%);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.5))}
 </style>
 
-<div id="app" class="busy boot" data-theme="light">
+<div id="app" class="desk busy boot" data-theme="dark">
   <canvas id="gl"></canvas>
-  <div id="room" aria-hidden="true"><i class="lamp"></i></div>
-  <header id="topbar" hidden>
-    <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
-    <button class="me" id="meBtn"><i class="av">1</i><span><b class="nm"></b><small class="rc"></small></span></button>
-    <span class="sp"></span>
-    <button class="tb" id="tbRec"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
-    <button class="tb" id="tbSet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
-  </header>
-  <div id="dock" hidden></div>
   <header id="deskBar" hidden>
     <div class="dk-logo">CUE</div>
     <div class="dk-tabs" role="tablist" id="dkTabs">
@@ -1415,44 +1233,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <i class="dk-edge" aria-hidden="true"></i><i class="dk-prop towel" aria-hidden="true"></i><i class="dk-prop chalk" aria-hidden="true"></i><i class="dk-prop plant" aria-hidden="true"></i>
   </section></div>
   <div id="dkBeams" hidden aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-
-  <!-- the way round the app: a rail down the side on a wide screen, a bar along the bottom on a narrow one -->
-  <nav class="h-nav" id="nav">
-    <div class="logo"><span class="mark"><i>8</i></span><span class="word">CUE</span></div>
-    <button class="nv" data-v="play"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="5"/><circle cx="16.5" cy="8.5" r="3.5"/><path d="M13.5 20.5 21 13"/></svg><span>대결</span></button>
-    <button class="nv" data-v="puzzle"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="13" r="8"/><circle cx="11" cy="13" r="4"/><path d="M11 13 19 5M17 3.5l3.5 3.5"/></svg><span>퍼즐</span></button>
-    <button class="nv" data-v="practice"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9 12 4.5 21.5 9 12 13.5zM6.5 11.2V16c1.6 1.7 3.4 2.5 5.5 2.5s3.9-.8 5.5-2.5v-4.8M21.5 9v5"/></svg><span>레슨</span></button>
-    <button class="nv" data-v="all"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>전적</span></button>
-    <button class="nv end" data-v="set"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>설정</span></button>
-  </nav>
-  <section id="home">
-    <div class="h-mid">
-      <div class="h-chips">
-        <button class="btn" id="tableBtn"><i class="chip-sw" id="clothSw"></i><span class="k">테이블</span><span class="v" id="tableVal"></span></button>
-        <button class="btn" id="cueBtn"><span class="k">큐</span><span class="v" id="cueVal"></span></button>
-        <button class="btn" id="guideBtn"><span class="k">조준선</span><span class="v" id="guideVal"></span></button>
-      </div>
-    </div>
-    <div class="h-right panel">
-      <div class="h-title" id="rightLab">대결</div>
-      <div id="resumeBox" hidden></div>
-      <div id="modeBox"><div id="modeList"></div></div>
-      <div id="pracList" hidden></div>
-      <div id="puzBox" hidden></div>
-      <div id="vsBox">
-      <div class="plist">
-        <button class="prow" id="pc0"><i class="av">1</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-        <button class="prow two" id="pc1"><i class="av">2</i><span class="who"><span class="nm"></span><span class="rc"></span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-      </div>
-      <div class="seg" id="segOpp"><button data-v="0">친구와</button><button data-v="1">컴퓨터와</button></div>
-      <div class="seg slide" id="segLvl" data-lv="1"><button data-v="0">쉬움</button><button data-v="1">보통</button><button data-v="2">어려움</button><button data-v="3">미친</button></div>
-      <div class="seg" id="segRule3" hidden><button data-v="0">쿠션 자유</button><button data-v="1">원쿠션</button><button data-v="3">쓰리쿠션</button></div>
-      <div class="seg" id="segTarget"><button data-v="3">3점</button><button data-v="5">5점</button><button data-v="10">10점</button></div>
-      <div class="seg" id="segFinish" hidden><button data-v="0">마무리 자유</button><button data-v="1">쿠션 마무리</button></div>
-      </div>
-      <button class="btn cta" id="startBtn">시작</button>
-    </div>
-  </section>
 
   <header id="hud" hidden>
     <button class="btn icon" id="menuBtn" aria-label="일시정지 메뉴"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>

@@ -44,9 +44,9 @@ function flames(now) {
   flameRaf = requestAnimationFrame(flames);
 }
 const lightFlames = () => { if (!flameRaf) flameRaf = requestAnimationFrame(flames); };
-function showRecords() { show('records'); st.phase = 'idle'; flow = null; paintRecords(); $('#records').scrollTop = 0; lobbyPaint(); }
+function showRecords() { show('records'); st.phase = 'idle'; flow = null; paintRecords(); $('#records').scrollTop = 0; }
 function paintRecords() {
-  paintNav(); const body = $('#recBody'); body.textContent = '';
+  const body = $('#recBody'); body.textContent = '';
   const names = Object.keys(rec).filter(n => rec[n].w || rec[n].l).sort((a, b) => rec[b].w - rec[a].w || rec[a].l - rec[b].l);
   if (!names.length) { body.appendChild(note('아직 끝난 판이 없습니다. 한 판 끝나면 이름별로 기록이 쌓입니다.')); return; }
   // one card a player; whoever is on a run of wins has a card on fire

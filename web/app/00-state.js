@@ -150,10 +150,10 @@ scene.setBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
 function dress(ice) { scene.setCloth(ice ? ICE : iceOn() ? 0 : prefs.cloth); }
 function applyTheme() {
-  const light = prefs.theme === 'light', away = st.screen === 'home' || st.screen === 'records', night = prefs.ui === 'lobby' && away, desk = prefs.ui === 'desk' && st.screen === 'home';   // the lobby is always night; on the desk the table sits on felt
-  app.dataset.theme = light ? 'light' : 'dark';
-  document.body.style.background = desk ? '#6b4527' : night ? '#0d1014' : light ? '#eef0f3' : '#101216';
-  scene.setBackdrop(desk ? 0x034db0 : night ? 0x0d1014 : light ? 0xeef0f3 : 0x101216);
+  const desk = st.screen === 'home';                                  // on the desk's home the table sits on felt
+  app.dataset.theme = 'dark';
+  document.body.style.background = desk ? '#6b4527' : '#101216';
+  scene.setBackdrop(desk ? 0x034db0 : 0x101216);
 }
 applyTheme();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,

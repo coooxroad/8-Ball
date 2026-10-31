@@ -3,7 +3,6 @@ function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b 
 function closeSheet() { $('#sheet').hidden = true; }
 $('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
 $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
-const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: onTap(fn) }, kids);
 const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
 const flatBtn = (text, fn) => el('button', { class: 'btn flat', text, onclick: () => { SND.tap(); fn(); } });
 // a row of choices; when the choices are just on and off, a switch
@@ -15,21 +14,6 @@ const segRow = (label, opts, cur, fn) => {
 };
 const note = text => el('p', { class: 'note', text });
 
-function sheetTable() {
-  const sizes = isCarom() ? [note(prefs.mode === 'three' ? '3구는 포켓 없는 대대(284×142cm, 공 61.5mm)로 고정입니다.' : '4구는 포켓 없는 중대(254×127cm, 공 65.5mm)로 고정입니다.')]
-    : TABLES.map(t => optBtn(prefs.table === t.id, optText(t.name, t.d), () => { prefs.table = t.id; savePrefs(); paintHome(); homePreview(); sheetTable(); }));
-  openSheet('테이블', [el('div', { class: 'lab', text: '크기' }), ...sizes, el('div', { class: 'lab', text: '천 색' }),
-    el('div', { class: 'grid2' }, CLOTHS.map((c, i) => optBtn(prefs.cloth === i,
-      [el('i', { class: 'sw', style: `--c:${hex(c.felt)};--w:${hex(c.wood)}` }), optText(c.name)], () => { prefs.cloth = i; savePrefs(); paintHome(); homePreview(); sheetTable(); }))),
-    iceOn() ? note('빙판: 공이 미끄러져 오래 구르고 회전이 잘 먹지 않습니다. 대결에만 적용되고, 레슨과 퍼즐은 일반 천에서 합니다.') : null]);
-}
-let cueWho = 0;
-function sheetCue() {
-  const two = !prefs.vsAI && prefs.mode !== 'practice' && prefs.mode !== 'puzzle'; if (!two) cueWho = 0;
-  openSheet('큐 고르기', [two ? segRow('누구 큐', [[0, prefs.names[0]], [1, prefs.names[1]]], cueWho, v => { cueWho = v; sheetCue(); }) : null].concat(CUES.map((c, i) => optBtn(prefs.cues[cueWho] === i,
-    [el('canvas', { class: 'cuepic' }), optText(c.name, c.note)], () => { prefs.cues[cueWho] = i; if (!cueWho) prefs.cue = i; savePrefs(); if (cueWho === 0) useCue(i); paintHome(); sheetCue(); }))));
-  document.querySelectorAll('#sheetBody .cuepic').forEach((cv, i) => drawCue(cv, CUES[i], false));
-}
 // one guide length per player (a handicap); a single slider when only one person is aiming
 // the knob is a matte blue that deepens as the guide gets longer
 function guideSlider(label, value, set) {

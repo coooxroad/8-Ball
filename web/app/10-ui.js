@@ -45,44 +45,31 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  const home = screen === 'home', away = home || screen === 'records', lob = prefs.ui === 'lobby', dk = prefs.ui === 'desk';
-  $('#home').hidden = !home; $('#nav').hidden = !away; $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
+  const home = screen === 'home', away = home || screen === 'records', dk = true;
+  $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
   // the desk and the lobby each bring their own bar along the top (kept over the records), and the desk its leaning plane
   $('#deskBar').hidden = !dk || !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !dk || !home;
-  $('#topbar').hidden = !lob || !away; $('#dock').hidden = !lob || !home; $('#room').hidden = !away;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   app.classList.toggle('bcast', dk && screen === 'play' && flow === match);   // a match on the desk is shown as on television (head.html)
-  paintNav(); applyTheme(); layout(); MUSIC.screen(screen);
+  applyTheme(); layout(); MUSIC.screen(screen);
 }
-// which place on the rail is lit
-function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
 let wide = true;
 function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
-  const tallp = portrait && !wide && H >= 900 && prefs.ui === 'lobby'; app.classList.toggle('tallp', tallp);   // a tablet held upright: the lobby keeps the table in view
   scene.resize();
-  const tilt = st.screen === 'home' && prefs.ui === 'desk';          // the desk's home: its plane leans away (32-desk.js)
+  const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (32-desk.js)
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do
   app.classList.toggle('tilt', tilt);
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
-  else scene.setInsets(homeInsets(tallp) || playInsets(H, portrait));
+  else scene.setInsets(playInsets(H, portrait));
   if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); }
   setPowerUI(st.power);
-}
-// The other homes keep the table clear of their panels (the room left round it, in pixels from each edge); null when the
-// home is narrow enough that the table simply takes the screen as in play.
-function homeInsets(tallp) {
-  if (st.screen !== 'home') return null;
-  if (wide && prefs.ui === 'lobby') return { t: 92, l: 40, r: 432, b: 168 };
-  if (tallp) return { t: 196, l: 24, r: 24, b: ($('.h-right').offsetHeight || 480) + 28 };
-  if (wide) return { t: 40, l: 126, r: 412, b: 104 };                // the classic home: rail on the left, panel on the right
-  return null;
 }
 // in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
 function playInsets(H, portrait) {
@@ -92,7 +79,7 @@ function playInsets(H, portrait) {
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
   if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
-  if (portrait && prefs.ui === 'desk') return { t: hud + 26, l: 6, r: 6, b: 146 };
+  if (portrait) return { t: hud + 26, l: 6, r: 6, b: 146 };
   return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
