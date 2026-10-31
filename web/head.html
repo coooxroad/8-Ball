@@ -930,6 +930,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* a slot is cut with a softened edge, and its walls darken it inside (under the key) */
 #app.desk .dk-slot{position:relative}
 #app.desk .dk-slot::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset -2px 5px 7px rgba(60,40,15,.32),0 1px 0 rgba(255,255,255,.55)}
+/* the slabs' sides that face the middle of the view: the rail's right side (lit, the light is on that side) and the
+   slate's left side (in its own shadow), each a few pixels of solid edge stepped out from the outline, under the drop shadow */
+#app.desk:not(.compact) .dk-rail{box-shadow:1px 0 0 rgb(208,195,168),2px 0 0 rgb(202,189,162),3px 0 0 rgb(197,183,156),4px 0 0 rgb(191,178,150),5px 0 0 rgb(185,172,144),6px 0 0 rgb(180,166,138),7px 0 0 rgb(174,160,132),8px 0 0 rgb(168,154,126),-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk:not(.compact) .dk-slate{box-shadow:-1px 0 0 rgb(18,25,25),-2px 0 0 rgb(17,23,23),-3px 0 0 rgb(15,21,21),-4px 0 0 rgb(14,18,18),-5px 0 0 rgb(12,16,16),-6px 0 0 rgb(10,14,14),-7px 0 0 rgb(9,12,12),-8px 0 0 rgb(7,10,10),-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk.compact:not(.portrait) .dk-rail{box-shadow:1px 0 0 rgb(205,192,164),2px 0 0 rgb(196,182,155),3px 0 0 rgb(186,173,145),4px 0 0 rgb(177,163,136),5px 0 0 rgb(168,154,126),-10px 14px 20px rgba(0,0,0,.5)}
+#app.desk.compact:not(.portrait) .dk-slate{box-shadow:-1px 0 0 rgb(17,24,24),-2px 0 0 rgb(15,20,20),-3px 0 0 rgb(12,17,17),-4px 0 0 rgb(10,13,13),-5px 0 0 rgb(7,10,10),-10px 14px 20px rgba(0,0,0,.5)}
+/* the desk keeps a margin of wood at its outer sides all the way down (the plane is widest at the bottom, where it is nearest) */
+#app.desk #desk{padding-left:44px;padding-right:44px}
+#app.desk.compact #desk{padding-left:18px;padding-right:18px}
+#app.desk.compact:not(.portrait) #desk{padding-left:24px;padding-right:24px}
+/* a slot's walls look the same width all round: its far wall (the art's top slice) is drawn flatter, so the top border is no
+   wider than the others */
+#app.desk .dk-slot{border-image-width:calc(54px*var(--s)*.55) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s));padding:calc(24px*var(--s)*.55 + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
+/* the swatches share the tray's width (all of them in view), and a cue's swatch shows its butt piece whole, end to joint */
+#app.desk .dk-foot .dk-sw{flex:1 1 0;width:auto;min-width:0;max-width:150px}
+#app.desk .dk-sw i{height:clamp(40px,6vh,58px)}
+#app.desk .dk-sw i.cuebox img{left:-3.3%;width:198.3%;transform:translateY(-44.5%)}
 </style>
 
 <div id="app" class="busy" data-theme="light">
