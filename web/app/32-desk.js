@@ -250,8 +250,17 @@ function shelfPage(d, shop) {
     // the cards
     shelfOpen = null; d.stage.dataset.win = '0';
     dkPut(d.head, dkTitle(shop ? `${K.name} 진열대` : `내 ${K.name}`, `${list.length}개${worn >= 0 ? ' · 장착: ' + list[worn].name : ''}`));
-    dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, list.map((q, i) => el('button', { class: 'dk-card' + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-      [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
+    // the cards from the commonest to the rarest, an ivory rule where the rarity changes saying what it is and how many
+    // of it are owned (everything is owned until the shop opens)
+    const order = list.map((q, i) => [q, i]).sort((p, q) => (p[0].rarity || 0) - (q[0].rarity || 0) || p[1] - q[1]), cards = [];
+    for (let n = 0; n < order.length; n++) {
+      const [q, i] = order[n], r = q.rarity || 0;
+      if (!n || (order[n - 1][0].rarity || 0) !== r) { const all = order.filter(x => (x[0].rarity || 0) === r).length;
+        cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${all}/${all})` })])); }
+      cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
+        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]));
+    }
+    dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     dkPut(d.slate, [dkHr(), dkTxt(shop ? '큐, 공, 테이블, 트레일, 장갑을 코인과 다이아로 살 수 있게 됩니다. 지금은 구경만 할 수 있습니다.' : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
       dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt('플레이 성능은 모두 같습니다.')]);
@@ -265,7 +274,7 @@ function shelfPage(d, shop) {
   K.show(q, d.stage, i);
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
-  dkPut(d.slate, dkHr());
+  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), dkHr()]);
   for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) dkPut(d.slate, dkActs(dkMain('구매', '상점이 열리면', () => {}, true), dkSec('카드 목록으로', close)));

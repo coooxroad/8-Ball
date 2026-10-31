@@ -55,3 +55,14 @@ const CUE_SPEC = {
   sport: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '화이트 코팅 메이플'], ['하대', '네이비'], ['그립', '노란 고무']],
 };
 const GLOVE_SPEC = [['소재', '스트레치 라이크라'], ['손가락', '엄지 · 검지 · 중지'], ['손목', '벨크로 스트랩']];
+/* Rarity of the things in the shop (일반 0 … 시크릿 5). Looks only: nothing plays differently. On a card it is only a colour
+   (RARITY's second value, a gradient); opened, its name is said. */
+const RARITY = [['일반', '#aeb6bf'], ['희귀', '#3f8cff'], ['에픽', '#a95cff'], ['신화', '#ff4d5e'], ['전설', '#ffb52e'], ['시크릿', 'rainbow']];
+{
+  const R = { cue: { house: 0, maple: 1, sport: 1, carbon: 2, rose: 4 },
+    ball: { classic: 0, plain: 0, pastel: 1, neon: 1, vintage: 2, marble: 2, pearl: 3, carbon: 3, noir: 4, galaxy: 5 },
+    cloth: { teal: 0, green: 0, blue: 1, wine: 2, charcoal: 3, ice: 4 },
+    trail: { none: 0, chalk: 0, fire: 1, gold: 2, neon: 3, rainbow: 4 },
+    glove: { black: 0, white: 0, red: 1, blue: 1, camo: 2, gold: 4 } };
+  for (const [list, k] of [[CUES, 'cue'], [BALLSKINS, 'ball'], [CLOTHS, 'cloth'], [TRAILS, 'trail'], [GLOVES, 'glove']]) for (const q of list) q.rarity = R[k][q.id] || 0;
+}

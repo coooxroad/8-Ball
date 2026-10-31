@@ -1288,6 +1288,37 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* 4구 with the colours drawn the other way: player 1's plate carries the yellow ball, player 2's the white */
 #app.bcast.carom.ysw #hud #p0 .av{background:radial-gradient(circle at 62% 32%,#fff6c2,#f4c20d 48%,#a37a00)}
 #app.bcast.carom.ysw #hud #p1 .av{background:radial-gradient(circle at 62% 32%,#fff,#f1ece0 45%,#b9b1a0)}
+/* rarity: on a card only a colour - a wash rising from its foot and a line under its name - and an ivory rule across the
+   shelf where the rarity changes, saying which and how many are owned; opened, the slate names it */
+.r0{--rc:#aeb6bf}.r1{--rc:#3f8cff}.r2{--rc:#a95cff}.r3{--rc:#ff4d5e}.r4{--rc:#ffb52e}.r5{--rc:#ffffff}
+#app.desk .dk-card::before{content:"";position:absolute;inset:6px;border-radius:10px;pointer-events:none;
+  background:linear-gradient(to top,color-mix(in srgb,var(--rc) 55%,transparent) 0%,color-mix(in srgb,var(--rc) 18%,transparent) 38%,transparent 70%)}
+#app.desk .dk-card.r5::before{background:linear-gradient(to top,rgba(255,80,110,.5),rgba(255,190,60,.32) 22%,rgba(80,220,140,.22) 40%,rgba(80,150,255,.14) 56%,transparent 76%)}
+#app.desk .dk-card .nm{border-bottom:3px solid var(--rc);padding-bottom:1px}
+#app.desk .dk-card.r5 .nm{border-image:linear-gradient(90deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff) 1}
+#app.desk .dk-card>*{position:relative}
+#app.desk .dk-card .wtag{position:absolute}
+#app.desk .dk-tier{grid-column:1/-1;display:flex;align-items:center;gap:10px;height:22px;margin:4px 2px -4px;color:#f4ecd8;font:800 13px 'Gothic A1',sans-serif;letter-spacing:.04em}
+#app.desk .dk-tier::before{content:"";width:16px;height:3px;border-radius:2px;background:#f4ecd8}
+#app.desk .dk-tier::after{content:"";flex:1;height:2px;border-radius:1px;background:linear-gradient(90deg,#f4ecd8,rgba(244,236,216,.25))}
+#app.desk .dk-tier span{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+#app.desk .dk-cards{grid-auto-rows:auto}
+#app.desk .dk-cards>.dk-card{height:clamp(170px,30vh,240px)}
+#app.desk.compact .dk-cards>.dk-card{height:150px}
+#app.desk .dk-cards.books>.dk-card,#app.desk .dk-cards.vols>.dk-card{height:auto}
+.rar{display:inline-block;padding:1px 9px 2px;border-radius:5px;font:800 12px/1.5 'Gothic A1',sans-serif;color:#10141a;background:var(--rc)}
+.rar.r5{background:linear-gradient(90deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff)}
+#app.desk .dk-card::before{z-index:1;mix-blend-mode:screen;inset:5px;border-radius:10px;
+  background:linear-gradient(to top,color-mix(in srgb,var(--rc) 75%,transparent) 0%,color-mix(in srgb,var(--rc) 30%,transparent) 30%,transparent 62%)}
+#app.desk .dk-card.r0::before{opacity:.55}
+#app.desk .dk-card.r5::before{background:linear-gradient(to top,rgba(255,80,110,.75),rgba(255,190,60,.5) 18%,rgba(80,220,140,.35) 34%,rgba(80,150,255,.2) 48%,transparent 64%)}
+#app.desk .dk-card .nm{z-index:2;border-bottom:0}
+#app.desk.compact.portrait .dk-cards{grid-auto-rows:auto}
+#app.desk.compact.portrait .dk-cards.books{grid-auto-rows:136px}
+#app.desk.compact.portrait .dk-cards.vols{grid-auto-rows:minmax(0,calc(100% - 4px))}
+#app.desk .dk-card{box-shadow:inset 0 -5px 0 -1px var(--rc)}
+#app.desk .dk-card.r5{box-shadow:inset 0 -5px 0 -1px #ff8a5c}
+#app.desk .dk-card.r1::before{background:linear-gradient(to top,rgba(110,180,255,.85) 0%,rgba(110,180,255,.35) 30%,transparent 62%)}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">
