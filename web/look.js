@@ -43,8 +43,9 @@ const TRAILS = [
 ];
 /* Gloves (내 장비 · 장갑): pictures come as ui/glove-<id>.webp. */
 const GLOVES = [
-  { id: 'black', name: '블랙' }, { id: 'white', name: '화이트' }, { id: 'red', name: '레드' },
-  { id: 'blue', name: '블루' }, { id: 'gold', name: '골드' }, { id: 'camo', name: '카모' },
+  { id: 'black', name: '블랙', rarity: 0, stats: { aim: 50, touch: 50 } }, { id: 'white', name: '화이트', rarity: 0, stats: { aim: 50, touch: 50 } },
+  { id: 'red', name: '레드', rarity: 1, stats: { aim: 54, touch: 50 } }, { id: 'blue', name: '블루', rarity: 1, stats: { aim: 50, touch: 54 } },
+  { id: 'camo', name: '카모', rarity: 2, stats: { aim: 56, touch: 52 } }, { id: 'gold', name: '골드', rarity: 3, stats: { aim: 56, touch: 56 } },
 ];
 /* What the gear pages list under each thing (looks only: every cue, ball and cloth plays the same). */
 const CUE_SPEC = {
@@ -55,3 +56,13 @@ const CUE_SPEC = {
   sport: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '화이트 코팅 메이플'], ['하대', '네이비'], ['그립', '노란 고무']],
 };
 const GLOVE_SPEC = [['소재', '스트레치 라이크라'], ['손가락', '엄지 · 검지 · 중지'], ['손목', '벨크로 스트랩']];
+/* Rarity (shop things), and what a cue or a glove does. Every stat is 0-100 with 50 the plain one; each point away from
+   50 is worth 0.24%, so 100 is +12% and 0 is -12%. A cue's three stats add up to 150 at 일반 and 6 more each rarity up,
+   a glove's two to 100 and 4 more: rarer is a little better, never much (and a stat can be traded for another). */
+const RARITY = [['일반', '#9aa3ad'], ['희귀', '#3b8cff'], ['에픽', '#a55cff'], ['신화', '#ff4d5e'], ['전설', '#ffc23a'], ['시크릿', '#e8e8e8']];
+const STAT_K = 0.12 / 50, statMul = v => 1 + ((v == null ? 50 : v) - 50) * STAT_K;
+const CUE_STATS = [['power', '파워', '최대로 칠 수 있는 힘'], ['spin', '회전', '같은 당점에서 걸리는 회전의 양'], ['reach', '당점 범위', '미스큐 없이 칠 수 있는 가장자리까지의 거리']];
+const GLOVE_STATS = [['aim', '미세 조준', '미세 조준 다이얼이 더 곱게 돎'], ['touch', '힘 조절', '파워 게이지의 약한 쪽이 더 곱게 나뉨']];
+const CUE_GRADE = { house: [0, { power: 50, spin: 50, reach: 50 }], maple: [1, { power: 52, spin: 54, reach: 50 }], sport: [1, { power: 58, spin: 48, reach: 50 }],
+  carbon: [2, { power: 60, spin: 50, reach: 52 }], rose: [4, { power: 54, spin: 62, reach: 58 }] };
+for (const c of CUES) { const g = CUE_GRADE[c.id] || [0, {}]; c.rarity = g[0]; c.stats = g[1]; }

@@ -106,6 +106,7 @@ function setPowerUI(p) {
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;
+  $('#spinPad').style.setProperty('--reach', cueStat('reach').toFixed(3));   // the ring: as far out as this cue lets the tip go
   $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
   $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
 }

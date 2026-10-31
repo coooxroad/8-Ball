@@ -95,13 +95,13 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
   // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
   const CANCEL = 0.04;
-  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.max(0.002, (q - CANCEL) / (1 - CANCEL)); };
+  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.max(0.002, Math.pow((q - CANCEL) / (1 - CANCEL), 1 + (gloveStat('touch') - 1) * 2)); };   // (a glove's 힘 조절: the soft end spread wider)
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null; ctlUp();
     const p = st.power;
-    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el); else { st.power = 0; setPowerUI(0); }
+    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p) * cueStat('power'), st.spin.x * 0.5 * cueStat('spin'), st.spin.y * 0.5 * cueStat('spin'), st.el); else { st.power = 0; setPowerUI(0); }   // (the cue's 파워 and 회전)
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -112,7 +112,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
+    st.aim += d * 0.0009 * (2 - gloveStat('aim')) * (scene.portrait ? -1 : 1); off += d;   // (a glove's 미세 조준: a finer turn)
     box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
   });
   const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
@@ -153,7 +153,8 @@ function drawDial() {
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
-    x /= 0.72; y /= 0.72; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    const reach = cueStat('reach');                                     // (the cue's 당점 범위: how far out the tip may go)
+    x /= 0.72; y /= 0.72; const m = Math.hypot(x, y); if (m > reach) { x *= reach / m; y *= reach / m; }
     st.spin = { x, y }; setSpinUI(); if (st.el) setKindUI(); scene.invalidate();
   };
   let id = null;

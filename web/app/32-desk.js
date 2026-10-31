@@ -195,7 +195,7 @@ const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.col
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` });
 const SHELVES = {
-  cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
+  cue: { name: '큐', stats: CUE_STATS, list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
     show: (c, stage) => { stage.dataset.win = '0'; dkPut(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]); },
     about: c => [c.note, ...(CUE_SPEC[c.id] || [])], wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: k => ballTrio(k, true),
@@ -208,12 +208,19 @@ const SHELVES = {
     show: (q, stage) => { scene.setTrail(q.id); stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, streak(q, true))); },
     about: q => [q.note, '큐볼이 구르는 동안 뒤로 짧게 남고 곧 사라집니다. 경기에는 영향이 없습니다.'],
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
-  glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
+  glove: { name: '장갑', stats: GLOVE_STATS, list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
     about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다.', ...GLOVE_SPEC],
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
 };
 const SHELF_KEYS = ['cue', 'ball', 'table', 'trail', 'glove'];
+// a thing's rarity as a small coloured label; a stat as a bar from 0 to 100 with the plain 50 marked, its number and what
+// it does in percent (each point from 50 is 0.24%)
+const rarityTag = q => el('span', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] });
+function statBar(q, [k, name, what]) {
+  const v = q.stats[k] == null ? 50 : q.stats[k], pc = (statMul(v) - 1) * 100, say = Math.abs(pc) < 0.05 ? '기본' : (pc > 0 ? '+' : '') + pc.toFixed(1) + '%';
+  return el('div', { class: 'dk-stat', title: what }, [el('span', { class: 'k', text: name }), el('span', { class: 'bar' }, el('i', { style: `width:${v}%` })), el('b', { text: String(v) }), el('small', { class: pc > 0 ? 'up' : pc < 0 ? 'dn' : '', text: say })]);
+}
 function shelfClose() { const k = SHELVES[deskTab === 'shop' ? shopSel : gearSel]; if (shelfOpen != null && k && k.undo) k.undo(); shelfOpen = null; }
 function gearOff() { shelfClose(); }                                  // (also called on leaving the place)
 function shelfPage(d, shop) {
@@ -225,10 +232,10 @@ function shelfPage(d, shop) {
     shelfOpen = null; d.stage.dataset.win = '0';
     dkPut(d.head, dkTitle(shop ? `${K.name} 진열대` : `내 ${K.name}`, `${list.length}개${worn >= 0 ? ' · 장착: ' + list[worn].name : ''}`));
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, list.map((q, i) => el('button', { class: 'dk-card' + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-      [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
+      [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? rarityTag(q) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: '곧 판매' }) : null]))));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     dkPut(d.slate, [dkHr(), dkTxt(shop ? '큐, 공, 테이블, 트레일, 장갑을 코인과 다이아로 살 수 있게 됩니다. 지금은 구경만 할 수 있습니다.' : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
-      dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt('플레이 성능은 모두 같습니다.')]);
+      dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt(K.stats ? '능력치가 조금씩 다릅니다(최대 ±12%). 희귀할수록 합계가 높습니다.' : '보기만 다르고 플레이 성능은 같습니다.')]);
     dkPut(d.slate, dkActs(shop ? dkMain('준비 중', null, () => {}, true) : null, shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
     return;
   }
@@ -240,6 +247,7 @@ function shelfPage(d, shop) {
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
   dkPut(d.slate, dkHr());
+  if (K.stats) dkPut(d.slate, [el('div', { class: 'dk-rar' }, [rarityTag(q), el('span', { text: `능력치 합계 ${K.stats.reduce((a, [k]) => a + q.stats[k], 0)}` })]), ...K.stats.map(st => statBar(q, st)), dkHr()]);
   for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) dkPut(d.slate, dkActs(dkMain('구매', '상점이 열리면', () => {}, true), dkSec('카드 목록으로', close)));

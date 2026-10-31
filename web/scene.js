@@ -917,7 +917,7 @@ function createScene(canvas, app, PH) {
           /* Nothing here is worked out by geometry: the shot is played out on a copy with the very inputs the stroke will use,
              and the guide is drawn from what happened. The length setting only decides how much of it is shown. */
           const after = gl < SIM ? 0.05 : gl <= 0.75 ? 2.4 : 2.4 + (gl - 0.75) / 0.25 * 12.6;
-          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, v.el || 0, after);
+          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * (v.vk || 1), v.spin.x * 0.5 * (v.sk || 1), v.spin.y * 0.5 * (v.sk || 1), v.el || 0, after);   // (with the cue's 파워 and 회전)
           const at = pv.at, pre = pv.pre, post = pv.post, rail = v.aimStyle === 'rail', kind = g.mode.table;
           // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
           const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, w.cue) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, pv.hit) : cCol;
