@@ -1338,6 +1338,21 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact #views{top:64px;gap:8px}#app.desk.compact #views .btn{width:42px;height:42px}
 #app.desk.portrait #views{top:calc(var(--hud-h) + 40px);right:8px}
 #app:not(.desk) #views,#hud[hidden] #views{display:none}
+/* in play on the desk, third pass: a slimmer gauge (the made one-window housing, 72 px of its 360), and on a tablet the
+   view keys in a row beside the 3D knob, the same size */
+#app.desk #power{width:72px;left:12px}
+#app.desk #power::before{inset:34px auto 34px 10px;width:52px}
+#app.desk #power::after{border-image:url(ui/gauge.webp) 170 0 fill/34px 0 stretch;background:none}
+#app.desk #powerCue{width:17px}
+#app.desk #powerNum{bottom:9px;font-size:15px}
+#app.desk.portrait #power{height:60px}
+#app.desk.portrait #power::before{inset:8px 28px auto 28px;height:44px;width:auto}
+#app.desk.portrait #power::after{border-image:url(ui/gauge-h.webp) 0 170 fill/0 28px stretch;background:none}
+#app.desk:not(.portrait) #views{top:12px;right:80px;flex-direction:row;gap:12px}
+#app.desk:not(.portrait) #views .btn{width:56px;height:56px}
+#app.desk.compact:not(.portrait) #views{top:6px;right:62px}
+#app.desk.compact:not(.portrait) #views .btn{width:48px;height:48px}
+#app.bcast:not(.portrait) #hud .pill{max-width:calc((100vw - 380px) / 2)}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">

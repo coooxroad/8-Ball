@@ -169,6 +169,13 @@ function createScene(canvas, app, PH) {
   const feltTex = tex(fc, 6);
 
   const feltMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1 });
+  /* The made cloth (batch 8): a worsted weave with its nap's soft mottling, light grey so the cloth colour tints it, one
+     picture to 30 cm of cloth (the bed's texture coordinates are metres), and its normal map for the weave's relief.
+     The cushions keep the drawn grain (their slopes are seen edge-on). */
+  let clothMade = null, clothNormal = null;
+  loadTex('cloth', 1 / 0.3, t => { clothMade = t; if (!iced) { feltMat.map = t; feltMat.bumpMap = null; feltMat.normalMap = clothNormal; feltMat.needsUpdate = true; } });
+  if (TEXS['cloth-n']) loader.load(TEXS['cloth-n'], t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 0.3, 1 / 0.3); t.anisotropy = aniso; clothNormal = t;
+    if (!iced && clothMade) { feltMat.normalMap = t; feltMat.normalScale.set(0.6, 0.6); feltMat.needsUpdate = true; } staticDirty = true; dirty = 3; });
   const cushMat = new THREE.MeshStandardMaterial({ map: feltTex, bumpMap: feltTex, bumpScale: 0.0005, roughness: 1, metalness: 0, envMapIntensity: 0.1, side: THREE.DoubleSide });
   /* Wood. The picture is a plank seen along the grain: growth rings stretched into long wavy bands, fine pores,
      a few darker streaks. The material then lays it along each rail and joins the rails at 45 degrees. */
@@ -438,10 +445,10 @@ function createScene(canvas, app, PH) {
       if (!iceTex) iceTex = makeIce();
       // the picture is stretched once over the whole bed (the bed's texture coordinates are metres from the middle)
       iceTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); iceTex.offset.set(0.5, 0.5);
-      feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
+      feltMat.map = iceTex; feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.copy(col(0xd8ecf8)); feltMat.roughness = 0.34; feltMat.envMapIntensity = 0.55;
       cushMat.color.copy(col(0xcfeaf8)); cushMat.roughness = 0.5;                            // packed snow along the rails
     } else {
-      feltMat.map = feltMat.bumpMap = cushMat.map = cushMat.bumpMap = feltTex; feltMat.color.copy(col(c.felt)); feltMat.roughness = 1; feltMat.envMapIntensity = 0.1;
+      cushMat.map = cushMat.bumpMap = feltTex; feltMat.map = clothMade || feltTex; feltMat.bumpMap = clothMade ? null : feltTex; feltMat.normalMap = clothMade ? clothNormal : null; feltMat.color.copy(col(c.felt)); feltMat.roughness = 1; feltMat.envMapIntensity = 0.1;
       cushMat.color.copy(col(c.felt)).multiplyScalar(0.8); cushMat.roughness = 1;
     }
     feltMat.needsUpdate = true;
