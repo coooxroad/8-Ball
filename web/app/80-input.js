@@ -113,11 +113,38 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
-    box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; scene.invalidate();
+    box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
   });
   const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
 })();
+/* The fine-aim dial (on the desk): a knurled rubber drum turning in its walnut slot, drawn as a real cylinder - its ridges
+   crowd together towards its edges and it darkens away from the light (upper right), with brass flanges at both ends.
+   dialPh is how far it has been rolled, in pixels at its face. */
+let dialPh = 0;
+function drawDial() {
+  const box = $('#fine'); if (!deskOn()) return;
+  let cv = box.querySelector('canvas.dial'); if (!cv) { cv = el('canvas', { class: 'dial' }); box.appendChild(cv); }
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  const dpr = Math.min(3, window.devicePixelRatio || 1); if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const along = !scene.portrait, L = along ? h : w, T = along ? w : h, R = L / 2, lit = along ? -0.35 : 0.3;   // (the light's side of the drum)
+  const shade = (th, base, span) => Math.round(base + span * Math.pow(Math.max(0, Math.cos(th - lit)), 1.6));
+  const body = along ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
+  for (let i = 0; i <= 16; i++) { const th = (i / 16 - 0.5) * Math.PI, v = shade(th, 10, 78); body.addColorStop(i / 16, `rgb(${v},${v},${v + 3})`); }
+  g.fillStyle = body; g.fillRect(0, 0, w, h);
+  const N = 56, step = 2 * Math.PI / N, ph = (((dialPh / R) % step) + step) % step, fl = Math.max(4, T * 0.12);
+  for (let th = -Math.PI / 2 + ph; th < Math.PI / 2; th += step) {
+    const c = Math.cos(th); if (c < 0.04) continue;
+    const at = R + R * Math.sin(th), t = Math.max(0.5, 2.4 * c), hi = 0.05 + 0.25 * Math.max(0, Math.cos(th - lit));
+    g.fillStyle = 'rgba(0,0,0,.6)'; if (along) g.fillRect(fl, at - t / 2, T - 2 * fl, t); else g.fillRect(at - t / 2, fl, t, T - 2 * fl);
+    g.fillStyle = `rgba(255,255,255,${hi.toFixed(3)})`; if (along) g.fillRect(fl, at + t / 2, T - 2 * fl, Math.max(0.5, c)); else g.fillRect(at + t / 2, fl, Math.max(0.5, c), T - 2 * fl);
+  }
+  // the brass flanges at the drum's two ends, shaded round the same way
+  const brass = along ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
+  for (let i = 0; i <= 16; i++) { const th = (i / 16 - 0.5) * Math.PI, k = Math.pow(Math.max(0, Math.cos(th - lit)), 1.3); brass.addColorStop(i / 16, `rgb(${Math.round(70 + 170 * k)},${Math.round(50 + 140 * k)},${Math.round(18 + 70 * k)})`); }
+  g.fillStyle = brass; if (along) { g.fillRect(0, 0, fl, h); g.fillRect(w - fl, 0, fl, h); } else { g.fillRect(0, 0, w, fl); g.fillRect(0, h - fl, w, fl); }
+}
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
@@ -140,7 +167,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const padEl = $('#elPad'); let eid = null;
   // the cue angle is folded away until asked for: most shots only need the spin
   const setEl = e => {
-    const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
+    const r = padEl.getBoundingClientRect(), bx = r.left + EL_BX, by = r.bottom - EL_BY; let a = Math.atan2(by - e.clientY, e.clientX - bx);
     // from level to straight down, kept to a tenth of a degree; under half a degree counts as level, so that a flat cue is
     // easy to come back to
     a = Math.max(0, Math.min(Math.PI / 2, a)); if (a < 0.0087) a = 0;
@@ -176,22 +203,25 @@ function setKindUI() {
   // the ordinary stroke says nothing; a cue set any other way is shown on the spin button
   const plain = st.el < 0.009;
   const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
-  // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
+  // The side view: the cloth, the cue ball at the pivot of a brass protractor, and the player's own cue leaning at its angle
+  // with its tip on the ball (on the desk the made pictures, elsewhere drawn).
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1); cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
-  const g = cv.getContext('2d'), dark = prefs.theme !== 'light', ink = dark ? '#e8ebf0' : '#1f2630', dim = dark ? 'rgba(255,255,255,.28)' : 'rgba(25,31,40,.25)';
-  g.setTransform(dpr, 0, 0, dpr, 0, 0); const bx = 34, by = ch - 26, R = 15, a = st.el;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const bx = EL_BX, by = ch - EL_BY, R = 15, a = st.el, c = CUES[cueNow] || CUES[0];
+  const arc = elImg('angle-arc'); if (arc.naturalWidth) { const sc = Math.min(cw - bx - 4, by - 4) / 480; g.drawImage(arc, bx - 16 * sc, by - 496 * sc, 512 * sc, 512 * sc); }
   g.fillStyle = hex(CLOTHS[iceOn() && flow === match ? ICE : iceOn() ? 0 : prefs.cloth].felt); g.fillRect(0, by + R, cw, ch - by - R);
-  g.strokeStyle = dim; g.lineWidth = 1.5; g.setLineDash([3, 4]); g.beginPath(); g.arc(bx, by, 96, -Math.PI / 2, 0); g.stroke(); g.setLineDash([]);
-  g.fillStyle = dim; g.font = '600 10px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const d of [0, 30, 60, 90]) { const t = d * Math.PI / 180; g.beginPath(); g.moveTo(bx + Math.cos(t) * 90, by - Math.sin(t) * 90); g.lineTo(bx + Math.cos(t) * 102, by - Math.sin(t) * 102); g.stroke(); g.fillText(d + '°', bx + Math.cos(t) * 116 - (d === 0 ? 6 : 0), by - Math.sin(t) * 112 + (d === 90 ? 4 : 0)); }
-  const ball = g.createRadialGradient(bx - 5, by - 6, 2, bx, by, R); ball.addColorStop(0, '#ffffff'); ball.addColorStop(1, '#cfc8b6'); g.fillStyle = ball; g.beginPath(); g.arc(bx, by, R, 0, 6.3); g.fill();
-  const ca = Math.cos(a), sa = Math.sin(a), tx = bx + ca * (R + 2), ty = by - sa * (R + 2), ex = bx + ca * 150, ey = by - sa * 150, nx = sa, ny = ca, c = CUES[cueNow] || CUES[0];
-  const seg = (f0, f1, w0, w1, col) => { const x0 = tx + (ex - tx) * f0, y0 = ty + (ey - ty) * f0, x1 = tx + (ex - tx) * f1, y1 = ty + (ey - ty) * f1; g.fillStyle = col; g.beginPath(); g.moveTo(x0 + nx * w0, y0 + ny * w0); g.lineTo(x1 + nx * w1, y1 + ny * w1); g.lineTo(x1 - nx * w1, y1 - ny * w1); g.lineTo(x0 - nx * w0, y0 - ny * w0); g.fill(); };
-  seg(0, 0.03, 2, 2, hex(c.tip)); seg(0.03, 0.08, 2, 2.2, hex(c.ferrule)); seg(0.08, 0.6, 2.2, 3.4, hex(c.shaft)); seg(0.6, 1, 3.4, 4.6, hex(c.fore));
-  g.strokeStyle = '#8a4dff'; g.lineWidth = 2.5; g.beginPath(); g.arc(bx, by, 44, -a, 0); if (a) g.stroke();
-  g.fillStyle = ink; g.font = '700 11px Outfit, sans-serif'; g.textAlign = 'left'; if (!a) g.fillText('끌어서 큐를 세웁니다', bx + 30, by - 34);
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, by + R, cw, 2);
+  const ball = elImg('spin-ball'); if (ball.naturalWidth) g.drawImage(ball, bx - R * 1.07, by - R * 1.07, R * 2.14, R * 2.14); else { g.fillStyle = '#f4efe2'; g.beginPath(); g.arc(bx, by, R, 0, 6.3); g.fill(); }
+  const tx = bx + Math.cos(a) * (R + 1.5), ty = by - Math.sin(a) * (R + 1.5), cue = elImg('cue-' + c.id), Lc = Math.max(cw, ch) * 1.25, hc = Math.max(7, Lc * 110 / 2400 * 1.3);
+  g.save(); g.translate(tx, ty); g.rotate(Math.PI - a);
+  if (cue.naturalWidth) { g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 6; g.shadowOffsetX = -3; g.shadowOffsetY = 4; g.drawImage(cue, -Lc, -hc / 2, Lc, hc); }
+  else { g.fillStyle = hex(c.shaft); g.fillRect(-Lc, -2.5, Lc, 5); }
+  g.restore();
+  if (!a) { g.fillStyle = '#f1e4c4'; g.font = '700 12px Gothic A1, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText('위로 끌어 큐를 세웁니다', bx + 40, by - 46); }
 }
+const EL_BX = 26, EL_BY = 24, elImgs = {};
+const elImg = n => elImgs[n] || (elImgs[n] = Object.assign(new Image(), { onload: () => setKindUI(), src: `ui/${n}.webp` }));
 
 document.addEventListener('contextmenu', e => e.preventDefault());
 

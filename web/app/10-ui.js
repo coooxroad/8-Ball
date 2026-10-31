@@ -72,7 +72,7 @@ function layout() {
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(homeInsets(tallp) || playInsets(H, portrait));
-  if (st.screen === 'play') paintPowerCue();
+  if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); }
   setPowerUI(st.power);
 }
 // The other homes keep the table clear of their panels (the room left round it, in pixels from each edge); null when the
@@ -87,11 +87,12 @@ function homeInsets(tallp) {
 // in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
 function playInsets(H, portrait) {
   const hud = H <= 520 ? 50 : 60;
-  // A match on the desk is shown as on television (head.html #app.bcast): lying, its score bar runs along the bottom
+  // A match on the desk is shown as on television (head.html #app.bcast): lying, its score bar runs along the top
   // middle, so the table keeps clear of it; carom shows each player's ball on their plate.
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
-  if (tv && !portrait) return { t: hud + 6, l: 66, r: 74, b: wide ? 82 : 62 };
+  if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 104 : 86, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
+  if (portrait && prefs.ui === 'desk') return { t: hud + 26, l: 6, r: 6, b: 136 };
   return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
@@ -114,6 +115,7 @@ function setPowerUI(p) {
   const q = Math.min(1, p), hue = 185 - 185 * Math.pow(q, 0.85);
   tr.style.setProperty('--heat', `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(52 - 4 * q)}% / ${(q < 0.02 ? 0 : 0.35 + 0.6 * q).toFixed(2)})`);
   tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
+  tr.style.setProperty('--pw', (q * 100).toFixed(1) + '%');                 // (the desk's lit meter: exactly the power)
 }
 function setSpinUI() {
   const s = st.spin, k = 0.36;

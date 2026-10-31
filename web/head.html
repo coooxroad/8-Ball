@@ -1289,6 +1289,76 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   box-shadow:inset 0 0 0 6px var(--w),inset 0 0 0 8px rgba(0,0,0,.4),inset 0 0 12px 8px rgba(0,0,0,.25),-4px 7px 8px rgba(0,0,0,.45)}
 #app.desk .dk-card i.btrio img{display:block;height:28%;max-height:66px;aspect-ratio:1;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.45))}
 #app.desk .dk-card i.btrio.v{gap:4%}
+/* ---- in play on the desk, second pass: roomier controls ----
+   score bar along the TOP middle (its clock bar under it, the tour tab hanging below its left end), messages under it in
+   the middle; a wide power gauge (a lit meter in the cue's groove, green to red as it is drawn); the fine-aim dial a
+   short drum in its slot; a big cue ball for spin with a red tip mark; bigger knobs. */
+#app.bcast{--bt:8px}
+#app.bcast.compact{--bt:6px}
+#app.bcast:not(.portrait) #hud .pill,#app.bcast:not(.portrait) #badge{bottom:auto;top:var(--bt)}
+#app.bcast:not(.portrait) #clock{bottom:auto;top:var(--bt)}
+#app.bcast:not(.portrait) #hud::before{bottom:auto;top:calc(var(--bt) + var(--bh) + 6px);border-radius:0 0 3px 3px}
+#app.bcast #toast{left:50%;right:auto;top:calc(var(--bt) + var(--bh) + 40px);bottom:auto;transform:translate(-50%,-10px);max-width:min(var(--wb),90%);text-align:center;border-left:0;border-top:5px solid var(--blue1);border-radius:3px}
+#app.bcast #toast.show{transform:translate(-50%,0)}
+#app.bcast #toast.foul{border-top-color:#e0262e}
+#app.bcast #toast.good{border-top-color:var(--gold2)}
+#app.bcast.compact:not(.portrait) #toast{top:calc(var(--bt) + var(--bh) + 30px);bottom:auto}
+#app.bcast.portrait #toast{left:50%;right:auto;top:calc(var(--hud-h) + 34px);bottom:auto;max-width:calc(100% - 20px)}
+#app.desk #menuBtn,#app.desk #viewBtn{width:56px;height:56px}
+#app.desk #viewBtn svg{width:24px;height:24px}
+#app.desk.compact #menuBtn,#app.desk.compact #viewBtn{width:48px;height:48px}
+/* power: wide, a real gauge */
+#app.desk #power{width:84px;left:12px;border-image:url(ui/power-rail.webp) 120 0 fill/50px 0 stretch}
+#app.desk #power::before{inset:52px 22px;border-radius:4px;background:repeating-linear-gradient(to top,rgba(60,70,60,.55) 0 6px,rgba(0,0,0,.6) 6px 8px);box-shadow:inset 0 2px 6px rgba(0,0,0,.7)}
+#app.desk #power::after{content:"";position:absolute;left:22px;right:22px;top:52px;bottom:52px;width:auto;border-radius:4px;transform:none;pointer-events:none;
+  background:repeating-linear-gradient(to top,transparent 0 6px,rgba(0,0,0,.65) 6px 8px),linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%);
+  -webkit-mask:linear-gradient(to top,#000 var(--pw,0%),transparent var(--pw,0%));mask:linear-gradient(to top,#000 var(--pw,0%),transparent var(--pw,0%));
+  box-shadow:0 0 12px rgba(255,200,80,.35)}
+#app.desk #powerCue{z-index:1;width:17px}
+#app.desk #powerNum{bottom:12px;font-size:19px;z-index:1}
+#app.desk.portrait #power{left:112px;right:10px;height:64px;width:auto;border-image:url(ui/power-rail-h.webp) 0 120 fill/0 38px stretch}
+#app.desk.portrait #power::before{inset:17px 40px;background:repeating-linear-gradient(to left,rgba(60,70,60,.55) 0 6px,rgba(0,0,0,.6) 6px 8px)}
+#app.desk.portrait #power::after{left:40px;right:40px;top:17px;bottom:17px;height:auto;
+  background:repeating-linear-gradient(to left,transparent 0 6px,rgba(0,0,0,.65) 6px 8px),linear-gradient(to left,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%);
+  -webkit-mask:linear-gradient(to left,#000 var(--pw,0%),transparent var(--pw,0%));mask:linear-gradient(to left,#000 var(--pw,0%),transparent var(--pw,0%))}
+#app.desk.portrait #powerNum{right:auto;left:8px;height:auto;top:50%;transform:translateY(-50%);padding:0 6px}
+/* fine aim: the drum */
+#app.desk #fine{right:12px;top:50%;bottom:auto;height:300px;margin-top:-150px;width:66px;background:none}
+#app.desk #fine::before{z-index:1;border-image:url(ui/wheel-box.webp) 140 45 fill/42px 15px stretch}
+#app.desk #fine::after{z-index:2;left:-6px;right:auto;width:12px;height:12px;margin-top:-6px;border-radius:0;background:#e9c46a;clip-path:polygon(0 0,100% 50%,0 100%);box-shadow:none}
+#app.desk #fine canvas.dial{position:absolute;left:15px;right:15px;top:42px;bottom:42px;width:calc(100% - 30px);height:calc(100% - 84px)}
+#app.desk.compact:not(.portrait) #fine{height:220px;margin-top:-110px}
+#app.desk.compact:not(.portrait) #fine::before{border-image-width:30px 15px}
+#app.desk.compact:not(.portrait) #fine canvas.dial{top:30px;bottom:30px;height:calc(100% - 60px)}
+#app.desk.portrait #fine{left:112px;right:10px;top:auto;bottom:84px;height:46px;margin:0;width:auto}
+#app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/10px 32px stretch}
+#app.desk.portrait #fine::after{left:50%;top:-6px;width:12px;height:12px;margin:0 0 0 -6px;clip-path:polygon(0 0,100% 0,50% 100%)}
+#app.desk.portrait #fine canvas.dial{left:32px;right:32px;top:10px;bottom:10px;width:calc(100% - 64px);height:calc(100% - 20px)}
+/* spin: a big ball, a red tip mark */
+#app.desk #spinBtn{width:96px;height:96px;right:12px;bottom:12px}
+#app.desk.compact:not(.portrait) #spinBtn{width:78px;height:78px}
+#app.desk #spinDot,#app.desk .sdot{width:18px;height:18px;margin:-9px;background:radial-gradient(circle at 38% 32%,#ff9a8f,#e3261d 55%,#9d1410);box-shadow:0 0 0 2px rgba(255,255,255,.65),0 1px 3px rgba(0,0,0,.45)}
+#app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
+#app.desk.portrait #spinBtn{left:10px;bottom:16px;width:94px;height:94px}
+/* the spin and cue-angle pop: a slate with the ball in its bezel and the masse side view on a brass protractor */
+#app.desk #spinPop{right:120px;bottom:12px;padding:18px 20px 22px;gap:12px;color:#e9eef5;--s:.5;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
+  border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;filter:drop-shadow(-8px 12px 12px rgba(0,0,0,.5))}
+#app.desk.portrait #spinPop{left:10px;right:auto;bottom:120px}
+#app.desk #spinPad{width:200px;height:200px}
+#app.desk.compact #spinPad{width:160px;height:160px}
+#app.desk #spinHint{color:#b9c4d2;max-width:230px}
+#app.desk #kindBox{width:230px}
+#app.desk #kindBox .lab{color:#d9e1ea}
+#app.desk #kindBox .lab b{color:#f3e2b4}
+#app.desk #kindBox .lab span{color:#ffb35c}
+#app.desk #elPad{width:230px;height:150px;border-radius:10px;background:linear-gradient(#202b36,#141b22);box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
+#app.desk #spinReset{color:#e9eef5}
+#app.bcast.portrait #hud .pill{gap:4px}#app.bcast.portrait #hud .pill .pts,#app.bcast.portrait #hud .pill.on .pts{min-width:34px;font-size:22px;padding:0 3px}
+#app.bcast.portrait #hud .pill .av{width:16px;height:16px;margin-left:6px}#app.bcast.portrait #hud .pill.r .av{margin-right:6px}
+@media (max-width:420px){#app.bcast.portrait #hud .pill .sub{display:none}}
+#app.desk #kindBox .lab{white-space:nowrap;flex-wrap:wrap}
+#app.desk #spinTag{background:linear-gradient(#ffd34d,#e09a00);color:#2b1d05}
+#app.desk #spinReset{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">
