@@ -858,7 +858,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-sw[aria-pressed="true"]::after{content:"";position:absolute;left:-7px;right:-7px;top:-7px;height:calc(100% - 12px);background:url(ui/swframe.webp) center/100% 100% no-repeat;pointer-events:none}
 #app.desk .dk-sw i.cuebox{display:flex;align-items:center;box-sizing:border-box;position:relative;overflow:hidden;padding:0;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
 #app.desk .dk-sw i.cuebox img{position:absolute;left:-6%;top:50%;width:364%;height:auto;transform:translateY(-44.5%);filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
-#app.desk .dk-sw .eq{position:absolute;left:6px;top:6px;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;z-index:1;--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
+#app.desk .dk-sw .eq,#app.desk .dk-card .eq{position:absolute;left:6px;top:6px;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;z-index:1;--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
 
 /* ---------- the slate: the options, which scroll if they must, and the buttons, which stay put at the foot ---------- */
 #app.desk .dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
@@ -1140,6 +1140,45 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .g-black{--g:#1b1c1f}.g-white{--g:#eef0f3}.g-red{--g:#c8161d}.g-blue{--g:#1f4fd1}.g-gold{--g:linear-gradient(#1b1c1f 60%,#d9a514 60%)}.g-camo{--g:repeating-radial-gradient(circle at 30% 30%,#5d6b4a 0 5px,#3e4a32 5px 9px,#7a7f5e 9px 12px)}
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-slot{min-width:0;flex:1 1 0}               /* (five keys: they share the row) */
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-rb{font-size:14px}
+/* 내 장비 · 상점: the cards in the felt tray, and one card opened (X back to the cards) */
+#app.desk .dk-cards{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,calc(50% - 8px));gap:16px 14px;
+  overflow-y:auto;scrollbar-width:none;padding:2px 2px 8px}
+#app.desk .dk-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-height:0;padding:10px 6px 8px;
+  border:0 solid transparent;--s:.4;border-image:url(ui/well.webp) 50 48 48 48 fill/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) stretch;
+  background:none;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif;cursor:pointer}
+#app.desk .dk-card:active{transform:translateY(1px)}
+#app.desk .dk-card .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#app.desk .dk-card .price{font:700 11px 'Gothic A1',sans-serif;color:#2b241c;background:#e9dcb8;border-radius:99px;padding:2px 8px}
+#app.desk .dk-card .eq{z-index:2}
+#app.desk .dk-card>i,#app.desk .dk-card>img{flex:1;min-height:0;width:100%}
+#app.desk .dk-card .cuecard{position:relative;overflow:hidden;display:block;container-type:size}
+#app.desk .dk-card .cuecard img{position:absolute;left:50%;top:50%;height:auto;width:var(--cl,200px);transform:translate(-50%,-50%) rotate(-90deg);width:96cqh;filter:drop-shadow(-3px 4px 3px rgba(0,0,0,.45))}
+#app.desk .dk-card .clothcard{display:block;width:72%;margin:4px auto 0;border-radius:6px;background-size:64px;box-shadow:inset 0 0 0 5px var(--w),inset 0 0 0 7px rgba(0,0,0,.35),-3px 5px 6px rgba(0,0,0,.4)}
+#app.desk .dk-card img.glove{object-fit:contain;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.45))}
+#app.desk i.btrio.v{flex-direction:column;background:none;gap:8%}
+#app.desk i.btrio.v b{width:auto;height:24%;max-width:none;max-height:44px}
+#app.desk .dk-card i.btrio{display:flex;align-items:center;justify-content:center}
+#app.desk .dk-card i.btrio b{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),var(--c);box-shadow:inset -3px -4px 6px rgba(0,0,0,.35),-2px 3px 3px rgba(0,0,0,.4)}
+#app.desk .dk-card i.trl{display:block;position:relative;background:none}
+#app.desk .dk-card i.trl::before{left:50%;right:auto;top:12%;bottom:34%;width:22%;height:auto;transform:translateX(-50%);background:linear-gradient(transparent,var(--c))}
+#app.desk .dk-card i.trl.rb::before{background:linear-gradient(transparent,#bf5af2,#0a84ff,#34c759,#ffcc00,#ff3b30)}
+#app.desk .dk-card i.trl::after{left:50%;right:auto;top:auto;bottom:12%;width:auto;height:24%;transform:translateX(-50%)}
+#app.desk .dk-stage .bigpic{position:absolute;inset:6% 10%;display:grid;place-items:center}
+#app.desk .dk-stage .bigpic img.glove{max-width:100%;max-height:100%;filter:drop-shadow(-10px 14px 10px rgba(0,0,0,.5))}
+#app.desk .dk-stage .bigpic i.trl.big{position:relative;width:70%;height:40%;background:none}
+#app.desk .dk-stage .bigpic i.trl.big::before{left:0;right:22%;height:26%}
+#app.desk .dk-stage .bigpic i.trl.big::after{right:4%;width:20%;max-width:none}
+#app.desk .dk-head.open{gap:14px}
+#app.desk .dk-x{flex:none;width:46px;height:46px;border:0;padding:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;position:relative;cursor:pointer;filter:drop-shadow(-3px 4px 3px rgba(0,0,0,.45))}
+#app.desk .dk-x:active{background-image:url(ui/knob-press.webp)}
+#app.desk .dk-x i::before,#app.desk .dk-x i::after{content:"";position:absolute;left:50%;top:47%;width:44%;height:3px;border-radius:2px;background:#f3e2b4;box-shadow:0 1px 0 rgba(0,0,0,.5);transform:translate(-50%,-50%) rotate(45deg)}
+#app.desk .dk-x i::after{transform:translate(-50%,-50%) rotate(-45deg)}
+#app.desk.compact .dk-x{width:34px;height:34px}
+#app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px 'Gothic A1',sans-serif;color:#a9b6c6}
+#app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
+#app.desk.compact .dk-cards{gap:10px 8px}
+#app.desk.compact .dk-card{font-size:11.5px;padding:6px 3px 5px;gap:3px}
+#app.desk.compact .dk-card .eq{font-size:9.5px;padding:2px 6px;left:3px;top:3px}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">
