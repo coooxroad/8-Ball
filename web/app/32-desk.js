@@ -153,6 +153,7 @@ function deskPuzzle(d) {
 // (The lessons there are now are all on the pool table, so they sit in 8볼; the others wait for theirs.)
 let lessonVol = null;
 const VOLUMES = [['three', '3구'], ['four', '4구'], ['eight', '8볼'], ['nine', '9볼']];
+const BOOK_LEATHER = ['navy', 'burgundy', 'green', 'brown'];          // a lesson book's leather by its course (ui/book-*.webp)
 const volLessons = v => v === 'eight' ? LESSONS() : [];
 function deskLesson({ head, stage, slate }) {
   const top = drills.LEVELS; stage.dataset.win = '0';
@@ -161,7 +162,7 @@ function deskLesson({ head, stage, slate }) {
     dkPut(head, dkTitle('교본', '종목을 고르세요'));
     dkPut(stage, el('div', { class: 'dk-cards vols' }, VOLUMES.map(([v, name], i) => { const ids = volLessons(v);
       return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
-        el('i', { class: 'tome v' + i }, [el('i', { class: 'mi', style: `background-image:url(ui/mode-${v}.webp)` }), el('b', { text: name }), el('small', { text: '교본' })]),
+        el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name }), el('small', { text: '교본' })])),
         el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' })]); })));
     dkPut(slate, dkH1('교본', '레슨'));
     dkPut(slate, [dkHr(), dkTxt('종목 교본을 펼치면 그 안에 레슨 교본이 있습니다. 교본을 누르면 그 레슨이 바로 시작됩니다.'), dkHr()]);
@@ -183,7 +184,7 @@ function deskLesson({ head, stage, slate }) {
   dkPut(stage, el('div', { class: 'dk-cards books' }, books.map(([course, ci, id], i) => {
     const dr = drills.byId(id), lv = levelOf(id);
     return el('button', { class: 'dk-card book' + (id === cur ? ' last' : '') + (lv >= top ? ' done' : ''), 'aria-label': dr.name, onclick: onTap(() => { prefs.lastTrain = 'practice'; prefs.mode = 'practice'; practice.start(id); }) }, [
-      el('i', { class: 'cover c' + ci }, [el('small', { text: course }), el('b', { text: dr.name }), el('em', { text: String(i + 1) })]),
+      el('i', { class: 'cover', style: `background-image:${lv >= top ? 'url(ui/book-gilt.webp),' : ''}url(ui/book-${BOOK_LEATHER[ci] || 'brown'}.webp)` }, el('span', { class: 'tt' }, [el('small', { text: course }), el('b', { text: dr.name }), el('em', { text: String(i + 1) })])),
       el('span', { class: 'lvl' }, Array.from({ length: top }, (_, k) => el('i', { class: k < lv ? 'on' : '' })))]);
   })));
   const dr = drills.byId(cur);

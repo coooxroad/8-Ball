@@ -1265,6 +1265,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-card.vol .tome b{font-size:16px}
 #app.desk.compact .dk-card.vol .tome small{font-size:9px}
 #app.desk.compact.portrait .dk-cards.vols{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:190px}
+/* the made books (batch 7): the game volumes two by two, filling the tray, their names on the plain leather below the
+   medallion (y 300-480 of 560); the lesson books with their titles below the emblem (y 190-400 of 480), gilt when done */
+#app.desk .dk-cards.vols{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,calc(50% - 10px));align-content:stretch;gap:14px 18px}
+#app.desk .dk-card.vol{padding:10px 8px 8px;gap:4px}
+#app.desk .dk-card.vol .tome{flex:1;min-height:0;width:auto;max-width:100%;aspect-ratio:420/560;height:auto;margin:0 auto;display:block;position:relative;border-radius:0;
+  background:center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
+#app.desk .dk-card.vol .tome::before,#app.desk .dk-card.vol .tome::after{display:none}
+#app.desk .dk-card.vol .tome .tt{position:absolute;left:17%;right:14%;top:56%;height:28%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#app.desk .dk-card.vol .tome b{font:900 clamp(16px,2.6vw,30px) 'Gothic A1',sans-serif;color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.6),0 0 6px rgba(0,0,0,.4)}
+#app.desk .dk-card.vol .tome small{font:700 11px 'Gothic A1',sans-serif;letter-spacing:.45em;color:#e9cf8a;opacity:.85}
+#app.desk .dk-card.vol.empty .tome{filter:saturate(.6) brightness(.82) drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
+#app.desk .dk-card.book .cover{aspect-ratio:360/480;height:auto;max-height:100%;width:auto;max-width:100%;flex:1;min-height:0;padding:0;border-radius:0;box-shadow:none;
+  background:center/100% 100% no-repeat;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.5));position:relative;display:block}
+#app.desk .dk-card.book.done .cover{box-shadow:none}
+#app.desk .dk-card.book .cover .tt{position:absolute;left:19%;right:12%;top:40%;height:43%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+#app.desk .dk-card.book .cover em{bottom:-28%;left:0;right:0;text-align:center}
+#app.desk.compact.portrait .dk-cards.vols{grid-auto-rows:220px}
+#app.desk .dk-card.book .cover b{word-break:keep-all}
+#app.desk.compact.portrait .dk-cards.vols{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,calc(100% - 4px));gap:8px 6px}
+#app.desk.compact.portrait .dk-card.vol .nm{font-size:10px}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">
