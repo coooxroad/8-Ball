@@ -86,14 +86,12 @@ function homeInsets(tallp) {
 }
 // in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
 function playInsets(H, portrait) {
-  let hud = H <= 520 ? 50 : 60;
-  // A match on the desk, lying: the television scorebug across the top middle, scaled (--bs) to the screen; on pool the
-  // balls each still has to pot hang in a tray under it. Upright, the two players' tabs fill the HUD's row as before.
-  if (app.classList.contains('bcast') && !portrait) {
-    const W = app.clientWidth, bs = Math.max(0.3, Math.min(0.6, (W - 150) / 1400, H * (H < 560 ? 0.17 : 0.14) / 180));
-    app.style.setProperty('--bs', bs.toFixed(3));
-    hud = Math.max(hud, 4 + (game.mode.table === 'carom' ? 158 : 222) * bs);
-  }
+  const hud = H <= 520 ? 50 : 60;
+  // A match on the desk is shown as on television (head.html #app.bcast): lying, its score bar runs along the bottom
+  // middle, so the table keeps clear of it; carom shows each player's ball on their plate.
+  const tv = app.classList.contains('bcast');
+  app.classList.toggle('carom', tv && game.mode.table === 'carom');
+  if (tv && !portrait) return { t: hud + 6, l: 66, r: 74, b: wide ? 82 : 62 };
   return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.

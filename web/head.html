@@ -1040,70 +1040,92 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .form .w{background:url(ui/res-win.webp) center/contain no-repeat;color:#3b3229}
 #app.desk .form .l{background:url(ui/res-loss.webp) center/contain no-repeat;color:#fff}
 #app.desk .rcard .run{--s:.42;height:calc(80px*var(--s));display:inline-flex;align-items:center;padding:0 16px 2px;border:0 solid transparent;border-radius:0;background:none;border-image:url(ui/streak.webp) 0 28 fill/0 calc(28px*var(--s)) stretch;color:#fff6e6;text-shadow:0 1px 1px rgba(80,20,0,.6)}
-/* ---------- a match on the desk, shown as on television (#app.bcast; parts in ui/, README) ----------
-   Lying: one scorebug across the top middle (bc-bug), scaled by --bs (10-ui.js playInsets), the players' tabs let into
-   its sides (the white and the yellow ball's colour on their edge, lit while it is that player's turn), the game in the
-   raised middle and the shot clock as a ring hanging from it; on pool the balls still to pot sit in a tray under each tab.
-   Upright: the two tabs fill the HUD's row and the ring hangs under the middle. Messages come up as a lower third. */
-#app.bcast{--cs:calc(96px*var(--bs,.5))}
-#app.bcast.portrait{--cs:54px}
-#app.bcast #hud .pill{border:0 solid transparent;border-radius:0;box-shadow:none;background:none;color:#9fb0c2;box-sizing:border-box;
-  border-image:url(ui/bc-tab-l.webp) 0 32 fill/0 14px stretch}
-#app.bcast #hud .pill.on{border-image-source:url(ui/bc-tab-l-on.webp)}
-#app.bcast #hud .pill.r{border-image-source:url(ui/bc-tab-r.webp)}
-#app.bcast #hud .pill.r.on{border-image-source:url(ui/bc-tab-r-on.webp)}
-#app.bcast #hud .pill .av{display:none}
-#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#f3f5f7}
-#app.bcast #hud .pill.on{color:#bcd3ea}
-#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{font-family:'Outfit',sans-serif;font-weight:700;color:#fff;margin-left:auto}
-#app.bcast #hud .pill.r .pts{margin-left:0;margin-right:auto}
-#app.bcast #hud .pill .who{flex:1}
-#app.bcast.portrait #hud .pill{height:46px;padding:0 10px 0 18px;gap:8px}
-#app.bcast.portrait #hud .pill.r{padding:0 18px 0 10px}
-#app.bcast:not(.portrait) #hud::before{content:"";position:absolute;left:50%;top:4px;width:calc(1400px*var(--bs));height:calc(180px*var(--bs));margin-left:calc(-700px*var(--bs));
-  background:url(ui/bc-bug.webp) 0 0/100% 100% no-repeat;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45));pointer-events:none}
-#app.bcast:not(.portrait) #hud.out::before{background-image:url(ui/bc-bug-out.webp)}
-#app.bcast:not(.portrait) #hud .pill{position:absolute;top:calc(4px + 76px*var(--bs));height:calc(74px*var(--bs));width:calc(426px*var(--bs));margin:0;
-  padding:0 calc(28px*var(--bs)) 0 calc(36px*var(--bs));gap:calc(14px*var(--bs));border-image-width:0 calc(20px*var(--bs))}
-#app.bcast:not(.portrait) #hud #p0{left:calc(50% - 636px*var(--bs))}
-#app.bcast:not(.portrait) #hud #p1{left:calc(50% + 210px*var(--bs));padding:0 calc(36px*var(--bs)) 0 calc(28px*var(--bs))}
-#app.bcast:not(.portrait) #hud .pill .nm{font-size:max(12px,calc(30px*var(--bs)))}
-#app.bcast:not(.portrait) #hud .pill .sub{font-size:max(9.5px,calc(21px*var(--bs)))}
-#app.bcast:not(.portrait) #hud .pts{font-size:max(17px,calc(58px*var(--bs)))}
-#app.bcast:not(.portrait) #hud .tray{position:absolute;top:calc(100% + 24px*var(--bs));left:0;height:calc(44px*var(--bs));align-items:center;gap:calc(6px*var(--bs));
-  padding:0 calc(16px*var(--bs));border:0 solid transparent;border-image:url(ui/bc-tray.webp) 16 fill/calc(10px*var(--bs)) stretch}
-#app.bcast:not(.portrait) #hud .pill.r .tray{left:auto;right:0}
-#app.bcast:not(.portrait) #hud .tray:empty{display:none}
-#app.bcast:not(.portrait) #hud .tray .mb{width:calc(26px*var(--bs));height:calc(26px*var(--bs))}
-#app.bcast:not(.portrait) #badge{position:absolute;left:calc(50% - 125px*var(--bs));top:calc(4px + 30px*var(--bs));width:calc(250px*var(--bs));height:calc(56px*var(--bs));
-  display:flex;flex-wrap:wrap;align-content:center;justify-content:center;column-gap:4px;row-gap:0;overflow:hidden;white-space:nowrap;
-  font-size:max(9px,calc(19px*var(--bs)));line-height:1.2;color:#a9b8c8;background:none;border:0;padding:0;box-shadow:none}
-#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font-family:'Outfit',sans-serif;font-weight:600;font-size:max(10px,calc(22px*var(--bs)));letter-spacing:.32em;text-transform:uppercase;color:#e3c46c}
-#app.bcast:not(.portrait) #badge .mb{width:calc(20px*var(--bs));height:calc(20px*var(--bs))}
-#app.bcast #clock{top:calc(4px + 88px*var(--bs));left:50%;width:var(--cs);height:var(--cs);margin-left:calc(var(--cs)/-2);display:grid;place-items:center;
-  background:url(ui/bc-clock.webp) center/100% 100% no-repeat;border-radius:50%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
-#app.bcast.portrait #clock{top:calc(var(--hud-h) + 6px)}
-#app.bcast #clock i{position:absolute;inset:0;height:auto;border-radius:50%;box-shadow:none;overflow:visible;
-  background:conic-gradient(var(--c) calc(var(--k)*360deg),transparent 0);
-  -webkit-mask:radial-gradient(circle closest-side,transparent 69%,#000 70.5%,#000 78.5%,transparent 80%);mask:radial-gradient(circle closest-side,transparent 69%,#000 70.5%,#000 78.5%,transparent 80%)}
-#app.bcast #clock i::after{display:none}
-#app.bcast #clock b{position:relative;background:none;padding:0;min-width:0;font-size:calc(var(--cs)*.36);color:#fff}
-#app.bcast #clock{--c:#e9edf2}
-#app.bcast #clock.two{--c:#f2c94c}
-#app.bcast #clock[data-lv="1"]{--c:#f0a92b}
-#app.bcast #clock[data-lv="2"]{--c:#e2402f}
-#app.bcast #toast{left:76px;top:auto;bottom:22px;width:max-content;max-width:min(62%,760px);box-sizing:border-box;transform:translateX(-28px);
-  font:700 17px/1.4 'Gothic A1',sans-serif;letter-spacing:0;color:#f4f6f8;-webkit-text-stroke:0;text-align:left;padding:13px 62px 13px 26px;
-  border:0 solid transparent;border-image:url(ui/bc-lower.webp) 0 100 0 28 fill/0 50px 0 14px stretch;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
-  transition:opacity .18s,transform .26s cubic-bezier(.2,.9,.3,1)}
+/* ---------- a match on the desk, shown as on television (#app.bcast) ----------
+   Like a pool or carom broadcast: one bright score bar along the bottom middle - each player's white name plate with
+   the ball they play (carom) or the balls still to pot (pool), and their score in a blue box at the inner end (gold on
+   their turn); the game and the shot clock in the dark middle, the clock's bar running along under the whole bar in
+   the shooter's colour (amber at 10 s, red at 5); the tour's tab on top at the left. Messages come up as a lower third
+   over the left of the bar. Upright, the plates fill the HUD's row at the top and the clock bar runs under them.
+   All drawn here (sharp at any size, animated); sizes in --wb (bar width), --bh (its height), --cw (the middle). */
+#app.bcast{--wb:min(820px,calc(100vw - 190px));--bh:50px;--cw:150px;--bb:14px;--navy:#0a1a3f;--blue1:#2563eb;--blue2:#0b2f9a;--gold1:#ffd34d;--gold2:#e09a00}
+#app.bcast.compact{--wb:min(660px,calc(100vw - 170px));--bh:40px;--cw:118px;--bb:8px}
+#app.bcast #hud .pill{border:0;border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);box-sizing:border-box;margin:0;gap:8px;overflow:hidden;
+  background:linear-gradient(#ffffff,#e6ebf3);color:#4a5670;padding:0}
+#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#0a1a3f;font-weight:800}
+#app.bcast #hud .pill.on{color:#4a5670}
+#app.bcast #hud .pill .who{flex:1;padding:0 4px}
+#app.bcast #hud .pill .av{flex:none;width:calc(var(--bh)*.44);height:calc(var(--bh)*.44);margin-left:calc(var(--bh)*.24);font-size:calc(var(--bh)*.24);border:0;
+  background:#0a1a3f;color:#fff;box-shadow:inset 0 -2px 3px rgba(0,0,0,.3)}
+#app.bcast #hud .pill.r .av{margin-left:0;margin-right:calc(var(--bh)*.24)}
+#app.bcast.carom #hud .pill .av{font-size:0;background:radial-gradient(circle at 62% 32%,#fff,#f1ece0 45%,#b9b1a0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+#app.bcast.carom #hud .pill.r .av{background:radial-gradient(circle at 62% 32%,#fff6c2,#f4c20d 48%,#a37a00)}
+#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{flex:none;align-self:stretch;display:grid;place-items:center;min-width:calc(var(--bh)*1.3);padding:0 6px;
+  font:800 calc(var(--bh)*.62)/1 'Outfit',sans-serif;color:#fff;background:linear-gradient(var(--blue1),var(--blue2));transition:background .25s,color .25s}
+#app.bcast #hud .pill.on .pts{background:linear-gradient(var(--gold1),var(--gold2));color:#0a1a3f}
+#app.bcast #hud .pill .pts:empty,#app.bcast #hud .pill .tray:empty{display:none}
+#app.bcast #hud .pill .tray{flex:none;padding:0 8px;gap:3px}
+#app.bcast #hud .pill.on::after{content:"";position:absolute;top:0;bottom:0;width:5px;background:linear-gradient(var(--gold1),var(--gold2))}
+#app.bcast #hud .pill::after{left:0}
+#app.bcast #hud .pill.r::after{left:auto;right:0}
+/* lying: along the bottom */
+#app.bcast:not(.portrait) #hud .pill{position:fixed;bottom:calc(var(--bb) + 6px);height:var(--bh);width:calc((var(--wb) - var(--cw))/2)}
+#app.bcast:not(.portrait) #hud #p0{left:calc(50% - var(--wb)/2);clip-path:polygon(calc(var(--bh)*.3) 0,100% 0,100% 100%,0 100%)}
+#app.bcast:not(.portrait) #hud #p1{left:calc(50% + var(--cw)/2);clip-path:polygon(0 0,calc(100% - var(--bh)*.3) 0,100% 100%,0 100%)}
+#app.bcast:not(.portrait) #hud .pill .nm{font-size:calc(var(--bh)*.34)}
+#app.bcast:not(.portrait) #hud .pill .sub{font-size:max(9.5px,calc(var(--bh)*.23));color:#5b6880}
+#app.bcast:not(.portrait) #hud #p0 .who{padding-left:calc(var(--bh)*.15)}
+#app.bcast:not(.portrait) #hud #p1 .who{padding-right:calc(var(--bh)*.15)}
+#app.bcast:not(.portrait) #badge{position:fixed;bottom:calc(var(--bb) + 6px);left:calc(50% - var(--cw)/2);width:var(--cw);height:var(--bh);box-sizing:border-box;
+  display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;column-gap:4px;row-gap:1px;padding:calc(var(--bh)*.1) 6px 0;overflow:hidden;white-space:nowrap;
+  background:linear-gradient(#13285c,var(--navy));border:0;border-top:3px solid var(--gold1);border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);
+  font-size:max(9px,calc(var(--bh)*.2));line-height:1.25;color:#9fb3d9}
+#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 'Outfit','Gothic A1',sans-serif;letter-spacing:.2em;color:#fff}
+#app.bcast:not(.portrait) #badge .mb{width:calc(var(--bh)*.26);height:calc(var(--bh)*.26)}
+#app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge{font-size:0}
+#app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge .mb{display:none}
+#app.bcast:not(.portrait) #hud::before{content:"CUE TOUR";position:fixed;left:calc(50% - var(--wb)/2 + var(--bh)*.3);bottom:calc(var(--bb) + 6px + var(--bh));
+  padding:3px 12px 2px;background:var(--navy);color:var(--gold1);font:800 11px/1.3 'Outfit',sans-serif;letter-spacing:.28em;border-radius:3px 3px 0 0}
+/* the shot clock: its number in the middle, its bar under the whole score bar */
+#app.bcast #clock{--c:#ffffff;top:auto;margin:0;pointer-events:none;display:block;filter:none;background:none}
+#app.bcast #clock.two{--c:#ffd21f}
+#app.bcast #clock[data-lv="1"]{--c:#ff9f1a}
+#app.bcast #clock[data-lv="2"]{--c:#ff3b30}
+#app.bcast:not(.portrait) #clock{position:fixed;left:calc(50% - var(--wb)/2);width:var(--wb);bottom:var(--bb);height:calc(var(--bh) + 6px)}
+#app.bcast #clock i{position:absolute;left:0;right:0;bottom:0;height:5px;border-radius:0;background:rgba(10,26,63,.85);box-shadow:none}
+#app.bcast #clock i::after{border-radius:0;background:var(--c);box-shadow:0 0 8px var(--c)}
+#app.bcast #clock b{position:absolute;left:50%;bottom:calc(6px + var(--bh)*.1);transform:translateX(-50%);min-width:0;padding:0;background:none;
+  font:800 calc(var(--bh)*.44)/1 'Outfit',sans-serif;color:var(--c)}
+#app.bcast #clock[data-lv="2"] b{color:#ff6b61}
+#app.bcast #hud.out #badge{background:linear-gradient(#e0262e,#8e0c12);border-top-color:#fff}
+/* upright: the plates along the top */
+#app.bcast.portrait #hud .pill{position:relative}
+#app.bcast.portrait #hud .pill{height:44px}
+#app.bcast.portrait #hud .pill .nm{font-size:14px}
+#app.bcast.portrait #hud .pill .sub{font-size:10.5px}
+#app.bcast.portrait #hud .pts{min-width:38px;font-size:24px;padding:0 4px}
+#app.bcast.portrait #hud .pill{overflow:visible}
+#app.bcast.portrait #hud .pill .tray{position:absolute;top:100%;left:0;height:17px;padding:0 6px;gap:2px;align-items:center;background:var(--navy);border-radius:0 0 4px 4px}
+#app.bcast.portrait #hud .pill.r .tray{left:auto;right:0}
+#app.bcast.portrait #hud .pill .tray .mb{width:11px;height:11px}
+#app.bcast.portrait:not(.carom) #clock{top:calc(var(--hud-h) + 16px)}
+#app.bcast.portrait #hud .pill .av{margin-left:8px}#app.bcast.portrait #hud .pill.r .av{margin-right:8px}
+#app.bcast.portrait{--bh:44px}
+#app.bcast.portrait #clock{position:fixed;top:calc(var(--hud-h) + 2px);left:10px;right:10px;width:auto;height:22px}
+#app.bcast.portrait #clock i{top:auto;bottom:0}
+#app.bcast.portrait #clock b{bottom:8px;font-size:15px}
+/* messages: a lower third over the left of the bar */
+#app.bcast #toast{left:calc(50% - var(--wb)/2);top:auto;bottom:calc(var(--bb) + 6px + var(--bh) + 26px);width:max-content;max-width:var(--wb);box-sizing:border-box;
+  transform:translateY(12px);font:700 16px/1.4 'Gothic A1',sans-serif;letter-spacing:0;color:#0a1a3f;-webkit-text-stroke:0;text-align:left;
+  padding:10px 18px 10px 22px;background:linear-gradient(#ffffff,#e9eef6);border-left:6px solid var(--blue1);border-radius:2px;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);transition:opacity .18s,transform .26s cubic-bezier(.2,.9,.3,1)}
 #app.bcast #toast::after{display:none}
 #app.bcast #toast.show{transform:none}
-#app.bcast #toast.foul{color:#ff958c}
-#app.bcast #toast.good{color:#ffd860}
-#app.bcast.portrait #toast{left:8px;bottom:122px;max-width:calc(100% - 16px);font-size:15px}
-#app.bcast.compact:not(.portrait) #toast{font-size:14px;padding:9px 48px 9px 20px;bottom:12px}
+#app.bcast #toast.foul{border-left-color:#e0262e;color:#7d0d12}
+#app.bcast #toast.good{border-left-color:var(--gold2)}
+#app.bcast.portrait #toast{left:10px;bottom:122px;max-width:calc(100% - 20px);font-size:14.5px}
+#app.bcast.compact:not(.portrait) #toast{font-size:13.5px;padding:7px 14px 7px 18px;bottom:calc(var(--bb) + 6px + var(--bh) + 22px)}
+#app.bcast.compact:not(.portrait) #hud::before{font-size:9px;padding:2px 9px 1px}
 #app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
-#app.bcast.compact:not(.portrait) #badge{font-size:0}                              /* (a phone lying down: just the game's name over the clock) */
 </style>
 
 <div id="app" class="busy boot" data-theme="light">

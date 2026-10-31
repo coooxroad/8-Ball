@@ -46,11 +46,6 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
 | streak | R3 220×80 | the "N연승" badge | slice 28 l r |
 | plaque | R4 900×140 | the records' title plate | slice 80 l r |
-| bc-bug, bc-bug-out | O1 1400×180 | a match's scorebug; -out (red edge) while a time-out is shown. Player 64–490 / game 580–820 / player 910–1336 | stretched whole |
-| bc-tab-l, -l-on, -r, -r-on | O2 640×120 | the players' tabs (white / yellow ball's colour on the edge; -on: their turn) | slice 32 l r |
-| bc-clock | O3 220 | the shot clock's ring (track radius 77–87, drawn over it as a conic arc) | – |
-| bc-lower | O4 1200×160 | messages as a lower third | slice 28 l, 100 r |
-| bc-tray | O5 640×72 | the balls still to pot, under each tab on pool | slice 16 |
 
 ## Table materials (`web/tex/`)
 
