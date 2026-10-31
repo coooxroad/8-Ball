@@ -582,6 +582,19 @@ function createScene(canvas, app, PH) {
     const p = portrait ? Math.min(sw / THf, sh / TWf) : Math.min(sw / TWf, sh / THf), w = (portrait ? TH : TW) * p, h = (portrait ? TW : TH) * p;
     return { x: cx - w / 2, y: cy - h / 2, w, h };
   }
+  // The table's outline on the screen once the insets t are reached: the outer edge of its rails, rounded corners and all,
+  // taken at the rails' height (nearer the eye than the cloth, so a little bigger than the cloth-level box tableRect gives)
+  // and projected with the camera those insets will give. A polygon, its box, and the corner radius in pixels.
+  function tableOutline(t) {
+    const keep = { t: ins.t, l: ins.l, r: ins.r, b: ins.b }; Object.assign(ins, { t: t.t, l: t.l, r: t.r, b: t.b }); applyCamera(); proj.begin();
+    const ex = cur.HL + CW + RW, ey = cur.HW + CW + RW, rr = 0.1, z = RAIL_Z - 0.011, pts = [], o = [0, 0];
+    for (const [cx, cy, a0] of [[ex - rr, ey - rr, 0], [-ex + rr, ey - rr, 90], [-ex + rr, -ey + rr, 180], [ex - rr, -ey + rr, 270]])
+      for (let k = 0; k <= 6; k++) { const a = (a0 + 15 * k) * Math.PI / 180; proj.at(cx + rr * Math.cos(a), cy + rr * Math.sin(a), z, o); pts.push([o[0], o[1]]); }
+    proj.at(0, 0, z, o); const c = [o[0], o[1]]; proj.at(rr, 0, z, o); const rpx = Math.abs(o[0] - c[0]) + Math.abs(o[1] - c[1]);
+    Object.assign(ins, keep); applyCamera();
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), x = Math.min(...xs), y = Math.min(...ys);
+    return { pts, x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y, r: rpx };
+  }
   function setInsets(t, instant) {
     const ly = !!t.lie; if (ly !== lying) { lying = ly; if (W && H) { portrait = H > W && !lying; if (lampsOn) applyLook(); staticDirty = true; } instant = true; }
     insTo.t = t.t; insTo.l = t.l; insTo.r = t.r; insTo.b = t.b;
@@ -775,7 +788,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
-    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable, setCloth, setCue, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
