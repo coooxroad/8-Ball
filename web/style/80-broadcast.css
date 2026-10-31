@@ -1,0 +1,127 @@
+/* a match shown as on television (#app.bcast) */
+/* ---------- a match on the desk, shown as on television (#app.bcast) ----------
+   Like a pool or carom broadcast: one bright score bar along the bottom middle - each player's white name plate with
+   the ball they play (carom) or the balls still to pot (pool), and their score in a blue box at the inner end (gold on
+   their turn); the game and the shot clock in the dark middle, the clock's bar running along under the whole bar in
+   the shooter's colour (amber at 10 s, red at 5); the tour's tab on top at the left. Messages come up as a lower third
+   over the left of the bar. Upright, the plates fill the HUD's row at the top and the clock bar runs under them.
+   All drawn here (sharp at any size, animated); sizes in --wb (bar width), --bh (its height), --cw (the middle). */
+#app.bcast{--wb:min(820px,calc(100vw - 190px));--bh:50px;--cw:150px;--bb:14px;--navy:#0a1a3f;--blue1:#2563eb;--blue2:#0b2f9a;--gold1:#ffd34d;--gold2:#e09a00}
+#app.bcast.compact{--wb:min(660px,calc(100vw - 170px));--bh:40px;--cw:118px;--bb:8px}
+#app.bcast #hud .pill{border:0;border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);box-sizing:border-box;margin:0;gap:8px;overflow:hidden;
+  background:linear-gradient(#ffffff,#e6ebf3);color:#4a5670;padding:0}
+#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#0a1a3f;font-weight:800}
+#app.bcast #hud .pill.on{color:#4a5670}
+#app.bcast #hud .pill .who{flex:1;padding:0 4px}
+#app.bcast #hud .pill .av{flex:none;width:calc(var(--bh)*.44);height:calc(var(--bh)*.44);margin-left:calc(var(--bh)*.24);font-size:calc(var(--bh)*.24);border:0;
+  background:#0a1a3f;color:#fff;box-shadow:inset 0 -2px 3px rgba(0,0,0,.3)}
+#app.bcast #hud .pill.r .av{margin-left:0;margin-right:calc(var(--bh)*.24)}
+#app.bcast.carom #hud .pill .av{font-size:0;background:radial-gradient(circle at 62% 32%,#fff,#f1ece0 45%,#b9b1a0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+#app.bcast.carom #hud .pill.r .av{background:radial-gradient(circle at 62% 32%,#fff6c2,#f4c20d 48%,#a37a00)}
+#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{flex:none;align-self:stretch;display:grid;place-items:center;min-width:calc(var(--bh)*1.3);padding:0 6px;
+  font:800 calc(var(--bh)*.62)/1 'Outfit',sans-serif;color:#fff;background:linear-gradient(var(--blue1),var(--blue2));transition:background .25s,color .25s}
+#app.bcast #hud .pill.on .pts{background:linear-gradient(var(--gold1),var(--gold2));color:#0a1a3f}
+#app.bcast #hud .pill .pts:empty,#app.bcast #hud .pill .tray:empty{display:none}
+#app.bcast #hud .pill .tray{flex:none;padding:0 8px;gap:3px}
+#app.bcast #hud .pill.on::after{content:"";position:absolute;top:0;bottom:0;width:5px;background:linear-gradient(var(--gold1),var(--gold2))}
+#app.bcast #hud .pill::after{left:0}
+#app.bcast #hud .pill.r::after{left:auto;right:0}
+/* lying: along the bottom */
+#app.bcast:not(.portrait) #hud .pill{position:fixed;bottom:calc(var(--bb) + 6px);height:var(--bh);width:calc((var(--wb) - var(--cw))/2)}
+#app.bcast:not(.portrait) #hud #p0{left:calc(50% - var(--wb)/2);clip-path:polygon(calc(var(--bh)*.3) 0,100% 0,100% 100%,0 100%)}
+#app.bcast:not(.portrait) #hud #p1{left:calc(50% + var(--cw)/2);clip-path:polygon(0 0,calc(100% - var(--bh)*.3) 0,100% 100%,0 100%)}
+#app.bcast:not(.portrait) #hud .pill .nm{font-size:calc(var(--bh)*.34)}
+#app.bcast:not(.portrait) #hud .pill .sub{font-size:max(9.5px,calc(var(--bh)*.23));color:#5b6880}
+#app.bcast:not(.portrait) #hud #p0 .who{padding-left:calc(var(--bh)*.15)}
+#app.bcast:not(.portrait) #hud #p1 .who{padding-right:calc(var(--bh)*.15)}
+#app.bcast:not(.portrait) #badge{position:fixed;bottom:calc(var(--bb) + 6px);left:calc(50% - var(--cw)/2);width:var(--cw);height:var(--bh);box-sizing:border-box;
+  display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;column-gap:4px;row-gap:1px;padding:calc(var(--bh)*.1) 6px 0;overflow:hidden;white-space:nowrap;
+  background:linear-gradient(#13285c,var(--navy));border:0;border-top:3px solid var(--gold1);border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);
+  font-size:max(9px,calc(var(--bh)*.2));line-height:1.25;color:#9fb3d9}
+#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 'Outfit','Gothic A1',sans-serif;letter-spacing:.2em;color:#fff}
+#app.bcast:not(.portrait) #badge .mb{width:calc(var(--bh)*.26);height:calc(var(--bh)*.26)}
+#app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge{font-size:0}
+#app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge .mb{display:none}
+#app.bcast:not(.portrait) #hud::before{content:"CUE TOUR";position:fixed;left:calc(50% - var(--wb)/2 + var(--bh)*.3);bottom:calc(var(--bb) + 6px + var(--bh));
+  padding:3px 12px 2px;background:var(--navy);color:var(--gold1);font:800 11px/1.3 'Outfit',sans-serif;letter-spacing:.28em;border-radius:3px 3px 0 0}
+/* the shot clock: its number in the middle, its bar under the whole score bar */
+#app.bcast #clock{--c:#ffffff;top:auto;margin:0;pointer-events:none;display:block;filter:none;background:none}
+#app.bcast #clock.two{--c:#ffd21f}
+#app.bcast #clock[data-lv="1"]{--c:#ff9f1a}
+#app.bcast #clock[data-lv="2"]{--c:#ff3b30}
+#app.bcast:not(.portrait) #clock{position:fixed;left:calc(50% - var(--wb)/2);width:var(--wb);bottom:var(--bb);height:calc(var(--bh) + 6px)}
+#app.bcast #clock i{position:absolute;left:0;right:0;bottom:0;height:5px;border-radius:0;background:rgba(10,26,63,.85);box-shadow:none}
+#app.bcast #clock i::after{border-radius:0;background:var(--c);box-shadow:0 0 8px var(--c)}
+#app.bcast #clock b{position:absolute;left:50%;bottom:calc(6px + var(--bh)*.1);transform:translateX(-50%);min-width:0;padding:0;background:none;
+  font:800 calc(var(--bh)*.44)/1 'Outfit',sans-serif;color:var(--c)}
+#app.bcast #clock[data-lv="2"] b{color:#ff6b61}
+#app.bcast #hud.out #badge{background:linear-gradient(#e0262e,#8e0c12);border-top-color:#fff}
+/* upright: the plates along the top */
+#app.bcast.portrait #hud .pill{position:relative;justify-self:stretch}
+#app.bcast.portrait #hud .pill{height:44px}
+#app.bcast.portrait #hud .pill .nm{font-size:14px}
+#app.bcast.portrait #hud .pill .sub{font-size:10.5px}
+#app.bcast.portrait #hud .pts{min-width:38px;font-size:24px;padding:0 4px}
+#app.bcast.portrait #hud .pill{overflow:visible}
+#app.bcast.portrait #hud .pill .tray{position:absolute;top:100%;left:0;height:17px;padding:0 6px;gap:2px;align-items:center;background:var(--navy);border-radius:0 0 4px 4px}
+#app.bcast.portrait #hud .pill.r .tray{left:auto;right:0}
+#app.bcast.portrait #hud .pill .tray .mb{width:11px;height:11px}
+#app.bcast.portrait:not(.carom) #clock{top:calc(var(--hud-h) + 16px)}
+#app.bcast.portrait #hud .pill .av{margin-left:8px}
+#app.bcast.portrait #hud .pill.r .av{margin-right:8px}
+#app.bcast.portrait{--bh:44px}
+#app.bcast.portrait #clock{position:fixed;top:calc(var(--hud-h) + 2px);left:10px;right:10px;width:auto;height:22px}
+#app.bcast.portrait #clock i{top:auto;bottom:0}
+#app.bcast.portrait #clock b{bottom:8px;font-size:15px}
+/* messages: a lower third over the left of the bar */
+#app.bcast #toast{left:calc(50% - var(--wb)/2);top:auto;bottom:calc(var(--bb) + 6px + var(--bh) + 26px);width:max-content;max-width:var(--wb);box-sizing:border-box;
+  transform:translateY(12px);font:700 16px/1.4 'Gothic A1',sans-serif;letter-spacing:0;color:#0a1a3f;-webkit-text-stroke:0;text-align:left;
+  padding:10px 18px 10px 22px;background:linear-gradient(#ffffff,#e9eef6);border-left:6px solid var(--blue1);border-radius:2px;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);transition:opacity .18s,transform .26s cubic-bezier(.2,.9,.3,1)}
+#app.bcast #toast::after{display:none}
+#app.bcast #toast.show{transform:none}
+#app.bcast #toast.foul{border-left-color:#e0262e;color:#7d0d12}
+#app.bcast #toast.good{border-left-color:var(--gold2)}
+#app.bcast.portrait #toast{left:10px;bottom:122px;max-width:calc(100% - 20px);font-size:14.5px}
+#app.bcast.compact:not(.portrait) #toast{font-size:13.5px;padding:7px 14px 7px 18px;bottom:calc(var(--bb) + 6px + var(--bh) + 22px)}
+#app.bcast.compact:not(.portrait) #hud::before{font-size:9px;padding:2px 9px 1px}
+#app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
+#app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy) url(ui/tour-logo.webp) center/80% auto no-repeat}
+#app.bcast.compact:not(.portrait) #hud::before{width:78px;height:21px;padding:0}
+/* ---- in play on the desk, second pass: roomier controls ----
+   score bar along the TOP middle (its clock bar under it, the tour tab hanging below its left end), messages under it in
+   the middle; a wide power gauge (a lit meter in the cue's groove, green to red as it is drawn); the fine-aim dial a
+   short drum in its slot; a big cue ball for spin with a red tip mark; bigger knobs. */
+#app.bcast{--bt:8px}
+#app.bcast.compact{--bt:6px}
+#app.bcast:not(.portrait) #hud .pill,#app.bcast:not(.portrait) #badge{bottom:auto;top:var(--bt)}
+#app.bcast:not(.portrait) #clock{bottom:auto;top:var(--bt)}
+#app.bcast:not(.portrait) #hud::before{bottom:auto;top:calc(var(--bt) + var(--bh) + 6px);border-radius:0 0 3px 3px}
+#app.bcast #toast{left:50%;right:auto;top:calc(var(--bt) + var(--bh) + 40px);bottom:auto;transform:translate(-50%,-10px);max-width:min(var(--wb),90%);text-align:center;border-left:0;border-top:5px solid var(--blue1);border-radius:3px}
+#app.bcast #toast.show{transform:translate(-50%,0)}
+#app.bcast #toast.foul{border-top-color:#e0262e}
+#app.bcast #toast.good{border-top-color:var(--gold2)}
+#app.bcast.compact:not(.portrait) #toast{top:calc(var(--bt) + var(--bh) + 30px);bottom:auto}
+#app.bcast.portrait #toast{left:50%;right:auto;top:calc(var(--hud-h) + 34px);bottom:auto;max-width:calc(100% - 20px)}
+#app.bcast.portrait #hud .pill{gap:4px}
+#app.bcast.portrait #hud .pill .pts,#app.bcast.portrait #hud .pill.on .pts{min-width:34px;font-size:22px;padding:0 3px}
+#app.bcast.portrait #hud .pill .av{width:16px;height:16px;margin-left:6px}
+#app.bcast.portrait #hud .pill.r .av{margin-right:6px}
+@media (max-width:420px){#app.bcast.portrait #hud .pill .sub{display:none}}
+/* the controls and the HUD over the live table each on their own layer: drawn once, not again every frame the table moves */
+#app.desk #power,#app.desk #fine,#app.desk #spinBtn,#app.desk #menuBtn,#app.desk #viewBtn,#app.bcast #hud .pill,#app.bcast #badge,#app.bcast #clock,#app.bcast #toast,#app.bcast #hud::before{will-change:transform}
+/* 4구 with the colours drawn the other way: player 1's plate carries the yellow ball, player 2's the white */
+#app.bcast.carom.ysw #hud #p0 .av{background:radial-gradient(circle at 62% 32%,#fff6c2,#f4c20d 48%,#a37a00)}
+#app.bcast.carom.ysw #hud #p1 .av{background:radial-gradient(circle at 62% 32%,#fff,#f1ece0 45%,#b9b1a0)}
+#app.bcast:not(.portrait) #hud .pill{max-width:calc((100vw - 380px) / 2)}
+/* lessons, free practice and puzzles in play on the desk: the player's ivory name plate at the top left, what the drill
+   asks on a small slate tag beside it, and the drill's keys as the desk's square ivory keys */
+#app.desk:not(.bcast) #hud .pill{--s:.42;border:0 solid transparent;border-radius:0;background:none;box-shadow:-6px 9px 10px rgba(0,0,0,.4);color:#6b5f4e;
+  border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s)) stretch;padding:4px 18px 12px 10px}
+#app.desk:not(.bcast) #hud .pill .nm,#app.desk:not(.bcast) #hud .pill.on .nm{color:#2b241c;font-weight:800}
+#app.desk:not(.bcast) #hud .pill.on{color:#6b5f4e}
+#app.desk:not(.bcast) #hud .pill .av{background:#2b241c;color:#f4ecd8;border:0}
+#app.desk:not(.bcast) #hud .pts{color:#2b241c}
+#app.desk:not(.bcast) #badge{background:rgba(22,28,32,.88);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 14px;color:#c9d3df;box-shadow:-4px 6px 8px rgba(0,0,0,.35)}
+#app.desk:not(.bcast) #badge b{color:#f3e2b4;font:800 12px 'Gothic A1',sans-serif;letter-spacing:.1em}
+#app.desk:not(.bcast) #badge{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}

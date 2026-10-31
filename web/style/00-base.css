@@ -1,0 +1,80 @@
+/* shared: the page, colours, buttons, segmented choices */
+/* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
+   leave during play, when only a slim scoreboard and the edge controls remain.
+   Two looks share the layout: "light" (white cards on pale grey, one blue) and "dark" (glass panels on near-black, one cyan). */
+:root{color-scheme:light;--hud-h:60px}
+#app[data-theme="dark"]{
+  --bg:#101216;--fg:#f3f5f7;--fg2:#c3cad3;--sub:#9aa3af;
+  --panel:rgba(31,35,42,.9);--bd:rgba(255,255,255,.12);--sh:none;
+  --hair:rgba(255,255,255,.08);--opt:rgba(255,255,255,.06);--sheet:#1a1d23;--scrim:rgba(4,6,9,.62);
+  --acc:#36c5d8;--acc-fg:#06181c;--sel-bg:rgba(54,197,216,.13);--sel-bd:#36c5d8;
+  --seg:rgba(255,255,255,.05);--seg-on:rgba(255,255,255,.15);--seg-sh:none;
+  --cta:#f3f5f7;--cta-fg:#101216;
+  --av1-bg:transparent;--av1-bd:#36c5d8;--av1-fg:#7fe0ee;--av2-bg:transparent;--av2-bd:#f0a96b;--av2-fg:#f6c79b;
+  --on-bg:rgba(31,35,42,.9);--on-bd:#36c5d8;--on-fg:#f3f5f7;--on-sub:#7fe0ee;--on-av-bg:#36c5d8;--on-av-fg:#06181c;
+  --tick:rgba(255,255,255,.14);--fill:rgba(54,197,216,.22);--foul:#e5484d;--win:#36c5d8;
+  --r-card:18px;--r-pill:999px;--r-ctl:24px;--r-chip:999px;--r-cta:999px;
+  --num:'Outfit','Gothic A1',sans-serif;--num-w:500;--w-title:700;--w-text:300;--w-name:500;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:#eef0f3;font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;font-size:15px;line-height:1.3;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#app{position:relative;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-weight:var(--w-text)}
+/* ---------- shared pieces ---------- */
+.btn{background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-chip);height:44px;padding:0 16px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:var(--fg2);white-space:nowrap;transition:transform .08s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn.icon{width:44px;padding:0}
+.btn .k{font-weight:var(--w-text);color:var(--sub)}
+.btn .v{color:var(--fg)}
+.btn.cta{background:var(--cta);color:var(--cta-fg);border-color:transparent;border-radius:var(--r-cta);height:60px;font-size:19px;font-weight:700;box-shadow:none}
+.btn.flat{box-shadow:none;background:var(--opt);border-color:transparent}
+.lab{font-size:12.5px;font-weight:700;color:var(--sub);padding-left:4px;letter-spacing:.02em}
+.seg{background:var(--seg);border:1px solid var(--bd);border-radius:var(--r-chip);padding:4px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+.seg button{height:38px;border-radius:calc(var(--r-chip) - 3px);font-size:14.5px;color:var(--sub);transition:background .15s}
+.seg button[aria-pressed="true"]{background:var(--seg-on);box-shadow:var(--seg-sh);color:var(--fg);font-weight:700}
+/* a seg whose choice is a bar that can be dragged along; its colour says how hard the choice is */
+.seg.slide{position:relative;touch-action:none;--n:4;--i:1;--g:linear-gradient(135deg,#58b4ff,#1f6fe5)}
+.seg.slide::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px - (var(--n) - 1)*4px)/var(--n));border-radius:calc(var(--r-chip) - 3px);
+  background:var(--g);box-shadow:0 3px 10px rgba(0,0,0,.22);transform:translateX(calc(var(--i)*(100% + 4px)));transition:transform .16s cubic-bezier(.3,.9,.4,1)}
+.seg.slide.drag::before{transition:none;filter:brightness(1.08)}
+.seg.slide button{position:relative;background:none!important;box-shadow:none!important;pointer-events:none;transition:color .15s}
+.seg.slide button[aria-pressed="true"]{color:#fff}
+.seg.slide[data-lv="0"]{--g:linear-gradient(135deg,#5fe08f,#12a150)}
+.seg.slide[data-lv="1"]{--g:linear-gradient(135deg,#58b4ff,#1f6fe5)}
+.seg.slide[data-lv="2"]{--g:linear-gradient(135deg,#ff7a66,#d92c3a)}
+.seg.slide[data-lv="3"]{--g:linear-gradient(135deg,#c084ff,#6a2bd9)}
+.av{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;box-sizing:border-box;font-style:normal;font-family:var(--num);font-weight:var(--num-w);font-size:17px;
+  background:var(--av1-bg);border:1px solid var(--av1-bd);color:var(--av1-fg)}
+.two .av{background:var(--av2-bg);border-color:var(--av2-bd);color:var(--av2-fg)}
+/* ---------- home ---------- */
+/* the table behind shows through the middle; everything else takes taps */
+/* the rail: logo, the places to go, settings at the foot */
+/* the panel on the right: what the chosen place offers, with its one big button at the bottom */
+/* lessons: a row each, with a bar for how far it has been taken */
+/* puzzles: the count, the kinds, then a tile for every puzzle */
+.ball{display:grid;place-items:center;border-radius:50%;background:var(--c,#111);width:40px;height:40px;box-sizing:border-box}
+[data-theme="dark"] .ball{border:1px solid rgba(255,255,255,.22)}
+.pts{font-family:var(--num);font-weight:var(--num-w);font-size:26px;line-height:1;min-width:24px;text-align:center;color:var(--fg)}
+.scrim{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:var(--scrim);overflow:auto}
+.txt{font:inherit;font-size:20px;font-weight:700;color:var(--fg);background:var(--opt);border:2px solid transparent;border-radius:14px;padding:12px 14px;width:100%;box-sizing:border-box;
+  -webkit-user-select:text;user-select:text}
+.txt:focus{border-color:var(--acc);outline:none}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
+.lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
+#nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:17px;line-height:1.6;background:#101216;color:#f3f5f7}
+@media (max-height:520px){:root{--hud-h:52px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* rarity: on a card only a colour - a wash rising from its foot and a line under its name - and an ivory rule across the
+   shelf where the rarity changes, saying which and how many are owned; opened, the slate names it */
+.r0{--rc:#aeb6bf}
+.r1{--rc:#3f8cff}
+.r2{--rc:#a95cff}
+.r3{--rc:#ff4d5e}
+.r4{--rc:#ffb52e}
+.r5{--rc:#ffffff}

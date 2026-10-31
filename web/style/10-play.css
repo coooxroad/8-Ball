@@ -1,0 +1,244 @@
+/* in play: scoreboard, messages, the controls, the view keys, the shot clock */
+/* always in reach, however long the options above it get */
+/* ---------- in-game scoreboard ---------- */
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;
+  align-items:center;gap:8px;padding:6px 10px 0}
+#menuBtn,#viewBtn{width:46px;height:46px;border-radius:var(--r-pill)}
+#viewBtn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
+.pill{justify-self:start;max-width:100%;min-width:0;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);
+  border-radius:var(--r-pill);padding:5px 15px 5px 6px;color:var(--sub);transition:background .2s,border-color .2s,color .2s}
+.pill.r{justify-self:end;flex-direction:row-reverse;padding:5px 6px 5px 15px;text-align:right}
+.pill .av{width:34px;height:34px;font-size:15px}
+.pill .who{min-width:0;display:flex;flex-direction:column;gap:1px}
+.pill .nm{font-size:14.5px;font-weight:var(--w-name);line-height:1.15;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .sub{font-size:11.5px;line-height:1.15;white-space:nowrap}
+.pill.on{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-sub)}
+.pill.on .nm{color:var(--on-fg)}
+.pill.on .av{background:var(--on-av-bg);border-color:transparent;color:var(--on-av-fg)}
+.pill.r.on .av{background:var(--on-av-bg)}
+.tray{display:flex;gap:3px;min-width:0}
+.mb{flex:none;width:14px;height:14px;border-radius:50%;box-sizing:border-box;background:var(--c,#333)}
+.mb.st{background:linear-gradient(#f1efe8 0 25%,var(--c) 25% 75%,#f1efe8 75%)}
+.mb.slot{background:none;border:1.5px solid currentColor;opacity:.45}
+.mb.e8{background:#0b0b0d;border:1.5px solid var(--acc)}
+.pill.on .pts{color:var(--on-fg)}
+#badge{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--sub);white-space:nowrap}
+#badge b{font-weight:800;color:var(--fg)}
+[data-theme="dark"] #badge{background:none;border:0;padding:0}
+[data-theme="dark"] #badge b{font-family:'Outfit',sans-serif;font-weight:500;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--sub)}
+/* messages that pop up over the table: chunky rounded letters with one black outline.
+   The element itself is drawn as a thick black stroke; an exact copy of the text sits on top in the fill colour. */
+#toast{position:absolute;left:50%;top:calc(var(--hud-h) + 16px);transform:translate(-50%,0) scale(.7);width:max-content;max-width:min(90%,680px);
+  font-family:'Jua','Gothic A1',sans-serif;font-weight:400;font-size:clamp(19px,2.5vw,29px);line-height:1.28;letter-spacing:.01em;text-align:center;
+  color:#15171c;-webkit-text-stroke:6px #15171c;--fill:#fff;opacity:0;pointer-events:none;transition:opacity .16s,transform .22s cubic-bezier(.2,1.6,.4,1)}
+#toast::after{content:attr(data-t);position:absolute;inset:0;color:var(--fill);-webkit-text-stroke:0}
+#toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#toast.foul{--fill:#ff6259}
+#toast.good{--fill:#ffe04a}
+#fps{position:absolute;left:8px;bottom:6px;font-family:'Outfit',sans-serif;font-size:12px;color:var(--fg);background:var(--panel);border-radius:8px;padding:2px 8px;pointer-events:none}
+/* ---------- controls: same places and behaviour as before ---------- */
+#power,#fine{position:absolute;touch-action:none;border-radius:var(--r-ctl);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);box-sizing:border-box}
+#power{left:10px;top:calc(var(--hud-h) + 12px);bottom:14px;width:48px;overflow:hidden}
+/* the power control is the chosen cue: drag it back along the track, let go to strike */
+#powerCue{position:absolute;left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+#power::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--heat,transparent),transparent var(--reach,0%));pointer-events:none}
+#powerNum{position:absolute;left:5px;right:5px;bottom:6px;padding:15px 0 3px;text-align:center;font-family:var(--num);font-weight:var(--num-w);font-size:18px;color:var(--fg);background:var(--chip-bg,#1f232a);border-radius:999px}
+#powerLab{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:10.5px;color:var(--sub);z-index:1}
+#fine{right:10px;top:calc(var(--hud-h) + 12px);bottom:90px;width:48px;overflow:hidden;
+  background-image:repeating-linear-gradient(180deg,transparent 0 10px,var(--tick) 10px 11.5px)}
+#fine::after{content:"";position:absolute;left:7px;right:7px;top:50%;height:3px;margin-top:-1.5px;background:var(--acc);border-radius:2px}
+#fineLab{position:absolute;left:0;right:0;top:0;padding:7px 0 5px;text-align:center;font-size:10.5px;color:var(--sub);background:var(--panel)}
+#spinBtn,#spinPad{background:radial-gradient(circle at 36% 30%,#ffffff 0,#f6f1e4 34%,#d9d2c0 72%,#aaa28f 100%)}
+#spinBtn{position:absolute;right:10px;bottom:14px;width:60px;height:60px;border-radius:50%;border:0;box-shadow:0 2px 4px rgba(0,0,0,.2),0 8px 18px rgba(0,0,0,.28),inset 0 -3px 6px rgba(0,0,0,.12)}
+#spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#ff7a6e,#d8352c 55%,#a61f18);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+#spinPop{position:absolute;right:82px;bottom:14px;background:var(--sheet);border:1px solid var(--bd);border-radius:22px;box-shadow:0 12px 32px rgba(0,0,0,.24);padding:14px;
+  display:flex;flex-direction:column;align-items:center;gap:10px}
+#spinPad{position:relative;width:150px;height:150px;border-radius:50%;touch-action:none;box-shadow:0 4px 12px rgba(0,0,0,.25),inset 0 -8px 16px rgba(0,0,0,.14)}
+#spinPad::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(rgba(25,31,40,.16),rgba(25,31,40,.16)) center/1px 72% no-repeat,linear-gradient(rgba(25,31,40,.16),rgba(25,31,40,.16)) center/72% 1px no-repeat;pointer-events:none}
+#spinPad::before{content:"";position:absolute;inset:14%;border-radius:50%;border:1.5px dashed rgba(25,31,40,.25)}
+#spinPad .sdot{width:22px;height:22px;margin:-11px}
+#spinHint{font-size:12.5px;color:var(--sub);text-align:center;max-width:180px;line-height:1.45}
+#app.busy #power,#app.busy #fine,#app.busy #spinBtn{opacity:.45;pointer-events:none}
+#power,#fine,#spinBtn{transition:opacity .2s}
+.portrait #power{left:84px;right:10px;top:auto;bottom:14px;width:auto;height:46px}
+.portrait #power::before{background:linear-gradient(to left,var(--heat,transparent),transparent var(--reach,0%))}
+.portrait #powerCue{left:0;top:50%;width:100%;height:15px;transform:translate(10px,-50%)}
+.portrait #powerNum{left:auto;right:5px;top:5px;bottom:5px;padding:0 12px 0 40px;display:grid;place-items:center}
+.portrait #powerLab{left:auto;right:42px;top:0;bottom:0;display:grid;place-items:center}
+.portrait #fine{left:84px;right:10px;top:auto;bottom:70px;width:auto;height:32px;
+  background-image:repeating-linear-gradient(90deg,transparent 0 10px,var(--tick) 10px 11.5px)}
+.portrait #fine::after{left:50%;right:auto;top:6px;bottom:6px;width:3px;height:auto;margin:0 0 0 -1.5px}
+.portrait #fineLab{left:0;right:auto;top:0;bottom:0;padding:0 8px 0 12px;display:grid;place-items:center}
+.portrait #spinBtn{left:12px;right:auto;bottom:26px}
+.portrait #spinPop{left:10px;right:auto;bottom:112px}
+/* ---------- sheets ---------- */
+.zap{position:absolute;top:0;width:46px;height:100%;pointer-events:none;z-index:15;opacity:0;transition:opacity .2s}
+.zap.l{left:0}
+.zap.r{right:0}
+.zap.on{opacity:1}
+.pill .nm small{font-family:var(--num);font-size:.72em;font-weight:500;color:var(--sub);margin-left:6px}
+.pill.on .nm small{color:inherit;opacity:.75}
+@media (max-height:520px){.pill .av{width:30px;height:30px;font-size:14px}#menuBtn,#viewBtn{width:40px;height:40px}}
+@media (max-width:900px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto}}
+@media (max-width:640px){#badge{display:none}#hud{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto;gap:6px;padding-inline:6px}.pill{gap:6px;padding-right:9px}.pill.r{padding-left:9px}.mb{width:11px;height:11px}.tray{gap:2px}}
+/* ---- 2.0 ---- */
+.pill.think .sub::after{content:"";display:inline-block;width:1.1em;text-align:left;animation:dots 1s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.mb.pop{animation:mbPop .7s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes mbPop{0%{transform:scale(0)}55%{transform:scale(1.9)}100%{transform:scale(1)}}
+#badge .mb{width:16px;height:16px}
+#kindBox{display:flex;flex-direction:column;gap:8px;width:190px}
+#kindBox .seg button{height:34px;font-size:13.5px}
+#kindBox .lab{display:flex;align-items:baseline;gap:8px}
+#kindBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
+#kindBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#8a4dff}
+#elPad{width:190px;height:112px;border-radius:14px;background:var(--seg);touch-action:none;display:block}
+#spinBtn{overflow:visible}
+#spinTag{position:absolute;right:0;top:-13px;font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.portrait #spinTag{right:auto;left:0}
+@media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
+/* (on a phone the balls go under the name) */
+/* the shot clock: a bar running down under the scoreboard, under the player at the table (broadcast pieces to come) */
+#clock{position:fixed;top:64px;left:50%;width:220px;margin-left:-110px;height:22px;display:flex;align-items:center;gap:8px;z-index:4;pointer-events:none;--k:1;--c:#2a78d2}
+#clock.two{--c:#d9ab52}
+#clock i{position:relative;flex:1;height:6px;border-radius:3px;background:rgba(13,17,23,.78);box-shadow:0 0 0 1px rgba(255,255,255,.08);overflow:hidden}
+#clock i::after{content:"";position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(var(--k));background:var(--c);border-radius:3px}
+#clock b{min-width:30px;padding:2px 6px;border-radius:6px;background:rgba(13,17,23,.85);color:#f1ece2;font:700 14px Outfit,sans-serif;text-align:center;font-variant-numeric:tabular-nums}
+#clock[data-lv="1"]{--c:#f0a92b}
+#clock[data-lv="2"]{--c:#e2402f}
+#clock[data-lv="2"] b{color:#ff8676;animation:clockBeat 1s steps(2) infinite}
+@keyframes clockBeat{50%{transform:scale(1.12)}}
+.compact #clock{top:56px;width:160px;margin-left:-80px}
+/* in play on the desk: the controls as real things, like the desk's own (ui/README.md) -
+   power: a walnut cue trough with brass ends and a brass scale, the equipped cue lying in its felt groove;
+   fine aim: a rubber thumb wheel turning in a walnut slot (its ridges move as it is rolled, 80-input.js);
+   spin: a real cue ball in a brass bezel, a blue chalk mark where the tip will meet it; pause and 3D: walnut knobs. */
+#app.desk #power{background:none;border:0 solid transparent;border-radius:0;box-shadow:none;overflow:visible;
+  border-image:url(ui/power-rail.webp) 120 0 fill/29px 0 stretch;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
+#app.desk #power::before{inset:30px 13px;border-radius:3px}
+#app.desk #power::after{content:"";position:absolute;right:-12px;top:30px;bottom:30px;width:9px;background:url(ui/power-scale.webp) center/100% 100% no-repeat;pointer-events:none}
+#app.desk #powerLab{display:none}
+#app.desk #powerNum{left:9px;right:9px;bottom:5px;padding:2px 0;background:none;box-shadow:none;color:#3b2a0e;font-size:15px;text-shadow:0 1px 0 rgba(255,235,180,.6)}
+#app.desk.portrait #power{border-image:url(ui/power-rail-h.webp) 0 120 fill/0 28px stretch}
+#app.desk.portrait #power::before{inset:12px 28px}
+#app.desk.portrait #power::after{right:30px;left:30px;top:auto;bottom:-11px;width:auto;height:9px;
+  background:repeating-linear-gradient(90deg,#c9a24e 0 1.5px,transparent 1.5px 5%) bottom/100% 60% no-repeat,linear-gradient(#e2c27a,#b38a36) bottom/100% 2px no-repeat}
+#app.desk.portrait #powerNum{right:4px;top:auto;bottom:auto;height:100%;padding:0 10px;color:#3b2a0e}
+#app.desk #fine{background:#151515 url(ui/wheel-ridges.webp) 0 0/100% auto repeat-y;border:0;border-radius:4px;box-shadow:-4px 6px 10px rgba(0,0,0,.45);overflow:visible}
+#app.desk #fine::before{content:"";position:absolute;inset:0;border:0 solid transparent;border-image:url(ui/wheel-box.webp) 140 45 fill/34px 11px stretch;pointer-events:none}
+#app.desk #fine::after{left:6px;right:6px;height:2px;margin-top:-1px;background:#e9c46a;box-shadow:0 0 4px rgba(233,196,106,.8);z-index:1}
+#app.desk #fineLab{display:none}
+#app.desk.portrait #fine{background-image:url(ui/wheel-ridges-h.webp);background-size:auto 100%;background-repeat:repeat-x}
+#app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/7px 22px stretch}
+#app.desk.portrait #fine::after{top:3px;bottom:3px;margin:0 0 0 -1px;width:2px}
+#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-bezel.webp) center/100% 100% no-repeat,url(ui/spin-ball.webp) center/79% no-repeat;border-radius:50%;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
+#app.desk #spinBtn{width:66px;height:66px}
+#app.desk #spinDot,#app.desk .sdot{width:16px;height:16px;margin:-8px;background:url(ui/chalk-mark.webp) center/100% 100% no-repeat;box-shadow:none}
+#app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
+#app.desk #spinPad::before{inset:20%;border-color:rgba(60,45,20,.3)}
+#app.desk #menuBtn,#app.desk #viewBtn{border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;border-radius:50%;box-shadow:-3px 5px 8px rgba(0,0,0,.45)}
+#app.desk #menuBtn:active,#app.desk #viewBtn:active,#app.desk #viewBtn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
+#app.desk #menuBtn,#app.desk #viewBtn{width:56px;height:56px}
+#app.desk #viewBtn svg{width:24px;height:24px}
+#app.desk.compact #menuBtn,#app.desk.compact #viewBtn{width:48px;height:48px}
+/* power: wide, a real gauge */
+#app.desk #power{width:84px;left:12px;border-image:url(ui/power-rail.webp) 120 0 fill/50px 0 stretch}
+#app.desk #power::before{inset:52px 22px;border-radius:4px;background:repeating-linear-gradient(to top,rgba(60,70,60,.55) 0 6px,rgba(0,0,0,.6) 6px 8px);box-shadow:inset 0 2px 6px rgba(0,0,0,.7)}
+#app.desk #power::after{content:"";position:absolute;left:22px;right:22px;top:52px;bottom:52px;width:auto;border-radius:4px;transform:none;pointer-events:none;
+  background:repeating-linear-gradient(to top,transparent 0 6px,rgba(0,0,0,.65) 6px 8px),linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%);
+  -webkit-mask:linear-gradient(to top,#000 var(--pw,0%),transparent var(--pw,0%));mask:linear-gradient(to top,#000 var(--pw,0%),transparent var(--pw,0%));
+  box-shadow:0 0 12px rgba(255,200,80,.35)}
+#app.desk #powerCue{z-index:1;width:17px}
+#app.desk #powerNum{bottom:12px;font-size:19px;z-index:1}
+#app.desk.portrait #power{left:112px;right:10px;height:64px;width:auto;border-image:url(ui/power-rail-h.webp) 0 120 fill/0 38px stretch}
+#app.desk.portrait #power::before{inset:17px 40px;background:repeating-linear-gradient(to left,rgba(60,70,60,.55) 0 6px,rgba(0,0,0,.6) 6px 8px)}
+#app.desk.portrait #power::after{left:40px;right:40px;top:17px;bottom:17px;height:auto;
+  background:repeating-linear-gradient(to left,transparent 0 6px,rgba(0,0,0,.65) 6px 8px),linear-gradient(to left,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%);
+  -webkit-mask:linear-gradient(to left,#000 var(--pw,0%),transparent var(--pw,0%));mask:linear-gradient(to left,#000 var(--pw,0%),transparent var(--pw,0%))}
+#app.desk.portrait #powerNum{right:auto;left:8px;height:auto;top:50%;transform:translateY(-50%);padding:0 6px}
+/* fine aim: the drum */
+#app.desk #fine{right:12px;top:50%;bottom:auto;height:300px;margin-top:-150px;width:66px;background:none}
+#app.desk #fine::before{z-index:1;border-image:url(ui/wheel-box.webp) 140 45 fill/42px 15px stretch}
+#app.desk #fine::after{z-index:2;left:-6px;right:auto;width:12px;height:12px;margin-top:-6px;border-radius:0;background:#e9c46a;clip-path:polygon(0 0,100% 50%,0 100%);box-shadow:none}
+#app.desk #fine canvas.dial{position:absolute;left:15px;right:15px;top:42px;bottom:42px;width:calc(100% - 30px);height:calc(100% - 84px)}
+#app.desk.compact:not(.portrait) #fine{height:220px;margin-top:-110px}
+#app.desk.compact:not(.portrait) #fine::before{border-image-width:30px 15px}
+#app.desk.compact:not(.portrait) #fine canvas.dial{top:30px;bottom:30px;height:calc(100% - 60px)}
+#app.desk.portrait #fine{left:112px;right:10px;top:auto;bottom:94px;height:46px;margin:0;width:auto}
+#app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/10px 32px stretch}
+#app.desk.portrait #fine::after{left:50%;top:-6px;width:12px;height:12px;margin:0 0 0 -6px;clip-path:polygon(0 0,100% 0,50% 100%)}
+#app.desk.portrait #fine canvas.dial{left:32px;right:32px;top:10px;bottom:10px;width:calc(100% - 64px);height:calc(100% - 20px)}
+/* spin: a big ball, a red tip mark */
+#app.desk #spinBtn{width:96px;height:96px;right:12px;bottom:12px}
+#app.desk.compact:not(.portrait) #spinBtn{width:78px;height:78px}
+#app.desk #spinDot,#app.desk .sdot{width:18px;height:18px;margin:-9px;background:radial-gradient(circle at 38% 32%,#ff9a8f,#e3261d 55%,#9d1410);box-shadow:0 0 0 2px rgba(255,255,255,.65),0 1px 3px rgba(0,0,0,.45)}
+#app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
+#app.desk.portrait #spinBtn{left:10px;bottom:16px;width:94px;height:94px}
+/* the spin and cue-angle pop: a slate with the ball in its bezel and the masse side view on a brass protractor */
+#app.desk #spinPop{right:120px;bottom:12px;padding:18px 20px 22px;gap:12px;color:#e9eef5;--s:.5;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
+  border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;filter:drop-shadow(-8px 12px 12px rgba(0,0,0,.5))}
+#app.desk.portrait #spinPop{left:10px;right:auto;bottom:120px}
+#app.desk #spinPad{width:200px;height:200px}
+#app.desk.compact #spinPad{width:160px;height:160px}
+#app.desk #spinHint{color:#b9c4d2;max-width:230px}
+#app.desk #kindBox{width:230px}
+#app.desk #kindBox .lab{color:#d9e1ea}
+#app.desk #kindBox .lab b{color:#f3e2b4}
+#app.desk #kindBox .lab span{color:#ffb35c}
+#app.desk #elPad{width:230px;height:150px;border-radius:10px;background:linear-gradient(#202b36,#141b22);box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
+#app.desk #spinReset{color:#e9eef5}
+#app.desk #kindBox .lab{white-space:nowrap;flex-wrap:wrap}
+#app.desk #spinTag{background:linear-gradient(#ffd34d,#e09a00);color:#2b1d05}
+#app.desk #spinReset{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px}
+/* the power gauge (batch 6): a walnut and brass instrument - a lit meter behind glass on the left, the cue in its channel
+   on the right; the housing lies over both. ::before is the meter (dark until lit from the bottom by --pw), ::after the
+   housing with the glass under it. Sizes from the housing's 360x1400 at 96 px wide (caps 45 px). */
+#app.desk #power{width:96px;border:0;border-image:none;border-radius:6px;background:#0c100d;box-shadow:-5px 8px 12px rgba(0,0,0,.5)}
+#app.desk #power::before{inset:45px auto 45px 13px;width:38px;border-radius:0;box-shadow:inset 0 2px 6px rgba(0,0,0,.7);
+  background:repeating-linear-gradient(to top,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) top/100% calc(100% - var(--pw,0%)) no-repeat,
+  linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%)}
+#app.desk #power::after{inset:0;left:0;right:0;top:0;bottom:0;width:auto;height:auto;z-index:2;-webkit-mask:none;mask:none;box-shadow:none;border-radius:0;
+  background:url(ui/gauge-glass.webp) 13px 45px/38px calc(100% - 90px) no-repeat;border:0 solid transparent;border-image:url(ui/gauge.webp) 170 0 fill/45px 0 stretch}
+#app.desk #powerCue{left:75%;z-index:1}
+#app.desk #powerNum{z-index:3;bottom:13px;left:0;right:0;color:#3b2a0e;font-size:18px}
+#app.desk.portrait #power{left:112px;right:10px;height:72px;width:auto}
+#app.desk.portrait #power::before{inset:10px 34px auto 34px;height:28px;width:auto;
+  background:repeating-linear-gradient(to left,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) left/calc(100% - var(--pw,0%)) 100% no-repeat,
+  linear-gradient(to left,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%)}
+#app.desk.portrait #power::after{background:url(ui/gauge-glass-h.webp) 34px 10px/calc(100% - 68px) 28px no-repeat;border-image:url(ui/gauge-h.webp) 0 170 fill/0 34px stretch}
+#app.desk.portrait #powerCue{left:0;top:54px;height:14px;transform:translate(10px,-50%)}
+#app.desk.portrait #powerNum{left:4px;right:auto;top:50%;bottom:auto;transform:translateY(-50%);width:28px;padding:0;font-size:15px}
+/* the power gauge, one channel: the lit meter fills the whole window and the cue lies in it, its chalked tip showing at
+   the top (the housing's two windows made one, ui/gauge*.webp) */
+#app.desk #power::before{inset:45px auto 45px 13px;width:70px}
+#app.desk #power::after{background:url(ui/gauge-glass.webp) 13px 45px/70px calc(100% - 90px) no-repeat}
+#app.desk #powerCue{left:50%;width:19px}
+#app.desk.portrait #power::before{inset:10px 34px auto 34px;height:52px;width:auto}
+#app.desk.portrait #power::after{background:url(ui/gauge-glass-h.webp) 34px 10px/calc(100% - 68px) 52px no-repeat}
+#app.desk.portrait #powerCue{top:50%;height:19px}
+/* the fine-aim drum, taller */
+#app.desk #fine{height:380px;margin-top:-190px}
+#app.desk.compact:not(.portrait) #fine{height:260px;margin-top:-130px}
+/* the view keys under the 3D knob: straight down (2D) and the player's eye behind the cue ball */
+#views{display:none}
+#app.desk #views{position:fixed;right:12px;top:76px;display:flex;flex-direction:column;gap:10px;z-index:5}
+#app.desk #views .btn{width:48px;height:48px;border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;box-shadow:-3px 5px 8px rgba(0,0,0,.45)}
+#app.desk #views .btn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
+#app.desk.compact #views{top:64px;gap:8px}
+#app.desk.compact #views .btn{width:42px;height:42px}
+#app.desk.portrait #views{top:calc(var(--hud-h) + 40px);right:8px}
+#app:not(.desk) #views,#hud[hidden] #views{display:none}
+/* in play on the desk, third pass: a slimmer gauge (the made one-window housing, 72 px of its 360), and on a tablet the
+   view keys in a row beside the 3D knob, the same size */
+#app.desk #power{width:72px;left:12px}
+#app.desk #power::before{inset:34px auto 34px 10px;width:52px}
+#app.desk #power::after{border-image:url(ui/gauge.webp) 170 0 fill/34px 0 stretch;background:none}
+#app.desk #powerCue{width:17px}
+#app.desk #powerNum{bottom:9px;font-size:15px}
+#app.desk.portrait #power{height:60px}
+#app.desk.portrait #power::before{inset:8px 28px auto 28px;height:44px;width:auto}
+#app.desk.portrait #power::after{border-image:url(ui/gauge-h.webp) 0 170 fill/0 28px stretch;background:none}
+#app.desk:not(.portrait) #views{top:12px;right:80px;flex-direction:row;gap:12px}
+#app.desk:not(.portrait) #views .btn{width:56px;height:56px}
+#app.desk.compact:not(.portrait) #views{top:6px;right:62px}
+#app.desk.compact:not(.portrait) #views .btn{width:48px;height:48px}

@@ -92,8 +92,8 @@ const match = {
     const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
     if (match.best && !has(match.best)) list.push(match.best);
     if (match.worst && !has(match.worst)) list.push(match.worst);
-    // at most six: the best and the worst always, then the strongest of the rest
-    const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(3, list.length);   // (three on the tray)
+    // at most three (the tray holds three): the best and the worst always, then the strongest of the rest
+    const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(3, list.length);
     list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
     const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
     for (const q of list) {

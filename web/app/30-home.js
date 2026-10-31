@@ -27,7 +27,8 @@ function homePreview() {
   dress(ice); scene.setTable(game.P); st.rev++; scene.invalidate();
   { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }
 }
-// The table on the first screen plays itself: two computers at the hard level, one game after another, without a sound.
+// The table on the first screen plays itself: two computers at the hard level, one game after another, without a sound
+// (and resting while the desk covers it: 90-loop.js).
 const homeDemo = {
   quiet: true, save: false, guide: () => 0.5, restart() {}, beforeShot() {}, hud() {},
   auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }),

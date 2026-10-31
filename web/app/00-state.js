@@ -3,18 +3,20 @@
      - what several files share is declared HERE (settings, the game, what is on screen, the current flow) and nowhere else;
      - everything else a file declares is its own;
      - tools/check.js fails the build if two files declare the same name.
-   00-state    what is shared                         50-match     a game between two players (or one and the computer)
-   10-ui       small DOM helpers, screens, layout     51-practice  lessons
-   20-sheets   every sheet that slides up             52-puzzle    puzzles
-   30-home     the home screen underneath all three   53-demo      one given shot, played by the app
-   31-lobby    the lobby home, and which home is on   60-records   wins and losses, and the burning cards
-   32-desk     the desk home (4.0) and its lean       62-bolts     the lightning border while play runs fast
-   40-shot     the shot pipeline and the scoreboard   70-buttons   what each button does
-   80-input    aiming, power, spin, cue angle         90-loop      the frame loop, saving, start
+   00-state    what is shared, and what is worn      40-shot        the shot pipeline and the scoreboard
+   05-music    the lobby's tune, win and lose songs   50-match       a game between two players (or one and the computer)
+   10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
+   20-sheets   every sheet that slides up             52-puzzle      puzzles
+   30-home     what the desk and the flows share      53-demo        one given shot, played by the app
+   32-desk     the desk's parts, moving between places 60-records    wins and losses, and the burning cards
+   33-desk-play     플레이: the panels, the games    62-bolts       the lightning border while play runs fast
+   34-desk-train    훈련: lessons, puzzles, practice  70-buttons     what each button does
+   35-desk-shelves  내 장비 and 상점                    80-input       aiming, power, spin, cue angle
+   36-desk-paint    laying the desk out and leaning it 90-loop       the frame loop, saving, start
    Around a shot, what happens depends on what is being played; that part lives in "flows" (match, practice, puzzle, demo)
    with the same handful of methods, and the shot pipeline never asks which one is active.
-   The rest of the game is outside this folder and knows nothing of the page: physics.js, game.js, drills.js, puzzles.js,
-   highlights.js (no DOM), scene.js (drawing), audio.js, look.js (colours and designs), reel/ (replays). */
+   The rest of the game is outside this folder and knows nothing of the page: content/ (what can be owned), physics.js,
+   game.js, drills.js, puzzles.js, highlights.js (no DOM), scene/ (drawing), audio.js, reel/ (replays). */
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
@@ -75,50 +77,6 @@ usePhysics();
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
-/* ================= music: the lobby's tune, and a song when a match ends =================
-   Three tracks bundled with the app (music/*.mp3, see web/music): the lobby's, on a loop while on the home screens and the
-   records; the winner's when a match ends with the player winning - and always between friends, whoever won; the
-   loser's when the computer wins. They are plain audio elements (streamed from the file, not decoded into memory), faded
-   in and out, kept quiet under the game's own sounds, and only played with 음악 on in the settings. */
-const MUSIC = (() => {
-  const TRACKS = { lobby: { src: 'music/lobby.mp3', loop: true, vol: 0.42 }, win: { src: 'music/win.mp3', vol: 0.62 }, lose: { src: 'music/lose.mp3', vol: 0.55 } };
-  const els = {}, fades = new Map();
-  let cur = null;                                                    // the track that should be heard now (null: none)
-  const get = k => els[k] || (els[k] = Object.assign(new Audio(TRACKS[k].src), { loop: !!TRACKS[k].loop, preload: 'auto', volume: 0 }));
-  // ease an element's volume to `to` over ms, then call done
-  function fade(a, to, ms, done) {
-    clearInterval(fades.get(a)); const from = a.volume, t0 = performance.now();
-    const id = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-      if (k >= 1) { clearInterval(id); fades.delete(a); if (done) done(); } }, 40);
-    fades.set(a, id);
-  }
-  const on = () => prefs.music !== false;
-  function start(k, fromTop) {
-    const a = get(k); if (fromTop) { try { a.currentTime = 0; } catch (e) {} }
-    const p = a.play(); if (p && p.catch) p.catch(() => { want = k; });   // (a browser that wants a tap first: try again on the next one)
-    fade(a, TRACKS[k].vol, 900);
-  }
-  let want = null;
-  // play track k (the others fade out); a song for the end of a match starts from the top, the lobby's carries on
-  function play(k) {
-    if (cur === k) return; cur = k;
-    for (const [n, a] of Object.entries(els)) if (n !== k && !a.paused) fade(a, 0, 700, () => a.pause());
-    if (k && on() && !document.hidden) start(k, k !== 'lobby');
-  }
-  function stop() { play(null); }
-  // what each screen sounds like: the home screens and the records have the lobby's tune; the game and the highlight reel
-  // have none; the result keeps whatever the end of the match started
-  function screen(s) { if (s === 'home' || s === 'records') play('lobby'); else if (s !== 'result') stop(); }
-  // the switch in the settings
-  function setOn(v) { if (!v) { for (const a of Object.values(els)) fade(a, 0, 400, () => a.pause()); } else if (cur) { const k = cur; cur = null; play(k); } }
-  // the app in the background is silent; back in front, the music picks up where it was
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { for (const a of Object.values(els)) a.pause(); }
-    else if (cur && on()) start(cur, false);
-  });
-  window.addEventListener('pointerdown', () => { if (want && want === cur && on()) { want = null; start(cur, false); } }, true);
-  return { play, stop, screen, setOn, get current() { return cur; } };
-})();
 const highlights = createHighlights();
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
@@ -143,7 +101,7 @@ if (!scene) {
   app.textContent = ''; app.appendChild(d); return;
 }
 scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs.quality);
-scene.setBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
+useBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 // The ice table is a cloth like the others to choose, but it plays differently (everything slides), so lessons and puzzles -
 // whose shots were worked out on cloth - are always shown and played on the ordinary one.
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
@@ -182,5 +140,8 @@ function drawCue(cv, d, vertical) {
 }
 // whose cue is out: each player has their own
 let cueNow = prefs.cues[0];
-function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); if (st.screen === 'play') paintPowerCue(); }
+SND.voice('cue', (CUES[cueNow] || CUES[0]).sound);
+// the ball set on the table, and how it sounds (content/30-balls.js: sound)
+function useBalls(id) { scene.setBalls(id); SND.voice('ball', (BALLSKINS.find(b => b.id === id) || BALLSKINS[0]).sound); }
+function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); SND.voice('cue', CUES[i].sound); if (st.screen === 'play') paintPowerCue(); }
 function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], !scene.portrait); }

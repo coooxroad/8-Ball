@@ -1,0 +1,89 @@
+/* 내 장비 · 상점: the cards, one card opened, rarity */
+.dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
+.dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
+/* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
+   lies under it; a swatch shows just the butt */
+#app.desk .dk-stage img.cuebig{position:absolute;left:2%;top:34%;width:96%;height:auto;transform:translateY(-50%) rotate(-12deg);filter:drop-shadow(0 16px 8px rgba(0,0,0,.45));pointer-events:none}
+#app.desk .dk-stage .cuezoom{position:absolute;left:3%;right:3%;bottom:6%;aspect-ratio:1210/110;overflow:hidden;pointer-events:none;filter:drop-shadow(0 12px 8px rgba(0,0,0,.5))}
+#app.desk .dk-stage .cuezoom img{position:absolute;left:-3.3%;top:0;width:198.3%;height:auto}
+/* 내 장비 · 상점: the cards in the felt tray, and one card opened (X back to the cards) */
+#app.desk .dk-cards{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,calc(50% - 8px));gap:16px 14px;
+  overflow-y:auto;scrollbar-width:none;padding:16px 8px 8px}
+#app.desk .dk-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-height:0;padding:10px 6px 8px;
+  border:0 solid transparent;--s:.4;border-image:url(ui/well.webp) 50 48 48 48 fill/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) stretch;
+  background:none;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif;cursor:pointer}
+#app.desk .dk-card:active{transform:translateY(1px)}
+#app.desk .dk-card .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#app.desk .dk-card .price{font:700 11px 'Gothic A1',sans-serif;color:#2b241c;background:#e9dcb8;border-radius:99px;padding:2px 8px}
+#app.desk .dk-card>i,#app.desk .dk-card>img{flex:1;min-height:0;width:100%}
+#app.desk .dk-card .cuecard{position:relative;overflow:hidden;display:block;container-type:size}
+#app.desk .dk-card .cuecard img{position:absolute;left:50%;top:50%;height:auto;width:var(--cl,200px);transform:translate(-50%,-50%) rotate(-90deg);width:96cqh;filter:drop-shadow(-3px 4px 3px rgba(0,0,0,.45))}
+#app.desk .dk-card .clothcard{display:block;width:72%;margin:4px auto 0;border-radius:6px;background-size:64px;box-shadow:inset 0 0 0 5px var(--w),inset 0 0 0 7px rgba(0,0,0,.35),-3px 5px 6px rgba(0,0,0,.4)}
+#app.desk .dk-card img.glove{object-fit:contain;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.45))}
+#app.desk .dk-card i.trl{display:block;position:relative;background:none}
+#app.desk .dk-card i.trl::before{left:50%;right:auto;top:12%;bottom:34%;width:22%;height:auto;transform:translateX(-50%);background:linear-gradient(transparent,var(--c))}
+#app.desk .dk-card i.trl.rb::before{background:linear-gradient(transparent,#bf5af2,#0a84ff,#34c759,#ffcc00,#ff3b30)}
+#app.desk .dk-card i.trl::after{left:50%;right:auto;top:auto;bottom:12%;width:auto;height:24%;transform:translateX(-50%)}
+#app.desk .dk-stage .bigpic{position:absolute;inset:6% 10%;display:grid;place-items:center}
+#app.desk .dk-stage .bigpic img.glove{max-width:100%;max-height:100%;filter:drop-shadow(-10px 14px 10px rgba(0,0,0,.5))}
+#app.desk .dk-stage .bigpic i.trl.big{position:relative;width:70%;height:40%;background:none}
+#app.desk .dk-stage .bigpic i.trl.big::before{left:0;right:22%;height:26%}
+#app.desk .dk-stage .bigpic i.trl.big::after{right:4%;width:20%;max-width:none}
+#app.desk.compact .dk-cards{gap:10px 8px}
+#app.desk.compact .dk-card{font-size:11.5px;padding:6px 3px 5px;gap:3px}
+/* the card worn: ringed in light, with a tag hanging over its top edge; a table card is a small table inside the card;
+   ball cards hold photographs of the balls (scene.ballPortrait) */
+#app.desk .dk-card.worn::after{content:"";position:absolute;inset:-5px;border:3px solid #fff4d6;border-radius:14px;box-shadow:0 0 14px rgba(255,232,170,.75),inset 0 0 10px rgba(255,232,170,.35);pointer-events:none}
+#app.desk .dk-card .wtag{position:absolute;left:50%;top:-13px;transform:translateX(-50%);z-index:3;white-space:nowrap;padding:3px 12px 4px;border-radius:0 0 9px 9px;
+  background:linear-gradient(#fffaf0,#efe3c4);color:#2b241c;font:800 12px 'Gothic A1',sans-serif;box-shadow:-2px 4px 6px rgba(0,0,0,.45)}
+#app.desk .dk-card .wtag::before{content:"";position:absolute;left:-6px;right:-6px;top:0;height:5px;border-radius:3px;background:#d9b65c}
+#app.desk.compact .dk-card .wtag{font-size:9.5px;padding:2px 7px 3px;top:-10px}
+#app.desk .dk-card .clothcard{flex:none;width:auto;height:68%;aspect-ratio:1/2;margin:auto;border-radius:7px;
+  box-shadow:inset 0 0 0 6px var(--w),inset 0 0 0 8px rgba(0,0,0,.4),inset 0 0 12px 8px rgba(0,0,0,.25),-4px 7px 8px rgba(0,0,0,.45)}
+/* a ball set in its case: the open lid, the case, the three balls sitting in its cups */
+#app.desk .dk-card i.bcase{position:relative;display:block;flex:1;min-height:0;width:auto;aspect-ratio:360/864;max-width:100%;margin:0 auto;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.45))}
+#app.desk .dk-card i.bcase img{position:absolute;display:block}
+#app.desk .dk-card i.bcase .box{left:0;top:16.7%;width:100%;height:83.3%}
+#app.desk .dk-card i.bcase .b{width:38%;left:31%;aspect-ratio:1;transform:translateY(-50%);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.5))}
+/* the worn card, second look: an ivory line hugging the card's edge, and at the top middle an ivory tab saying 장착 with a
+   point under it, aimed down into the card (no glow) */
+#app.desk .dk-card.worn::after{inset:0;border:3px solid #f4ecd8;border-radius:10px;box-shadow:none}
+#app.desk .dk-card .wtag{top:-12px;padding:3px 14px 4px;border-radius:9px;background:#f4ecd8;color:#2b241c;font:800 12.5px 'Gothic A1',sans-serif;box-shadow:-2px 3px 4px rgba(0,0,0,.35)}
+#app.desk .dk-card .wtag::before{content:"";position:absolute;left:50%;top:100%;right:auto;width:12px;height:7px;margin-left:-6px;border-radius:0;background:#f4ecd8;clip-path:polygon(0 0,100% 0,50% 100%)}
+#app.desk.compact .dk-card .wtag{top:-10px;padding:2px 9px 3px;font-size:10px}
+#app.desk .dk-card i.bcase{aspect-ratio:1/2}
+#app.desk .dk-card i.bcase .box{top:0;height:100%}
+#app.desk.compact.portrait .dk-cards{grid-auto-rows:minmax(150px,calc(50% - 8px))}
+/* the worn tab, third look: it grows out of the ivory line - above the card's top edge, its foot on the line, the
+   same ivory with no shadow, so the two read as one; a small point under the line aims down into the card */
+#app.desk .dk-cards{padding-top:28px}
+#app.desk .dk-card .wtag{top:auto;bottom:calc(100% - 3px);padding:3px 14px 3px;border-radius:9px 9px 0 0;box-shadow:none}
+#app.desk .dk-card .wtag::before{top:calc(100% + 3px);width:14px;height:8px;margin-left:-7px}
+#app.desk.compact .dk-card .wtag{top:auto;bottom:calc(100% - 3px);padding:2px 9px 2px}
+#app.desk .dk-card.worn::after{inset:3px 2px 1px}
+#app.desk .dk-card .wtag,#app.desk.compact .dk-card .wtag{bottom:calc(100% - 6px)}
+#app.desk .dk-card::before{content:"";position:absolute;inset:6px;border-radius:10px;pointer-events:none;
+  background:linear-gradient(to top,color-mix(in srgb,var(--rc) 55%,transparent) 0%,color-mix(in srgb,var(--rc) 18%,transparent) 38%,transparent 70%)}
+#app.desk .dk-card.r5::before{background:linear-gradient(to top,rgba(255,80,110,.5),rgba(255,190,60,.32) 22%,rgba(80,220,140,.22) 40%,rgba(80,150,255,.14) 56%,transparent 76%)}
+#app.desk .dk-card .nm{border-bottom:3px solid var(--rc);padding-bottom:1px}
+#app.desk .dk-card.r5 .nm{border-image:linear-gradient(90deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff) 1}
+#app.desk .dk-card>*{position:relative}
+#app.desk .dk-card .wtag{position:absolute}
+#app.desk .dk-tier{grid-column:1/-1;display:flex;align-items:center;gap:10px;height:22px;margin:4px 2px -4px;color:#f4ecd8;font:800 13px 'Gothic A1',sans-serif;letter-spacing:.04em}
+#app.desk .dk-tier::before{content:"";width:16px;height:3px;border-radius:2px;background:#f4ecd8}
+#app.desk .dk-tier::after{content:"";flex:1;height:2px;border-radius:1px;background:linear-gradient(90deg,#f4ecd8,rgba(244,236,216,.25))}
+#app.desk .dk-tier span{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+#app.desk .dk-cards{grid-auto-rows:auto}
+#app.desk .dk-cards>.dk-card{height:clamp(170px,30vh,240px)}
+#app.desk.compact .dk-cards>.dk-card{height:150px}
+.rar{display:inline-block;padding:1px 9px 2px;border-radius:5px;font:800 12px/1.5 'Gothic A1',sans-serif;color:#10141a;background:var(--rc)}
+.rar.r5{background:linear-gradient(90deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff)}
+#app.desk .dk-card::before{z-index:1;mix-blend-mode:screen;inset:5px;border-radius:10px;
+  background:linear-gradient(to top,color-mix(in srgb,var(--rc) 75%,transparent) 0%,color-mix(in srgb,var(--rc) 30%,transparent) 30%,transparent 62%)}
+#app.desk .dk-card.r0::before{opacity:.55}
+#app.desk .dk-card.r5::before{background:linear-gradient(to top,rgba(255,80,110,.75),rgba(255,190,60,.5) 18%,rgba(80,220,140,.35) 34%,rgba(80,150,255,.2) 48%,transparent 64%)}
+#app.desk .dk-card .nm{z-index:2;border-bottom:0}
+#app.desk.compact.portrait .dk-cards{grid-auto-rows:auto}
+#app.desk .dk-card{box-shadow:inset 0 -5px 0 -1px var(--rc)}
+#app.desk .dk-card.r5{box-shadow:inset 0 -5px 0 -1px #ff8a5c}
+#app.desk .dk-card.r1::before{background:linear-gradient(to top,rgba(110,180,255,.85) 0%,rgba(110,180,255,.35) 30%,transparent 62%)}

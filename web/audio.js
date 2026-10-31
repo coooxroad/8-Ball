@@ -6,6 +6,8 @@ function createAudio(isOn) {
   let ac = null, out = null, ui = null, buf = null, roll = null, sink = null, white = null;
   const voices = new Set(), previous = {};
   const bursts = { ball: { time: -1, count: 0 }, rail: { time: -1, count: 0 } };
+  // how the equipped balls and cue sound (content/: an item's `sound`): pitch, brightness, loudness, or a recording of its own
+  const voice = { ball: {}, cue: {} };
 
   // parts: [frequency Hz, decay time s, level]; push: how long the contact lasts
   function make(dur, push, parts, noise) {
@@ -111,9 +113,10 @@ function createAudio(isOn) {
     if (now - burst.time >= 0.012) { burst.time = now; burst.count = 0; }
     if (burst.count >= max) return;
     const slot = burst.count++, k = Math.min(1, v / scale);
-    const gain = level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3);
-    const bright = low + high * Math.sqrt(k), at = slot * 0.0018, rate = 0.995 + Math.random() * 0.01;
-    if (name === 'ball') {
+    const gain = level * Math.pow(k, 0.65) / Math.sqrt(1 + slot * 0.3) * ((voice[name] || {}).gain || 1);
+    const vo = voice[name] || {}, bright = (low + high * Math.sqrt(k)) * (vo.tone || 1), at = slot * 0.0018, rate = (0.995 + Math.random() * 0.01) * (vo.rate || 1);
+    if (name === 'ball' && voice.ball.file && buf['x:' + voice.ball.file]) hit('x:' + voice.ball.file, gain, bright, at, rate, -1, pan);   // (a set's own recording: one, as it is)
+    else if (name === 'ball') {
       // blend the soft / medium / hard recordings so the tone changes smoothly with speed
       if (voices.size > 46) return;
       const position = v < 1.8 ? Math.max(0, (v - 0.35) / 1.45) : 1 + Math.min(1, (v - 1.8) / 3.2);
@@ -221,8 +224,16 @@ function createAudio(isOn) {
     stop() { if (!playing) return; const p = playing, t = ac.currentTime; playing = null; p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(Math.max(0.0001, p.g.gain.value), t); p.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); try { p.src.stop(t + 0.55); } catch (e) {} },
   };
 
+  // a recording named by an item (web/sound/<name>.*, carried in the page as SOUNDS), decoded once when first needed
+  function loadOwn(file) {
+    if (!file || !ac || !buf || buf['x:' + file] !== undefined) return;
+    const src = typeof SOUNDS !== 'undefined' && SOUNDS[file]; buf['x:' + file] = null; if (!src) return;
+    fetch(src).then(r => r.arrayBuffer()).then(a => ac.decodeAudioData(a)).then(b => { buf['x:' + file] = [b]; }).catch(() => {});
+  }
   return {
-    init,
+    init() { init(); loadOwn(voice.ball.file); loadOwn(voice.cue.file); },
+    // the equipped balls' or cue's sound: kind 'ball' | 'cue', v = the item's `sound` (or nothing for the usual)
+    voice(kind, v) { voice[kind] = v || {}; loadOwn(voice[kind].file); },
     song: songApi,
     // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
     boom() {
@@ -274,8 +285,8 @@ function createAudio(isOn) {
     rail(v, pan) { impact('rail', v, 4, 0.48, 750, 1700, 3, pan); },
     cue(v, pan) {
       if (!Number.isFinite(v) || v <= 0) return;
-      const k = Math.min(1, v / 9);
-      hit('cue', 0.95 * Math.pow(k, 0.55), 1500 + 4500 * Math.sqrt(k), 0, 0.97 + 0.04 * k, -1, pan);
+      const k = Math.min(1, v / 9), vo = voice.cue, own = vo.file && buf && buf['x:' + vo.file];
+      hit(own ? 'x:' + vo.file : 'cue', 0.95 * Math.pow(k, 0.55) * (vo.gain || 1), (1500 + 4500 * Math.sqrt(k)) * (vo.tone || 1), 0, (0.97 + 0.04 * k) * (vo.rate || 1), -1, pan);
     },
     // A ball going down, reported stage by stage by the animation itself:
     //   lip  - it tips over the edge (speed it arrived with)      wall - it knocks the inside of the pocket

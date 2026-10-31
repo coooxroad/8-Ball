@@ -53,7 +53,7 @@ function show(screen) {
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match on the desk is shown as on television (head.html)
+  app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
 let wide = true;
@@ -74,7 +74,7 @@ function layout() {
 // in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
 function playInsets(H, portrait) {
   const hud = H <= 520 ? 50 : 60;
-  // A match on the desk is shown as on television (head.html #app.bcast): lying, its score bar runs along the top
+  // A match is shown as on television (style/80-broadcast.css, #app.bcast): lying, its score bar runs along the top
   // middle, so the table keeps clear of it; carom shows each player's ball on their plate.
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');

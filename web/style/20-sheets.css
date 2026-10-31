@@ -1,0 +1,59 @@
+/* sheets that slide up (settings, names, guide, songs, pause) */
+.gwrap{position:relative;padding-top:26px}
+.gtag{position:absolute;top:0;transform:translateX(-50%);font-size:12.5px;font-weight:800;color:var(--fg);background:var(--seg-on);padding:2px 9px;border-radius:999px;box-shadow:var(--seg-sh);white-space:nowrap;pointer-events:none}
+.gslide{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0}
+.gslide::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,#c9d6e4,#8fa9c6 40%,#4f74a0 75%,#2c4a72)}
+.gslide::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-8px;border-radius:50%;background:var(--gc,#4f74a0);border:2px solid rgba(255,255,255,.85);box-shadow:0 1px 3px rgba(0,0,0,.22)}
+/* songs kept for the reel */
+.song{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
+.song:first-of-type{border-top:0}
+.song .chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd);display:grid;place-items:center;font-size:15px;color:transparent}
+.song.on .chk{background:#1f6fe5;border-color:#1f6fe5;color:#fff}
+.song .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.song .meta{font-size:12.5px;color:var(--sub);font-family:var(--num)}
+.song .acts{display:flex;gap:6px}
+.song .acts button{height:34px;padding:0 10px;font-size:13px;border-radius:10px;border:1px solid var(--bd);color:var(--fg)}
+.song:not(.on) .nm{color:var(--sub)}
+.pickrow{display:flex;flex-wrap:wrap;gap:6px}
+.pickrow button{height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--bd);font-size:14px;color:var(--sub)}
+.pickrow button[aria-pressed="true"]{background:var(--fg);color:var(--bg,#fff);border-color:var(--fg);font-weight:700}
+.sheet{width:min(100%,500px);background:var(--sheet);border:1px solid var(--bd);border-radius:24px;box-shadow:0 24px 64px rgba(0,0,0,.3);padding:20px;display:flex;flex-direction:column;gap:16px;
+  animation:pop .16s ease-out}
+@keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet h2{margin:0;font-size:21px;font-weight:var(--w-title);letter-spacing:-.01em}
+#sheetBody{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:8px}
+.opt{background:var(--opt);border:2px solid transparent;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}
+.opt:active{transform:scale(.985)}
+.opt[aria-pressed="true"]{background:var(--sel-bg);border-color:var(--sel-bd)}
+.opt .t{display:block;font-size:16.5px;font-weight:var(--w-name);color:var(--fg)}
+.opt .d{display:block;font-size:13px;color:var(--sub);margin-top:2px;line-height:1.4}
+.note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
+#app.desk .sheet{--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 30px calc(28px + var(--lip));gap:14px;color:#ece6da;box-shadow:-18px 26px 40px rgba(0,0,0,.6)}
+#app.desk .sheet h2{font:800 24px 'Gothic A1',sans-serif;color:#f3eee3}
+#app.desk .sheet .lab{color:#9aa39e;font-size:13px;padding-left:2px}
+#app.desk .sheet .note{color:#a7afab}
+#app.desk .sheet .seg{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}
+#app.desk .sheet .seg button{color:#c9c2b4;background:none}
+#app.desk .sheet .seg:not(.slide) button[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));position:relative;padding-bottom:var(--lip);color:#2b241c;box-shadow:-3px 4px 6px rgba(0,0,0,.4)}
+#app.desk .sheet .btn.flat,#app.desk #sheetX{--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));min-height:46px;padding:0 16px var(--lip);color:#eee8dc;box-shadow:-6px 9px 12px rgba(0,0,0,.4)}
+#app.desk .sheet .btn.flat:active,#app.desk #sheetX:active{border-image-source:url(ui/sec-press.webp);padding-top:calc(8px*var(--s));padding-bottom:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
+#app.desk .sheet .opt{--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding:10px 14px calc(10px + var(--lip));color:#eee8dc;box-shadow:-5px 8px 10px rgba(0,0,0,.4)}
+#app.desk .sheet .opt .t{color:#f1ebe0}
+#app.desk .sheet .opt .d{color:#a7afab}
+#app.desk .sheet .opt[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);border-image-slice:66 56 74 56 fill;border-image-width:calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s));border-image-outset:calc(16px*var(--s))}
+#app.desk .sheet input{background:#0f1515;border:1px solid #2b3434;color:#f1ebe0;border-radius:10px;box-shadow:inset -1px 3px 5px rgba(0,0,0,.6)}
+#app.desk.compact .sheet{--s:.36;padding:22px 20px calc(20px + var(--lip))}
+/* a switch for on and off */
+.tglrow{flex-direction:row;align-items:center;justify-content:space-between}
+.tgl{position:relative;flex:none;width:56px;height:32px;border-radius:16px;background:var(--seg);border:1px solid var(--bd)}
+.tgl i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .18s}
+.tgl[aria-checked="true"]{background:#2a78d2;border-color:transparent}
+.tgl[aria-checked="true"] i{transform:translateX(24px)}
+/* on the desk: the made pieces - a switch of an ivory knob in a slate groove (felt-lit when on), brass dividers between rows */
+#app.desk .sheet .tgl{width:104px;height:50px;border:0;border-radius:0;background:url(ui/toggle-off.webp) center/100% 100% no-repeat}
+#app.desk .sheet .tgl[aria-checked="true"]{background-image:url(ui/toggle-on.webp)}
+#app.desk .sheet .tgl i{display:none}
+#app.desk .sheet #sheetBody>*+.field{padding-top:14px;background:url(ui/divider.webp) top center/100% 6px no-repeat}
+#app.desk .sheet .tglrow .lab{font-size:15px;color:#e3ddd1}

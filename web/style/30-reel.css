@@ -1,0 +1,136 @@
+/* the highlight reel and the look of each edit */
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+/* ---------- best-shot reel ---------- */
+#reel{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+#reel .lb{position:absolute;left:0;right:0;height:9%;background:#000;z-index:3}
+#reel .lb.t{top:0}
+#reel .lb.b{bottom:0}
+#reel::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.6));transition:opacity .25s;opacity:.75}
+.colour #reel::after{opacity:.45}
+.hold #reel::after{opacity:1}
+#reelSkip{position:absolute;right:18px;bottom:calc(9% + 14px);pointer-events:auto;z-index:4;height:40px;font-size:14px;opacity:.85}
+#reelCv{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+#reelFx{position:absolute;inset:0;z-index:2}
+.rfx.num{font:italic 800 34px 'Outfit',sans-serif;color:#fff;-webkit-text-stroke:5px #0b0d12;paint-order:stroke fill;margin:-17px 0 0 0}
+/* one thing in the middle of the picture: the skull of the freeze, or the running count of the combo */
+#reelBig{position:absolute;left:50%;top:50%;z-index:2;font-size:min(36vh,34vw);line-height:1;font-style:normal;white-space:nowrap;transform:translate(-50%,-50%) scale(0);opacity:0}
+#reelBig.skull,#reelBig.gone{top:31%;font-size:min(27vh,24vw)}
+#reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards;filter:drop-shadow(0 0 40px rgba(0,0,0,.8))}
+#reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards,wob .5s .45s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:translate(-50%,-50%) rotate(-5deg) scale(1)}50%{transform:translate(-50%,-50%) rotate(5deg) scale(1.06)}}
+#reelBig.gone{animation:gone .22s ease-in forwards}
+#reelBig.num3{font:italic 800 min(36vh,32vw)/1 'Outfit',sans-serif;color:#fff;-webkit-text-stroke:14px #0b0d12;paint-order:stroke fill;text-shadow:8px 0 #ff2d55,-8px 0 #19e3ff;animation:num3 .42s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes num3{0%{transform:translate(-50%,-50%) scale(2.8);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.92}}
+@keyframes skull{0%{transform:translate(-50%,-50%) scale(3);opacity:0}40%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+@keyframes gone{0%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(3.4);opacity:0}}
+#reelBig.count{left:auto;right:6%;top:20%;transform:none;opacity:1;font:italic 800 clamp(48px,10vw,120px)/1 'Outfit',sans-serif;color:hsl(calc(48 - 48*var(--hot,0)) 100% calc(100% - 42%*var(--hot,0)));text-shadow:0 0 calc(40px*var(--hot,0)) #ff7a1a;-webkit-text-stroke:10px #0b0d12;paint-order:stroke fill;transform-origin:100% 50%}
+#reelBig.count.pop{animation:cpop .22s cubic-bezier(.2,1.6,.4,1)}
+#reelBig.count.last{color:#ffe04a;animation:cpop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes cpop{0%{transform:scale(1.7) rotate(-6deg)}100%{transform:scale(1)}}
+/* tape running backwards */
+#reelTag{position:absolute;right:22px;top:calc(9% + 14px);z-index:2;font:800 20px/1 'Outfit','Gothic A1',sans-serif;color:#fff;letter-spacing:.04em;text-shadow:0 0 6px rgba(0,0,0,.8),2px 0 #ff2d55,-2px 0 #19e3ff;animation:blink .5s steps(2) infinite}
+.rew #reel::before{content:"";position:absolute;inset:-6px 0;z-index:1;background:repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 2px,transparent 2px 6px),linear-gradient(0deg,transparent 0 62%,rgba(255,255,255,.16) 64%,transparent 70%);animation:vhs .13s steps(3) infinite}
+@keyframes vhs{0%{transform:translateY(-6px)}100%{transform:translateY(6px)}}
+@keyframes blink{0%{opacity:1}100%{opacity:.25}}
+.rfx{position:absolute;font-style:normal;font-size:52px;line-height:1;margin:-26px 0 0 -26px;animation:rfx 1.4s ease-out forwards}
+@keyframes rfx{0%{transform:translateY(30px) scale(.4);opacity:0}18%{opacity:1;transform:translateY(0) scale(1.25) rotate(var(--rot))}100%{transform:translate(var(--dx),-190px) scale(1) rotate(var(--rot));opacity:0}}
+#reelFlash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1}
+#reelFlash.go{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+#reelFade{position:absolute;inset:0;background:#000;opacity:0;z-index:3;transition:opacity .5s}
+#reelFade.go{opacity:1}
+/* the grade: drained before the drop, rich after it; one or two frames of negative on the hit itself */
+.reeling #gl{filter:grayscale(.9) contrast(1.12) brightness(.9);transition:filter .12s}
+.reeling.colour #gl{filter:saturate(1.4) contrast(1.16)}
+/* three looks a cut can take: rich, bleached, and black-and-white with the contrast up (none of them changes which colour a ball is) */
+.reeling.g1 #gl{filter:saturate(1.9) contrast(1.22) sepia(.14)!important}
+.reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)!important}
+.reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)!important}
+.reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)!important}
+.reeling.rew #gl{animation:trk .16s steps(2) infinite}
+@keyframes trk{0%{transform:skewX(-.5deg) translateX(-4px)}100%{transform:skewX(.4deg) translateX(3px)}}
+/* a streak of light across the picture on the drop, a softer flash for cuts, the frame glowing in the ball's colour on each beat */
+#reelStreak{position:absolute;left:-10%;right:-10%;top:50%;height:10px;margin-top:-5px;z-index:2;opacity:0;border-radius:50%;background:radial-gradient(ellipse at center,#fff 0,rgba(255,255,255,.85) 18%,var(--kc,#fff) 45%,transparent 72%);filter:blur(1.5px);mix-blend-mode:screen}
+#reelStreak.go{animation:streak .55s cubic-bezier(.1,.8,.2,1)}
+@keyframes streak{0%{opacity:1;transform:scale(.1,3.2)}30%{opacity:.95;transform:scale(1,1.4)}100%{opacity:0;transform:scale(1.25,.2)}}
+#reelFlash.soft{animation:flashS .22s ease-out}
+@keyframes flashS{0%{opacity:.34}100%{opacity:0}}
+#reel .glowE{position:absolute;left:0;right:0;top:9%;bottom:9%;z-index:1;opacity:0;box-shadow:inset 0 0 90px 14px var(--kc,#fff);mix-blend-mode:screen}
+.pulse #reel .glowE{animation:glowE .42s ease-out}
+@keyframes glowE{0%{opacity:.75}100%{opacity:0}}
+.rfx.fall{animation:rfall 2.4s cubic-bezier(.4,0,.8,.6) forwards;font-size:44px}
+@keyframes rfall{0%{transform:translateY(-60px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),105vh) rotate(calc(var(--rot)*8));opacity:0}}
+.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05)!important;transition:none}
+.reeling.impact #gl{filter:invert(1) contrast(1.5)!important;transition:none}
+/* ---------- the look of each edit (sk-<name> on the page while it plays) ---------- */
+#reelTint{position:absolute;inset:0;pointer-events:none;opacity:0}
+#reelFrame{position:absolute;inset:0;z-index:2;pointer-events:none}
+/* plain: just the shot again - no bars, no grade */
+.sk-plain #reel .lb{display:none}
+.reeling.sk-plain #gl{filter:none}
+.sk-plain #reel::after{opacity:.25}
+/* cuts: cinema - wider bars, teal shadows and orange highlights */
+.sk-cuts #reel .lb{height:12.5%}
+.sk-cuts #reelTint{opacity:.55;background:linear-gradient(180deg,#0aa6b8,transparent 42%,transparent 58%,#ff8a2b);mix-blend-mode:soft-light}
+/* tracer: light painted in a dark room */
+.reeling.sk-tracer #gl{filter:brightness(.36) saturate(.5) contrast(1.15)}
+.reeling.sk-tracer.colour #gl{filter:brightness(.58) saturate(1.15) contrast(1.15)}
+/* math: a blueprint */
+.reeling.sk-math #gl{filter:grayscale(1) brightness(.66) contrast(1.35)}
+.reeling.sk-math.colour #gl{filter:grayscale(.5) brightness(.85) contrast(1.25)}
+.sk-math #reelTint{opacity:1;background:#1246c4;mix-blend-mode:color}
+.sk-math.colour #reelTint{opacity:.5}
+/* freeze: a printed page - black and white with dots, red when everything stops */
+.reeling.sk-freeze #gl{filter:grayscale(1) contrast(1.7) brightness(1.06)}
+.reeling.sk-freeze.colour #gl{filter:saturate(1.5) contrast(1.2)}
+.sk-freeze #reelTint{opacity:.3;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px;mix-blend-mode:multiply}
+.sk-freeze.frozen #reelTint{opacity:.6;background:radial-gradient(circle,#000 1.1px,transparent 1.7px) 0 0/7px 7px,#ff2a2a}
+.sk-freeze.colour #reelTint{opacity:0}
+/* velocity: speed - red and cyan fringes at the sides */
+.sk-velocity #reelFrame{top:9%;bottom:9%;box-shadow:inset 30px 0 46px -20px #ff2d55,inset -30px 0 46px -20px #19e3ff;mix-blend-mode:screen}
+/* combo: an arcade cabinet - loud colour from the first frame, scan lines, a lit frame */
+.reeling.sk-combo #gl{filter:saturate(1.75) contrast(1.2)}
+.sk-combo #reelTint{opacity:.2;background:repeating-linear-gradient(0deg,#000 0 2px,transparent 2px 4px);mix-blend-mode:multiply}
+.sk-combo #reelFrame{top:9%;bottom:9%;box-shadow:inset 0 0 0 4px #ffe04a,inset 0 0 46px #ff7a1a}
+/* rewind: video tape - a 4:3 frame, scan lines, colour bleed */
+.sk-rewind #reelFrame{background:linear-gradient(90deg,#000 0 10%,transparent 10% 90%,#000 90%)}
+.sk-rewind #reelTint{opacity:.55;background:repeating-linear-gradient(0deg,rgba(255,255,255,.1) 0 1px,transparent 1px 4px),linear-gradient(90deg,rgba(255,0,80,.14),rgba(0,200,255,.14));mix-blend-mode:screen}
+.sk-rewind #reelTag{right:calc(10% + 18px)}
+/* pov: a camera strapped to the ball - viewfinder corners, heavy edges */
+.sk-pov #reelFrame{inset:14% 6%;--b:linear-gradient(#fff,#fff);background:var(--b) 0 0/44px 3px,var(--b) 0 0/3px 44px,var(--b) 100% 0/44px 3px,var(--b) 100% 0/3px 44px,var(--b) 0 100%/44px 3px,var(--b) 0 100%/3px 44px,var(--b) 100% 100%/44px 3px,var(--b) 100% 100%/3px 44px;background-repeat:no-repeat;opacity:.85}
+.sk-pov #reel::after{opacity:1}
+.sk-pov #reelTag{color:#ff3b3b;text-shadow:0 0 6px rgba(0,0,0,.8);right:calc(6% + 62px);top:calc(14% + 10px)}
+/* strobe: a dark stage with a flashing light */
+.reeling.sk-strobe #gl{filter:brightness(.42) contrast(1.25) grayscale(.6)}
+.reeling.sk-strobe.colour #gl{filter:brightness(.68) contrast(1.2) saturate(1.3)}
+/* bullet: the world turns to green code while time is stopped */
+.reeling.sk-bullet.matrix #gl{filter:grayscale(1) contrast(1.5) brightness(.85)}
+.sk-bullet.matrix #reelTint{opacity:.85;background:#19ff7a;mix-blend-mode:color}
+/* count: a slab of colour for every number */
+.sk-count.tinted #reelTint{opacity:.78;background:var(--tint,#ff2d55);mix-blend-mode:multiply}
+.reeling.sk-count.tinted #gl{filter:grayscale(1) contrast(1.5) brightness(1.15)}
+/* glitch: the picture tearing (the stutter edit, and the crash in the worst-shot reel) */
+.glitch #reelTint{opacity:.9;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,0,80,.4) 22px 27px,transparent 27px 61px,rgba(0,220,255,.4) 61px 65px);animation:gly .09s steps(2) infinite}
+.glitch #gl{animation:glx .09s steps(2) infinite}
+@keyframes gly{0%{transform:translateY(-14px)}100%{transform:translateY(19px)}}
+@keyframes glx{0%{transform:translateX(-8px) skewX(1.6deg)}100%{transform:translateX(7px) skewX(-1.2deg)}}
+/* words over the picture in the worst-shot reels */
+#reelCard{position:absolute;z-index:2;color:#fff}
+#reelCard.news{left:0;right:0;bottom:9%;padding-right:130px;display:grid;grid-template-columns:auto 1fr;background:linear-gradient(90deg,#b00020,#e5123a);animation:newsIn .28s ease-out;box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+#reelCard.news i{grid-row:span 2;font-style:normal;font-weight:800;font-size:clamp(20px,3.4vw,34px);padding:8px 20px;background:#fff;color:#c0102e;display:grid;place-items:center}
+#reelCard.news b{font-size:clamp(18px,3vw,32px);padding:9px 18px 1px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#reelCard.news .tick{font-size:clamp(12px,1.6vw,16px);padding:2px 18px 9px;opacity:.92;white-space:nowrap;overflow:hidden}
+@keyframes newsIn{0%{transform:translateY(100%)}100%{transform:none}}
+#reelCard.bsod{left:0;right:0;top:9%;bottom:9%;background:#0b3fc4;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 9%}
+#reelCard.bsod b{font:300 clamp(64px,12vw,130px)/1 'Outfit',sans-serif}
+#reelCard.bsod span{font-size:clamp(19px,3vw,30px);font-weight:700}
+#reelCard.bsod small{font:500 clamp(12px,1.8vw,17px)/1.4 'Outfit','Gothic A1',sans-serif;opacity:.88}
+#reelCard.obit{left:0;right:0;bottom:calc(9% + 24px);text-align:center;font-size:clamp(16px,2.6vw,26px);text-shadow:0 2px 10px #000,0 0 2px #000}
+#reelCard.obit b{font-weight:800}
+#reelBig.num3.q{color:#ffe04a;letter-spacing:-.04em;font-style:normal;top:30%;font-size:min(30vh,26vw)}
+.hit #gl,.hit #reelCv{animation:hit .34s cubic-bezier(.2,.8,.3,1)}
+.beat #gl,.beat #reelCv{animation:beat .2s ease-out}
+@keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
+@keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
+#app.desk.tilt #deskPlane,#app.desk.tilt #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
+#app.desk #gl{transition:transform .35s ease}

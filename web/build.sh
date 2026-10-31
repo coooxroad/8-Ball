@@ -6,14 +6,20 @@ cd "$(dirname "$0")"
 A=../app/src/main/assets
 mkdir -p "$A/fonts"
 # Every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped.
+# content/ is the data of what can be owned (cues, balls, tables, trails, gloves), one file a kind, in file-name order.
 # Two parts are folders of small files that share one scope, in file-name order:
+#   scene/ the body of createScene(canvas, app, PH) - the 3D table, balls, cue and guide
 #   reel/  the body of createReel(d) - the reel's machinery, then one file per edit, then playing one
 #   app/   the app itself - what it shares first (00-state.js), then one file per screen or concern
 script() {
   echo '<script>'
   # the table's material pictures (tex/), carried as data so WebGL may read them from a page opened as a file
   echo 'const TEXTURES = {'; for f in tex/*.webp; do printf "'%s': 'data:image/webp;base64,%s',\n" "$(basename "$f" .webp)" "$(base64 -w0 "$f")"; done; echo '};'
-  cat physics.js game.js drills.js puzzles.js highlights.js look.js scene.js sounds.js audio.js | grep -v '^if (typeof module'
+  # sounds an item names for itself (content/: sound.file), carried as data the same way
+  echo 'const SOUNDS = {'; for f in sound/*.mp3 sound/*.ogg sound/*.wav; do [ -e "$f" ] || continue; printf "'%s': 'data:audio/%s;base64,%s',\n" "$(basename "${f%.*}")" "${f##*.}" "$(base64 -w0 "$f")"; done; echo '};'
+  cat content/*.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
+  echo 'function createScene(canvas, app, PH) {'; cat scene/*.js; echo '}'
+  cat sounds.js audio.js | grep -v '^if (typeof module'
   echo 'function createReel(d) {'; cat reel/*.js; echo '}'
   echo "(() => {"; echo "'use strict';"; cat app/*.js; echo '})();'
   echo '</script>'
@@ -40,8 +46,11 @@ body{margin:0}
 </head>
 <body>
 HTML
-  sed -e 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#three.min.js#' \
-      -e '/fonts.googleapis.com/d' head.html
+  # the markup (index.html), with the styles (style/*.css, in file-name order) where it marks them
+  while IFS= read -r line; do
+    case "$line" in '<!--STYLE'*) echo '<style>'; cat style/*.css; echo '</style>';; *) printf '%s\n' "$line";; esac
+  done < index.html | sed -e 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#three.min.js#' -e '/fonts.googleapis.com/d'
+
   script
   echo '</body></html>'
 } > "$A/index.html"
