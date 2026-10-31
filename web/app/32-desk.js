@@ -3,7 +3,6 @@
    ivory rail, what it looks like in the felt tray (the live table, a cue, the swatches), and on the slate what it needs
    and the one button that does it. It is the same home underneath (prefs.mode, homePreview, the flows); only the way
    it is laid out is new. 상점 is a placeholder until there is something to sell. */
-const deskOn = () => true;                                           // (the desk is the only first screen; the lobby and the classic home are gone)
 app.classList.add('desk');
 const GAME4 = ['three', 'four', 'eight', 'nine'];
 const GAME_SUB = { three: '쓰리쿠션', four: '사구 · 수지 대결', eight: '에잇볼', nine: '나인볼' };
@@ -37,7 +36,6 @@ const dkSec = (t, fn, sub) => el('button', { class: 'dk-sec', onclick: onTap(fn)
 const dkActs = (...btns) => el('div', { class: 'dk-acts' }, btns);
 // the things laid on it: a cue as its photograph, the little cream tab on what is in use
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
-const eqTag = () => el('span', { class: 'eq', text: '장착' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);
 function guideRow() {
   const a = guideName(prefs.guides[0]), b = guideName(prefs.guides[1]);
@@ -50,8 +48,6 @@ function dkNavHead(head, what, t, sub, go) {
   const arrow = dir => el('button', { class: 'dk-arrow', 'aria-label': `${dir < 0 ? '이전' : '다음'} ${what}`, onclick: () => { SND.tap(); go(dir)(); } }, svgArrow(dir > 0 ? 1 : 0));
   dkPut(head, [arrow(-1), dkTitle(t, sub), arrow(1)]);
 }
-// a swatch in the tray's foot (a cue or a cloth), tagged if it is the one in use
-const dkSwatch = (on, worn, pic, name, fn) => el('button', { class: 'dk-sw', 'aria-pressed': String(on), onclick: onTap(fn) }, [worn ? eqTag() : null, pic, document.createTextNode(name)]);
 
 function deskGo(tab) {
   if (tab === deskTab && st.screen === 'home') { if (tab === 'play' && playStep !== 'boards') { playStep = 'boards'; paintHome(); } return; }   // (플레이 again: back to its boards)
@@ -259,13 +255,12 @@ function deskFree({ head, slate }) {
    Opening a card only tries it on (the scene shows it); X or another place puts back what is worn. */
 let shelfOpen = null;                                                 // the card opened in the tray, or null for all the cards
 const hx6 = h => '#' + h.toString(16).padStart(6, '0');
-// a set of balls as three balls (carom: white, yellow, red; else the cue ball, the 1 and the 3)
-function ballTrio(k, v) {
-  const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool', shot = n => scene.ballPortrait(k.id, kind, n);
-  // on a card: the set in its case, a ball in each cup (cup centres 23.6, 50 and 76.4% down)
-  if (v) return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
-    ...ids.map((n, j) => el('img', { class: 'b', src: shot(n), alt: '', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
-  return el('i', { class: 'btrio' }, ids.map(n => el('img', { src: shot(n), alt: '', draggable: 'false' })));
+// a set of balls in its case, a ball in each cup (cup centres 23.6, 50 and 76.4% down): carom white, yellow, red; else
+// the cue ball, the 1 and the 3
+function ballCase(k) {
+  const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool';
+  return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
+    ...ids.map((n, j) => el('img', { class: 'b', src: scene.ballPortrait(k.id, kind, n), alt: '', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
 }
 const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
@@ -274,7 +269,7 @@ const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
     show: (c, stage) => { stage.dataset.win = '0'; dkPut(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]); },
     about: c => [c.note, ...(CUE_SPEC[c.id] || [])], wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
-  ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: k => ballTrio(k, true),
+  ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => scene.setBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],
     wear: k => { prefs.ballSkin = k.id; return `${k.name} 공을 꺼냈습니다.`; }, undo: () => scene.setBalls(prefs.ballSkin) },
   table: { name: '테이블', list: () => CLOTHS, worn: () => prefs.cloth, pic: clothPic, show: (c, stage, i) => scene.setCloth(i),
@@ -365,7 +360,6 @@ function deskWindow(W, H, portrait) {
 }
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 function deskPaint() {
-  if (!deskOn()) return;
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));

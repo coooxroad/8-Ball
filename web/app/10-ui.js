@@ -45,16 +45,16 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  const home = screen === 'home', away = home || screen === 'records', dk = true;
+  const home = screen === 'home', away = home || screen === 'records';
   $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
-  // the desk and the lobby each bring their own bar along the top (kept over the records), and the desk its leaning plane
-  $('#deskBar').hidden = !dk || !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !dk || !home;
+  // the desk's bar along the top (kept over the records), and on the home screen its leaning plane
+  $('#deskBar').hidden = !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !home;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  app.classList.toggle('bcast', dk && screen === 'play' && flow === match);   // a match on the desk is shown as on television (head.html)
-  applyTheme(); layout(); MUSIC.screen(screen);
+  app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match on the desk is shown as on television (head.html)
+  applyBackdrop(); layout(); MUSIC.screen(screen);
 }
 let wide = true;
 function layout() {
@@ -81,7 +81,7 @@ function playInsets(H, portrait) {
   app.classList.toggle('ysw', tv && game.mode.table === 'carom' && game.yellow === 0);   // (player 1 has the yellow: the plates' balls swap)
   if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
   if (portrait) return { t: hud + 26, l: 6, r: 6, b: 146 };
-  return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
+  return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
 let layoutT = 0;
@@ -94,7 +94,7 @@ if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
 
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
-  const tr = $('#power'), c = $('#powerCue'), dk = deskOn(), REST = dk ? (scene.portrait ? 36 : 48) : 10, END = dk ? (scene.portrait ? 40 : 52) : 70;   // (on the desk: clear of the gauge's end caps, so the chalked tip shows)
+  const tr = $('#power'), c = $('#powerCue'), REST = scene.portrait ? 36 : 48, END = scene.portrait ? 40 : 52;   // (clear of the gauge's end caps, so the chalked tip shows)
   $('#powerNum').textContent = p > 0 ? Math.max(1, Math.round(p * 100)) : 0;
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;

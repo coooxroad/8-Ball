@@ -126,7 +126,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
    dialPh is how far it has been rolled, in pixels at its face. */
 let dialPh = 0, dialN = 0;
 function drawDial() {
-  const box = $('#fine'); if (!deskOn()) return;
+  const box = $('#fine');
   let cv = box.querySelector('canvas.dial'); if (!cv) { cv = el('canvas', { class: 'dial' }); box.appendChild(cv); }
   const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1); if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }

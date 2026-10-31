@@ -44,7 +44,7 @@ function sheetSettings() {
     note('CUE 2.0'),
   ]);
 }
-// shown once: to someone new, how to play a shot; to someone coming from 1.x, what 2.0 added and where it is
+// shown once, to someone new: how to play a shot
 function sheetHow() {
   prefs.how = true; savePrefs();
   openSheet('치는 법', [
@@ -53,16 +53,6 @@ function sheetHow() {
     optText('회전', '오른쪽 아래 흰 공을 누르면 칠 곳을 정합니다. 맛세이와 점프도 여기.'),
     el('button', { class: 'btn cta', text: '시작', onclick: () => { SND.tap(); closeSheet(); } }),
   ].map(k => k.tagName === 'BUTTON' ? k : el('div', { class: 'opt' }, k)));
-}
-function sheetNews() {
-  prefs.news = false; savePrefs();
-  openSheet('CUE 2.0', [
-    ['큐 세우기', '회전 창의 큐 각도. 세울수록 높이 뜹니다. 바로 앞 공은 60~70°, 멀리 있는 공은 40~45°로 세게 치면 넘어갑니다. 많이 세우고 좌우 회전을 섞어 부드럽게 치면 맛세이로 휩니다.'],
-    ['수지', '4구에서 이름을 누르면 각자 수지를 정합니다. 50이면 다섯 번 득점.'],
-    ['빙판 테이블', '테이블 고르는 곳에 새 스킨. 공이 미끄러집니다.'],
-    ['퍼즐 스테이지', '4구 기술 일곱 가지, 105문제. 힌트는 흰 공이 닿는 곳을 번호로.'],
-    ['이어하기 · 넣은 공 · 연승 불꽃 · 큐 각자', '하던 판은 첫 화면 카드로 남고, 이름표에 넣은 공이 쌓입니다.'],
-  ].map(([t, d]) => el('div', { class: 'opt' }, optText(t, d))).concat(el('button', { class: 'btn cta', text: '확인', onclick: () => { SND.tap(); closeSheet(); } })));
 }
 // the best-shot reel: which edit it gets, and the songs it may use (picked from this device and kept on it)
 const mmss = s => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;

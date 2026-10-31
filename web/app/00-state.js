@@ -35,17 +35,17 @@ const TABLES = [
 ];
 const prefs = (() => {
   const saved = store.get('prefs', {});
-  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', theme: 'light', cloth: 0, cue: 0,
+  const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', cloth: 0, cue: 0,
     guides: null, drill: 'free', drillLv: {}, sound: true, fast: false, quality: 'auto', fps: false, edit: 'random', rule3: 3,
     pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
-    aim: 'line', gv: 0, ui: 'desk', uiv: 0,
+    aim: 'line', gv: 0,
     music: true,
     shotClock: 40,
     ballSkin: 'classic', trail: 'none', glove: null,
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
-  p.ui = 'desk'; p.theme = 'dark';                                      // the desk is the only first screen now, and it is dark
+  delete p.ui; delete p.uiv; delete p.theme; delete p.news;           // the lobby, the old home, the light theme and the 2.0 news: gone
   if (!p.trainCpu) p.vsAI = false;                                      // (the computer is played from 훈련 only)
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
@@ -58,9 +58,7 @@ const prefs = (() => {
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
-  if (p.v < 2) { p.news = Object.keys(saved).length > 0; p.how = !!p.news; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
-  if (p.uiv !== 4) { p.ui = 'desk'; p.uiv = 4; }                       // 4.0: the desk is the first screen (the lobby and the old one stay in the settings)
-  if (!['desk', 'lobby', 'classic'].includes(p.ui)) p.ui = 'desk';
+  if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
 const savePrefs = () => store.set('prefs', prefs);
@@ -150,13 +148,13 @@ scene.setBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 // whose shots were worked out on cloth - are always shown and played on the ordinary one.
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
 function dress(ice) { scene.setCloth(ice ? ICE : iceOn() ? 0 : prefs.cloth); }
-function applyTheme() {
+// behind everything: the desk's wood on the home screen, the dark room in play
+function applyBackdrop() {
   const desk = st.screen === 'home';                                  // on the desk's home the table sits on felt
-  app.dataset.theme = 'dark';
   document.body.style.background = desk ? '#6b4527' : '#101216';
   scene.setBackdrop(desk ? 0x034db0 : 0x101216);
 }
-applyTheme();
+applyBackdrop();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,
 // forearm with its points, wrap, sleeve, bumper). Used by the power control and by the cue chooser.
 // Drawn tip-first along the canvas's long side; `vertical` puts the tip at the top.

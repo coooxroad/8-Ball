@@ -27,10 +27,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 #app{position:relative;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-weight:var(--w-text)}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.num{font-family:var(--num);font-weight:var(--num-w)}
 
 /* ---------- shared pieces ---------- */
-.panel{background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-card)}
+
 .btn{background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);border-radius:var(--r-chip);height:44px;padding:0 16px;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;color:var(--fg2);white-space:nowrap;transition:transform .08s,opacity .15s}
 .btn:active{transform:scale(.97)}
@@ -84,33 +83,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 
 /* the panel on the right: what the chosen place offers, with its one big button at the bottom */
 
-.plist{background:var(--seg);border-radius:14px}
 /* lessons: a row each, with a bar for how far it has been taken */
 
-.prog{display:block;height:5px;border-radius:3px;background:var(--hair);margin-top:7px;overflow:hidden}
-.prog i{display:block;height:100%;width:var(--w);border-radius:3px;background:#12b76a}
 /* puzzles: the count, the kinds, then a tile for every puzzle */
-
-.pzgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
-.pz{aspect-ratio:1;border-radius:10px;background:var(--seg);color:var(--fg);font-family:var(--num);font-weight:600;font-size:14px;border:2px solid transparent}
-.pz.done{background:#12b76a;color:#fff}
-.pz[aria-pressed="true"]{border-color:var(--acc)}
 
 .ball{display:grid;place-items:center;border-radius:50%;background:var(--c,#111);width:40px;height:40px;box-sizing:border-box}
 [data-theme="dark"] .ball{border:1px solid rgba(255,255,255,.22)}
-.ball i{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:#111;font-style:normal;font-family:var(--num);font-weight:800;font-size:13px}
-.four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;width:40px;height:40px}
-.four i{border-radius:50%;background:var(--c)}
-.three{position:relative;width:40px;height:40px}
-.three i{position:absolute;width:19px;height:19px;border-radius:50%;background:var(--c)}
-.three i:nth-child(1){left:10.5px;top:1px}.three i:nth-child(2){left:0;bottom:2px}.three i:nth-child(3){right:0;bottom:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-
-.plist{padding:4px 16px;display:flex;flex-direction:column}
-
-.lv{flex:none;font-family:var(--num);font-size:12px;color:var(--sub);border:1px solid var(--bd);border-radius:999px;padding:3px 9px;white-space:nowrap}
-
-.target{width:40px;height:40px;border-radius:50%;border:3px solid var(--acc);display:grid;place-items:center;box-sizing:border-box}
-.target i{width:14px;height:14px;border-radius:50%;background:var(--acc)}
 
 /* narrow screens: one column that scrolls, the rail turned into a bar along the bottom */
 
@@ -222,9 +200,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .txt{font:inherit;font-size:20px;font-weight:700;color:var(--fg);background:var(--opt);border:2px solid transparent;border-radius:14px;padding:12px 14px;width:100%;box-sizing:border-box;
   -webkit-user-select:text;user-select:text}
 .txt:focus{border-color:var(--acc);outline:none}
-.rec{display:grid;grid-template-columns:minmax(0,1fr) 52px 52px 76px;gap:8px 10px;align-items:center;font-size:16px}
-.rec .hd{font-size:12px;color:var(--sub)}
-.rec .n{font-family:var(--num);font-weight:var(--num-w);text-align:center;font-size:18px}
+
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 .row{display:flex;gap:10px}.row>*{flex:1}
 
@@ -474,53 +450,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .rwrap .rcard{position:relative}
 .rcard.fire{border-color:var(--f);box-shadow:0 0 0 1px var(--f)}
 
-@keyframes fireGlow2{from{box-shadow:0 0 0 2px var(--f),0 0 6px var(--f)}to{box-shadow:0 0 0 2px var(--f),0 0 18px var(--f)}}
 #records .rcards{max-width:760px;margin-left:auto;margin-right:auto;padding-top:22px}
 
-/* puzzle stages */
-
-.rw{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));justify-items:center}
-.rw.rev{direction:rtl}
-.rw::before{content:"";position:absolute;left:10%;right:10%;top:19px;border-top:3px dotted var(--bd)}
-.rw.more::after{content:"";position:absolute;right:10%;top:21px;height:62px;border-right:3px dotted var(--bd)}
-.rw.rev.more::after{right:auto;left:10%}
-
-@keyframes ndPulse{50%{box-shadow:0 0 0 6px hsl(var(--h) 78% 52% / .22)}}
-
 @media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
-
-/* ================= the lobby (4.0 home; prefs.ui 'lobby', the old home is 'classic') =================
-   A night in a billiard hall: the room dark, one lamp over the live table, the games laid out along the bottom as the
-   balls they are played with - every choice in sight, nothing behind a menu - and one big lit button to play.
-   It always wears the night look, whatever the theme of the game itself. */
-
-/* the room: dark all round, a pool of lamplight on the table, breathing very slowly */
-
-@keyframes lampBreath{0%,100%{opacity:.75}50%{opacity:1}}
-
-/* the bar along the top: who you are, and the two places that are not a game */
-
-.me{display:flex;align-items:center;gap:11px;height:50px;padding:0 18px 0 6px;border-radius:999px;background:var(--panel);border:1px solid var(--bd);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);text-align:left;transition:transform .1s}
-.me:active{transform:scale(.96)}
-.me .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:16px;color:#0d1014;background:linear-gradient(135deg,#7fe0ee,#36c5d8)}
-.me b{display:block;font-size:15.5px;font-weight:800;line-height:1.15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.me small{display:block;font-size:12.5px;color:var(--sub);font-weight:600}
-.me.fire{box-shadow:0 0 0 2px #ff7a3c,0 0 22px rgba(255,110,40,.45)}
-
-/* the games, as balls on a strip of cloth */
-
-@keyframes gtIn{from{opacity:0;transform:translateY(26px) scale(.9)}}
-
-/* balls drawn in CSS: a coloured sphere with its light, a stripe, a number disc */
-
-/* the panel: the chosen game's settings, and the button */
-
-@keyframes ctaShine{0%,62%{left:-40%}100%{left:130%}}
-@keyframes ctaGlow{0%,100%{box-shadow:0 10px 26px color-mix(in srgb,var(--mc) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}50%{box-shadow:0 12px 34px color-mix(in srgb,var(--mc) 58%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}}
-
-/* narrow: the bar, the balls in a row that scrolls, then the panel, the button always in reach */
-
-/* a tablet held upright: the games along the top, the table lit in the middle, the panel at the foot */
 
 /* ================= the desk (4.0 first screen; prefs.ui 'desk') =================
    Everything is a thing on a wooden desk: an ivory rail of choices on the left, a felt tray in the middle with the live
@@ -674,18 +606,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
 .dk-pill[aria-pressed="true"] small{color:#6b5f4e}
 .dk-pill img.lock{width:22px;height:22px}
-.dk-dots{display:flex;align-items:center;gap:10px;color:#d9e2ee;font:700 15px 'Gothic A1',sans-serif}
-.dk-dots i{width:14px;height:14px;border-radius:50%;background:#0a3566;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
-.dk-dots i.on{background:#e9dfcc;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+
 /* a swatch: the chosen one framed, the one in use badged */
-#app.desk .dk-sw{position:relative;flex:none;width:clamp(96px,11vw,150px);display:flex;flex-direction:column;align-items:center;gap:8px;color:#e9eef5;font:700 14px 'Gothic A1',sans-serif}
-#app.desk.compact .dk-sw{font-size:12px;white-space:nowrap}
-#app.desk .dk-sw i{display:block;width:100%;height:clamp(48px,7vh,70px);--s:.4;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/well.webp) 50 48 48 48/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));border-width:calc(20px*var(--s)) calc(8px*var(--s)) calc(8px*var(--s));background-clip:padding-box;box-shadow:inset -3px 5px 7px rgba(0,0,0,.5)}
-#app.desk .dk-sw[aria-pressed="true"] i{box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
-#app.desk .dk-sw[aria-pressed="true"]::after{content:"";position:absolute;left:-7px;right:-7px;top:-7px;height:calc(100% - 12px);background:url(ui/swframe.webp) center/100% 100% no-repeat;pointer-events:none}
-#app.desk .dk-sw i.cuebox{display:flex;align-items:center;box-sizing:border-box;position:relative;overflow:hidden;padding:0;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
-#app.desk .dk-sw i.cuebox img{position:absolute;left:-6%;top:50%;width:364%;height:auto;transform:translateY(-44.5%);filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
-#app.desk .dk-sw .eq,#app.desk .dk-card .eq{position:absolute;left:6px;top:6px;color:#2b241c;font:800 11.5px 'Gothic A1',sans-serif;z-index:1;--s:.4;padding:3px 10px;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;border-image:url(ui/tag.webp) 24 fill/calc(24px*var(--s))/calc(8px*var(--s)) stretch}
 
 /* ---------- the slate: the options, which scroll if they must, and the buttons, which stay put at the foot ---------- */
 #app.desk .dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
@@ -771,9 +693,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    wider than the others */
 #app.desk .dk-slot{border-image-width:calc(54px*var(--s)*.55) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s));padding:calc(24px*var(--s)*.55 + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
 /* the swatches share the tray's width (all of them in view), and a cue's swatch shows its butt piece whole, end to joint */
-#app.desk .dk-foot .dk-sw{flex:1 1 0;width:auto;min-width:0;max-width:150px}
-#app.desk .dk-sw i{height:clamp(40px,6vh,58px)}
-#app.desk .dk-sw i.cuebox img{left:-3.3%;width:198.3%;transform:translateY(-44.5%)}
+
 /* the wallet, between the player and the record: coins and the rare diamonds, each in a little well of slate */
 .dk-wallet{display:flex;gap:8px;margin-right:4px}
 .dk-cur{--s:.42;position:relative;display:flex;align-items:center;gap:7px;height:40px;box-sizing:border-box;padding:0 16px 0 8px;border:0 solid transparent;border-image:url(ui/chip.webp) 44 fill/calc(44px*var(--s))/calc(4px*var(--s)) stretch;color:#f3ecdc;font:700 15px Outfit,sans-serif;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.5)}
@@ -954,17 +874,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.bcast.compact:not(.portrait) #hud::before{font-size:9px;padding:2px 9px 1px}
 #app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
 /* 내 장비: a ball set as three balls, a trail as its streak, a glove (picture to come) as its colour */
-#app.desk .dk-sw i.btrio{display:flex;align-items:center;justify-content:center;gap:6%;box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px}
-#app.desk .dk-sw i.btrio b{width:24%;aspect-ratio:1;max-width:30px;border-radius:50%;background:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),var(--c);
-  box-shadow:inset -3px -4px 6px rgba(0,0,0,.35),-2px 3px 3px rgba(0,0,0,.4)}
-#app.desk .dk-sw i.trl{box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px;position:relative;overflow:hidden}
-#app.desk .dk-sw i.trl::before{content:"";position:absolute;left:8%;right:30%;top:50%;height:22%;transform:translateY(-50%);border-radius:99px;background:linear-gradient(90deg,transparent,var(--c))}
-#app.desk .dk-sw i.trl::after{content:"";position:absolute;right:16%;top:50%;width:22%;aspect-ratio:1;max-width:24px;transform:translateY(-50%);border-radius:50%;background:radial-gradient(circle at 62% 30%,#fff,#f1ece0 45%,#b9b1a0)}
-#app.desk .dk-sw i.trl.rb::before{background:linear-gradient(90deg,transparent,#ff3b30,#ffcc00,#34c759,#0a84ff,#bf5af2)}
-#app.desk .dk-sw i.trl.none::before{display:none}
-#app.desk .dk-sw i.glv{box-sizing:border-box;background:#0b3b70 url(ui/felt.webp) 0 0/150px;position:relative}
-#app.desk .dk-sw i.glv::after{content:"";position:absolute;left:50%;top:50%;width:34%;aspect-ratio:3/4;max-height:80%;transform:translate(-50%,-50%);border-radius:40% 40% 30% 30%;background:var(--g);box-shadow:-2px 3px 3px rgba(0,0,0,.4)}
-.g-black{--g:#1b1c1f}.g-white{--g:#eef0f3}.g-red{--g:#c8161d}.g-blue{--g:#1f4fd1}.g-gold{--g:linear-gradient(#1b1c1f 60%,#d9a514 60%)}.g-camo{--g:repeating-radial-gradient(circle at 30% 30%,#5d6b4a 0 5px,#3e4a32 5px 9px,#7a7f5e 9px 12px)}
+
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-slot{min-width:0;flex:1 1 0}               /* (five keys: they share the row) */
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-rb{font-size:14px}
 /* 내 장비 · 상점: the cards in the felt tray, and one card opened (X back to the cards) */
@@ -976,16 +886,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card:active{transform:translateY(1px)}
 #app.desk .dk-card .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 #app.desk .dk-card .price{font:700 11px 'Gothic A1',sans-serif;color:#2b241c;background:#e9dcb8;border-radius:99px;padding:2px 8px}
-#app.desk .dk-card .eq{z-index:2}
+
 #app.desk .dk-card>i,#app.desk .dk-card>img{flex:1;min-height:0;width:100%}
 #app.desk .dk-card .cuecard{position:relative;overflow:hidden;display:block;container-type:size}
 #app.desk .dk-card .cuecard img{position:absolute;left:50%;top:50%;height:auto;width:var(--cl,200px);transform:translate(-50%,-50%) rotate(-90deg);width:96cqh;filter:drop-shadow(-3px 4px 3px rgba(0,0,0,.45))}
 #app.desk .dk-card .clothcard{display:block;width:72%;margin:4px auto 0;border-radius:6px;background-size:64px;box-shadow:inset 0 0 0 5px var(--w),inset 0 0 0 7px rgba(0,0,0,.35),-3px 5px 6px rgba(0,0,0,.4)}
 #app.desk .dk-card img.glove{object-fit:contain;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.45))}
-#app.desk i.btrio.v{flex-direction:column;background:none;gap:8%}
-#app.desk i.btrio.v b{width:auto;height:24%;max-width:none;max-height:44px}
-#app.desk .dk-card i.btrio{display:flex;align-items:center;justify-content:center}
-#app.desk .dk-card i.btrio b{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),var(--c);box-shadow:inset -3px -4px 6px rgba(0,0,0,.35),-2px 3px 3px rgba(0,0,0,.4)}
+
 #app.desk .dk-card i.trl{display:block;position:relative;background:none}
 #app.desk .dk-card i.trl::before{left:50%;right:auto;top:12%;bottom:34%;width:22%;height:auto;transform:translateX(-50%);background:linear-gradient(transparent,var(--c))}
 #app.desk .dk-card i.trl.rb::before{background:linear-gradient(transparent,#bf5af2,#0a84ff,#34c759,#ffcc00,#ff3b30)}
@@ -1005,7 +912,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
 #app.desk.compact .dk-cards{gap:10px 8px}
 #app.desk.compact .dk-card{font-size:11.5px;padding:6px 3px 5px;gap:3px}
-#app.desk.compact .dk-card .eq{font-size:9.5px;padding:2px 6px;left:3px;top:3px}
+
 /* in play on the desk: the controls as real things, like the desk's own (ui/README.md) -
    power: a walnut cue trough with brass ends and a brass scale, the equipped cue lying in its felt groove;
    fine aim: a rubber thumb wheel turning in a walnut slot (its ridges move as it is rolled, 80-input.js);
@@ -1037,12 +944,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk #menuBtn:active,#app.desk #viewBtn:active,#app.desk #viewBtn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
 #app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy) url(ui/tour-logo.webp) center/80% auto no-repeat}
 #app.bcast.compact:not(.portrait) #hud::before{width:78px;height:21px;padding:0}
-#app.desk i.btrio[class*=" m-"] b{background-blend-mode:normal,overlay,normal;background-size:auto,300% 150%,auto}
-#app.desk i.btrio.m-marble b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-marble.webp),linear-gradient(var(--c),var(--c))}
-#app.desk i.btrio.m-pearl b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-pearl.webp),linear-gradient(var(--c),var(--c))}
-#app.desk i.btrio.m-carbon b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-carbon.webp),linear-gradient(var(--c),var(--c))}
-#app.desk i.btrio.m-galaxy b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-galaxy.webp),linear-gradient(var(--c),var(--c))}
-#app.desk i.btrio.m-vintage b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-vintage.webp),linear-gradient(var(--c),var(--c))}
+
 /* the card worn: ringed in light, with a tag hanging over its top edge; a table card is a small table inside the card;
    ball cards hold photographs of the balls (scene.ballPortrait) */
 #app.desk .dk-card.worn::after{content:"";position:absolute;inset:-5px;border:3px solid #fff4d6;border-radius:14px;box-shadow:0 0 14px rgba(255,232,170,.75),inset 0 0 10px rgba(255,232,170,.35);pointer-events:none}
@@ -1052,8 +954,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-card .wtag{font-size:9.5px;padding:2px 7px 3px;top:-10px}
 #app.desk .dk-card .clothcard{flex:none;width:auto;height:68%;aspect-ratio:1/2;margin:auto;border-radius:7px;
   box-shadow:inset 0 0 0 6px var(--w),inset 0 0 0 8px rgba(0,0,0,.4),inset 0 0 12px 8px rgba(0,0,0,.25),-4px 7px 8px rgba(0,0,0,.45)}
-#app.desk .dk-card i.btrio img{display:block;height:28%;max-height:66px;aspect-ratio:1;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.45))}
-#app.desk .dk-card i.btrio.v{gap:4%}
+
 /* ---- in play on the desk, second pass: roomier controls ----
    score bar along the TOP middle (its clock bar under it, the tour tab hanging below its left end), messages under it in
    the middle; a wide power gauge (a lit meter in the cue's groove, green to red as it is drawn); the fine-aim dial a
@@ -1147,7 +1048,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 /* a ball set in its case: the open lid, the case, the three balls sitting in its cups */
 #app.desk .dk-card i.bcase{position:relative;display:block;flex:1;min-height:0;width:auto;aspect-ratio:360/864;max-width:100%;margin:0 auto;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.45))}
 #app.desk .dk-card i.bcase img{position:absolute;display:block}
-#app.desk .dk-card i.bcase .lid{left:0;top:0;width:100%;height:18.5%}
+
 #app.desk .dk-card i.bcase .box{left:0;top:16.7%;width:100%;height:83.3%}
 #app.desk .dk-card i.bcase .b{width:38%;left:31%;aspect-ratio:1;transform:translateY(-50%);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.5))}
 /* the worn card, second look: an ivory line hugging the card's edge, and at the top middle an ivory tab saying 장착 with a
@@ -1165,7 +1066,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
   border-radius:3px 7px 7px 3px;padding:10px 8px 10px 14px;box-sizing:border-box;color:#e9cf8a;
   background:linear-gradient(90deg,rgba(0,0,0,.45) 0 9px,rgba(255,255,255,.12) 9px 10px,transparent 10px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.14),transparent 60%),var(--lc,#1d3a6b);
   box-shadow:inset 0 0 0 2px rgba(233,207,138,.35),inset -3px 0 0 rgba(255,255,255,.08),-5px 7px 8px rgba(0,0,0,.5)}
-#app.desk .dk-card.book .cover.c0{--lc:#1c3a6e}#app.desk .dk-card.book .cover.c1{--lc:#6e1c24}#app.desk .dk-card.book .cover.c2{--lc:#1d5a3a}#app.desk .dk-card.book .cover.c3{--lc:#4a2f1c}
+
 #app.desk .dk-card.book .cover small{font:700 10.5px 'Gothic A1',sans-serif;letter-spacing:.12em;opacity:.85}
 #app.desk .dk-card.book .cover b{font:800 17px/1.25 'Gothic A1',sans-serif;color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
 #app.desk .dk-card.book .cover em{position:absolute;bottom:8px;font:700 12px 'Outfit',sans-serif;font-style:normal;opacity:.7}
@@ -1262,11 +1163,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card.vol .tome{position:relative;flex:none;width:92%;aspect-ratio:3/4;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:4px 9px 9px 4px;
   color:#f1d993;background:linear-gradient(90deg,rgba(0,0,0,.5) 0 13px,rgba(255,255,255,.14) 13px 14px,transparent 14px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.16),transparent 60%),var(--lc);
   box-shadow:inset 0 0 0 3px rgba(233,207,138,.45),inset 0 0 0 6px rgba(0,0,0,.2),inset -4px 0 0 rgba(255,255,255,.08),-7px 10px 12px rgba(0,0,0,.5)}
-#app.desk .dk-card.vol .tome::before,#app.desk .dk-card.vol .tome::after{content:"";position:absolute;right:0;width:18px;height:18px;background:linear-gradient(135deg,#f3d27a,#a77a24)}
-#app.desk .dk-card.vol .tome::before{top:0;border-radius:0 9px 0 0;clip-path:polygon(0 0,100% 0,100% 100%)}
-#app.desk .dk-card.vol .tome::after{bottom:0;border-radius:0 0 9px 0;clip-path:polygon(100% 0,100% 100%,0 100%)}
-#app.desk .dk-card.vol .tome.v0{--lc:#1d4d3a}#app.desk .dk-card.vol .tome.v1{--lc:#6e1c24}#app.desk .dk-card.vol .tome.v2{--lc:#1a1c24}#app.desk .dk-card.vol .tome.v3{--lc:#7a5a12}
-#app.desk .dk-card.vol .tome .mi{width:42%;aspect-ratio:1;background:center/contain no-repeat;filter:drop-shadow(-2px 3px 3px rgba(0,0,0,.5))}
+
 #app.desk .dk-card.vol .tome b{font:900 26px 'Gothic A1',sans-serif;color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.6)}
 #app.desk .dk-card.vol .tome small{font:700 12px 'Gothic A1',sans-serif;letter-spacing:.4em;opacity:.8}
 #app.desk .dk-card.vol.empty .tome{filter:saturate(.5) brightness(.8)}
@@ -1279,7 +1176,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card.vol{padding:10px 8px 8px;gap:4px}
 #app.desk .dk-card.vol .tome{flex:1;min-height:0;width:auto;max-width:100%;aspect-ratio:420/560;height:auto;margin:0 auto;display:block;position:relative;border-radius:0;
   background:center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
-#app.desk .dk-card.vol .tome::before,#app.desk .dk-card.vol .tome::after{display:none}
+
 #app.desk .dk-card.vol .tome .tt{position:absolute;left:17%;right:14%;top:56%;height:28%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 #app.desk .dk-card.vol .tome b{font:900 clamp(16px,2.6vw,30px) 'Gothic A1',sans-serif;color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
 #app.desk .dk-card.vol .tome small{font:700 11px 'Gothic A1',sans-serif;letter-spacing:.45em;color:#f4efe6;opacity:.75}

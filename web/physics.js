@@ -519,11 +519,6 @@ function createPhysics(cfg) {
     return best;
   }
 
-  function predict(w, ang) {
-    const c = w.balls[w.cue];
-    return cast(w, c.x, c.y, Math.cos(ang), Math.sin(ang), w.cue);
-  }
-
   /* The shot played out on a copy, for the aiming guide: the guide draws what this returns and nothing else, so what is shown
      is what the same inputs will do. pre: the cue ball's path up to its first contact; at: where it was then ([x, y, z, ball
      or -1]); post: its path afterwards, for `after` seconds; turn: where in post it next changed course; obj: the struck
@@ -597,6 +592,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
+  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

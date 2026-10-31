@@ -115,7 +115,6 @@ function start() {
   SND.song.load(); $('#fps').hidden = !prefs.fps;
   goHome(true);                                             // a game left unfinished waits on the first screen as a card to carry on with
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
-  if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }
 window.__dp8 = { game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
