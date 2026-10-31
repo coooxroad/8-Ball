@@ -39,6 +39,7 @@ node web/tools/check.js   # 만든 페이지 검사: 문법, 이름 겹침, 생�
 | `web/app/32-desk.js` | 책상 첫 화면(4.0): 네 자리(플레이·훈련·내 장비·상점), 책상 기울이기(`deskLean`)와 테이블 창(`deskWindow`) | 앎 |
 | `web/head.html` | 스타일과 마크업. 책상 스타일은 "the desk" 구역 한 곳에 조각 순서대로 | — |
 | `web/ui/` | 책상의 재료와 버튼 그림(WebP). 파일별 쓰임과 9-slice 값은 `web/ui/README.md` | — |
+| `web/music/` | 로비·승리·패배 음악(MP3). 언제 나오는지는 `web/music/README.md`, 재생은 `web/app/00-state.js`의 `MUSIC` | — |
 | `web/test/run.js` | 브라우저 없이 도는 검사 | — |
 | `web/tools/` | 퍼즐 생성기, 페이지 검사 | — |
 | `design/` | 화면 설계 메모와 시안, 작업 기록 | — |

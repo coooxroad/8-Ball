@@ -81,6 +81,7 @@ const match = {
     }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
+    MUSIC.play(!match.ctx.ai || w === 0 ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);
   },
 };

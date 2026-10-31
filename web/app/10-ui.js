@@ -54,7 +54,7 @@ function show(screen) {
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  paintNav(); applyTheme(); layout();
+  paintNav(); applyTheme(); layout(); MUSIC.screen(screen);
 }
 // which place on the rail is lit
 function paintNav() { const v = st.screen === 'records' ? 'all' : prefs.mode === 'practice' || prefs.mode === 'puzzle' ? prefs.mode : 'play'; for (const b of document.querySelectorAll('#nav .nv')) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }

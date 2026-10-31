@@ -47,6 +47,7 @@ function sheetSettings() {
     segRow('첫 화면', [['desk', '책상'], ['lobby', '로비'], ['classic', '이전 화면']], prefs.ui, v => { prefs.ui = v; savePrefs(); applyUI(); closeSheet(); goHome(true); }),
     segRow('화면', [['dark', '다크'], ['light', '라이트']], prefs.theme, v => { prefs.theme = v; savePrefs(); applyTheme(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
+    segRow('음악', [[true, '켬'], [false, '끔']], prefs.music !== false, v => { prefs.music = v; savePrefs(); MUSIC.setOn(v); sheetSettings(); }),
     flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),

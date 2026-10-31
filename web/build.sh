@@ -51,5 +51,7 @@ rm -f "$A"/fonts/*
 cp fonts/*.woff2 "$A/fonts/"
 # the desk's materials and controls (images made to order, see ui/README.md)
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
+# the music (lobby, win, lose; see music/README.md)
+rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c dist/artifact.html "$A/index.html"
