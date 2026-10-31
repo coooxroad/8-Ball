@@ -29,10 +29,12 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | towel, chalk, plant | E2, E3, E4 | on the desk; scaled down and blurred a little here (out of focus) | – |
 | dot | 13-glossy-red-dot-128 | the chosen rail key's red ball | – |
 | swframe | 14-cream-swatch-frame-480x260 | frame over the chosen swatch | body from 16 |
-| coin | 18-brass-coin-128 | the coin (for the shop, not used yet) | – |
 | ring | 19-brass-avatar-ring-160 | ring round a player's avatar; opening centre 80,80, radius 54 | – |
 | tag | 21-cream-equipped-tag-160x64 | the "장착" tab on what is in use | slice 24, body from 8 |
 | lock | 22-closed-brass-padlock-96 | a locked puzzle stage | – |
 | star, star-off | 23-puzzle-star-* | a puzzle's stars | – |
 | cloth-teal … cloth-ice | 24a–f | the table cloths' swatches (ids as in look.js CLOTHS), tiled | – |
 | cue-maple … cue-sport | 25a–e | the cues (ids as in look.js CUES); 2400×110, butt left, tip right, centre line y 49 | – |
+| coin | 18-brass-coin-128 | the coin, in the wallet on the top bar | – |
+| dia | F2-diamond 160 | the diamond, the rare currency, in the wallet | – |
+| chip, chip-glow | F3, F4 currency chip 300x96 | the wallet's wells (glow not used yet: for when an amount rises) | slice 44 / 4 |

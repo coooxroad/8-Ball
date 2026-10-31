@@ -189,10 +189,11 @@ function deskCloth({ head, foot, slate }) {
 
 // 상점: a placeholder, laid out like the others so the place is there when it opens
 function deskShop({ rail, head, stage, slate }) {
-  dkPut(rail, [railBtn(shopSel === 'cue', '큐', '준비 중', () => { shopSel = 'cue'; paintHome(); }, true), railBtn(shopSel === 'table', '테이블', '준비 중', () => { shopSel = 'table'; paintHome(); }, true)]);
-  dkPut(head, dkTitle(shopSel === 'cue' ? '큐 진열대' : '테이블 천 진열대', '곧 열립니다'));
+  const SHOP = [['cue', '큐', '큐 진열대'], ['ball', '공', '공 진열대'], ['table', '테이블', '테이블 천 진열대']];
+  dkPut(rail, SHOP.map(([k, t]) => railBtn(shopSel === k, t, '준비 중', () => { shopSel = k; paintHome(); }, true)));
+  dkPut(head, dkTitle((SHOP.find(x => x[0] === shopSel) || SHOP[0])[2], '곧 열립니다'));
   stage.dataset.win = '0';
-  dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '상점 준비 중' }), document.createTextNode('큐와 테이블 외형을 코인으로 살 수 있게 됩니다.'), document.createTextNode('플레이 성능은 모두 같습니다.')]));
+  dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '상점 준비 중' }), el('span', { text: '큐, 공, 테이블 외형을 코인과 다이아로 살 수 있게 됩니다.' }), el('span', { text: '플레이 성능은 모두 같습니다.' })]));
   dkPut(slate, dkH1('상점', '곧 열립니다'));
   dkPut(slate, [dkHr(), dkTxt('지금 가진 큐와 천은 내 장비에서 바꿀 수 있습니다.')]);
   dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('내 장비로', () => deskGo('gear'))));
@@ -234,6 +235,7 @@ function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));
+  { const w = prefs.wallet || {}, n = v => (v || 0).toLocaleString('ko-KR'); $('#dkWallet .coin b').textContent = n(w.coin); $('#dkWallet .dia b').textContent = n(w.dia); }
   $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = recText(prefs.names[0]);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
