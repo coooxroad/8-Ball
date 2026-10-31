@@ -91,8 +91,8 @@ function playInsets(H, portrait) {
   // middle, so the table keeps clear of it; carom shows each player's ball on their plate.
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
-  if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 104 : 86, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
-  if (portrait && prefs.ui === 'desk') return { t: hud + 26, l: 6, r: 6, b: 136 };
+  if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
+  if (portrait && prefs.ui === 'desk') return { t: hud + 26, l: 6, r: 6, b: 146 };
   return portrait ? { t: hud + 8, l: 6, r: 6, b: 112 } : { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.

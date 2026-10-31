@@ -164,8 +164,11 @@ let shelfOpen = null;                                                 // the car
 const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 // a set of balls as three balls (carom: white, yellow, red; else the cue ball, the 1 and the 3)
 function ballTrio(k, v) {
-  const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool';
-  return el('i', { class: 'btrio' + (v ? ' v' : '') }, ids.map(n => el('img', { src: scene.ballPortrait(k.id, kind, n), alt: '', draggable: 'false' })));
+  const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool', shot = n => scene.ballPortrait(k.id, kind, n);
+  // on a card: the set in its open case, a ball in each cup (cup centres 36.3, 58.3 and 80.3% down the case and its lid)
+  if (v) return el('i', { class: 'bcase' }, [el('img', { class: 'lid', src: 'ui/ball-case-lid.webp', alt: '' }), el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
+    ...ids.map((n, j) => el('img', { class: 'b', src: shot(n), alt: '', style: `top:${[36.3, 58.3, 80.3][j]}%` }))]);
+  return el('i', { class: 'btrio' }, ids.map(n => el('img', { src: shot(n), alt: '', draggable: 'false' })));
 }
 const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });

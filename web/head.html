@@ -1184,7 +1184,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
    fine aim: a rubber thumb wheel turning in a walnut slot (its ridges move as it is rolled, 80-input.js);
    spin: a real cue ball in a brass bezel, a blue chalk mark where the tip will meet it; pause and 3D: walnut knobs. */
 #app.desk #power{background:none;border:0 solid transparent;border-radius:0;box-shadow:none;overflow:visible;
-  border-image:url(ui/power-rail.webp) 120 0 fill/29px 0 stretch;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+  border-image:url(ui/power-rail.webp) 120 0 fill/29px 0 stretch;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
 #app.desk #power::before{inset:30px 13px;border-radius:3px}
 #app.desk #power::after{content:"";position:absolute;right:-12px;top:30px;bottom:30px;width:9px;background:url(ui/power-scale.webp) center/100% 100% no-repeat;pointer-events:none}
 #app.desk #powerLab{display:none}
@@ -1194,19 +1194,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.portrait #power::after{right:30px;left:30px;top:auto;bottom:-11px;width:auto;height:9px;
   background:repeating-linear-gradient(90deg,#c9a24e 0 1.5px,transparent 1.5px 5%) bottom/100% 60% no-repeat,linear-gradient(#e2c27a,#b38a36) bottom/100% 2px no-repeat}
 #app.desk.portrait #powerNum{right:4px;top:auto;bottom:auto;height:100%;padding:0 10px;color:#3b2a0e}
-#app.desk #fine{background:#151515 url(ui/wheel-ridges.webp) 0 0/100% auto repeat-y;border:0;border-radius:0;box-shadow:none;overflow:visible;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+#app.desk #fine{background:#151515 url(ui/wheel-ridges.webp) 0 0/100% auto repeat-y;border:0;border-radius:4px;box-shadow:-4px 6px 10px rgba(0,0,0,.45);overflow:visible}
 #app.desk #fine::before{content:"";position:absolute;inset:0;border:0 solid transparent;border-image:url(ui/wheel-box.webp) 140 45 fill/34px 11px stretch;pointer-events:none}
 #app.desk #fine::after{left:6px;right:6px;height:2px;margin-top:-1px;background:#e9c46a;box-shadow:0 0 4px rgba(233,196,106,.8);z-index:1}
 #app.desk #fineLab{display:none}
 #app.desk.portrait #fine{background-image:url(ui/wheel-ridges-h.webp);background-size:auto 100%;background-repeat:repeat-x}
 #app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/7px 22px stretch}
 #app.desk.portrait #fine::after{top:3px;bottom:3px;margin:0 0 0 -1px;width:2px}
-#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-bezel.webp) center/100% 100% no-repeat,url(ui/spin-ball.webp) center/79% no-repeat;box-shadow:none;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-bezel.webp) center/100% 100% no-repeat,url(ui/spin-ball.webp) center/79% no-repeat;border-radius:50%;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
 #app.desk #spinBtn{width:66px;height:66px}
 #app.desk #spinDot,#app.desk .sdot{width:16px;height:16px;margin:-8px;background:url(ui/chalk-mark.webp) center/100% 100% no-repeat;box-shadow:none}
 #app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
 #app.desk #spinPad::before{inset:20%;border-color:rgba(60,45,20,.3)}
-#app.desk #menuBtn,#app.desk #viewBtn{border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;box-shadow:none;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.5))}
+#app.desk #menuBtn,#app.desk #viewBtn{border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;border-radius:50%;box-shadow:-3px 5px 8px rgba(0,0,0,.45)}
 #app.desk #menuBtn:active,#app.desk #viewBtn:active,#app.desk #viewBtn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
 #app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy) url(ui/tour-logo.webp) center/80% auto no-repeat}
 #app.bcast.compact:not(.portrait) #hud::before{width:78px;height:21px;padding:0}
@@ -1328,7 +1328,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact:not(.portrait) #fine{height:220px;margin-top:-110px}
 #app.desk.compact:not(.portrait) #fine::before{border-image-width:30px 15px}
 #app.desk.compact:not(.portrait) #fine canvas.dial{top:30px;bottom:30px;height:calc(100% - 60px)}
-#app.desk.portrait #fine{left:112px;right:10px;top:auto;bottom:84px;height:46px;margin:0;width:auto}
+#app.desk.portrait #fine{left:112px;right:10px;top:auto;bottom:94px;height:46px;margin:0;width:auto}
 #app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/10px 32px stretch}
 #app.desk.portrait #fine::after{left:50%;top:-6px;width:12px;height:12px;margin:0 0 0 -6px;clip-path:polygon(0 0,100% 0,50% 100%)}
 #app.desk.portrait #fine canvas.dial{left:32px;right:32px;top:10px;bottom:10px;width:calc(100% - 64px);height:calc(100% - 20px)}
@@ -1358,6 +1358,32 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk #spinTag{background:linear-gradient(#ffd34d,#e09a00);color:#2b1d05}
 #app.desk #spinReset{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px}
 #app.desk .r-title{order:1}#app.desk .r-vs{order:2}#app.desk #rWhy{order:3}#app.desk #rStats{order:4}#app.desk #rHlBox{order:5}#app.desk .r-btns{order:6}
+/* the controls and the HUD over the live table each on their own layer: drawn once, not again every frame the table moves */
+#app.desk #power,#app.desk #fine,#app.desk #spinBtn,#app.desk #menuBtn,#app.desk #viewBtn,#app.bcast #hud .pill,#app.bcast #badge,#app.bcast #clock,#app.bcast #toast,#app.bcast #hud::before{will-change:transform}
+/* the power gauge (batch 6): a walnut and brass instrument - a lit meter behind glass on the left, the cue in its channel
+   on the right; the housing lies over both. ::before is the meter (dark until lit from the bottom by --pw), ::after the
+   housing with the glass under it. Sizes from the housing's 360x1400 at 96 px wide (caps 45 px). */
+#app.desk #power{width:96px;border:0;border-image:none;border-radius:6px;background:#0c100d;box-shadow:-5px 8px 12px rgba(0,0,0,.5)}
+#app.desk #power::before{inset:45px auto 45px 13px;width:38px;border-radius:0;box-shadow:inset 0 2px 6px rgba(0,0,0,.7);
+  background:repeating-linear-gradient(to top,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) top/100% calc(100% - var(--pw,0%)) no-repeat,
+  linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%)}
+#app.desk #power::after{inset:0;left:0;right:0;top:0;bottom:0;width:auto;height:auto;z-index:2;-webkit-mask:none;mask:none;box-shadow:none;border-radius:0;
+  background:url(ui/gauge-glass.webp) 13px 45px/38px calc(100% - 90px) no-repeat;border:0 solid transparent;border-image:url(ui/gauge.webp) 170 0 fill/45px 0 stretch}
+#app.desk #powerCue{left:75%;z-index:1}
+#app.desk #powerNum{z-index:3;bottom:13px;left:0;right:0;color:#3b2a0e;font-size:18px}
+#app.desk.portrait #power{left:112px;right:10px;height:72px;width:auto}
+#app.desk.portrait #power::before{inset:10px 34px auto 34px;height:28px;width:auto;
+  background:repeating-linear-gradient(to left,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) left/calc(100% - var(--pw,0%)) 100% no-repeat,
+  linear-gradient(to left,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%)}
+#app.desk.portrait #power::after{background:url(ui/gauge-glass-h.webp) 34px 10px/calc(100% - 68px) 28px no-repeat;border-image:url(ui/gauge-h.webp) 0 170 fill/0 34px stretch}
+#app.desk.portrait #powerCue{left:0;top:54px;height:14px;transform:translate(10px,-50%)}
+#app.desk.portrait #powerNum{left:4px;right:auto;top:50%;bottom:auto;transform:translateY(-50%);width:28px;padding:0;font-size:15px}
+/* a ball set in its case: the open lid, the case, the three balls sitting in its cups */
+#app.desk .dk-card i.bcase{position:relative;display:block;flex:1;min-height:0;width:auto;aspect-ratio:360/864;max-width:100%;margin:0 auto;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.45))}
+#app.desk .dk-card i.bcase img{position:absolute;display:block}
+#app.desk .dk-card i.bcase .lid{left:0;top:0;width:100%;height:18.5%}
+#app.desk .dk-card i.bcase .box{left:0;top:16.7%;width:100%;height:83.3%}
+#app.desk .dk-card i.bcase .b{width:38%;left:31%;aspect-ratio:1;transform:translateY(-50%);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.5))}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">
