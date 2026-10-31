@@ -104,7 +104,7 @@ function deskPlay({ rail, head, foot, slate }) {
   dkPut(slate, [dkHr(), guideRow()]);
   const d = store.get('save', null), gm = d && d.v === 2 && d.game && MODE_KO[d.game.modeId] ? d.game : null;
   const vs = prefs.vsAI ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와';
-  dkPut(slate, dkActs(dkMain('시작', `${MODE_KO[m]} · ${vs}`, () => m === 'four' ? lag.start() : match.start(0)),   // (4구 opens with the lag)
+  dkPut(slate, dkActs(dkMain('시작', `${MODE_KO[m]} · ${vs}`, () => match.start(m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0)),   // (4구: the yellow ball, and so who breaks, drawn by lot)
     gm ? dkSec('이어서 하기', () => resume(d), `${MODE_KO[gm.modeId]} · ${gm.players[0].name} vs ${gm.players[1].name}`) : null));
 }
 

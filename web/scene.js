@@ -542,8 +542,9 @@ function createScene(canvas, app, PH) {
   }
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
   // another ball set: each ball's picture drawn again (the meshes stay)
+  let caromY = 1;                                                     // which carom ball wears the yellow (frame)
   function setBalls(id) {
-    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0]; if (k === skin) return; skin = k;
+    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0]; if (k === skin) return; skin = k; caromY = 1;
     for (const [kind, set] of [['pool', sets.pool], ['carom', sets.carom]]) set.mesh.forEach((m, i) => { const old = m.material.map; m.material.map = ballTexture(kind, i); m.material.needsUpdate = true; old.dispose(); });
     dirty = 3;
   }
@@ -850,6 +851,8 @@ function createScene(canvas, app, PH) {
     if (falls.length || v.animating) dirty = 3;
     if (dirty <= 0) return false; dirty--;
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    // carom: ball 1 is drawn yellow unless the game says player 0 has the yellow (4구 draws the colours by lot)
+    if (set === sets.carom) { const y = g.yellow == null ? 1 : g.yellow; if (y !== caromY) { const m0 = set.mesh[0].material, m1 = set.mesh[1].material, t = m0.map; m0.map = m1.map; m1.map = t; m0.needsUpdate = m1.needsUpdate = true; caromY = y; } }
     if (P !== cur || !tables.has(P)) setTable(P);
     for (let i = 0; i < set.mesh.length; i++) {
       const b = w.balls[i], m = set.mesh[i], s = set.blob[i];

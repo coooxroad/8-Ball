@@ -295,6 +295,8 @@ function createAudio(isOn) {
       roll.g.gain.setTargetAtTime(0.03 * Math.sqrt(k), t, 0.08); roll.bp.frequency.setTargetAtTime(200 + 260 * k, t, 0.12);
     },
     tap() { uiHit('tick', 0.22, 5000, 0, 1); },
+    // the fine-aim dial: one soft detent click per ridge, pitched up a little the faster it is rolled
+    dial(speed) { uiHit('tick', 0.09, 2600, 0, 1.25 + Math.min(0.5, speed || 0)); },
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
     bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
     win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },

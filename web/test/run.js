@@ -189,7 +189,10 @@ for (const name of ['bar', 'pro', 'pub']) {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }), carom3: createPhysics({ R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }) });
   for (const mode of ['four', 'three']) for (const first of [0, 1]) {
     g.start(mode, ['A', 'B'], false, { first, rnd }); const b = g.world.balls, c = g.cueBall();
-    if (g.world.cue !== first || Math.abs(c.y) < 0.1 || Math.abs(b[1 - first].y) > 1e-3) fail(`${mode}, player ${first + 1} first: the shooter's ball is not on the spot beside the line`);
+    if (mode === 'four') {                                              // 4구: rolled out - every ball on the cloth, none touching, the first player has the yellow
+      const P = g.P; if (g.world.cue !== first || g.yellow !== first) fail(`four, player ${first + 1} first: not on the yellow ball`);
+      for (let i = 0; i < 4; i++) { if (Math.abs(b[i].x) > P.HL - P.R || Math.abs(b[i].y) > P.HW - P.R) fail(`four: ball ${i} off the cloth`); for (let j = i + 1; j < 4; j++) if (Math.hypot(b[i].x - b[j].x, b[i].y - b[j].y) < 2 * P.R) fail(`four: balls ${i} and ${j} overlap`); }
+    } else if (g.world.cue !== first || Math.abs(c.y) < 0.1 || Math.abs(b[1 - first].y) > 1e-3) fail(`${mode}, player ${first + 1} first: the shooter's ball is not on the spot beside the line`);
   }
   g.start('three', ['A', 'B'], true, { level: 2, target: 3, cushions: 1, rnd }); g.players[0].ai = true;
   if (g.P.R !== 0.03075 || g.P.HL !== 1.42) fail('three-ball is not on the match table');

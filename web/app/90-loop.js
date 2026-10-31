@@ -40,6 +40,13 @@ function aheadStep() {
     if (P.rest(w) || a.t >= 30 * 120) a.done = true;
   }
 }
+// Rolling the balls out before a game (4구): each ball given a push in a random direction, the table played until it
+// stops, and then the flow told (flow.rolled) instead of a shot being judged.
+function rollOut() {
+  const w = game.world, P = game.P; w.ev = P.newEv();
+  for (const b of w.balls) if (b.on) { const a = Math.random() * Math.PI * 2, v = 0.5 + Math.random() * 0.9; b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; }
+  st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = true; st.phase = 'sim';
+}
 function stepSim(dt) {
   const w = game.world, P = game.P;
   // once everything is crawling, run the clock faster so nobody waits on the last roll
@@ -51,7 +58,7 @@ function stepSim(dt) {
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
   drain(); SND.rolling(flow.quiet ? 0 : Math.min(8, vmax));
-  if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) endShot(); }
+  if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { st.rolling = false; st.rev++; flow.rolled(); } else endShot(); } }
   return alpha;
 }
 function frame(now) {

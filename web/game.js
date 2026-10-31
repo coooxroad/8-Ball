@@ -114,12 +114,18 @@ function createGame(PH) {
       id: 'four', name: '4구', blurb: '빨간 공 두 개를 다 맞히면 1점', table: 'carom', n: 4, ballInHand: false, target: true,
       setup(g, rnd) {
         const P = g.P, { HL } = P, w = g.world;
-        P.place(w, 2, HL / 2, 0, rnd); P.place(w, 3, -HL / 2, 0, rnd);
-        // whoever shoots first has their ball beside the line of the two reds, the other player's ball is on it
-        P.place(w, 1 - g.turn, -HL * 0.78, 0, rnd); P.place(w, g.turn, -HL * 0.78, -0.17, rnd);
+        // the four balls rolled out by hand, as a hall starts a game: each one somewhere new every time - clear of the
+        // cushions and of each other, the two reds not touching, the first player's ball not frozen to anything
+        const { HW, R } = P, m = 0.12, gap = R * 5;
+        for (let tries = 0; tries < 400; tries++) {
+          const pts = [0, 1, 2, 3].map(() => [(rnd() * 2 - 1) * (HL - m), (rnd() * 2 - 1) * (HW - m)]);
+          let ok = true; for (let i = 0; i < 4 && ok; i++) for (let j = i + 1; j < 4; j++) if (Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]) < gap) { ok = false; break; }
+          if (!ok && tries < 399) continue;
+          pts.forEach((p, i) => P.place(w, i, p[0], p[1], rnd)); break;
+        }
         g.placing = null; g.isBreak = false;
       },
-      intro: g => `${g.players[g.turn].name}부터. 빨간 공 두 개를 모두 맞히세요.`,
+      intro: g => `${g.players[g.turn].name} 선수, 노란 공으로 먼저 칩니다. 빨간 공 두 개를 모두 맞히세요.`,
       status: (g, pi) => ({ sub: g.tens ? `수지 ${g.targets[pi] * 10}` : `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
       badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
@@ -218,6 +224,9 @@ function createGame(PH) {
     // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
+    // carom: the first to play has the yellow ball (4구; the other has the white). g.yellow is that player's index; the
+    // scene and the HUD paint ball 0 or 1 yellow by it
+    g.yellow = g.mode.table === 'carom' && modeId === 'four' ? g.turn : 1;
     g.mode.setup(g, opts.rnd || Math.random);
     g.world.ice = g.ice;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
@@ -581,11 +590,11 @@ function createGame(PH) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
-    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse, yellow: g.yellow,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
-    g.modeId = d.modeId; g.mode = MODES[d.modeId]; g.P = PH[g.mode.bed] || PH[g.mode.table];
+    g.modeId = d.modeId; g.mode = MODES[d.modeId]; g.P = PH[g.mode.bed] || PH[g.mode.table]; g.yellow = d.yellow == null ? 1 : d.yellow;
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
