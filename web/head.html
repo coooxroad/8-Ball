@@ -786,17 +786,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-rail{display:flex;flex-direction:column;overflow:auto;min-height:0;--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/rail.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));gap:14px;padding:22px 16px calc(20px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk.compact .dk-rail{--s:.34;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none;gap:8px;padding:10px 10px calc(10px + var(--lip))}
 #app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:10px 8px calc(8px + var(--lip))}
-#app.desk .dk-slot{--s:.42;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s)) calc(14px*var(--s)) calc(6px*var(--s))}
-#app.desk.compact .dk-slot{--s:.28;flex:1 0 auto;min-width:80px;height:58px}
+#app.desk .dk-slot{--s:.56;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s) + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
+#app.desk.compact .dk-slot{--s:.36;flex:1 0 auto;min-width:80px;height:58px}
 #app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
-#app.desk .dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;padding:0 0 var(--lip);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
-#app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);padding:calc(12px*var(--s)) 0 calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
-#app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);padding:calc(6px*var(--s)) 0 calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
+#app.desk .dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif;--s:.33;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
+#app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);--pt:calc(12px*var(--s));--pb:calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
+#app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);--pt:calc(6px*var(--s));--pb:calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
 #app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
 .dk-rb.soon{opacity:.55}
 .dk-rb small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7;margin-top:4px}
-#app.desk.compact .dk-rb{--s:.26;font-size:17px}
-#app.desk.compact .dk-rb[aria-pressed="true"]::before{width:12px;height:12px;left:9px;top:calc(50% - 6px - 4px*var(--s))}
+#app.desk.compact .dk-rb{--s:.24;font-size:17px}
+#app.desk.compact .dk-rb[aria-pressed="true"]::before{display:none}               /* (on a narrow key the felt inlay says it alone; the ball would sit on the name) */
 #app.desk.compact .dk-rb small{display:none}
 #app.desk.compact:not(.portrait) .dk-rb{font-size:16px}
 
@@ -818,8 +818,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .dk-stage .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;color:#d9e2ee;font:600 17px/1.5 'Gothic A1',sans-serif;padding:0 20px}
 .dk-stage .msg b{font:800 26px 'Gothic A1',sans-serif;color:#f3eee3}
 /* the table's shadow on the felt, and the near rail's front under the table's window (#dkShade is laid by deskWindow() in 32-desk.js) */
-#dkShade{position:absolute;border-radius:12px;box-shadow:-12px 18px 26px rgba(0,0,0,.55),-3px 5px 8px rgba(0,0,0,.35);pointer-events:none}
-#dkShade>i{position:absolute;left:6px;right:6px;top:100%;height:var(--tl,9px);margin-top:-2px;border-radius:0 0 10px 10px;background:linear-gradient(#7a4c2c,#3a2212 70%,#24150b)}
+#dkShade{position:absolute;border-radius:var(--tr,12px);box-shadow:-12px 18px 26px rgba(0,0,0,.55),-3px 5px 8px rgba(0,0,0,.35);pointer-events:none}
+/* (the strip is the table's own shape pushed down: the window hides all of it but what shows below the rails) */
+#dkShade>i{position:absolute;left:0;right:0;bottom:calc(0px - var(--tl,9px));height:calc(var(--tr,12px)*2);border-radius:0 0 var(--tr,12px) var(--tr,12px);background:linear-gradient(#7a4c2c calc(100% - var(--tl,9px)),#3a2212 calc(100% - var(--tl,9px)*.4),#21130a)}
 /* a cue is long and thin: the whole of it lies across the tray, and a close look at its butt - wrap, points, joint -
    lies under it; a swatch shows just the butt */
 #app.desk .dk-stage img.cuebig{position:absolute;left:2%;top:34%;width:96%;height:auto;transform:translateY(-50%) rotate(-12deg);filter:drop-shadow(0 16px 8px rgba(0,0,0,.45));pointer-events:none}
@@ -900,26 +901,35 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-acts{padding-top:2px;flex-direction:row}
 #app.desk.compact .dk-acts>*{flex:1 1 0;min-width:0}
 #app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
-#app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif;--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));padding:0 0 var(--lip);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
-#app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);padding:calc(14px*var(--s)) 0 calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
+#app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif;--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
+#app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);--pt:calc(14px*var(--s));--pb:calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
 #app.desk .dk-main:disabled{opacity:.5}
 .dk-main small{display:block;font:700 13px 'Gothic A1',sans-serif;opacity:.8;margin:2px 0 8px}
 #app.desk.compact .dk-main{--s:.34;height:64px;font-size:22px}
 #app.desk.compact .dk-main small{margin-bottom:0}
 #app.desk.compact:not(.portrait) .dk-main{height:54px}
-#app.desk .dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding:0 10px var(--lip);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
-#app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp);padding-top:calc(8px*var(--s));padding-bottom:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
+#app.desk .dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 10px var(--pb);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
+#app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp);--pt:calc(8px*var(--s));--pb:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
 .dk-sec small{display:block;font:600 11.5px 'Gothic A1',sans-serif;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#app.desk.compact .dk-sec{--s:.32;height:auto;min-height:48px;padding:4px 8px calc(4px + var(--lip));font-size:15px;line-height:1.2}
-#app.desk.compact .dk-sec:active{padding-top:calc(4px + 8px*var(--s));padding-bottom:calc(4px + 6px*var(--s))}
+#app.desk.compact .dk-sec{--s:.32;height:auto;min-height:48px;padding:calc(4px + var(--pt)) 8px calc(4px + var(--pb));font-size:15px;line-height:1.2}
 .dk-stars{display:flex;align-items:center;gap:4px;font:600 15px 'Gothic A1',sans-serif;color:#cfc8ba}
 .dk-stars img{width:30px;height:30px}
 .dk-stars span{margin-left:8px}
 
 /* ---------- the square keys: the tray's arrows, the steppers, the chips, records and settings ---------- */
-#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));padding-top:0;padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
-#app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);padding-top:calc(7px*var(--s));padding-bottom:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
+#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));--pt:0px;--pb:var(--lip);padding-top:var(--pt);padding-bottom:var(--pb);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
+#app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);--pt:calc(7px*var(--s));--pb:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
 #app.desk .dk-top[aria-pressed="true"]{color:#9cc3f5}
+/* every raised piece's top face rolls over at its edges instead of ending in a cut: a lit rim along the top and the right
+   (the light is there), a soft shade along the bottom and the left where it turns down into its lip (--pt/--pb: where
+   the top face is, pressed or not) */
+#app.desk .dk-main,#app.desk .dk-sec,#app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-chip,#app.desk .dk-plate,#app.desk .dk-pill,#app.desk .dk-tab,#app.desk .dk-top,#app.desk .dk-seg button{position:relative}
+#app.desk .dk-rb::after,#app.desk .dk-main::after,#app.desk .dk-sec::after,#app.desk .dk-arrow::after,#app.desk .dk-step button::after,#app.desk .dk-chip::after,#app.desk .dk-plate::after,#app.desk .dk-pill::after,#app.desk .dk-tab::after,#app.desk .dk-top::after,#app.desk .dk-seg button[aria-pressed="true"]::after{
+  content:"";display:block;position:absolute;left:0;right:0;top:var(--pt,0px);bottom:var(--pb,var(--lip));border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.42),inset -1.5px 0 0 rgba(255,255,255,.16),inset 0 -4px 5px -2px rgba(0,0,0,.22),inset 3px 0 4px -2px rgba(0,0,0,.14)}
+/* a slot is cut with a softened edge, and its walls darken it inside (under the key) */
+#app.desk .dk-slot{position:relative}
+#app.desk .dk-slot::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset -2px 5px 7px rgba(60,40,15,.32),0 1px 0 rgba(255,255,255,.55)}
 </style>
 
 <div id="app" class="busy" data-theme="light">
