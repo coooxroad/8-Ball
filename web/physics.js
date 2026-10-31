@@ -295,43 +295,102 @@ function createPhysics(cfg) {
     }
     for (const q of [a, b]) { q.x += q.vx * tau; q.y += q.vy * tau; q.z = Math.max(0, q.z + q.vz * tau); }
   }
+  /* Balls on the cloth meeting balls on the cloth. The meetings are taken in the order they happened (each pair, found a
+     little way into each other, is taken back to the instant it touched), and meetings that happened at the same instant
+     - a ball struck square between two that touch, a rack - are settled TOGETHER: one set of blows, worked out at once
+     (projected Jacobi on the contacts, each blow giving the pair back e of its closing speed and none pulling), so that no
+     ball is served first because of its number. Then whatever those blows set closing next (the next row of a rack) is
+     the next instant, and so on until nothing is closing. It used to go pair by pair in the balls' order, and two balls
+     side by side came off at 2.36 and 1.19 m/s, and the other way round when their numbers were swapped. */
+  const SIM_EPS = 1e-7;                                         // touches this close in time (s) count as one instant
+  let overlapSeen = false;                                      // (set by contacts: some pair is pressed into another)
+  function contacts(w, bs, n, h) {
+    const out = []; overlapSeen = false;
+    for (let i = 0; i < n; i++) {
+      const a = bs[i]; if (!a.on || a.z !== 0 || a.vz !== 0) continue;
+      for (let j = i + 1; j < n; j++) {
+        const b = bs[j]; if (!b.on || b.z !== 0 || b.vz !== 0) continue;
+        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        if (d2 >= 4 * R * R + 1e-12 || d2 < 1e-14) continue;
+        if (d2 < 4 * R * R - 1e-12) overlapSeen = true;
+        const rvx = b.vx - a.vx, rvy = b.vy - a.vy, vv = rvx * rvx + rvy * rvy, dv = dx * rvx + dy * rvy;
+        if (dv >= -1e-12 || vv < 1e-12) continue;                  // not closing
+        const tau = d2 < 4 * R * R ? Math.max(0, Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv)) : 0;
+        out.push({ i, j, tau });
+      }
+    }
+    return out;
+  }
+  function collideGround(w, bs, n, h) {
+    const cue = w.cue;
+    for (let round = 0; round < 64; round++) {
+      const all = contacts(w, bs, n, h); if (!all.length) break;
+      let T = 0; for (const c of all) if (c.tau > T) T = c.tau;
+      const group = all.filter(c => c.tau >= T - SIM_EPS);
+      const inv = new Set(); for (const c of group) { inv.add(c.i); inv.add(c.j); }
+      // back to the instant they touched
+      for (const k of inv) { const q = bs[k]; q.x -= q.vx * T; q.y -= q.vy * T; }
+      const deg = new Map(); for (const k of inv) deg.set(k, 0); for (const c of group) { deg.set(c.i, deg.get(c.i) + 1); deg.set(c.j, deg.get(c.j) + 1); }
+      for (const c of group) {
+        const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+        c.nx = dx / d; c.ny = dy / d; c.rel0 = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny;
+        c.target = c.rel0 < 0 ? -E_BALL * c.rel0 : 0; c.lam = 0; c.w = 1 / Math.max(deg.get(c.i), deg.get(c.j));
+      }
+      // the blows, all from the same state each pass, until they agree
+      for (let it = 0; it < 200; it++) {
+        let moved = 0; const dv = new Map(); for (const k of inv) dv.set(k, [0, 0]);
+        for (const c of group) {
+          const a = bs[c.i], b = bs[c.j], rel = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny;
+          const nl = Math.max(0, c.lam + c.w * (c.target - rel) / 2), d = nl - c.lam; c.lam = nl;
+          if (d !== 0) { const ai = dv.get(c.i), bj = dv.get(c.j); ai[0] -= d * c.nx; ai[1] -= d * c.ny; bj[0] += d * c.nx; bj[1] += d * c.ny; if (Math.abs(d) > moved) moved = Math.abs(d); }
+        }
+        for (const [k, v] of dv) { bs[k].vx += v[0]; bs[k].vy += v[1]; }
+        if (moved < 1e-10) break;
+      }
+      // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
+      const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
+      if (met.length) {
+        const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, 0, met[0]];
+        if (w.ev.firstHit == null) w.ev.firstHit = met[0];
+        for (const o of met) if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
+      }
+      if (w.snd) for (const c of group) if (-c.rel0 > 0.03 && c.lam > 0) { const a = bs[c.i], b = bs[c.j]; w.snd.push({ t: 'ball', v: -c.rel0, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id }); }
+      // and on from that instant with the new speeds
+      for (const k of inv) { const q = bs[k]; q.x += q.vx * T; q.y += q.vy * T; }
+    }
+    // Overlaps left over (balls pressed together, a ball placed in contact): pushed apart the same way, all pairs at once.
+    if (!overlapSeen) return;
+    for (let it = 0; it < 8; it++) {
+      const push = new Map(); let any = false;
+      for (let i = 0; i < n; i++) {
+        const a = bs[i]; if (!a.on || a.z !== 0) continue;
+        for (let j = i + 1; j < n; j++) {
+          const b = bs[j]; if (!b.on || b.z !== 0) continue;
+          const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+          if (d2 >= 4 * R * R - 1e-12 || d2 < 1e-14) continue;
+          const d = Math.sqrt(d2), ov = (2 * R - d) / 2, nx = dx / d, ny = dy / d; any = true;
+          const pa = push.get(i) || [0, 0], pb = push.get(j) || [0, 0]; pa[0] -= nx * ov; pa[1] -= ny * ov; pb[0] += nx * ov; pb[1] += ny * ov; push.set(i, pa); push.set(j, pb);
+        }
+      }
+      if (!any) break;
+      for (const [k, p] of push) { bs[k].x += p[0]; bs[k].y += p[1]; }
+    }
+  }
   function sub(w, h) {
     SUBH = h;
-    const bs = w.balls, n = bs.length, cue = w.cue;
+    const bs = w.balls, n = bs.length;
     for (let i = 0; i < n; i++) if (bs[i].on) motion(w, bs[i], h);
+    // a ball off the cloth meeting another: the three-dimensional blow, pair by pair (rare, and never two at once)
     for (let i = 0; i < n; i++) {
       const a = bs[i]; if (!a.on) continue;
       for (let j = i + 1; j < n; j++) {
         const b = bs[j]; if (!b.on) continue;
-        let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
-        if (d2 >= 4 * R * R || d2 < 1e-14) continue;
-        if (a.z !== 0 || b.z !== 0 || a.vz !== 0 || b.vz !== 0) { hitAir(w, a, b, i, j, h); continue; }
-        /* They are found already overlapping, a little way into each other. The blow goes along the line of centres at the
-           instant they TOUCHED, so both are taken back to that instant first (and carried on from it afterwards). Without
-           this a thin cut came out degrees wrong, and differently at every step length. */
-        const rvx = b.vx - a.vx, rvy = b.vy - a.vy, vv = rvx * rvx + rvy * rvy, dv = dx * rvx + dy * rvy;
-        let tau = 0;
-        if (dv < 0 && vv > 1e-12) {
-          tau = Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv);
-          a.x -= a.vx * tau; a.y -= a.vy * tau; b.x -= b.vx * tau; b.y -= b.vy * tau;
-          dx = b.x - a.x; dy = b.y - a.y; d2 = dx * dx + dy * dy;
-        }
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = (2 * R - d) / 2;
-        if (ov > 0) { a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov; }
-        const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-        if (rel >= 0) { if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; } continue; }
-        const jn = -(1 + E_BALL) / 2 * rel;
-        a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
-        if ((i === cue || j === cue) && !w.ev.at) { const c = i === cue ? a : b; w.ev.at = [c.x, c.y, 0, i === cue ? j : i]; }
-        if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; }
-        if (i === cue || j === cue) {
-          const o = i === cue ? j : i;
-          if (w.ev.firstHit == null) w.ev.firstHit = o;
-          if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
-        }
-        if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
+        if (a.z === 0 && b.z === 0 && a.vz === 0 && b.vz === 0) continue;
+        const dx = b.x - a.x, dy = b.y - a.y; if (dx * dx + dy * dy >= 4 * R * R) continue;
+        hitAir(w, a, b, i, j, h);
       }
     }
+    collideGround(w, bs, n, h);
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
@@ -353,10 +412,12 @@ function createPhysics(cfg) {
           hitSeg(w, b, SEGS[best]);
         }
         if (!POCKETED) continue;
-        // A ball drops once its centre is far enough over the hole. A fast ball has to get deeper before it drops,
-        // so a hard shot that is not centred hits the back of the pocket and can rattle out again.
-        // b.hot remembers how hard the ball was travelling a moment ago, so slowing down on a jaw does not rescue it
-        const tight = 1 - 0.55 * Math.min(1, Math.max(0, (b.hot - 2.5) / 4.5));
+        // A ball drops once its centre is far enough over the hole. (A fast ball used to have to get deeper first, the
+        // drop zone shrinking with pace; together with the spit below that turned hard but well-aimed balls coming in at
+        // an angle away - the window of a corner pocket 30 degrees off the diagonal fell from 6.8 to 3.3 cm at full pace,
+        // and the lost shots came back as scattered rattle-ins. Now the pocket's own shape decides: a hard ball that is
+        // not centred still meets the jaws or the back of the pocket, and can still be spat out.)
+        const tight = 1;
         const outside = Math.abs(b.x) > HL || Math.abs(b.y) > HW;
         let pk = -1;
         for (let k = 0; k < 6; k++) {

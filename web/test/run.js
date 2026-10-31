@@ -146,6 +146,49 @@ for (const name of ['bar', 'pro', 'pub']) {
   // (none while they are made again)
   console.log(`puzzles: ${Z.list.length} in ${Z.STAGES.length} stages (${Z.STAGES.map((s, i) => s.name + ' ' + Z.of(i).length).join(', ')}), ${Z.list.length - bad} stored answers work`);
 }
+// Meetings at the same instant are settled together, not in the balls' order: two touching balls struck square between
+// them come off alike, whatever their numbers; a straight break opens the rack evenly; a row of touching balls passes the
+// blow along it; no group of blows makes energy.
+{
+  const P = createPhysics(Object.assign({ pockets: true }, TABLES.pro)), R = P.R;
+  const sp = b => Math.hypot(b.vx, b.vy), KE = w => w.balls.reduce((a, b) => a + b.vx * b.vx + b.vy * b.vy, 0);
+  for (const tick of [1 / 120, 1 / 1920]) {
+    const got = [];
+    for (const swap of [false, true]) {
+      const w = P.makeWorld(3); P.place(w, 0, -0.3, 0); P.place(w, swap ? 2 : 1, 0, R); P.place(w, swap ? 1 : 2, 0, -R); P.strike(w, 0, 3, 0, 0, 0);
+      let k0 = KE(w), up = 0, gain = 0; for (let t = 0; t < 0.2; t += tick) { P.step(w, tick); const k = KE(w); if (k > k0 + 1e-9) gain = Math.max(gain, k - k0); k0 = k; }
+      const u = w.balls[swap ? 2 : 1], d = w.balls[swap ? 1 : 2];
+      if (Math.abs(sp(u) - sp(d)) > 1e-9) fail(`touching pair, tick 1/${Math.round(1 / tick)}${swap ? ' swapped' : ''}: ${sp(u).toFixed(4)} vs ${sp(d).toFixed(4)} m/s`);
+      if (gain > 0) fail(`touching pair: the blows made energy (${gain.toExponential(2)})`);
+      got.push(sp(u));
+    }
+    if (Math.abs(got[0] - got[1]) > 1e-9) fail(`touching pair: swapping the numbers changed the result (${got[0]} vs ${got[1]})`);
+  }
+  {
+    const w = P.makeWorld(16), rows = [[0], [-1, 1], [-2, 0, 2], [-3, -1, 1, 3], [-4, -2, 0, 2, 4]], at = [];
+    let id = 1; rows.forEach((r, k) => r.forEach(m => { P.place(w, id, P.HL / 2 + k * 2 * R * Math.sqrt(3) / 2, m * R); at.push([k, m, id]); id++; }));
+    P.place(w, 0, -P.HL / 2, 0); P.strike(w, 0, 8, 0, 0, 0);
+    for (let t = 0; t < 0.3; t += 1 / 1920) P.step(w, 1 / 1920);
+    let worst = 0, vy = 0; for (const b of w.balls) vy += b.vy;
+    for (const [k, m, i] of at) if (m > 0) { const j = at.find(q => q[0] === k && q[1] === -m)[2]; worst = Math.max(worst, Math.abs(sp(w.balls[i]) - sp(w.balls[j]))); }
+    if (worst > 1e-6 || Math.abs(vy) > 1e-6) fail(`straight break: mirror pairs differ by ${worst.toExponential(2)} m/s, sideways momentum ${vy.toExponential(2)}`);
+  }
+  {
+    const w = P.makeWorld(4); P.place(w, 0, -0.4, 0); for (let i = 1; i < 4; i++) P.place(w, i, (i - 1) * 2 * R, 0); P.strike(w, 0, 2, 0, 0, 0);
+    for (let t = 0; t < 0.3; t += 1 / 240) P.step(w, 1 / 240);
+    if (!(sp(w.balls[3]) > 3 * sp(w.balls[1]) && sp(w.balls[3]) > 3 * sp(w.balls[2]))) fail(`a row of touching balls: the blow did not pass along it (${[1, 2, 3].map(i => sp(w.balls[i]).toFixed(2)).join(', ')})`);
+  }
+  console.log('simultaneous contacts: alike whatever the numbers, an even break, a row passes the blow on');
+}
+// Pockets: a hard, well-aimed ball coming into a corner pocket at an angle is not turned away for its pace (the drop zone
+// used to shrink with speed, which with the spit halved the window at full pace)
+{
+  const P = createPhysics(Object.assign({ pockets: true }, TABLES.pro)), K = P.POCKETS[2];
+  const win = (ang, v) => { let n = 0; for (let o = -0.08; o <= 0.0801; o += 0.0025) { const w = P.makeWorld(1), a0 = Math.PI / 4 - ang * Math.PI / 180, sx = K.x - Math.cos(a0), sy = K.y - Math.sin(a0); P.place(w, 0, sx, sy); P.strike(w, Math.atan2(K.y - sy, K.x - sx) + Math.atan2(o, 1), v, 0, 0, 0); if (P.run(w, 25).pocketed.length) n++; } return n * 0.25; };
+  const slowish = win(30, 3.5), hard = win(30, 7.7);
+  if (hard < slowish * 0.8) fail(`corner pocket 30° off: ${hard} cm of aim pocket at full pace against ${slowish} cm at 3.5 m/s`);
+  console.log(`pocket window, corner 30° off the diagonal: ${slowish} cm at 3.5 m/s, ${hard} cm at 7.7 m/s`);
+}
 // 2.0: the raised cue. A masse bends towards the side that was put on it; a jump clears a ball in the way and a soft one does not;
 // a ball that goes over the rail is a foul and comes back; a shot replayed from its tape ends where it ended, in the air or not
 {
