@@ -113,15 +113,15 @@ function createScene(canvas, app, PH) {
     rr(70, 60, 372, 200, 26);
     const sm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s), transparent: true, opacity: 0.55, depthWrite: false, toneMapped: false }));
     sm.position.set(0, -0.05, -0.79); sm.layers.set(1); sScene.add(sm); tableShadow = sm;
-    // the room beyond the lamps' reach: the floor darkens away from the table into the dark of the hall
+    // the room beyond the lamps' reach: the floor darkens away from the table into the dark of the hall (black well before the floor ends)
     const v = mkCanvas(256, 256), vg = v.getContext('2d'), gr = vg.createRadialGradient(128, 128, 18, 128, 128, 128);
-    gr.addColorStop(0, 'rgba(4,4,6,0)'); gr.addColorStop(0.22, 'rgba(4,4,6,0)'); gr.addColorStop(0.55, 'rgba(4,4,6,0.55)'); gr.addColorStop(0.85, 'rgba(4,4,6,0.95)'); gr.addColorStop(1, 'rgba(4,4,6,1)');
+    gr.addColorStop(0, 'rgba(4,4,6,0)'); gr.addColorStop(0.16, 'rgba(4,4,6,0)'); gr.addColorStop(0.36, 'rgba(4,4,6,0.55)'); gr.addColorStop(0.6, 'rgba(4,4,6,0.95)'); gr.addColorStop(0.75, 'rgba(4,4,6,1)');
     vg.fillStyle = gr; vg.fillRect(0, 0, 256, 256);
-    const dk = new THREE.Mesh(new THREE.PlaneGeometry(17.5, 12), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
+    const dk = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
     dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk);
   })();
   /* The hall's light over the table: a long black box hung on two wires, its underside a lit acrylic panel. Only seen
-     when the camera looks round from low enough (from higher up it would hang between the camera and the cloth); it
+     when the camera looks round from below it (from higher up it would hang between the camera and the cloth); it
      lights nothing itself - the lamps above do that. Scaled along the table in setTable. */
   const hall = new THREE.Group();
   (function hallLight() {
@@ -664,9 +664,9 @@ function createScene(canvas, app, PH) {
       // a scripted camera may come in very close, so what it can see starts nearer to it
       if (cam) { camera.position.copy(dir).multiplyScalar(d * cam.zoom); camera.position.x += cam.tx; camera.position.y += cam.ty; fitP.set(cam.tx, cam.ty, 0); camera.near = Math.max(0.05, Math.min(0.5, d * cam.zoom * 0.3)); }
       else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
-      hall.visible = orbit.el < 1.05;
     } else { hall.visible = false; camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
+    hall.visible = orbit.on && camera.position.z < 0.98;                // only from under it, where its lit face shows (from higher it would hang between the camera and the cloth)
     camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
