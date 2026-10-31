@@ -114,6 +114,9 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
     box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
+    // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
+    const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
+    if (n !== dialN) { dialN = n; SND.dial(Math.abs(d) / 20); }
   });
   const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
@@ -121,7 +124,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 /* The fine-aim dial (on the desk): a knurled rubber drum turning in its walnut slot, drawn as a real cylinder - its ridges
    crowd together towards its edges and it darkens away from the light (upper right), with brass flanges at both ends.
    dialPh is how far it has been rolled, in pixels at its face. */
-let dialPh = 0;
+let dialPh = 0, dialN = 0;
 function drawDial() {
   const box = $('#fine'); if (!deskOn()) return;
   let cv = box.querySelector('canvas.dial'); if (!cv) { cv = el('canvas', { class: 'dial' }); box.appendChild(cv); }

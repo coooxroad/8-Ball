@@ -1319,6 +1319,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .dk-card{box-shadow:inset 0 -5px 0 -1px var(--rc)}
 #app.desk .dk-card.r5{box-shadow:inset 0 -5px 0 -1px #ff8a5c}
 #app.desk .dk-card.r1::before{background:linear-gradient(to top,rgba(110,180,255,.85) 0%,rgba(110,180,255,.35) 30%,transparent 62%)}
+/* the power gauge, one channel: the lit meter fills the whole window and the cue lies in it, its chalked tip showing at
+   the top (the housing's two windows made one, ui/gauge*.webp) */
+#app.desk #power::before{inset:45px auto 45px 13px;width:70px}
+#app.desk #power::after{background:url(ui/gauge-glass.webp) 13px 45px/70px calc(100% - 90px) no-repeat}
+#app.desk #powerCue{left:50%;width:19px}
+#app.desk.portrait #power::before{inset:10px 34px auto 34px;height:52px;width:auto}
+#app.desk.portrait #power::after{background:url(ui/gauge-glass-h.webp) 34px 10px/calc(100% - 68px) 52px no-repeat}
+#app.desk.portrait #powerCue{top:50%;height:19px}
+/* the fine-aim drum, taller */
+#app.desk #fine{height:380px;margin-top:-190px}
+#app.desk.compact:not(.portrait) #fine{height:260px;margin-top:-130px}
+/* the view keys under the 3D knob: straight down (2D) and the player's eye behind the cue ball */
+#views{display:none}
+#app.desk #views{position:fixed;right:12px;top:76px;display:flex;flex-direction:column;gap:10px;z-index:5}
+#app.desk #views .btn{width:48px;height:48px;border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;box-shadow:-3px 5px 8px rgba(0,0,0,.45)}
+#app.desk #views .btn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
+#app.desk.compact #views{top:64px;gap:8px}#app.desk.compact #views .btn{width:42px;height:42px}
+#app.desk.portrait #views{top:calc(var(--hud-h) + 40px);right:8px}
+#app:not(.desk) #views,#hud[hidden] #views{display:none}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">
@@ -1350,6 +1369,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
     <div class="pill r two" id="p1"><i class="av">2</i><div class="who"><span class="nm"></span><span class="sub"></span></div><div class="tray"></div><div class="pts"></div></div>
     <div id="pracBar" hidden></div>
     <button class="btn icon" id="viewBtn" aria-label="3D로 둘러보기" aria-pressed="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
+    <div id="views" aria-label="시점">
+      <button class="btn icon" id="topBtn" aria-label="위에서 보기 (2D)" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="10" cy="12" r="1.6" fill="currentColor"/><circle cx="15" cy="10" r="1.6" fill="currentColor"/></svg></button>
+      <button class="btn icon" id="eyeBtn" aria-label="선수 시점" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/></svg></button>
+    </div>
   </header>
 
   <div id="toast" role="status" aria-live="polite"></div>

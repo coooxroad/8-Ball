@@ -731,10 +731,12 @@ function createScene(canvas, app, PH) {
   }
   function orbitBy(dx, dy) {
     if (!orbit.on) return;
+    if (orbit.cam && orbit.cam.eye) { orbit.az = orbit.cam.az - (portrait ? -Math.PI / 2 : 0); orbit.zoom = 0.8; orbit.cam = null; if (onFree) onFree(); }   // (dragging the view leaves the player's eye for a free look)
     orbit.az -= dx * 0.0034; orbit.elTo = orbit.el = Math.max(0.3, Math.min(1.42, orbit.el + dy * 0.0028)); orbit.live = 4; applyCamera();
   }
   // A camera placed by a script (the highlight reel): az is the compass direction the camera sits in, el its height angle,
   // zoom < 1 is closer than "whole table in view", and it looks at the table point (tx, ty).
+  let onFree = null;
   function setCam(c) { orbit.on = true; orbit.cam = c; orbit.el = orbit.elTo = c.el; orbit.live = 4; applyCamera(); }
   // where table points are on the screen, in pixels from the top-left of the game area (for overlays drawn on top of the
   // 3D picture): call begin() once, then at() for each point, which says whether the point is in front of the camera
@@ -895,20 +897,25 @@ function createScene(canvas, app, PH) {
     const c = w.balls[w.cue];
     if (trailTick(c, R, dt)) dirty = Math.max(dirty, 2);
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
+    // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
+    const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }
     if (cue.visible) {
-      const dx = Math.cos(v.aim), dy = Math.sin(v.aim);
+      const dx = Math.cos(v.aim), dy = Math.sin(v.aim), cx0 = fo ? fo.x : c.x, cy0 = fo ? fo.y : c.y, pullV = fo ? fo.pull : v.pull, spinV = fo ? fo.spin : v.spin;
       // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
-      const e = v.el || 0, ce = Math.cos(e), se = Math.sin(e);
-      const tx = c.x - dx * ce * (R + v.pull), ty = c.y - dy * ce * (R + v.pull);
+      const e = fo ? fo.el : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
+      const tx = cx0 - dx * ce * (R + pullV), ty = cy0 - dy * ce * (R + pullV);
       // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
       // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
       // The cue is drawn at its angle with a small lean for looks (the ordinary stroke is a level 0), and moved sideways and
       // up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
-      const off = v.spin.x * 0.5 * R, lift = v.spin.y * 0.5 * R * ce, px = tx + dy * off, py = ty - dx * off;
-      if (orbit.on) { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + v.pull)); cue.rotation.set(0, -Math.min(Math.PI / 2, 0.085 + e), v.aim + Math.PI); }
-      else { cue.scale.set(Math.max(0.16, ce), 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
-      const sx = px - dx * 0.735 * ce + 0.012, sy = py - dy * 0.735 * ce - 0.014;
-      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * Math.max(0.12, ce), 0.022, 1);
+      const off = spinV.x * 0.5 * R, lift = spinV.y * 0.5 * R * ce, px = tx + dy * off, py = ty - dx * off;
+      // From above, a raised cue is raised too, in true perspective (the butt nearer the eye, so wider), only shortened so its
+      // butt stays within a third of a metre of the cloth; its shadow lies on the cloth below and falls away from it.
+      const kl = orbit.on || e < 0.03 ? 1 : Math.min(1, 0.32 / (1.47 * se));
+      if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? 0.085 : 0) + e), v.aim + Math.PI); }
+      else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
+      const half = 0.735 * kl * ce, sx = px - dx * half + 0.012 + 0.025 * se, sy = py - dy * half - 0.014 - 0.025 * se;
+      cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * kl * Math.max(0.12, ce), 0.022 * (1 + 0.5 * se), 1); cueShadow.material.opacity = 0.22 * (1 - 0.55 * se);   // (a raised cue's shadow is fainter)
     }
     if (guide.visible) {
       const gl = v.level, chosen = v.power > 0;
@@ -1007,6 +1014,7 @@ function createScene(canvas, app, PH) {
   }
 
   return {
+    set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
     setTable, setCloth, setCue, setBalls, setTrail, ballPortrait, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
