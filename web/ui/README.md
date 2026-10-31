@@ -38,3 +38,32 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | coin | 18-brass-coin-128 | the coin, in the wallet on the top bar | – |
 | dia | F2-diamond 160 | the diamond, the rare currency, in the wallet | – |
 | chip, chip-glow | F3, F4 currency chip 300x96 | the wallet's wells (glow not used yet: for when an amount rises) | slice 44 / 4 |
+| mode-three … mode-nine | H1 mode icons 128 | beside each game's name on the rail keys | – |
+| toggle-off, toggle-on | S1 200×96 | the settings' on/off switch (knob 45,45 → 155,45) | – |
+| slider-track, slider-knob | S2 | (not used yet: for a slider) | slice 28 l r |
+| divider | S3 600×12 | the brass line between settings rows | slice 6 l r |
+| rank-1 … rank-3 | R1 128 | the first three in the records (number in 30,28–98,96) | – |
+| res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
+| streak | R3 220×80 | the "N연승" badge | slice 28 l r |
+| plaque | R4 900×140 | the records' title plate | slice 80 l r |
+| bc-bug, bc-bug-out | O1 1400×180 | a match's scorebug; -out (red edge) while a time-out is shown. Player 64–490 / game 580–820 / player 910–1336 | stretched whole |
+| bc-tab-l, -l-on, -r, -r-on | O2 640×120 | the players' tabs (white / yellow ball's colour on the edge; -on: their turn) | slice 32 l r |
+| bc-clock | O3 220 | the shot clock's ring (track radius 77–87, drawn over it as a conic arc) | – |
+| bc-lower | O4 1200×160 | messages as a lower third | slice 28 l, 100 r |
+| bc-tray | O5 640×72 | the balls still to pot, under each tab on pool | slice 16 |
+
+## Table materials (`web/tex/`)
+
+Carried inside the page as data URIs (build.sh writes them into `TEXTURES`) because a page opened from a file may not
+hand its own images to WebGL. Each replaces a drawn stand-in in scene.js once loaded.
+
+| file | from | use |
+|---|---|---|
+| wood-mahogany, wood-walnut | W1, W2 1024×512 | rails and apron, chosen by the cloth (look.js `grain`) |
+| wood-end | W3 512 | a carom table's pedestals (grain up and down) |
+| sight | T3 128 | the mother-of-pearl sights |
+| carpet-checker, carpet-geo | F1, F2 (768) | the floor under a pool / a carom table (2 m a repeat) |
+| diffuser | L1 512×256 | the underside of the hall's light box |
+| badge | B1 256×128 | the maker's plate on the apron |
+
+T2 (cloth detail) is not used: at table scale it only showed as blocks; the drawn cloth stays.

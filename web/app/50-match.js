@@ -17,7 +17,7 @@ const match = {
   cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
-  timeout() { const out = game.timeout(); SND.bad(); toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false); snapshot(); },
+  timeout() { const out = game.timeout(); SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
@@ -102,3 +102,6 @@ function shotClock(dt) {
   if (s < was && s <= 5 && s > 0) SND.tap();
   if (st.clock <= 0) { box.hidden = true; clockShown = -1; match.timeout(); }
 }
+// time ran out: the scorebug's lower edge burns red for as long as the message stays up
+let outT = 0;
+function flashOut(ms) { const h = $('#hud'); h.classList.add('out'); clearTimeout(outT); outT = setTimeout(() => h.classList.remove('out'), ms || 2600); }
