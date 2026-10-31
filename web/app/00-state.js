@@ -185,6 +185,3 @@ function drawCue(cv, d, vertical) {
 let cueNow = prefs.cues[0];
 function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); if (st.screen === 'play') paintPowerCue(); }
 function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], !scene.portrait); }
-// what the cue in hand and the worn glove do to a person's shot (look.js stats; the computer plays plain)
-const cueStat = k => statMul((CUES[cueNow] || CUES[0]).stats[k]);
-const gloveStat = k => { const g = GLOVES.find(x => x.id === prefs.glove); return statMul(g ? g.stats[k] : 50); };

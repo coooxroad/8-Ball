@@ -74,7 +74,7 @@ function frame(now) {
   if (st.phase === 'aim') syncEl();
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
-    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, vk: st.phase === 'aim' ? cueStat('power') : 1, sk: st.phase === 'aim' ? cueStat('spin') : 1, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
+    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
     showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle', showGuide: lined, level: flow ? flow.guide() : 0, aimStyle: prefs.aim,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
