@@ -494,7 +494,14 @@ function createScene(canvas, app, PH) {
         if (n === 6 || n === 9) g.fillRect(u * W - 22, H / 2 + 46, 44, 7);
       }
     }
+    // a set with a surface (marble, pearl...): its grey picture brightens and darkens the colours (overlay), once loaded
+    const im = sk.mat && matOf(sk.mat); if (im) { g.globalCompositeOperation = 'overlay'; g.drawImage(im, 0, 0, W, H); g.globalCompositeOperation = 'source-over'; }
     return tex(c);
+  }
+  const mats = {};
+  function matOf(m) {
+    if (m in mats) return mats[m]; mats[m] = null; const u = TEXS['ball-' + m]; if (!u) return null;
+    const im = new Image(); im.onload = () => { mats[m] = im; if (skin.mat === m) { const k = skin.id; skin = null; setBalls(k); } }; im.src = u; return null;
   }
   function ballSet(kind, n, R) {
     const mesh = [], blob = [];

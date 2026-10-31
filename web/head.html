@@ -1098,7 +1098,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.bcast #clock[data-lv="2"] b{color:#ff6b61}
 #app.bcast #hud.out #badge{background:linear-gradient(#e0262e,#8e0c12);border-top-color:#fff}
 /* upright: the plates along the top */
-#app.bcast.portrait #hud .pill{position:relative}
+#app.bcast.portrait #hud .pill{position:relative;justify-self:stretch}
 #app.bcast.portrait #hud .pill{height:44px}
 #app.bcast.portrait #hud .pill .nm{font-size:14px}
 #app.bcast.portrait #hud .pill .sub{font-size:10.5px}
@@ -1179,6 +1179,43 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.compact .dk-cards{gap:10px 8px}
 #app.desk.compact .dk-card{font-size:11.5px;padding:6px 3px 5px;gap:3px}
 #app.desk.compact .dk-card .eq{font-size:9.5px;padding:2px 6px;left:3px;top:3px}
+/* in play on the desk: the controls as real things, like the desk's own (ui/README.md) -
+   power: a walnut cue trough with brass ends and a brass scale, the equipped cue lying in its felt groove;
+   fine aim: a rubber thumb wheel turning in a walnut slot (its ridges move as it is rolled, 80-input.js);
+   spin: a real cue ball in a brass bezel, a blue chalk mark where the tip will meet it; pause and 3D: walnut knobs. */
+#app.desk #power{background:none;border:0 solid transparent;border-radius:0;box-shadow:none;overflow:visible;
+  border-image:url(ui/power-rail.webp) 120 0 fill/29px 0 stretch;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+#app.desk #power::before{inset:30px 13px;border-radius:3px}
+#app.desk #power::after{content:"";position:absolute;right:-12px;top:30px;bottom:30px;width:9px;background:url(ui/power-scale.webp) center/100% 100% no-repeat;pointer-events:none}
+#app.desk #powerLab{display:none}
+#app.desk #powerNum{left:9px;right:9px;bottom:5px;padding:2px 0;background:none;box-shadow:none;color:#3b2a0e;font-size:15px;text-shadow:0 1px 0 rgba(255,235,180,.6)}
+#app.desk.portrait #power{border-image:url(ui/power-rail-h.webp) 0 120 fill/0 28px stretch}
+#app.desk.portrait #power::before{inset:12px 28px}
+#app.desk.portrait #power::after{right:30px;left:30px;top:auto;bottom:-11px;width:auto;height:9px;
+  background:repeating-linear-gradient(90deg,#c9a24e 0 1.5px,transparent 1.5px 5%) bottom/100% 60% no-repeat,linear-gradient(#e2c27a,#b38a36) bottom/100% 2px no-repeat}
+#app.desk.portrait #powerNum{right:4px;top:auto;bottom:auto;height:100%;padding:0 10px;color:#3b2a0e}
+#app.desk #fine{background:#151515 url(ui/wheel-ridges.webp) 0 0/100% auto repeat-y;border:0;border-radius:0;box-shadow:none;overflow:visible;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+#app.desk #fine::before{content:"";position:absolute;inset:0;border:0 solid transparent;border-image:url(ui/wheel-box.webp) 140 45 fill/34px 11px stretch;pointer-events:none}
+#app.desk #fine::after{left:6px;right:6px;height:2px;margin-top:-1px;background:#e9c46a;box-shadow:0 0 4px rgba(233,196,106,.8);z-index:1}
+#app.desk #fineLab{display:none}
+#app.desk.portrait #fine{background-image:url(ui/wheel-ridges-h.webp);background-size:auto 100%;background-repeat:repeat-x}
+#app.desk.portrait #fine::before{border-image:url(ui/wheel-box-h.webp) 45 140 fill/7px 22px stretch}
+#app.desk.portrait #fine::after{top:3px;bottom:3px;margin:0 0 0 -1px;width:2px}
+#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-bezel.webp) center/100% 100% no-repeat,url(ui/spin-ball.webp) center/79% no-repeat;box-shadow:none;filter:drop-shadow(-4px 6px 6px rgba(0,0,0,.5))}
+#app.desk #spinBtn{width:66px;height:66px}
+#app.desk #spinDot,#app.desk .sdot{width:16px;height:16px;margin:-8px;background:url(ui/chalk-mark.webp) center/100% 100% no-repeat;box-shadow:none}
+#app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
+#app.desk #spinPad::before{inset:20%;border-color:rgba(60,45,20,.3)}
+#app.desk #menuBtn,#app.desk #viewBtn{border:0;border-radius:50%;background:url(ui/knob.webp) center/100% 100% no-repeat;color:#f1dca6;box-shadow:none;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.5))}
+#app.desk #menuBtn:active,#app.desk #viewBtn:active,#app.desk #viewBtn[aria-pressed="true"]{background-image:url(ui/knob-press.webp);color:#ffd46b}
+#app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy) url(ui/tour-logo.webp) center/80% auto no-repeat}
+#app.bcast.compact:not(.portrait) #hud::before{width:78px;height:21px;padding:0}
+#app.desk i.btrio[class*=" m-"] b{background-blend-mode:normal,overlay,normal;background-size:auto,300% 150%,auto}
+#app.desk i.btrio.m-marble b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-marble.webp),linear-gradient(var(--c),var(--c))}
+#app.desk i.btrio.m-pearl b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-pearl.webp),linear-gradient(var(--c),var(--c))}
+#app.desk i.btrio.m-carbon b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-carbon.webp),linear-gradient(var(--c),var(--c))}
+#app.desk i.btrio.m-galaxy b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-galaxy.webp),linear-gradient(var(--c),var(--c))}
+#app.desk i.btrio.m-vintage b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-vintage.webp),linear-gradient(var(--c),var(--c))}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">

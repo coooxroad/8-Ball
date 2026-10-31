@@ -53,6 +53,8 @@ rm -f "$A"/fonts/*
 cp fonts/*.woff2 "$A/fonts/"
 # the desk's materials and controls (images made to order, see ui/README.md)
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
+# the ball surfaces also as files, for the shelf cards (the 3D balls read them from the page)
+rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
