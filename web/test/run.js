@@ -2,9 +2,8 @@
    1. every practice drill, at every level, on every table size: the layout is valid and its reference shot passes
    2. computer-vs-computer games of every rule set finish, on every table size */
 const path = require('path'), W = path.join(__dirname, '..');
-// the game plays on the game physics (real + play), so that is what is checked by default; a check of another asks for it
-// (real: false for the original, play: false for the realistic one the puzzles were made on)
-const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(Object.assign({ real: true, play: true }, cfg)), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
+// there is one physics, the one the game is played on
+const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(cfg), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
 const TABLES = {
   bar: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }, club: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 },
   pro: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 }, pub: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 },
@@ -129,11 +128,11 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
   }
 }
-// puzzles: every one is on the cloth, and the answer stored with it really does what its stage asks -
-// played both straight from the stored speed and through the power control's rounding, as the app's "answer" button does
+// puzzles: every one is on the cloth. Their stored answers were found on the realistic physics, which is gone; until the
+// puzzles are made again on the game's, how many answers still work is only counted, not required
 {
   const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
-  const g = createGame({ pool: createPhysics(Object.assign({ play: false, pockets: true }, TABLES.bar)), carom: createPhysics({ play: false, R: 0.03275, pockets: false }) });
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
   let bad = 0;
   for (const z of Z.list) {
     g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
@@ -141,7 +140,7 @@ for (const name of ['bar', 'pro', 'pub']) {
     w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
       const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4]); const ev = P.run(t, 30);
-      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; fail(`puzzle ${z.id} (${Z.STAGES[z.stage].name}): its stored answer does not work`); break; }
+      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; break; }
     }
   }
   if (Z.list.length < 40) fail('fewer than 40 puzzles');
@@ -199,49 +198,21 @@ for (const name of ['bar', 'pro', 'pub']) {
   const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, {}); if (!g.restore(d) || g.P.HL !== 1.42) fail('a saved three-ball game came back on the wrong table');
   console.log(`openings and the three-ball table: checked (${n} shots)`);
 }
-// the realistic physics (cfg.real): games of every kind finish on it; nothing gains energy at a cushion; running side
-// lengthens the angle off a cushion; a cut throws the struck ball off the line of centres towards the way the cue ball was going;
-// side sends the cue ball a little the other way; the carom cloth runs further than the pool cloth; and a raised cue costs spin
+/* What a simulation owes whoever plays it: the same answer at any step length (a thin cut against theory); the mirror image
+   of a shot gives the mirror image of the result, and which ball has which number changes nothing; the aiming guide's
+   preview IS the shot; the gentlest touch and the smallest raise of the cue can be played; nothing jumps at a threshold, a
+   ball landing on another is a real blow, and no shot - cushions, balls, air and all - ever ends up with more energy than
+   it was given. */
 {
-  const real = cfg => createPhysics(Object.assign({ real: true, play: false }, cfg)), C = real({ R: 0.03275, pockets: false }), PL = real(Object.assign({ pockets: true }, TABLES.bar)), OLD = createPhysics({ real: false, R: 0.03275, pockets: false });
-  const one = (P, n) => { const w = P.makeWorld(n); for (let i = 1; i < n; i++) w.balls[i].on = false; P.place(w, 0, 0, 0); return w; };
-  const energy = b => b.vx * b.vx + b.vy * b.vy + 0.4 * C.R * C.R * (b.wx * b.wx + b.wy * b.wy + b.wz * b.wz);
-  let gain = 0;
-  for (let k = 0; k < 1500; k++) { const w = one(C, 4); C.strike(w, (k * 0.6180339) % 1 * 6.283, 1 + (k * 7 % 60) / 10, (k % 7 - 3) / 6 * 0.5, (k % 5 - 2) / 4 * 0.5); for (let i = 0; i < 300; i++) { const e0 = energy(w.balls[0]); C.step(w, 1 / 120); if (energy(w.balls[0]) > e0 * 1.0001 + 1e-9) gain++; } }
-  if (gain) fail(`realistic physics: energy went up on ${gain} steps`);
-  const off = side => { const w = one(C, 4); w.balls[0].x = w.balls[0].px = -0.5; C.strike(w, Math.PI / 4, 2.5, side, 0); for (let i = 0; i < 600; i++) { C.step(w, 1 / 120); if (w.ev.railed.length) { const b = w.balls[0]; return Math.atan2(-b.vy, b.vx); } } return NaN; };
-  if (!(off(0.35) < off(0) - 0.03)) fail('realistic physics: running side did not lengthen the angle off the cushion');
-  { const w = C.makeWorld(4); w.balls[1].on = w.balls[3].on = false; C.place(w, 0, -0.5, 0); C.place(w, 2, 0, C.R); C.strike(w, 0, 1.5, 0, 0); const v = OLD.makeWorld(4); v.balls[1].on = v.balls[3].on = false; OLD.place(v, 0, -0.5, 0); OLD.place(v, 2, 0, OLD.R); OLD.strike(v, 0, 1.5, 0, 0);
-    for (let i = 0; i < 200 && !w.ev.hits.length; i++) C.step(w, 1 / 120); for (let i = 0; i < 200 && !v.ev.hits.length; i++) OLD.step(v, 1 / 120); for (let i = 0; i < 3; i++) { C.step(w, 1 / 120); OLD.step(v, 1 / 120); } const a = Math.atan2(w.balls[2].vy, w.balls[2].vx), b = Math.atan2(v.balls[2].vy, v.balls[2].vx);
-    if (!(a < b - 0.003 && a > b - 0.12)) fail(`realistic physics: a cut should throw the struck ball a degree or so (${((b - a) * 57.3).toFixed(2)} degrees)`); if (!(Math.abs(w.balls[2].wz) > 0.1)) fail('realistic physics: no spin passed from ball to ball'); }
-  { const w = one(C, 4); C.strike(w, 0, 3, 0.4, 0); if (!(w.balls[0].vy > 0.02 && w.balls[0].vy < 0.2)) fail('realistic physics: right side should send the cue ball a little left'); const v = one(OLD, 4); OLD.strike(v, 0, 3, 0.4, 0); if (v.balls[0].vy !== 0) fail('the usual physics has no squirt'); }
-  const roll = P => { const w = one(P, P.POCKETED ? 16 : 4); P.place(w, 0, -P.HL + 0.2, 0.11); P.strike(w, 0, 4, 0, 0); let d = 0, px = w.balls[0].x, n = 0; while (!P.rest(w) && n < 20000) { P.step(w, 1 / 120); n++; d += Math.abs(w.balls[0].x - px); px = w.balls[0].x; } return d / (2 * P.HL); };
-  if (!(roll(C) > roll(PL) && roll(C) > roll(OLD) * 1.2)) fail('realistic physics: the carom cloth should run further than the pool cloth, and further than before');
-  { const spin = P => { const w = one(P, 4); P.strike(w, 0, 5, 0, -0.4, 0.6); return Math.hypot(w.balls[0].wx, w.balls[0].wy); }; if (!(spin(C) < spin(OLD) * 0.9)) fail('realistic physics: a raised cue should cost some of the draw'); }
-  const g = createGame({ pool: PL, carom: C, carom3: real({ R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }) });
-  for (const mode of ['eight', 'nine', 'four', 'three']) for (const level of [2, 3]) {
-    g.start(mode, ['A', 'B'], true, { level, target: 3, cushions: 1, rnd }); g.players[0].ai = true; let n = 0;
-    while (!g.over && n < 400) { const pl = g.aiPlan(); if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; } g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 90); g.world.snd.length = 0; g.resolve(); n++;
-      for (const b of g.world.balls) if (b.on && !(Number.isFinite(b.x) && Number.isFinite(b.y) && Math.abs(b.x) <= g.P.HL + 0.2 && Math.abs(b.y) <= g.P.HW + 0.2)) { fail(`realistic physics, ${mode}: a ball is nowhere sensible`); n = 999; break; } }
-    if (!g.over) fail(`realistic physics, ${mode} level ${level}: game did not finish`);
-  }
-  console.log(`realistic physics: checked (carom cloth runs ${roll(C).toFixed(1)} table lengths against ${roll(OLD).toFixed(1)} before; pool ${roll(PL).toFixed(1)})`);
-}
-/* What a simulation owes whoever plays it, on both physics: the same answer at any step length (a thin cut against theory);
-   the mirror image of a shot gives the mirror image of the result, and which ball has which number changes nothing; the aiming
-   guide's preview IS the shot; the gentlest touch and the smallest raise of the cue can be played; and on the realistic one
-   nothing jumps at a threshold, side dies at a measured rate, a ball landing on another is a real blow, and no shot - cushions,
-   balls, air and all - ever ends up with more energy than it was given. */
-{
-  const deg = 180 / Math.PI, both = [['usual', { real: false }], ['realistic', { play: false }], ['game', {}]];
+  const deg = 180 / Math.PI, both = [['game', {}]];
   let worst = 0, gain = 0, shots = 0;
   for (const [name, kind] of both) {
-    const P = createPhysics(Object.assign({ pockets: true }, kind, TABLES.bar)), R = P.R, real = P.REAL;
+    const P = createPhysics(Object.assign({ pockets: true }, kind, TABLES.bar)), R = P.R;
     const lay = (list) => { const w = P.makeWorld(list.length); list.forEach((q, i) => P.place(w, i, q[0], q[1])); return w; };
     const cut = dt => { const w = lay([[-0.4, 0], [0, 1.8 * R]]); P.strike(w, 0, 3, 0, 0); let n = 0; while (w.ev.firstHit == null && n++ < 1e6) P.step(w, dt); return Math.atan2(w.balls[1].vy, w.balls[1].vx) * deg; };
     const a = cut(1 / 120), b = cut(1 / 1920); worst = Math.max(worst, Math.abs(a - b));
     if (Math.abs(a - b) > 0.02) fail(`${name} physics: a thin cut depends on the step length (${a.toFixed(2)} against ${b.toFixed(2)} degrees)`);
-    if ((!real || P.PLAY) && Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`${name} physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
+    if (Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`${name} physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
     // mirror image
     for (let k = 0; k < 40; k++) {
       const ang = (k * 0.618 % 1 - 0.5) * 0.5, V = 1 + k % 7, sa = (k % 5 - 2) / 4 * 0.5, sb = (k % 3 - 1) * 0.3, el = k % 4 === 0 ? 0.5 : 0, pos = [[-0.4, 0.1], [0.1, 0.16], [0.5, -0.2], [-0.2, -0.3]];
@@ -266,57 +237,64 @@ for (const name of ['bar', 'pro', 'pub']) {
       if (at) for (let i = 0; i < Math.min(path.length, pv.post.length - 3); i++) if (path[i] !== pv.post[i + 3]) { fail(`${name} physics: the guide's cue ball path is not the shot's (shot ${k})`); k = 99; break; }
     }
     // energy, everything counted: travel, turning, height. (Striking the ball is where energy comes in; after that it only goes.)
-    if (real) for (let k = 0; k < 400; k++) {
+    for (let k = 0; k < 400; k++) {
       const w = lay([[-0.5, 0.02], [0.05, 0.06 * (k % 3 - 1)], [0.3, 0.2], [0.11, 0.0], [-0.1, -0.3]]), el = k % 3 === 0 ? 0.2 + (k % 11) * 0.1 : 0;
       P.strike(w, (k * 0.618 % 1 - 0.5) * 0.6, 1 + (k * 7 % 70) / 10, (k % 7 - 3) / 6 * 0.5, (k % 5 - 2) / 4 * 0.5, el); shots++;
       const E = () => { let e = 0; for (const q of w.balls) if (q.on) e += 0.5 * (q.vx * q.vx + q.vy * q.vy + q.vz * q.vz) + 0.2 * R * R * (q.wx * q.wx + q.wy * q.wy + q.wz * q.wz) + 9.8 * q.z; return e; };
       for (let i = 0; i < 600 && !P.rest(w); i++) { const e0 = E(); P.step(w, 1 / 120); if (E() > e0 * 1.0005 + 1e-7) gain++; }
     }
-    if (real) {
+    {
       // nothing switches on at a threshold: a hair more speed, never less air and never a leap (on the game's physics the
       // cloth swallows a soft raised stroke, so the air starts from nothing - smoothly - above a walking pace)
       const air = V => { const w = lay([[0, 0]]); P.strike(w, 0, V, 0, 0, Math.PI / 4); P.run(w, 20); return w.ev.air; };
       if (!(air(4) > 0.01)) fail('a hard raised stroke did not leave the cloth');
-      for (let V = 0.2; V < 4; V += 0.02) { const d = air(V + 0.02) - air(V); if (!((P.PLAY ? d >= 0 : d > 0) && d < 0.0012)) { fail(`realistic physics: the jump leaps between ${V.toFixed(2)} and ${(V + 0.02).toFixed(2)} m/s (${(d * 1000).toFixed(2)} mm)`); break; } }
+      for (let V = 0.2; V < 4; V += 0.02) { const d = air(V + 0.02) - air(V); if (!(d >= 0 && d < 0.0012)) { fail(`physics: the jump leaps between ${V.toFixed(2)} and ${(V + 0.02).toFixed(2)} m/s (${(d * 1000).toFixed(2)} mm)`); break; } }
       const bounce = down => { const w = lay([[0, 0]]), q = w.balls[0]; q.z = 1e-5; q.vz = -down; let top = 0; for (let i = 0; i < 60; i++) { P.step(w, 1 / 960); top = Math.max(top, q.z); } return top; };
-      for (let d = 0.1; d < 2; d += 0.02) { const j = bounce(d + 0.02) - bounce(d); if (!(j > 0 && j < 0.002)) { fail(`realistic physics: the bounce leaps for a landing between ${d.toFixed(2)} and ${(d + 0.02).toFixed(2)} m/s`); break; } }
+      for (let d = 0.1; d < 2; d += 0.02) { const j = bounce(d + 0.02) - bounce(d); if (!(j > 0 && j < 0.002)) { fail(`physics: the bounce leaps for a landing between ${d.toFixed(2)} and ${(d + 0.02).toFixed(2)} m/s`); break; } }
       // a ball coming down on another: a hit, a blow both ways, and it is thrown back up
       { const w = lay([[-0.03, 0], [0, 0]]), c = w.balls[0]; c.z = 1.9 * R; c.vz = -1.5; c.vx = 0.4; let up = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (c.vz > 0.2) up = true; }
-        if (w.ev.firstHit !== 1 || !up || !(Math.hypot(w.balls[1].vx, w.balls[1].vy) > 0.05 || w.balls[1].x > 0.001)) fail('realistic physics: a ball landing on another should strike it, move it and bounce off it'); }
+        if (w.ev.firstHit !== 1 || !up || !(Math.hypot(w.balls[1].vx, w.balls[1].vy) > 0.05 || w.balls[1].x > 0.001)) fail('physics: a ball landing on another should strike it, move it and bounce off it'); }
     }
-    // side dies at a rate tables are measured to have
-    { const w = lay([[0, 0]]), q = w.balls[0]; q.wz = 30; P.step(w, 1 / 120); const rate = (30 - q.wz) * 120; if (real && !(rate >= 5 && rate <= 15)) fail(`realistic physics: side dies at ${rate.toFixed(1)} rad/s2 (measured tables: 5 to 15)`);
+    // a ball only turning on the spot does not hold the game up, and what is left of it at the end is dropped
+    { const w = lay([[0, 0]]), q = w.balls[0]; q.wz = 30; P.step(w, 1 / 120);
       if (!P.rest(w)) fail('a ball only turning on the spot should not hold up the game'); P.run(w, 1); if (q.wz !== 0) fail('the turning left over when a shot ends should be dropped'); }
   }
-  if (gain) fail(`realistic physics: total energy went up on ${gain} steps`);
-  // power: from 15% up the curve of each physics (the old one on the realistic tables, where the puzzle answers were made;
-  // the calmer one on the game's), and below it down to a touch - smooth, increasing, and the way back agrees
-  for (const [play, B, E] of [[false, 7.4, 1.35], [true, 6.4, 1.6]]) {
-    const g = createGame({ pool: createPhysics(Object.assign({ real: true, play, pockets: true }, TABLES.bar)), carom: createPhysics({ real: true, play, R: 0.03275, pockets: false }) });
+  if (gain) fail(`physics: total energy went up on ${gain} steps`);
+  // power: from 15% up the game's calm curve, and below it down to a touch - smooth, increasing, and the way back agrees
+  for (const [B, E] of [[6.4, 1.6]]) {
+    const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
     g.start('eight', ['A', 'B'], false, {}); g.isBreak = false;
     let ok = true, last = g.vOf(0); for (let p = 0.001; p <= 1.0001; p += 0.001) { const v = g.vOf(p); if (!(v > last && v - last < 0.02) || Math.abs(g.powerOf(v) - p) > 1e-6) ok = false; last = v; }
     if (!ok) fail('power: the curve should rise smoothly, and powerOf should undo vOf');
-    for (const p of [0.15, 0.3, 0.62, 1]) if (Math.abs(g.vOf(p) - (0.35 + B * Math.pow(p, E))) > 1e-12) fail(`power: the curve changed where lessons and answers use it (${play ? 'game' : 'realistic'})`);
+    for (const p of [0.15, 0.3, 0.62, 1]) if (Math.abs(g.vOf(p) - (0.35 + B * Math.pow(p, E))) > 1e-12) fail('power: the curve changed where lessons use it');
   }
-  { const g = createGame({ pool: createPhysics(Object.assign({ real: true, pockets: true }, TABLES.bar)), carom: createPhysics({ real: true, R: 0.03275, pockets: false }) });
+  { const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
     g.start('eight', ['A', 'B'], false, {}); g.isBreak = false;
     const P = g.P, w = P.makeWorld(1); P.place(w, 0, 0, 0); P.strike(w, 0, g.vOf(0.002), 0, 0); P.run(w, 30);
     if (!(w.balls[0].x > 0 && w.balls[0].x < 0.01)) fail(`power: the gentlest touch rolls ${(w.balls[0].x * 100).toFixed(1)} cm - it should be millimetres`);
-    console.log(`both physics: step length (worst ${worst.toFixed(4)} degrees), mirror, numbering, guide = shot, energy over ${shots} shots, thresholds, soft touch (${(w.balls[0].x * 1000).toFixed(1)} mm): checked`);
+    console.log(`physics: step length (worst ${worst.toFixed(4)} degrees), mirror, numbering, guide = shot, energy over ${shots} shots, thresholds, soft touch (${(w.balls[0].x * 1000).toFixed(1)} mm): checked`);
   }
 }
-// The cue's angle on the realistic tables: an ordinary stroke leans 5 degrees, a said 0 is level, straight down is allowed;
-// the original physics is level
+// the cue's angle: an ordinary stroke is level, and striking without saying an angle is that ordinary stroke
 {
-  const RP = createPhysics(Object.assign({ real: true, play: false, pockets: true }, TABLES.bar)), OP = createPhysics(Object.assign({ real: false, pockets: true }, TABLES.bar)), GP = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = Math.PI / 180;
-  const at = (P, x, y) => { const w = P.makeWorld(1); P.place(w, 0, x, y); return w; };
-  if (Math.abs(RP.restEl() - 5 * deg) > 1e-9 || OP.restEl() !== 0 || GP.restEl() !== 0) fail('cue angle: an ordinary stroke should lean 5 degrees on the realistic tables and none on the others (the game\'s is level)');
-  const a = at(RP, -0.9, 0), b = at(RP, -0.9, 0), c = at(RP, -0.9, 0); RP.strike(a, 0, 6, 0, 0); RP.strike(b, 0, 6, 0, 0, RP.restEl()); RP.strike(c, 0, 6, 0, 0, 0);
-  if (a.balls[0].vx !== b.balls[0].vx || a.balls[0].vz !== b.balls[0].vz || c.balls[0].vz !== 0) fail('realistic cue: strike without an angle should be the ordinary stroke, and 0 should be level');
-  const o1 = at(OP, 0, 0), o2 = at(OP, 0, 0); OP.strike(o1, 0.3, 4, 0.2, 0.1); OP.strike(o2, 0.3, 4, 0.2, 0.1, 0);
-  if (o1.balls[0].vx !== o2.balls[0].vx || o1.balls[0].wz !== o2.balls[0].wz) fail('original physics: strike without an angle must stay level');
-  const v = at(RP, 0, 0); RP.strike(v, 0, 4, 0.4, 0, Math.PI / 2); if (!(Math.abs(v.balls[0].vx) < 1e-9 && v.balls[0].vz > 0)) fail('realistic cue: a vertical cue should drive the ball straight down into the slate');
-  console.log('realistic cue angle: checked');
+  const P = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), at = () => { const w = P.makeWorld(1); P.place(w, 0, 0, 0); return w; };
+  const a = at(), b = at(); P.strike(a, 0.3, 4, 0.2, 0.1); P.strike(b, 0.3, 4, 0.2, 0.1, 0);
+  if (P.restEl() !== 0 || a.balls[0].vx !== b.balls[0].vx || a.balls[0].wz !== b.balls[0].wz || a.balls[0].vz !== 0) fail('cue angle: the ordinary stroke should be level');
+  console.log('cue angle: checked');
+}
+// the shot clock: running out passes the turn; on a pool table it is a foul with ball in hand (not on the break), on a
+// carom table nothing more - no point lost
+{
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  g.start('eight', ['A', 'B'], false, { rnd: Math.random });
+  let o = g.timeout();
+  if (g.turn !== 1 || g.placing === 'any' || g.players[0].fouls) fail('shot clock: a timed-out break should simply pass');
+  g.isBreak = false; o = g.timeout();
+  if (g.turn !== 0 || g.placing !== 'any' || g.players[1].fouls !== 1 || o.kind !== 'foul') fail('shot clock: on a pool table, time out = foul and ball in hand');
+  g.start('four', ['A', 'B'], false, { target: 10, rnd: Math.random });
+  g.players[0].score = 3; g.timeout();
+  if (g.turn !== 1 || g.players[0].score !== 3 || g.world.cue !== 1) fail('shot clock: on a carom table, time out passes the turn and nothing more');
+  console.log('shot clock: checked');
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

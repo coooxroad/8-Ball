@@ -237,12 +237,23 @@ function createGame(PH) {
       p: v => v >= V_LOW ? Math.pow((v - 0.35) / B, 1 / E) : v <= V_MIN ? 0 : (-B_LOW + Math.sqrt(B_LOW * B_LOW + 4 * C_LOW * (v - V_MIN))) / (2 * C_LOW)
     };
   };
-  const CLASSIC = curve(7.4, 1.35), CALM = curve(6.4, 1.6);
-  const cv = () => g.P && g.P.PLAY ? CALM : CLASSIC;
+  const CALM = curve(6.4, 1.6), cv = () => CALM;
   const brk = () => g.isBreak && g.mode.table === 'pool' ? 1.42 : 1;
   g.vOf = power => cv().v(power) * brk();
   g.powerOf = V => cv().p(V / brk());
   g.beginShot = () => { g._ctx = g.mode.ctx(g); g.placing = null; };
+
+  // The shot clock ran out before the player shot: the turn goes to the other player. On a pool table that is a foul and
+  // the cue ball is theirs to place anywhere (unless it was the break, which simply passes); on a carom table nothing
+  // more happens - no point is lost.
+  g.timeout = function () {
+    const m = g.mode, me = g.turn, p = g.players[me], nx = 1 - me, name = g.players[nx].name;
+    p.run = 0; g.turn = nx;
+    let msg = `시간 초과 · ${name} 차례`;
+    if (m.ballInHand && !g.isBreak) { p.fouls++; g.placing = 'any'; msg = `시간 초과 · ${name} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
+    if (m.table === 'carom') g.world.cue = g.turn;
+    return { msg, kind: 'foul', dur: 2600 };
+  };
 
   // Called once every ball has stopped. Applies the result and says what happened.
   g.resolve = function () {

@@ -16,6 +16,8 @@ const match = {
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
   cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
+  // the shot clock ran out: the turn goes over, as game.timeout() says
+  timeout() { const out = game.timeout(); SND.bad(); toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name }; },
@@ -85,3 +87,18 @@ const match = {
     for (const [cv, q] of pics) drawShot(cv, q);
   },
 };
+
+/* ---- the shot clock (prefs.shotClock seconds, 0 for none): in a match only, for a player at the table (not the computer),
+   while aiming or placing the cue ball, stopped while a sheet or the pause menu is up. It runs down under the scoreboard,
+   turns amber in the last ten seconds and red in the last five, ticking each of those. ---- */
+let clockShown = -1;
+function shotClock(dt) {
+  const box = $('#clock'), on = flow === match && st.screen === 'play' && st.phase === 'aim' && prefs.shotClock > 0 && !game.over && !game.players[game.turn].ai;
+  if (!on) { if (!box.hidden) box.hidden = true; clockShown = -1; return; }
+  const was = Math.ceil(st.clock); st.clock = Math.max(0, st.clock - dt); const s = Math.ceil(st.clock);
+  if (box.hidden) box.hidden = false;
+  box.style.setProperty('--k', (st.clock / prefs.shotClock).toFixed(4));
+  if (s !== clockShown) { clockShown = s; box.querySelector('b').textContent = s; box.dataset.lv = s <= 5 ? '2' : s <= 10 ? '1' : '0'; box.classList.toggle('two', game.turn === 1); }
+  if (s < was && s <= 5 && s > 0) SND.tap();
+  if (st.clock <= 0) { box.hidden = true; clockShown = -1; match.timeout(); }
+}

@@ -40,6 +40,7 @@ const prefs = (() => {
     pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
     aim: 'line', gv: 0, ui: 'desk', uiv: 0,
     music: true,
+    shotClock: 40,
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -61,18 +62,14 @@ const prefs = (() => {
 })();
 const savePrefs = () => store.set('prefs', prefs);
 
-/* Matches, lessons and the first screen play on the game's physics (physics.js, cfg.real + cfg.play: what you picture is
-   what happens). The puzzles stay on the realistic physics without it, which their answers were found on, until they are
-   made again. The original physics (no cfg.real) is still in physics.js but nothing here uses it.
-   usePhysics(kind) puts the tables of the chosen size, on the 'play' or the 'real' physics, where the game looks for them;
-   it is called before a game is started. */
+/* Everything plays on the one physics (physics.js: what you picture is what happens). usePhysics() puts the tables of the
+   chosen size where the game looks for them; it is called before a game is started. */
 const tableCache = {};
-let physKind = 'play';
-const tableOf = (key, cfg) => { const k = key + '/' + physKind; return tableCache[k] || (tableCache[k] = createPhysics(Object.assign({ real: true, play: physKind === 'play' }, cfg))); };
+const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysics(cfg));
 const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
 // carom: the medium table four-ball is played on (254x127cm, 65.5mm balls); carom3: the match table of three-cushion (284x142cm, 61.5mm)
 const PH = {};
-function usePhysics(kind) { physKind = kind || 'play'; PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
+function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
 usePhysics();
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();
@@ -135,7 +132,7 @@ const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs
 /* What is on screen and where the current shot is.
    screen: home | play | result | records | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null };
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null, clock: 0 };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);

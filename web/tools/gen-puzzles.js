@@ -7,8 +7,8 @@
    the stage asks falls in the stage's range (a smaller share is a harder puzzle) and one of them survives being played a
    touch off. Nothing gets in without an answer that has been seen to work. */
 const path = require('path'), fs = require('fs'), W = path.join(__dirname, '..'), OUT = path.join(__dirname, 'out');
-// on the physics the game plays on: the realistic one
-const createPhysics = cfg => require(path.join(W, 'physics.js'))(Object.assign({ real: true }, cfg)), createGame = require(path.join(W, 'game.js'));
+// on the physics the game plays on (the only one there is)
+const createPhysics = cfg => require(path.join(W, 'physics.js'))(cfg), createGame = require(path.join(W, 'game.js'));
 const P = createPhysics({ R: 0.03275, pockets: false }), { R, HL, HW } = P;
 const G = createGame({ pool: createPhysics({ R: 0.028575, pockets: true, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }), carom: P });
 const judge = (goal, ev, w) => G.MODES.puzzle4.judge(goal, ev, w).ok;
@@ -40,8 +40,8 @@ G.start('four', ['A', 'B'], false, {});                             // so that s
 function world(balls) { const w = P.makeWorld(4); balls.forEach((b, i) => P.place(w, i, b[0], b[1], () => 0.5)); return w; }
 const valid = b => { for (let i = 0; i < 4; i++) { if (Math.abs(b[i][0]) > HL - R - 0.02 || Math.abs(b[i][1]) > HW - R - 0.02) return false; for (let j = 0; j < i; j++) if (dist(b[i], b[j]) < 2 * R + 0.03) return false; } return true; };
 // one shot: does it do what the stage asks?
-// (no cue angle given: the ordinary stroke, a few degrees up - what a player gets without touching the angle)
-function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] == null ? P.BASE_EL : s[4]); return judge(goal, P.run(w, 25), w); }
+// (no cue angle given: the ordinary stroke, level - what a player gets without touching the angle)
+function tryShot(base, goal, s) { const w = P.clone(base); P.strike(w, s[0], s[1], s[2] || 0, s[3] || 0, s[4] == null ? 0 : s[4]); return judge(goal, P.run(w, 25), w); }
 // every direction in `angles` at each speed, with one way of striking: the share that works, and the middle of the widest run
 // COARSE: a first look at a fraction of the directions, to turn away a position that cannot fit before the full sweep
 let COARSE = false;
@@ -53,7 +53,7 @@ function sweep(base, goal, angles, Vs, a, b, el) {
     for (let i = 0; i < n; i++) if (ok[i]) hits++;
     for (let i = 0; i < n; i++) if (ok[i] && !(loop ? ok[(i + n - 1) % n] : i > 0 && ok[i - 1])) {
       let m = 1; while (m < n && (loop ? ok[(i + m) % n] : i + m < n && ok[i + m])) m++;
-      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el == null ? +P.BASE_EL.toFixed(5) : el] };
+      if (!best || m > best.n) best = { n: m, sol: [angles[(i + Math.floor((m - 1) / 2)) % n], V, a, b, el == null ? 0 : el] };
     }
   }
   return { share: hits / (n * Vs.length), best };
@@ -119,7 +119,7 @@ if (process.argv[2] === 'resolve') {
   for (const z of Z.list) {
     const S = Z.STAGES[z.stage], base = world(z.balls);
     // an answer made for a level cue is first tried as the ordinary stroke (a few degrees up), which is what a player gets
-    if (!S.trick && !z.sol[4]) { const s2 = z.sol.slice(0, 4).concat([+P.BASE_EL.toFixed(5)]); if (sturdy(base, S.goal, s2)) { const before = JSON.stringify(z); z.sol = s2; src = src.replace(before, JSON.stringify(z)); fixed++; continue; } }
+    if (!S.trick && !z.sol[4]) { const s2 = z.sol.slice(0, 4).concat([0]); if (sturdy(base, S.goal, s2)) { const before = JSON.stringify(z); z.sol = s2; src = src.replace(before, JSON.stringify(z)); fixed++; continue; } }
     if (sturdy(base, S.goal, z.sol)) continue;
     const s = STAGES[GEN[S.name]].solve(base, z.balls), sol = s && s.best ? s.best.sol.map((v, i) => i === 0 ? Math.round(v * 1e5) / 1e5 : v) : null;
     if (sol && sturdy(base, S.goal, sol)) { const before = JSON.stringify(z), after = JSON.stringify(Object.assign({}, z, { sol })); if (!src.includes(before)) throw new Error('puzzle ' + z.id + ' not found as written'); src = src.replace(before, after); fixed++; console.log(`puzzle ${z.id} (${S.name}): new answer`); }

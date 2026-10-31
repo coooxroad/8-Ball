@@ -4,27 +4,15 @@
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
-  /* cfg.real: the same table with the physics taken as far towards a real one as this engine goes (see the notes where each
-     is used): cushions worked out from where the rubber meets the ball, friction between balls, the cue ball pushed off
-     line by side, spin lost into the slate under a raised cue, cloth and cushions as fast as each kind of table really is,
-     and no easing of the last roll. Without it everything is as it has always been, which is what the lessons and puzzles
-     were made on. */
-  const REAL = !!cfg.real;
-  /* cfg.play (on top of cfg.real): the physics the game is played on. The rule for it: what a player pictures is what
-     happens. Everything a player draws in their head stays and is made plain and steady - follow and draw, side opening or
-     closing the angle off a cushion, a raised cue curving or jumping the ball. Everything real that nobody pictures is
-     taken out: the cue ball pushed off line by side (squirt), the struck ball dragged off the line of centres (throw), the
-     ordinary few-degrees-raised stroke curving the ball, the angle off a cushion changing with the pace, side lingering for
-     cushion after cushion. And balls stop in good time. The realistic physics without it is kept as it was (the puzzles'
-     answers were found on it). */
-  const PLAY = REAL && !!cfg.play;
-  /* MU_SP: friction against turning on the spot. Side dies at 2.5 * MU_SP * g / R radians per second, every second. The
-     original 0.04 makes that 34; measured tables give 5 to 15 (Dr. Dave Alciatore's table of equipment properties). The
-     realistic physics takes the contact patch to grow with the ball, MU_SP = 4R/9, which is 10.9 for any ball - the same
-     assumption and value as the pooltool simulator. For a carom ball on carom cloth that is a guess, not a measurement. */
-  const MU_S0 = 0.2, MU_R0 = !REAL || PLAY ? 0.016 : POCKETED ? 0.0105 : 0.0065, MU_SP0 = REAL && !PLAY ? (4 / 9) * R : 0.04, E_BALL = 0.96, MU_CUSH = REAL ? 0.2 : 0.16;
-  // the nose of a cushion stands at 0.635 of a ball's height, so it meets the ball above the middle and pushes it down as well as back
-  const NOSE_S = 0.27, NOSE_C = Math.sqrt(1 - NOSE_S * NOSE_S);
+  /* One physics, the one the game is played on. The rule for it: what a player pictures is what happens. Everything a
+     player draws in their head stays and is made plain and steady - follow and draw, side opening or closing the angle off
+     a cushion, a raised cue curving or jumping the ball. Everything real that nobody pictures is left out: the cue ball
+     pushed off line by side (squirt), the struck ball dragged off the line of centres (throw), the ordinary stroke curving
+     the ball, the angle off a cushion changing with the pace, side lingering for cushion after cushion. And balls stop in
+     good time. (There were two more before: the original one, and a realistic one the puzzles were made on. Both are gone.) */
+  /* MU_SP: friction against turning on the spot. Side dies at 2.5 * MU_SP * g / R radians per second, every second: 34 with
+     0.04 (measured tables give 5 to 15 - but on the move, side here fades with the distance run instead, see SIDE_RUN). */
+  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.04, E_BALL = 0.96;
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
   const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
@@ -107,29 +95,21 @@ function createPhysics(cfg) {
   function strike(w, ang, V, a, bb, el) {
     const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
-    el = physEl(el);
     const ce = Math.cos(el), se = Math.sin(el);
-    // side on the cue ball sends it a little the other way from the side it was struck on (real tables only)
-    const sq = squirt(a) * ce, gx = Math.cos(ang + sq), gy = Math.sin(ang + sq);
-    c.vx = V * ce * gx; c.vy = V * ce * gy;
+    c.vx = V * ce * dx; c.vy = V * ce * dy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = PLAY ? lift(V, el) : JUMP * V * se; c.z = 0; c.vz = up > HOP ? up : 0;   // (original physics only) a hop too small to see is swallowed by the cloth
-    if (REAL && se > 0) {
+    const up = lift(V, el); c.z = 0; c.vz = up > 0 ? up : 0;
+    if (se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
       const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = Math.hypot(ux, uy);
       if (us > 1e-4) { const dec = Math.min(PINCH * MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
     }
     w.ev = newEv();
   }
-  /* A real cue is never level: the hand behind it is up on the rail, so it leans down onto the ball by a few degrees. On the
-     realistic tables (the puzzles) the cue angle is that real angle, BASE_EL when nobody raises it - and anything from level
-     to straight down when somebody does (the rail is not allowed to get in the way: that was no fun).
-     On the game's physics the ordinary stroke is level, 0 degrees, shown as 0 and played as 0 - nobody pictures their
-     everyday stroke curving the ball - and the angle set is the angle played. (The cue is still drawn leaning a little.) */
-  const BASE_EL = REAL && !PLAY ? 5 * Math.PI / 180 : 0;
-  // the angle of an ordinary stroke here
-  const restEl = () => BASE_EL;
+  /* The ordinary stroke is level, 0 degrees, shown as 0 and played as 0 - nobody pictures their everyday stroke curving the
+     ball - and the angle set is the angle played. (The cue is still drawn leaning a little, as a real one does.) */
+  const restEl = () => 0;
   /* The game's physics, raised cue: how fast the ball leaves the cloth, upwards.
      JUMP_MODEL 'contact' works it out from the three bodies in the strike - cue, ball, slate - and their masses and
      bounces, with one number fitted:
@@ -144,7 +124,7 @@ function createPhysics(cfg) {
      and a ball right in front cannot be jumped - as with a real house cue. A jump cue would be a lighter CUE_M.
      'shape' is the curve used before (a hand-made shape peaking at 50 degrees), kept to go back to.
      And the pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a
-     third of the realistic one: a masse goes out along the cue first and bends after, as it does in slow motion. */
+     third of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
   /* JUMP_MODEL 'angle' (in use): the plainest picture - the steeper the cue, the higher the ball goes, as players
      expect and as a jump cue really does (a ball close in front is jumped at sixty degrees or more, one further off at
      forty). Three numbers, each a thing: ANG_K how much of the downward drive the slate gives back up; ANG_C what the
@@ -161,23 +141,18 @@ function createPhysics(cfg) {
   const CUE_M = POCKETED ? 0.54 : 0.5, BALL_M = POCKETED ? 0.17 : 0.21, E_TIP = 0.75, E_SLATE = 0.4, BLOCK = 0.75, LEAK = 0.15;
   const K_U = (CUE_M - E_TIP * BALL_M) / ((1 + E_TIP) * CUE_M);
   const liftContact = (V, el) => { const s = Math.sin(el), c = Math.cos(el), behind = Math.max(0, K_U - c * c + E_SLATE * s * s); return V * s * Math.max(LEAK * E_SLATE, E_SLATE - BLOCK * behind); };
-  const PEAK = 50 * Math.PI / 180, PINCH = PLAY ? 0.35 : 1;
+  const PEAK = 50 * Math.PI / 180, PINCH = 0.35;
   const liftK = el => { const s3 = Math.pow(Math.sin(Math.min(el, PEAK)), 3); if (el <= PEAK) return s3; const u = Math.min(1, (el - PEAK) / (Math.PI / 2 - PEAK)), c = Math.cos(u * Math.PI / 2); return s3 * (0.3 + 0.7 * c * c); };
   const liftShape = (V, el) => (POCKETED ? 0.44 : 0.4) * V * liftK(el);
   const lift = (V, el) => JUMP_MODEL === 'shape' ? liftShape(V, el) : JUMP_MODEL === 'contact' ? liftContact(V, el) : liftAngle(V, el);
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
-  const physEl = el => el;                                       // (was a 5-degree offset on the game's physics)
-  // how far off the line of the cue the ball starts, in radians, for side a (about two degrees at the most side there is)
-  const squirt = a => REAL && !PLAY ? 0.07 * a : 0;
-  const CREEP = REAL && !PLAY ? 0 : 0.18, JUMP = REAL && !POCKETED ? 0.3 : 0.36,   // a carom ball is heavier and leaves the cloth less readily
+  const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
-        /* The original physics drops a hop below HOP and a bounce below LAND outright, so a little more cue speed can turn
-           "stays down" into a centimetre of air. The realistic one has no such step: every raised cue lifts the ball by what
-           it lifts it, and it goes on bouncing until the bounce is too small to matter (a twentieth of a millimetre). */
-        HOP = REAL ? 0 : 0.45, LAND = REAL ? 0.03 : 0.7, E_LAND = REAL ? 0.5 : 0.42;
+        // every raised cue lifts the ball by what it lifts it, and it bounces on until a bounce is too small to matter
+        LAND = 0.03, E_LAND = 0.5;
 
   function motion(w, b, h) {
-    if (REAL && (b.z > 0 || b.vz > 0)) {
+    if (b.z > 0 || b.vz > 0) {
       /* In the air: nothing but gravity - worked out exactly, landing at the instant it lands and bouncing on from there
          within the same step. (Stepping it, a ball one hair off the cloth was handed a whole step of falling, and came
          back up from that with more than it went down with: the smallest bounces never died.) */
@@ -211,7 +186,7 @@ function createPhysics(cfg) {
       if (w.track) turn(b, h);
       return;
     }
-    // ice: as slippery against the cloth it replaces, on either physics (0.022, 0.0085 and 0.012 on the original)
+    // ice: much more slippery than the cloth it replaces
     const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? MU_R0 * 0.53 : MU_R0, MU_SP = w.ice ? MU_SP0 * 0.3 : MU_SP0;
     const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
     if (us > 1e-4) {
@@ -231,7 +206,7 @@ function createPhysics(cfg) {
       if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
-    if (PLAY && !w.ice) {
+    if (!w.ice) {
       /* The game's side fades with the distance the ball runs, not with time: the same share of it is left at the cushion
          however hard the ball was hit (and twice the pace put twice the side on), so a given side bends a given cushion by
          the same amount at any pace. A third of it is gone after a metre; after three cushions or so it is all but spent.
@@ -294,7 +269,7 @@ function createPhysics(cfg) {
   let SUBH = 1 / 360;                                             // the length of the step being taken (for the rewinds above and below)
   function hitRail(w, b, nx, ny, vn) {
     const tx = -ny, ty = nx;
-    if (PLAY) {
+    {
       /* The game's cushion: a mirror, with side as the one thing that bends it off the rail - and with the ball's roll left
          as it was, as on a real table. Off the rail itself, angle in = angle out at an ordinary pace (a hard ball sinks into
          the rubber and comes off a touch wider, a slow one a touch narrower); side grips the rail and opens or closes that
@@ -313,40 +288,6 @@ function createPhysics(cfg) {
       if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
       noteRail(w, b, vn); return;
     }
-    if (REAL) {
-      /* The cushion touches the ball above its middle, so it pushes along a line that slopes down into the table. The push
-         straight back is what it always was. What is new is the grip at that raised point: it sees the ball's side spin,
-         its roll along the rail AND its roll into the rail, and answers each (up to what friction allows) - which is why a
-         rolling ball comes off a real cushion with its roll partly turned round, and why side lengthens or shortens the
-         angle. And being pushed down, the ball is gripped by the cloth for that instant too. */
-      const c = -vn, e = POCKETED ? Math.max(0.6, 0.85 - 0.035 * c) : Math.max(0.7, 0.9 - 0.03 * c), Jn = (1 + e) * c / NOSE_C;
-      let wn = b.wx * nx + b.wy * ny, wt = b.wx * tx + b.wy * ty;
-      const st = b.vx * tx + b.vy * ty - RB * (b.wz * NOSE_C + wn * NOSE_S), sp = vn * NOSE_S + wt * RB;   // slip of the touching point: along the rail, and up the face
-      let Jt = -st / 3.5, Jp = -sp / (2.5 + NOSE_S * NOSE_S); const jl = Math.hypot(Jt, Jp), lim = MU_CUSH * Jn;
-      if (jl > lim) { Jt *= lim / jl; Jp *= lim / jl; }
-      const dn = (1 + e) * c + Jp * NOSE_S;
-      b.vx += dn * nx + Jt * tx; b.vy += dn * ny + Jt * ty;
-      b.wz -= 2.5 * Jt * NOSE_C / RB; wn -= 2.5 * Jt * NOSE_S / RB; wt += 2.5 * Jp / RB;
-      b.wx = wn * nx + wt * tx; b.wy = wn * ny + wt * ty;
-      const down = Jn * NOSE_S - Jp * NOSE_C;                     // how hard it was pressed into the cloth
-      if (down > 0 && b.z === 0) { const ux = b.vx - RB * b.wy, uy = b.vy + RB * b.wx, us = Math.hypot(ux, uy); if (us > 1e-4) { const dec = Math.min(MU_S0 * down, (2 / 7) * us), ex = ux / us, ey = uy / us; b.vx -= dec * ex; b.vy -= dec * ey; b.wx -= (2.5 / RB) * dec * ey; b.wy += (2.5 / RB) * dec * ex; } }
-      noteRail(w, b, vn); return;
-    }
-    const e = Math.max(0.62, 0.87 - 0.035 * -vn);
-    // side spin grips the cushion and bends the rebound
-    const slip = b.vx * tx + b.vy * ty - RB * b.wz;
-    const lim = MU_CUSH * (1 + e) * -vn;
-    let dvt = -(2 / 7) * slip;
-    if (dvt > lim) dvt = lim; else if (dvt < -lim) dvt = -lim;
-    b.vx += -(1 + e) * vn * nx + dvt * tx;
-    b.vy += -(1 + e) * vn * ny + dvt * ty;
-    b.wz -= (2.5 / RB) * dvt;
-    // the nose sits above centre: roll into the rail is mostly killed and slightly reversed,
-    // roll along the rail survives
-    const wn = b.wx * nx + b.wy * ny, wt = b.wx * tx + b.wy * ty;
-    const wn2 = wn * 0.9, wt2 = wt * -0.15;
-    b.wx = wn2 * nx + wt2 * tx; b.wy = wn2 * ny + wt2 * ty;
-    noteRail(w, b, vn);
   }
   function noteRail(w, b, vn) {
     if (w.ev.firstHit != null) w.ev.rail = true;
@@ -372,19 +313,6 @@ function createPhysics(cfg) {
     if (rel < 0) {
       const jn = -(1 + E_BALL) / 2 * rel;
       a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
-      if (REAL && !PLAY) {
-        // the same friction between the two surfaces as on the cloth (see below), in three dimensions
-        const wx = a.wx + b.wx, wy = a.wy + b.wy, wz = a.wz + b.wz;
-        let sx = b.vx - a.vx - R * (wy * nz - wz * ny), sy = b.vy - a.vy - R * (wz * nx - wx * nz), sz = b.vz - a.vz - R * (wx * ny - wy * nx);
-        const sn = sx * nx + sy * ny + sz * nz; sx -= sn * nx; sy -= sn * ny; sz -= sn * nz;
-        const us = Math.hypot(sx, sy, sz);
-        if (us > 1e-5) {
-          const J = Math.min((0.00995 + 0.108 * Math.exp(-1.088 * us)) * jn, us / 7), fx = -J * sx / us, fy = -J * sy / us, fz = -J * sz / us, k = 2.5 / R;
-          b.vx += fx; b.vy += fy; b.vz += fz; a.vx -= fx; a.vy -= fy; a.vz -= fz;
-          const tx = -(ny * fz - nz * fy) * k, ty = -(nz * fx - nx * fz) * k, tz = -(nx * fy - ny * fx) * k;   // the same turn for both: (-R n) x f on one, (R n) x (-f) on the other
-          a.wx += tx; a.wy += ty; a.wz += tz; b.wx += tx; b.wy += ty; b.wz += tz;
-        }
-      }
       for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
       if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
       if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
@@ -418,17 +346,6 @@ function createPhysics(cfg) {
         if (rel >= 0) { if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; } continue; }
         const jn = -(1 + E_BALL) / 2 * rel;
         a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
-        if (REAL && !PLAY && a.z === 0 && b.z === 0) {
-          /* Balls are not perfectly slippery. Where they touch, one surface is sliding across the other - from the angle of
-             the cut and from whatever spin they carry - and friction there throws the struck ball a degree or so off the
-             line through the centres and hands a little spin across. Slower, stickier: the faster the sliding, the less grip. */
-          const uh = (b.vx - a.vx) * -ny + (b.vy - a.vy) * nx - R * (b.wz + a.wz), uz = -R * ((b.wx + a.wx) * ny - (b.wy + a.wy) * nx), us = Math.hypot(uh, uz);
-          if (us > 1e-5) {
-            const J = Math.min((0.00995 + 0.108 * Math.exp(-1.088 * us)) * jn, us / 7), dh = -uh / us, dz = -uz / us;
-            b.vx += J * dh * -ny; b.vy += J * dh * nx; a.vx -= J * dh * -ny; a.vy -= J * dh * nx;
-            const k = 2.5 * J / R; a.wz -= k * dh; b.wz -= k * dh; a.wx += k * dz * -ny; a.wy += k * dz * nx; b.wx += k * dz * -ny; b.wy += k * dz * nx;
-          }
-        }
         if ((i === cue || j === cue) && !w.ev.at) { const c = i === cue ? a : b; w.ev.at = [c.x, c.y, 0, i === cue ? j : i]; }
         if (tau) { a.x += a.vx * tau; a.y += a.vy * tau; b.x += b.vx * tau; b.y += b.vy * tau; }
         if (i === cue || j === cue) {
@@ -478,12 +395,6 @@ function createPhysics(cfg) {
               const e = 0.35 + 0.5 * Math.min(1, Math.max(0, (b.hot - 2.5) / 4.5));
               if (b.hot > 3.8) b.spit = 0.22;   // too hard and off-centre: the pocket spits it back out
               b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; b.vx *= 0.88; b.vy *= 0.88; b.wx *= 0.5; b.wy *= 0.5;
-              if (b.hot > 3.8 && !PLAY) {
-                // thrown back towards the table, keeping a little of the angle it bounced at (the realistic tables, where the
-                // puzzle answers were made; on the game's it simply comes off the back of the pocket the way it hit it)
-                const s0 = Math.hypot(b.vx, b.vy) || 1, ox = -p.nx + 0.5 * b.vx / s0, oy = -p.ny + 0.5 * b.vy / s0, ol = Math.hypot(ox, oy) || 1, out = REAL ? Math.min(0.4 * b.hot, s0) : 0.4 * b.hot;   // realistic: never faster than it came off the back
-                b.vx = ox / ol * out; b.vy = oy / ol * out;
-              }
               if (w.snd && vn > 0.3) w.snd.push({ t: 'rail', v: vn * 0.6, x: b.x, y: b.y, id: b.id });
             }
           }
@@ -648,7 +559,7 @@ function createPhysics(cfg) {
   }
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
-  const hop = (V, el) => { const e = physEl(el || 0), up = PLAY ? lift(V, e) : JUMP * V * Math.sin(e); return up > HOP ? up * up / (2 * G) : 0; };
-  return { hop, squirt, REAL, PLAY, BASE_EL, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
+  const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
+  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, predict, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

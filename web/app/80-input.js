@@ -134,20 +134,18 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   pad.addEventListener('pointermove', e => { if (id === e.pointerId) set(e); });
   const padUp = () => { if (id != null) { id = null; ctlUp(); } };
   pad.addEventListener('pointerup', padUp); pad.addEventListener('pointercancel', padUp);
-  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = 0; st.elWant = game.P.BASE_EL; syncEl(); setSpinUI(); setKindUI(); scene.invalidate(); });
+  $('#spinReset').addEventListener('click', () => { SND.tap(); st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; syncEl(); setSpinUI(); setKindUI(); scene.invalidate(); });
   // The cue raised: one angle, set on a picture of the shot seen from the side - the ball on the cloth and the cue leaning
   // over it. Dragging anywhere in the picture swings the cue to point at the finger.
   const padEl = $('#elPad'); let eid = null;
   // the cue angle is folded away until asked for: most shots only need the spin
   const setEl = e => {
     const r = padEl.getBoundingClientRect(), bx = r.left + 34, by = r.bottom - 26; let a = Math.atan2(by - e.clientY, e.clientX - bx);
-    // kept to a tenth of a degree; under one degree counts as level, so that a flat cue is easy to come back to.
-    // On the realistic tables this is the cue's real angle, from level to straight down.
-    const real = game.P.REAL;
-    a = Math.max(0, Math.min((real ? 90 : 85) * Math.PI / 180, a)); if (a < (real ? 0.0087 : 0.0175)) a = 0;
+    // from level to straight down, kept to a tenth of a degree; under half a degree counts as level, so that a flat cue is
+    // easy to come back to
+    a = Math.max(0, Math.min(Math.PI / 2, a)); if (a < 0.0087) a = 0;
     a = Math.round(a * 1800 / Math.PI) * Math.PI / 1800;
-    const was = st.el; if (real) { st.elWant = a; syncEl(); } else st.el = a; setKindUI(); scene.invalidate();
-    if (!was && st.el && !game.P.REAL && !prefs.elTip) { prefs.elTip = true; savePrefs(); toast('큐를 세우면: 세게 치면 공이 뜨고, 좌우 회전을 주면 휩니다. 점선이 갈 길, 고리는 떠 있는 구간.', '', 5200); }
+    st.elWant = a; syncEl(); setKindUI(); scene.invalidate();
   };
   padEl.addEventListener('pointerdown', e => { if (!humanAiming()) return; eid = e.pointerId; ctlDown(); try { padEl.setPointerCapture(eid); } catch (err) {} setEl(e); e.preventDefault(); });
   padEl.addEventListener('pointermove', e => { if (eid === e.pointerId) setEl(e); });
@@ -155,17 +153,17 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   padEl.addEventListener('pointerup', elUp); padEl.addEventListener('pointercancel', elUp);
 })();
 const trickOK = () => !!flow && flow !== homeDemo;
-/* Realistic tables: the cue angle is the real one. What the player asked for (st.elWant: 5 degrees to begin with) is what
-   is played - only, where raising the cue is not allowed, nothing above the ordinary 5. */
+/* What the player asked for (st.elWant) is what is played - only, where raising the cue is not allowed, nothing above the
+   ordinary level stroke. */
 function syncEl() {
-  const P = game.P; if (!P.REAL || !game.world) return;
-  const el = Math.max(0, (trickOK() ? st.elWant : Math.min(st.elWant, P.BASE_EL)) || 0);
+  const P = game.P; if (!game.world) return;
+  const el = trickOK() ? Math.max(0, st.elWant || 0) : 0;
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
 // (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
 function elSay() {
-  const P = game.P; if (!st.el || Math.abs(st.el - (P.BASE_EL || 0)) < 0.009) return '';
+  const P = game.P; if (st.el < 0.009) return '';
   const h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
   if (h > P.R * 2) return '공을 넘는 점프';
   if (h > 0.012) return P.hop(game.vOf(1), st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
@@ -173,10 +171,10 @@ function elSay() {
   return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
 }
 function setKindUI() {
-  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK() || (game.P.REAL && !!flow && flow !== homeDemo), say = elSay();
+  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
   // the ordinary stroke says nothing; a cue set any other way is shown on the spin button
-  const plain = Math.abs(st.el - (game.P.BASE_EL || 0)) < 0.009;
+  const plain = st.el < 0.009;
   const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // the side view: cloth, ball, a quarter circle marked every 30 degrees, and the cue at its angle with the tip on the ball
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;

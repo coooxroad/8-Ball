@@ -63,8 +63,10 @@ function deskGo(tab) {
   paintHome(); if (was === 'gear' || tab === 'play' || tab === 'train') homePreview();
 }
 // the rail: a slot for each choice with its key down in it, the chosen key inlaid with felt and its red dot
-function railBtn(on, label, sub, fn, soon) {
-  return el('div', { class: 'dk-slot' }, el('button', { class: 'dk-rb' + (soon ? ' soon' : ''), 'aria-pressed': String(on), onclick: onTap(fn) }, dkLabelled(label, sub)));
+function railBtn(on, label, sub, fn, soon, icon) {
+  const kids = dkLabelled(label, sub);
+  return el('div', { class: 'dk-slot' }, el('button', { class: 'dk-rb' + (soon ? ' soon' : '') + (icon ? ' iconed' : ''), 'aria-pressed': String(on), onclick: onTap(fn) },
+    icon ? [el('i', { class: 'mi', style: `background-image:url(ui/${icon}.webp)` }), el('span', { class: 'lb' }, kids)] : kids));
 }
 
 /* Each place fills the same five parts of the desk, d = { rail, head, stage, foot, slate }, which deskPaint has emptied:
@@ -75,7 +77,7 @@ function railBtn(on, label, sub, fn, soon) {
 function deskPlay({ rail, head, foot, slate }) {
   const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m];
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; repaintLive(); };
-  dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id))));
+  dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
   dkPut(head, dkTitle(prefs.vsAI ? '컴퓨터와 플레이' : '친구와 플레이', mm.blurb));
   const plate = i => {
     const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? LEVELS[prefs.level] : recText(nm);

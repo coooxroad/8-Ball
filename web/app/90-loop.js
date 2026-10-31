@@ -61,6 +61,7 @@ function frame(now) {
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
+    shotClock(dt);
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
@@ -70,7 +71,7 @@ function frame(now) {
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
-  if (st.phase === 'aim' && game.P.REAL) syncEl();
+  if (st.phase === 'aim') syncEl();
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
@@ -88,12 +89,13 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, real: !!game.P.REAL, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
   store.set('save', d);
 }
 function start() {
   SND.song.load(); $('#fps').hidden = !prefs.fps;
   goHome(true);                                             // a game left unfinished waits on the first screen as a card to carry on with
+  requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   if (prefs.news) sheetNews();
   requestAnimationFrame(frame);
 }

@@ -6,8 +6,13 @@ $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) close
 const optBtn = (on, kids, fn) => el('button', { class: 'opt', 'aria-pressed': String(on), onclick: onTap(fn) }, kids);
 const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
 const flatBtn = (text, fn) => el('button', { class: 'btn flat', text, onclick: () => { SND.tap(); fn(); } });
-const segRow = (label, opts, cur, fn) => el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
-  el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+// a row of choices; when the choices are just on and off, a switch
+const segRow = (label, opts, cur, fn) => {
+  if (opts.length === 2 && opts.every(([v]) => typeof v === 'boolean')) return el('div', { class: 'field tglrow' }, [el('div', { class: 'lab', text: label }),
+    el('button', { class: 'tgl', role: 'switch', 'aria-checked': String(!!cur), 'aria-label': label, onclick: () => { SND.tap(); fn(!cur); } }, el('i'))]);
+  return el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
+    el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+};
 const note = text => el('p', { class: 'note', text });
 
 function sheetTable() {
@@ -49,6 +54,7 @@ function sheetSettings() {
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
     segRow('음악', [[true, '켬'], [false, '끔']], prefs.music !== false, v => { prefs.music = v; savePrefs(); MUSIC.setOn(v); sheetSettings(); }),
     flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
+    segRow('샷 시간', [[0, '끔'], [30, '30초'], [40, '40초'], [60, '60초']], prefs.shotClock || 0, v => { prefs.shotClock = v; savePrefs(); sheetSettings(); }),
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
