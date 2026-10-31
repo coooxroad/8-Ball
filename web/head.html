@@ -1216,68 +1216,66 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk i.btrio.m-carbon b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-carbon.webp),linear-gradient(var(--c),var(--c))}
 #app.desk i.btrio.m-galaxy b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-galaxy.webp),linear-gradient(var(--c),var(--c))}
 #app.desk i.btrio.m-vintage b{background-image:radial-gradient(circle at 62% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 32%),url(tex/ball-vintage.webp),linear-gradient(var(--c),var(--c))}
-/* after a match, on the desk: the result laid out as things on the desk - a brass plaque with the winner, the two
-   players on name plates (the winner's gold cup and rosette by theirs), the score chalked on a slate, the numbers of the
-   match on the score sheet on a clipboard with the winner's red stamp, the highlights as instant photos, the desk's keys */
-#app.desk #result{background:radial-gradient(ellipse 80% 70% at 88% 0%,rgba(255,226,170,.22),rgba(255,226,170,0) 62%),radial-gradient(ellipse 130% 110% at 62% 28%,rgba(0,0,0,0) 50%,rgba(18,9,3,.66) 100%),#6b4527 url(ui/desk.webp) 0 0/var(--desk-tile,900px) repeat;
-  gap:clamp(12px,2.4vh,22px);padding:22px clamp(16px,4vw,48px) 30px;color:#2b241c}
-#app.desk .r-title{margin-top:0;--s:.5;min-width:min(520px,90%);height:70px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0 50px;
-  border:0 solid transparent;border-image:url(ui/plaque.webp) 0 80 fill/0 40px stretch;font:800 26px 'Gothic A1',sans-serif;letter-spacing:.12em;color:#3d2c10;text-shadow:0 1px 0 rgba(255,240,200,.55);filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.45))}
-#app.desk .r-vs{max-width:880px;gap:clamp(12px,2.6vw,30px);align-items:center}
-#app.desk .r-p{position:relative;--s:.42;min-height:76px;box-sizing:border-box;padding:12px 22px 22px;color:#6b5f4e;
-  border:0 solid transparent;border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s)) stretch;filter:drop-shadow(-6px 9px 7px rgba(0,0,0,.4))}
-#app.desk .r-p .av{display:none}
-#app.desk .r-p .nm{color:#2b241c;font-size:clamp(20px,2.8vw,30px)}
-#app.desk .r-p .rc{color:#6b5f4e}
-#app.desk .r-p.won{color:#2b241c}
-#app.desk .r-p.won::before{content:"";position:absolute;width:86px;height:108px;top:-62px;background:url(ui/trophy-gold.webp) center/contain no-repeat;filter:drop-shadow(-6px 8px 6px rgba(0,0,0,.45))}
-#app.desk .r-p.won::after{content:"";position:absolute;width:44px;height:58px;top:-14px;background:url(ui/rosette.webp) center/contain no-repeat;transform:rotate(-12deg);filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.4))}
-#app.desk .r-p:not(.two).won::before{left:-60px}#app.desk .r-p:not(.two).won::after{right:-14px}
-#app.desk .r-p.two.won::before{right:-60px}#app.desk .r-p.two.won::after{left:-14px}
-#app.desk .r-score{--s:.6;box-sizing:border-box;padding:14px 34px 16px;color:#f2f0e8;font-family:'Jua','Gothic A1',sans-serif;font-weight:400;
-  border:0 solid transparent;border-image:url(ui/chalkboard.webp) 52 fill/calc(52px*var(--s)) stretch;text-shadow:0 0 1px rgba(255,255,255,.6),0 0 6px rgba(255,255,255,.25);filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.45))}
-#app.desk .r-score b{color:#ffe17a}
-#app.desk #rStats{position:relative;max-width:640px;box-sizing:border-box;padding:66px 46px 30px;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
-  border-image:url(ui/scoresheet.webp) 160 50 60 50 fill/68px 22px 26px 22px stretch;filter:drop-shadow(-8px 12px 10px rgba(0,0,0,.45))}
-#app.desk #rStats .srow+.srow{border-top:1px solid rgba(60,80,140,.2)}
-#app.desk #rStats .k{color:#5a6070;font-weight:700}
-#app.desk #rStats b,#app.desk #rStats span.n{color:#1b2a5c}
-#app.desk #rStats .bar{background:rgba(27,42,92,.12)}
-#app.desk #rStats .bar i{background:#2a4fbf}
-#app.desk #rStats .bar.r i{background:#c0282b;opacity:.85}
-#app.desk #rStats::after{content:attr(data-stamp);position:absolute;top:-6px;width:88px;height:88px;display:grid;place-items:center;text-align:center;
-  background:url(ui/stamp.webp) center/100% 100% no-repeat;color:rgba(190,30,30,.85);font:800 17px/1.1 'Gothic A1',sans-serif;transform:rotate(-14deg);mix-blend-mode:multiply;padding:0 14px;box-sizing:border-box}
-#app.desk #rStats[data-won="0"]::after{left:-30px}#app.desk #rStats[data-won="1"]::after{right:-30px}
-#app.desk .hl-lab{color:#f1e4c4;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-#app.desk #rHl{grid-template-columns:repeat(auto-fill,minmax(130px,150px));justify-content:center;gap:18px}
-#app.desk .hcard{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;min-height:0;padding:0;border-radius:0;background:none;box-shadow:none;color:#2b241c;overflow:visible;
-  padding:15px 15px 6px;border:0 solid transparent;border-image:url(ui/photo.webp) 48 48 118 48 fill/15px 15px 58px 15px stretch;filter:drop-shadow(-5px 8px 6px rgba(0,0,0,.45));transform:rotate(-1.6deg)}
-#app.desk .hcard:nth-child(2n){transform:rotate(1.4deg)}
-#app.desk .hcard .pic{order:-1;width:100%;height:auto;aspect-ratio:34/33;border-radius:0;align-self:stretch;background:#0b3b52}
-#app.desk .hcard .tx{padding:6px 2px 0}
-#app.desk .hcard .tag{font:400 17px 'Jua','Gothic A1',sans-serif;color:#1b2a5c}
-#app.desk .hcard .when{color:#6b5f4e;font-size:12px}
-#app.desk .hcard .who{margin-top:2px}
-#app.desk .hcard .who b{color:#3b3229;font-size:12.5px}
+/* after a match, on the desk: the broadcast's final graphic over the table (dimmed behind it) - the tour logo and the
+   result banner, the two players with the score between them (the winner's box gold, WINNER over their plate), how
+   the match was won as a lower third, the numbers side by side as on television, the replays as thumbnails, and the
+   two buttons. The panels come in one after another. */
+#app.desk #result{background:radial-gradient(ellipse 90% 70% at 50% 30%,rgba(16,34,86,.82),rgba(4,9,24,.94));backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  gap:clamp(10px,2.2vh,20px);padding:20px clamp(14px,4vw,48px) 24px;color:#fff;--navy:#0a1a3f;--blue1:#2563eb;--blue2:#0b2f9a;--gold1:#ffd34d;--gold2:#e09a00}
+#app.desk #result::before{content:"";flex:none;width:200px;height:56px;background:url(ui/tour-logo.webp) center/contain no-repeat;animation:bcIn .5s both}
+#app.desk .r-title{margin:0;padding:6px 28px 7px;background:linear-gradient(var(--gold1),var(--gold2));color:var(--navy);font:900 clamp(18px,2.4vw,24px)/1.2 'Gothic A1',sans-serif;letter-spacing:.14em;
+  clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%);animation:bcIn .5s .1s both}
+#app.desk .r-vs{max-width:900px;gap:0;align-items:stretch;flex-wrap:nowrap;animation:bcIn .5s .2s both;box-shadow:0 14px 30px rgba(0,0,0,.45)}
+#app.desk .r-p{position:relative;flex:1 1 0;gap:12px;padding:14px 22px;background:linear-gradient(#ffffff,#e4e9f2);color:#4a5670}
+#app.desk .r-p:not(.two){clip-path:polygon(18px 0,100% 0,100% 100%,0 100%)}
+#app.desk .r-p.two{clip-path:polygon(0 0,calc(100% - 18px) 0,100% 100%,0 100%)}
+#app.desk .r-p .av{width:40px;height:40px;font-size:18px;border:0;background:var(--navy);color:#fff}
+#app.desk .r-p .nm{color:var(--navy);font-weight:900;font-size:clamp(20px,2.6vw,30px)}
+#app.desk .r-p .rc{color:#5b6880;font-size:13px}
+#app.desk .r-p.won .av{background:linear-gradient(var(--gold1),var(--gold2));color:var(--navy)}
+#app.desk .r-p.won::after{content:"WINNER";position:absolute;top:0;padding:2px 12px 3px;background:var(--navy);color:var(--gold1);font:800 11px/1.3 'Outfit',sans-serif;letter-spacing:.3em}
+#app.desk .r-p:not(.two).won::after{right:0}#app.desk .r-p.two.won::after{left:0}
+#app.desk .r-score{display:flex;align-items:stretch;padding:0;color:#fff;font:800 clamp(40px,6vw,64px)/1 'Outfit',sans-serif;background:var(--navy)}
+#app.desk .r-score>*{display:grid;place-items:center;min-width:1.5em;padding:0 .2em;background:linear-gradient(var(--blue1),var(--blue2));color:#fff}
+#app.desk .r-score b{background:linear-gradient(var(--gold1),var(--gold2));color:var(--navy)}
+#app.desk #rWhy{order:0;margin:0;padding:8px 20px 9px;background:linear-gradient(#ffffff,#e9eef6);color:var(--navy);font:700 15px 'Gothic A1',sans-serif;border-left:6px solid var(--blue1);
+  box-shadow:0 8px 20px rgba(0,0,0,.35);animation:bcIn .5s .3s both}
+#app.desk #rStats{max-width:720px;padding:6px 0;border:0;border-radius:0;background:rgba(6,14,38,.72);box-shadow:0 10px 26px rgba(0,0,0,.4);animation:bcIn .5s .4s both}
+#app.desk #rStats .srow{grid-template-columns:70px minmax(0,1fr) 128px minmax(0,1fr) 70px;padding:7px 16px}
+#app.desk #rStats .srow+.srow{border-top:1px solid rgba(255,255,255,.08)}
+#app.desk #rStats .k{justify-self:center;padding:3px 12px;background:var(--navy);border:1px solid rgba(255,211,77,.35);color:#e6edf8;font-weight:700;font-size:12.5px;letter-spacing:.04em}
+#app.desk #rStats b,#app.desk #rStats span.n{color:#fff;font-family:'Outfit',sans-serif;font-weight:800}
+#app.desk #rStats .bar{height:8px;border-radius:0;background:rgba(255,255,255,.1)}
+#app.desk #rStats .bar i{border-radius:0;background:linear-gradient(90deg,var(--blue2),var(--blue1))}
+#app.desk #rStats .bar.r i{background:linear-gradient(90deg,var(--gold1),var(--gold2));opacity:1}
+#app.desk #rStats::after{content:none}
+#app.desk #rHlBox{animation:bcIn .5s .5s both}
+#app.desk .hl-lab{color:var(--gold1);font:800 12px 'Outfit','Gothic A1',sans-serif;letter-spacing:.3em}
+#app.desk #rHl{grid-template-columns:repeat(auto-fill,minmax(150px,180px));justify-content:center;gap:10px}
+#app.desk .hcard{flex-direction:column;gap:0;min-height:0;padding:0;border-radius:0;border:0;background:#08122c;box-shadow:0 8px 18px rgba(0,0,0,.4);color:#fff;overflow:hidden}
+#app.desk .hcard .pic{order:-1;width:100%;height:auto;aspect-ratio:16/9;border-radius:0}
+#app.desk .hcard .tx{padding:6px 10px 8px;border-top:3px solid var(--blue1)}
+#app.desk .hcard.two .tx{border-top-color:var(--gold1)}
+#app.desk .hcard .tag{font-size:14.5px;color:#fff}
+#app.desk .hcard .when{font-size:11.5px;color:#9fb3d9}
 #app.desk .hcard .who .av{display:none}
-#app.desk .hcard .go{right:auto;left:50%;top:32%;margin:-17px 0 0 -17px;opacity:.85;background:rgba(10,20,40,.55)}
-#app.desk .hcard .rib{right:-10px;top:-12px;padding:0;width:40px;height:52px;font-size:0;background:url(ui/rosette.webp) center/contain no-repeat;border-radius:0}
-#app.desk .hcard.worst .rib{filter:grayscale(1) brightness(.8)}
-#app.desk .hcard.best{box-shadow:none}
-#app.desk #rWhy{color:#f1e4c4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-#app.desk .r-btns{gap:16px;max-width:640px;width:100%;position:sticky;bottom:0;z-index:3;margin-top:auto;filter:drop-shadow(0 -6px 14px rgba(40,20,5,.35))}   /* (always in reach, however tall the rest) */
-#app.desk .r-btns .btn{flex:1}
-#app.desk .r-btns .dk-main{flex:1.6;height:76px;font-size:24px}
-#app.desk .r-btns .dk-sec{height:66px}
-#app.desk.compact #rStats{padding:56px 26px 24px}
-#app.desk.compact .r-p.won::before{width:58px;height:72px;top:-44px}
-#app.desk.compact .r-p:not(.two).won::before{left:-30px}#app.desk.compact .r-p.two.won::before{right:-30px}
-#app.desk.compact #rStats::after{width:64px;height:64px;font-size:12px;top:-14px}
-#app.desk.compact #rStats[data-won="0"]::after{left:-8px}#app.desk.compact #rStats[data-won="1"]::after{right:-8px}
-#app.desk.portrait #rHl{grid-template-columns:repeat(2,minmax(0,1fr))}
+#app.desk .hcard .who b{color:#cfd9ea;font-size:12px}
+#app.desk .hcard .go{right:auto;left:8px;top:8px;margin:0;width:auto;height:auto;padding:2px 8px;border-radius:0;background:#e0262e;font:800 10px/1.4 'Outfit',sans-serif;letter-spacing:.2em;opacity:.95;white-space:nowrap;display:block}
+#app.desk .hcard .go::before{content:"REPLAY ";}
+#app.desk .hcard .rib{top:8px;right:8px;border-radius:0;padding:2px 8px}
+#app.desk .hcard.worst .rib{background:#5b6880;color:#fff}
+#app.desk .r-btns{gap:14px;max-width:640px;width:100%;position:sticky;bottom:0;z-index:3;margin-top:auto;animation:bcIn .5s .6s both}
+#app.desk .r-btns .btn{flex:1;height:60px;border-radius:0;font:800 18px 'Gothic A1',sans-serif;letter-spacing:.06em;border:0;box-shadow:0 10px 22px rgba(0,0,0,.45)}
+#app.desk #homeBtn{background:var(--navy);color:#e6edf8;border:2px solid rgba(255,255,255,.25)}
+#app.desk #againBtn{flex:1.6;background:linear-gradient(var(--gold1),var(--gold2));color:var(--navy)}
+@keyframes bcIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 #app.desk.portrait .r-vs{flex-wrap:wrap}
-#app.desk.portrait .r-score{order:-1;flex:0 0 auto;margin:0 auto}
-#app.desk.portrait .r-vs .r-p{flex:1 1 40%}
+#app.desk.portrait .r-vs .r-p{flex:1 1 100%;clip-path:none}
+#app.desk.portrait .r-score{order:2;flex:1 1 100%;justify-content:center;font-size:44px}
+#app.desk.portrait .r-p.two{order:3}
+#app.desk.portrait #rStats .srow{grid-template-columns:44px minmax(0,1fr) 84px minmax(0,1fr) 44px;padding:6px 10px}
+#app.desk.portrait #rStats .k{padding:2px 6px;font-size:11px}
+#app.desk.portrait #rHl{grid-template-columns:repeat(2,minmax(0,1fr))}
 /* the card worn: ringed in light, with a tag hanging over its top edge; a table card is a small table inside the card;
    ball cards hold photographs of the balls (scene.ballPortrait) */
 #app.desk .dk-card.worn::after{content:"";position:absolute;inset:-5px;border:3px solid #fff4d6;border-radius:14px;box-shadow:0 0 14px rgba(255,232,170,.75),inset 0 0 10px rgba(255,232,170,.35);pointer-events:none}
@@ -1359,6 +1357,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk #kindBox .lab{white-space:nowrap;flex-wrap:wrap}
 #app.desk #spinTag{background:linear-gradient(#ffd34d,#e09a00);color:#2b1d05}
 #app.desk #spinReset{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px}
+#app.desk .r-title{order:1}#app.desk .r-vs{order:2}#app.desk #rWhy{order:3}#app.desk #rStats{order:4}#app.desk #rHlBox{order:5}#app.desk .r-btns{order:6}
 </style>
 
 <div id="app" class="busy boot" data-theme="light">

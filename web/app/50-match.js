@@ -48,7 +48,7 @@ const match = {
     rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
-    $('#rTitle').textContent = pw.name + ' 승리';
+    $('#rTitle').textContent = deskOn() ? 'FINAL · ' + pw.name + ' 승리' : pw.name + ' 승리';
     for (let i = 0; i < 2; i++) {
       const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
       box.className = 'r-p' + (i ? ' two' : '') + (won ? ' won' + fireOf(r.streak) : '');
@@ -82,9 +82,6 @@ const match = {
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
     }
     $('#rWhy').textContent = game.over.why;
-    // on the desk the two buttons are the desk's own keys, and the stamp on the score sheet names the winner
-    const dk = deskOn(); $('#againBtn').classList.toggle('dk-main', dk); $('#homeBtn').classList.toggle('dk-sec', dk);
-    $('#rStats').dataset.won = w; $('#rStats').dataset.stamp = pw.name + ' 승';
     show('result'); SND.win();
     MUSIC.play(!match.ctx.ai || w === 0 ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);
