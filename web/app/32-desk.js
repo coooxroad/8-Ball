@@ -54,8 +54,9 @@ function dkNavHead(head, what, t, sub, go) {
 const dkSwatch = (on, worn, pic, name, fn) => el('button', { class: 'dk-sw', 'aria-pressed': String(on), onclick: onTap(fn) }, [worn ? eqTag() : null, pic, document.createTextNode(name)]);
 
 function deskGo(tab) {
-  if (tab === deskTab && st.screen === 'home') return;
+  if (tab === deskTab && st.screen === 'home') { if (tab === 'play' && playStep !== 'boards') { playStep = 'boards'; paintHome(); } return; }   // (플레이 again: back to its boards)
   gearOff(); const was = deskTab; deskTab = tab;
+  if (tab === 'play' && was !== 'play') playStep = 'boards';
   const game4 = m => GAME4.includes(m);
   if (tab === 'play') { prefs.trainCpu = false; prefs.vsAI = false; if (!game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight'; }   // (플레이 is against people; the computer is in 훈련)
   if (tab === 'train' && !trainOf()) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode;
@@ -75,13 +76,62 @@ function railBtn(on, label, sub, fn, soon, icon) {
    the rail's keys, the tray's head, what lies in the tray (the live table unless stage.dataset.win is set to '0'), the
    tray's foot, and the slate - its options, then a .dk-acts row of buttons. */
 
-// 플레이: the four games on the rail; the two players on plates at the foot of the tray; who against, how far, the guide
-const deskPlay = d => deskMatch(d, false);
-// a match to set up: against a friend (플레이, the game picked on the rail) or the computer (훈련 · 컴퓨터 대전, picked on the slate)
-function deskMatch({ rail, head, foot, slate }, cpu) {
+/* 플레이: four boards lying on the desk - the shop's window, 투어 (for stakes), 친구와 플레이 and 랭킹전 with the player's
+   tier in its socket. 친구와 플레이 lays out the four games as cards (4구 and 8볼 above, 3구 and 9볼 below), and a card
+   opens the match to set up, with an X back to the cards. 투어 and 랭킹전 wait for the server. */
+let playStep = 'boards';                                              // 'boards' | 'games' | 'setup'
+const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['master', '마스터'], ['legend', '레전드']];
+// where the boards lie, in the pictures' own pixels: [W, H, [[id, x, y, w, h, turn°], ...]]; of the ways given, the one
+// that comes out largest in the space there is is used (a wide screen: side by side; a phone upright: stacked)
+const BOARD_FITS = [
+  [2380, 1160, [['shop', 0, 0, 650, 1160, -1.1], ['tour', 690, 0, 1000, 560, .5], ['friend', 690, 600, 1000, 560, -.4], ['rank', 1730, 0, 650, 1160, .9]]],
+  [1000, 2060, [['tour', 0, 0, 1000, 560, .5], ['friend', 0, 600, 1000, 560, -.4], ['shop', 0, 1200, 480, 860, -1.1], ['rank', 520, 1200, 480, 860, .9]]]];
+const GAME_FITS = [
+  [1320, 1000, [['four', 0, 0, 640, 480, -.6], ['eight', 680, 0, 640, 480, .5], ['three', 0, 520, 640, 480, .4], ['nine', 680, 520, 640, 480, -.5]]],
+  [640, 2040, [['four', 0, 0, 640, 480, -.6], ['eight', 0, 520, 640, 480, .5], ['three', 0, 1040, 640, 480, .4], ['nine', 0, 1560, 640, 480, -.5]]]];
+function fitBoards() {
+  const box = document.querySelector('#dkBoards .bd-fit'); if (!box) return;
+  const cw = box.clientWidth, ch = box.clientHeight; if (!cw || !ch) return;
+  let best = null;
+  for (const f of box._fits) { const k = Math.min(cw / f[0], ch / f[1]); if (!best || k > best[0]) best = [k, f]; }
+  const [k, [W, H, items]] = best, ox = (cw - W * k) / 2, oy = (ch - H * k) / 2;
+  for (const [id, x, y, w, h, r] of items) {
+    const n = box.querySelector(`[data-b="${id}"]`); if (!n) continue;
+    Object.assign(n.style, { left: (ox + x * k).toFixed(1) + 'px', top: (oy + y * k).toFixed(1) + 'px', width: (w * k).toFixed(1) + 'px', height: (h * k).toFixed(1) + 'px', transform: r ? `rotate(${r}deg)` : '' });
+    n.style.setProperty('--bw', (w * k).toFixed(1) + 'px');
+  }
+}
+function deskPlay(d) {
+  if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'games'; paintHome(); });
+  d.stage.dataset.win = '0';
+  $('#desk').classList.add('boards');
+  const fit = el('div', { class: 'bd-fit' }), wrap = el('div', { id: 'dkBoards', class: playStep }), tt = (t, sub) => el('span', { class: 'bd-tt' }, [el('b', { text: t }), el('small', { text: sub })]);
+  const board = (id, label, fn, kids) => el('button', { class: 'bd bd-' + id, 'data-b': id, 'aria-label': label, onclick: onTap(fn) }, kids);
+  if (playStep === 'games') {
+    fit._fits = GAME_FITS;
+    dkPut(wrap, el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '플레이로', onclick: () => { SND.tap(); playStep = 'boards'; paintHome(); } }, el('i')), dkTitle('친구와 플레이', '종목을 고르세요')]));
+    dkPut(fit, ['four', 'eight', 'three', 'nine'].map(id => board(id, MODE_KO[id], () => { prefs.mode = id; playStep = 'setup'; repaintLive(); }, tt(MODE_KO[id], GAME_SUB[id]))));
+    for (const n of fit.children) n.style.backgroundImage = `url(ui/game-${n.dataset.b}.webp)`;
+  } else {
+    fit._fits = BOARD_FITS;
+    const later = what => () => toast(`${what} 서버가 열리면 시작합니다.`, '', 2200);
+    const best = CUES.reduce((a, c) => (c.rarity || 0) > (a.rarity || 0) ? c : a, CUES[0]), tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
+    dkPut(fit, [
+      board('shop', '상점', () => deskGo('shop'), [el('span', { class: 'bd-sign', text: '상점' }), tt('오늘의 진열', RARITY[best.rarity || 0][0]),
+        el('span', { class: 'bd-show' }, cueImg(best)), el('span', { class: 'bd-name', text: best.name })]),
+      board('tour', '투어', later('투어는'), [tt('투어', '판돈을 걸고 겨루는 대회'), el('span', { class: 'bd-tag', text: '준비 중' })]),
+      board('friend', '친구와 플레이', () => { playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기로 번갈아 칩니다'), el('span', { class: 'bd-tag', text: '4종목' })]),
+      board('rank', '랭킹전', later('랭킹전은'), [tt('랭킹전', '시즌 준비 중'), el('img', { class: 'bd-tier', src: `ui/tier-${tier[0]}.webp`, alt: tier[1] }), el('span', { class: 'bd-name', text: tier[1] })])]);
+  }
+  wrap.appendChild(fit); $('#desk').appendChild(wrap);
+}
+// a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터
+// 대전, picked on the slate); back, if given, puts an X on the tray's head
+function deskMatch({ rail, head, foot, slate }, cpu, back) {
   const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m];
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
   if (!cpu) dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
+  if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(cpu ? '컴퓨터 대전' : '친구와 플레이', mm.blurb));
   const plate = i => {
     const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? LEVELS[prefs.level] : recText(nm);
@@ -309,6 +359,7 @@ function deskLean(W, H, portrait) {
 // coordinates (the transform carries it along); a shade under the window edge lays the table's shadow on the felt,
 // and a strip below it is the near rail's front.
 function deskWindow(W, H, portrait) {
+  fitBoards();
   const pl = $('#deskPlane'), dk = $('#desk'), sg = $('#dkStage'), win = sg.dataset.win === '1';
   let x = dk.offsetLeft, y = dk.offsetTop; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
   const dx = pl.offsetLeft, dy = pl.offsetTop, sw = sg.offsetWidth, sh0 = sg.offsetHeight;   // (x, y: the stage in the plane; dx, dy: the plane in the app)
@@ -334,6 +385,7 @@ function deskPaint() {
   for (const k of [...d.stage.children]) if (k.id !== 'dkShade') k.remove();
   d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   d.head.className = 'dk-head';
+  $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); }
   DESK_PLACES[deskTab](d);
   // the slate: its options scroll if they must, its buttons stay put at the foot
   const acts = d.slate.querySelector('.dk-acts'), body = el('div', { class: 'dk-body' });
