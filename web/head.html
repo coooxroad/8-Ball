@@ -1388,6 +1388,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk.portrait #rStats .k{font-size:11.5px}
 #app.desk.portrait .r-title{font-size:22px}
 #app.desk.portrait .r-meta{font-size:11.5px}
+/* lessons, free practice and puzzles in play on the desk: the player's ivory name plate at the top left, what the drill
+   asks on a small slate tag beside it, and the drill's keys as the desk's square ivory keys */
+#app.desk:not(.bcast) #hud .pill{--s:.42;border:0 solid transparent;border-radius:0;background:none;box-shadow:-6px 9px 10px rgba(0,0,0,.4);color:#6b5f4e;
+  border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s)) stretch;padding:4px 18px 12px 10px}
+#app.desk:not(.bcast) #hud .pill .nm,#app.desk:not(.bcast) #hud .pill.on .nm{color:#2b241c;font-weight:800}
+#app.desk:not(.bcast) #hud .pill.on{color:#6b5f4e}
+#app.desk:not(.bcast) #hud .pill .av{background:#2b241c;color:#f4ecd8;border:0}
+#app.desk:not(.bcast) #hud .pts{color:#2b241c}
+#app.desk:not(.bcast) #badge{background:rgba(22,28,32,.88);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 14px;color:#c9d3df;box-shadow:-4px 6px 8px rgba(0,0,0,.35)}
+#app.desk:not(.bcast) #badge b{color:#f3e2b4;font:800 12px 'Gothic A1',sans-serif;letter-spacing:.1em}
+#app.desk #pracBar{gap:10px;margin-right:220px}
+#app.desk #pracBar .btn{height:48px;padding:0 16px 7px;color:#3b3229;font:800 15px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
+  border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s)) stretch;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.4))}
+#app.desk #pracBar .btn:active,#app.desk #pracBar .btn[aria-pressed="true"]{border-image-source:url(ui/sq-press.webp);padding:5px 16px 2px;color:#1d4f9a}
+#app.desk.compact #pracBar{margin-right:180px;gap:6px}
+#app.desk.compact #pracBar .btn{height:40px;padding:0 10px 6px;font-size:13px}
+#app.desk.portrait #pracBar{margin-right:0}
+#app.desk #pracBar .btn{color:#2b241c;--s:.3;border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s)) stretch;padding:0 16px 8px}
+#app.desk #pracBar .btn:active,#app.desk #pracBar .btn[aria-pressed="true"]{border-image-source:url(ui/key-press.webp);padding:4px 16px 3px;color:#1d4f9a}
+#app.desk:not(.bcast) #badge{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
 </style>
 
 <div id="app" class="desk busy boot" data-theme="dark">

@@ -9,7 +9,7 @@ const GAME4 = ['three', 'four', 'eight', 'nine'];
 const GAME_SUB = { three: '쓰리쿠션', four: '사구 · 수지 대결', eight: '에잇볼', nine: '나인볼' };
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';
 const LESSONS = () => COURSES.flatMap(c => c[1]).filter(id => drills.byId(id).make);
-const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.drill === 'free' ? 'free' : 'lesson') : null;
+const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.drill === 'free' ? 'free' : 'lesson') : prefs.trainCpu && GAME4.includes(prefs.mode) ? 'cpu' : null;
 const svgArrow = d => { const s = el('span'); s.innerHTML = `<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="${d ? 'M8 4.5v15L19 12z' : 'M16 4.5v15L5 12z'}"/></svg>`; return s.firstChild; };
 // Nearly every key on the desk is an onTap (the steppers and arrows only click: by the time they can be pressed
 // something else has woken the audio). Most choices then save and lay the desk out again, and the ones that change
@@ -57,8 +57,9 @@ function deskGo(tab) {
   if (tab === deskTab && st.screen === 'home') return;
   gearOff(); const was = deskTab; deskTab = tab;
   const game4 = m => GAME4.includes(m);
-  if (tab === 'play' && !game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight';
-  if (tab === 'train' && !trainOf()) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode; prefs.mode = prefs.lastTrain === 'practice' ? 'practice' : 'puzzle'; }
+  if (tab === 'play') { prefs.trainCpu = false; prefs.vsAI = false; if (!game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight'; }   // (플레이 is against people; the computer is in 훈련)
+  if (tab === 'train' && !trainOf()) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode;
+    if (prefs.lastTrain === 'cpu') { prefs.trainCpu = true; prefs.vsAI = true; prefs.mode = game4(prefs.cpuMode) ? prefs.cpuMode : 'eight'; } else prefs.mode = prefs.lastTrain === 'practice' ? 'practice' : 'puzzle'; }
   savePrefs();
   if (st.screen !== 'home') return goHome(true);
   paintHome(); if (was === 'gear' || tab === 'play' || tab === 'train') homePreview();
@@ -75,11 +76,13 @@ function railBtn(on, label, sub, fn, soon, icon) {
    tray's foot, and the slate - its options, then a .dk-acts row of buttons. */
 
 // 플레이: the four games on the rail; the two players on plates at the foot of the tray; who against, how far, the guide
-function deskPlay({ rail, head, foot, slate }) {
+const deskPlay = d => deskMatch(d, false);
+// a match to set up: against a friend (플레이, the game picked on the rail) or the computer (훈련 · 컴퓨터 대전, picked on the slate)
+function deskMatch({ rail, head, foot, slate }, cpu) {
   const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m];
-  const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; repaintLive(); };
-  dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
-  dkPut(head, dkTitle(prefs.vsAI ? '컴퓨터와 플레이' : '친구와 플레이', mm.blurb));
+  const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
+  if (!cpu) dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
+  dkPut(head, dkTitle(cpu ? '컴퓨터 대전' : '친구와 플레이', mm.blurb));
   const plate = i => {
     const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? LEVELS[prefs.level] : recText(nm);
     return el('button', { class: 'dk-plate' + (i ? ' two' : ''), onclick: onTap(() => sheetName(i)) }, [el('i', { class: 'av', text: String(i + 1) }), el('span', null, [el('b', { text: nm }), el('small', { text: sub })])]);
@@ -87,7 +90,8 @@ function deskPlay({ rail, head, foot, slate }) {
   dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
 
   dkPut(slate, dkH1(MODE_KO[m], GAME_SUB[m]));
-  dkPut(slate, [dkHr(), dkLab('상대'), dkSeg([['net', '온라인', true], ['friend', '친구'], ['ai', '컴퓨터']], prefs.vsAI ? 'ai' : 'friend', v => { prefs.vsAI = v === 'ai'; repaint(); })]);
+  if (cpu) dkPut(slate, [dkHr(), dkLab('종목'), dkSeg(GAME4.map(id => [id, MODE_KO[id]]), m, v => pick(v)())]);
+  else dkPut(slate, [dkHr(), dkLab('상대'), dkSeg([['net', '온라인', true], ['friend', '친구']], 'friend', () => {})]);
   if (prefs.vsAI) dkPut(slate, [dkLab('난이도'), dkSeg(LEVELS.map((t, i) => [i, t]), Math.min(3, prefs.level), v => { prefs.level = v; repaint(); })]);
   if (m === 'four') {
     const suji = (name, i, set) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-txt', text: name }), dkStep(SUJI, sujiOf(i), v => String(v * 10), v => { set(v); repaint(); }, true)]);
@@ -112,10 +116,13 @@ function deskPlay({ rail, head, foot, slate }) {
 function deskTrain(d) {
   const t = trainOf() || 'puzzle';
   const to = (mode, drill) => () => { prefs.lastTrain = mode; if (drill) drill(); prefs.mode = mode; repaintLive(); };
-  dkPut(d.rail, [railBtn(t === 'lesson', '레슨', null, to('practice', () => { if (prefs.drill === 'free') prefs.drill = LESSONS()[0]; })),
-    railBtn(t === 'puzzle', '퍼즐', null, to('puzzle')),
-    railBtn(t === 'free', '자유 연습', null, to('practice', () => { prefs.drill = 'free'; }))]);
-  if (t === 'puzzle') deskPuzzle(d); else if (t === 'lesson') deskLesson(d); else deskFree(d);
+  const cpu = () => { prefs.lastTrain = 'cpu'; prefs.trainCpu = true; prefs.vsAI = true; prefs.mode = GAME4.includes(prefs.cpuMode) ? prefs.cpuMode : 'eight'; repaintLive(); };
+  const off = () => { prefs.trainCpu = false; prefs.vsAI = false; };
+  dkPut(d.rail, [railBtn(t === 'lesson', '레슨', null, to('practice', () => { off(); if (prefs.drill === 'free') prefs.drill = LESSONS()[0]; })),
+    railBtn(t === 'puzzle', '퍼즐', null, to('puzzle', off)),
+    railBtn(t === 'free', '자유 연습', null, to('practice', () => { off(); prefs.drill = 'free'; })),
+    railBtn(t === 'cpu', '컴퓨터 대전', null, cpu)]);
+  if (t === 'puzzle') deskPuzzle(d); else if (t === 'lesson') deskLesson(d); else if (t === 'cpu') deskMatch(d, true); else deskFree(d);
 }
 // the puzzle in hand: the head steps through the open puzzles, the foot's pills jump to a stage
 function deskPuzzle(d) {
