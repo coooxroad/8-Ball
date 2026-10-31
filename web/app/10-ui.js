@@ -53,7 +53,7 @@ function show(screen) {
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  app.classList.toggle('bcast', dk && screen === 'play' && flow === match);   // a match on the desk is shown as on television (head.html)
+  app.classList.toggle('bcast', dk && screen === 'play' && (flow === match || flow === lag));   // a match on the desk is shown as on television (head.html)
   applyTheme(); layout(); MUSIC.screen(screen);
 }
 let wide = true;

@@ -105,3 +105,53 @@ function shotClock(dt) {
 // time ran out: the scorebug's lower edge burns red for as long as the message stays up
 let outT = 0;
 function flashOut(ms) { const h = $('#hud'); h.classList.add('out'); clearTimeout(outT); outT = setTimeout(() => h.classList.remove('out'), ms || 2600); }
+
+/* ================= flow: the lag (뱅킹) that opens a four-ball match =================
+   The two players each send their own ball (first the white, then the yellow) from beside the head string to the far
+   cushion and back; whoever's ball comes to rest nearer the head cushion breaks. A ball that never reaches a cushion
+   loses the lag. Against the computer it lags too, as well as its level allows. Then the match starts as usual. */
+const lag = {
+  quiet: false, save: false, d: [null, null],
+  start() {
+    usePhysics(); scene.clearFalls();
+    const names = [prefs.names[0], oppName()];
+    game.start('four', names, prefs.vsAI, { level: prefs.level, target: prefs.target, first: 0, targets: [sujiOf(0), sujiOf(1)], tens: true, finish: prefs.finish, ice: iceOn() });
+    const P = game.P, w = game.world;
+    w.balls[2].on = w.balls[3].on = false;                                // (the reds are not out for the lag)
+    P.place(w, 0, -P.HL * 0.62, -P.HW * 0.36); P.place(w, 1, -P.HL * 0.62, P.HW * 0.36);
+    lag.d = [null, null]; game.turn = 0; w.cue = 0;
+    flow = lag; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; useCue(prefs.cues[0]);
+    show('play'); lag.turn();
+    toast('뱅킹: 먼저 칠 사람을 정합니다. 반대편 쿠션을 맞고 돌아와 헤드 쿠션에 더 가까이 선 공이 이깁니다.', '', 4200);
+  },
+  turn() { beginTurn(true); st.aim = 0; scene.invalidate(); },             // (aimed straight at the far cushion)
+  guide: () => Math.min(0.25, prefs.guides[game.turn]),
+  cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
+  // the computer: the speed that brings its ball back closest to the head cushion, as nearly as its level can judge it
+  auto: () => game.players[game.turn].ai ? { think: 0.8, showSpin: false, plan() {
+    const P = game.P; let best = null;
+    for (let k = 0; k <= 40; k++) {
+      const V = game.vOf(0.25 + 0.7 * k / 40), t = P.clone(game.world); P.strike(t, 0, V, 0, 0, 0); const ev = P.run(t, 30), d = lag.dist(t, ev);
+      if (!best || d < best.d) best = { d, V };
+    }
+    const miss = [0.09, 0.05, 0.025, 0.01][Math.min(3, prefs.level)];
+    return { angle: (Math.random() - 0.5) * miss * 0.4, V: best.V * (1 + (Math.random() * 2 - 1) * miss), a: 0, b: 0, el: 0 };
+  } } : null,
+  dist(w, ev) { const b = w.balls[w.cue], P = game.P; return ev.railed.includes(w.cue) ? Math.max(0, b.x + P.HL - P.R) : Infinity; },
+  beforeShot() {}, restart() { lag.start(); },
+  afterShot() {
+    const i = game.turn, d = lag.dist(game.world, game.world.ev); lag.d[i] = d;
+    const say = d === Infinity ? '쿠션에 닿지 않음' : `헤드 쿠션에서 ${Math.round(d * 100)}cm`;
+    if (i === 0) { toast(`${game.players[0].name}: ${say}`, '', 2200); game.turn = 1; game.world.cue = 1; lag.cue(); return hold(1.4, () => { if (flow === lag) lag.turn(); }); }
+    const win = lag.d[1] < lag.d[0] ? 1 : 0;
+    toast(`${game.players[1].name}: ${say} · ${game.players[win].name}의 뱅킹 승리, 먼저 칩니다.`, 'good', 3000); lag.hud();
+    hold(3, () => { if (flow === lag) match.start(win); });
+  },
+  hud() {
+    for (let i = 0; i < 2; i++) {
+      const d = lag.d[i], sub = d == null ? (game.turn === i ? '뱅킹 중' : '대기') : d === Infinity ? '쿠션 못 닿음' : `${Math.round(d * 100)}cm`;
+      paintPill(i, { name: game.players[i].name, on: game.turn === i && st.phase !== 'hold', sub, pts: null, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) });
+    }
+    paintBadge('뱅킹', { text: '헤드 쿠션에 가까운 쪽이 먼저' }); setBusy();
+  },
+};
