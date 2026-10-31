@@ -1374,7 +1374,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .r-top b{font:800 24px 'Gothic A1',sans-serif}
 #app.desk .r-top small{font:600 15px 'Gothic A1',sans-serif;opacity:.8}
 #app.desk .r-tray{position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto;scrollbar-width:none;--s:.4;border:0 solid transparent;background:#0e4c8e url(ui/felt.webp) 0 0/300px repeat;
-  border-image:url(ui/tray.webp) 112 92 108 92/calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s)) stretch;padding:34px 34px 34px;box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+  border-width:calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s));background-clip:padding-box;
+  border-image:url(ui/tray.webp) 112 92 108 92 stretch;padding:4px 2px;box-shadow:none;filter:drop-shadow(-12px 18px 14px rgba(0,0,0,.45))}
+/* (the rail is the tray's real border, so the felt stops at it and what scrolls in the tray slides under it, never over) */
 #app.desk .r-sheet{position:relative;flex:none;color:#2b241c;border:0 solid transparent;border-image:url(ui/scoresheet.webp) 160 50 60 50 fill/72px 22px 26px 22px stretch;padding:70px 40px 26px;filter:drop-shadow(-8px 12px 10px rgba(0,0,0,.45))}
 #app.desk .r-title{display:flex;align-items:center;justify-content:center;gap:10px;margin:0;font:900 28px 'Gothic A1',sans-serif;letter-spacing:.2em;color:#9a6a12;text-shadow:0 1px 0 rgba(255,255,255,.7)}
 #app.desk .r-title.lost{color:#5b6880}
@@ -1434,7 +1436,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 #app.desk .r-side{animation-delay:.12s}
 @keyframes rIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 #app.desk.compact .r-plane{grid-template-columns:minmax(0,1fr) minmax(210px,30%);padding:44px 10px 10px;gap:8px 10px;transform:rotateX(8deg)}
-#app.desk.compact .r-tray{--s:.28;padding:20px 18px}
+#app.desk.compact .r-tray{--s:.28;padding:2px 0}
 #app.desk.compact .r-sheet{padding:56px 18px 14px}
 #app.desk.compact .r-p .ball{width:38px;height:38px}
 #app.desk.compact #rStats .srow{grid-template-columns:44px minmax(0,1fr) 96px minmax(0,1fr) 44px;padding:6px 2px}
