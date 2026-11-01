@@ -76,3 +76,13 @@
 #dkBoards .bd-rank{--u:min(1.25cqw,1cqh)}
 #dkBoards .bd-rank .bd-tier{width:min(82%,calc(var(--u)*62))}
 #dkBoards .bd-shop .rar{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.4)}
+/* 랭킹전, looking for an opponent (54-ranked.js): a strip at the top, just under the desk's bar (whose tabs stay free),
+   over whatever is open, with the time and a way out */
+#rkBar{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--bar,62px) + 6px);left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;
+  max-width:calc(100vw - 24px);box-sizing:border-box;padding:6px 6px 6px 14px;border-radius:999px;background:rgba(10,26,63,.94);
+  box-shadow:0 0 0 1.5px #ffd34d inset,0 6px 18px rgba(0,0,0,.45);color:#fff;font:700 14px var(--ui-font);white-space:nowrap}
+#rkBar .t{overflow:hidden;text-overflow:ellipsis}
+#rkBar .tm{font:700 15px var(--num);color:#ffd34d;font-variant-numeric:tabular-nums}
+#rkBar .sp{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,211,77,.3);border-top-color:#ffd34d;animation:rkSpin .9s linear infinite}
+#rkBar button{flex:none;height:30px;padding:0 14px;border:0;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font:700 13px var(--ui-font)}
+@keyframes rkSpin{to{transform:rotate(360deg)}}

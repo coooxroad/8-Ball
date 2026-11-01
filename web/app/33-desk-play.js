@@ -4,6 +4,7 @@
    billiard cloth. 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
    with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
 let playStep = 'boards';                                              // 'boards' | 'games' | 'setup'
+let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
 const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['master', '마스터'], ['legend', '레전드']];
 // a game's balls, as the table draws them, in its usual layout ([n, x, y] in ball widths)
 const RACK = {
@@ -26,15 +27,18 @@ function deskPlay(d) {
   const panel = (id, label, fn, kids, cls) => el('button', { class: 'bd bd-' + id + (cls ? ' ' + cls : ''), 'data-b': id, 'aria-label': label, onclick: onTap(fn) }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, kids)]);
   const tt = (t, sub, tag) => el('span', { class: 'bd-tt' }, [tag ? el('em', { text: tag }) : null, el('b', { text: t }), sub ? el('small', { text: sub }) : null]);
   if (playStep === 'games') {
-    dkPut(wrap, el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '플레이로', onclick: () => { SND.tap(); playStep = 'boards'; paintHome(); } }, el('i')), dkTitle('친구와 플레이', '종목을 고르세요')]));
-    dkPut(fit, ['four', 'eight', 'three', 'nine'].map(id => panel(id, MODE_KO[id], () => { prefs.mode = id; playStep = 'setup'; repaintLive(); }, [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game')));
+    const rank = playFor === 'rank';
+    dkPut(wrap, el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '플레이로', onclick: () => { SND.tap(); playStep = 'boards'; paintHome(); } }, el('i')),
+      dkTitle(rank ? '랭킹전' : '친구와 플레이', rank ? `종목을 고르면 다마가 비슷한 상대를 찾습니다 · ${net.me ? net.me.dama : ECONOMY.DAMA_START} 다마` : '종목을 고르세요')]));
+    const go = id => rank ? () => { playStep = 'boards'; paintHome(); ranked.find(id); } : () => { prefs.mode = id; playStep = 'setup'; repaintLive(); };
+    dkPut(fit, ['four', 'eight', 'three', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game')));
   } else {
     const later = what => () => toast(`${what} 서버가 열리면 시작합니다.`, '', 2200);
     const best = CUES.reduce((a, c) => (c.rarity || 0) > (a.rarity || 0) ? c : a, CUES[0]), r = best.rarity || 0, tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
     dkPut(fit, [
       panel('shop', '상점', () => deskGo('shop'), [tt('상점', '오늘의 진열', 'SHOP'), el('span', { class: 'bd-show' }, cueImg(best)), el('span', { class: 'bd-foot' }, [el('b', { text: best.name }), el('small', { class: 'rar r' + r, text: RARITY[r][0] })])]),
       panel('tour', '투어', later('투어는'), [tt('투어', '판돈을 걸고 겨루는 대회', 'ONLINE'), el('span', { class: 'bd-tag', text: '준비 중' })], 'online'),
-      panel('friend', '친구와 플레이', () => { playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기로 번갈아 칩니다'),
+      panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기로 번갈아 칩니다'),
         el('span', { class: 'bd-modes' }, GAME4.map(id => el('i', { style: `background-image:url(ui/mode-${id}.webp)` })))]),
       panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '다마가 비슷한 상대와', 'ONLINE'), el('img', { class: 'bd-tier', src: `ui/tier-${tier[0]}.webp`, alt: tier[1] }), el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `${(net.me ? net.me.dama : ECONOMY.DAMA_START)} 다마` })])], 'online')]);
   }

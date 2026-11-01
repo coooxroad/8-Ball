@@ -11,28 +11,34 @@ const RANKED_CLOCK = 45;                      // seconds to shoot in a ranked ga
 const ranked = {
   on: null,                                   // the game being played: { seat, room, token, seed, first, mode, opp, standIn, inbox, n, sent, ws, done }
   finding: null,                              // waiting in the lobby: { mode, t0, timer }
+  // the 랭킹전 panel: the four game panels open (33-desk-play.js), as for 친구와 플레이; picking one starts looking
   pick() {
     if (!net.on) return toast('랭킹전은 서버가 열리면 시작합니다.', '', 2200);
-    openSheet('랭킹전', [note('다마가 비슷한 상대와 겨룹니다. 이기면 다마가 오르고, 넣은 점수의 두 배를 코인으로 받습니다. 지면 절반.'),
-      el('div', { class: 'row' }, GAME4.map(id => flatBtn(MODE_KO[id], () => ranked.find(id))))]);
+    playFor = 'rank'; playStep = 'games'; paintHome();
   },
-  // waiting: asked again every two seconds, with the time waited on the sheet and a way out
+  /* Waiting: the lobby is asked again every two seconds, and a strip at the top says so (#rkBar) with the time waited and
+     a way out - meanwhile the rest of the app is free (훈련, 상점, anything). An opponent found: whatever was open is left
+     and the game begins. */
   find(mode) {
     ranked.cancel(true);
-    const f = ranked.finding = { mode, t0: Date.now(), timer: 0 }, clock = el('b', { class: 'num', text: '0:00' });
-    openSheet('상대 찾는 중', [note(`${MODE_KO[mode]} · ${(net.me ? net.me.dama : ECONOMY.DAMA_START)} 다마`), el('p', { class: 'note' }, [clock]), flatBtn('취소', () => { ranked.cancel(); closeSheet(); })]);
+    const f = ranked.finding = { mode, t0: Date.now(), timer: 0 }, bar = $('#rkBar');
+    bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
     const ask = async () => {
       if (ranked.finding !== f) return;
-      const s = Math.floor((Date.now() - f.t0) / 1000); clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      const s = Math.floor((Date.now() - f.t0) / 1000); bar.querySelector('.tm').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
       const r = await net.queue(mode);
       if (ranked.finding !== f) return;
-      if (r && r.ok && r.room) { ranked.finding = null; closeSheet(); return ranked.play(r); }
-      if (!r) clock.textContent = '연결 중…';
+      if (r && r.ok && r.room) { ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
       f.timer = setTimeout(ask, 2000);
     };
     ask();
   },
-  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; if (!quiet) net.leaveQueue(f.mode); },
+  // an opponent: whatever is going on here is left (a practice, a sheet, the shop) and the game begins
+  found(r) {
+    closeSheet(); if (flow && flow !== match && st.screen === 'play') { st.phase = 'idle'; st.auto = null; }
+    SND.tap(); ranked.play(r);
+  },
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); if (!quiet) net.leaveQueue(f.mode); },
 
   play(r) {
     const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, opp: r.opp, standIn: r.standIn || null,
@@ -140,3 +146,4 @@ const ranked = {
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
 };
+press('#rkCancel', () => ranked.cancel());
