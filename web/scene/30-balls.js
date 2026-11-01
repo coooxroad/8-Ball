@@ -12,7 +12,7 @@
   function ballTexture(kind, n) {
     const hex = h => '#' + h.toString(16).padStart(6, '0'), sk = skin, colOf = k => sk.pal ? hex(sk.pal[(k - 1) % 8]) : ballCss(k);
     const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = hex(sk.cue);
-    if (sk.skin != null) { skinTexture(g, W, H, sk, kind, n, hex, colOf); holesOn(g, W, H, sk); return tex(c); }
+    if (sk.skin != null) { skinTexture(g, W, H, sk, kind, n, hex, colOf); holesOn(g, W, H, sk); seamsOn(g, W, H, sk); return tex(c); }
     const dots = (bgc, dc, rad) => {
       g.fillStyle = bgc; g.fillRect(0, 0, W, H); g.fillStyle = dc;
       for (const u of [0, 0.25, 0.5, 0.75, 1]) { g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill(); }
@@ -49,6 +49,13 @@
                 number on an ivory disc as usual; the cue ball (and the carom white) keep the surface as it is;
        'label': the surface stays as it is, and the ball wears its colour as discs: a pool ball a disc of its colour with
                 the number on ivory (a stripe a ring of it), a carom ball two discs of its colour (the white none). */
+  // a mirror ball's seams: a thin dark line round every facet (finish.facets: [round, up], as the sphere is cut)
+  function seamsOn(g, W, H, sk) {
+    const f = sk.finish && sk.finish.facets; if (!f) return;
+    g.fillStyle = 'rgba(20,22,28,.75)';
+    for (let i = 0; i <= f[0]; i++) g.fillRect(i * W / f[0] - 2, 0, 4, H);
+    for (let j = 0; j <= f[1]; j++) g.fillRect(0, j * H / f[1] - 2, W, 4);
+  }
   function skinTexture(g, W, H, sk, kind, n, hex, colOf) {
     // caromSkins: the three carom balls each a surface of their own ({ pic, color }: a picture, the colour until it has come)
     // - a peeled potato, a golden one, a red one - so they tell themselves apart with nothing laid on them
@@ -166,7 +173,38 @@
     }
     const t = new THREE.CanvasTexture(c); t.anisotropy = aniso; return (bumpTex[key] = t);
   }
-  function dressBall(m, k) { m.geometry = geomOf(k); finishOf(k, m.material); }
+  /* A comic set (finish.toon): lit in three flat steps, dotted like print where it is in shade, a black outline (the inside
+     of a slightly bigger ball, drawn behind it). A mirror set (finish.facets: [round, up]): small flat facets. */
+  let toonGrad = null;
+  function toonMat() {
+    if (!toonGrad) { toonGrad = new THREE.DataTexture(new Uint8Array([70, 150, 255]), 3, 1, THREE.LuminanceFormat); toonGrad.minFilter = toonGrad.magFilter = THREE.NearestFilter; toonGrad.needsUpdate = true; }
+    const m = new THREE.MeshToonMaterial({ gradientMap: toonGrad });
+    m.onBeforeCompile = sh => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>', `
+        { float L = dot(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse, vec3(0.299, 0.587, 0.114)) / max(0.05, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
+          vec2 q = fract(gl_FragCoord.xy / 5.0) - 0.5; float rr = clamp(0.62 - L * 0.55, 0.0, 0.46);
+          outgoingLight *= mix(1.0, 0.5, step(length(q), rr)); }
+        #include <output_fragment>`);
+    };
+    return m;
+  }
+  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x0b0b10, side: THREE.BackSide });
+  const facetGeoms = {};
+  function dressBall(m, k) {
+    const f = k.finish || {}, toon = !!f.toon;
+    if (toon !== (m.material.type === 'MeshToonMaterial')) {
+      const old = m.material;
+      m.material = toon ? toonMat() : new THREE.MeshPhysicalMaterial({ roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: m === shotBall ? 0.9 : 0.7 });
+      m.material.map = old.map; old.dispose();
+    }
+    if (f.facets) { const key = f.facets.join('x'); m.geometry = facetGeoms[key] || (facetGeoms[key] = new THREE.SphereGeometry(1, f.facets[0], f.facets[1])); }
+    else m.geometry = geomOf(k);
+    m.material.flatShading = !!f.facets;
+    finishOf(k, m.material);
+    let ol = m.userData.outline;
+    if (toon && !ol) { ol = m.userData.outline = new THREE.Mesh(m.geometry, outlineMat); ol.scale.setScalar(1.075); m.add(ol); }
+    if (ol) { ol.visible = toon; ol.geometry = m.geometry; }
+  }
   const mats = {};
   // every picture a set's balls are painted from (once all have come, the shelf's photographs are kept)
   const picsOf = k => [k.mat, typeof k.skin === 'string' ? k.skin : null, ...(k.caromSkins || []).map(c => c.pic)].filter(Boolean);

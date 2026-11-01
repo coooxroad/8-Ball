@@ -5,7 +5,8 @@
    A set may also be made otherwise (all optional; scene/30-balls.js, tasks/gpt-skins.md 2-1): shape { lumps, squash, n, eyes,
    seed } (a lumpy 3D shape inside the ball's sphere), holes [[lat, lon, radius, depth]] (finger holes), skin (the surface:
    a colour picture tex/ball-<name>.webp, or a colour), mark 'tint' | 'label' (how a skinned ball shows which it is),
-   finish { rough, coat, metal, bump, bumpScale } (how the surface takes the light).
+   finish { rough, coat, metal, bump, bumpScale, toon, facets } (how the surface takes the light; toon: true drawn as a comic
+   - three flat steps of light, print dots in the shade, a black outline; facets: [round, up] a mirror ball's flat facets).
    sound (also on a cue): { rate: pitch, 1 as recorded (1.1 higher), tone: brightness, 1 as recorded, gain: loudness,
    1 as recorded, file: a recording in web/sound/ (name without extension) to use instead }. Left out: the usual sound. */
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
@@ -26,5 +27,12 @@ const BALLSKINS = [
     caromSkins: [{ pic: 'potato-white', color: 0xeee2c4 }, { pic: 'potato-gold', color: 0xe5b52a }, { pic: 'potato-red', color: 0xa33a2c }],
     shape: { lumps: 0.105, squash: [1, 0.9, 0.96], n: 13, eyes: 8, seed: 37 }, finish: { rough: 0.92, coat: 0 },
     sound: { rate: 0.9, tone: 0.65, gain: 0.72 } },
+  // a mirror ball: flat mirror facets in the ball's colour, and small lights thrown on the cloth round it (scene/57-comic.js)
+  { id: 'disco', name: '디스코볼', rarity: 3, note: '거울 조각이 촘촘한 미러볼, 굴러가며 천 위에 빛 조각을 뿌립니다', pal: null,
+    cue: 0xe9edf2, yel: 0xf3c43a, red: 0xe0473c, dots: false, skin: 0xaab1ba, mark: 'tint', sticker: 1.3,
+    finish: { rough: 0.14, metal: 0.72, coat: 0, facets: [26, 14] } },
+  // a comic: flat colours, the shading in print dots, black outlines, and 쾅! on hard hits (scene/57-comic.js)
+  { id: 'comic', name: '만화', rarity: 4, note: '만화책에서 튀어나온 공: 굵은 외곽선과 망점, 세게 맞으면 쾅!', pal: null,
+    cue: 0xfbf6ea, yel: 0xffd21f, red: 0xf0322a, dots: false, finish: { toon: true } }
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };

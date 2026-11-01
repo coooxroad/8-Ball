@@ -264,7 +264,7 @@
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
-    if (iced || watery) setCloth(clothI);
+    if (iced || watery || (CLOTHS[clothI] && CLOTHS[clothI].comic)) setCloth(clothI);
   }
   // barricades (puzzles; physics walls()): dark rubber blocks with a maple top, standing on the cloth
   const wallGrp = new THREE.Group(); sScene.add(wallGrp);
@@ -360,10 +360,28 @@
     if (waterAcc < 1 / 30) return false;
     waterAcc = 0; return true;
   }
+  /* The comic table (comic: true): the cloth printed flat - its colour, halftone dots thickening towards the cushions, faint
+     speed lines out from the middle, a heavy black line round the edge; the rails flat colour. */
+  let comicTex = null;
+  const makeComic = hexFelt => {
+    const W2 = 2048, H2 = 1024, c = mkCanvas(W2, H2), g = c.getContext('2d'), base = new THREE.Color(hexFelt);
+    g.fillStyle = '#' + base.getHexString(); g.fillRect(0, 0, W2, H2);
+    g.strokeStyle = 'rgba(10,20,40,.10)'; g.lineWidth = 3;
+    for (let k = 0; k < 40; k++) { const a = k / 40 * Math.PI * 2; g.beginPath(); g.moveTo(W2 / 2 + Math.cos(a) * 90, H2 / 2 + Math.sin(a) * 90); g.lineTo(W2 / 2 + Math.cos(a) * W2, H2 / 2 + Math.sin(a) * W2); g.stroke(); }
+    const dark = base.clone().multiplyScalar(0.62); g.fillStyle = '#' + dark.getHexString();
+    const sp = 22;
+    for (let y = sp / 2; y < H2; y += sp) for (let x = (Math.round(y / sp) % 2) * sp / 2; x < W2; x += sp) {
+      const e = Math.min(x, W2 - x, (y) * 2, (H2 - y) * 2) / (W2 * 0.5), r = sp * 0.42 * Math.max(0, 1 - e * 3.2);
+      if (r > 0.6) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    }
+    g.strokeStyle = '#0b0b10'; g.lineWidth = 14; g.strokeRect(7, 7, W2 - 14, H2 - 14);
+    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
+  };
+  const flatTex = (() => { const c = mkCanvas(4, 4), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 4, 4); return tex(c); })();
   let clothI = 0, iced = false, watery = false;
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice; watery = !!c.water;
-    waterMesh.visible = watery; woodU.uWs.value.set(0.62, 2.3);
+    waterMesh.visible = watery; woodU.uWs.value.set(0.62, 2.3); woodMat.clearcoat = 1; woodMat.roughness = 0.36;
     if (watery) {
       if (!poolTex || poolTex.P !== cur) { if (poolTex) poolTex.dispose(); poolTex = makePoolFloor(); poolTex.P = cur; }
       poolTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); poolTex.offset.set(0.5, 0.5);
@@ -375,6 +393,16 @@
       bodyMat.map = tiles || woodTex; bodyMat.color.copy(col(0xbfd8e2)); pedMat.map = tiles || woodTex; pedMat.color.copy(col(0x9fbfcc));
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
       renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.55; staticDirty = true; dirty = 3; return;
+    }
+    if (c.comic) {
+      if (!comicTex || comicTex.P !== cur || comicTex.felt !== c.felt) { if (comicTex) comicTex.dispose(); comicTex = makeComic(c.felt); comicTex.P = cur; comicTex.felt = c.felt; }
+      comicTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); comicTex.offset.set(0.5, 0.5);
+      feltMat.map = comicTex; feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1); feltMat.roughness = 1; feltMat.envMapIntensity = 0.05;
+      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)).multiplyScalar(0.7); cushMat.roughness = 1;
+      woodMat.map = flatTex; woodMat.color.copy(col(c.wood)); woodU.uWs.value.set(1, 1); woodMat.clearcoat = 0; woodMat.roughness = 0.85;   // (flat paint)
+      bodyMat.map = flatTex; bodyMat.color.copy(col(0x14161c)); pedMat.map = flatTex; pedMat.color.copy(col(0x14161c));
+      feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
+      renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.85; staticDirty = true; dirty = 3; return;
     }
     if (iced) {
       if (!iceTex) iceTex = makeIce();
