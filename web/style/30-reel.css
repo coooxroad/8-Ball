@@ -28,7 +28,7 @@
 #reelBig.count.last{color:#ffe04a;animation:cpop .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes cpop{0%{transform:scale(1.7) rotate(-6deg)}100%{transform:scale(1)}}
 /* tape running backwards */
-#reelTag{position:absolute;right:22px;top:calc(9% + 14px);z-index:2;font:800 20px/1 'Outfit','Gothic A1',sans-serif;color:#fff;letter-spacing:.04em;text-shadow:0 0 6px rgba(0,0,0,.8),2px 0 #ff2d55,-2px 0 #19e3ff;animation:blink .5s steps(2) infinite}
+#reelTag{position:absolute;right:22px;top:calc(9% + 14px);z-index:2;font:800 20px/1 'Outfit',var(--ui-font);color:#fff;letter-spacing:.04em;text-shadow:0 0 6px rgba(0,0,0,.8),2px 0 #ff2d55,-2px 0 #19e3ff;animation:blink .5s steps(2) infinite}
 .rew #reel::before{content:"";position:absolute;inset:-6px 0;z-index:1;background:repeating-linear-gradient(0deg,rgba(255,255,255,.09) 0 2px,transparent 2px 6px),linear-gradient(0deg,transparent 0 62%,rgba(255,255,255,.16) 64%,transparent 70%);animation:vhs .13s steps(3) infinite}
 @keyframes vhs{0%{transform:translateY(-6px)}100%{transform:translateY(6px)}}
 @keyframes blink{0%{opacity:1}100%{opacity:.25}}
@@ -124,7 +124,7 @@
 #reelCard.bsod{left:0;right:0;top:9%;bottom:9%;background:#0b3fc4;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 9%}
 #reelCard.bsod b{font:300 clamp(64px,12vw,130px)/1 'Outfit',sans-serif}
 #reelCard.bsod span{font-size:clamp(19px,3vw,30px);font-weight:700}
-#reelCard.bsod small{font:500 clamp(12px,1.8vw,17px)/1.4 'Outfit','Gothic A1',sans-serif;opacity:.88}
+#reelCard.bsod small{font:500 clamp(12px,1.8vw,17px)/1.4 'Outfit',var(--ui-font);opacity:.88}
 #reelCard.obit{left:0;right:0;bottom:calc(9% + 24px);text-align:center;font-size:clamp(16px,2.6vw,26px);text-shadow:0 2px 10px #000,0 0 2px #000}
 #reelCard.obit b{font-weight:800}
 #reelBig.num3.q{color:#ffe04a;letter-spacing:-.04em;font-style:normal;top:30%;font-size:min(30vh,26vw)}

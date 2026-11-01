@@ -91,6 +91,13 @@ function layoutSoon() {
 }
 window.addEventListener('resize', layoutSoon);
 if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
+// Some browsers change DPR without delivering resize or resolution-media events. The existing frame loop checks one
+// number; a full layout only happens when that number changes, including the first frame after a backgrounded tab wakes.
+let layoutDpr = window.devicePixelRatio || 1;
+function checkPixelRatio() {
+  const current = window.devicePixelRatio || 1;
+  if (current !== layoutDpr) { layoutDpr = current; layout(); }
+}
 
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises

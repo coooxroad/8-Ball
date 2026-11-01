@@ -3,13 +3,13 @@
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
 @media (max-width:640px){#pracBar{gap:4px}#pracBar .btn{padding:0 10px;font-size:13px;height:42px}}
-#app.desk .dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;--s:.36;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4)}
+#app.desk .dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px var(--ui-font);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;--s:.36;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4)}
 #app.desk .dk-pill[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));color:#2b241c;padding-bottom:var(--lip)}
 #app.desk .dk-pill.lock{opacity:.7}
 .dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
 .dk-pill[aria-pressed="true"] small{color:#6b5f4e}
 .dk-pill img.lock{width:22px;height:22px}
-.dk-stars{display:flex;align-items:center;gap:4px;font:600 15px 'Gothic A1',sans-serif;color:#cfc8ba}
+.dk-stars{display:flex;align-items:center;gap:4px;font:600 15px var(--ui-font);color:#cfc8ba}
 .dk-stars img{width:30px;height:30px}
 .dk-stars span{margin-left:8px}
 /* every raised piece's top face rolls over at its edges instead of ending in a cut: a lit rim along the top and the right
@@ -26,8 +26,8 @@
   border-radius:3px 7px 7px 3px;padding:10px 8px 10px 14px;box-sizing:border-box;color:#e9cf8a;
   background:linear-gradient(90deg,rgba(0,0,0,.45) 0 9px,rgba(255,255,255,.12) 9px 10px,transparent 10px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.14),transparent 60%),var(--lc,#1d3a6b);
   box-shadow:inset 0 0 0 2px rgba(233,207,138,.35),inset -3px 0 0 rgba(255,255,255,.08),-5px 7px 8px rgba(0,0,0,.5)}
-#app.desk .dk-card.book .cover small{font:700 10.5px 'Gothic A1',sans-serif;letter-spacing:.12em;opacity:.85}
-#app.desk .dk-card.book .cover b{font:800 17px/1.25 'Gothic A1',sans-serif;color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+#app.desk .dk-card.book .cover small{font:700 10.5px var(--ui-font);letter-spacing:.12em;opacity:.85}
+#app.desk .dk-card.book .cover b{font:800 17px/1.25 var(--ui-font);color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
 #app.desk .dk-card.book .cover em{position:absolute;bottom:8px;font:700 12px 'Outfit',sans-serif;font-style:normal;opacity:.7}
 #app.desk .dk-card.book.done .cover{box-shadow:inset 0 0 0 3px #e3c066,inset 0 0 0 5px rgba(0,0,0,.25),-5px 7px 8px rgba(0,0,0,.5)}
 #app.desk .dk-card.book .lvl{display:flex;gap:4px}
@@ -44,8 +44,8 @@
 #app.desk .dk-card.vol .tome{position:relative;flex:none;width:92%;aspect-ratio:3/4;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:4px 9px 9px 4px;
   color:#f1d993;background:linear-gradient(90deg,rgba(0,0,0,.5) 0 13px,rgba(255,255,255,.14) 13px 14px,transparent 14px),radial-gradient(ellipse at 70% 20%,rgba(255,255,255,.16),transparent 60%),var(--lc);
   box-shadow:inset 0 0 0 3px rgba(233,207,138,.45),inset 0 0 0 6px rgba(0,0,0,.2),inset -4px 0 0 rgba(255,255,255,.08),-7px 10px 12px rgba(0,0,0,.5)}
-#app.desk .dk-card.vol .tome b{font:900 26px 'Gothic A1',sans-serif;color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.6)}
-#app.desk .dk-card.vol .tome small{font:700 12px 'Gothic A1',sans-serif;letter-spacing:.4em;opacity:.8}
+#app.desk .dk-card.vol .tome b{font:900 26px var(--ui-font);color:#f1d993;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+#app.desk .dk-card.vol .tome small{font:700 12px var(--ui-font);letter-spacing:.4em;opacity:.8}
 #app.desk .dk-card.vol.empty .tome{filter:saturate(.5) brightness(.8)}
 #app.desk.compact .dk-card.vol .tome b{font-size:16px}
 #app.desk.compact .dk-card.vol .tome small{font-size:9px}
@@ -57,8 +57,8 @@
 #app.desk .dk-card.vol .tome{flex:1;min-height:0;width:auto;max-width:100%;aspect-ratio:420/560;height:auto;margin:0 auto;display:block;position:relative;border-radius:0;
   background:center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
 #app.desk .dk-card.vol .tome .tt{position:absolute;left:17%;right:14%;top:56%;height:28%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-#app.desk .dk-card.vol .tome b{font:900 clamp(16px,2.6vw,30px) 'Gothic A1',sans-serif;color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
-#app.desk .dk-card.vol .tome small{font:700 11px 'Gothic A1',sans-serif;letter-spacing:.45em;color:#f4efe6;opacity:.75}
+#app.desk .dk-card.vol .tome b{font:900 clamp(16px,2.6vw,30px) var(--ui-font);color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+#app.desk .dk-card.vol .tome small{font:700 11px var(--ui-font);letter-spacing:.45em;color:#f4efe6;opacity:.75}
 #app.desk .dk-card.vol.empty .tome{filter:saturate(.6) brightness(.82) drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
 #app.desk .dk-card.book .cover{aspect-ratio:360/480;height:auto;max-height:100%;width:auto;max-width:100%;flex:1;min-height:0;padding:0;border-radius:0;box-shadow:none;
   background:center/100% 100% no-repeat;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.5));position:relative;display:block}
@@ -73,7 +73,7 @@
 #app.desk.compact.portrait .dk-cards.books{grid-auto-rows:136px}
 #app.desk.compact.portrait .dk-cards.vols{grid-auto-rows:minmax(0,calc(100% - 4px))}
 #app.desk #pracBar{gap:10px;margin-right:220px}
-#app.desk #pracBar .btn{height:48px;padding:0 16px 7px;color:#3b3229;font:800 15px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
+#app.desk #pracBar .btn{height:48px;padding:0 16px 7px;color:#3b3229;font:800 15px var(--ui-font);--s:.4;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
   border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s)) stretch;filter:drop-shadow(-3px 5px 4px rgba(0,0,0,.4))}
 #app.desk #pracBar .btn:active,#app.desk #pracBar .btn[aria-pressed="true"]{border-image-source:url(ui/sq-press.webp);padding:5px 16px 2px;color:#1d4f9a}
 #app.desk.compact #pracBar{margin-right:180px;gap:6px}

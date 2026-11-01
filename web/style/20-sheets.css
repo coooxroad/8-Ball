@@ -31,7 +31,7 @@
 .opt .d{display:block;font-size:13px;color:var(--sub);margin-top:2px;line-height:1.4}
 .note{font-size:13px;color:var(--sub);margin:0;line-height:1.5}
 #app.desk .sheet{--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 30px calc(28px + var(--lip));gap:14px;color:#ece6da;box-shadow:-18px 26px 40px rgba(0,0,0,.6)}
-#app.desk .sheet h2{font:800 24px 'Gothic A1',sans-serif;color:#f3eee3}
+#app.desk .sheet h2{font:800 24px var(--ui-font);color:#f3eee3}
 #app.desk .sheet .lab{color:#9aa39e;font-size:13px;padding-left:2px}
 #app.desk .sheet .note{color:#a7afab}
 #app.desk .sheet .seg{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}

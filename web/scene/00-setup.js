@@ -8,7 +8,17 @@
    and the canvas resolution is fixed up front. */
   if (!window.THREE) return null;
   let renderer;
-  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { return null; }
+  // Some integrated GPUs reject the preferred context; retry without MSAA or a dedicated-GPU preference.
+  let gl = null;
+  for (const options of [{ antialias: true, powerPreference: 'high-performance' }, { antialias: false, powerPreference: 'default' }]) {
+    for (const kind of ['webgl2', 'webgl', 'experimental-webgl']) {
+      try { gl = canvas.getContext(kind, { ...options, alpha: false, depth: true, stencil: true }); } catch (e) {}
+      if (gl) break;
+    }
+    if (gl) break;
+  }
+  if (!gl) return null;
+  try { renderer = new THREE.WebGLRenderer({ canvas, context: gl }); } catch (e) { return null; }
   const RW = 0.095, RAIL_Z = 0.04, FOV = 40;
   const LAMPS = [[-0.78, 0, 1.05], [0, 0, 1.05], [0.78, 0, 1.05]];   // three shades hanging over the long axis
   const CW = PH.pool.CW;

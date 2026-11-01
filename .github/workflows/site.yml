@@ -1,28 +1,43 @@
-# Puts CUE on the web (site/wrangler.toml): builds the page from web/ and serves it from Cloudflare, whenever web/
-# changes on main. Separate from build.yml (the APK) and server.yml (the server); never touches signing.
+# Publish the exact source of each successful APK release. A PR only runs checks, so it must never deploy the web.
+# workflow_run also works when the APK workflow publishes its release with GITHUB_TOKEN; release events do not chain.
 name: Deploy web
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'web/**'
-      - 'site/**'
-      - '.github/workflows/site.yml'
+  workflow_run:
+    workflows: [Build APK]
+    types: [completed]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency: site-deploy
 
 jobs:
   deploy:
+    # Only these two APK events run the release job. Never trust a PR/fork completion with deployment secrets.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    env:
+      # workflow_run's github.sha points at the default branch, which may already contain a newer, unreleased change.
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      APK_BUILD: ${{ github.event.workflow_run.run_number || '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Build the page
         run: sh web/build.sh && node web/tools/check.js
+      - name: Record the deployed version
+        run: node site/version.cjs write app/src/main/assets/version.json
       - name: Wrangler
         working-directory: server
         run: npm ci --no-audit --no-fund
@@ -31,12 +46,22 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ../server/node_modules/.bin/wrangler deploy 2>&1 | tee deploy.log
+        run: |
+          set -o pipefail
+          ../server/node_modules/.bin/wrangler deploy 2>&1 | tee deploy.log
       - name: Where it is
         working-directory: site
         run: |
           U=$(grep -o 'https://[a-z0-9.-]*workers.dev' deploy.log | head -1)
-          echo "$U"
+          test -n "$U" || { echo 'FAIL no deployment address'; exit 1; }
+          echo "$U (APK build $APK_BUILD, commit $SOURCE_SHA)"
           # (a new address can take a minute or two to answer)
-          for i in $(seq 1 18); do if curl -sf "$U/" | grep -q '<title>CUE</title>'; then echo "ok   the page is there"; exit 0; fi; sleep 10; done
-          echo "FAIL the page does not answer"; curl -s -o /dev/null -w '%{http_code}\n' "$U/"; exit 1
+          for i in $(seq 1 18); do
+            if curl -sf "$U/" | grep -q '<title>CUE</title>' &&
+               curl -sf "$U/version.json?deploy=$GITHUB_RUN_ID" -o deployed-version.json &&
+               node version.cjs check deployed-version.json; then
+              echo "ok   the released version is on the web"; exit 0
+            fi
+            sleep 10
+          done
+          echo "FAIL the released version does not answer"; curl -s -o /dev/null -w '%{http_code}\n' "$U/"; exit 1

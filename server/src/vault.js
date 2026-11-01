@@ -5,7 +5,8 @@ import { VaultCore } from './core.js';
 const hashOf = async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
 
-// physics steps per slice of checking: a few milliseconds of thinking, inside the free plan's 10 ms a request
+// A small verification batch keeps wallet requests responsive. Durable Objects have their own CPU limit (30s default),
+// distinct from the front-door Worker's free 10ms limit; batch sizing is a latency/usage choice.
 const SLICE = 150;
 
 export class Vault extends DurableObject {
@@ -18,7 +19,7 @@ export class Vault extends DurableObject {
     if (path === '/init') return this.core.init(await hashOf(body.key)) ? json({ ok: true }) : json({ ok: false }, 409);
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
-    if (path === '/v1/me') return json({ ok: true, me: this.core.me() });
+    if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); return json({ ok: true, me }); }
     if (path === '/v1/buy') return json(this.core.buy(body));
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }

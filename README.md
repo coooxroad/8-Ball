@@ -22,6 +22,10 @@
 `web/`을 고친 뒤 `sh web/build.sh`로 `app/src/main/assets/`를 만들고, 검사 네 가지를 통과시킵니다. `main`에 올리면
 GitHub Actions(`.github/workflows/build.yml`)가 APK를 만들어 릴리스합니다.
 
+APK 릴리스가 성공하면 `Deploy web`이 **그 APK와 같은 커밋**으로 웹게임도 자동 배포합니다. PR 검사나 실패한 APK 빌드는
+웹을 배포하지 않습니다. 웹 주소의 `/version.json`에서 적용된 커밋과 APK 빌드 번호를 확인할 수 있습니다.
+웹 배포만 실패했다면 해당 `Deploy web` 실행을 다시 실행하면 됩니다. 수동 웹 배포도 남아 있으며, 이 경우 APK 빌드 번호는 `null`입니다.
+
 ## 고정 서명 키 (선택)
 
 키가 없으면 빌드마다 임시 키로 서명되어, 새 버전을 깔 때 기존 앱을 먼저 지워야 합니다. 한 번만 설정하면 그대로 덮어 설치됩니다.
