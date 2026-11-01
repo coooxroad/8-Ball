@@ -14,10 +14,43 @@ function ballCase(k) {
 const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` });
+/* How a cue or glove plays, as numbers and bars (content/00-rarity.js), set against what is worn now: the bar is blue up to
+   what the worn one gives, green where this one gives more, red where it gives less, and the change beside the number.
+   OVR is the one number for the whole: a cue's from its three (70 with nothing either way, up to 95), a glove's from how
+   fine its two steps are (60 bare-handed, up to 95). Each row: { k: label, v, w (worn), lo, hi (the bar's ends), t: text,
+   d: the change as text, up: whether more is better }. */
+const cueOVR = c => { const s = (c && c.stat) || {}; return Math.round(70 + 1.25 * ((s.power || 0) + (s.spin || 0) + (s.guide || 0))); };
+const gloveFine = s => [(BARE_HAND.power - s.power) / (BARE_HAND.power - 0.25), (BARE_HAND.dial - s.dial) / (BARE_HAND.dial - 0.03)];
+const gloveOVR = g => { const f = gloveFine((g && g.stat) || BARE_HAND); return Math.round(60 + 35 * (f[0] + f[1]) / 2); };
+const sgn = (n, unit) => n > 0 ? `+${n}${unit}` : n < 0 ? `${n}${unit}` : '';
+function cueStats(c, worn) {
+  const s = c.stat || {}, w = (worn && worn.stat) || {};
+  const rows = [['최대 파워', 'power'], ['회전', 'spin'], ['조준선', 'guide']].map(([k, f]) => ({ k, v: 100 + (s[f] || 0), w: 100 + (w[f] || 0), lo: 100 - STAT_MAX, hi: 100 + STAT_MAX, up: true }));
+  for (const r of rows) { r.t = r.v + '%'; r.d = sgn(r.v - r.w, ''); }
+  const o = cueOVR(c), ow = cueOVR(worn);
+  return { ovr: o, ovrD: sgn(o - ow, ''), rows };
+}
+function gloveStats(g, worn) {
+  const s = g.stat || BARE_HAND, w = (worn && worn.stat) || BARE_HAND, round = x => Math.round(x * 1000) / 1000;
+  // (a finer step is better: the bar runs from the bare hand's step at its left to the finest at its right)
+  const rows = [{ k: '세기 단위', v: s.power, w: w.power, lo: BARE_HAND.power, hi: 0.25, t: String(s.power), d: sgn(round(s.power - w.power), '') },
+    { k: '다이얼 단위', v: s.dial, w: w.dial, lo: BARE_HAND.dial, hi: 0.03, t: s.dial + '°', d: sgn(round(s.dial - w.dial), '°') }];
+  for (const r of rows) r.up = false;
+  const o = gloveOVR(g), ow = gloveOVR(worn);
+  return { ovr: o, ovrD: sgn(o - ow, ''), rows };
+}
+// one row: the bar's blue (what the worn one gives), then green (more) or red (less), and the number with its change
+function statRow(r) {
+  const at = v => Math.max(0, Math.min(1, (v - r.lo) / (r.hi - r.lo))), a = at(r.v), b = at(r.w), better = a > b, pct = x => (x * 100).toFixed(1) + '%';
+  const good = r.d && better, bad = r.d && !better && a !== b;
+  return el('div', { class: 'dk-stat' }, [el('span', { class: 'k', text: r.k }),
+    el('i', { class: 'bar' }, [el('i', { class: 'cur', style: `width:${pct(Math.min(a, b))}` }), a !== b ? el('i', { class: better ? 'up' : 'down', style: `left:${pct(Math.min(a, b))};width:${pct(Math.abs(a - b))}` }) : null]),
+    el('b', { text: r.t }), el('em', { class: good ? 'up' : bad ? 'down' : '', text: r.d })]);
+}
 const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
     show: (c, stage) => { stage.dataset.win = '0'; dkPut(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]); },
-    about: c => [c.note, ...(c.spec || [])], stats: c => { const s = c.stat || {}; return [['최대 파워', s.power], ['회전', s.spin], ['조준선', s.guide]].map(([k, v]) => [k, (v || 0) / STAT_MAX, `${v > 0 ? '+' : ''}${v || 0}%`, true]); }, wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
+    about: c => [c.note, ...(c.spec || [])], stats: c => cueStats(c, CUES[prefs.cues[0]]), wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],
     wear: k => { prefs.ballSkin = k.id; return `${k.name} 공을 꺼냈습니다.`; }, undo: () => useBalls(prefs.ballSkin) },
@@ -32,7 +65,7 @@ const SHELVES = {
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
     about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다. 좋은 장갑일수록 세기와 미세 조준 다이얼이 더 잘게 움직입니다(손가락 움직임은 같습니다).', ...GLOVE_SPEC],
     // (the finest a glove may go, for the bars: a quarter of a power step, three hundredths of a degree)
-    stats: g => { const s = g.stat || BARE_HAND, f = (v, bare, best) => Math.max(0.06, Math.min(1, (bare - v) / (bare - best))); return [['세기 단위', f(s.power, BARE_HAND.power, 0.25), String(s.power)], ['다이얼 단위', f(s.dial, BARE_HAND.dial, 0.03), s.dial + '°']]; },
+    stats: g => gloveStats(g, GLOVES.find(x => x.id === prefs.glove)),
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
 };
 const SHELF_KEYS = ['cue', 'ball', 'table', 'trail', 'glove'];
@@ -55,7 +88,7 @@ function shelfPage(d, shop) {
       if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
         cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
       cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
     }
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
@@ -72,13 +105,15 @@ function shelfPage(d, shop) {
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
   dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), dkHr()]);
-  for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
-  // how it plays, as bars: a cue's from the middle (less to the left, more to the right), a glove's from nothing
+  // how it plays, first (it is what is looked for): OVR, then each number as a bar set against what is worn now
   if (K.stats) {
+    const S = K.stats(q);
+    dkPut(d.slate, [el('div', { class: 'dk-ovr' }, [el('span', { text: 'OVR' }), el('b', { text: S.ovr }), el('em', { class: S.ovrD ? (S.ovrD[0] === '+' ? 'up' : 'down') : '', text: S.ovrD }),
+      el('small', { text: i === worn ? '장착 중' : '장착한 것과 비교' })])]);
+    for (const r of S.rows) dkPut(d.slate, statRow(r));
     dkPut(d.slate, dkHr());
-    for (const [k, v, t, mid] of K.stats(q)) dkPut(d.slate, el('div', { class: 'dk-stat' + (mid ? ' mid' : '') + (v < 0 ? ' neg' : '') }, [el('span', { text: k }),
-      el('i', { class: 'bar', style: mid ? `--a:${(v < 0 ? 50 + v * 50 : 50).toFixed(1)}%;--w:${(Math.abs(v) * 50).toFixed(1)}%` : `--a:0%;--w:${(v * 100).toFixed(1)}%` }), el('b', { text: t })]));
   }
+  for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
     const buy = async () => { const r = await net.buy(kind, q.id); toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };

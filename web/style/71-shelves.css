@@ -88,10 +88,19 @@
 #app.desk .dk-card.r5{box-shadow:inset 0 -5px 0 -1px #ff8a5c}
 #app.desk .dk-card.r1::before{background:linear-gradient(to top,rgba(110,180,255,.85) 0%,rgba(110,180,255,.35) 30%,transparent 62%)}
 
-/* a cue's and a glove's stat (content/00-rarity.js) as bars on the opened card */
-#app.desk .dk-stat{display:grid;grid-template-columns:5.6em 1fr 3.4em;gap:10px;align-items:center;padding:6px 2px;font:600 14px var(--ui-font);color:#a9b6c6}
+/* a cue's and a glove's stat (35-desk-shelves.js): OVR, and bars set against what is worn - blue up to it, green more, red less */
+#app.desk .dk-ovr{display:flex;align-items:baseline;gap:8px;padding:6px 2px 8px;color:#a9b6c6;font:700 13px var(--ui-font)}
+#app.desk .dk-ovr b{font:800 30px/1 var(--num);color:#f3e2b4}
+#app.desk .dk-ovr em,#app.desk .dk-stat em{font:700 14px var(--num);font-style:normal}
+#app.desk .dk-ovr small{margin-left:auto;font-weight:500;color:#7f8c9c}
+#app.desk .dk-stat{display:grid;grid-template-columns:5.6em 1fr 3.4em 2.6em;gap:8px;align-items:center;padding:6px 2px;font:600 14px var(--ui-font);color:#a9b6c6}
 #app.desk .dk-stat b{text-align:right;color:#e9e4da;font-family:var(--num);font-weight:600}
-#app.desk .dk-stat .bar{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden}
-#app.desk .dk-stat .bar::after{content:'';position:absolute;top:0;bottom:0;left:var(--a);width:var(--w);border-radius:4px;background:#6fd3a4}
-#app.desk .dk-stat.mid .bar::before{content:'';position:absolute;top:-2px;bottom:-2px;left:50%;width:1px;background:rgba(255,255,255,.35)}
-#app.desk .dk-stat.neg .bar::after{background:#e4776b}
+#app.desk .dk-stat em{text-align:left}
+#app.desk .dk-stat .bar{position:relative;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden}
+#app.desk .dk-stat .bar i{position:absolute;top:0;bottom:0;left:0}
+#app.desk .dk-stat .bar .cur{background:#3f8cff}
+#app.desk .dk-stat .bar .up{background:#8ee04f}
+#app.desk .dk-stat .bar .down{background:#e8524a}
+#app.desk .dk-ovr em.up,#app.desk .dk-stat em.up{color:#8ee04f}
+#app.desk .dk-ovr em.down,#app.desk .dk-stat em.down{color:#ff6a5f}
+#app.desk .dk-card .ovr{position:absolute;left:6px;top:6px;z-index:2;min-width:26px;padding:1px 5px;border-radius:6px;background:rgba(10,14,20,.78);color:#f3e2b4;font:800 13px/1.35 var(--num);text-align:center}
