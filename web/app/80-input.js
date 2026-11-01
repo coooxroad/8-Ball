@@ -95,24 +95,30 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
   // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
   const CANCEL = 0.04;
-  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.max(0.002, (q - CANCEL) / (1 - CANCEL)); };
+  // the finger moves the power the same with any glove; the glove decides the step it lands on (a finer glove, finer steps)
+  const snap = p => { const k = gloveStep().power / 100; return Math.max(k, Math.round(p / k) * k); };
+  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.min(1, snap(Math.max(0.002, (q - CANCEL) / (1 - CANCEL)))); };
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null; ctlUp();
     const p = st.power;
-    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p), st.spin.x * 0.5, st.spin.y * 0.5, st.el); else { st.power = 0; setPowerUI(0); }
+    // (the cue in hand: its hardest stroke, and how far its strike point turns the ball)
+    const k = cueK();
+    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
 })();
 (function fineCtl() {
-  const box = $('#fine'); let id = null, last = 0, off = 0;
+  // the dial turns the aim the same with any glove; the aim moves in the glove's steps (degrees) from where the turn began
+  const box = $('#fine'); let id = null, last = 0, off = 0, from = 0, turned = 0;
   const pos = e => scene.portrait ? e.clientX : e.clientY;
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    st.aim += d * 0.0009 * (scene.portrait ? -1 : 1); off += d;
+    const unit = gloveStep().dial * Math.PI / 180; turned += d * 0.0009 * (scene.portrait ? -1 : 1);
+    st.aim = from + Math.round(turned / unit) * unit; off += d;
     box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
     const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
@@ -194,10 +200,10 @@ function syncEl() {
 // (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
 function elSay() {
   const P = game.P; if (st.el < 0.009) return '';
-  const h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45), st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
+  const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
   if (h > P.R * 2) return '공을 넘는 점프';
-  if (h > 0.012) return P.hop(game.vOf(1), st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
-  if (P.hop(game.vOf(1), st.el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
+  if (h > 0.012) return P.hop(game.vOf(1) * kp, st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
+  if (P.hop(game.vOf(1) * kp, st.el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
   return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
 }
 function setKindUI() {

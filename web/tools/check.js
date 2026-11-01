@@ -50,6 +50,18 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
     }
   }
   for (const c of C.CUES || []) for (const n of ['shaft', 'ferrule', 'tip', 'joint', 'fore', 'wrap', 'sleeve']) if (typeof c[n] !== 'number') fail(`content CUES '${c.id}': colour ${n} missing`);
+  // how cues and gloves play (00-rarity.js): a cue's three within ±STAT_MAX adding up to its rarity's total; a glove's
+  // steps finer (or no coarser) the rarer it is, and never coarser than the bare hand
+  for (const c of C.CUES || []) {
+    const s = c.stat, at = `content CUES '${c.id}'`;
+    if (!s || !['power', 'spin', 'guide'].every(k => Number.isInteger(s[k]) && Math.abs(s[k]) <= C.STAT_MAX)) { fail(`${at}: stat needs power, spin and guide, whole percents within ±${C.STAT_MAX}`); continue; }
+    if (s.power + s.spin + s.guide !== C.STAT_SUM[c.rarity]) fail(`${at}: stat adds up to ${s.power + s.spin + s.guide}, its rarity's total is ${C.STAT_SUM[c.rarity]}`);
+  }
+  for (const g of C.GLOVES || []) {
+    const s = g.stat, at = `content GLOVES '${g.id}'`;
+    if (!s || !(s.power > 0 && s.power <= C.BARE_HAND.power) || !(s.dial > 0 && s.dial <= C.BARE_HAND.dial)) { fail(`${at}: stat needs power and dial steps, no coarser than the bare hand (${C.BARE_HAND.power}, ${C.BARE_HAND.dial})`); continue; }
+    for (const h of C.GLOVES) if (h.stat && h.rarity < g.rarity && (h.stat.power < s.power || h.stat.dial < s.dial)) fail(`${at}: a glove of lower rarity ('${h.id}') has finer steps`);
+  }
 }
 // 4. the markup's ids, and the pictures named by path
 {

@@ -17,7 +17,7 @@ const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};b
 const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
     show: (c, stage) => { stage.dataset.win = '0'; dkPut(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]); },
-    about: c => [c.note, ...(c.spec || [])], wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
+    about: c => [c.note, ...(c.spec || [])], stats: c => { const s = c.stat || {}; return [['최대 파워', s.power], ['회전', s.spin], ['조준선', s.guide]].map(([k, v]) => [k, (v || 0) / STAT_MAX, `${v > 0 ? '+' : ''}${v || 0}%`, true]); }, wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],
     wear: k => { prefs.ballSkin = k.id; return `${k.name} 공을 꺼냈습니다.`; }, undo: () => useBalls(prefs.ballSkin) },
@@ -30,7 +30,9 @@ const SHELVES = {
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
   glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
-    about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다.', ...GLOVE_SPEC],
+    about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다. 좋은 장갑일수록 세기와 미세 조준 다이얼이 더 잘게 움직입니다(손가락 움직임은 같습니다).', ...GLOVE_SPEC],
+    // (the finest a glove may go, for the bars: a quarter of a power step, three hundredths of a degree)
+    stats: g => { const s = g.stat || BARE_HAND, f = (v, bare, best) => Math.max(0.06, Math.min(1, (bare - v) / (bare - best))); return [['세기 단위', f(s.power, BARE_HAND.power, 0.25), String(s.power)], ['다이얼 단위', f(s.dial, BARE_HAND.dial, 0.03), s.dial + '°']]; },
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
 };
 const SHELF_KEYS = ['cue', 'ball', 'table', 'trail', 'glove'];
@@ -58,7 +60,7 @@ function shelfPage(d, shop) {
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     dkPut(d.slate, [dkHr(), dkTxt(shop ? (net.on ? '코인과 다이아로 삽니다. 산 것은 내 장비에 들어갑니다.' : '서버가 열리면 코인과 다이아로 살 수 있습니다.') : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
-      dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt('플레이 성능은 모두 같습니다.')]);
+      dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt(kind === 'cue' ? '큐마다 최대 파워·회전·조준선이 조금씩 다릅니다(±12% 안).' : kind === 'glove' ? '장갑마다 세기와 다이얼이 움직이는 단위가 다릅니다.' : '플레이 성능은 모두 같습니다.')]);
     dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
     return;
   }
@@ -71,6 +73,12 @@ function shelfPage(d, shop) {
   const about = K.about(q);
   dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), dkHr()]);
   for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
+  // how it plays, as bars: a cue's from the middle (less to the left, more to the right), a glove's from nothing
+  if (K.stats) {
+    dkPut(d.slate, dkHr());
+    for (const [k, v, t, mid] of K.stats(q)) dkPut(d.slate, el('div', { class: 'dk-stat' + (mid ? ' mid' : '') + (v < 0 ? ' neg' : '') }, [el('span', { text: k }),
+      el('i', { class: 'bar', style: mid ? `--a:${(v < 0 ? 50 + v * 50 : 50).toFixed(1)}%;--w:${(Math.abs(v) * 50).toFixed(1)}%` : `--a:0%;--w:${(v * 100).toFixed(1)}%` }), el('b', { text: t })]));
+  }
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
     const buy = async () => { const r = await net.buy(kind, q.id); toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };

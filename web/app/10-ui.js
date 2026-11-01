@@ -102,7 +102,8 @@ function checkPixelRatio() {
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
   const tr = $('#power'), c = $('#powerCue'), REST = scene.portrait ? 36 : 48, END = scene.portrait ? 40 : 52;   // (clear of the gauge's end caps, so the chalked tip shows)
-  $('#powerNum').textContent = p > 0 ? Math.max(1, Math.round(p * 100)) : 0;
+  // (in the glove's steps: a half or a quarter shows as one)
+  $('#powerNum').textContent = p > 0 ? String(Math.max(0.25, Math.round(p * 400) / 4)) : 0;
   if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
   else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
@@ -117,3 +118,17 @@ function setSpinUI() {
   $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
   $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
 }
+
+/* Full screen, on the web (the app is full screen already, and a web page installed to the home screen opens that way
+   by its manifest): a button on the desk's top and in the pause sheet. A browser allows it only from a tap. */
+const fullCan = () => location.protocol !== 'file:' && !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+const fullOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+function fullToggle() {
+  const d = document.documentElement;
+  if (fullOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => toast('이 브라우저에서는 전체 화면을 쓸 수 없습니다.', '', 2200)); }
+}
+function paintFull() { const b = $('#dkFull'); if (!b) return; b.hidden = !fullCan(); b.querySelector('span').textContent = fullOn() ? '창 모드' : '전체 화면'; }
+document.addEventListener('fullscreenchange', () => { paintFull(); layoutSoon(); });
+document.addEventListener('webkitfullscreenchange', () => { paintFull(); layoutSoon(); });
+
