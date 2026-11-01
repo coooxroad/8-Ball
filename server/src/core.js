@@ -5,6 +5,7 @@
    The app never says how much it has; it says what it did, and this decides what that is worth.
    `sql` is the Durable Object's SQLite (ctx.storage.sql) - or, in the tests, node's. */
 import { E, playPuzzle, playMatch, Replay } from './check.js';
+import { logError, matchKey } from './match-log.js';
 
 const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS, glove: E.GLOVES };
 const day = () => new Date().toISOString().slice(0, 10);
@@ -17,6 +18,7 @@ export class VaultCore {
     sql.exec(`CREATE TABLE IF NOT EXISTS owned (kind TEXT, id TEXT, at INTEGER, PRIMARY KEY (kind, id))`);
     sql.exec(`CREATE TABLE IF NOT EXISTS solved (id INTEGER PRIMARY KEY, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS reqs (req TEXT PRIMARY KEY, res TEXT, at INTEGER)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS match_claims (digest TEXT PRIMARY KEY, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, coins INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS matches (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, kind TEXT, mode TEXT, log TEXT, paid INTEGER, checked INTEGER, status TEXT, cp TEXT, why TEXT)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS ledger (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, what TEXT, coin INTEGER, dia INTEGER)`);
@@ -47,14 +49,15 @@ export class VaultCore {
   // a change the app asked for: once per request number
   once(req, fn) {
     if (typeof req !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(req)) return { ok: false, why: 'no request number' };
-    const had = this.sql.exec(`SELECT res FROM reqs WHERE req = ?`, req).toArray();
-    if (had.length) return JSON.parse(had[0].res);
-    let res; try { res = this.tx(fn); } catch (e) { res = { ok: false, why: e.message }; }        // (a throw undoes the whole change)
-    // kept without the wallet (the app asks for that anyway), and only for a fortnight: a request is not sent again after that
-    const keep = Object.assign({}, res); delete keep.me;
-    this.sql.exec(`INSERT INTO reqs (req, res, at) VALUES (?, ?, ?)`, req, JSON.stringify(keep), Date.now());
-    if (Math.random() < 0.02) this.sql.exec(`DELETE FROM reqs WHERE at < ?`, Date.now() - 14 * 864e5);
-    return res;
+    return this.tx(() => {
+      const had = this.sql.exec(`SELECT res FROM reqs WHERE req = ?`, req).toArray();
+      if (had.length) return JSON.parse(had[0].res);
+      const res = fn(), keep = Object.assign({}, res); delete keep.me;
+      // A failed receipt write must roll back the payment too. Operational errors propagate so the client can retry.
+      this.sql.exec(`INSERT INTO reqs (req, res, at) VALUES (?, ?, ?)`, req, JSON.stringify(keep), Date.now());
+      if (Math.random() < 0.02) this.sql.exec(`DELETE FROM reqs WHERE at < ?`, Date.now() - 14 * 864e5);
+      return res;
+    });
   }
 
   buy({ req, kind, id }) {
@@ -63,7 +66,8 @@ export class VaultCore {
       if (!it) return { ok: false, why: 'no such item' };
       if (this.owns(kind, id)) return { ok: false, why: 'already owned' };
       const price = E.priceOf(it);
-      this.pay(`buy ${kind}:${id}`, -(price.coin || 0), -(price.dia || 0));          // (throws, and nothing changes, when short)
+      if (this.get('coin', 0) < (price.coin || 0) || this.get('dia', 0) < (price.dia || 0)) return { ok: false, why: 'not enough' };
+      this.pay(`buy ${kind}:${id}`, -(price.coin || 0), -(price.dia || 0));
       this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, kind, id, Date.now());
       return { ok: true, me: this.me() };
     });
@@ -81,14 +85,17 @@ export class VaultCore {
   }
 
   /* A match played on the device - with a friend on it, or against the computer. CHECK_MATCHES says how it is checked:
-       "slices" (the free plan): it is queued, played again a few hundred physics steps per request (work(), driven by the
+       "slices": it is queued, played again a few hundred physics steps per request (work(), driven by the
                  Durable Object's alarm), and paid when the replay reaches the end - seconds to a minute later;
-       "true"    (a plan that may think longer): played again at once and paid in the answer;
+       "true":   played again at once and paid in the answer;
        "false":  paid by what the app says, kept within sense and a daily allowance, and stored. */
   match({ req, kind, log }) {
     return this.once(req, () => {
       if (kind !== 'friend' && kind !== 'cpu') return { ok: false, why: 'not a match played on the device' };
-      if (!log || !E.ECONOMY.PER_POINT[log.mode]) return { ok: false, why: 'bad log' };
+      const why = logError(log); if (why) return { ok: false, why };
+      const digest = matchKey(log);
+      if (this.sql.exec(`SELECT 1 FROM match_claims WHERE digest = ?`, digest).toArray().length) return { ok: false, why: 'match already submitted', me: this.me() };
+      this.sql.exec(`INSERT INTO match_claims (digest, at) VALUES (?, ?)`, digest, Date.now());
       if (this.env.CHECK_MATCHES === 'slices') {
         // which to play again (economy.js): a share chosen at random, every big one, a new account's first, all of a caught one
         const X = E.ECONOMY, said = E.matchCoins(kind, log.mode, Array.isArray(log.points) ? log.points : [0, 0], log.winner === 0);
@@ -103,7 +110,9 @@ export class VaultCore {
       if (check) { const r = playMatch(log); if (!r.ok) return { ok: false, why: r.why }; points = r.points; won = r.winner === 0; }
       else {
         points = Array.isArray(log.points) ? log.points.map(p => Math.max(0, Math.min(60, p | 0))) : [0, 0]; won = log.winner === 0;
-        if ((log.shots || []).length < points[0] + points[1]) points = [0, 0];                         // (more points than shots: no)
+        // A legal pool shot can pot several balls. Carom still allows only one point per non-timeout shot.
+        const perShot = log.mode === 'eight' ? 15 : log.mode === 'nine' ? 9 : 1;
+        if (log.shots.filter(s => s.timeout !== true).length * perShot < points[0] + points[1]) points = [0, 0];
       }
       let coins = E.matchCoins(kind, log.mode, points, won);
       if (!check) {
@@ -124,15 +133,18 @@ export class VaultCore {
   work(steps) {
     const row = this.sql.exec(`SELECT n, kind, log, cp FROM matches WHERE status = 'checking' ORDER BY n LIMIT 1`).toArray()[0];
     if (!row) return false;
-    if (!this.job || this.job.n !== row.n) this.job = { n: row.n, saved: row.cp ? JSON.parse(row.cp).i : 0, rp: new Replay(JSON.parse(row.log), row.cp ? JSON.parse(row.cp) : null) };
-    const job = this.job, out = job.rp.advance(steps);
+    let log, out;
+    try {
+      log = JSON.parse(row.log);
+      if (!this.job || this.job.n !== row.n) this.job = { n: row.n, saved: row.cp ? JSON.parse(row.cp).i : 0, rp: new Replay(log, row.cp ? JSON.parse(row.cp) : null) };
+      out = this.job.rp.advance(steps);
+    } catch (e) { out = { ok: false, why: 'invalid replay data' }; }                // old/corrupt queue entries must not block the next match
+    const job = this.job;
     if (!out) {
       // where it got to, written down every few shots (a restart replays at most those few)
       const c = job.rp.lastCp; if (c && c.i - job.saved >= 4) { this.sql.exec(`UPDATE matches SET cp = ? WHERE n = ?`, JSON.stringify(c), row.n); job.saved = c.i; }
       return true;
     }
-    this.job = null;
-    const log = JSON.parse(row.log);
     this.tx(() => {
       // one that does not play out as the app said: turned down, and from now on every match of this account is checked
       if (!out.ok) { this.sql.exec(`UPDATE matches SET status = 'rejected', why = ?, cp = NULL, log = NULL WHERE n = ?`, out.why, row.n); this.set('caught', Date.now()); return; }
@@ -140,6 +152,7 @@ export class VaultCore {
       this.sql.exec(`UPDATE matches SET status = 'paid', paid = ?, checked = 1, cp = NULL, log = NULL WHERE n = ?`, coins, row.n);
       if (coins) this.pay(`match ${row.kind} ${log.mode}`, coins, 0);
     });
+    this.job = null;                                                          // retain the finished replay if the transaction fails
     return this.sql.exec(`SELECT 1 FROM matches WHERE status = 'checking' LIMIT 1`).toArray().length > 0;
   }
 }

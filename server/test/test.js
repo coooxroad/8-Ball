@@ -3,6 +3,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
+import { logError, matchKey } from '../src/match-log.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const vault = env => {
@@ -51,6 +52,12 @@ function record(mode, opts) {
   }
   log.winner = g.over ? g.over.winner : null; log.points = pts; return log;
 }
+// Structurally complete logs for paths that intentionally do not replay physics. Distinct inputs model distinct games.
+function uncheckedLog(i, points = [5, 4]) {
+  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')); g.start('four', ['A', 'B'], false, { rnd });
+  const sh = { s: H.snapshot(g.world), aim: i / 1000, V: 2, a: 0, b: 0, el: 0 };
+  return { mode: 'four', winner: 0, points, shots: Array.from({ length: 30 }, () => structuredClone(sh)) };
+}
 for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }], ['eight', {}], ['three', { target: 2, cushions: 3 }], ['nine', {}]]) {
   const log = record(mode, opts); if (log.winner == null) { console.log(`${mode}: the computers did not finish in 200 shots (skipped)`); continue; }
   const t0 = Date.now(), r = playMatch(JSON.parse(JSON.stringify(log))), ms = Date.now() - t0;
@@ -64,13 +71,24 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   // paid by the rules: checked, and unchecked within the daily allowance
   const v = vault({ CHECK_MATCHES: 'true' }); v.init('h');
   const pr = v.match({ req: req(), kind: 'cpu', log }); ok(pr.ok && pr.paid === E.matchCoins('cpu', mode, log.points, log.winner === 0), `${mode}: paid what the rules say`);
+  const balance = v.me().coin;
+  ok(!v.match({ req: req(), kind: 'cpu', log: structuredClone(log) }).ok && v.me().coin === balance, `${mode}: a new request cannot claim the same match again`);
+  // A final shot can land exactly on a slice boundary, just before begin() reports the result.
+  const end = new Replay(log); while (!end.out && !end.g.over) end.advance(1);
+  const cp = structuredClone(end.lastCp), restored = new Replay(log, cp).advance(150);
+  ok(restored?.ok && restored.winner === log.winner, `${mode}: terminal checkpoint retains the winner`);
+  delete cp.over;
+  ok(new Replay(log, cp).advance(Infinity)?.ok, `${mode}: legacy terminal checkpoints recover`);
+  // Multiple pots in one pool shot still pay on the unsampled path.
+  const u = vault({ CHECK_MATCHES: 'false' }); u.init('h');
+  ok(u.match({ req: req(), kind: 'cpu', log }).paid === E.matchCoins('cpu', mode, log.points, log.winner === 0), `${mode}: unchecked legal match pays`);
   console.log(`${mode}: ${log.shots.length} shots, points ${log.points.join(':')}, played again in ${ms} ms, cpu pays ${pr.paid}`);
 }
 {
   const v = vault({ CHECK_MATCHES: 'false' }); v.init('h'); let total = 0;
-  for (let i = 0; i < 20; i++) total += v.match({ req: req(), kind: 'friend', log: { mode: 'four', winner: 0, points: [5, 4], shots: new Array(30).fill({}) } }).paid || 0;
+  for (let i = 0; i < 20; i++) total += v.match({ req: req(), kind: 'friend', log: uncheckedLog(i) }).paid || 0;
   ok(total === E.ECONOMY.UNCHECKED_DAILY, `unchecked matches stop at the daily allowance (${total})`);
-  ok(v.match({ req: req(), kind: 'friend', log: { mode: 'four', winner: 0, points: [50, 40], shots: [] } }).paid === 0, 'more points than shots pays nothing');
+  ok(v.match({ req: req(), kind: 'friend', log: uncheckedLog(21, [50, 40]) }).paid === 0, 'more carom points than shots pays nothing');
   ok(!v.match({ req: req(), kind: 'ranked', log: { mode: 'four' } }).ok, 'ranked is not paid from the device');
   console.log('unchecked matches: checked');
 }
@@ -89,13 +107,49 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const want = E.matchCoins('cpu', 'eight', good.points, good.winner === 0);
     ok(v.me().coin === want && v.me().checking === 0, `paid after checking in ${n} slices: ${v.me().coin} (want ${want})`);
     ok(!!v.get('caught'), 'the doctored match marks the account');
-    for (let k = 0; k < 6; k++) v.match({ req: req(), kind: 'cpu', log: good });
+    for (let k = 0; k < 6; k++) v.match({ req: req(), kind: 'cpu', log: uncheckedLog(k) });
     ok(v.me().checking === 6, 'a caught account has every match checked');
     const u = vault({ CHECK_MATCHES: 'slices' }); u.init('h'); let queued = 0;
-    for (let k = 0; k < 40; k++) if (u.match({ req: req(), kind: 'cpu', log: { mode: 'four', winner: 0, points: [3, 1], shots: new Array(20).fill({}) } }).pending) queued++;
+    const random = Math.random;
+    try { for (let k = 0; k < 40; k++) { Math.random = () => k % 4 === 0 ? 0.1 : 0.99; if (u.match({ req: req(), kind: 'cpu', log: uncheckedLog(k, [3, 1]) }).pending) queued++; } } finally { Math.random = random; }
     ok(queued >= 3 && queued < 30, `only a share is checked (${queued} of 40)`);
     console.log(`sliced checking: ${n} slices for two matches, paid ${v.me().coin}; ${queued} of 40 ordinary matches picked for checking`);
   }
+}
+// A missing receipt, ownership write or payout must roll back the entire operation and remain retryable.
+{
+  const v = vault({ CHECK_MATCHES: 'false' }); v.init('h');
+  const original = v.sql.exec.bind(v.sql), q = req(), log = uncheckedLog(100);
+  v.sql.exec = (sql, ...args) => { if (sql.startsWith('INSERT INTO reqs')) throw new Error('receipt failed'); return original(sql, ...args); };
+  let threw = false; try { v.match({ req: q, kind: 'cpu', log }); } catch (e) { threw = true; }
+  v.sql.exec = original;
+  ok(threw && v.me().coin === 0 && !v.sql.exec('SELECT * FROM match_claims').toArray().length, 'receipt failure rolls back payment and match identity');
+  ok(v.match({ req: q, kind: 'cpu', log }).paid > 0, 'retry after receipt failure pays once');
+  const balance = v.me().coin; v.match({ req: q, kind: 'cpu', log }); ok(v.me().coin === balance, 'same request remains idempotent');
+  const it = E.CUES.find(c => c.rarity === 1), price = E.priceOf(it).coin; v.pay('test', price, 0);
+  const before = v.me().coin, purchase = req();
+  v.sql.exec = (sql, ...args) => { if (sql.startsWith('INSERT INTO owned')) throw new Error('ownership failed'); return original(sql, ...args); };
+  threw = false; try { v.buy({ req: purchase, kind: 'cue', id: it.id }); } catch (e) { threw = true; }
+  v.sql.exec = original;
+  ok(threw && v.me().coin === before && !v.owns('cue', it.id), 'ownership failure rolls back coin debit');
+  ok(v.buy({ req: purchase, kind: 'cue', id: it.id }).ok && v.me().coin === before - price, 'purchase retry succeeds once');
+}
+// Malformed new logs are rejected; corrupt rows from the old server cannot strand valid work behind them.
+{
+  const v = vault({ CHECK_MATCHES: 'slices' }); v.init('h');
+  const malformed = uncheckedLog(200); malformed.shots[0] = null;
+  ok(!v.match({ req: req(), kind: 'cpu', log: malformed }).ok && !v.me().checking, 'malformed log never enters queue');
+  for (const log of ['{broken', JSON.stringify(malformed)]) v.sql.exec("INSERT INTO matches (at, kind, mode, log, status) VALUES (?, 'cpu', 'four', ?, 'checking')", Date.now(), log);
+  const good = record('four', { target: 3, targets: [3, 3], tens: true });
+  v.set('caught', 1); v.match({ req: req(), kind: 'cpu', log: good });
+  let steps = 0; while (v.work(150) && steps++ < 100000) {}
+  ok(!v.me().checking && v.me().coin === E.matchCoins('cpu', 'four', good.points, good.winner === 0), 'corrupt rows rejected, next valid match paid');
+  ok(v.sql.exec("SELECT * FROM matches WHERE status = 'rejected'").toArray().length === 2, 'corrupt rows retired');
+  const clone = structuredClone(good); clone.points = [99, 99]; clone.winner = 1 - good.winner; clone.extra = 'ignored';
+  clone.shots[0].s.balls[0][5] = [0, 0, 1, 0];
+  ok(matchKey(clone) === matchKey(good), 'presentation fields and claimed outcome cannot change match identity');
+  ok(logError({ ...good, mode: 'toString' }) && logError({ ...good, shots: [null] }), 'unknown mode and null shots rejected');
+  console.log('reward regressions: receipts, duplicate matches, corrupt queue and terminal checkpoints checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);

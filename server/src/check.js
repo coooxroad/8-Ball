@@ -2,10 +2,9 @@
    The physics gives the same result for the same input, so a shot sent with where the balls stood and how it was struck
    ends exactly where the app saw it end - and a made-up result does not. */
 import * as E from './gen/engine.js';
+import { logError, shotOk } from './match-log.js';
 
 const seeded = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
-const shotOk = s => s && num(s.aim, -20, 20) && num(s.V, 0, 12) && num(s.a, -1, 1) && num(s.b, -1, 1) && num(s.el || 0, 0, Math.PI / 2);
 const H = E.createHighlights();
 
 // A puzzle (web/puzzles.js) and the shot the player solved it with: does that shot do what the puzzle asks?
@@ -33,13 +32,15 @@ export function playPuzzle(id, shot) {
 export class Replay {
   constructor(log, cp) {
     this.log = log; const o = log && log.opts || {};
-    if (!log || !E.ECONOMY.PER_POINT[log.mode] || !Array.isArray(log.shots) || log.shots.length > 600) { this.out = { ok: false, why: 'bad log' }; return; }
+    const why = logError(log); if (why) { this.out = { ok: false, why }; return; }
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
     this.g.start(log.mode, ['A', 'B'], false, { rnd: seeded(1), first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: !!o.finish, ice: !!o.ice });
     this.i = 0; this.points = [0, 0]; this.running = false;
-    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else this.g.world.ice = !!o.ice; }
+    // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
+    if (cp && cp.i === log.shots.length && !cp.over) cp = null;
+    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.over = cp.over || null; } }
   }
-  checkpoint() { return this.running || this.out ? null : { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(this.g.serialize())) }; }
+  checkpoint() { return this.running || this.out ? null : { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(this.g.serialize())), over: this.g.over && { ...this.g.over } }; }
   // the next shot set going, or the end of the match
   begin() {
     const g = this.g, log = this.log, o = log.opts || {};
@@ -70,7 +71,7 @@ export class Replay {
       const potted = w.ev.pocketed.filter(p => p.id !== 0).length, r = g.resolve().r;
       if (g.mode.table === 'carom') { if (r.pts > 0) this.points[this.me] += r.pts; } else if (!r.foul) this.points[this.me] += potted;
       this.running = false; this.i++;
-      this.lastCp = { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(g.serialize())) };   // (where it may carry on from)
+      this.lastCp = this.checkpoint();                                          // (including a win at the last step of a slice)
     }
     return this.out || null;
   }
