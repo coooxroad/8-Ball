@@ -650,6 +650,229 @@
           "total": 441
         }
       ]
+    },
+    {
+      "stage": 7,
+      "seed": 20261101,
+      "physics": "d92adf6dcf529bdb5eb7fef2170371963176300dc0a193f5a68e904d1a4e4f96",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
+      "samples": 441,
+      "percentRange": [
+        1,
+        90
+      ],
+      "puzzles": [
+        {
+          "id": 801,
+          "attempt": 31,
+          "percent": 83.6734693877551,
+          "good": 369,
+          "total": 441,
+          "open": [
+            2.795347317,
+            3.096916079,
+            0,
+            0,
+            0
+          ],
+          "openGood": 299,
+          "openTotal": 441,
+          "openPercent": 67.80045351473923,
+          "blockedWalls": 1,
+          "wallCount": 3,
+          "solutionWalls": 1,
+          "solutionCushions": 2
+        },
+        {
+          "id": 802,
+          "attempt": 30,
+          "percent": 67.12018140589569,
+          "good": 296,
+          "total": 441,
+          "open": [
+            1.545494479,
+            2.187034854,
+            0,
+            0,
+            0
+          ],
+          "openGood": 427,
+          "openTotal": 441,
+          "openPercent": 96.82539682539682,
+          "blockedWalls": 1,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 803,
+          "attempt": 4,
+          "percent": 43.08390022675737,
+          "good": 190,
+          "total": 441,
+          "open": [
+            0.538452117,
+            1.250280798,
+            0,
+            0,
+            0
+          ],
+          "openGood": 413,
+          "openTotal": 441,
+          "openPercent": 93.65079365079364,
+          "blockedWalls": 2,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 804,
+          "attempt": 18,
+          "percent": 33.333333333333336,
+          "good": 147,
+          "total": 441,
+          "open": [
+            0.593939541,
+            2.187034854,
+            0,
+            0,
+            0
+          ],
+          "openGood": 365,
+          "openTotal": 441,
+          "openPercent": 82.76643990929705,
+          "blockedWalls": 1,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 805,
+          "attempt": 3,
+          "percent": 28.571428571428573,
+          "good": 126,
+          "total": 441,
+          "open": [
+            -2.084603701,
+            6.089588815,
+            0,
+            0,
+            0
+          ],
+          "openGood": 356,
+          "openTotal": 441,
+          "openPercent": 80.72562358276645,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 806,
+          "attempt": 25,
+          "percent": 22.90249433106576,
+          "good": 101,
+          "total": 441,
+          "open": [
+            0.291444132,
+            6.089588815,
+            0,
+            0,
+            0
+          ],
+          "openGood": 340,
+          "openTotal": 441,
+          "openPercent": 77.09750566893425,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 3,
+          "solutionCushions": 2
+        },
+        {
+          "id": 807,
+          "attempt": 24,
+          "percent": 21.08843537414966,
+          "good": 93,
+          "total": 441,
+          "open": [
+            -2.604112905,
+            4.707700778,
+            0,
+            0,
+            0
+          ],
+          "openGood": 309,
+          "openTotal": 441,
+          "openPercent": 70.06802721088435,
+          "blockedWalls": 1,
+          "wallCount": 3,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 808,
+          "attempt": 32,
+          "percent": 15.646258503401361,
+          "good": 69,
+          "total": 441,
+          "open": [
+            0.852731506,
+            3.176324184,
+            0,
+            0,
+            0
+          ],
+          "openGood": 273,
+          "openTotal": 441,
+          "openPercent": 61.904761904761905,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 2,
+          "solutionCushions": 4
+        },
+        {
+          "id": 809,
+          "attempt": 8,
+          "percent": 15.419501133786849,
+          "good": 68,
+          "total": 441,
+          "open": [
+            1.224769828,
+            6.089588815,
+            0,
+            0,
+            0
+          ],
+          "openGood": 344,
+          "openTotal": 441,
+          "openPercent": 78.00453514739229,
+          "blockedWalls": 2,
+          "wallCount": 3,
+          "solutionWalls": 4,
+          "solutionCushions": 2
+        },
+        {
+          "id": 810,
+          "attempt": 9,
+          "percent": 8.16326530612245,
+          "good": 36,
+          "total": 441,
+          "open": [
+            0.455285461,
+            4.828411055,
+            0,
+            0,
+            0
+          ],
+          "openGood": 403,
+          "openTotal": 441,
+          "openPercent": 91.38321995464852,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 1,
+          "solutionCushions": 5
+        }
+      ]
     }
   ]
 }
