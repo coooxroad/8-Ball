@@ -86,9 +86,11 @@ function sheetName(i, keep) {
   const input = ai ? null : el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: keep == null ? prefs.names[i] : keep, 'aria-label': '이름', autocomplete: 'off' });
   let suji = sujiOf(i);
   const save = () => {
+    const was = debugOn();
     if (input) { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) prefs.names[i] = v; }
     if (four) { if (ai) prefs.sujiAI = suji; else prefs.suji[prefs.names[i]] = suji; }
-    savePrefs(); closeSheet(); paintHome();
+    savePrefs(); closeSheet(); net.renamed(); paintHome();
+    if (i === 0 && debugOn() !== was) toast(debugOn() ? '디버그 모드: 모든 제한을 풀었습니다.' : '디버그 모드를 껐습니다.', 'good', 2400);
   };
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
   const sj = four ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '수지 (몇 쳐?)' }), el('div', { class: 'seg' }, SUJI.map(v => el('button', { 'aria-pressed': String(v === suji), text: String(v * 10), onclick: e => { SND.tap(); suji = v; for (const b of e.target.parentNode.children) b.setAttribute('aria-pressed', String(b === e.target)); } }))),

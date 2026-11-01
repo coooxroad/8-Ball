@@ -5,6 +5,10 @@
    ever sets a balance. With no SERVER set the game plays offline as it always has, with everything to hand.
    All talking to the server is in this file: the screens call net.*, never fetch. */
 const SERVER = 'https://cue-server.co-oxroad.workers.dev';          // ('' plays offline with everything to hand)
+// The owner's debug name: a player named this has everything unlocked on this device - every item, every puzzle stage -
+// for trying things out. Only what the device shows: the server's coins and what it says is owned are not touched.
+const DEBUG_NAME = '이환컴퍼니';
+const debugOn = () => prefs.names[0] === DEBUG_NAME;
 const net = (() => {
   let me = store.get('me', null), busy = false, account = store.get('acct', null);
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
@@ -28,8 +32,9 @@ const net = (() => {
   function setMe(m, announce) {
     const was = me; me = m; store.set('me', m); prefs.wallet = { coin: m.coin, dia: m.dia };
     if (announce && was && m.coin > was.coin) toast(`+${(m.coin - was.coin).toLocaleString('ko-KR')} 코인 (경기 확인 완료)`, 'good', 2600);
-    // what is worn but no longer (or not yet) owned goes back to the first of its kind
+    // what is worn but no longer (or not yet) owned goes back to the first of its kind (not in debug: everything is to hand)
     const k = KIND_OF;
+    if (debugOn()) { savePrefs(); if (st.screen === 'home') paintHome(); return; }
     if (!owns('ball', prefs.ballSkin)) { prefs.ballSkin = BALLSKINS[0].id; useBalls(prefs.ballSkin); }
     if (!owns('trail', prefs.trail)) prefs.trail = TRAILS[0].id;
     if (prefs.glove && !owns('glove', prefs.glove)) prefs.glove = null;
@@ -56,11 +61,13 @@ const net = (() => {
   let laterT = 0, laterN = 0;
   function later() { clearTimeout(laterT); laterT = setTimeout(() => { laterN++; flush(); }, Math.min(60000, 4000 * Math.pow(1.6, laterN))); }
   // the 일반 things are everyone's; the rest are owned once bought (all of them, while there is no server)
-  const owns = (kind, id) => { const it = (KIND_OF[kind] ? KIND_OF[kind].list() : []).find(q => q.id === id); return !!it && (!SERVER || !(it.rarity > 0) || !!(me && me.owned[kind] && me.owned[kind].includes(id))); };
+  const owns = (kind, id) => { const it = (KIND_OF[kind] ? KIND_OF[kind].list() : []).find(q => q.id === id); return !!it && (!SERVER || debugOn() || !(it.rarity > 0) || !!(me && me.owned[kind] && me.owned[kind].includes(id))); };
   window.addEventListener('online', () => flush());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   return {
     get on() { return !!SERVER; }, get me() { return me; }, owns, flush,
+    // the name changed: debug may have come or gone, so what is worn is looked at again
+    renamed() { if (me) setMe(me); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
     claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
     // buying needs the server there and then: true when bought

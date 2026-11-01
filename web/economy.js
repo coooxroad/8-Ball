@@ -8,8 +8,8 @@
      cpu (컴퓨터 대전)       my points x price x 1/4
      tour (투어)            both put up the same stake; the winner takes the pot less the house's cut
    A puzzle pays once, the first time it is solved. Anything bought is priced by its rarity (content/00-rarity.js).
-   DAMA (다마: what a billiard hall calls a player's handicap, 수지) is the ranked score, counted the way a hall counts it:
-   everyone starts at DAMA_START (30). A ranked game moves both players the chess-rating way, on the hall's scale: an even
+   DAMA is the ranked score - a rating in place of ELO (the word is billiard-hall slang, 다마). Everyone starts at
+   DAMA_START (30). A ranked game moves both players the chess-rating way, on this smaller scale: an even
    game moves each by DAMA_K / 2, beating someone higher earns more and losing to someone lower costs more (never more than
    DAMA_K); DAMA_SPREAD apart, the stronger is expected to win ten times out of eleven. Nobody goes below DAMA_FLOOR.
 

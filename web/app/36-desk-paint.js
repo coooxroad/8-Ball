@@ -36,7 +36,7 @@ function deskPaint() {
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));
   { const w = prefs.wallet || {}, n = v => (v || 0).toLocaleString('ko-KR'); $('#dkWallet .coin b').textContent = n(w.coin); $('#dkWallet .dia b').textContent = n(w.dia); }
-  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = recText(prefs.names[0]);
+  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = debugOn() ? '디버그 모드' : recText(prefs.names[0]);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';

@@ -31,6 +31,7 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
 | `web/content/` | **가질 수 있는 것**: 희귀도, 테이블, 큐, 공, 트레일, 장갑. 데이터만. 파일마다 맨 위에 칸 설명 | 모름 |
 | `web/economy.js`, `web/tables.js` | 돈·DAMA 규칙, 테이블 규격. 앱과 서버가 같이 쓴다 | 모름 |
 | `server/` | 서버(Cloudflare Workers). 6절 | — |
+| `site/` | 웹 버전: 빌드된 페이지를 Cloudflare가 그대로 내보낸다(`.github/workflows/site.yml`, web/이 바뀌면 배포) | — |
 | `web/physics.js` | 공의 움직임. 결정적: 같은 입력이면 같은 결과 | 모름 |
 | `web/game.js` | 규칙, 차례, 컴퓨터 플레이어 | 모름 |
 | `web/drills.js` | 레슨(종목 교본 속 교본)과 자유 연습. 레슨 형식은 파일 맨 위 | 모름 |
@@ -92,6 +93,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 ### 하이라이트 편집 추가
 `web/reel/`에 `NN-이름.js`를 만들고 `STYLES.이름 = { name, init, step, ... }`을 넣는다. 다른 편집 파일은 건드리지 않는다.
 
+### 디버그 이름
+이름을 `이환컴퍼니`(07-net.js `DEBUG_NAME`)로 하면 그 기기에서 모든 아이템과 퍼즐 단계가 풀린다(`debugOn()`). 서버의 코인·보유는 건드리지 않는다.
+새로 제한을 만들면 `debugOn()`일 때 풀리게 한다.
+
 ### 저장 데이터
 `localStorage`의 `dp8.*` 모양을 바꾸면 옛 저장본을 읽는 줄도 같이 넣는다(`app/00-state.js`의 `prefs`). 전적과 진행이 날아가면 안 된다.
 
@@ -103,7 +108,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   `server/tools/pack.cjs`가 `web/`의 content·tables·economy·physics·game·puzzles·highlights를 그대로 묶어 서버에 넣는다 —
   앱과 서버가 **같은 코드로** 공을 친다. 물리가 결정적이라 같은 입력이면 같은 결과다.
 - 돈의 규칙은 `web/economy.js` 한 곳: 종목별 1점당 코인, 랭킹전 ×2/×½, 친구 ¼(둘 합), 컴퓨터 ¼(내 점수), 투어 수수료 10%,
-  퍼즐 150(처음 한 번), 희귀도별 가격, DAMA(다마: 당구장의 수지. 30 시작, 비슷한 상대면 ±3, 최대 ±6, 최저 10). 숫자를 바꾸면 앱과 서버가 같이 따른다.
+  퍼즐 150(처음 한 번), 희귀도별 가격, DAMA(ELO를 대신하는 랭킹 점수, '다마'는 당구장 은어. 30 시작, 비슷한 상대면 ±3, 최대 ±6, 최저 10). 숫자를 바꾸면 앱과 서버가 같이 따른다.
 - 해킹 방지: 앱은 "한 일"(퍼즐을 이 샷으로 풀었다, 이 경기를 이렇게 쳤다)만 보낸다. 서버가 다시 쳐 보고 지급한다.
   요청마다 앱이 번호(`req`)를 붙이고, 같은 번호는 두 번 처리되지 않는다. 금고는 요청을 한 줄로 처리하고, 실패하면 통째로 되돌린다.
 - `CHECK_MATCHES`(`server/wrangler.toml`): 무료 플랜은 요청 하나에 계산 10ms라 경기 전체를 한 번에 다시 칠 수 없다(샷 하나 3~34ms).

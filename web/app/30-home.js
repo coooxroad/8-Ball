@@ -6,7 +6,7 @@ const fireOf = n => n >= 2 ? ' fire f' + Math.min(5, n) : '';
 const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구' };
 // the puzzles on offer, and which stages are open
 const pzList = () => puzzles.list, PZ_NEED = 5;
-const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
+const pzOpen = si => si === 0 || debugOn() || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() { deskPaint(); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
