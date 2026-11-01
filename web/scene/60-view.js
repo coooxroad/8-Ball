@@ -77,8 +77,13 @@
   function resize() {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
     portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
-    const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
-    renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
+    // On the desk's home the picture is leaned back by CSS (the desk's tilt), and the browser resamples it doing so: drawn
+    // at exactly the screen's resolution it comes out soft - which shows on a computer's screen (one pixel a pixel). So
+    // while it leans there it is drawn at twice the screen's pixels, and the browser has detail to spare. Phones and tablets
+    // draw at two already and are left as they are (their frame rate first).
+    const lean = app.classList.contains('tilt'), dpr = Math.min(window.devicePixelRatio || 1, 3), want = lean && dpr < 2 ? 2 : dpr;
+    const cap = quality === 'high' ? (lean ? 14e6 : 9e6) : quality === 'low' ? 1.6e6 : (lean ? 8e6 : 4.2e6);
+    renderer.setPixelRatio(Math.max(1, Math.min(want, Math.sqrt(cap / (W * H)))));
     renderer.setSize(W, H, false);
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
     if (!rt || rt.width !== size.x || rt.height !== size.y) {

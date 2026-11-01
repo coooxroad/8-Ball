@@ -61,10 +61,10 @@ function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
+  const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (36-desk-paint.js)
+  app.classList.toggle('tilt', tilt);                                // (before the scene sizes itself: it draws finer while leaning)
   scene.resize();
-  const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (32-desk.js)
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do
-  app.classList.toggle('tilt', tilt);
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(playInsets(H, portrait));
