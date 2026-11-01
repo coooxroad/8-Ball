@@ -1,6 +1,7 @@
 # CUE on the web: the same page the Android app carries (app/src/main/assets, made by web/build.sh), served by Cloudflare
 # as a Worker with nothing but static files (free, no limit on requests for static files). Deployed by
-# .github/workflows/site.yml on every push that changes web/. The page talks to the server (server/) for the wallet.
+# .github/workflows/site.yml after each successful APK release, from that release's commit. The page talks to the server
+# (server/) for the wallet. /version.json identifies the deployed source commit and APK build.
 name = "cue"
 compatibility_date = "2026-10-01"
 

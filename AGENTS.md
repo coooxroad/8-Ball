@@ -31,7 +31,7 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
 | `web/content/` | **가질 수 있는 것**: 희귀도, 테이블, 큐, 공, 트레일, 장갑. 데이터만. 파일마다 맨 위에 칸 설명 | 모름 |
 | `web/economy.js`, `web/tables.js` | 돈·DAMA 규칙, 테이블 규격. 앱과 서버가 같이 쓴다 | 모름 |
 | `server/` | 서버(Cloudflare Workers). 6절 | — |
-| `site/` | 웹 버전: 빌드된 페이지를 Cloudflare가 그대로 내보낸다(`.github/workflows/site.yml`, web/이 바뀌면 배포) | — |
+| `site/` | 웹 버전: APK 릴리스 성공 후 같은 커밋의 페이지를 Cloudflare에 배포(`.github/workflows/site.yml`). `version.cjs`가 배포 버전을 기록·확인 | — |
 | `web/physics.js` | 공의 움직임. 결정적: 같은 입력이면 같은 결과 | 모름 |
 | `web/game.js` | 규칙, 차례, 컴퓨터 플레이어 | 모름 |
 | `web/drills.js` | 레슨(종목 교본 속 교본)과 자유 연습. 레슨 형식은 파일 맨 위 | 모름 |
