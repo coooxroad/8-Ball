@@ -226,7 +226,7 @@ function setKindUI() {
   const tx = bx + Math.cos(a) * (R + 1.5), ty = by - Math.sin(a) * (R + 1.5), cue = elImg('cue-' + c.id), Lc = Math.max(cw, ch) * 1.25, hc = Math.max(7, Lc * 110 / 2400 * 1.3);
   g.save(); g.translate(tx, ty); g.rotate(Math.PI - a);
   if (cue.naturalWidth) { g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 6; g.shadowOffsetX = -3; g.shadowOffsetY = 4; g.drawImage(cue, -Lc, -hc / 2, Lc, hc); }
-  else { g.fillStyle = hex(c.shaft); g.fillRect(-Lc, -2.5, Lc, 5); }
+  else { g.fillStyle = hex(c.shaft != null ? c.shaft : c.glow ? c.glow.color : 0xd8c49a); g.fillRect(-Lc, -2.5, Lc, 5); }
   g.restore();
   if (!a) { g.fillStyle = '#f1e4c4'; g.font = '700 12px Gothic A1, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText('위로 끌어 큐를 세웁니다', bx + 40, by - 46); }
 }

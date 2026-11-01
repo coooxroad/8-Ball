@@ -69,7 +69,10 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
    `rarity`는 0(일반)~5(시크릿).
 2. 카드 그림을 넣는다: 큐 `web/ui/cue-<id>.webp`(2400×110, 팁이 왼쪽), 테이블 `web/ui/cloth-<id>.webp`,
    장갑 `web/ui/glove-<id>.webp`. 공은 코드로 그리고, 표면 무늬가 있으면 `web/tex/ball-<mat>.webp`에 `mat: '<mat>'`.
-3. 검사 네 가지. 빠진 그림, 겹친 id, 범위 밖 희귀도는 `check.js`가 잡는다. 다른 파일은 고치지 않아도 상점·내 장비에 나온다.
+3. 모양·재질·빛이 다른 스킨(울퉁불퉁한 공, 손가락 구멍, 직접 정한 큐 구간, 빛나는 날)은 코드 수정 없이 칸으로:
+   공 `shape`·`holes`·`skin`·`mark`·`finish`, 큐 `profile`·`glow`. 설명과 예시는 `tasks/gpt-skins.md` 2-1절, 그리는 곳은
+   `scene/30-balls.js`(모양은 세트마다 한 번 만들어 공유, 물리 구 안쪽에만)·`scene/40-cue.js`·`app/00-state.js`의 `drawCue`.
+4. 검사 네 가지. 빠진 그림, 겹친 id, 범위 밖 희귀도는 `check.js`가 잡는다. 다른 파일은 고치지 않아도 상점·내 장비에 나온다.
 
 **`id`는 한번 정하면 바꾸지 않는다.** 저장된 장착 정보와 앞으로 서버의 보유 목록이 `id`로 아이템을 찾는다.
 이름(`name`)은 바꿔도 된다.

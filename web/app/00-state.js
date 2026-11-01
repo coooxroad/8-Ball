@@ -120,9 +120,21 @@ function drawCue(cv, d, vertical) {
   const LEN = 1.47, x = m => m / LEN * L, rad = m => (0.006 + (0.0146 - 0.006) * Math.min(1, m / 1.45)) / 0.0146 * T / 2;
   const css = n => '#' + n.toString(16).padStart(6, '0');
   const seg = (m0, m1, fill) => { g.fillStyle = fill; g.beginPath(); g.moveTo(x(m0), T / 2 - rad(m0)); g.lineTo(x(m1), T / 2 - rad(m1)); g.lineTo(x(m1), T / 2 + rad(m1)); g.lineTo(x(m0), T / 2 + rad(m0)); g.fill(); };
+  // (a cue with its own make: its sections, and a lit blade - a white core in a glow of its colour - over them)
+  if (d.profile) {
+    const rr = r => r / 0.0146 * T / 2;
+    for (const [x0, x1, r0, r1, h] of d.profile) { g.fillStyle = css(h); g.beginPath(); g.moveTo(x(x0), T / 2 - rr(r0)); g.lineTo(x(x1), T / 2 - rr(r1)); g.lineTo(x(x1), T / 2 + rr(r1)); g.lineTo(x(x0), T / 2 + rr(r0)); g.fill(); }
+    if (d.glow) {
+      const G = d.glow, r = rr(G.r || 0.0062);
+      g.save(); g.shadowColor = css(G.color); g.shadowBlur = r * 5; g.fillStyle = css(G.color); g.fillRect(x(G.from), T / 2 - r * 1.6, x(G.to) - x(G.from), r * 3.2);
+      g.shadowBlur = r * 2; g.fillStyle = css(G.core != null ? G.core : 0xffffff); g.fillRect(x(G.from), T / 2 - r, x(G.to) - x(G.from), r * 2); g.restore();
+      return;
+    }
+  } else {
   seg(0, 0.012, css(d.tip)); seg(0.012, 0.04, css(d.ferrule)); seg(0.04, 0.74, css(d.shaft)); seg(0.74, 0.756, css(d.joint));
   seg(0.756, 1.03, css(d.fore)); seg(1.03, 1.3, css(d.wrap)); seg(1.3, 1.45, css(d.sleeve)); seg(1.45, 1.47, '#0d0d0d');
-  if (d.points != null) {                                                            // the points: long spear shapes running up the forearm
+  }
+  if (d.points != null && !d.profile) {                                              // the points: long spear shapes running up the forearm
     g.save(); g.beginPath(); g.moveTo(x(0.756), T / 2 - rad(0.756)); g.lineTo(x(1.03), T / 2 - rad(1.03)); g.lineTo(x(1.03), T / 2 + rad(1.03)); g.lineTo(x(0.756), T / 2 + rad(0.756)); g.clip();
     g.fillStyle = css(d.points);
     for (const o of [-1, 0, 1]) { const w = rad(1.03) * 0.42; g.beginPath(); g.moveTo(x(1.03), T / 2 + o * rad(1.03) * 0.95 - w); g.lineTo(x(1.03), T / 2 + o * rad(1.03) * 0.95 + w); g.lineTo(x(0.79), T / 2 + o * rad(0.79) * 0.95); g.fill(); }
