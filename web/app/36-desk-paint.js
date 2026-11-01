@@ -55,3 +55,4 @@ $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-ta
 press('#dkSet', sheetSettings);
 press('#dkRec', () => { if (st.screen === 'records') goHome(true); else { showRecords(); deskPaint(); } });
 press('#dkMe', () => sheetName(0));
+press('#dkFull', fullToggle); paintFull();
