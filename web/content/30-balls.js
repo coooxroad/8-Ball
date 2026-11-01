@@ -2,6 +2,10 @@
    { id, name, rarity, note, pal: colours of balls 1-8 (stripes repeat them; null: the usual ones), cue / yel / red: the
      carom balls, dots: the red dots TV balls have on the white (and yellow), noir?: dark balls with coloured bands and
      numbers, mat?: a surface laid over them (tex/ball-<mat>.webp), sound?: how they sound }
+   A set may also be made otherwise (all optional; scene/30-balls.js, tasks/gpt-skins.md 2-1): shape { lumps, squash, n, eyes,
+   seed } (a lumpy 3D shape inside the ball's sphere), holes [[lat, lon, radius, depth]] (finger holes), skin (the surface:
+   a colour picture tex/ball-<name>.webp, or a colour), mark 'tint' | 'label' (how a skinned ball shows which it is),
+   finish { rough, coat, metal, bump, bumpScale } (how the surface takes the light).
    sound (also on a cue): { rate: pitch, 1 as recorded (1.1 higher), tone: brightness, 1 as recorded, gain: loudness,
    1 as recorded, file: a recording in web/sound/ (name without extension) to use instead }. Left out: the usual sound. */
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
