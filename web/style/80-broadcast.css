@@ -7,7 +7,8 @@
    over the left of the bar. Upright, the plates fill the HUD's row at the top and the clock bar runs under them.
    All drawn here (sharp at any size, animated); sizes in --wb (bar width), --bh (its height), --cw (the middle). */
 #app.bcast{--wb:min(820px,calc(100vw - 190px));--bh:50px;--cw:150px;--bb:14px;--navy:#0a1a3f;--blue1:#2563eb;--blue2:#0b2f9a;--gold1:#ffd34d;--gold2:#e09a00}
-#app.bcast.compact{--wb:min(660px,calc(100vw - 170px));--bh:40px;--cw:118px;--bb:8px}
+/* (a small screen lying down: the bar keeps clear of the pause knob on the left and the view keys on the right) */
+#app.bcast.compact{--wb:min(660px,calc(100vw - 370px));--bh:40px;--cw:118px;--bb:8px}
 #app.bcast #hud .pill{border:0;border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);box-sizing:border-box;margin:0;gap:8px;overflow:hidden;
   background:linear-gradient(#ffffff,#e6ebf3);color:#4a5670;padding:0}
 #app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#0a1a3f;font-weight:800}

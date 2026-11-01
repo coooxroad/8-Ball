@@ -80,7 +80,8 @@ function playInsets(H, portrait) {
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
   app.classList.toggle('ysw', tv && game.mode.table === 'carom' && game.yellow === 0);   // (player 1 has the yellow: the plates' balls swap)
   if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
-  if (portrait) return { t: hud + 26, l: 6, r: 6, b: 146 };
+  // held upright: the power gauge stands at the right beside the table's lower half, the spin ball and the fine-aim drum below
+  if (portrait) return { t: hud + 26, l: 6, r: 76, b: 98 };
   return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
@@ -101,11 +102,11 @@ function checkPixelRatio() {
 
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
-  const tr = $('#power'), c = $('#powerCue'), REST = scene.portrait ? 36 : 48, END = scene.portrait ? 40 : 52;   // (clear of the gauge's end caps, so the chalked tip shows)
+  // (the gauge stands upright in either orientation: the cue is drawn down it, as it is drawn back from the ball)
+  const tr = $('#power'), c = $('#powerCue'), REST = 48, END = 52;   // (clear of the gauge's end caps, so the chalked tip shows)
   // (in the glove's steps: a half or a quarter shows as one)
   $('#powerNum').textContent = p > 0 ? String(Math.max(0.25, Math.round(p * 400) / 4)) : 0;
-  if (scene.portrait) c.style.transform = `translate(${REST + p * Math.max(0, tr.clientWidth - REST - END)}px,-50%)`;
-  else c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
+  c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
   // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
   const q = Math.min(1, p), hue = 185 - 185 * Math.pow(q, 0.85);

@@ -97,7 +97,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   const CANCEL = 0.04;
   // the finger moves the power the same with any glove; the glove decides the step it lands on (a finer glove, finer steps)
   const snap = p => { const k = gloveStep().power / 100; return Math.max(k, Math.round(p / k) * k); };
-  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, scene.portrait ? (e.clientX - r.left - 30) / (r.width - 60) : (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.min(1, snap(Math.max(0.002, (q - CANCEL) / (1 - CANCEL)))); };
+  const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.min(1, snap(Math.max(0.002, (q - CANCEL) / (1 - CANCEL)))); };
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
   const up = (e, cancel) => {
