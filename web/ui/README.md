@@ -76,5 +76,5 @@ T2 (cloth detail) is not used: at table scale it only showed as blocks; the draw
 | glove-black … glove-camo | G1–G6 | gloves (look.js GLOVES) | – |
 | tour-logo | L2 | the score bar's tab | – |
 
-`web/tex/ball-marble … ball-vintage` (BL1–BL5, 512×256 grey) are the ball sets' surfaces, worked over the painted colours
+`web/tex/ball-marble` (512×256 grey) is a ball set's surface (the bowling ball), worked over the painted colours
 in scene.js; build.sh also copies them to the app's `tex/` for the shelf cards.

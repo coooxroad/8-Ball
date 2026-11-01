@@ -16,5 +16,11 @@ const CUES = [
     spec: [['무게', '18oz · 510g'], ['팁', '13mm 단일 가죽'], ['몸통', '통짜 메이플 원피스'], ['쓰임', '당구장 벽걸이 큐'], ['조인트', '없음']] },
   { id: 'sport', name: '스포츠 그립', rarity: 1, note: '흰 상대, 남색 하대에 노란 고무 그립', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d, stat: { power: 6, spin: -4, guide: 2 },
     spec: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '화이트 코팅 메이플'], ['하대', '네이비'], ['그립', '노란 고무']] },
+  // of its own make (profile, glow: top of this file): a metal hilt and a lit blade
+  { id: 'saber', name: '광선검', rarity: 5, note: '금속 손잡이에 푸르게 빛나는 날', stat: { power: 8, spin: 6, guide: 6 },
+    profile: [[0, 0.74, 0.006, 0.0062, 0xffffff], [0.74, 0.8, 0.0125, 0.0125, 0x2b2d31, { metal: 0.9, rough: 0.3 }], [0.8, 1.3, 0.0128, 0.0132, 0x9aa0a8, { metal: 1, rough: 0.25 }],
+      [1.3, 1.45, 0.0134, 0.0136, 0x1b1c1f, { rough: 0.8 }], [1.45, 1.47, 0.0136, 0.013, 0x9aa0a8, { metal: 1, rough: 0.2 }]],
+    glow: { from: 0.004, to: 0.74, color: 0x31a8ff, core: 0xeaf6ff, r: 0.0055 },
+    spec: [['무게', '19oz · 539g'], ['날', '빛나는 상대'], ['손잡이', '금속 원통, 고무 그립'], ['조인트', '없음']] },
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
