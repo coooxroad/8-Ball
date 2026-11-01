@@ -5,15 +5,28 @@
   function setCue(i) {
     const d = CUES[i] || CUES[0];
     while (cue.children.length) { const m = cue.children.pop(); m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
-    const part = (x0, x1, r0, r1, mat) => {
-      const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
+    const part = (x0, x1, r0, r1, mat, sides) => {
+      const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, sides || 20); g.rotateZ(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, 0);
       cue.add(new THREE.Mesh(g, mat));
     };
     const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
     /* A cue with its own make (content/20-cues.js: profile, glow): its sections as given, tip first - and a lit blade, a
        bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
     if (d.profile) {
-      for (const [x0, x1, r0, r1, h, o] of d.profile) { const q = o || {}; part(x0, x1, r0, r1, std(h, q.rough != null ? q.rough : 0.4, q.metal || 0)); }
+      /* a section's own options: rough, metal; sides (6: a pencil's flats); pic (a picture from web/tex wrapped round it,
+         its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour) */
+      for (const [x0, x1, r0, r1, h, o] of d.profile) {
+        const q = o || {}, m = std(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
+        if (q.lit != null) { m.emissive = col(q.lit); m.emissiveIntensity = 1.6; }
+        if (q.pic) {
+          const at = cue.children.length, rep = q.rep || [1, Math.max(1, Math.round((x1 - x0) / 0.12))];
+          loadTex(q.pic, 0, t => {
+            const k = t.clone(); k.needsUpdate = true; k.wrapS = k.wrapT = THREE.RepeatWrapping; k.center.set(0.5, 0.5); k.rotation = Math.PI / 2; k.repeat.set(rep[1], rep[0]);
+            const me = cue.children[at]; if (me && me.material === m) { m.map = k; m.needsUpdate = true; dirty = 3; }
+          });
+        }
+        part(x0, x1, r0, r1, m, q.sides);
+      }
       if (d.glow) {
         const G = d.glow, core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
         // (each layer ends round at the tip, not cut square: a cap of its own radius)

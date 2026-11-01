@@ -50,5 +50,48 @@ const CUES = [
       [1.44, 1.47, 0.019, 0.0184, 0xb1bac3, { rough: 0.26, metal: 1 }]
     ], glow: { from: 0.004, to: 1, color: 0x38bfff, core: 0xf2fcff, r: 0.006 }, sound: { file: 'saber-strike' },
     spec: [['길이', '147cm'], ['날', '푸른 광선 · 밝은 중심부'], ['손잡이', '브러시드 실버 · 건메탈'], ['그립', '차콜 링 그립'], ['타격음', '짧은 전자 스윕']] },
+  // gold: the usual shape, all of it polished gold with black rings
+  { id: 'gold', name: '황금 큐', rarity: 3, note: '끝에서 끝까지 광을 낸 금, 검은 링 몇 줄', stat: { power: 4, spin: 4, guide: 4 },
+    profile: [
+      [0, 0.012, 0.006, 0.0062, 0x3d6fb0, { rough: 0.9 }],
+      [0.012, 0.04, 0.0062, 0.0064, 0xf4efe2, { rough: 0.35 }],
+      [0.04, 0.74, 0.0064, 0.0104, 0xe8b64a, { rough: 0.22, metal: 1 }],
+      [0.74, 0.756, 0.0107, 0.0108, 0x141414, { rough: 0.3 }],
+      [0.756, 1.03, 0.0106, 0.0122, 0xf0c25a, { rough: 0.18, metal: 1 }],
+      [1.03, 1.036, 0.0122, 0.0123, 0x141414, { rough: 0.3 }],
+      [1.036, 1.294, 0.0123, 0.0136, 0xc99a34, { rough: 0.38, metal: 1 }],
+      [1.294, 1.3, 0.0136, 0.0136, 0x141414, { rough: 0.3 }],
+      [1.3, 1.44, 0.0136, 0.0146, 0xf0c25a, { rough: 0.18, metal: 1 }],
+      [1.44, 1.47, 0.0146, 0.0142, 0x141414, { rough: 0.6 }]
+    ],
+    spec: [['무게', '20oz · 567g'], ['팁', '12mm 레이어드 가죽'], ['몸통', '광택 금 도금'], ['링', '검은 흑단 링 넷'], ['조인트', '금 3/8×10']] },
+  // a pencil as long as a cue: graphite point, the sharpened wood, a yellow six-sided body, the metal band and the rubber
+  { id: 'pencil', name: '거대 연필', rarity: 2, note: '깎은 흑연 끝, 노란 육각 몸통, 끝엔 분홍 지우개', stat: { power: -2, spin: 4, guide: 6 },
+    profile: [
+      [0, 0.03, 0.0035, 0.006, 0x2b2b30, { rough: 0.45, metal: 0.35 }],
+      [0.03, 0.15, 0.006, 0.0125, 0xe7c89a, { rough: 0.85 }],
+      [0.15, 1.36, 0.0125, 0.0125, 0xf2b81c, { rough: 0.45, sides: 6 }],
+      [1.36, 1.366, 0.0131, 0.0131, 0xb8bcc2, { rough: 0.3, metal: 1 }],
+      [1.366, 1.372, 0.0128, 0.0128, 0x9a9ea5, { rough: 0.35, metal: 1 }],
+      [1.372, 1.378, 0.0131, 0.0131, 0xb8bcc2, { rough: 0.3, metal: 1 }],
+      [1.378, 1.384, 0.0128, 0.0128, 0x9a9ea5, { rough: 0.35, metal: 1 }],
+      [1.384, 1.39, 0.0131, 0.0131, 0xb8bcc2, { rough: 0.3, metal: 1 }],
+      [1.39, 1.47, 0.0124, 0.0122, 0xf08aa0, { rough: 0.92 }]
+    ],
+    spec: [['길이', '147cm'], ['끝', 'HB 흑연'], ['몸통', '노란 육각 삼나무'], ['띠', '알루미늄'], ['지우개', '분홍 고무']] },
+  // the dragon: green-bronze scales the length of it (tex/cue-dragon-scales), bronze fittings, an ember at the tip
+  { id: 'dragon', name: '드래곤 큐', rarity: 4, note: '청동빛 비늘이 감긴 몸통, 불씨가 맺힌 팁', stat: { power: 9, spin: 4, guide: 3 },
+    profile: [
+      [0, 0.012, 0.006, 0.0062, 0xff7a1a, { rough: 0.6, lit: 0xff5a0a }],
+      [0.012, 0.04, 0.0062, 0.0064, 0xb07a3a, { rough: 0.3, metal: 0.9 }],
+      [0.04, 0.74, 0.0064, 0.0104, 0xffffff, { rough: 0.42, metal: 0.25, pic: 'cue-dragon-scales', rep: [1, 9] }],
+      [0.74, 0.756, 0.0108, 0.0109, 0xb07a3a, { rough: 0.3, metal: 0.9 }],
+      [0.756, 1.03, 0.0106, 0.0122, 0xd8e2d0, { rough: 0.4, metal: 0.25, pic: 'cue-dragon-scales', rep: [2, 4] }],
+      [1.03, 1.04, 0.0124, 0.0124, 0xb07a3a, { rough: 0.3, metal: 0.9 }],
+      [1.04, 1.3, 0.0123, 0.0136, 0x7e8c78, { rough: 0.55, metal: 0.2, pic: 'cue-dragon-scales', rep: [2, 4] }],
+      [1.3, 1.44, 0.0136, 0.0146, 0x1d2a22, { rough: 0.35, metal: 0.4 }],
+      [1.44, 1.47, 0.0146, 0.014, 0xb07a3a, { rough: 0.3, metal: 0.9 }]
+    ], sound: { file: 'fx-fire' },
+    spec: [['무게', '21oz · 595g'], ['팁', '불씨 팁'], ['몸통', '청동 비늘 감기'], ['장식', '청동 고리'], ['타격음', '화르륵']] }
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
