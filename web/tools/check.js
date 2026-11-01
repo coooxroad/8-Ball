@@ -49,7 +49,30 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
       }
     }
   }
-  for (const c of C.CUES || []) for (const n of ['shaft', 'ferrule', 'tip', 'joint', 'fore', 'wrap', 'sleeve']) if (typeof c[n] !== 'number') fail(`content CUES '${c.id}': colour ${n} missing`);
+  // a cue: its eight colours - or its own make (profile: sections tip first, metres along and radius; glow: a lit blade)
+  const num = (v, lo, hi) => typeof v === 'number' && v >= lo && v <= hi;
+  for (const c of C.CUES || []) {
+    const at = `content CUES '${c.id}'`;
+    if (!c.profile) { for (const n of ['shaft', 'ferrule', 'tip', 'joint', 'fore', 'wrap', 'sleeve']) if (typeof c[n] !== 'number') fail(`${at}: colour ${n} missing`); continue; }
+    let last = 0;
+    for (const q of c.profile) {
+      if (!Array.isArray(q) || !num(q[0], 0, 1.6) || !num(q[1], 0, 1.6) || !(q[1] > q[0]) || !num(q[2], 0.003, 0.03) || !num(q[3], 0.003, 0.03) || !num(q[4], 0, 0xffffff)) { fail(`${at}: profile section ${JSON.stringify(q)} should be [from, to, radius at from, radius at to, colour, { rough, metal }?] in metres`); break; }
+      if (q[0] < last - 1e-9) fail(`${at}: profile sections should run from the tip, one after another`); last = q[1];
+    }
+    if (c.profile.length && (c.profile[0][0] !== 0 || last < 1.3 || last > 1.6)) fail(`${at}: the profile should start at the tip (0) and end at the butt (1.3 to 1.6 m)`);
+    if (c.glow && (!num(c.glow.from, 0, 1.6) || !num(c.glow.to, 0, 1.6) || !(c.glow.to > c.glow.from) || !num(c.glow.color, 0, 0xffffff))) fail(`${at}: glow should be { from, to, color, core?, r? }`);
+  }
+  // a ball set's own make (content/30-balls.js): its shape, holes, surface picture, mark and finish
+  for (const k of C.BALLSKINS || []) {
+    const at = `content BALLSKINS '${k.id}'`;
+    if (k.shape && (!num(k.shape.lumps || 0, 0, 0.15) || (k.shape.squash && !(k.shape.squash.length === 3 && k.shape.squash.every(v => num(v, 0.7, 1)))))) fail(`${at}: shape.lumps 0..0.15, shape.squash three numbers 0.7..1`);
+    for (const h of k.holes || []) if (!Array.isArray(h) || !num(h[0], -90, 90) || !num(h[1], 0, 360) || !num(h[2], 0.03, 0.4) || !num(h[3] == null ? 0.3 : h[3], 0.05, 0.6)) fail(`${at}: a hole is [latitude, longitude (degrees), radius, depth (of the ball's radius)]`);
+    if (typeof k.skin === 'string' && !has(`tex/ball-${k.skin}.webp`)) fail(`${at}: its surface tex/ball-${k.skin}.webp is missing`);
+    if (k.skin != null && typeof k.skin !== 'string' && !num(k.skin, 0, 0xffffff)) fail(`${at}: skin is a picture's name or a colour`);
+    if (k.mark && !['tint', 'label'].includes(k.mark)) fail(`${at}: mark is 'tint' or 'label'`);
+    const f = k.finish; if (f && ((f.rough != null && !num(f.rough, 0, 1)) || (f.coat != null && !num(f.coat, 0, 1)) || (f.metal != null && !num(f.metal, 0, 1)))) fail(`${at}: finish rough, coat, metal are 0..1`);
+    if (f && f.bump && !has(`tex/ball-${f.bump}.webp`)) fail(`${at}: its bump picture tex/ball-${f.bump}.webp is missing`);
+  }
   // how cues and gloves play (00-rarity.js): a cue's three within ±STAT_MAX adding up to its rarity's total; a glove's
   // steps finer (or no coarser) the rarer it is, and never coarser than the bare hand
   for (const c of C.CUES || []) {
