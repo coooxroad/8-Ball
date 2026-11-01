@@ -11,7 +11,46 @@ function ballCase(k) {
   return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
     ...ids.map((n, j) => el('img', { class: 'b', src: scene.ballPortrait(k.id, kind, n), alt: '', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
 }
-const streak = (q, big) => el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
+/* A trail's card: the way a ball went up the card, drawn as that trail draws it (a trail with a kind; scene/55-chalk.js,
+   56-fx.js) - or, for a plain one, a streak of its colour. Each drawn once. */
+const trailPics = {};
+function trailPic(kind, wide) {
+  const key = kind + (wide ? ':w' : ''); if (trailPics[key]) return trailPics[key];
+  // drawn upright, the ball coming down to the bottom; wide: the same turned so it comes in from the left to the right
+  const W = 160, H = 260, c = document.createElement('canvas'); c.width = wide ? H : W; c.height = wide ? W : H; const g = c.getContext('2d');
+  if (wide) g.setTransform(0, -1, 1, 0, 0, W);
+  const text = (t, x, y) => { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#f6f8f0'; g.font = '20px Jua, sans-serif'; g.textAlign = 'center'; g.fillText(t, wide ? y : x, wide ? W - x : y); g.restore(); };
+  let sd = 5; const r = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+  const P = [[60, 4], [128, 96], [34, 186], [80, 256]];                         // down the card, off a cushion and back
+  const along = (f, step) => { for (let i = 0; i < P.length - 1; i++) { const [x0, y0] = P[i], [x1, y1] = P[i + 1], L = Math.hypot(x1 - x0, y1 - y0); for (let d = 0; d < L; d += step) f(x0 + (x1 - x0) * d / L, y0 + (y1 - y0) * d / L, d / L, i); } };
+  const path = () => { g.beginPath(); P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
+  g.lineCap = g.lineJoin = 'round';
+  if (kind === 'chalk') {
+    for (let k = 0; k < 3; k++) { g.strokeStyle = `rgba(246,248,240,${0.5 + r() * 0.3})`; g.lineWidth = 2 + r() * 1.5; g.save(); g.translate(r() * 2 - 1, r() * 2 - 1); path(); g.stroke(); g.restore(); }
+    g.strokeStyle = 'rgba(246,248,240,.8)'; g.lineWidth = 1.6; g.beginPath(); g.arc(34, 186, 18, -0.95, 0.95); g.stroke();
+    text('44°', 74, 192);
+  } else if (kind === 'stars') {
+    g.strokeStyle = 'rgba(200,225,255,.7)'; g.lineWidth = 1.2; path(); g.stroke();
+    along((x, y) => { if (r() < 0.5) return; g.fillStyle = ['#fff', '#bfe3ff', '#ffe7a3'][(r() * 3) | 0]; g.globalAlpha = 0.5 + r() * 0.5; g.beginPath(); g.arc(x + r() * 10 - 5, y + r() * 10 - 5, 1 + r() * 1.6, 0, 7); g.fill(); g.globalAlpha = 1; }, 6);
+    for (const [x, y] of P) { const s = 13; g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x, y - s); g.quadraticCurveTo(x, y, x + s, y); g.quadraticCurveTo(x, y, x, y + s); g.quadraticCurveTo(x, y, x - s, y); g.quadraticCurveTo(x, y, x, y - s); g.fill(); }
+  } else if (kind === 'puff') {
+    along((x, y, t, i) => { const k = 9 + ((i + t) / 3) * 14; g.fillStyle = ['#d9d39c', '#c9d79a', '#e6dcb9'][(r() * 3) | 0]; g.strokeStyle = 'rgba(90,100,50,.45)'; g.lineWidth = 2;
+      for (let j = 0; j < 3; j++) { g.beginPath(); g.arc(x + (r() - 0.5) * k, y + (r() - 0.5) * k * 0.6, k * (0.5 + r() * 0.3), 0, 7); g.fill(); g.stroke(); } }, 34);
+  } else if (kind === 'ink') {
+    along((x, y, t, i) => { const w = 4 + (i + t) * 3.5; g.fillStyle = 'rgba(14,14,18,.92)'; g.beginPath(); g.arc(x, y, Math.max(2, w / 2), 0, 7); g.fill(); if (i === 2 && r() < 0.4) { g.fillStyle = 'rgba(14,14,18,.5)'; g.fillRect(x + 6, y, 2, 2); } }, 1.5);
+    for (let k = 0; k < 10; k++) { g.fillStyle = 'rgba(14,14,18,.85)'; g.beginPath(); g.arc(34 + (r() - 0.3) * 24, 186 + (r() - 0.5) * 28, 1 + r() * 3, 0, 7); g.fill(); }
+  } else if (kind === 'fire') {
+    along((x, y, t, i) => { const k = 10 + r() * 8; const gr = g.createRadialGradient(x, y, 0, x, y - k * 0.4, k);
+      gr.addColorStop(0, 'rgba(255,245,200,.95)'); gr.addColorStop(0.35, 'rgba(255,170,40,.8)'); gr.addColorStop(1, 'rgba(220,40,10,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(x, y - k * 0.3, k * 0.45, k, 0, 0, 7); g.fill(); }, 9);
+  } else if (kind === 'splash') {
+    along((x, y) => { g.fillStyle = r() < 0.5 ? '#fff' : '#cfefff'; for (const sd2 of [-1, 1]) { g.beginPath(); g.arc(x + sd2 * (8 + r() * 14), y + (r() - 0.5) * 8, 1.6 + r() * 2.4, 0, 7); g.fill(); } }, 12);
+    g.strokeStyle = 'rgba(230,250,255,.85)'; g.lineWidth = 2; for (const [x, y] of P.slice(1, 3)) for (const k of [10, 20]) { g.beginPath(); g.ellipse(x, y, k * 1.3, k * 0.8, 0, 0, 7); g.stroke(); }
+  }
+  return (trailPics[key] = c.toDataURL());
+}
+const streak = (q, big) => q.kind ? el('i', { class: 'trl pic' + (big ? ' big' : ''), style: `--pic:url(${trailPic(q.kind, big)})` })
+  : el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` });
 /* How a cue or glove plays, as numbers and bars (content/00-rarity.js), set against what is worn now: the bar is blue up to
@@ -59,7 +98,7 @@ const SHELVES = {
     wear: (c, i) => { prefs.cloth = i; homePreview(); return `${c.name} 테이블로 바꿨습니다.`; }, undo: () => dress(iceOn()) },
   trail: { name: '트레일', list: () => TRAILS, worn: () => Math.max(0, TRAILS.findIndex(t => t.id === prefs.trail)), pic: q => streak(q),
     show: (q, stage) => { scene.setTrail(q.id); stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, streak(q, true))); },
-    about: q => [q.note, '큐볼이 구르는 동안 뒤로 짧게 남고 곧 사라집니다. 경기에는 영향이 없습니다.'],
+    about: q => [q.note, '큐볼이 지나간 길에 남고, 다음 샷을 치면 지워집니다. 보기만 다를 뿐 경기에는 영향이 없습니다.'],
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
   glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },

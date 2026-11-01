@@ -20,15 +20,20 @@
 #app.desk .dk-card .cuecard img{position:absolute;left:50%;top:50%;height:auto;width:var(--cl,200px);transform:translate(-50%,-50%) rotate(-90deg);width:96cqh;filter:drop-shadow(-3px 4px 3px rgba(0,0,0,.45))}
 #app.desk .dk-card .clothcard{display:block;width:72%;margin:4px auto 0;border-radius:6px;background-size:64px;box-shadow:inset 0 0 0 5px var(--w),inset 0 0 0 7px rgba(0,0,0,.35),-3px 5px 6px rgba(0,0,0,.4)}
 #app.desk .dk-card img.glove{object-fit:contain;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.45))}
+#app.desk i.trl::before,#app.desk i.trl::after{content:'';position:absolute}
+#app.desk i.trl::after{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ece7da 55%,#9c968a);box-shadow:0 3px 6px rgba(0,0,0,.35)}
+#app.desk i.trl.none::before{display:none}
 #app.desk .dk-card i.trl{display:block;position:relative;background:none}
 #app.desk .dk-card i.trl::before{left:50%;right:auto;top:12%;bottom:34%;width:22%;height:auto;transform:translateX(-50%);background:linear-gradient(transparent,var(--c))}
+#app.desk .dk-card i.trl.pic::before{top:6%;bottom:30%;width:62%;background:var(--pic) center/contain no-repeat}
 #app.desk .dk-card i.trl.rb::before{background:linear-gradient(transparent,#bf5af2,#0a84ff,#34c759,#ffcc00,#ff3b30)}
 #app.desk .dk-card i.trl::after{left:50%;right:auto;top:auto;bottom:12%;width:auto;height:24%;transform:translateX(-50%)}
 #app.desk .dk-stage .bigpic{position:absolute;inset:6% 10%;display:grid;place-items:center}
 #app.desk .dk-stage .bigpic img.glove{max-width:100%;max-height:100%;filter:drop-shadow(-10px 14px 10px rgba(0,0,0,.5))}
 #app.desk .dk-stage .bigpic i.trl.big{position:relative;width:70%;height:40%;background:none}
-#app.desk .dk-stage .bigpic i.trl.big::before{left:0;right:22%;height:26%}
-#app.desk .dk-stage .bigpic i.trl.big::after{right:4%;width:20%;max-width:none}
+#app.desk .dk-stage .bigpic i.trl.big::before{left:0;right:22%;top:37%;height:26%;width:auto;transform:none;background:linear-gradient(to right,transparent,var(--c))}
+#app.desk .dk-stage .bigpic i.trl.big.pic::before{left:0;right:20%;top:0;bottom:0;height:auto;background:var(--pic) right center/contain no-repeat}
+#app.desk .dk-stage .bigpic i.trl.big::after{right:4%;left:auto;top:50%;bottom:auto;width:20%;height:auto;max-width:none;transform:translateY(-50%)}
 #app.desk.compact .dk-cards{gap:10px 8px}
 #app.desk.compact .dk-card{font-size:11.5px;padding:6px 3px 5px;gap:3px}
 /* the card worn: ringed in light, with a tag hanging over its top edge; a table card is a small table inside the card;
