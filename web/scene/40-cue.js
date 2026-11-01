@@ -16,10 +16,12 @@
       for (const [x0, x1, r0, r1, h, o] of d.profile) { const q = o || {}; part(x0, x1, r0, r1, std(h, q.rough != null ? q.rough : 0.4, q.metal || 0)); }
       if (d.glow) {
         const G = d.glow, core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
-        part(G.from, G.to, G.r || 0.0062, G.r || 0.0062, core);
+        // (each layer ends round at the tip, not cut square: a cap of its own radius)
+        const r = G.r || 0.0062, cap = (rad, mat) => { const m = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 10), mat); m.position.set(G.from, 0, 0); cue.add(m); return m; };
+        part(G.from, G.to, r, r, core); cap(r, core);
         for (const [k, op] of [[1.7, 0.55], [3.2, 0.2]]) {
           const m = new THREE.MeshBasicMaterial({ color: col(G.color), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
-          part(G.from - 0.004, G.to + 0.004, (G.r || 0.0062) * k, (G.r || 0.0062) * k, m); cue.children[cue.children.length - 1].renderOrder = 3;
+          part(G.from, G.to + 0.004, r * k, r * k, m); cue.children[cue.children.length - 1].renderOrder = 3; cap(r * k, m).renderOrder = 3;
         }
       }
       dirty = 3; return;

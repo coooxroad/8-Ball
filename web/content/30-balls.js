@@ -15,9 +15,16 @@ const BALLSKINS = [
   { id: 'classic', name: '클래식', rarity: 0, note: '중계에서 보는 공: 흰 공과 노란 공에 빨간 점', pal: null, cue: 0xf4efe2, yel: 0xf4c20d, red: 0xd3241c, dots: true },
   { id: 'plain', name: '매끈한 공', rarity: 0, note: '점 없는 흰 공, 맑은 색', pal: null, cue: 0xf7f3ea, yel: 0xf6c514, red: 0xd8261e, dots: false },
   // made otherwise (shape, holes, skin, mark, finish: top of this file): a bowling ball with its finger holes, and a lumpy potato
-  { id: 'bowling', name: '볼링공', rarity: 1, note: '마블 무늬에 손가락 구멍 셋', pal: null, cue: 0xf4efe2, yel: 0xf2c21a, red: 0xd3241c, dots: false,
-    mat: 'marble', holes: [[52, 80, 0.15, 0.3], [52, 100, 0.15, 0.3], [30, 90, 0.17, 0.32]], finish: { rough: 0.15, coat: 1 } },
-  { id: 'potato', name: '알감자', rarity: 5, note: '울퉁불퉁 갓 캔 알감자', pal: null, cue: 0xe9dcc0, yel: 0xf2c21a, red: 0xd3241c, dots: false,
-    skin: 0x9a6b3c, mark: 'label', shape: { lumps: 0.09, squash: [1, 0.86, 0.94], n: 14, eyes: 7, seed: 5 }, finish: { rough: 0.85, coat: 0 } },
+  { id: 'bowling', name: '볼링공', rarity: 1, note: '마블 수지와 손가락 구멍 셋, 색과 띠로 공 구분', pal: null,
+    cue: 0xf4f1e8, yel: 0xf2c21a, red: 0xdb2827, dots: false, skin: 'bowling', mark: 'tint', numbers: false,
+    holes: [[48, 68, 0.135, 0.34], [48, 112, 0.135, 0.34], [24, 90, 0.165, 0.38]], finish: { rough: 0.18, coat: 1 },
+    sound: { rate: 0.76, tone: 0.82, gain: 1.05 } },
+  // the potato tells its balls apart as potatoes do: on a carom table a peeled one, a golden one and a red one; on a pool
+  // table a solid is dyed its colour, a stripe wears two rubber bands of it, and every number is on a big white sticker
+  { id: 'potato', name: '알감자', rarity: 5, note: '울퉁불퉁 알감자: 깐 감자·황금 감자·홍감자, 물들이고 고무줄 감고', pal: null,
+    cue: 0xf0e8d5, yel: 0xf4ca1c, red: 0xe42f27, dots: false, skin: 'potato', mark: 'tint', stripes: 'bands', sticker: 1.3,
+    caromSkins: [{ pic: 'potato-white', color: 0xeee2c4 }, { pic: 'potato-gold', color: 0xe5b52a }, { pic: 'potato-red', color: 0xa33a2c }],
+    shape: { lumps: 0.105, squash: [1, 0.9, 0.96], n: 13, eyes: 8, seed: 37 }, finish: { rough: 0.92, coat: 0 },
+    sound: { rate: 0.9, tone: 0.65, gain: 0.72 } },
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };

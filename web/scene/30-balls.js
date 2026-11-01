@@ -30,7 +30,7 @@
       if (stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
       if (sk.noir && !stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.44, W, H * 0.12); }   // (a thin coloured belt round a solid)
       const rad = 0.5 / Math.PI * H;
-      for (const u of [0.25, 0.75]) {
+      for (const u of sk.numbers === false ? [] : [0.25, 0.75]) {
         g.fillStyle = sk.noir ? '#141416' : ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
         if (sk.noir) { g.strokeStyle = colOf(n); g.lineWidth = 6; g.stroke(); }
         g.fillStyle = sk.noir ? colOf(n) : '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -50,22 +50,38 @@
        'label': the surface stays as it is, and the ball wears its colour as discs: a pool ball a disc of its colour with
                 the number on ivory (a stripe a ring of it), a carom ball two discs of its colour (the white none). */
   function skinTexture(g, W, H, sk, kind, n, hex, colOf) {
-    const im = typeof sk.skin === 'string' ? matOf(sk.skin) : null;
-    if (im) g.drawImage(im, 0, 0, W, H); else { g.fillStyle = typeof sk.skin === 'number' ? hex(sk.skin) : '#9a7048'; g.fillRect(0, 0, W, H); }
+    // caromSkins: the three carom balls each a surface of their own ({ pic, color }: a picture, the colour until it has come)
+    // - a peeled potato, a golden one, a red one - so they tell themselves apart with nothing laid on them
+    const own = kind === 'carom' && sk.caromSkins ? sk.caromSkins[Math.min(2, n)] : null;
+    const surf = own ? own.pic : sk.skin, im = typeof surf === 'string' ? matOf(surf) : null;
+    if (im) g.drawImage(im, 0, 0, W, H);
+    else { g.fillStyle = own ? hex(own.color) : typeof sk.skin === 'number' ? hex(sk.skin) : '#9a7048'; g.fillRect(0, 0, W, H); }
+    if (own) return;
     const col = kind === 'carom' ? (n === 0 ? null : n === 1 ? hex(sk.yel) : hex(sk.red)) : n === 0 ? null : colOf(n), stripe = kind === 'pool' && n > 8;
     const disc = (u, r, fill, ring) => { g.fillStyle = fill; g.beginPath(); g.arc(u * W, H / 2, r, 0, 7); g.fill(); if (ring) { g.lineWidth = r * 0.34; g.strokeStyle = ring; g.stroke(); } };
-    const number = u => { const r = 0.42 / Math.PI * H; disc(u, r, '#f4efe2'); g.fillStyle = '#111'; g.font = `bold ${n > 9 ? 74 : 92}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), u * W, H / 2 + 5); if (n === 6 || n === 9) g.fillRect(u * W - 19, H / 2 + 40, 38, 6); };
+    // the number on its sticker (sticker: how big, 1 the usual)
+    const number = u => { const k = sk.sticker || 1, r = 0.42 / Math.PI * H * k; disc(u, r, '#f7f3ea'); g.lineWidth = 3 * k; g.strokeStyle = 'rgba(0,0,0,.18)'; g.stroke();
+      g.fillStyle = '#111'; g.font = `bold ${Math.round((n > 9 ? 74 : 92) * k)}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), u * W, H / 2 + 5 * k);
+      if (n === 6 || n === 9) g.fillRect(u * W - 19 * k, H / 2 + 40 * k, 38 * k, 6 * k); };
+    const tint = (y0, h) => {
+      // the surface's light and dark kept, its colour the ball's (then a little of the colour laid over, so a dark ball is dark)
+      g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, y0, W, h);
+      g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.55; g.fillRect(0, y0, W, h); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+    };
     if ((sk.mark || 'tint') === 'tint') {
       if (col) {
-        // the surface's light and dark kept, its colour the ball's (then a little of the colour laid over, so a dark ball is dark)
-        const y0 = stripe ? H * 0.25 : 0, h = stripe ? H * 0.5 : H;
-        g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, y0, W, h);
-        g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.55; g.fillRect(0, y0, W, h); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+        // stripes: 'bands' - the surface as it is, two rubber bands of the colour round it; else a broad band dyed
+        if (stripe && sk.stripes === 'bands') for (const y of [0.37, 0.63]) {
+          const y0 = H * y - H * 0.04, gr = g.createLinearGradient(0, y0, 0, y0 + H * 0.08);
+          g.fillStyle = col; g.fillRect(0, y0, W, H * 0.08);
+          gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(0.35, 'rgba(255,255,255,.25)'); gr.addColorStop(1, 'rgba(0,0,0,.4)'); g.fillStyle = gr; g.fillRect(0, y0, W, H * 0.08);
+        }
+        else tint(stripe ? H * 0.25 : 0, stripe ? H * 0.5 : H);
       }
-      if (kind === 'pool' && n > 0) for (const u of [0.25, 0.75]) number(u);
+      if (kind === 'pool' && n > 0 && sk.numbers !== false) for (const u of [0.25, 0.75]) number(u);
     } else if (col) {
       if (kind === 'carom') for (const u of [0.25, 0.75]) disc(u, 0.3 / Math.PI * H, col);
-      else for (const u of [0.25, 0.75]) { disc(u, 0.62 / Math.PI * H, stripe ? '#f4efe2' : col, stripe ? col : null); number(u); }
+      else for (const u of [0.25, 0.75]) { disc(u, 0.62 / Math.PI * H, stripe ? '#f4efe2' : col, stripe ? col : null); if (sk.numbers !== false) number(u); }
     }
   }
   // finger holes (holes): dark inside, deepest at the middle, so the hollow the shape has (geomOf) reads as deep
@@ -152,9 +168,11 @@
   }
   function dressBall(m, k) { m.geometry = geomOf(k); finishOf(k, m.material); }
   const mats = {};
+  // every picture a set's balls are painted from (once all have come, the shelf's photographs are kept)
+  const picsOf = k => [k.mat, typeof k.skin === 'string' ? k.skin : null, ...(k.caromSkins || []).map(c => c.pic)].filter(Boolean);
   function matOf(m) {
     if (m in mats) return mats[m]; mats[m] = null; const u = TEXS['ball-' + m]; if (!u) return null;
-    const im = new Image(); im.onload = () => { mats[m] = im; if (skin && (skin.mat === m || skin.skin === m)) { const k = skin.id; skin = null; setBalls(k); } }; im.src = u; return null;
+    const im = new Image(); im.onload = () => { mats[m] = im; if (skin && picsOf(skin).includes(m)) { const k = skin.id; skin = null; setBalls(k); } }; im.src = u; return null;
   }
   /* A photograph of one ball of a set, for the shelf cards: the ball drawn by this renderer into a small target, lit by
      the same room (so it looks as it will on the table), its number turned to the camera; kept once made. */
@@ -171,7 +189,7 @@
       shotScene.add(shotBall); shotCam = new THREE.PerspectiveCamera(17, 1, 0.5, 20); shotCam.position.set(0, 0, 7); shotCam.lookAt(0, 0, 0);
     }
     const keep = skin; skin = k; const t = ballTexture(kind, n); skin = keep;
-    const done = (!k.mat || !!mats[k.mat]) && (typeof k.skin !== 'string' || !!mats[k.skin]);
+    const done = picsOf(k).every(m => !TEXS['ball-' + m] || !!mats[m]);
     dressBall(shotBall, k); shotBall.material.map = t; shotBall.material.color.setScalar(0.72); shotBall.material.needsUpdate = true;   // (no tone mapping off screen: a shade darker to match the table) shotBall.rotation.set(0.25, -0.18, 0);
     const prev = renderer.getRenderTarget(), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
     renderer.setRenderTarget(shotRT); renderer.setClearColor(0x000000, 0); unmask(); renderer.clear(); renderer.render(shotScene, shotCam);

@@ -117,7 +117,8 @@ function drawCue(cv, d, vertical) {
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const g = cv.getContext('2d'), L = vertical ? cv.height : cv.width, T = vertical ? cv.width : cv.height;
   if (vertical) g.setTransform(0, 1, 1, 0, 0, 0);                                    // swap the axes: x runs down the cue
-  const LEN = 1.47, x = m => m / LEN * L, rad = m => (0.006 + (0.0146 - 0.006) * Math.min(1, m / 1.45)) / 0.0146 * T / 2;
+  // (a lit blade's glow needs room past its tip, or the picture's edge cuts it square)
+  const LEN = 1.47, pad = d.glow ? T * 0.9 : 0, x = m => pad + m / LEN * (L - pad), rad = m => (0.006 + (0.0146 - 0.006) * Math.min(1, m / 1.45)) / 0.0146 * T / 2;
   const css = n => '#' + n.toString(16).padStart(6, '0');
   const seg = (m0, m1, fill) => { g.fillStyle = fill; g.beginPath(); g.moveTo(x(m0), T / 2 - rad(m0)); g.lineTo(x(m1), T / 2 - rad(m1)); g.lineTo(x(m1), T / 2 + rad(m1)); g.lineTo(x(m0), T / 2 + rad(m0)); g.fill(); };
   // (a cue with its own make: its sections, and a lit blade - a white core in a glow of its colour - over them)
@@ -126,8 +127,9 @@ function drawCue(cv, d, vertical) {
     for (const [x0, x1, r0, r1, h] of d.profile) { g.fillStyle = css(h); g.beginPath(); g.moveTo(x(x0), T / 2 - rr(r0)); g.lineTo(x(x1), T / 2 - rr(r1)); g.lineTo(x(x1), T / 2 + rr(r1)); g.lineTo(x(x0), T / 2 + rr(r0)); g.fill(); }
     if (d.glow) {
       const G = d.glow, r = rr(G.r || 0.0062);
-      g.save(); g.shadowColor = css(G.color); g.shadowBlur = r * 5; g.fillStyle = css(G.color); g.fillRect(x(G.from), T / 2 - r * 1.6, x(G.to) - x(G.from), r * 3.2);
-      g.shadowBlur = r * 2; g.fillStyle = css(G.core != null ? G.core : 0xffffff); g.fillRect(x(G.from), T / 2 - r, x(G.to) - x(G.from), r * 2); g.restore();
+      // round-ended bars: the coloured glow, then the white-hot core
+      const bar = (h, fill, blur) => { g.shadowBlur = blur; g.fillStyle = fill; g.beginPath(); g.moveTo(x(G.to), T / 2 - h); g.lineTo(x(G.from), T / 2 - h); g.arc(x(G.from), T / 2, h, -Math.PI / 2, Math.PI / 2, true); g.lineTo(x(G.to), T / 2 + h); g.fill(); };
+      g.save(); g.shadowColor = css(G.color); bar(r * 1.6, css(G.color), r * 5); bar(r, css(G.core != null ? G.core : 0xffffff), r * 2); g.restore();
       return;
     }
   } else {
