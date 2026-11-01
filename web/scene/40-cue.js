@@ -10,6 +10,20 @@
       cue.add(new THREE.Mesh(g, mat));
     };
     const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
+    /* A cue with its own make (content/20-cues.js: profile, glow): its sections as given, tip first - and a lit blade, a
+       bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
+    if (d.profile) {
+      for (const [x0, x1, r0, r1, h, o] of d.profile) { const q = o || {}; part(x0, x1, r0, r1, std(h, q.rough != null ? q.rough : 0.4, q.metal || 0)); }
+      if (d.glow) {
+        const G = d.glow, core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
+        part(G.from, G.to, G.r || 0.0062, G.r || 0.0062, core);
+        for (const [k, op] of [[1.7, 0.55], [3.2, 0.2]]) {
+          const m = new THREE.MeshBasicMaterial({ color: col(G.color), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+          part(G.from - 0.004, G.to + 0.004, (G.r || 0.0062) * k, (G.r || 0.0062) * k, m); cue.children[cue.children.length - 1].renderOrder = 3;
+        }
+      }
+      dirty = 3; return;
+    }
     part(0, 0.012, 0.006, 0.0062, std(d.tip, 0.9));
     part(0.012, 0.04, 0.0062, 0.0064, std(d.ferrule, 0.4));
     part(0.04, 0.74, 0.0064, 0.0104, std(d.shaft, 0.42));
