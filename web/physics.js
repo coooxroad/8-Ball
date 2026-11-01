@@ -275,6 +275,7 @@ function createPhysics(cfg) {
       b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
       b.wz -= (2.5 / RB) * ds;
       if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
+      if (w.trace && b.id === w.cue) TR_N = [nx, ny];
       if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
       return;
     }
@@ -396,10 +397,24 @@ function createPhysics(cfg) {
       for (const [k, p] of push) { bs[k].x += p[0]; bs[k].y += p[1]; }
     }
   }
+  /* The trace (only when something has asked for one, as the chalk trail does: w.trace = { p: [], k: [] }): the cue ball's
+     way at every step, p as x, y pairs, and k the turns it took - where, its way in and out, and the face's outward line
+     when that was a cushion (n), none when it was a ball. It only watches: nothing here changes how a shot runs. */
+  let TR_N = null;
+  function traceSub(w, c, vx, vy) {
+    const T = w.trace; T.p.push(c.x, c.y);
+    const si = Math.hypot(vx, vy), so = Math.hypot(c.vx, c.vy);
+    if (si > 0.02 && so > 0.005) {
+      const ix = vx / si, iy = vy / si, ox = c.vx / so, oy = c.vy / so;
+      if (ix * ox + iy * oy < 0.995) T.k.push({ x: c.x, y: c.y, din: [ix, iy], dout: [ox, oy], n: TR_N });
+    }
+    TR_N = null;
+  }
   function sub(w, h) {
     SUBH = h;
     const bs = w.balls, n = bs.length;
     for (let i = 0; i < n; i++) if (bs[i].on) motion(w, bs[i], h);
+    const tc = w.trace && bs[w.cue].on ? bs[w.cue] : null, tvx = tc ? tc.vx : 0, tvy = tc ? tc.vy : 0;
     // a ball off the cloth meeting another: the three-dimensional blow, pair by pair (rare, and never two at once)
     for (let i = 0; i < n; i++) {
       const a = bs[i]; if (!a.on) continue;
@@ -483,6 +498,7 @@ function createPhysics(cfg) {
         }
       }
     }
+    if (tc) traceSub(w, tc, tvx, tvy);
   }
 
   function step(w, dt) {

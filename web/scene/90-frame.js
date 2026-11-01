@@ -51,7 +51,7 @@
       if (f.z <= -0.11) { fallEvents.push({ t: 'land', v: Math.hypot(f.vx, f.vy, f.vz), x: f.x, y: f.y }); falls.splice(i, 1); }
     }
     const c = w.balls[w.cue];
-    if (trailTick(c, R, dt)) dirty = Math.max(dirty, 2);
+    if (trailTick(w, c, R, dt)) dirty = Math.max(dirty, 2);
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
     // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
     const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }

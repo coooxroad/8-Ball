@@ -29,9 +29,11 @@
   // The cue ball's trail (내 장비 · 트레일): where it has been in the last moment, as a ribbon fading behind it.
   const rTrail = makeRibbon(); scene.add(rTrail); rTrail.renderOrder = 2; rTrail.material.depthTest = true;
   let trail = null, trailT = 0; const trailPts = [];
-  function setTrail(id) { const t = TRAILS.find(x => x.id === id); trail = t && t.color ? t : null; trailPts.length = 0; rTrail.visible = false; }
-  function trailTick(c, R, dt) {
+  // (a trail of another kind draws itself: kind 'chalk', scene/55-chalk.js)
+  function setTrail(id) { const t = TRAILS.find(x => x.id === id); trail = t && (t.color || t.kind) ? t : null; trailPts.length = 0; rTrail.visible = false; chalkOff(); }
+  function trailTick(w, c, R, dt) {
     trailT += dt;
+    if (trail && trail.kind === 'chalk') return chalkTick(w, c, R, dt);
     if (trail && c && c.on && !c.z) {
       const l = trailPts.length;
       if (!l || Math.hypot(c.x - trailPts[l - 1].x, c.y - trailPts[l - 1].y) > 0.006) trailPts.push({ x: c.x, y: c.y, t: trailT });
