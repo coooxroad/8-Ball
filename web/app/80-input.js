@@ -127,6 +127,16 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   });
   const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+  // on a computer: the arrow keys turn the dial a step at a time (left / up anticlockwise, right / down clockwise; with
+  // Shift, ten steps), the drum rolling and clicking as if a finger had turned it
+  document.addEventListener('keydown', e => {
+    const dir = { ArrowLeft: 1, ArrowUp: 1, ArrowRight: -1, ArrowDown: -1 }[e.key];
+    if (!dir || e.altKey || e.ctrlKey || e.metaKey || !humanAiming() || st.screen !== 'play') return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') || !$('#sheet').hidden) return;
+    e.preventDefault();
+    st.aim += dir * (e.shiftKey ? 10 : 1) * gloveStep().dial * Math.PI / 180;
+    const d = dir * 8; off += d; box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); SND.dial(0.3); scene.invalidate();
+  });
 })();
 /* The fine-aim dial (on the desk): a knurled rubber drum turning in its walnut slot, drawn as a real cylinder - its ridges
    crowd together towards its edges and it darkens away from the light (upper right), with brass flanges at both ends.
