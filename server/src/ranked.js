@@ -73,7 +73,8 @@ export class LobbyCore {
    either device says, decides: who won, the points, and a seat that sent a shot that does not fit (it loses). Then each
    player's vault is paid: coins (economy.js, ranked) and the new DAMA.
    A stand-in seat (a person-like computer player, lobby.js) is played by the other player's device: its shots come in
-   from seat 0, marked for seat 1. Such a game moves DAMA half as far (STAND_IN_DAMA); nothing on the screen says so.
+   from seat 0, marked for seat 1. It counts exactly as any game - the same DAMA, the same coins - so nothing, on the
+   screen or in the numbers, tells a stand-in from a person (the owner's rule).
 
    Messages, as JSON. From a device: { t: 'aim', ... } (passed on as it is: the other screen shows the aiming),
    { t: 'shot', n, shot: { s, aim, V, a, b, el, inHand }, as? } (n: the shot's place in the log), { t: 'timeout', n },
@@ -82,7 +83,6 @@ export class LobbyCore {
    'aim' / 'shot' / 'timeout', { t: 'away', seat } / { t: 'back', seat }, { t: 'result', winner, points, coins, dama, why }. */
 
 export const RETURN_WITHIN = 30000;          // ms a seat may be gone before it loses
-export const STAND_IN_DAMA = 0.5;
 
 // a ranked game's rules (web/economy.js): what each game is played to
 export const RANKED_RULES = E.RANKED_RULES;
@@ -175,8 +175,7 @@ export class RoomCore {
   result(winner, points, why) {
     const r = this.get('room'), seats = this.get('seats'), res = { winner, points, why, coins: [0, 0], dama: [seats[0].dama, seats[1].dama] };
     if (winner != null) {
-      const [a, b] = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0), k = r.standIn ? STAND_IN_DAMA : 1;
-      res.dama = [seats[0].dama + Math.round((a - seats[0].dama) * k), seats[1].dama + Math.round((b - seats[1].dama) * k)];
+      res.dama = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0);
       for (let s = 0; s < 2; s++) res.coins[s] = E.matchCoins('ranked', r.mode, s ? [points[1], points[0]] : points, winner === s);
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);

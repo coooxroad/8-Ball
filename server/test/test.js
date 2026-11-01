@@ -227,12 +227,12 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   { const { R, sent } = roomOf('nine', 9, 0); ok(R.disconnected(1) && sent[0].some(m => m.t === 'away'), 'ranked: the other seat hears one has gone');
     const gone = R.get('gone'); gone[1] = Date.now() - RETURN_WITHIN - 1; R.set('gone', gone); ok(R.timers() === 'check', 'ranked: gone too long ends it');
     const r = finish(R); ok(r.winner === 0 && r.why === 'left', 'ranked: one who left loses'); }
-  // a stand-in: its shots come from seat 0's device; DAMA moves half as far; only the player's vault is told
+  // a stand-in: its shots come from seat 0's device; DAMA moves as in any game; only the player's vault is told
   { const G = rankedGame('eight', 11, 0), { R } = roomOf('eight', 11, 0, { name: 'S', icon: 0, dama: 40, level: 2 });
     for (const x of G.msgs) R.message(0, Object.assign({}, x.m, { as: x.seat }));
     R.message(0, { t: 'end' }); const r = finish(R);
     if (G.winner != null) { const full = E.damaAfter(30, 40, G.winner === 0)[0] - 30;
-      ok(r.winner === G.winner && r.dama[0] - 30 === Math.round(full * 0.5) && R.payouts().length === 1, `ranked: a stand-in game counts half (${r.why})`); } }
+      ok(r.winner === G.winner && r.dama[0] - 30 === full && R.payouts().length === 1, `ranked: a stand-in game counts like any (${r.why})`); } }
   console.log('ranked rooms: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
