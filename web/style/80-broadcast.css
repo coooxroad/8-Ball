@@ -38,7 +38,7 @@
   display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;column-gap:4px;row-gap:1px;padding:calc(var(--bh)*.1) 6px 0;overflow:hidden;white-space:nowrap;
   background:linear-gradient(#13285c,var(--navy));border:0;border-top:3px solid var(--gold1);border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);
   font-size:max(9px,calc(var(--bh)*.2));line-height:1.25;color:#9fb3d9}
-#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 'Outfit','Gothic A1',sans-serif;letter-spacing:.2em;color:#fff}
+#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 'Outfit',var(--ui-font);letter-spacing:.2em;color:#fff}
 #app.bcast:not(.portrait) #badge .mb{width:calc(var(--bh)*.26);height:calc(var(--bh)*.26)}
 #app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge{font-size:0}
 #app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge .mb{display:none}
@@ -75,7 +75,7 @@
 #app.bcast.portrait #clock b{bottom:8px;font-size:15px}
 /* messages: a lower third over the left of the bar */
 #app.bcast #toast{left:calc(50% - var(--wb)/2);top:auto;bottom:calc(var(--bb) + 6px + var(--bh) + 26px);width:max-content;max-width:var(--wb);box-sizing:border-box;
-  transform:translateY(12px);font:700 16px/1.4 'Gothic A1',sans-serif;letter-spacing:0;color:#0a1a3f;-webkit-text-stroke:0;text-align:left;
+  transform:translateY(12px);font:700 16px/1.4 var(--ui-font);letter-spacing:0;color:#0a1a3f;-webkit-text-stroke:0;text-align:left;
   padding:10px 18px 10px 22px;background:linear-gradient(#ffffff,#e9eef6);border-left:6px solid var(--blue1);border-radius:2px;
   box-shadow:0 8px 22px rgba(0,0,0,.4);transition:opacity .18s,transform .26s cubic-bezier(.2,.9,.3,1)}
 #app.bcast #toast::after{display:none}
@@ -123,5 +123,5 @@
 #app.desk:not(.bcast) #hud .pill .av{background:#2b241c;color:#f4ecd8;border:0}
 #app.desk:not(.bcast) #hud .pts{color:#2b241c}
 #app.desk:not(.bcast) #badge{background:rgba(22,28,32,.88);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 14px;color:#c9d3df;box-shadow:-4px 6px 8px rgba(0,0,0,.35)}
-#app.desk:not(.bcast) #badge b{color:#f3e2b4;font:800 12px 'Gothic A1',sans-serif;letter-spacing:.1em}
+#app.desk:not(.bcast) #badge b{color:#f3e2b4;font:800 12px var(--ui-font);letter-spacing:.1em}
 #app.desk:not(.bcast) #badge{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}

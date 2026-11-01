@@ -63,7 +63,7 @@
 .dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
 #app.desk.compact .dk-logo{display:none}
 .dk-tabs{display:flex;gap:6px;min-width:0;flex-shrink:0}
-#app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px 'Gothic A1',sans-serif;--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0}
+#app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px var(--ui-font);--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0}
 #app.desk .dk-tab[aria-selected="true"]{color:#fff;border-image-source:url(ui/tab-on.webp)}
 /* Desktop windows between tablet and full monitor widths still use the desk, but cannot fit its full-size bar. */
 @media (min-width:900px) and (max-width:1200px){
@@ -76,11 +76,11 @@
 .dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
 #app.desk .dk-me .av{position:relative;overflow:visible;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
 #app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
-.dk-me b{display:block;font:800 14.5px 'Gothic A1',sans-serif;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dk-me small{display:block;font:600 12px 'Gothic A1',sans-serif;color:#b9b2a5}
+.dk-me b{display:block;font:800 14.5px var(--ui-font);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dk-me small{display:block;font:600 12px var(--ui-font);color:#b9b2a5}
 #app.desk.compact .dk-me{display:none}
 /* records and settings are square keys (below) */
-.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px 'Gothic A1',sans-serif;white-space:nowrap;flex-shrink:0}
+.dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px var(--ui-font);white-space:nowrap;flex-shrink:0}
 #app.desk.compact .dk-top{height:40px;padding:0 11px}
 #app.desk.compact .dk-top span{display:none}
 #app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
@@ -91,12 +91,12 @@
 #app.desk .dk-slot{--s:.56;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s) + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
 #app.desk.compact .dk-slot{--s:.36;flex:1 0 auto;min-width:80px;height:58px}
 #app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
-#app.desk .dk-rb{position:relative;font:800 28px 'Gothic A1',sans-serif;--s:.33;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
+#app.desk .dk-rb{position:relative;font:800 28px var(--ui-font);--s:.33;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
 #app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);--pt:calc(12px*var(--s));--pb:calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
 #app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);--pt:calc(6px*var(--s));--pb:calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
 #app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
 .dk-rb.soon{opacity:.55}
-.dk-rb small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7;margin-top:4px}
+.dk-rb small{display:block;font:600 13px var(--ui-font);opacity:.7;margin-top:4px}
 #app.desk.compact .dk-rb{--s:.24;font-size:17px}
 #app.desk.compact .dk-rb[aria-pressed="true"]::before{display:none}
 /* (on a narrow key the felt inlay says it alone; the ball would sit on the name) */
@@ -107,8 +107,8 @@
 #app.desk.compact .dk-tray{--s:.28;border-radius:16px;padding:calc(78px*var(--s) + 6px) calc(58px*var(--s) + 8px) calc(48px*var(--s) + var(--lip) + 6px)}
 .dk-head{display:flex;align-items:center;gap:12px;min-height:58px;color:#f3eee3}
 .dk-head .tt{flex:1;min-width:0}
-.dk-head h2{margin:0;font:800 30px 'Gothic A1',sans-serif;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dk-head small{display:block;font:600 15px 'Gothic A1',sans-serif;color:#c3cedd;margin-top:3px}
+.dk-head h2{margin:0;font:800 30px var(--ui-font);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-head small{display:block;font:600 15px var(--ui-font);color:#c3cedd;margin-top:3px}
 .dk-head.nav .tt{text-align:center}
 #app.desk.compact .dk-head{min-height:34px}
 #app.desk.compact .dk-head h2{font-size:21px}
@@ -128,8 +128,8 @@
 .dk-plate:active{transform:translateY(2px)}
 #app.desk .dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px Outfit,sans-serif;font-style:normal;color:#fff;background:#3b3229;position:relative;overflow:visible;margin:0 6px}
 #app.desk .dk-plate.two .av{background:#8f1414}
-.dk-plate b{display:block;font:800 17px 'Gothic A1',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dk-plate small{display:block;font:600 13px 'Gothic A1',sans-serif;opacity:.7}
+.dk-plate b{display:block;font:800 17px var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-plate small{display:block;font:600 13px var(--ui-font);opacity:.7}
 #app.desk.compact .dk-plate{--s:.34;min-width:0;gap:8px;min-height:46px;padding:6px 10px calc(6px + var(--lip))}
 #app.desk.compact .dk-plate .av{width:28px;height:28px;font-size:13px}
 #app.desk.compact .dk-plate b{font-size:15px}
@@ -144,24 +144,24 @@
 #app.desk.compact:not(.portrait) .dk-slate{max-height:none;padding:12px 14px calc(10px + var(--lip))}
 .dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
 .dk-body::-webkit-scrollbar{display:none}
-.dk-slate h1{margin:0;font:800 40px/1.08 'Gothic A1',sans-serif;letter-spacing:-.01em;word-break:keep-all}
-.dk-slate .sub{font:700 18px 'Gothic A1',sans-serif;color:#cfc8ba;margin-top:-6px}
+.dk-slate h1{margin:0;font:800 40px/1.08 var(--ui-font);letter-spacing:-.01em;word-break:keep-all}
+.dk-slate .sub{font:700 18px var(--ui-font);color:#cfc8ba;margin-top:-6px}
 #app.desk.compact .dk-slate h1{font-size:28px}
 #app.desk.compact .dk-slate .sub{font-size:15px}
 /* a phone drops the title the rail and the tray already say */
 #app.desk.compact .dk-body>h1,#app.desk.compact .dk-body>.sub,#app.desk.compact .dk-body>h1+.dk-hr,#app.desk.compact .dk-body>.sub+.dk-hr{display:none}
 .dk-hr{flex:none;height:1px;background:rgba(255,255,255,.1)}
-.dk-lab{font:700 14px 'Gothic A1',sans-serif;color:var(--slate-sub)}
-.dk-txt{font:500 16px/1.55 'Gothic A1',sans-serif;color:#e3ddd1;word-break:keep-all}
+.dk-lab{font:700 14px var(--ui-font);color:var(--slate-sub)}
+.dk-txt{font:500 16px/1.55 var(--ui-font);color:#e3ddd1;word-break:keep-all}
 .dk-txt b{color:#7fb1ef;font-weight:700}
 .dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 #app.desk .dk-row .dk-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;color:#eee8dc;font:700 14px 'Gothic A1',sans-serif}
+.dk-chip{flex:none;display:inline-grid;place-items:center;height:38px;padding:0 16px;color:#eee8dc;font:700 14px var(--ui-font)}
 .dk-row .dk-chip{height:42px}
 /* wells cut into the slate: the segmented choice and the stepper; the chosen segment an ivory piece standing in it */
 #app.desk .dk-seg,#app.desk .dk-step{--s:.45;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/track.webp) 38 36 34 36 fill/calc(38px*var(--s)) calc(36px*var(--s)) calc(34px*var(--s)) calc(36px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(0px*var(--s));padding:calc(14px*var(--s) + 3px) calc(4px*var(--s) + 4px) calc(4px*var(--s) + 4px);box-shadow:none}
 .dk-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
-.dk-seg button{height:44px;border-radius:10px;font:700 15.5px 'Gothic A1',sans-serif;color:#c9c2b4;white-space:nowrap}
+.dk-seg button{height:44px;border-radius:10px;font:700 15.5px var(--ui-font);color:#c9c2b4;white-space:nowrap}
 #app.desk .dk-seg button[aria-pressed="true"]{color:#2b241c;--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-3px 4px 6px rgba(0,0,0,.4)}
 .dk-seg button:disabled{opacity:.38}
 #app.desk.compact:not(.portrait) .dk-seg button{height:38px}
@@ -178,16 +178,16 @@
 #app.desk.compact .dk-acts{padding-top:2px;flex-direction:row}
 #app.desk.compact .dk-acts>*{flex:1 1 0;min-width:0}
 #app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
-#app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px 'Gothic A1',sans-serif;--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
+#app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px var(--ui-font);--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
 #app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);--pt:calc(14px*var(--s));--pb:calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
 #app.desk .dk-main:disabled{opacity:.5}
-.dk-main small{display:block;font:700 13px 'Gothic A1',sans-serif;opacity:.8;margin:2px 0 8px}
+.dk-main small{display:block;font:700 13px var(--ui-font);opacity:.8;margin:2px 0 8px}
 #app.desk.compact .dk-main{--s:.34;height:64px;font-size:22px}
 #app.desk.compact .dk-main small{margin-bottom:0}
 #app.desk.compact:not(.portrait) .dk-main{height:54px}
-#app.desk .dk-sec{height:58px;color:#eee8dc;font:700 16.5px 'Gothic A1',sans-serif;--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 10px var(--pb);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
+#app.desk .dk-sec{height:58px;color:#eee8dc;font:700 16.5px var(--ui-font);--s:.4;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 10px var(--pb);box-shadow:-6px 9px 12px rgba(0,0,0,.4);transition:none}
 #app.desk .dk-sec:active{transform:none;border-image-source:url(ui/sec-press.webp);--pt:calc(8px*var(--s));--pb:calc(6px*var(--s));box-shadow:-2px 4px 6px rgba(0,0,0,.35)}
-.dk-sec small{display:block;font:600 11.5px 'Gothic A1',sans-serif;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-sec small{display:block;font:600 11.5px var(--ui-font);opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app.desk.compact .dk-sec{--s:.32;height:auto;min-height:48px;padding:calc(4px + var(--pt)) 8px calc(4px + var(--pb));font-size:15px;line-height:1.2}
 /* ---------- the square keys: the tray's arrows, the steppers, the chips, records and settings ---------- */
 #app.desk .dk-arrow,#app.desk .dk-step button,#app.desk .dk-top,#app.desk .dk-chip{--s:.36;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/sq.webp) 40 34 46 34 fill/calc(40px*var(--s)) calc(34px*var(--s)) calc(46px*var(--s)) calc(34px*var(--s))/calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) calc(12px*var(--s)) stretch;--lip:calc(12px*var(--s));--pt:0px;--pb:var(--lip);padding-top:var(--pt);padding-bottom:var(--pb);box-shadow:-4px 6px 8px rgba(0,0,0,.4);transition:none}
@@ -244,5 +244,5 @@
 #app.desk .dk-x i::before,#app.desk .dk-x i::after{content:"";position:absolute;left:50%;top:47%;width:44%;height:3px;border-radius:2px;background:#f3e2b4;box-shadow:0 1px 0 rgba(0,0,0,.5);transform:translate(-50%,-50%) rotate(45deg)}
 #app.desk .dk-x i::after{transform:translate(-50%,-50%) rotate(-45deg)}
 #app.desk.compact .dk-x{width:34px;height:34px}
-#app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px 'Gothic A1',sans-serif;color:#a9b6c6}
+#app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px var(--ui-font);color:#a9b6c6}
 #app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
