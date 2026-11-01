@@ -84,6 +84,18 @@ export class VaultCore {
     });
   }
 
+  // a ranked game's result, from its room (room.js), once per room: coins and the change in DAMA
+  ranked({ room, mode, won, draw, coins, dama }) {
+    if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
+    return this.once('room-' + room, () => {
+      const c = Math.max(0, Math.min(20000, coins | 0)), d = Math.max(-E.ECONOMY.DAMA_K, Math.min(E.ECONOMY.DAMA_K, dama | 0));
+      this.set('dama', Math.max(E.ECONOMY.DAMA_FLOOR, this.get('dama', E.ECONOMY.DAMA_START) + d));
+      this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, 'ranked', ?, NULL, ?, 1, ?)`, Date.now(), mode, c, draw ? 'draw' : won ? 'won' : 'lost');
+      if (c) this.pay(`ranked ${mode}`, c, 0);
+      return { ok: true };
+    });
+  }
+
   /* A match played on the device - with a friend on it, or against the computer. CHECK_MATCHES says how it is checked:
        "slices": it is queued, played again a few hundred physics steps per request (work(), driven by the
                  Durable Object's alarm), and paid when the replay reaches the end - seconds to a minute later;

@@ -70,6 +70,11 @@ const net = (() => {
     renamed() { if (me) setMe(me); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
     claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
+    // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)
+    async queue(mode) { if (!(await ensure())) return null; return call('/v1/queue', { mode, name: prefs.names[0], icon: 0 }); },
+    leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
+    // a ranked game's room, by WebSocket: its address for the seat's token
+    roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,
     // buying needs the server there and then: true when bought
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };

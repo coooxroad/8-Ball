@@ -9,26 +9,33 @@ const match = {
       targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn() };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
+    // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
+    // the other seat plays at its level
+    const o = c.online, standIn = o && o.standIn;
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice,
+      rnd: o ? seededRandom(o.seed) : undefined, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
+    if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
+    match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
-    match.log = { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
+    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
-    if (c.mode === 'four' && !ctx) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(); }); }
+    if (c.mode === 'four' && (!ctx || o)) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
     toast(game.mode.intro(game), '', 3600);
-    if (!prefs.how && !game.players[game.turn].ai) sheetHow();
+    if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
-  cue() { useCue(prefs.cues[game.players[1].ai ? 0 : game.turn]); },
+  cue() { useCue(prefs.cues[game.players[1].ai || match.ctx.online ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   rolled() { game.world.ev = game.P.newEv(); toast(game.mode.intro(game), '', 3600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
-  timeout() { if (match.log) match.log.shots.push({ timeout: true }); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
+  timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => prefs.guides[game.turn],
-  auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
+  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) {
     if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });
+    if (match.ctx.online) ranked.struck(JSON.parse(JSON.stringify(highlights.snapshot(game.world))), V, a, b, el);
     match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 }; },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, potted = ev.pocketed.filter(q => q.id !== 0).length, out = game.resolve();
@@ -61,15 +68,17 @@ const match = {
     series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
-    const mine = !match.ctx.ai || w === 0, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
-    $('#rTitle').textContent = match.ctx.ai ? (w === 0 ? '승리' : '패배') : `${pw.name} 승리`;
+    // (on a ranked game, this device's seat is the room's: 0 or 1)
+    const on = match.ctx.online, me = on ? on.seat : 0, solo = match.ctx.ai || !!on;
+    const mine = !solo || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
+    $('#rTitle').textContent = solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
     $('#rTitle').parentNode.classList.toggle('lost', !mine);
     for (let i = 0; i < 2; i++) {
       const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
       box.className = 'r-p' + (i ? ' two' : '') + (won ? ' won' : '') + (carom ? (i === (game.yellow == null ? 1 : game.yellow) ? ' yel' : '') : ' pool');
       box.querySelector('.nm').textContent = p.name;
       const rc = box.querySelector('.rc'); rc.textContent = '';
-      if (match.ctx.ai && i === 0) rc.appendChild(el('span', { class: 'me', text: '나' }));
+      if (solo && i === me) rc.appendChild(el('span', { class: 'me', text: '나' }));
       rc.appendChild(document.createTextNode(`${r.w}승 ${r.l}패` + (won && r.streak >= 2 ? ` · ${r.streak}연승` : '')));
     }
     // the score: points on carom (as the hall counts them), games won in the series on pool
@@ -77,8 +86,8 @@ const match = {
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
     const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
     const innings = Math.max(inn[0], inn[1]);
-    $('#rMeta').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}  |  ${innings}이닝 · ${dur}`;
-    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이'}`;
+    $('#rMeta').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? '랭킹전' : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}  |  ${innings}이닝 · ${dur}`;
+    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? '랭킹전' : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이'}`;
     const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
     const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
     const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
@@ -116,9 +125,11 @@ const match = {
       if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
       net.claim('match', { kind, log }); match.log = null;
     }
+    // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
+    if (on) { ranked.ended(); ranked.paint(); }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
-    MUSIC.play(!match.ctx.ai || w === 0 ? 'win' : 'lose');          // between friends it is always the winner's song
+    MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);
   },
 };
@@ -127,12 +138,14 @@ const match = {
    while aiming or placing the cue ball, stopped while a sheet or the pause menu is up. It runs down under the scoreboard,
    turns amber in the last ten seconds and red in the last five, ticking each of those. ---- */
 let clockShown = -1;
+// a ranked game always has one, the same for both (54-ranked.js)
+const clockLimit = () => flow === match && match.ctx && match.ctx.online ? RANKED_CLOCK : prefs.shotClock || 0;
 function shotClock(dt) {
-  const box = $('#clock'), on = flow === match && st.screen === 'play' && st.phase === 'aim' && prefs.shotClock > 0 && !game.over && !game.players[game.turn].ai;
+  const limit = clockLimit(), box = $('#clock'), on = flow === match && st.screen === 'play' && st.phase === 'aim' && limit > 0 && !game.over && !game.players[game.turn].ai;
   if (!on) { if (!box.hidden) box.hidden = true; clockShown = -1; return; }
   const was = Math.ceil(st.clock); st.clock = Math.max(0, st.clock - dt); const s = Math.ceil(st.clock);
   if (box.hidden) box.hidden = false;
-  box.style.setProperty('--k', (st.clock / prefs.shotClock).toFixed(4));
+  box.style.setProperty('--k', (st.clock / limit).toFixed(4));
   if (s !== clockShown) { clockShown = s; box.querySelector('b').textContent = s; box.dataset.lv = s <= 5 ? '2' : s <= 10 ? '1' : '0'; box.classList.toggle('two', game.turn === 1); }
   if (s < was && s <= 5 && s > 0) SND.tap();
   if (st.clock <= 0) { box.hidden = true; clockShown = -1; match.timeout(); }
