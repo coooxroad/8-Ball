@@ -5,7 +5,8 @@
    A set may also be made otherwise (all optional; scene/30-balls.js, tasks/gpt-skins.md 2-1): shape { lumps, squash, n, eyes,
    seed } (a lumpy 3D shape inside the ball's sphere), holes [[lat, lon, radius, depth]] (finger holes), skin (the surface:
    a colour picture tex/ball-<name>.webp, or a colour), mark 'tint' | 'label' (how a skinned ball shows which it is),
-   finish { rough, coat, metal, bump, bumpScale } (how the surface takes the light).
+   finish { rough, coat, metal, bump, bumpScale } (how the surface takes the light); numbers?: false hides pool badges.
+   Solids and stripes retain their colours even when numbers are hidden.
    sound (also on a cue): { rate: pitch, 1 as recorded (1.1 higher), tone: brightness, 1 as recorded, gain: loudness,
    1 as recorded, file: a recording in web/sound/ (name without extension) to use instead }. Left out: the usual sound. */
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
@@ -22,5 +23,13 @@ const BALLSKINS = [
   { id: 'carbon', name: '카본', rarity: 3, note: '검은 카본 직조에 색 띠', pal: [0xf2b705, 0x2f6fe0, 0xe0342b, 0x8a4fd1, 0xf08a24, 0x1fa463, 0xc23a5a, 0xd9d9d9], cue: 0xe9e9e9, yel: 0xd9a514, red: 0xa3201f, dots: false, noir: true, mat: 'carbon' },
   { id: 'galaxy', name: '갤럭시', rarity: 5, note: '별이 박힌 밤하늘', pal: [0xe0b23a, 0x2a4fd0, 0xc0283a, 0x6a2fc0, 0xd96a1c, 0x13906a, 0xa01a5a, 0x0d0d1a], cue: 0xdfe4f5, yel: 0xe0b23a, red: 0xb52235, dots: false, mat: 'galaxy' },
   { id: 'vintage', name: '빈티지', rarity: 2, note: '세월이 묻은 상아빛 공', pal: [0xd9a83a, 0x2f4f8a, 0xa8382c, 0x5e3f78, 0xc0702c, 0x2f6a48, 0x6e2a2a, 0x1c1a18], cue: 0xeadfc6, yel: 0xd9a83a, red: 0xa8382c, dots: false, mat: 'vintage' },
+  { id: 'potato', name: '알감자', rarity: 3, note: '울퉁불퉁한 알감자 껍질, 색과 띠로 공 구분', pal: null,
+    cue: 0xf0e8d5, yel: 0xf4ca1c, red: 0xe42f27, dots: false, skin: 'potato', mark: 'tint', numbers: false,
+    shape: { lumps: 0.105, squash: [1, 0.9, 0.96], n: 13, eyes: 8, seed: 37 }, finish: { rough: 0.92, coat: 0 },
+    sound: { rate: 0.9, tone: 0.65, gain: 0.72 } },
+  { id: 'bowling', name: '볼링공', rarity: 3, note: '마블 수지와 손가락 구멍 셋, 색과 띠로 공 구분', pal: null,
+    cue: 0xf4f1e8, yel: 0xf2c21a, red: 0xdb2827, dots: false, skin: 'bowling', mark: 'tint', numbers: false,
+    holes: [[48, 68, 0.135, 0.34], [48, 112, 0.135, 0.34], [24, 90, 0.165, 0.38]], finish: { rough: 0.18, coat: 1 },
+    sound: { rate: 0.76, tone: 0.82, gain: 1.05 } },
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };

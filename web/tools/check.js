@@ -65,6 +65,7 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
   // a ball set's own make (content/30-balls.js): its shape, holes, surface picture, mark and finish
   for (const k of C.BALLSKINS || []) {
     const at = `content BALLSKINS '${k.id}'`;
+    if (k.numbers != null && typeof k.numbers !== 'boolean') fail(`${at}: numbers must be true or false`);
     if (k.shape && (!num(k.shape.lumps || 0, 0, 0.15) || (k.shape.squash && !(k.shape.squash.length === 3 && k.shape.squash.every(v => num(v, 0.7, 1)))))) fail(`${at}: shape.lumps 0..0.15, shape.squash three numbers 0.7..1`);
     for (const h of k.holes || []) if (!Array.isArray(h) || !num(h[0], -90, 90) || !num(h[1], 0, 360) || !num(h[2], 0.03, 0.4) || !num(h[3] == null ? 0.3 : h[3], 0.05, 0.6)) fail(`${at}: a hole is [latitude, longitude (degrees), radius, depth (of the ball's radius)]`);
     if (typeof k.skin === 'string' && !has(`tex/ball-${k.skin}.webp`)) fail(`${at}: its surface tex/ball-${k.skin}.webp is missing`);

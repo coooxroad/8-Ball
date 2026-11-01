@@ -30,7 +30,7 @@
       if (stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.25, W, H * 0.5); }
       if (sk.noir && !stripe) { g.fillStyle = colOf(n); g.fillRect(0, H * 0.44, W, H * 0.12); }   // (a thin coloured belt round a solid)
       const rad = 0.5 / Math.PI * H;
-      for (const u of [0.25, 0.75]) {
+      for (const u of sk.numbers === false ? [] : [0.25, 0.75]) {
         g.fillStyle = sk.noir ? '#141416' : ivory; g.beginPath(); g.arc(u * W, H / 2, rad, 0, 7); g.fill();
         if (sk.noir) { g.strokeStyle = colOf(n); g.lineWidth = 6; g.stroke(); }
         g.fillStyle = sk.noir ? colOf(n) : '#111'; g.font = `bold ${n > 9 ? 84 : 104}px "Helvetica Neue",Arial,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -62,10 +62,10 @@
         g.globalCompositeOperation = 'color'; g.fillStyle = col; g.fillRect(0, y0, W, h);
         g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.55; g.fillRect(0, y0, W, h); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
       }
-      if (kind === 'pool' && n > 0) for (const u of [0.25, 0.75]) number(u);
+      if (kind === 'pool' && n > 0 && sk.numbers !== false) for (const u of [0.25, 0.75]) number(u);
     } else if (col) {
       if (kind === 'carom') for (const u of [0.25, 0.75]) disc(u, 0.3 / Math.PI * H, col);
-      else for (const u of [0.25, 0.75]) { disc(u, 0.62 / Math.PI * H, stripe ? '#f4efe2' : col, stripe ? col : null); number(u); }
+      else for (const u of [0.25, 0.75]) { disc(u, 0.62 / Math.PI * H, stripe ? '#f4efe2' : col, stripe ? col : null); if (sk.numbers !== false) number(u); }
     }
   }
   // finger holes (holes): dark inside, deepest at the middle, so the hollow the shape has (geomOf) reads as deep
