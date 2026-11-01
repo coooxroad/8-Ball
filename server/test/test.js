@@ -145,6 +145,13 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   let steps = 0; while (v.work(150) && steps++ < 100000) {}
   ok(!v.me().checking && v.me().coin === E.matchCoins('cpu', 'four', good.points, good.winner === 0), 'corrupt rows rejected, next valid match paid');
   ok(v.sql.exec("SELECT * FROM matches WHERE status = 'rejected'").toArray().length === 2, 'corrupt rows retired');
+  const retry = vault({ CHECK_MATCHES: 'slices' }); retry.init('h');
+  retry.match({ req: req(), kind: 'friend', log: good });
+  const pay = retry.pay.bind(retry); retry.pay = () => { throw new Error('temporary payout failure'); };
+  let threw = false; try { retry.work(Infinity); } catch (e) { threw = true; }
+  ok(threw && retry.me().coin === 0 && retry.me().checking === 1, 'alarm payout failure leaves match queued and wallet unchanged');
+  retry.pay = pay; retry.work(Infinity); retry.work(Infinity);
+  ok(retry.me().checking === 0 && retry.me().coin === E.matchCoins('friend', 'four', good.points, good.winner === 0), 'alarm retry pays once');
   const clone = structuredClone(good); clone.points = [99, 99]; clone.winner = 1 - good.winner; clone.extra = 'ignored';
   clone.shots[0].s.balls[0][5] = [0, 0, 1, 0];
   ok(matchKey(clone) === matchKey(good), 'presentation fields and claimed outcome cannot change match identity');
