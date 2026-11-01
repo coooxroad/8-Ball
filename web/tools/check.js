@@ -1,6 +1,6 @@
 /* Checks the built page before it ships:   sh web/build.sh && node web/tools/check.js
    1. the whole script parses;
-   2. no two files of a shared-scope folder (app/, reel/, scene/) declare the same top-level name - with several people working at
+   2. no two files of a shared-scope folder (ai/, app/, reel/, scene/) declare the same top-level name - with several people working at
       once this is the mistake that does not show until the app is opened: the later declaration quietly replaces the earlier;
    3. what can be owned (content/) is whole: every item has an id unique in its kind, a name, a rarity within RARITY, the
       picture its card needs, and a sound that names a recording only if web/sound/ has it; every texture and sound an
@@ -10,12 +10,12 @@ const fs = require('fs'), path = require('path'), W = path.join(__dirname, '..')
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); };
 const page = fs.readFileSync(path.join(W, '..', 'app/src/main/assets/index.html'), 'utf8'), m = page.match(/<script>([\s\S]*?)<\/script>\s*<\/body>/);
 if (!m) fail('no script found in the built page'); else try { new Function(m[1]); } catch (e) { fail('the built script does not parse: ' + e.message); }
-for (const dir of ['app', 'reel', 'scene']) {
+for (const dir of ['ai', 'app', 'reel', 'scene']) {
   const seen = {};
   for (const f of fs.readdirSync(path.join(W, dir)).sort()) {
     const src = fs.readFileSync(path.join(W, dir, f), 'utf8');
     for (const raw of src.split('\n')) {
-      const line = dir === 'scene' ? raw.replace(/^  (?=\S)/, '') : raw;   // (scene/ is the body of one function: its top level is two spaces in)
+      const line = dir === 'scene' || dir === 'ai' ? raw.replace(/^  (?=\S)/, '') : raw;   // (scene/ and ai/ are each the body of one function: their top level is two spaces in)
       // top level only: declarations that start in the first column
       const names = [];
       let d = line.match(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/); if (d) names.push(d[1]);

@@ -3,7 +3,10 @@
    2. computer-vs-computer games of every rule set finish, on every table size */
 const path = require('path'), W = path.join(__dirname, '..');
 // there is one physics, the one the game is played on
-const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(cfg), createGame = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
+const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(cfg), createGameRaw = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
+// the computer player (ai/) is the body of one function, as web/build.sh makes it
+const fs = require('fs'), createAI = new Function('g', fs.readdirSync(path.join(W, 'ai')).sort().map(f => fs.readFileSync(path.join(W, 'ai', f), 'utf8')).join('\n'));
+const createGame = PH => createGameRaw(PH, createAI);
 const TABLES = {
   bar: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }, club: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 },
   pro: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 }, pub: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 },
@@ -128,22 +131,23 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
   }
 }
-// puzzles: every one is on the cloth. Their stored answers were found on the realistic physics, which is gone; until the
-// puzzles are made again on the game's, how many answers still work is only counted, not required
+// puzzles (web/puzzles.js): every one is on the cloth, its id is unique, and its stored answer solves it - struck at the
+// speed stored and at that speed after the power slider's round trip (what a player can actually set)
 {
   const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  let bad = 0;
+  let bad = 0; const ids = new Set();
   for (const z of Z.list) {
+    if (ids.has(z.id)) fail(`puzzle ${z.id}: id used twice`); ids.add(z.id);
+    if (!Z.STAGES[z.stage]) { fail(`puzzle ${z.id}: no stage ${z.stage}`); continue; }
     g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
     z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
     w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
       const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4]); const ev = P.run(t, 30);
-      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; break; }
+      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; fail(`puzzle ${z.id}: its stored answer does not solve it`); break; }
     }
   }
-  // (none while they are made again)
   console.log(`puzzles: ${Z.list.length} in ${Z.STAGES.length} stages (${Z.STAGES.map((s, i) => s.name + ' ' + Z.of(i).length).join(', ')}), ${Z.list.length - bad} stored answers work`);
 }
 // Meetings at the same instant are settled together, not in the balls' order: two touching balls struck square between
@@ -341,6 +345,31 @@ for (const name of ['bar', 'pro', 'pub']) {
   g.players[0].score = 3; g.timeout();
   if (g.turn !== 1 || g.players[0].score !== 3 || g.world.cue !== 1) fail('shot clock: on a carom table, time out passes the turn and nothing more');
   console.log('shot clock: checked');
+}
+
+// the levels (ai/): each keeps the table more often than the one below. Played with a fixed Math.random, so the same every run.
+{
+  const real = Math.random; let s = 777; Math.random = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  for (const mode of ['eight', 'four']) {
+    const rate = [];
+    for (let lv = 0; lv <= 3; lv++) {
+      let kept = 0, turns = 0;
+      for (let k = 0; k < 4; k++) {
+        g.start(mode, ['A', 'B'], true, { levels: [lv, lv], target: 99, rnd: Math.random }); g.players[0].ai = true;
+        for (let n = 0; n < 24 && !g.over; n++) {
+          const who = g.turn, wasBreak = g.isBreak, pl = g.aiPlan();
+          if (pl.pos) { const c = g.cueBall(); c.x = c.px = pl.pos[0]; c.y = c.py = pl.pos[1]; }
+          g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve();
+          if (!wasBreak) { turns++; if (g.over ? g.over.winner === who : g.turn === who) kept++; }
+        }
+      }
+      rate.push(Math.round(100 * kept / Math.max(1, turns)));
+    }
+    console.log(`levels, ${mode}: keeps the table ${rate.map((r, i) => `level ${i} ${r}%`).join(', ')}`);
+    for (let i = 1; i < rate.length; i++) if (rate[i] < rate[i - 1]) fail(`levels, ${mode}: level ${i} (${rate[i]}%) is weaker than level ${i - 1} (${rate[i - 1]}%)`);
+  }
+  Math.random = real;
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

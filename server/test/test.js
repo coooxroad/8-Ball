@@ -39,7 +39,7 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
 let s = 99; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 const H = E.createHighlights();
 function record(mode, opts) {
-  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')); const o = Object.assign({ level: 3 }, opts);
+  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI); const o = Object.assign({ level: 3 }, opts);
   g.start(mode, ['A', 'B'], false, Object.assign({ rnd }, o)); g.players[0].ai = g.players[1].ai = true; g.level = 3;
   const log = { v: 1, mode, table: 'bar', opts: o, shots: [] }, pts = [0, 0];
   while (!g.over && log.shots.length < 200) {
@@ -54,7 +54,7 @@ function record(mode, opts) {
 }
 // Structurally complete logs for paths that intentionally do not replay physics. Distinct inputs model distinct games.
 function uncheckedLog(i, points = [5, 4]) {
-  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')); g.start('four', ['A', 'B'], false, { rnd });
+  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI); g.start('four', ['A', 'B'], false, { rnd });
   const sh = { s: H.snapshot(g.world), aim: i / 1000, V: 2, a: 0, b: 0, el: 0 };
   return { mode: 'four', winner: 0, points, shots: Array.from({ length: 30 }, () => structuredClone(sh)) };
 }

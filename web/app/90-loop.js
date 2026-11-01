@@ -42,9 +42,9 @@ function aheadStep() {
 }
 // Rolling the balls out before a game (4구): each ball given a push in a random direction, the table played until it
 // stops, and then the flow told (flow.rolled) instead of a shot being judged.
-function rollOut() {
+function rollOut(rnd) {
   const w = game.world, P = game.P; w.ev = P.newEv();
-  for (const b of w.balls) if (b.on) { const a = Math.random() * Math.PI * 2, v = 0.5 + Math.random() * 0.9; b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; }
+  game.rollOut(rnd || Math.random);
   st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = true; st.phase = 'sim';
 }
 function stepSim(dt) {

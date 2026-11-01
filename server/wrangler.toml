@@ -1,5 +1,5 @@
 # CUE's server on Cloudflare Workers. Deployed by .github/workflows/server.yml on every push that touches server/ or the
-# game files it shares (web/physics.js, game.js, puzzles.js, highlights.js, tables.js, economy.js, content/).
+# game files it shares (web/physics.js, game.js, ai/, puzzles.js, highlights.js, tables.js, economy.js, content/).
 name = "cue-server"
 main = "src/index.js"
 compatibility_date = "2026-10-01"

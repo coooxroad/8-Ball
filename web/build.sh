@@ -8,6 +8,7 @@ mkdir -p "$A/fonts"
 # Every source file is a plain script that defines one factory (or data); the lines that export them to node tests are dropped.
 # content/ is the data of what can be owned (cues, balls, tables, trails, gloves), one file a kind, in file-name order.
 # Two parts are folders of small files that share one scope, in file-name order:
+#   ai/    the body of createAI(g) - the computer player
 #   scene/ the body of createScene(canvas, app, PH) - the 3D table, balls, cue and guide
 #   reel/  the body of createReel(d) - the reel's machinery, then one file per edit, then playing one
 #   app/   the app itself - what it shares first (00-state.js), then one file per screen or concern
@@ -18,6 +19,7 @@ script() {
   # sounds an item names for itself (content/: sound.file), carried as data the same way
   echo 'const SOUNDS = {'; for f in sound/*.mp3 sound/*.ogg sound/*.wav; do [ -e "$f" ] || continue; printf "'%s': 'data:audio/%s;base64,%s',\n" "$(basename "${f%.*}")" "${f##*.}" "$(base64 -w0 "$f")"; done; echo '};'
   cat content/*.js tables.js economy.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
+  echo 'function createAI(g) {'; cat ai/*.js; echo '}'
   echo 'function createScene(canvas, app, PH) {'; cat scene/*.js; echo '}'
   cat sounds.js audio.js | grep -v '^if (typeof module'
   echo 'function createReel(d) {'; cat reel/*.js; echo '}'

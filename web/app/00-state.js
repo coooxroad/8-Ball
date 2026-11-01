@@ -16,7 +16,7 @@
    Around a shot, what happens depends on what is being played; that part lives in "flows" (match, practice, puzzle, demo)
    with the same handful of methods, and the shot pipeline never asks which one is active.
    The rest of the game is outside this folder and knows nothing of the page: content/ (what can be owned), physics.js,
-   game.js, drills.js, puzzles.js, highlights.js (no DOM), scene/ (drawing), audio.js, reel/ (replays). */
+   game.js, ai/ (the computer player), drills.js, puzzles.js, highlights.js (no DOM), scene/ (drawing), audio.js, reel/ (replays). */
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
@@ -66,7 +66,7 @@ const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t
 const PH = {};
 function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); }
 usePhysics();
-const game = createGame(PH);
+const game = createGame(PH, createAI);
 const drills = createDrills(), puzzles = createPuzzles();
 const SND = createAudio(() => prefs.sound);
 const highlights = createHighlights();

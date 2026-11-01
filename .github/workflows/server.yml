@@ -10,6 +10,7 @@ on:
       - 'server/**'
       - 'web/physics.js'
       - 'web/game.js'
+      - 'web/ai/**'
       - 'web/puzzles.js'
       - 'web/highlights.js'
       - 'web/tables.js'
