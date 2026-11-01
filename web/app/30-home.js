@@ -48,5 +48,6 @@ function resume(d) {
   match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
     targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
+  match.log = d.log || null; match.innings = d.inn || [1, 1];
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
 }

@@ -29,13 +29,14 @@ const puzzle = {
   },
   guide: () => prefs.guides[0],
   auto: () => null,
-  beforeShot() { scene.setMarks(null); },
+  beforeShot(V, a, b, el) { scene.setMarks(null); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
     if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
     // three stars for the first try, two within three, one after that or with help
     const stars = p.helped ? 1 : p.tries === 0 ? 3 : p.tries <= 2 ? 2 : 1, was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
+    if (!was) net.claim('puzzle', { id: z.id, shot: puzzle.shot });     // (paid once, by the server, after it plays the shot again)
     const now = pzList().filter(q => pzOpen(q.stage)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
     toast(all && !was ? '정답! 퍼즐을 모두 풀었습니다.' : now > opened ? '정답! 다음 스테이지가 열렸습니다.' : '정답! ' + '★'.repeat(stars), 'good', 2000); SND.good();
     hold(1.9, () => p.step(1));

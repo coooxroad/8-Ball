@@ -109,12 +109,13 @@ function frame(now) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save) return;
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count } };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count }, log: match.log, inn: match.innings };
   store.set('save', d);
 }
 function start() {
   SND.song.load(); $('#fps').hidden = !prefs.fps;
   goHome(true);                                             // a game left unfinished waits on the first screen as a card to carry on with
+  net.flush();                                              // rewards earned offline, and the wallet as the server has it
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }

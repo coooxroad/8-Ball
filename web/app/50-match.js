@@ -10,7 +10,10 @@ const match = {
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice }); match.best = null; match.worst = null; match.shots = []; match.count = 0;
-    st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now(); match.enter();
+    st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
+    // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
+    match.log = { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
+    match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     if (c.mode === 'four' && !ctx) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(); }); }
     toast(game.mode.intro(game), '', 3600);
@@ -21,12 +24,16 @@ const match = {
   restart() { match.start(game.turn, match.ctx); },
   rolled() { game.world.ev = game.P.newEv(); toast(game.mode.intro(game), '', 3600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
-  timeout() { const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
+  timeout() { if (match.log) match.log.shots.push({ timeout: true }); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => prefs.guides[game.turn],
   auto: () => game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
-  beforeShot(V, a, b, el) { match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 }; },
+  beforeShot(V, a, b, el) {
+    if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });
+    match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 }; },
   afterShot() {
-    const shot = match.pending, ev = game.world.ev, out = game.resolve();
+    const shot = match.pending, ev = game.world.ev, potted = ev.pocketed.filter(q => q.id !== 0).length, out = game.resolve();
+    // points as the server counts them (a carom score, or a ball potted on a legal pool shot): what the match pays by
+    if (match.log && shot) { const r = out.r; if (game.mode.table === 'carom') { if (r.pts > 0) match.log.points[shot.turn] += r.pts; } else if (!r.foul) match.log.points[shot.turn] += potted; }
     if (shot) {
       const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
       const n = ++match.count;
@@ -102,6 +109,12 @@ const match = {
       hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: onTap(() => playShot(q, best || worst ? undefined : 'plain')) }, [
         el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.inn ? q.inn + '이닝' : q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
         cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
+    }
+    // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
+    if (match.log && !match.ctx.online) {
+      const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
+      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')} · 확인 후 지급`);
+      net.claim('match', { kind, log }); match.log = null;
     }
     $('#rWhy').textContent = game.over.why;
     show('result'); SND.win();
