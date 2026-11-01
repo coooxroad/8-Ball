@@ -26,7 +26,8 @@ scene.onFreeLook = () => { viewMode = 'free'; paintViews(); };
 press('#viewBtn', () => setView(viewMode === 'free' ? 'top' : 'free'));
 press('#topBtn', () => setView('top'));
 press('#eyeBtn', () => setView('eye'));
-press('#againBtn', () => match.start(st.lastLoser == null ? 0 : st.lastLoser));
+// (after a ranked game: look for the next opponent in the same game)
+press('#againBtn', () => { const o = match.ctx && match.ctx.online; if (o) { ranked.leave(); goHome(); return ranked.find(o.mode); } match.start(st.lastLoser == null ? 0 : st.lastLoser); });
 press('#homeBtn', () => goHome());
 // the best shot of the match, played again as an edited clip
 const reel = createReel({ game, scene, SND, highlights, st, $, el, app, panOf, onEnd() { st.phase = 'idle'; flow = null; show('result'); } });

@@ -1,6 +1,6 @@
   /* Three independent axes: personality controls table manners, DAMA controls ability, style controls shot preferences.
      Saved personas are plain JSON. Matching/UI can use g.aiPlan.personaFor(dama, seededRand, optionalOverrides).
-     The current app has no avatar registry; icon 0 is the conservative default until matching supplies its own icon. */
+     Ranked room icons use the same 0..7 range as server/src/ranked.js. */
   const humanPersonalities = [
     { id: 'calm', name: '차분함', tempo: 0.5, aggression: 0.45, nerves: 0.12, taunt: 0, hesitation: 0.15 },
     { id: 'playful', name: '장난기', tempo: 0.6, aggression: 0.65, nerves: 0.2, taunt: 0.8, hesitation: 0.25 },
@@ -36,7 +36,16 @@
     const personality = humanPersonalities.find(p => p.id === overrides.personality) || pick(humanPersonalities);
     const style = humanStyles.find(p => p.id === overrides.style) || pick(humanStyles);
     const rating = Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
-    return { version: 1, name, icon: 0, dama: rating, skill: humanSkill(rating), personality: { ...personality }, style: { ...style } };
+    return { version: 1, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill: humanSkill(rating), level: rating < 22 ? 0 : rating < 40 ? 1 : 2, personality: { ...personality }, style: { ...style } };
+  }
+  function humanPerson(persona) {
+    // Existing ranked rooms may carry only name/icon/DAMA/level. Identity selects stable axes across reloads and turns;
+    // no extra gameplay random draws or mutation of the room's saved persona are needed for this compatibility path.
+    const identity = `${persona.name || ''}|${persona.icon || 0}|${persona.dama || 30}`;
+    let hash = 2166136261; for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
+    return { ...persona, skill: Number.isFinite(persona.skill) ? Math.max(0, Math.min(1, persona.skill)) : humanSkill(persona.dama),
+      personality: persona.personality || { ...humanPersonalities[hash % humanPersonalities.length] },
+      style: persona.style || { ...humanStyles[(hash >>> 8) % humanStyles.length] } };
   }
   function humanPresentation(shot, person, difficulty) {
     const p = person.personality, jitter = () => rand() * 2 - 1;

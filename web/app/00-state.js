@@ -5,6 +5,7 @@
      - tools/check.js fails the build if two files declare the same name.
    00-state    what is shared, and what is worn      40-shot        the shot pipeline and the scoreboard
    05-music    the lobby's tune, win and lose songs   50-match       a game between two players (or one and the computer)
+   07-net      the server: wallet, rewards, ranked    54-ranked      랭킹전: finding an opponent, playing them online
    10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
    20-sheets   every sheet that slides up             52-puzzle      puzzles
    30-home     what the desk and the flows share      53-demo        one given shot, played by the app
@@ -139,4 +140,8 @@ SND.voice('cue', (CUES[cueNow] || CUES[0]).sound);
 // the ball set on the table, and how it sounds (content/30-balls.js: sound)
 function useBalls(id) { scene.setBalls(id); SND.voice('ball', (BALLSKINS.find(b => b.id === id) || BALLSKINS[0]).sound); }
 function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); SND.voice('cue', CUES[i].sound); if (st.screen === 'play') paintPowerCue(); }
-function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], !scene.portrait); }
+// what the gear in hand does (content/00-rarity.js): the cue now in hand - its hardest stroke, how much the strike point
+// turns the ball, how long the guide - and the glove's steps for the power and the fine-aim dial
+const cueK = () => { const s = (CUES[cueNow] || {}).stat || {}; return { power: 1 + (s.power || 0) / 100, spin: 1 + (s.spin || 0) / 100, guide: 1 + (s.guide || 0) / 100 }; };
+const gloveStep = () => (GLOVES.find(g => g.id === prefs.glove) || {}).stat || BARE_HAND;
+function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], true); }   // (the power gauge always stands upright)

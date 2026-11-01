@@ -1,12 +1,12 @@
   /* Person-like planning is independent of the deterministic training levels. See 51-people.js for its three axes.
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
   function humanPlan(persona) {
-    const skill = Math.max(0, Math.min(1, persona.skill)), P = g.P, w = g.world, c = w.balls[w.cue];
-    const person = { ...persona, personality: persona.personality || humanPersonalities[0], style: persona.style || humanStyles[0] };
+    const person = humanPerson(persona), skill = person.skill, P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
-    const budget = Math.round(10 + 90 * skill * skill); let sims = 0;
+    const budget = Math.round(24 + 76 * skill * skill); let sims = 0;
+    const exploreMasse = g.masse && rand() < style.masse * (0.45 + 0.5 * skill);
     const speed = (x) => clamp(x, g.vOf(0), g.vOf(1));
     const add = (angle, V, id, extra = {}) => {
       const T = w.balls[id], origin = extra.pos ? { x: extra.pos[0], y: extra.pos[1] } : c;
@@ -16,7 +16,7 @@
     const nextChance = (world, who, r) => {
       const players = g.players.map(p => ({ ...p }));
       if (r && r.assign) { players[me].group = r.assign; players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid'; }
-      const view = { ...g, world, players }, cue = world.balls[world.cue];
+      const view = { ...g, world, players }, cue = world.balls[pool ? world.cue : who];
       if (!cue.on) return 0;
       let best = 0;
       for (const id of g.mode.legal(view, who)) {
@@ -66,13 +66,13 @@
           const V = speed((1 + 1.5 * Math.sqrt(dTP)) / Math.max(0.4, cos) + 0.9 * Math.sqrt(l)), angle = Math.atan2(gy - y, gx - x), clear = P.pathClear(w, x, y, gx, gy, [w.cue, T.id]);
           const rank = (l * 0.6 + 0.3) * (dTP + 0.25) / (cos * cos);
           if (clear) add(angle, V, T.id, { pos, cut: Math.acos(cos), difficulty: l * 0.35 + (1 - cos) * 1.5, rank, kind: 'pot' });
-          if (!clear && g.masse && style.masse > 0.2 && l > 0.4) add(angle, g.vOf(0.9), T.id, { pos, el: 0.7, rank: rank + 0.5, kind: 'masse', difficulty: 1.7 });
-          if (!g.placing && skill > 0.2 && style.bank > 0.3) for (const [axis, edge] of rails) {
+          if (!clear && exploreMasse && l > 0.4) add(angle, g.vOf(0.9), T.id, { pos, el: 0.7, rank: rank + 0.5, kind: 'masse', difficulty: 1.7 });
+          if (!g.placing && style.bank > 0.3) for (const [axis, edge] of rails) {
             const mx = axis === 'x' ? 2 * edge - gx : gx, my = axis === 'y' ? 2 * edge - gy : gy;
             const t = axis === 'x' ? (edge - c.x) / (mx - c.x) : (edge - c.y) / (my - c.y);
             if (!(t > 0.05 && t < 0.95)) continue;
             const bx = c.x + t * (mx - c.x), by = c.y + t * (my - c.y), after = Math.hypot(gx - bx, gy - by);
-            if (Math.abs(bx) > P.HL - 0.14 || Math.abs(by) > P.HW - 0.14 || (Math.abs(bx) < 0.13 && axis === 'y')) continue;
+            if (axis === 'x' ? Math.abs(by) > P.HW - 0.14 : Math.abs(bx) > P.HL - 0.14 || Math.abs(bx) < 0.13) continue;
             if (((gx - bx) * dx + (gy - by) * dy) / Math.max(after, 1e-9) < 0.35) continue;
             if (!P.pathClear(w, c.x, c.y, bx, by, [w.cue]) || !P.pathClear(w, bx, by, gx, gy, [w.cue, T.id])) continue;
             add(Math.atan2(my - c.y, mx - c.x), V * 1.25, T.id, { rank: rank + 0.5, kind: 'bank', difficulty: 1.5 });
@@ -83,7 +83,7 @@
       const need = g.modeId === 'three' ? g.cushions : ctx.last ? 1 : 0, L = P.HL - P.R, W = P.HW - P.R;
       for (const T of ordered) {
         const d = distance(c, T), base = Math.atan2(T.y - c.y, T.x - c.x), half = Math.asin(Math.min(0.99, 2 * P.R / d));
-        const steps = skill < 0.3 ? 6 : 28;
+        const steps = skill < 0.3 ? 14 : 28;
         for (let i = 0; i <= steps; i++) {
           const f = i === 0 ? 0 : Math.ceil(i / 2) / Math.ceil(steps / 2) * (i % 2 ? 1 : -1), angle = base + half * f * 0.98;
           const h = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); if (h.type !== 'ball' || h.ball !== T.id) continue;
@@ -92,20 +92,20 @@
           const other = ordered.find(b => b.id !== T.id), ox = other.x - h.gx, oy = other.y - h.gy, cross = Math.abs(ox * vy - oy * vx) / Math.max(Math.hypot(vx, vy), 1e-8), forward = ox * vx + oy * vy;
           add(angle, need ? 4.4 : 2.5, T.id, { rank: cross + (forward < 0 ? 3 : 0) + (need ? 2 : 0), cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom' });
         }
-        if (skill > 0.25) for (let ix = -2; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) {
+        if (skill > 0.25 || style.bank > 0.7) for (let ix = -2; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) {
           const n = Math.abs(ix) + Math.abs(iy); if (!n || n > Math.max(1, need)) continue;
           const x = 2 * L * ix + (ix % 2 ? -T.x : T.x), y = 2 * W * iy + (iy % 2 ? -T.y : T.y);
           add(Math.atan2(y - c.y, x - c.x), need >= 3 ? 5 : 3.8, T.id, { rank: 0.7 + n * 0.1 - (need ? 0.5 : 0), kind: 'bank', difficulty: 0.8 + n * 0.3 });
         }
-        if (g.masse && style.masse > 0.4) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
+        if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
       }
     }
     candidates.sort((a, b) => (a.rank - (a.kind === 'bank' ? style.bank * 0.8 : a.kind === 'masse' ? style.masse * 0.9 : 0)) - (b.rank - (b.kind === 'bank' ? style.bank * 0.8 : b.kind === 'masse' ? style.masse * 0.9 : 0)));
     let best = null, successes = 0;
     const consider = shot => { if (sims >= budget) return; const r = simulate(shot); if (!best || r.value > best.value) best = r; if (r.made) successes++; };
-    const visible = skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && k.kind !== 'bank').slice(0, 2) : candidates;
+    const visible = skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)).slice(0, 4) : candidates;
     for (const k of visible) {
-      const mults = skill < 0.3 ? [1] : [1, 0.78, 1.18];
+      const mults = skill < 0.3 ? [1, 0.78] : [1, 0.78, 1.18];
       for (const m of mults) for (const da of skill > 0.6 ? [0, 0.002, -0.002] : [0]) {
         consider({ ...k, angle: k.angle + da, V: speed(k.V * m) });
         if (style.spin > 0.4 && sims < budget - 12) consider({ ...k, angle: k.angle + da, V: speed(k.V * m), a: style.spin * 0.35 * (rand() < 0.5 ? -1 : 1), b: (rand() - 0.5) * style.spin * 0.6, kind: k.kind === 'pot' ? 'spin' : k.kind });
@@ -114,18 +114,19 @@
     }
     // A difficult position has recognizable responses: a deliberate safety, or a thick hit with a full-power release.
     if (!best || !best.made) {
-      const T = ordered[0], pos = g.placing ? P.findFree(w, Math.min(T.x - 0.3, g.placing === 'kitchen' ? -P.HL / 2 : P.HL - P.R), T.y, w.cue) : null;
+      const T = ordered.find(t => { const angle = Math.atan2(t.y - c.y, t.x - c.x), hit = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); return hit.type === 'ball' && hit.ball === t.id; }) || ordered[0], pos = g.placing ? P.findFree(w, Math.min(T.x - 0.3, g.placing === 'kitchen' ? -P.HL / 2 : P.HL - P.R), T.y, w.cue) : null;
       const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, base = Math.atan2(T.y - y, T.x - x), desperate = rand() < style.desperation * (0.35 + (1 - skill) * 0.65);
-      for (const power of desperate ? [1] : [0.22, 0.35, 0.52]) for (const da of [0, 0.02, -0.02]) {
-        consider({ pos, angle: base + da, V: g.vOf(power), a: desperate ? (rand() - 0.5) * 1.1 : 0, b: desperate ? (rand() - 0.5) * 0.7 : 0, el: 0, target: T.id, distance: Math.hypot(T.x - x, T.y - y), cut: 0, difficulty: 0.8, rank: 2, kind: desperate ? 'blast' : 'safety' });
+      for (const power of desperate ? [1, 0.35, 0.22] : [0.22, 0.35, 0.52]) for (const da of [0, 0.02, -0.02]) {
+        consider({ pos, angle: base + da, V: g.vOf(power), a: desperate && power === 1 ? (rand() - 0.5) * 1.1 : 0, b: desperate && power === 1 ? (rand() - 0.5) * 0.7 : 0, el: 0, target: T.id, distance: Math.hypot(T.x - x, T.y - y), cut: 0, difficulty: 0.8, rank: 2, kind: desperate && power === 1 ? 'blast' : 'safety' });
       }
       if (!best) best = { shot: { pos, angle: base, V: g.vOf(desperate ? 1 : 0.4), a: 0, b: 0, el: 0, distance: distance(c, T), difficulty: 0.7, kind: desperate ? 'blast' : 'contact' }, made: false };
     }
     const chosen = best.shot, diff = clamp(chosen.difficulty + Math.hypot(chosen.a, chosen.b) * 0.65 + g.powerOf(chosen.V) * 0.25 + chosen.el * 0.4, 0, 2.5);
     const lapse = rand() < 0.012 + character.nerves * (1 - skill) * 0.05;
-    const angleError = (0.00035 + Math.pow(1 - skill, 2.4) * 0.014) * (0.6 + diff * 1.7) * (lapse ? 3 : 1);
-    const powerError = 0.012 + Math.pow(1 - skill, 2) * 0.22;
-    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (1 - skill) * style.power * 0.09, 0, 1);
+    // Carom's scoring window is much narrower than a pocket; motor scatter is scaled separately from shot reading.
+    const angleError = (pool ? 1 : 0.1) * (0.00035 + Math.pow(1 - skill, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1);
+    const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - skill, 2) * 0.28);
+    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (1 - skill) * style.power * (pool ? 0.09 : 0.045), 0, 1);
     const shot = { pos: chosen.pos, angle: chosen.angle + noise() * angleError, V: g.vOf(power), a: chosen.a, b: chosen.b, el: chosen.el };
     return { ...shot, ...humanPresentation(shot, person, diff), decision: chosen.kind, difficulty: diff, simulations: sims };
   }

@@ -1,6 +1,6 @@
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
-  st.phase = 'aim'; st.clock = prefs.shotClock || 0; st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
+  st.phase = 'aim'; st.clock = clockLimit(); st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {
@@ -26,7 +26,8 @@ function autoTick(dt) {
   const a = st.auto; a.t += dt;
   if (!a.plan) {
     if (a.t < a.src.think) return;
-    a.plan = a.src.plan(); a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
+    a.plan = a.src.plan(); if (!a.plan) return;                       // (the other player's shot has not come yet)
+    a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
     if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }

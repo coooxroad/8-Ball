@@ -37,6 +37,7 @@ const homeDemo = {
 // leaving a game: `keep` leaves it saved so that it can be picked up again from the first screen
 function goHome(keep) {
   if (keep !== true) store.set('save', null);
+  ranked.leave();                                                       // (a ranked game left is given up)
   show('home'); paintHome(); homePreview();
 }
 function resume(d) {

@@ -1,0 +1,141 @@
+/* ================= 랭킹전: finding an opponent, and playing them through the server =================
+   The 랭킹전 panel picks a game; the lobby (server/src/ranked.js) pairs this player with someone close in DAMA, or after a
+   while seats a stand-in (a person-like computer player, ai/), which looks like anyone else. Then it is a match like any
+   other (50-match.js), with match.ctx.online = the game below:
+     each device plays its own shots and sends them to the room; the other's shots come in and are played here the same
+     way (the table first put exactly where the shot was struck from), as the computer's shots are (flow.auto);
+     a stand-in's shots are worked out here, and sent as its seat's;
+     the room plays the whole game again when it ends, and its result - who won, the coins, the DAMA - is the one shown.
+   The seats are the room's: seat 0 on the left. */
+const RANKED_CLOCK = 45;                      // seconds to shoot in a ranked game
+const ranked = {
+  on: null,                                   // the game being played: { seat, room, token, seed, first, mode, opp, standIn, inbox, n, sent, ws, done }
+  finding: null,                              // waiting in the lobby: { mode, t0, timer }
+  pick() {
+    if (!net.on) return toast('랭킹전은 서버가 열리면 시작합니다.', '', 2200);
+    openSheet('랭킹전', [note('다마가 비슷한 상대와 겨룹니다. 이기면 다마가 오르고, 넣은 점수의 두 배를 코인으로 받습니다. 지면 절반.'),
+      el('div', { class: 'row' }, GAME4.map(id => flatBtn(MODE_KO[id], () => ranked.find(id))))]);
+  },
+  // waiting: asked again every two seconds, with the time waited on the sheet and a way out
+  find(mode) {
+    ranked.cancel(true);
+    const f = ranked.finding = { mode, t0: Date.now(), timer: 0 }, clock = el('b', { class: 'num', text: '0:00' });
+    openSheet('상대 찾는 중', [note(`${MODE_KO[mode]} · ${(net.me ? net.me.dama : ECONOMY.DAMA_START)} 다마`), el('p', { class: 'note' }, [clock]), flatBtn('취소', () => { ranked.cancel(); closeSheet(); })]);
+    const ask = async () => {
+      if (ranked.finding !== f) return;
+      const s = Math.floor((Date.now() - f.t0) / 1000); clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      const r = await net.queue(mode);
+      if (ranked.finding !== f) return;
+      if (r && r.ok && r.room) { ranked.finding = null; closeSheet(); return ranked.play(r); }
+      if (!r) clock.textContent = '연결 중…';
+      f.timer = setTimeout(ask, 2000);
+    };
+    ask();
+  },
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; if (!quiet) net.leaveQueue(f.mode); },
+
+  play(r) {
+    const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, opp: r.opp, standIn: r.standIn || null,
+      inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, dama: net.me ? net.me.dama : ECONOMY.DAMA_START };
+    ranked.connect();
+    const names = []; names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name;
+    const rules = RANKED_RULES[o.mode];
+    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
+    toast(`${o.opp.name} · ${o.opp.dama} 다마`, '', 2600);
+  },
+  // the room, kept open: a dropped connection is opened again, and what it missed is sent again
+  connect() {
+    const o = ranked.on; if (!o || o.done) return;
+    let ws; try { ws = new WebSocket(net.roomUrl(o.room, o.token)); } catch (e) { return ranked.retry(); }
+    o.ws = ws;
+    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (ranked.on === o) ranked.hear(m); };
+    ws.onclose = () => { if (ranked.on === o && o.ws === ws) { o.ws = null; ranked.retry(); } };
+  },
+  retry() { const o = ranked.on; if (!o || o.done) return; o.tries++; setTimeout(ranked.connect, Math.min(8000, 600 * o.tries)); },
+  send(m) { const o = ranked.on; if (!o) return; if (m.t === 'shot' || m.t === 'timeout') o.sent.push(m); if (o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify(m)); },
+  hear(m) {
+    const o = ranked.on;
+    if (m.t === 'state') {
+      o.tries = 0;
+      // everything the room has: the other seat's shots not played here yet go in line; ours it missed go again
+      const have = m.shots.length;
+      for (let i = o.n + o.inbox.length; i < have; i++) if (m.shots[i].seat !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
+      for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
+      if (m.result) ranked.result(m.result);
+      return;
+    }
+    // (a shot already in line - heard again after a reconnect - is not played twice)
+    if ((m.t === 'shot' || m.t === 'timeout') && m.n < o.n + o.inbox.length) return;
+    if (m.t === 'shot') o.inbox.push({ n: m.n, shot: m.shot });
+    else if (m.t === 'timeout') o.inbox.push({ n: m.n, timeout: true });
+    else if (m.t === 'aim') ranked.aimFrom(m);
+    else if (m.t === 'away') toast(`${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
+    else if (m.t === 'back') toast(`${o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
+    else if (m.t === 'result') ranked.result(m);
+  },
+  // the other player lining up: their cue moves here as it does there
+  aimFrom(m) {
+    const o = ranked.on, a = st.auto;
+    if (!o || game.turn === o.seat || st.phase !== 'auto' || !a || a.plan) return;
+    st.aim = a.from = m.aim; st.power = Math.max(0, Math.min(1, m.power)); setPowerUI(st.power);
+    if (m.spin) { st.spin = { x: m.spin.x, y: m.spin.y }; setSpinUI(); }
+    st.el = m.el || 0; setKindUI(); scene.invalidate();
+  },
+  // a turn that is not this device's: the stand-in, worked out here; or the other player's next shot, when it comes
+  auto(o) {
+    if (game.turn === o.seat) return null;
+    if (o.standIn) return { think: 1.2 + Math.random() * 2.4, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } };
+    return { think: 0, showSpin: true, plan() {
+      const m = o.inbox[0]; if (!m) return null;
+      o.inbox.shift();
+      if (m.timeout) { setTimeout(() => { if (ranked.on === o && flow === match) match.timeout(); }, 0); return null; }
+      // the table exactly as it was when they struck (the same physics has brought it there anyway; this keeps it so)
+      const sh = m.shot; highlights.restore(game.world, sh.s); game.placing = null;
+      return { angle: sh.aim, V: sh.V, a: sh.a, b: sh.b, el: sh.el || 0, pos: null };
+    } };
+  },
+  // every shot struck here (by this device's player or its stand-in) goes to the room; every shot counts toward the next n
+  struck(snap, V, a, b, el) {
+    const o = ranked.on; if (!o) return;
+    if (game.turn === o.seat || o.standIn) ranked.send({ t: 'shot', n: o.n, shot: { s: snap, aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing }, as: game.turn });
+    o.n++;
+  },
+  timedOut() {
+    const o = ranked.on; if (!o) return;
+    if (game.turn === o.seat || o.standIn) ranked.send({ t: 'timeout', n: o.n, as: game.turn });
+    o.n++;
+  },
+  // each frame: this player's aiming, a few times a second, for the other screen
+  tick() {
+    const o = ranked.on; if (!o || o.done || st.phase !== 'aim' || game.turn !== o.seat) return;
+    const now = Date.now(); if (now - o.aimAt < 120) return; o.aimAt = now;
+    ranked.send({ t: 'aim', aim: st.aim, power: st.power, spin: st.spin, el: st.el });
+  },
+  // the game ended here: the room plays it again and says how it ended
+  ended() { const o = ranked.on; if (!o) return; ranked.send({ t: 'end' }); },
+  resign() { const o = ranked.on; if (!o || o.done) return; ranked.send({ t: 'resign' }); },
+  // the room's word: who won, the coins, the DAMA. Ended here already: the result screen gets the numbers; not ended here
+  // (the other player resigned or left): it ends now
+  result(m) {
+    const o = ranked.on; if (!o || o.done) return;
+    o.done = true; o.result = m;
+    if (flow === match && st.screen === 'play' && !game.over && m.winner != null) {
+      game.over = { winner: m.winner, why: m.why === 'left' ? `${o.opp.name}이(가) 나갔습니다.` : m.why === 'resigned' ? '기권했습니다.' : '경기가 끝났습니다.' };
+      match.finish();
+    } else if (st.screen === 'result') ranked.paint();
+    if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
+    net.flush();
+  },
+  // the result screen's lines for a ranked game: checking, then what it paid
+  paint() {
+    const o = ranked.on, side = $('#rSide'); if (!o || !side) return;
+    for (const x of side.querySelectorAll('.rk')) x.remove();
+    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec rk' }, [el('span', { text: k }), el('b', { text: v })]));
+    if (!o.result) return line('랭킹전', '결과 확인 중…');
+    const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
+    line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
+    line('다마', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+  },
+  // leaving the game (home, or the app goes away): it is given up
+  leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
+};

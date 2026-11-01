@@ -64,17 +64,30 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
     // pre: cushions the cue ball met before any ball;   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
     for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades standing on the cloth (puzzles), made with wall()
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false, walls: NO_WALLS };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades (puzzles), made with walls()
+  }
+  /* Barricades (puzzles): blocks standing on the cloth that force a way round. Each { x, y, len, thick, ang, h }: its middle,
+     length and thickness (m), its turn (radians, 0 along the table's length) and height (m). A ball rolling into one comes
+     off it as off a cushion - the same rubber, side bending it the same - but it does not count as a cushion (ev.walls
+     counts them); a ball in the air higher than its top passes over. The faces are kept ready for the step. */
+  const NO_WALLS = [];
+  function walls(list) {
+    return (list || []).map(q => {
+      const c = Math.cos(q.ang || 0), s = Math.sin(q.ang || 0), hl = q.len / 2, ht = (q.thick || 0.03) / 2;
+      const at = (u, v) => [q.x + c * u - s * v, q.y + s * u + c * v], P = [at(-hl, -ht), at(hl, -ht), at(hl, ht), at(-hl, ht)], faces = [];
+      for (let i = 0; i < 4; i++) { const a = P[i], b = P[(i + 1) % 4], l = Math.hypot(b[0] - a[0], b[1] - a[1]); faces.push({ ax: a[0], ay: a[1], bx: b[0], by: b[1], len: l, tx: (b[0] - a[0]) / l, ty: (b[1] - a[1]) / l }); }
+      return { x: q.x, y: q.y, len: q.len, thick: ht * 2, ang: q.ang || 0, h: q.h || 0.04, faces, reach: hl + ht + R };
+    });
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice, walls: w.walls || NO_WALLS };
   }
 
   function place(w, id, x, y, rnd) {
@@ -262,8 +275,15 @@ function createPhysics(cfg) {
       b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
       b.wz -= (2.5 / RB) * ds;
       if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
-      noteRail(w, b, vn); return;
+      if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
+      return;
     }
+  }
+  let ON_WALL = false;                                             // (the face being met is a barricade's, not a cushion's)
+  function noteWall(w, b, vn) {
+    w.ev.walls++;
+    if (b.id === w.cue && !w.ev.at) w.ev.at = [b.x, b.y, b.z, -2];
+    if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
   function noteRail(w, b, vn) {
     if (w.ev.firstHit != null) w.ev.rail = true;
@@ -391,6 +411,21 @@ function createPhysics(cfg) {
       }
     }
     collideGround(w, bs, n, h);
+    // the barricades: as the cushions below, the face met first first; a ball above a block's top goes over it
+    if (w.walls.length) for (let i = 0; i < n; i++) {
+      const b = bs[i]; if (!b.on || (b.vx === 0 && b.vy === 0)) continue;
+      ON_WALL = true;
+      for (let pass = 0; pass < 4; pass++) {
+        let best = null, bt = -1;
+        for (const q of w.walls) {
+          if (b.z > q.h || Math.abs(b.x - q.x) > q.reach || Math.abs(b.y - q.y) > q.reach) continue;
+          for (const f of q.faces) { const t = segTime(b, f); if (t > bt) { bt = t; best = f; } }
+        }
+        if (!best) break;
+        hitSeg(w, b, best);
+      }
+      ON_WALL = false;
+    }
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
@@ -592,6 +627,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') module.exports = createPhysics;

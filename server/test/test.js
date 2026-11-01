@@ -4,14 +4,16 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
+import { LobbyCore, RoomCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
-const vault = env => {
+const sqlOf = () => {
   const db = new DatabaseSync(':memory:');
   const sql = { exec(q, ...a) { if (/^\s*(CREATE|BEGIN|COMMIT|ROLLBACK)/i.test(q)) { db.exec(q); return { toArray: () => [] }; } const st = db.prepare(q); if (/^\s*SELECT/i.test(q)) { const rows = st.all(...a); return { toArray: () => rows }; } st.run(...a); return { toArray: () => [] }; } };
   const tx = fn => { db.exec('BEGIN'); try { const r = fn(); db.exec('COMMIT'); return r; } catch (e) { db.exec('ROLLBACK'); throw e; } };
-  return new VaultCore(sql, env || {}, tx);
+  return { sql, tx };
 };
+const vault = env => { const { sql, tx } = sqlOf(); return new VaultCore(sql, env || {}, tx); };
 let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
 
 // accounts
@@ -157,6 +159,81 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(matchKey(clone) === matchKey(good), 'presentation fields and claimed outcome cannot change match identity');
   ok(logError({ ...good, mode: 'toString' }) && logError({ ...good, shots: [null] }), 'unknown mode and null shots rejected');
   console.log('reward regressions: receipts, duplicate matches, corrupt queue and terminal checkpoints checked');
+}
+// ranked: the lobby pairs by DAMA (the range widening with the wait), and after a while seats a stand-in
+{
+  let t = 0; const L = new LobbyCore('eight', () => t);
+  ok(L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }).waiting, 'lobby: one alone waits');
+  const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in DAMA are paired at once');
+  const a = L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }); ok(a.room === b.room && a.seat === 1 && a.token !== b.token && a.seed === b.seed, 'lobby: the other hears the same room, its own seat');
+  ok(L.ask({ acct: 'c', dama: 20, name: 'C' }).waiting && L.ask({ acct: 'd', dama: 70, name: 'D' }).waiting, 'lobby: far apart, they wait');
+  t = 5000; L.ask({ acct: 'c', dama: 20 }); t = 10000; L.ask({ acct: 'c', dama: 20 }); L.ask({ acct: 'd', dama: 70 }); t = 14000; L.ask({ acct: 'c', dama: 20 });
+  t = 16000; ok(L.ask({ acct: 'd', dama: 70 }).waiting, 'lobby: 50 apart is still too far after 16 s');
+  L.ask({ acct: 'c', dama: 20 }); t = 20000; L.ask({ acct: 'd', dama: 70 });
+  t = 20500; const c = L.ask({ acct: 'c', dama: 20 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
+  t = 40000; ok(L.ask({ acct: 'e', dama: 30 }).waiting && !L.wait.has('d'), 'lobby: one not heard from has left');
+  console.log('ranked lobby: checked');
+}
+// ranked: a room - shots passed on and kept, the game played again, and the replay (not the devices) decides
+{
+  const H2 = E.createHighlights();
+  // a ranked game the way two devices play it: the room's seed for the rack (and the 4구 roll-out), each shot by its seat
+  function rankedGame(mode, seed, first) {
+    const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI);
+    g.start(mode, ['A', 'B'], false, Object.assign({ rnd: E.seededRandom(seed), first, level: 2 }, RANKED_RULES[mode])); g.players[0].ai = g.players[1].ai = true; g.level = 2;
+    if (mode === 'four') { g.rollOut(E.seededRandom((seed ^ 0x5bd1e995) >>> 0)); g.P.run(g.world, 40); g.world.ev = g.P.newEv(); }
+    const msgs = [];
+    while (!g.over && msgs.length < 300) {
+      const p = g.aiPlan(), w = g.world;
+      if (p.pos && g.placing) { const c = g.cueBall(); g.P.place(w, c.id, p.pos[0], p.pos[1]); }
+      msgs.push({ seat: g.turn, m: { t: 'shot', n: msgs.length, shot: { s: JSON.parse(JSON.stringify(H2.snapshot(w))), aim: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, inHand: !!g.placing } } });
+      g.beginShot(); g.P.strike(w, p.angle, p.V, p.a || 0, p.b || 0, p.el || 0); g.P.run(w, 40); g.resolve();
+    }
+    return { msgs, winner: g.over ? g.over.winner : null };
+  }
+  const roomOf = (mode, seed, first, standIn) => {
+    const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => sent[s].push(m), tx);
+    R.init({ room: 'f'.repeat(32), mode, seed, first, standIn: standIn || null, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: standIn ? null : 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
+    return { R, sent };
+  };
+  const finish = R => { let k = 0; while (R.work(500) && k < 100000) k++; return R.get('result'); };
+  for (const mode of ['eight', 'four']) {
+    const seed = 4242, first = 1, G = rankedGame(mode, seed, first);
+    if (G.winner == null) { console.log(`ranked ${mode}: the computers did not finish (skipped)`); continue; }
+    const { R, sent } = roomOf(mode, seed, first);
+    for (const x of G.msgs) R.message(x.seat, x.m);
+    ok(sent[1 - G.msgs[0].seat].some(m => m.t === 'shot' && m.n === 0), `ranked ${mode}: a shot is passed to the other seat`);
+    ok(R.message(0, { t: 'end' }) === null && R.message(1, { t: 'end' }) === 'check', `ranked ${mode}: both saying it ended starts the check`);
+    const res = finish(R);
+    ok(res && res.winner === G.winner && res.why === 'ended', `ranked ${mode}: the replay names the winner (${res && res.why})`);
+    ok(res.coins[G.winner] > 0 && res.dama[G.winner] > [30, 40][G.winner], `ranked ${mode}: the winner is paid and gains DAMA`);
+    const pay = R.payouts(); ok(pay.length === 2 && pay[G.winner].body.won && pay[G.winner].body.coins === res.coins[G.winner], `ranked ${mode}: both vaults are told`);
+    const v = vault(); v.init('h'); const before = v.me().dama;
+    v.ranked(pay[0].body); v.ranked(pay[0].body);
+    ok(v.me().dama === before + pay[0].body.dama && v.me().coin === pay[0].body.coins, `ranked ${mode}: a vault takes a room's result once`);
+    // a seat that moves a ball before its shot is caught by the replay, and loses
+    if (G.msgs.length > 2) {
+      const { R: R2 } = roomOf(mode, seed, first), j = G.msgs.findIndex((x, i) => i > 0 && x.seat === 1);
+      if (j > 0) {
+        G.msgs.forEach((x, i) => { const m = JSON.parse(JSON.stringify(x.m)); if (i === j) { const bs = m.shot.s.balls, b = bs.findIndex((q, k) => q[2] && k !== m.shot.s.cue); bs[b][0] += 0.02; } R2.message(x.seat, m); });
+        R2.message(0, { t: 'end' }); R2.message(1, { t: 'end' }); const r2 = finish(R2);
+        ok(r2.winner === 0 && r2.why === 'a shot that does not fit', `ranked ${mode}: a moved ball loses the game for the seat that sent it`);
+      }
+    }
+  }
+  // a seat that shoots out of turn loses; one that leaves and does not come back loses
+  { const G = rankedGame('eight', 7, 0), { R } = roomOf('eight', 7, 0); R.message(G.msgs[0].seat, G.msgs[0].m); const m = JSON.parse(JSON.stringify(G.msgs[1] || G.msgs[0])); m.m.n = 1; R.message(G.msgs[0].seat, m.m); R.message(0, { t: 'resign' });
+    const r = finish(R); ok(r.winner === 1 - G.msgs[0].seat, 'ranked: a shot out of turn loses'); }
+  { const { R, sent } = roomOf('nine', 9, 0); ok(R.disconnected(1) && sent[0].some(m => m.t === 'away'), 'ranked: the other seat hears one has gone');
+    const gone = R.get('gone'); gone[1] = Date.now() - RETURN_WITHIN - 1; R.set('gone', gone); ok(R.timers() === 'check', 'ranked: gone too long ends it');
+    const r = finish(R); ok(r.winner === 0 && r.why === 'left', 'ranked: one who left loses'); }
+  // a stand-in: its shots come from seat 0's device; DAMA moves half as far; only the player's vault is told
+  { const G = rankedGame('eight', 11, 0), { R } = roomOf('eight', 11, 0, { name: 'S', icon: 0, dama: 40, level: 2 });
+    for (const x of G.msgs) R.message(0, Object.assign({}, x.m, { as: x.seat }));
+    R.message(0, { t: 'end' }); const r = finish(R);
+    if (G.winner != null) { const full = E.damaAfter(30, 40, G.winner === 0)[0] - 30;
+      ok(r.winner === G.winner && r.dama[0] - 30 === Math.round(full * 0.5) && R.payouts().length === 1, `ranked: a stand-in game counts half (${r.why})`); } }
+  console.log('ranked rooms: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);

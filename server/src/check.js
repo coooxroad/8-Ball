@@ -14,7 +14,7 @@ export function playPuzzle(id, shot) {
   if (!shotOk(shot)) return { ok: false, why: 'bad shot' };
   const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')), rnd = seeded(1);
   g.start('puzzle4', ['A', ''], false, { rnd }); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
-  z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], rnd)); w.cue = 0; g.goal = goal;
+  w.walls = P.walls(z.walls); z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], rnd)); w.cue = 0; g.goal = goal;
   P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el || 0);
   const ev = P.run(w, 40);
   return g.MODES.puzzle4.judge(goal, ev, w).ok ? { ok: true } : { ok: false, why: 'the shot does not solve it' };
@@ -30,11 +30,17 @@ export function playPuzzle(id, shot) {
    a Replay made from that checkpoint carries on from there - so a server that may only think for a few milliseconds per
    request still plays every shot, a few hundred steps per request. */
 export class Replay {
-  constructor(log, cp) {
-    this.log = log; const o = log && log.opts || {};
+  // open: a ranked game's log (room.js) - it may stop before the end (someone left), and who won is what the replay says,
+  // not what a player claims. A shot carries the seat that sent it (seat), checked against whose turn it was; a failing
+  // shot's index is in the answer (at), so the seat that sent it can be held to it.
+  constructor(log, cp, open) {
+    this.log = log; this.open = !!open; const o = log && log.opts || {};
     const why = logError(log); if (why) { this.out = { ok: false, why }; return; }
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
-    this.g.start(log.mode, ['A', 'B'], false, { rnd: seeded(1), first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: !!o.finish, ice: !!o.ice });
+    // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
+    const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
+    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: !!o.finish, ice: !!o.ice });
+    if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
     if (cp && cp.i === log.shots.length && !cp.over) cp = null;
@@ -46,18 +52,21 @@ export class Replay {
     const g = this.g, log = this.log, o = log.opts || {};
     while (this.i < log.shots.length && !g.over && log.shots[this.i].timeout) { g.timeout(); this.i++; }
     if (this.i >= log.shots.length || g.over) {
+      if (this.open) return this.out = { ok: true, points: this.points, winner: g.over ? g.over.winner : null };
       if (!g.over) return this.out = { ok: false, why: 'the match does not end' };
       if (log.winner !== g.over.winner) return this.out = { ok: false, why: 'a different winner' };
       return this.out = { ok: true, points: this.points, winner: g.over.winner };
     }
     const sh = log.shots[this.i], w = g.world, i = this.i;
-    if (!shotOk(sh) || !sh.s || !Array.isArray(sh.s.balls) || sh.s.balls.length !== w.balls.length) return this.out = { ok: false, why: `shot ${i}: bad` };
-    if (i > 0) for (let j = 0; j < w.balls.length; j++) {
+    if (!shotOk(sh) || !sh.s || !Array.isArray(sh.s.balls) || sh.s.balls.length !== w.balls.length) return this.out = { ok: false, why: `shot ${i}: bad`, at: i };
+    if (sh.seat != null && sh.seat !== g.turn) return this.out = { ok: false, why: `shot ${i}: not this seat's turn`, at: i };
+    // (the first shot of a game played on one device may start from any rack; a ranked game's from its seed's)
+    if (i > 0 || this.open) for (let j = 0; j < w.balls.length; j++) {
       if (j === w.cue && g.placing) continue;
       const b = w.balls[j], v = sh.s.balls[j];
-      if (!!v[2] !== b.on || (b.on && (Math.abs(v[0] - b.x) > 1e-7 || Math.abs(v[1] - b.y) > 1e-7))) return this.out = { ok: false, why: `shot ${i}: ball ${j} is not where the last shot left it` };
+      if (!!v[2] !== b.on || (b.on && (Math.abs(v[0] - b.x) > 1e-7 || Math.abs(v[1] - b.y) > 1e-7))) return this.out = { ok: false, why: `shot ${i}: ball ${j} is not where the last shot left it`, at: i };
     }
-    H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed' };
+    H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed', at: i };
     this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); this.t = 0; this.running = true;
     return null;
   }

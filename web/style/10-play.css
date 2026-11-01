@@ -242,3 +242,17 @@
 #app.desk:not(.portrait) #views .btn{width:56px;height:56px}
 #app.desk.compact:not(.portrait) #views{top:6px;right:62px}
 #app.desk.compact:not(.portrait) #views .btn{width:48px;height:48px}
+/* held upright (a phone, mostly): the thumb's easy reach is the bottom corners, and the power is pulled down the way the cue
+   is drawn back - so the gauge stands at the right beside the table's lower half (playInsets keeps the table clear of it,
+   the view keys sit above it), its travel short; the spin ball and the fine-aim drum share the strip under the table. */
+#app.desk.portrait #power{left:auto;right:8px;top:auto;bottom:12px;width:64px;height:min(44vh,360px)}
+#app.desk.portrait #power::before{inset:34px auto 34px 8px;width:48px;height:auto;
+  background:repeating-linear-gradient(to top,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) top/100% calc(100% - var(--pw,0%)) no-repeat,
+  linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%)}
+#app.desk.portrait #power::after{border-image:url(ui/gauge.webp) 170 0 fill/34px 0 stretch;background:none}
+#app.desk.portrait #powerCue{left:50%;top:0;width:15px;height:100%;transform:translate(-50%,10px)}
+#app.desk.portrait #powerNum{left:0;right:0;top:auto;bottom:9px;width:auto;height:auto;transform:none;padding:0;font-size:14px}
+#app.desk.portrait #fine{left:96px;right:82px;bottom:22px;height:46px}
+#app.desk.portrait #spinBtn{left:8px;bottom:8px;width:80px;height:80px}
+#app.desk.portrait #spinPop{left:8px;bottom:98px}
+

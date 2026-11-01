@@ -28,6 +28,8 @@ const ECONOMY = {
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 30, DAMA_K: 6, DAMA_SPREAD: 100, DAMA_FLOOR: 10,
 };
+// a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
+const RANKED_RULES = { eight: {}, nine: {}, four: { target: 10 }, three: { target: 5, cushions: 3 } };
 const matchCoins = (kind, mode, points, won) => {
   const per = ECONOMY.PER_POINT[mode] || 0, mine = points[0] * per;
   if (kind === 'ranked') return Math.round(mine * (won ? ECONOMY.RANKED_WIN : ECONOMY.RANKED_LOSS));
@@ -42,4 +44,4 @@ const damaAfter = (a, b, aWon) => {
   const ea = 1 / (1 + Math.pow(10, (b - a) / ECONOMY.DAMA_SPREAD)), d = Math.round(ECONOMY.DAMA_K * ((aWon ? 1 : 0) - ea));
   return [Math.max(ECONOMY.DAMA_FLOOR, a + d), Math.max(ECONOMY.DAMA_FLOOR, b - d)];
 };
-if (typeof module !== 'undefined') module.exports = { ECONOMY, matchCoins, tourPayout, priceOf, damaAfter };
+if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, matchCoins, tourPayout, priceOf, damaAfter };

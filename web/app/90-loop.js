@@ -61,16 +61,18 @@ function stepSim(dt) {
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { st.rolling = false; st.rev++; flow.rolled(); } else endShot(); } }
   return alpha;
 }
+let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
   checkPixelRatio();
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
-  const paused = !$('#sheet').hidden || (st.screen === 'home' && !deskTableShown());
+  // (a ranked game goes on under a sheet: the other player is still playing)
+  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown());
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
-    shotClock(dt); eyeTick();
+    shotClock(dt); eyeTick(); ranked.tick();
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
@@ -93,10 +95,13 @@ function frame(now) {
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
   if (st.phase === 'aim') syncEl();
+  if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
-    follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, level: flow ? flow.guide() : 0, aimStyle: prefs.aim,
+    follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
+    // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
+    gear: st.phase === 'aim' ? cueK() : null, level: flow ? flow.guide() * (st.phase === 'aim' ? cueK().guide : 1) : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
   drainFalls();
@@ -109,7 +114,7 @@ function frame(now) {
 
 /* ================= saving ================= */
 function snapshot() {
-  if (st.screen !== 'play' || !flow || !flow.save) return;
+  if (st.screen !== 'play' || !flow || !flow.save || (flow === match && match.ctx && match.ctx.online)) return;   // (a ranked game is not picked up later)
   const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count }, log: match.log, inn: match.innings };
   store.set('save', d);
 }
@@ -120,5 +125,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, ranked, net, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();

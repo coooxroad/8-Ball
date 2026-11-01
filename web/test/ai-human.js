@@ -32,14 +32,14 @@ function strike(g, p) {
   g.beginShot(); g.P.strike(g.world, p.angle, p.V, p.a, p.b, p.el); g.P.run(g.world, 40); g.world.snd.length = 0;
   assert(g.P.rest(g.world)); return g.resolve().r;
 }
-// All combinations are valid at each ability; frame sampling never consumes gameplay randomness.
+// Every personality/style combination works in all four modes; frame sampling never consumes gameplay randomness.
 const profiles = g0.aiPlan.profiles;
 assert.equal(profiles.personalities.length, 6); assert.equal(profiles.styles.length, 6);
 for (const [dama, skill] of [[10, 0.05], [30, 0.4], [60, 0.8], [80, 0.95], [120, 0.95]]) assert.equal(profile(g0, dama).skill, skill);
 for (let d = 11; d <= 80; d++) assert(profile(g0, d).skill >= profile(g0, d - 1).skill);
-const names = new Set(), random = seeded(10), combos = new Set();
-for (let i = 0; i < 2000; i++) { const p = g0.aiPlan.personaFor(30, random); names.add(p.name); combos.add(p.personality.id + '/' + p.style.id); assert.equal(p.icon, 0); assert(!/봇|AI|컴퓨터|시발|씨발/.test(p.name)); assert.deepEqual(JSON.parse(JSON.stringify(p)), p); }
-assert(names.size >= 200); assert.equal(combos.size, 36);
+const names = new Set(), random = seeded(10), combos = new Set(), icons = new Set();
+for (let i = 0; i < 2000; i++) { const p = g0.aiPlan.personaFor(30, random); names.add(p.name); combos.add(p.personality.id + '/' + p.style.id); assert(Number.isInteger(p.icon) && p.icon >= 0 && p.icon < 8); icons.add(p.icon); assert(!/봇|AI|컴퓨터|시발|씨발/.test(p.name)); assert.deepEqual(JSON.parse(JSON.stringify(p)), p); }
+assert(names.size >= 200); assert.equal(combos.size, 36); assert.equal(icons.size, 8);
 for (const mode of ['eight', 'nine', 'four', 'three']) {
   for (const character of profiles.personalities) for (const style of profiles.styles) {
     const g = fresh(), p = frozen(profile(g, 50, 5, { personality: character.id, style: style.id }));
@@ -64,8 +64,28 @@ for (const mode of ['eight', 'nine', 'four', 'three']) {
   }
   assert(samples.some(p => p.style === 'power' && Math.abs(g.powerOf(p.V) - 1) < 1e-9), 'power style never releases at 100%');
   assert(samples.some(p => p.style === 'masse' && p.el > 0), 'masse style never raises cue');
+  assert(samples.some(p => p.style === 'banker' && p.decision === 'bank'), 'banker never chooses a cushion');
   assert(samples.some(p => p.preShot.kind === 'taunt'), 'no cue-shaking timeline');
   const taunt = samples.find(p => p.preShot.kind === 'taunt'); assert(taunt.preShot.keyframes.some(k => Math.abs(k.angle - taunt.angle) > 0.2));
+}
+// Disabling raised cues overrides every style, including its visual pose.
+{
+  const g = fresh();
+  for (const mode of ['eight', 'nine', 'four', 'three']) {
+    const p = profile(g, 80, 1, { personality: 'playful', style: 'masse' });
+    g.start(mode, ['A', 'B'], true, { rnd: seeded(8), personas: [p, p], masse: false, cushions: 3 }); g.aiRnd = seeded(9);
+    if (g.isBreak) strike(g, measured(g));
+    const shot = measured(g); assert.equal(shot.el, 0); assert(shot.preShot.keyframes.every(k => k.el === 0));
+  }
+}
+// Older ranked rooms supply a rating/level without the new axes. They still produce valid seeded plans after reload.
+{
+  const g = fresh(), legacy = frozen({ name: '초크한통17', icon: 7, dama: 30, level: 1 });
+  g.start('four', ['A', legacy.name], true, { rnd: seeded(32), personas: [legacy, legacy] });
+  g.aiRnd = seeded(7); const a = measured(g); g.aiRnd = seeded(7); assert.deepEqual(a, measured(g));
+  assert.deepEqual(legacy, { name: '초크한통17', icon: 7, dama: 30, level: 1 });
+  const empty = createAI(null); assert.equal(typeof empty.plan.personaFor, 'function');
+  assert(Number.isFinite(empty.plan.personaFor(30, seeded(1)).skill));
 }
 function match(mode, a, b, seed, stats) {
   const g = fresh(), first = seed % 2, ps = [profile(g, a, seed * 19 + 1), profile(g, b, seed * 19 + 2)];

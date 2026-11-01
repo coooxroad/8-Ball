@@ -34,6 +34,13 @@ script() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14110f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 html{box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 body{margin:0}
@@ -65,5 +72,7 @@ rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
 rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
+# the web version installed as an app (site/): its name, icon and full-screen display
+cp manifest.webmanifest icon-192.png icon-512.png "$A/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c "$A/index.html"

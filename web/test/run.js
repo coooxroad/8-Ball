@@ -140,7 +140,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   for (const z of Z.list) {
     if (ids.has(z.id)) fail(`puzzle ${z.id}: id used twice`); ids.add(z.id);
     if (!Z.STAGES[z.stage]) { fail(`puzzle ${z.id}: no stage ${z.stage}`); continue; }
-    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
+    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal; w.walls = P.walls(z.walls);
     z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
     w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
@@ -347,6 +347,18 @@ for (const name of ['bar', 'pro', 'pub']) {
   console.log('shot clock: checked');
 }
 
+// barricades (physics walls()): a ball rolled square into one comes back, it is not counted as a cushion, a ball rolled
+// past its end goes by, and the same shot comes out the same every time
+{
+  const P = createPhysics({ R: 0.03275, pockets: false }), W = P.walls([{ x: 0.3, y: 0, len: 0.4, thick: 0.03, ang: Math.PI / 2, h: 0.04 }]);
+  const roll = (y, V) => { const w = P.makeWorld(1); w.walls = W; P.place(w, 0, -0.3, y); P.strike(w, 0, V, 0, 0); const ev = P.run(w, 30); return { w, ev, b: w.balls[0] }; };
+  const a = roll(0, 1.5), b = roll(0, 1.5), c = roll(0.4, 1.5);
+  if (!(a.ev.walls >= 1 && a.ev.cushions === 0 && a.b.x < 0.3)) fail(`barricades: a ball rolled into one should come back (walls ${a.ev.walls}, x ${a.b.x.toFixed(3)})`);
+  if (a.b.x !== b.b.x || a.b.y !== b.b.y) fail('barricades: the same shot ends differently');
+  if (c.ev.walls !== 0) fail('barricades: a ball rolled past the end met it');
+  const none = P.makeWorld(1); if (none.walls.length || P.clone(a.w).walls !== W) fail('barricades: a world has none until given, and a copy keeps them');
+  console.log('barricades: checked');
+}
 // the levels (ai/): each keeps the table more often than the one below. Played with a fixed Math.random, so the same every run.
 {
   const real = Math.random; let s = 777; Math.random = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };

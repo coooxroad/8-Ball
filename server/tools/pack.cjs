@@ -8,6 +8,6 @@ for (const f of files) src += `// ---- web/${f}\n` + fs.readFileSync(path.join(W
 // the computer player (web/ai/, the body of one function as web/build.sh makes it): for the tests' recorded matches, and
 // later for checking a person-like opponent's shots
 src += '// ---- web/ai/\nfunction createAI(g) {\n' + fs.readdirSync(path.join(W, 'ai')).sort().map(f => fs.readFileSync(path.join(W, 'ai', f), 'utf8')).join('\n') + '}\n';
-src += 'export { RARITY, CLOTHS, CUES, BALLSKINS, TRAILS, GLOVES, TABLES, CAROM, physicsFor, ECONOMY, matchCoins, tourPayout, priceOf, damaAfter, createPhysics, createGame, seededRandom, createAI, createPuzzles, createHighlights };\n';
+src += 'export { RARITY, CLOTHS, CUES, BALLSKINS, TRAILS, GLOVES, TABLES, CAROM, physicsFor, ECONOMY, RANKED_RULES, matchCoins, tourPayout, priceOf, damaAfter, createPhysics, createGame, seededRandom, createAI, createPuzzles, createHighlights };\n';
 fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(path.join(OUT, 'engine.js'), src);
 console.log('engine packed:', files.length, 'files,', src.length, 'bytes');

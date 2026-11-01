@@ -75,7 +75,7 @@
     }
     if (guide.visible) {
       const gl = v.level, chosen = v.power > 0;
-      const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), gl.toFixed(3), v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4), v.aimStyle].join('|');
+      const key = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), gl.toFixed(3), v.power.toFixed(4), v.spin.x.toFixed(3), v.spin.y.toFixed(3), ppm.toFixed(1), g.turn, v.rev, (v.el || 0).toFixed(4), v.aimStyle, v.gear ? v.gear.power + ',' + v.gear.spin : ''].join('|');
       if (key !== guideKey) {
         guideKey = key;
         gRing.visible = gDisc.visible = false; for (const m of RIBS) m.visible = false;
@@ -83,7 +83,8 @@
           /* Nothing here is worked out by geometry: the shot is played out on a copy with the very inputs the stroke will use,
              and the guide is drawn from what happened. The length setting only decides how much of it is shown. */
           const after = gl < SIM ? 0.05 : gl <= 0.75 ? 2.4 : 2.4 + (gl - 0.75) / 0.25 * 12.6;
-          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45), v.spin.x * 0.5, v.spin.y * 0.5, v.el || 0, after);
+          const k = v.gear || { power: 1, spin: 1 };
+          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, after);
           const at = pv.at, pre = pv.pre, post = pv.post, rail = v.aimStyle === 'rail', kind = g.mode.table;
           // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
           const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, w.cue) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, pv.hit) : cCol;
@@ -171,7 +172,7 @@
 
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable, setCloth, setCue, setBalls, setTrail, ballPortrait, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable, setWalls, setCloth, setCue, setBalls, setTrail, ballPortrait, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); },
   };
