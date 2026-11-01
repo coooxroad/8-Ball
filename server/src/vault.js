@@ -24,7 +24,12 @@ export class Vault extends DurableObject {
     if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); return json({ ok: true, me }); }
     if (path === '/v1/buy') return json(this.core.buy(body));
     // waiting for a ranked game: the front door asks who this is, then goes to the lobby
-    if (path === '/v1/ticket') return json({ ok: true, dama: this.core.me().dama });
+    if (path === '/v1/ticket') {
+      // (and what they have on, as far as it is theirs - the other player will see it)
+      let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
+      const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.owns(k, want[k]) ? want[k] : null;
+      return json({ ok: true, dama: this.core.me().dama, gear });
+    }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }
     return json({ ok: false, why: 'no such thing' }, 404);

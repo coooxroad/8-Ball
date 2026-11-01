@@ -101,7 +101,11 @@ useBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 // The ice table is a cloth like the others to choose, but it plays differently (everything slides), so lessons and puzzles -
 // whose shots were worked out on cloth - are always shown and played on the ordinary one.
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
-function dress(ice) { scene.setCloth(ice ? ICE : iceOn() ? 0 : prefs.cloth); }
+// (a ranked game wears the look the two players' gear makes: 54-ranked.js lookOf)
+const lookNow = () => typeof flow !== 'undefined' && flow === match && match.ctx && match.ctx.online && match.ctx.online.look;
+function dress(ice) { const L = lookNow(); scene.setCloth(ice ? ICE : iceOn() ? 0 : L ? L.cloth : prefs.cloth); }
+// back to this player's own things (leaving a ranked game)
+function ownLook() { useBalls(prefs.ballSkin); scene.setTrail(prefs.trail); dress(false); }
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {
   const desk = st.screen === 'home';                                  // on the desk's home the table sits on felt

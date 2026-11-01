@@ -28,7 +28,7 @@ const match = {
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
-  cue() { useCue(prefs.cues[game.players[1].ai || match.ctx.online ? 0 : game.turn]); },
+  cue() { const L = lookNow(); useCue(L ? L.cues[game.turn] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   rolled() { game.world.ev = game.P.newEv(); toast(game.mode.intro(game), '', 3600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says

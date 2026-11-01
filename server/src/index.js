@@ -6,7 +6,7 @@
    POST /v1/buy     { req, kind, id }                 buy an item from content/ at its rarity's price
    POST /v1/puzzle  { req, id, shot }                 a puzzle solved: checked, paid once
    POST /v1/match   { req, kind: friend | cpu, log }  a match played on the device: paid by economy.js
-   POST /v1/queue   { mode, name, icon }              waiting for a ranked game (ask every 2 s): { waiting } or the room
+   POST /v1/queue   { mode, name, icon, gear }        waiting for a ranked game (ask every 2 s): { waiting } or the room
    POST /v1/queue/leave { mode }                      stop waiting
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
@@ -41,11 +41,11 @@ export default {
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {
       const body = await request.json().catch(() => ({}));
       if (!MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
-      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2] } })).json();
+      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const lobby = env.LOBBY.get(env.LOBBY.idFromName(body.mode));
-      const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ acct: m[1], dama: t.dama, name, icon, mode: body.mode }) });
+      const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ acct: m[1], dama: t.dama, name, icon, gear: t.gear || null, mode: body.mode }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     const r = await vault.fetch('https://vault' + url.pathname, {

@@ -12,6 +12,7 @@ function beginTurn(first) {
 }
 function shoot(V, a, b, el) {
   el = el || 0;
+  { const L = lookNow(); if (L) scene.setTrail(L.trails[game.turn]); }      // (a ranked game: the trail of the player shooting)
   flow.beforeShot(V, a, b, el); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
   st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el };

@@ -25,6 +25,18 @@ export function standIn(dama, rnd) {
     level: d < 22 ? 0 : d < 40 ? 1 : 2 };      // (never the top level: it does not miss, and nobody is like that)
 }
 
+/* What a player has on (their cue, ball set, table, trail - ids, each checked by the vault to be theirs; null: the usual),
+   shown to the other player. A stand-in dresses as a person might: mostly the usual, now and then something bought. */
+const GEAR_KINDS = { cue: 'CUES', ball: 'BALLSKINS', table: 'CLOTHS', trail: 'TRAILS' };
+export function standInGear(rnd) {
+  const g = {};
+  for (const k in GEAR_KINDS) {
+    const list = (E[GEAR_KINDS[k]] || []).filter(q => (q.rarity || 0) <= 2 && !q.ice), pick = list.filter(q => (q.rarity || 0) > 0);
+    g[k] = rnd() < 0.45 && pick.length ? pick[Math.floor(rnd() * pick.length)].id : null;
+  }
+  return g;
+}
+
 export class LobbyCore {
   constructor(mode, now) { this.mode = mode; this.now = now || (() => Date.now()); this.wait = new Map(); this.made = new Map(); }
   /* p: { acct, dama, name, icon } asks again. Answers { waiting, waited } or the game it is in:
@@ -35,8 +47,8 @@ export class LobbyCore {
     if (this.made.has(p.acct)) return this.made.get(p.acct).you;
     for (const [k, w] of this.wait) if (t - w.seen > GONE) this.wait.delete(k);
     let me = this.wait.get(p.acct);
-    if (!me) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, since: t });
-    me.seen = t; me.name = p.name; me.icon = p.icon;
+    if (!me) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t });
+    me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null;
     // the closest of those close enough (by either one's wait)
     let best = null, bd = Infinity;
     for (const o of this.wait.values()) {
@@ -47,7 +59,7 @@ export class LobbyCore {
     if (best) return this.pair(me, best, null, t);
     if (t - me.since >= STAND_IN_AFTER) {
       const seedR = Math.random, persona = standIn(me.dama, seedR);
-      return this.pair(me, { acct: null, dama: persona.dama, name: persona.name, icon: persona.icon }, persona, t);
+      return this.pair(me, { acct: null, dama: persona.dama, name: persona.name, icon: persona.icon, gear: standInGear(seedR) }, persona, t);
     }
     return { waiting: true, waited: t - me.since };
   }
@@ -55,9 +67,9 @@ export class LobbyCore {
   pair(a, b, persona, t) {
     this.wait.delete(a.acct); if (b.acct) this.wait.delete(b.acct);
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [a, b];
-    const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama });
+    const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     const init = { room, mode: this.mode, seed, first, standIn: persona,
-      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama })) };
+      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
     const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
     this.made.set(a.acct, { at: t, you: you(0) });
     if (b.acct) this.made.set(b.acct, { at: t, you: you(1) });
@@ -111,7 +123,7 @@ export class RoomCore {
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[1 - seat];
     return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: RANKED_RULES[r.mode], standIn: seat === 0 ? r.standIn : null,
-      opp: { name: o.name, icon: o.icon, dama: o.dama }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
+      opp: { name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
   connected(seat) {
     const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.send(1 - seat, { t: 'back', seat }); }

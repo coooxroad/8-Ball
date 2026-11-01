@@ -38,6 +38,7 @@ const homeDemo = {
 function goHome(keep) {
   if (keep !== true) store.set('save', null);
   ranked.leave();                                                       // (a ranked game left is given up)
+  if (lookNow()) flow = null; ownLook();                              // (this player's own things back on)
   show('home'); paintHome(); homePreview();
 }
 function resume(d) {

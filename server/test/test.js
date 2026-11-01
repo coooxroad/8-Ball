@@ -172,6 +172,12 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   L.ask({ acct: 'c', dama: 20 }); t = 20000; L.ask({ acct: 'd', dama: 70 });
   t = 20500; const c = L.ask({ acct: 'c', dama: 20 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
   t = 40000; ok(L.ask({ acct: 'e', dama: 30 }).waiting && !L.wait.has('d'), 'lobby: one not heard from has left');
+  // what each has on reaches the other; a stand-in dresses too
+  { const G = new LobbyCore('nine', () => 0); G.ask({ acct: 'g', dama: 30, name: 'G', gear: { cue: 'gold', ball: null, table: 'pool', trail: 'fire' } });
+    const h = G.ask({ acct: 'h', dama: 30, name: 'H', gear: { cue: null, ball: 'disco', table: null, trail: null } });
+    ok(h.opp.gear && h.opp.gear.cue === 'gold' && h.opp.gear.table === 'pool', 'lobby: the other player\'s gear comes with the room');
+    ok(G.lastInit.seats.every(q => q.gear), 'lobby: the room is told both players\' gear'); }
+  ok(c.opp.gear && ['cue', 'ball', 'table', 'trail'].every(k => k in c.opp.gear), 'lobby: a stand-in has gear on');
   console.log('ranked lobby: checked');
 }
 // ranked: a room - shots passed on and kept, the game played again, and the replay (not the devices) decides

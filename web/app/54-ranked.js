@@ -8,6 +8,7 @@
      the room plays the whole game again when it ends, and its result - who won, the coins, the DAMA - is the one shown.
    The seats are the room's: seat 0 on the left. */
 const RANKED_CLOCK = 45;                      // seconds to shoot in a ranked game
+const AIM_LAG = 150, AIM_GAP = 66;            // ms the other player's cue is shown behind; ms between the aims sent while it moves
 const ranked = {
   on: null,                                   // the game being played: { seat, room, token, seed, first, mode, opp, standIn, inbox, n, sent, ws, done }
   finding: null,                              // waiting in the lobby: { mode, t0, timer }
@@ -46,6 +47,7 @@ const ranked = {
     ranked.connect();
     const names = []; names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name;
     const rules = RANKED_RULES[o.mode];
+    o.look = ranked.lookOf(o); useBalls(o.look.ball);
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
     toast(`${o.opp.name} · ${o.opp.dama} 다마`, '', 2600);
   },
@@ -80,13 +82,42 @@ const ranked = {
     else if (m.t === 'result') ranked.result(m);
   },
   // the other player lining up: their cue moves here as it does there
+  /* (each heard with the time it came; the picture runs a little behind - AIM_LAG - and moves smoothly between them, so the
+     other player's cue swings, stops, pulls back as their hand did, not in jumps. After a still spell the last place is
+     put in again just before the new one, so the move starts from where it was then.) */
   aimFrom(m) {
-    const o = ranked.on, a = st.auto;
-    if (!o || game.turn === o.seat || st.phase !== 'auto' || !a || a.plan) return;
-    st.aim = a.from = m.aim; st.power = Math.max(0, Math.min(1, m.power)); setPowerUI(st.power);
-    if (m.spin) { st.spin = { x: m.spin.x, y: m.spin.y }; setSpinUI(); }
-    st.el = m.el || 0; setKindUI(); scene.invalidate();
+    const o = ranked.on; if (!o || game.turn === o.seat) return;
+    const now = performance.now(), b = o.aimBuf || (o.aimBuf = []), last = b[b.length - 1];
+    if (last && now - last.t > 220) b.push(Object.assign({}, last, { t: now - AIM_GAP }));
+    b.push({ t: now, aim: +m.aim || 0, power: Math.max(0, Math.min(1, +m.power || 0)), sx: m.spin ? +m.spin.x || 0 : 0, sy: m.spin ? +m.spin.y || 0 : 0, el: +m.el || 0 });
+    while (b.length > 2 && b[1].t < now - AIM_LAG - 400) b.shift();
   },
+  // each frame, the other player's turn: where their cue is now, between the two places heard either side of a moment ago
+  aimShow() {
+    const o = ranked.on, a = st.auto, b = o && o.aimBuf;
+    if (!b || !b.length || game.turn === o.seat || st.phase !== 'auto' || !a || a.plan) return;
+    const at = performance.now() - AIM_LAG; let i = 0; while (i < b.length - 1 && b[i + 1].t <= at) i++;
+    const p = b[i], q = b[Math.min(b.length - 1, i + 1)], u = q === p || q.t <= p.t ? 1 : Math.max(0, Math.min(1, (at - p.t) / (q.t - p.t)));
+    let d = q.aim - p.aim; d -= Math.round(d / (2 * Math.PI)) * 2 * Math.PI;                 // (the short way round)
+    const aim = p.aim + d * u, power = p.power + (q.power - p.power) * u;
+    if (aim === st.aim && power === st.power) return;
+    st.aim = a.from = aim; st.power = power; setPowerUI(power);
+    st.spin = { x: p.sx + (q.sx - p.sx) * u, y: p.sy + (q.sy - p.sy) * u }; setSpinUI();
+    st.el = p.el + (q.el - p.el) * u; setKindUI(); scene.invalidate();
+  },
+  /* What each seat has on (gear ids, null the usual; ours from here, theirs from the room) and so what this game looks like:
+     each player's own cue and trail, and the ball set and table of whichever player has the rarer (seat 0's if equal). An ice
+     table is not a look - it plays differently - so it is never chosen here. */
+  lookOf(o) {
+    const g = []; g[o.seat] = ranked.gear(); g[1 - o.seat] = o.opp.gear || {};
+    const rar = (L, id) => { const q = L.find(x => x.id === id); return q ? q.rarity || 0 : -1; };
+    const rarer = (L, k, usual) => { const a = g[0][k], b = g[1][k], w = rar(L, b) > rar(L, a) ? b : a; return L.some(x => x.id === w) ? w : usual; };
+    const tbl = rarer(CLOTHS.filter(c => !c.ice), 'table', CLOTHS[0].id), usualCue = Math.max(0, CUES.findIndex(c => !(c.rarity > 0)));
+    return { ball: rarer(BALLSKINS, 'ball', BALLSKINS[0].id), cloth: Math.max(0, CLOTHS.findIndex(c => c.id === tbl)),
+      cues: g.map(x => { const i = CUES.findIndex(c => c.id === x.cue); return i >= 0 ? i : usualCue; }),
+      trails: g.map(x => TRAILS.some(t => t.id === x.trail) ? x.trail : 'none') };
+  },
+  gear() { return { cue: (CUES[prefs.cues[0]] || {}).id || null, ball: prefs.ballSkin, table: (CLOTHS[prefs.cloth] || {}).id || null, trail: prefs.trail }; },
   // a turn that is not this device's: the stand-in, worked out here; or the other player's next shot, when it comes
   auto(o) {
     if (game.turn === o.seat) return null;
@@ -113,9 +144,14 @@ const ranked = {
     o.n++;
   },
   // each frame: this player's aiming, a few times a second, for the other screen
+  // (15 a second while it moves, nothing while it is still; and the other player's, shown)
   tick() {
-    const o = ranked.on; if (!o || o.done || st.phase !== 'aim' || game.turn !== o.seat) return;
-    const now = Date.now(); if (now - o.aimAt < 120) return; o.aimAt = now;
+    const o = ranked.on; if (!o || o.done) return;
+    ranked.aimShow();
+    if (st.phase !== 'aim' || game.turn !== o.seat) return;
+    const now = Date.now(); if (now - o.aimAt < 66) return;
+    const k = [st.aim, st.power, st.spin.x, st.spin.y, st.el].map(v => Math.round(v * 1e4)).join();
+    if (k === o.aimKey) return; o.aimKey = k; o.aimAt = now;
     ranked.send({ t: 'aim', aim: st.aim, power: st.power, spin: st.spin, el: st.el });
   },
   // the game ended here: the room plays it again and says how it ended
