@@ -7,6 +7,7 @@
 |---|---|---|
 | `gpt-skins.md` | 스킨(큐·공·테이블·트레일·장갑) 추가, 스킨별 소리 | `web/content/`, `web/ui/`, `web/tex/`, `web/sound/` |
 | `gpt-puzzles.md` | 4구 퍼즐 생성기와 퍼즐 목록 | `web/tools/puzzles/`, `web/puzzles.js` |
+| `gpt-puzzles-walls.md` | 퍼즐 7단계 바리케이드 10문제 (퍼즐 작업 이어서) | `web/tools/puzzles/`, `web/puzzles.js` |
 | `gpt-human-ai.md` | 사람 같은 컴퓨터 상대(랭킹전 빈자리 채우기) | `web/ai/50-human.js`, `web/ai/51-people.js`, `web/test/ai-human.js` |
 
 세 작업은 서로 다른 파일만 건드리므로 동시에 해도 된다. Claude가 같은 때 하는 일(매칭, 능력치, 폰 화면, 바리케이드)과도
