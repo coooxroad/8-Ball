@@ -112,14 +112,15 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 })();
 (function fineCtl() {
   // the dial turns the aim the same with any glove; the aim moves in the glove's steps (degrees) from where the turn began
+  // (the drum turns along its length: upright in either orientation now, lying only if a layout lays it down)
   const box = $('#fine'); let id = null, last = 0, off = 0, from = 0, turned = 0;
-  const pos = e => scene.portrait ? e.clientX : e.clientY;
+  const lying = () => box.clientWidth > box.clientHeight, pos = e => lying() ? e.clientX : e.clientY;
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    const unit = gloveStep().dial * Math.PI / 180; turned += d * 0.0009 * (scene.portrait ? -1 : 1);
+    const unit = gloveStep().dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
     st.aim = from + Math.round(turned / unit) * unit; off += d;
-    box.style.backgroundPosition = scene.portrait ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
+    box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
     const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
     if (n !== dialN) { dialN = n; SND.dial(Math.abs(d) / 20); }
@@ -137,7 +138,7 @@ function drawDial() {
   const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1); if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const along = !scene.portrait, L = along ? h : w, T = along ? w : h, R = L / 2, lit = along ? -0.35 : 0.3;   // (the light's side of the drum)
+  const along = h >= w, L = along ? h : w, T = along ? w : h, R = L / 2, lit = along ? -0.35 : 0.3;   // (the light's side of the drum)
   const shade = (th, base, span) => Math.round(base + span * Math.pow(Math.max(0, Math.cos(th - lit)), 1.6));
   const body = along ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
   for (let i = 0; i <= 16; i++) { const th = (i / 16 - 0.5) * Math.PI, v = shade(th, 10, 78); body.addColorStop(i / 16, `rgb(${v},${v},${v + 3})`); }

@@ -80,8 +80,8 @@ function playInsets(H, portrait) {
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
   app.classList.toggle('ysw', tv && game.mode.table === 'carom' && game.yellow === 0);   // (player 1 has the yellow: the plates' balls swap)
   if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
-  // held upright: the power gauge stands at the right beside the table's lower half, the spin ball and the fine-aim drum below
-  if (portrait) return { t: hud + 26, l: 6, r: 76, b: 98 };
+  // held upright: every control in one column at the right (style/10-play.css), the table beside it
+  if (portrait) return { t: hud + 26, l: 6, r: 72, b: 10 };
   return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
