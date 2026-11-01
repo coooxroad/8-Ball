@@ -7,6 +7,7 @@
     if (orbit.on && Math.abs(orbit.elTo - orbit.el) > 0.002) { orbit.el += (orbit.elTo - orbit.el) * Math.min(1, dt * 7); orbit.live = 4; applyCamera(); }   // easing down from overhead
     if (orbit.live > 0) dirty = 3;
     if (falls.length || v.animating) dirty = 3;
+    if (waterTick(v.game && v.game.world, dt)) dirty = Math.max(dirty, 1);
     if (dirty <= 0) return false; dirty--;
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
     // carom: ball 1 is drawn yellow unless the game says player 0 has the yellow (4구 draws the colours by lot)
@@ -52,6 +53,7 @@
     }
     const c = w.balls[w.cue];
     if (trailTick(w, c, R, dt)) dirty = Math.max(dirty, 2);
+    if (ringsTick(dt)) dirty = Math.max(dirty, 2);
     cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
     // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
     const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }

@@ -46,7 +46,7 @@
   const fxAdd = fxSystem(THREE.AdditiveBlending, 500), fxMix = fxSystem(THREE.NormalBlending, 400);
   // rings flat on the cloth (the splash): a few meshes used over and over
   const fxRings = [];
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 30; i++) {
     const m = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 40), new THREE.MeshBasicMaterial({ color: 0xe8fbff, transparent: true, opacity: 0, depthWrite: false }));
     m.visible = false; m.renderOrder = 3; scene.add(m); fxRings.push({ m, age: 0, life: 0, r0: 0, r1: 0, op: 0 });
   }
@@ -213,15 +213,20 @@
     for (const k of T.k) { if (lastK && Math.hypot(k.x - lastK.x, k.y - lastK.y) < 0.03) continue; lastK = k; if (k.din[0] * k.dout[0] + k.din[1] * k.dout[1] < Math.cos(0.12)) fxTurn(k, R); }
     T.k.length = 0;
     let live = fxStep(fxAdd, dt, R) | fxStep(fxMix, dt, R);
-    for (const q of fxRings) {
-      if (!q.m.visible) continue;
-      q.age += dt; const u = q.age / q.life;
-      if (u >= 1) { q.m.visible = false; continue; }
-      q.m.scale.setScalar(q.r0 + (q.r1 - q.r0) * (1 - (1 - u) * (1 - u))); q.m.material.opacity = q.op * (1 - u); live = 1;
-    }
     renderer.getDrawingBufferSize(fxScaleV); const sc = camera.projectionMatrix.elements[5] * fxScaleV.y / 2;
     fxAdd.mat.uniforms.uScale.value = fxMix.mat.uniforms.uScale.value = sc;
     if (chalk.dirty) { chalkTex.needsUpdate = true; chalk.dirty = false; }
     return moving || !!live || (fx.fade > 0 && fx.fade < 1);
   }
   function fxOff() { setFx(null); }
+  // the rings spread and fade (the splash trail's, and the pool table's wakes), whatever the trail
+  function ringsTick(dt) {
+    let live = false;
+    for (const q of fxRings) {
+      if (!q.m.visible) continue;
+      q.age += dt; const u = q.age / q.life;
+      if (u >= 1) { q.m.visible = false; continue; }
+      q.m.scale.setScalar(q.r0 + (q.r1 - q.r0) * (1 - (1 - u) * (1 - u))); q.m.material.opacity = q.op * (1 - u); live = true;
+    }
+    return live;
+  }

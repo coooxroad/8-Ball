@@ -55,7 +55,7 @@
     wg.putImageData(id, 0, 0);
   })();
   const woodTex = tex(wc, 1);
-  const woodU = { uOuter: { value: new THREE.Vector2(1, 1) } };                      // outer half-size of the table currently shown
+  const woodU = { uOuter: { value: new THREE.Vector2(1, 1) }, uWs: { value: new THREE.Vector2(0.62, 2.3) } };   // outer half-size of the table shown; uWs: the picture's scale, per metre
   const woodMat = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: 0.36, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
   // the cabinet under the rails: the same wood, matt and a shade darker (it stands in the rail's shadow and has no lacquer)
   const bodyMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x8c6c58, roughness: 0.7, metalness: 0, envMapIntensity: 0.3 });
@@ -67,15 +67,16 @@
   // the made woods: mahogany or walnut along the rails (cloth by cloth, look.js), and the mahogany cut across for the pedestals
   loadTex('wood-mahogany', 1, () => setCloth(clothI)); loadTex('wood-walnut', 1, () => setCloth(clothI));
   loadTex('wood-end', 1.7, () => setCloth(clothI));
+  loadTex('pool-tiles', 1, () => { if (watery) setCloth(clothI); });
   woodMat.onBeforeCompile = sh => {
-    sh.uniforms.uOuter = woodU.uOuter;
+    sh.uniforms.uOuter = woodU.uOuter; sh.uniforms.uWs = woodU.uWs;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLocal = position;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;\nuniform vec2 uOuter;').replace('#include <map_fragment>', `
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;\nuniform vec2 uOuter;\nuniform vec2 uWs;').replace('#include <map_fragment>', `
       float dxe = uOuter.x - abs(vLocal.x), dye = uOuter.y - abs(vLocal.y);
       bool endRail = dxe < dye;                                                      // nearer a short end than a long side
       vec2 wuv = endRail ? vec2(vLocal.y + 0.31, vLocal.x * sign(vLocal.x) + 0.17) : vec2(vLocal.x, vLocal.y * sign(vLocal.y));
       wuv.y += vLocal.z * 0.9;                                                       // the grain carries on down the side faces
-      vec4 texelColor = mapTexelToLinear(texture2D(map, wuv * vec2(0.62, 2.3)));
+      vec4 texelColor = mapTexelToLinear(texture2D(map, wuv * uWs));
       texelColor.rgb *= 1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.0016, abs(dxe - dye)));  // the joint where two rails meet
       diffuseColor *= texelColor;`);
   };
@@ -263,7 +264,7 @@
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
-    if (iced) setCloth(clothI);
+    if (iced || watery) setCloth(clothI);
   }
   // barricades (puzzles; physics walls()): dark rubber blocks with a maple top, standing on the cloth
   const wallGrp = new THREE.Group(); sScene.add(wallGrp);
@@ -299,9 +300,82 @@
     for (const [x0, y0, x1, y1] of [[0, 0, 0, 40], [0, H2, 0, H2 - 40], [0, 0, 50, 0], [W2, 0, W2 - 50, 0]]) { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W2, H2); }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
   };
-  let clothI = 0, iced = false;
+  /* The swimming pool (a table with water: true): its floor small tiles with the lanes' dark lines, its rails and cabinet
+     tiled (tex/pool-tiles), and over the floor the light the water throws, moving (water below, drawn every frame - 30 a
+     second - while this table is out; nothing else on the table changes). */
+  let poolTex = null;
+  const makePoolFloor = () => {
+    const W2 = 2048, H2 = 1024, c = mkCanvas(W2, H2), g = c.getContext('2d'), P = cur, kx = W2 / (2 * P.HL), ky = H2 / (2 * P.HW);
+    let sd = 11; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+    const ts = 0.035;                                                                // a tile, 3.5 cm
+    for (let y = 0; y < 2 * P.HW; y += ts) for (let x = 0; x < 2 * P.HL; x += ts) {
+      const l = 50 + rnd() * 6; g.fillStyle = `hsl(${192 + rnd() * 6},${68 + rnd() * 10}%,${l}%)`; g.fillRect(x * kx, y * ky, ts * kx + 1, ts * ky + 1);
+    }
+    // grout
+    g.strokeStyle = 'rgba(225,245,255,.45)'; g.lineWidth = 1.4;
+    for (let x = 0; x <= 2 * P.HL + 1e-6; x += ts) { g.beginPath(); g.moveTo(x * kx, 0); g.lineTo(x * kx, H2); g.stroke(); }
+    for (let y = 0; y <= 2 * P.HW + 1e-6; y += ts) { g.beginPath(); g.moveTo(0, y * ky); g.lineTo(W2, y * ky); g.stroke(); }
+    // the lane lines: dark blue down the length, a T at each end
+    g.fillStyle = 'rgba(18,52,120,.82)';
+    for (const ly of [-0.5, 0.5]) {
+      const cy = (P.HW + ly * P.HW) * ky, hw = ts * 0.75 * ky, x0 = 0.32 * kx, x1 = W2 - 0.32 * kx;
+      g.fillRect(x0, cy - hw, x1 - x0, 2 * hw);
+      for (const xe of [x0, x1]) g.fillRect(xe - hw, cy - 0.12 * ky, 2 * hw, 0.24 * ky);
+    }
+    // deeper in the middle, shallower at the edges
+    const mid = g.createRadialGradient(W2 / 2, H2 / 2, 0, W2 / 2, H2 / 2, W2 * 0.6); mid.addColorStop(0, 'rgba(0,40,90,.18)'); mid.addColorStop(1, 'rgba(255,255,255,.06)'); g.fillStyle = mid; g.fillRect(0, 0, W2, H2);
+    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
+  };
+  const waterU = { uT: { value: 0 }, uK: { value: 1.7 } };
+  const waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({
+    uniforms: waterU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec2 vP; void main() { vP = (modelMatrix * vec4(position, 1.0)).xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    // the bright net of light under moving water: waves crossing one another, their crests drawn thin
+    fragmentShader: `varying vec2 vP; uniform float uT, uK;
+      void main() {
+        vec2 p = vP * uK * 6.2831 - 250.0, i = p; float c = 1.0;
+        for (int n = 0; n < 4; n++) {
+          float t = uT * 0.32 * (1.0 - 3.5 / float(n + 1));
+          i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
+          c += 1.0 / length(vec2(p.x / (sin(i.x + t) / 0.006), p.y / (cos(i.y + t) / 0.006)));
+        }
+        c /= 4.0; c = 1.17 - pow(c, 1.4); float v = pow(abs(c), 9.0);
+        gl_FragColor = vec4(vec3(0.7, 0.95, 1.0) * clamp(v, 0.0, 1.0) * 0.3, 1.0);
+      }`
+  }));
+  waterMesh.visible = false; waterMesh.renderOrder = 0; waterMesh.position.z = 0.0006; scene.add(waterMesh);
+  waterMesh.material.polygonOffset = true; waterMesh.material.polygonOffsetFactor = -2; waterMesh.material.polygonOffsetUnits = -4;   // (seen low, it stays over the floor)
+  const wakes = [];                                                                  // where each ball last left a ring
+  let waterAcc = 0;
+  // each frame (before anything decides whether to draw): the water moves on; a ball going through it leaves rings
+  function waterTick(w, dt) {
+    if (!waterMesh.visible) return false;
+    waterU.uT.value += dt; waterAcc += dt;
+    if (w) for (let i = 0; i < w.balls.length; i++) {
+      const b = w.balls[i], q = wakes[i];
+      if (!b.on) { wakes[i] = null; continue; }
+      if (!q) { wakes[i] = { x: b.x, y: b.y }; continue; }
+      if (Math.hypot(b.x - q.x, b.y - q.y) > 0.07) { q.x = b.x; q.y = b.y; fxRing(b.x, b.y, 0.0016, cur.R * 1.1, cur.R * 2.8, 1.1, 0.32); waterAcc = 1; }
+    }
+    if (waterAcc < 1 / 30) return false;
+    waterAcc = 0; return true;
+  }
+  let clothI = 0, iced = false, watery = false;
   function setCloth(i) {
-    const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice;
+    const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice; watery = !!c.water;
+    waterMesh.visible = watery; woodU.uWs.value.set(0.62, 2.3);
+    if (watery) {
+      if (!poolTex || poolTex.P !== cur) { if (poolTex) poolTex.dispose(); poolTex = makePoolFloor(); poolTex.P = cur; }
+      poolTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); poolTex.offset.set(0.5, 0.5);
+      feltMat.map = poolTex; feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(0.92); feltMat.roughness = 0.75; feltMat.envMapIntensity = 0.25;
+      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)); cushMat.roughness = 0.35;    // the pool's edge, wet
+      waterMesh.scale.set(2 * cur.HL, 2 * cur.HW, 1);
+      const tiles = made['pool-tiles'];
+      if (tiles) { woodMat.map = tiles; woodMat.color.setScalar(1); woodU.uWs.value.set(4, 4); } else { woodMat.map = woodTex; woodMat.color.copy(col(c.wood)); }
+      bodyMat.map = tiles || woodTex; bodyMat.color.copy(col(0xbfd8e2)); pedMat.map = tiles || woodTex; pedMat.color.copy(col(0x9fbfcc));
+      feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
+      renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.55; staticDirty = true; dirty = 3; return;
+    }
     if (iced) {
       if (!iceTex) iceTex = makeIce();
       // the picture is stretched once over the whole bed (the bed's texture coordinates are metres from the middle)
