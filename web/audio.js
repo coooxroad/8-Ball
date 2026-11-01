@@ -234,6 +234,8 @@ function createAudio(isOn) {
     init() { init(); loadOwn(voice.ball.file); loadOwn(voice.cue.file); },
     // the equipped balls' or cue's sound: kind 'ball' | 'cue', v = the item's `sound` (or nothing for the usual)
     voice(kind, v) { voice[kind] = v || {}; loadOwn(voice[kind].file); },
+    // a recording of the trail's (web/sound/<file>): fetched the first time it is asked for, played once it is there
+    fx(file, gain, rate, pan) { loadOwn(file); if (buf && buf['x:' + file]) hit('x:' + file, gain, 20000, 0, rate || 1, -1, pan || 0); },
     song: songApi,
     // a deep thump for the big moment, and a tiny rising blip for a cushion in the reel
     boom() {

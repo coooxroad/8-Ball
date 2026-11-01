@@ -4,15 +4,19 @@
      until the next shot sets off, which wipes it. Drawn into one picture laid on the cloth, redrawn only when it grows. */
   const CH_W = 1024, CH_H = 512;
   const chalkCv = mkCanvas(CH_W, CH_H), chalkG = chalkCv.getContext('2d'), chalkTex = new THREE.CanvasTexture(chalkCv);
-  chalkTex.anisotropy = aniso;
+  chalkTex.anisotropy = aniso; chalkTex.encoding = THREE.sRGBEncoding;
   const chalkMat = new THREE.MeshBasicMaterial({ map: chalkTex, transparent: true, depthWrite: false, toneMapped: false });
   const chalkMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), chalkMat); chalkMesh.renderOrder = 2; chalkMesh.visible = false; scene.add(chalkMesh);
-  const chalk = { pts: [], last: null, moving: false, dirty: false, corners: [], open: null, w: null, seed: 1, P: null };
+  const chalk = { pts: [], last: null, moving: false, dirty: false, corners: [], open: null, rest: null, seed: 1, P: null };
+  // the physics' trace of the cue ball (physics.js, w.trace), asked of whichever table is being shown; one table at a time
+  let traceW = null;
+  function traceFor(w) { if (traceW !== w) { if (traceW) traceW.trace = null; traceW = w; } if (!w.trace) w.trace = { p: [], k: [] }; return w.trace; }
+  function traceOff() { if (traceW) traceW.trace = null; traceW = null; }
   const chRand = () => { chalk.seed = (chalk.seed * 1664525 + 1013904223) >>> 0; return chalk.seed / 4294967296; };
   // table metres to the picture's pixels (the picture covers the cloth inside the cushions)
   const chX = x => (x / chalk.P.HL * 0.5 + 0.5) * CH_W, chY = y => (0.5 - y / chalk.P.HW * 0.5) * CH_H, chS = () => CH_W / (2 * chalk.P.HL);
   function chalkFit(P, R) {
-    chalk.P = P; chalkMesh.scale.set(2 * P.HL, 2 * P.HW, 1); chalkMesh.position.set(0, 0, -R + 0.0012);
+    chalk.P = P; chalkMesh.scale.set(2 * P.HL, 2 * P.HW, 1); chalkMesh.position.set(0, 0, 0.0012);
   }
   function chalkClear() { chalkG.clearRect(0, 0, CH_W, CH_H); chalk.pts.length = 0; chalk.corners.length = 0; chalk.last = null; chalk.open = null; chalkTex.needsUpdate = true; }
   // one stretch of chalk: a few thin passes slightly off one another, each broken here and there, as a stick drags on cloth
@@ -53,14 +57,12 @@
      cushion and a ball at once) are one corner, in from the first and out of the last. */
   function chalkTick(w, c, R, dt) {
     if (!chalk.P || chalk.P !== cur) chalkFit(cur, R);
-    if (chalk.w !== w) { if (chalk.w) chalk.w.trace = null; chalk.w = w; }
-    if (!w.trace) w.trace = { p: [], k: [] };
     // a new shot setting off: last shot's chalk is wiped away and this one begins
     const moving = !!c && c.on && (c.vx !== 0 || c.vy !== 0);
     if (moving && !chalk.moving) { chalkClear(); chalk.seed = 7; if (chalk.rest) chalk.pts.push(chalk.rest); }
     chalk.moving = moving;
     if (!moving && c && c.on) chalk.rest = { x: c.x, y: c.y };
-    const T = w.trace;
+    const T = traceFor(w);
     for (let i = 0; i < T.p.length; i += 2) {
       const L = chalk.pts.length, p = { x: T.p[i], y: T.p[i + 1] }, q = chalk.pts[L - 1];
       if (!q) { chalk.pts.push(p); continue; }
@@ -79,10 +81,10 @@
     if (o && (!moving || !c || !c.on || Math.hypot(c.x - o.x, c.y - o.y) > 0.04)) {
       chalk.open = null;
       const t = o.din[0] * o.dout[0] + o.din[1] * o.dout[1];
-      if (t < Math.cos(0.12)) { chalkAngle(o, o.din, o.dout, o.n); chalk.dirty = true; }
+      if (t < Math.cos(0.12)) { chalkAngle(o, o.din, o.dout, o.n); chalk.dirty = true; fxSounds.push({ file: 'fx-chalk', v: 0.5, x: o.x, y: o.y }); }
     }
     if (chalk.dirty) { chalkTex.needsUpdate = true; chalk.dirty = false; }
     chalkMesh.visible = chalk.pts.length > 1;
     return moving;
   }
-  function chalkOff() { chalkClear(); chalkMesh.visible = false; if (chalk.w) chalk.w.trace = null; chalk.w = null; chalk.open = null; }
+  function chalkOff() { chalkClear(); chalkMesh.visible = false; chalkMat.opacity = 1; traceOff(); chalk.open = null; }

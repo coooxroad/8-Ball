@@ -20,6 +20,12 @@ function drainFalls() {
   if (flow && !flow.quiet) for (const e of s) SND.drop(e.t, e.v, panOf(e.x, e.y));
   s.length = 0;
 }
+// the trail's own sounds (scene/56-fx.js): a puff of wind, a flame, a splash
+function drainFx() {
+  const s = scene.fxSounds; if (!s.length) return;
+  for (const e of s) SND.fx(e.file, flow && flow.quiet ? 0 : e.v, e.rate, panOf(e.x, e.y));
+  s.length = 0;
+}
 /* Fast play needs to know when, in steps, the cue ball makes its last contact with another ball this shot. The shot is
    played out on a copy alongside the real one (the physics gives the same answer every time) - a slice of it each frame, so
    that working it out never costs a frame. Until the copy has finished, play stays at its own pace. Not before 0.3 seconds
@@ -104,7 +110,7 @@ function frame(now) {
     gear: st.phase === 'aim' ? cueK() : null, level: flow ? flow.guide() * (st.phase === 'aim' ? cueK().guide : 1) : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
   }, dt);
-  drainFalls();
+  drainFalls(); drainFx();
   if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
   if (prefs.fps) {
     fpsN++; fpsT += dt;
