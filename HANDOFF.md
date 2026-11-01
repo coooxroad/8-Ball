@@ -102,10 +102,13 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
 - Cloudflare Workers + Durable Objects, 무료 플랜. 소유자가 저장소 Secrets에 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`를 넣었다.
   `main`에 푸시하면 `.github/workflows/server.yml`이 `server/`의 검사 후 배포. 주소는 그 워크플로 로그의 "Where it is" 단계,
   그 주소를 `web/app/07-net.js`의 `SERVER`에 넣으면 앱이 서버를 쓰기 시작한다(비어 있으면 예전처럼 오프라인, 모든 아이템 사용).
-- 정한 것: 랭킹전 점수 이름 **DAMA**(1000 시작, 체스 레이팅 방식). 코인: 1점당 4구 100·8볼 60·3구 150·9볼 60, 랭킹전 내 점수×(승 2·패 ½),
+- 정한 것: 랭킹전 점수 **DAMA**는 당구장 말 "다마"(수지)를 영어로 옮긴 것 — 30 다마에서 시작, 비슷한 상대면 ±3. 코인: 1점당 4구 100·8볼 60·3구 150·9볼 60, 랭킹전 내 점수×(승 2·패 ½),
   친구와 한 기기 둘 합×¼, 컴퓨터 대전 내 점수×¼, 투어 승자 독식 수수료 10%, 퍼즐 처음 한 번 150. 가격은 희귀도별(economy.js).
 - 소유자는 해외결제 카드가 없어 유료 플랜 불가(오라클도 카드 필요). 그래서 무료로 전부 확인하는 `CHECK_MATCHES="slices"`:
-  경기를 150걸음씩 조각내 알람으로 다시 친다(`server/src/check.js`의 `Replay`, `core.js`의 `work`). 하루 약 500~700판.
+  경기를 150걸음씩 조각내 알람으로 다시 친다(`server/src/check.js`의 `Replay`, `core.js`의 `work`). 부담을 줄이려고 일부만
+  확인(무작위 25%·큰 판·새 계정 첫 3판·걸린 계정 전부), 나머지는 바로 지급. 유료가 되면 economy.js에서 비율만 올린다.
+- 서버 주소 `https://cue-server.co-oxroad.workers.dev`(앱에 연결됨). 이 작업 환경에서는 workers.dev에 접속이 막혀 있어서,
+  실제 서버 확인은 배포 워크플로의 live 검사(`server/tools/live.mjs`) 결과를 `gh run view --log`로 본다.
 - 소유자 질문 "검증 대신 암호화만?" → 앱 안에 키가 있어야 하니 꺼내면 끝(웹 페이지라 더 쉽다). 보조 장치일 뿐 검증을 대신 못 한다고 답함.
 - 로컬에서 끝까지 확인한 방법: `cd server && npx wrangler dev --port 8787 --local --var CHECK_MATCHES:true`, 빌드된 페이지의
   `SERVER`를 `http://srv.test`로 바꾸고 하네스에서 `page.route('http://srv.test/**')`를 localhost:8787로 넘긴다

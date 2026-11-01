@@ -113,7 +113,7 @@ const match = {
     // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
-      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')} · 확인 후 지급`);
+      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
       net.claim('match', { kind, log }); match.log = null;
     }
     $('#rWhy').textContent = game.over.why;

@@ -36,7 +36,7 @@ function deskPlay(d) {
       panel('tour', '투어', later('투어는'), [tt('투어', '판돈을 걸고 겨루는 대회', 'ONLINE'), el('span', { class: 'bd-tag', text: '준비 중' })], 'online'),
       panel('friend', '친구와 플레이', () => { playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기로 번갈아 칩니다'),
         el('span', { class: 'bd-modes' }, GAME4.map(id => el('i', { style: `background-image:url(ui/mode-${id}.webp)` })))]),
-      panel('rank', '랭킹전', later('랭킹전은'), [tt('랭킹전', '시즌 준비 중', 'ONLINE'), el('img', { class: 'bd-tier', src: `ui/tier-${tier[0]}.webp`, alt: tier[1] }), el('span', { class: 'bd-foot' }, el('b', { text: tier[1] }))], 'online')]);
+      panel('rank', '랭킹전', later('랭킹전은'), [tt('랭킹전', '시즌 준비 중', 'ONLINE'), el('img', { class: 'bd-tier', src: `ui/tier-${tier[0]}.webp`, alt: tier[1] }), el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `${(net.me ? net.me.dama : ECONOMY.DAMA_START)} 다마` })])], 'online')]);
   }
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }
