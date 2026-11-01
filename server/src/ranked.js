@@ -18,7 +18,8 @@ const NAMES = ['큐잡이', '쓰리쿠션러', '빈쿠션왕', '당구장죽돌�
   '끌어치기', '초크한통', 'bank88', '레일러너', '포켓헌터', 'side_spin', '중대고수', '저녁당구', 'nineball_j', '큐대한자루'];
 export function standIn(dama, rnd) {
   const ai = E.createAI ? E.createAI(null) : null;
-  if (ai && ai.personaFor) return ai.personaFor(dama, rnd);
+  // (a few DAMA either side, as a person waiting at the same time would be)
+  if (ai && ai.personaFor) return ai.personaFor(Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 8)), rnd);
   const d = Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 8));
   return { name: NAMES[Math.floor(rnd() * NAMES.length)] + (rnd() < 0.4 ? Math.floor(rnd() * 90 + 10) : ''), icon: Math.floor(rnd() * 8), dama: d,
     level: d < 22 ? 0 : d < 40 ? 1 : 2 };      // (never the top level: it does not miss, and nobody is like that)

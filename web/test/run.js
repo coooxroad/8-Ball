@@ -383,5 +383,11 @@ for (const name of ['bar', 'pro', 'pub']) {
   }
   Math.random = real;
 }
+// the person-like opponent (ai/50-human.js): its own checks, in their own file (a minute or so)
+{
+  const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'ai-human.js')], { encoding: 'utf8' });
+  const last = (r.stdout || '').trim().split('\n').pop();
+  if (r.status !== 0) fail('person-like opponent: ' + (last || r.stderr.trim().split('\n').pop())); else console.log(last);
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

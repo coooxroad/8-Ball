@@ -35,6 +35,12 @@ function autoTick(dt) {
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
+  // a person-like player (ai/50-human.js) lines up its own way - looking about, waggling, settling - then strikes
+  if (a.plan.preShot && game.aiPlan.cueAt) {
+    const q = game.aiPlan.cueAt(a.plan, t); st.aim = q.angle; st.power = Math.max(0, Math.min(1, q.power)); setPowerUI(st.power);
+    if (t >= a.plan.preShot.duration) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }
+    return;
+  }
   st.aim = a.from + a.delta * e(t / 0.75);
   st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
   if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }

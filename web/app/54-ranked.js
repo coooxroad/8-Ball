@@ -84,7 +84,8 @@ const ranked = {
   // a turn that is not this device's: the stand-in, worked out here; or the other player's next shot, when it comes
   auto(o) {
     if (game.turn === o.seat) return null;
-    if (o.standIn) return { think: 1.2 + Math.random() * 2.4, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } };
+    // (a person-like stand-in lines up its own way - its preShot, played by autoTick - so it needs no fixed wait)
+    if (o.standIn) return { think: 0.4, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }; } };
     return { think: 0, showSpin: true, plan() {
       const m = o.inbox[0]; if (!m) return null;
       o.inbox.shift();

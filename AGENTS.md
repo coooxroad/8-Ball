@@ -15,7 +15,7 @@ CUE는 위에서 내려다보는 3D 당구(8볼·9볼·3구·4구)다. 게임은
 ## 2. 올리기 전 검사 네 가지 (모두 통과해야 한다)
 
 ```sh
-node web/test/run.js      # 규칙·컴퓨터·레슨·퍼즐·물리 (브라우저 없이, 4분쯤)
+node web/test/run.js      # 규칙·컴퓨터·사람 같은 상대·레슨·퍼즐·물리 (브라우저 없이, 5분쯤)
 sh web/build.sh           # 페이지 만들기 → app/src/main/assets/
 node web/tools/check.js   # 만든 페이지 검사: 문법, 이름 겹침, content/ 항목, 그림 파일, id 중복
 node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·설정·자유 연습·8볼 대결·컴퓨터 4구 끝까지·결과·홈 (태블릿·폰, 몇 분)
