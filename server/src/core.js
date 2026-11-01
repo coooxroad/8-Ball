@@ -35,7 +35,10 @@ export class VaultCore {
   authed(secretHash) { const s = this.get('secret'); return !!s && s === secretHash; }
   owns(kind, id) { const it = (KINDS[kind] || []).find(q => q.id === id); return !!it && (!(it.rarity > 0) || this.sql.exec(`SELECT 1 FROM owned WHERE kind = ? AND id = ?`, kind, id).toArray().length > 0); }
   me() {
-    const owned = {}; for (const k in KINDS) owned[k] = KINDS[k].filter(q => this.owns(k, q.id)).map(q => q.id);
+    // (one read for everything owned; the 일반 things are everyone's)
+    const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
+    for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
+    if (this.get('dama', 0) >= 1000) this.set('dama', E.ECONOMY.DAMA_START);                    // (the first accounts started at 1000)
     return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned,
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
@@ -47,7 +50,10 @@ export class VaultCore {
     const had = this.sql.exec(`SELECT res FROM reqs WHERE req = ?`, req).toArray();
     if (had.length) return JSON.parse(had[0].res);
     let res; try { res = this.tx(fn); } catch (e) { res = { ok: false, why: e.message }; }        // (a throw undoes the whole change)
-    this.sql.exec(`INSERT INTO reqs (req, res, at) VALUES (?, ?, ?)`, req, JSON.stringify(res), Date.now());
+    // kept without the wallet (the app asks for that anyway), and only for a fortnight: a request is not sent again after that
+    const keep = Object.assign({}, res); delete keep.me;
+    this.sql.exec(`INSERT INTO reqs (req, res, at) VALUES (?, ?, ?)`, req, JSON.stringify(keep), Date.now());
+    if (Math.random() < 0.02) this.sql.exec(`DELETE FROM reqs WHERE at < ?`, Date.now() - 14 * 864e5);
     return res;
   }
 
@@ -84,8 +90,13 @@ export class VaultCore {
       if (kind !== 'friend' && kind !== 'cpu') return { ok: false, why: 'not a match played on the device' };
       if (!log || !E.ECONOMY.PER_POINT[log.mode]) return { ok: false, why: 'bad log' };
       if (this.env.CHECK_MATCHES === 'slices') {
-        this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, 0, 0, 'checking')`, Date.now(), kind, log.mode, JSON.stringify(log));
-        return { ok: true, pending: true, me: this.me() };
+        // which to play again (economy.js): a share chosen at random, every big one, a new account's first, all of a caught one
+        const X = E.ECONOMY, said = E.matchCoins(kind, log.mode, Array.isArray(log.points) ? log.points : [0, 0], log.winner === 0);
+        const done = this.sql.exec(`SELECT COUNT(*) AS c FROM matches`).toArray()[0].c;
+        if (this.get('caught') || said > X.CHECK_OVER || done < X.CHECK_FIRST || Math.random() < X.CHECK_SHARE) {
+          this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, 0, 0, 'checking')`, Date.now(), kind, log.mode, JSON.stringify(log));
+          return { ok: true, pending: true, me: this.me() };
+        }
       }
       const check = this.env.CHECK_MATCHES === 'true';
       let points, won;
@@ -100,7 +111,7 @@ export class VaultCore {
         coins = Math.max(0, Math.min(coins, E.ECONOMY.UNCHECKED_DAILY - had));
         this.sql.exec(`INSERT INTO daily (day, coins) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET coins = coins + excluded.coins`, d, coins);
       }
-      this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, ?, ?, 'paid')`, Date.now(), kind, log.mode, JSON.stringify(log), coins, check ? 1 : 0);
+      this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, ?, ?, 'paid')`, Date.now(), kind, log.mode, null, coins, check ? 1 : 0);   // (the result is kept, not the log)
       if (coins) this.pay(`match ${kind} ${log.mode}`, coins, 0);
       return { ok: true, paid: coins, checked: check, me: this.me() };
     });
@@ -113,18 +124,20 @@ export class VaultCore {
   work(steps) {
     const row = this.sql.exec(`SELECT n, kind, log, cp FROM matches WHERE status = 'checking' ORDER BY n LIMIT 1`).toArray()[0];
     if (!row) return false;
-    if (!this.job || this.job.n !== row.n) this.job = { n: row.n, saved: -1, rp: new Replay(JSON.parse(row.log), row.cp ? JSON.parse(row.cp) : null) };
+    if (!this.job || this.job.n !== row.n) this.job = { n: row.n, saved: row.cp ? JSON.parse(row.cp).i : 0, rp: new Replay(JSON.parse(row.log), row.cp ? JSON.parse(row.cp) : null) };
     const job = this.job, out = job.rp.advance(steps);
     if (!out) {
-      const c = job.rp.lastCp; if (c && c.i !== job.saved) { this.sql.exec(`UPDATE matches SET cp = ? WHERE n = ?`, JSON.stringify(c), row.n); job.saved = c.i; }
+      // where it got to, written down every few shots (a restart replays at most those few)
+      const c = job.rp.lastCp; if (c && c.i - job.saved >= 4) { this.sql.exec(`UPDATE matches SET cp = ? WHERE n = ?`, JSON.stringify(c), row.n); job.saved = c.i; }
       return true;
     }
     this.job = null;
     const log = JSON.parse(row.log);
     this.tx(() => {
-      if (!out.ok) { this.sql.exec(`UPDATE matches SET status = 'rejected', why = ?, cp = NULL WHERE n = ?`, out.why, row.n); return; }
+      // one that does not play out as the app said: turned down, and from now on every match of this account is checked
+      if (!out.ok) { this.sql.exec(`UPDATE matches SET status = 'rejected', why = ?, cp = NULL, log = NULL WHERE n = ?`, out.why, row.n); this.set('caught', Date.now()); return; }
       const coins = E.matchCoins(row.kind, log.mode, out.points, out.winner === 0);
-      this.sql.exec(`UPDATE matches SET status = 'paid', paid = ?, checked = 1, cp = NULL WHERE n = ?`, coins, row.n);
+      this.sql.exec(`UPDATE matches SET status = 'paid', paid = ?, checked = 1, cp = NULL, log = NULL WHERE n = ?`, coins, row.n);
       if (coins) this.pay(`match ${row.kind} ${log.mode}`, coins, 0);
     });
     return this.sql.exec(`SELECT 1 FROM matches WHERE status = 'checking' LIMIT 1`).toArray().length > 0;

@@ -8,18 +8,25 @@
      cpu (컴퓨터 대전)       my points x price x 1/4
      tour (투어)            both put up the same stake; the winner takes the pot less the house's cut
    A puzzle pays once, the first time it is solved. Anything bought is priced by its rarity (content/00-rarity.js).
-   DAMA is the ranked score: everyone starts at DAMA_START, and a ranked game moves both players by the chess-rating rule
-   (beating someone rated higher earns more, losing to someone rated lower costs more, never more than DAMA_K). */
+   DAMA (다마: what a billiard hall calls a player's handicap, 수지) is the ranked score, counted the way a hall counts it:
+   everyone starts at DAMA_START (30). A ranked game moves both players the chess-rating way, on the hall's scale: an even
+   game moves each by DAMA_K / 2, beating someone higher earns more and losing to someone lower costs more (never more than
+   DAMA_K); DAMA_SPREAD apart, the stronger is expected to win ten times out of eleven. Nobody goes below DAMA_FLOOR.
+
+   Checking (server, free plan): a match played on the device is played again on the server before it pays - but only a
+   share of them (CHECK_SHARE), and always the big ones (over CHECK_OVER coins), a new account's first CHECK_FIRST, and
+   every one from an account caught once. The rest pay at once by what the app says (within sense, at most
+   UNCHECKED_DAILY a day). */
 const ECONOMY = {
   PER_POINT: { four: 100, eight: 60, three: 150, nine: 60 },
   RANKED_WIN: 2, RANKED_LOSS: 0.5, FRIEND: 0.25, CPU: 0.25,
   TOUR_CUT: 0.1,
   PUZZLE: 150,
   // until the server plays every match again to check it (paid plan), matches it cannot check pay at most this a day
-  UNCHECKED_DAILY: 3000,
+  UNCHECKED_DAILY: 3000, CHECK_SHARE: 0.25, CHECK_OVER: 600, CHECK_FIRST: 3,
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
-  DAMA_START: 1000, DAMA_K: 32,
+  DAMA_START: 30, DAMA_K: 6, DAMA_SPREAD: 100, DAMA_FLOOR: 10,
 };
 const matchCoins = (kind, mode, points, won) => {
   const per = ECONOMY.PER_POINT[mode] || 0, mine = points[0] * per;
@@ -32,7 +39,7 @@ const tourPayout = stake => Math.floor(stake * 2 * (1 - ECONOMY.TOUR_CUT));
 const priceOf = item => ECONOMY.PRICE[Math.max(0, Math.min(ECONOMY.PRICE.length - 1, item.rarity || 0))];
 // new ratings after a ranked game between a (won: 1, lost: 0) and b
 const damaAfter = (a, b, aWon) => {
-  const ea = 1 / (1 + Math.pow(10, (b - a) / 400)), d = Math.round(ECONOMY.DAMA_K * ((aWon ? 1 : 0) - ea));
-  return [a + d, b - d];
+  const ea = 1 / (1 + Math.pow(10, (b - a) / ECONOMY.DAMA_SPREAD)), d = Math.round(ECONOMY.DAMA_K * ((aWon ? 1 : 0) - ea));
+  return [Math.max(ECONOMY.DAMA_FLOOR, a + d), Math.max(ECONOMY.DAMA_FLOOR, b - d)];
 };
 if (typeof module !== 'undefined') module.exports = { ECONOMY, matchCoins, tourPayout, priceOf, damaAfter };

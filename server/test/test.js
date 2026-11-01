@@ -24,7 +24,7 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
   const r0 = v.buy({ req: req(), kind: 'cue', id: it.id }); ok(!r0.ok && v.me().coin === 0 && !v.owns('cue', it.id), 'cannot buy without the coins');
   v.pay('test', price + 5, 0);
   const q = req(), r1 = v.buy({ req: q, kind: 'cue', id: it.id }), r2 = v.buy({ req: q, kind: 'cue', id: it.id });
-  ok(r1.ok && v.me().coin === 5 && v.owns('cue', it.id), 'bought'); ok(JSON.stringify(r1) === JSON.stringify(r2) && v.me().coin === 5, 'the same request twice pays once');
+  ok(r1.ok && v.me().coin === 5 && v.owns('cue', it.id), 'bought'); ok(r1.ok && r2.ok && v.me().coin === 5, 'the same request twice pays once');
   ok(!v.buy({ req: req(), kind: 'cue', id: it.id }).ok && v.me().coin === 5, 'cannot buy twice');
   ok(!v.buy({ req: req(), kind: 'cue', id: 'nope' }).ok, 'no such item');
   ok(!v.buy({ req: 'short', kind: 'cue', id: it.id }).ok, 'a request needs its number');
@@ -75,8 +75,9 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   console.log('unchecked matches: checked');
 }
 // DAMA and the tour
-{ const [a, b] = E.damaAfter(1000, 1000, true); ok(a === 1016 && b === 984, 'dama even'); const [c] = E.damaAfter(1000, 1400, true); ok(c > 1016, 'beating someone higher earns more'); ok(E.tourPayout(1000) === 1800, 'tour: the pot less 10%'); }
-// the free plan's way: queued, checked a slice at a time, paid at the end; a doctored one is turned down
+{ const [a, b] = E.damaAfter(30, 30, true); ok(a === 33 && b === 27, `dama: an even game moves each by 3 (${a}, ${b})`); const [c] = E.damaAfter(30, 80, true); ok(c > 33, 'beating someone higher earns more'); const [, d] = E.damaAfter(10, 30, true); ok(d >= E.ECONOMY.DAMA_FLOOR, 'nobody below the floor'); ok(E.tourPayout(1000) === 1800, 'tour: the pot less 10%'); }
+// the free plan's way: a new account's first matches are queued, checked a slice at a time and paid at the end; a doctored
+// one is turned down, and after that every match of the account is checked
 {
   const v = vault({ CHECK_MATCHES: 'slices' }); v.init('h');
   const good = record('eight', {}), bad = JSON.parse(JSON.stringify(good));
@@ -87,7 +88,13 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     let n = 0; while (v.work(150) && n < 100000) { n++; if (n % 40 === 0) v.job = null; }      // (now and then forgetting the replay in hand, as a restart would)
     const want = E.matchCoins('cpu', 'eight', good.points, good.winner === 0);
     ok(v.me().coin === want && v.me().checking === 0, `paid after checking in ${n} slices: ${v.me().coin} (want ${want})`);
-    console.log(`sliced checking: ${n} slices for two matches, paid ${v.me().coin}`);
+    ok(!!v.get('caught'), 'the doctored match marks the account');
+    for (let k = 0; k < 6; k++) v.match({ req: req(), kind: 'cpu', log: good });
+    ok(v.me().checking === 6, 'a caught account has every match checked');
+    const u = vault({ CHECK_MATCHES: 'slices' }); u.init('h'); let queued = 0;
+    for (let k = 0; k < 40; k++) if (u.match({ req: req(), kind: 'cpu', log: { mode: 'four', winner: 0, points: [3, 1], shots: new Array(20).fill({}) } }).pending) queued++;
+    ok(queued >= 3 && queued < 30, `only a share is checked (${queued} of 40)`);
+    console.log(`sliced checking: ${n} slices for two matches, paid ${v.me().coin}; ${queued} of 40 ordinary matches picked for checking`);
   }
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
