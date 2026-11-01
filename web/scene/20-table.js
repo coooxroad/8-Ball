@@ -265,6 +265,17 @@
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
     if (iced) setCloth(clothI);
   }
+  // barricades (puzzles; physics walls()): dark rubber blocks with a maple top, standing on the cloth
+  const wallGrp = new THREE.Group(); sScene.add(wallGrp);
+  const wallMats = (() => { const side = new THREE.MeshStandardMaterial({ color: 0x24201d, roughness: 0.75, metalness: 0 }), top = new THREE.MeshStandardMaterial({ color: 0xc9a46a, roughness: 0.55, metalness: 0 }); return [side, side, side, side, top, side]; })();
+  function setWalls(list) {
+    while (wallGrp.children.length) wallGrp.children.pop().geometry.dispose();
+    for (const q of list || []) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(q.len, q.thick, q.h), wallMats);
+      m.position.set(q.x, q.y, q.h / 2); m.rotation.z = q.ang || 0; m.castShadow = m.receiveShadow = true; wallGrp.add(m);
+    }
+    renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
   /* Ice, for the table that is a sheet of it: one even blue, a few cracks that fork, trapped bubbles, a little frost at the edges. */
   let iceTex = null;
   const makeIce = () => {

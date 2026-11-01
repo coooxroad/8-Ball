@@ -5,6 +5,7 @@ const puzzle = {
   // the balls of a puzzle, onto the table
   put(z) {
     const P = game.P, w = game.world, n = Math.hypot(z.balls[2][0] - z.balls[0][0], z.balls[2][1] - z.balls[0][1]) <= Math.hypot(z.balls[3][0] - z.balls[0][0], z.balls[3][1] - z.balls[0][1]) ? 2 : 3;
+    w.walls = P.walls(z.walls);                                       // (its barricades, if it has any)
     z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], Math.random));
     w.cue = 0; game.goal = puzzle.stage(z).goal;
     scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
