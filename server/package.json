@@ -1,0 +1,14 @@
+{
+  "name": "cue-server",
+  "private": true,
+  "description": "CUE's server: accounts, wallet, shop, rewards, checked by playing shots again on the game's own physics",
+  "scripts": {
+    "pack": "node tools/pack.cjs",
+    "test": "node tools/pack.cjs && node --no-warnings test/test.js",
+    "deploy": "node tools/pack.cjs && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "type": "module"
+}

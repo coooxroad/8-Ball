@@ -1,0 +1,18 @@
+# CUE's server on Cloudflare Workers. Deployed by .github/workflows/server.yml on every push that touches server/ or the
+# game files it shares (web/physics.js, game.js, puzzles.js, highlights.js, tables.js, economy.js, content/).
+name = "cue-server"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# how a match played on the device is checked before it pays (src/core.js): "slices" played again a slice at a time
+# (the free plan), "true" all at once (a paid plan), "false" not checked (a daily allowance)
+CHECK_MATCHES = "slices"
+
+[[durable_objects.bindings]]
+name = "VAULT"
+class_name = "Vault"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Vault"]
