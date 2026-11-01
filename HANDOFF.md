@@ -36,7 +36,7 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
    이 세션 환경에서는 스모크 테스트에 `CHROME=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`를 준다.
 4. `git push origin main`. "This repository moved" 경고는 무시해도 된다(푸시는 된다).
 5. 릴리스 확인: `gh run list -R coooxroad/8-Ball -L 1`이 success가 되면
-   `gh api repos/coooxroad/8-Ball/releases?per_page=1 --jq '.[0].tag_name'`로 새 버전(`v2.0.N`)을 확인해 알려 준다.
+   `gh api repos/coooxroad/8-Ball/releases?per_page=1 --jq '.[0].tag_name'`로 새 버전(`v4.0.N`; 소유자가 2026-11-01에 CUE 4.0으로 바꿈)을 확인해 알려 준다.
    (`gh release list`는 GraphQL이라 막혀 있다. REST `gh api`를 쓴다.)
 6. 커밋 메시지 끝에는 시스템이 알려 주는 Co-Authored-By / Claude-Session 두 줄을 붙인다.
 

@@ -41,7 +41,7 @@ function sheetSettings() {
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 큐볼이 맞힐 공을 다 맞히고 나면 나머지를 두 배 빠르게 보여 줍니다(화면 테두리에 번개). 화질을 낮추면 움직임이 더 부드러워집니다.'),
-    note('CUE 2.0'),
+    note('CUE 4.0'),
   ]);
 }
 // shown once, to someone new: how to play a shot
