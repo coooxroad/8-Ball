@@ -72,6 +72,12 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
 3. 모양·재질·빛이 다른 스킨(울퉁불퉁한 공, 손가락 구멍, 직접 정한 큐 구간, 빛나는 날)은 코드 수정 없이 칸으로:
    공 `shape`·`holes`·`skin`·`mark`·`finish`, 큐 `profile`·`glow`. 설명과 예시는 `tasks/gpt-skins.md` 2-1절, 그리는 곳은
    `scene/30-balls.js`(모양은 세트마다 한 번 만들어 공유, 물리 구 안쪽에만)·`scene/40-cue.js`·`app/00-state.js`의 `drawCue`.
+   공 `finish.toon`(만화: 세 단계 빛·망점·외곽선), `finish.facets`(미러볼 면), 큐 구간 옵션 `sides`·`pic`·`rep`·`lit`,
+   테이블 `water`(수영장)·`comic`(만화)·`ice`.
+   **트레일과 움직이는 바닥(물)은 그림이 아니라 코드로 그린다**(소유자 결정): 트레일 `kind`가 `chalk`면 `scene/55-chalk.js`,
+   `stars`·`puff`·`ink`·`fire`·`splash`면 `scene/56-fx.js`(입자는 GPU가 모양을 그림), 만화 효과음 말풍선·미러볼 빛은
+   `scene/57-comic.js`. 모두 물리의 궤적 기록(`w.trace`: 큐볼의 매 스텝 위치와 꺾인 곳, 켤 때만 기록하고 결과는 바꾸지 않음)을 읽는다.
+   천 높이는 z=0, 공 중심은 z=R이다(조준선 `ribbon`만 공 중심 기준 높이를 받는다).
 4. 검사 네 가지. 빠진 그림, 겹친 id, 범위 밖 희귀도는 `check.js`가 잡는다. 다른 파일은 고치지 않아도 상점·내 장비에 나온다.
 
 **`id`는 한번 정하면 바꾸지 않는다.** 저장된 장착 정보와 앞으로 서버의 보유 목록이 `id`로 아이템을 찾는다.
