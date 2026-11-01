@@ -1,0 +1,33 @@
+/* ---------- a phone held upright: the last word on the few things that did not fit (2026-11-02 pass) ----------
+   The bar along the top in two rows - the places across the whole width, then the player, the wallet and the keys - so
+   nothing is cut off and the coins show; the shelves three cards across, each tall enough to see; the rail's keys sharing
+   the width; in play, the practice keys under the score, and messages kept between the two columns of buttons. */
+#app.desk.compact.portrait{--bar:100px}
+#app.desk.compact.portrait #deskBar{flex-wrap:wrap;align-content:center;row-gap:6px;column-gap:6px;padding:0 8px}
+#app.desk.compact.portrait .dk-tabs{order:0;flex:1 0 100%;gap:5px}
+#app.desk.compact.portrait .dk-tab{flex:1 1 0;min-width:0;height:40px;padding:0 4px;font-size:14px}
+#app.desk.compact.portrait .dk-me{display:flex;order:1;flex:0 1 auto;min-width:0;height:38px;padding:0 4px 0 2px;gap:7px}
+#app.desk.compact.portrait .dk-me .av{width:28px;height:28px;font-size:12px}
+#app.desk.compact.portrait .dk-me b{max-width:84px;font-size:13px}
+#app.desk.compact.portrait .dk-me small{display:none}
+#app.desk.compact.portrait .dk-wallet{display:flex;order:2;gap:5px;margin:0}
+#app.desk.compact.portrait .dk-cur{height:32px;padding:0 10px 0 5px;font-size:12.5px}
+#app.desk.compact.portrait #deskBar .sp{order:3;flex:1}
+#app.desk.compact.portrait .dk-top{order:4;height:36px;padding:0 9px}
+
+/* the shelves: three across, rows as tall as a card needs (the rarity rules only as tall as their line) */
+#app.desk.compact.portrait .dk-cards{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;align-content:start;gap:12px 8px}
+#app.desk.compact.portrait .dk-card{height:184px}
+#app.desk.compact.portrait .dk-tier{margin:6px 2px 0}
+
+/* the rail's keys share the row; a long name may take two lines */
+#app.desk.compact.portrait .dk-slot{flex:1 1 0;min-width:0}
+#app.desk.compact.portrait .dk-rb{font-size:14px;line-height:1.15;white-space:normal;word-break:keep-all;padding-left:4px;padding-right:4px}
+
+/* play: the spin pop-up over the shot clock's line; practice's keys under the score; no mode badge (the score says it) */
+#app.desk.portrait #spinPop{z-index:30}
+#app.desk.portrait:not(.bcast) #badge{display:none}
+#app.desk.portrait #pracBar{position:absolute;top:62px;left:60px;right:56px;justify-content:center;margin:0}
+#app.desk.portrait #toast,#app.bcast.portrait #toast{max-width:calc(100% - 120px);font-size:15px}
+#app.desk.portrait:has(#pracBar:not([hidden])) #toast{top:112px}
+#app.desk.portrait:has(#spinPop:not([hidden])) #clock{visibility:hidden}
