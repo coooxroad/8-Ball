@@ -3,11 +3,11 @@
 const fs = require('fs'), path = require('path'), { Worker } = require('worker_threads'), { createHash } = require('crypto');
 const { verify, STAGES } = require('./engine'), { assign } = require('./catalog'), { samePosition } = require('./layouts');
 const args = process.argv.slice(2), option = (name, fallback) => { const i = args.indexOf(name); if (i >= 0 && i === args.length - 1) throw Error(`missing value: ${name}`); return i < 0 ? fallback : args[i + 1]; };
-if (args.length % 2 || args.some((v, i) => i % 2 === 0 && !['--seed', '--stage'].includes(v))) throw Error('Use --seed <uint32> --stage all|0,1,...,6');
+if (args.length % 2 || args.some((v, i) => i % 2 === 0 && !['--seed', '--stage'].includes(v))) throw Error('Use --seed <uint32> --stage all|0,1,...,7');
 const seed = Number(option('--seed', 20261101)), selected = option('--stage', 'all');
-if (selected !== 'all' && !/^[0-6](,[0-6])*$/.test(selected)) throw Error('stage must be all or 0..6');
+if (selected !== 'all' && !/^[0-7](,[0-7])*$/.test(selected)) throw Error('stage must be all or 0..7');
 const stages = selected === 'all' ? STAGES.map((_, i) => i) : selected.split(',').map(Number);
-if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff || new Set(stages).size !== stages.length || stages.some(s => !Number.isInteger(s) || !STAGES[s])) throw Error('Use --seed <uint32> --stage all|0,1,...,6');
+if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff || new Set(stages).size !== stages.length || stages.some(s => !Number.isInteger(s) || !STAGES[s])) throw Error('Use --seed <uint32> --stage all|0,1,...,7');
 const dest = path.resolve(__dirname, '../../puzzles.js'), cache = path.join(__dirname, '.work');
 const read = (name, fallback) => fs.existsSync(path.join(__dirname, name)) ? JSON.parse(fs.readFileSync(path.join(__dirname, name), 'utf8')) : fallback;
 const hashFile = file => createHash('sha256').update(fs.readFileSync(path.resolve(__dirname, '../..', file))).digest('hex');

@@ -26,7 +26,7 @@ function wallGap(a, b) {
 }
 function validWalls(balls, walls) {
   return Array.isArray(walls) && walls.length >= 1 && walls.length <= 3 && walls.every((q, i) =>
-    ['x', 'y', 'len', 'thick', 'ang', 'h'].every(k => Number.isFinite(q[k])) && q.len >= 0.15 && q.len <= 0.5 && q.thick === 0.03 && q.h === 0.04 &&
+    q && ['x', 'y', 'len', 'thick', 'ang', 'h'].every(k => Number.isFinite(q[k])) && q.len >= 0.15 && q.len <= 0.5 && q.thick === 0.03 && q.h === 0.04 &&
     corners(q).every(([x, y]) => Math.abs(x) <= P.HL - DIAMETER && Math.abs(y) <= P.HW - DIAMETER) &&
     balls.every(b => pointGap(b, q) >= P.R + CLEARANCE) && walls.slice(0, i).every(p => wallGap(p, q) >= DIAMETER));
 }

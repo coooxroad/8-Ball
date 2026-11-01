@@ -1,6 +1,6 @@
 'use strict';
 const { createHash } = require('crypto');
-const fingerprint = z => createHash('sha256').update(JSON.stringify([z.stage, z.balls])).digest('hex');
+const fingerprint = z => createHash('sha256').update(JSON.stringify(z.walls && z.walls.length ? [z.stage, z.balls, z.walls.map(q => [q.x, q.y, q.len, q.thick, q.ang, q.h])] : [z.stage, z.balls])).digest('hex');
 function assign(results, previous, ledger) {
   const entries = ledger.slice();
   // Adopt existing content as well, so even a list predating the ledger is protected.
