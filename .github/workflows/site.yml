@@ -37,4 +37,6 @@ jobs:
         run: |
           U=$(grep -o 'https://[a-z0-9.-]*workers.dev' deploy.log | head -1)
           echo "$U"
-          curl -sf "$U/" | grep -q '<title>CUE</title>' && echo "ok   the page is there"
+          # (a new address can take a minute or two to answer)
+          for i in $(seq 1 18); do if curl -sf "$U/" | grep -q '<title>CUE</title>'; then echo "ok   the page is there"; exit 0; fi; sleep 10; done
+          echo "FAIL the page does not answer"; curl -s -o /dev/null -w '%{http_code}\n' "$U/"; exit 1
