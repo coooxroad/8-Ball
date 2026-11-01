@@ -1,0 +1,40 @@
+# Puts CUE on the web (site/wrangler.toml): builds the page from web/ and serves it from Cloudflare, whenever web/
+# changes on main. Separate from build.yml (the APK) and server.yml (the server); never touches signing.
+name: Deploy web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'site/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+concurrency: site-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the page
+        run: sh web/build.sh && node web/tools/check.js
+      - name: Wrangler
+        working-directory: server
+        run: npm ci --no-audit --no-fund
+      - name: Deploy
+        working-directory: site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ../server/node_modules/.bin/wrangler deploy 2>&1 | tee deploy.log
+      - name: Where it is
+        working-directory: site
+        run: |
+          U=$(grep -o 'https://[a-z0-9.-]*workers.dev' deploy.log | head -1)
+          echo "$U"
+          curl -sf "$U/" | grep -q '<title>CUE</title>' && echo "ok   the page is there"
