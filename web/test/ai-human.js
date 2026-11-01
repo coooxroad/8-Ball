@@ -92,8 +92,15 @@ function match(mode, a, b, seed, stats) {
   g.start(mode, ['A', 'B'], true, { rnd: seeded(seed), first, target: 5, personas: ps }); g.players[0].ai = true; g.aiRnd = seeded(seed ^ 0x517cc1b7);
   const visit = [0, 0]; let shots = 0;
   for (; !g.over && shots < 400; shots++) {
-    const who = g.turn, p = measured(g), r = strike(g, p), s = stats && stats[who];
-    if (s) { s.shots++; s.power += g.powerOf(p.V); if (r.foul) s.fouls++; if (r.keep || r.win === who) { s.made++; visit[who]++; } }
+    const who = g.turn, breaking = g.isBreak, p = measured(g), r = strike(g, p), s = stats && stats[who];
+    if (s) {
+      s.shots++; s.power += g.powerOf(p.V); if (r.foul) s.fouls++;
+      if (r.keep || r.win === who) {
+        const group = g.players[who].group;
+        const made = mode === 'eight' ? g.world.ev.pocketed.filter(q => q.id !== 0 && (q.id === 8 ? !breaking && r.win === who : breaking || !group || (q.id < 8) === (group === 'solid'))).length : r.pts;
+        s.made += made; visit[who] += made;
+      }
+    }
     if (g.turn !== who || g.over) { if (s) { s.visits++; s.runs += visit[who]; if (visit[who]) s.scoringVisits++; } visit[who] = 0; }
   }
   assert(g.over, `${mode}, seed ${seed}, ${a}/${b} unfinished after 400 shots`); return g.over.winner;
@@ -104,7 +111,7 @@ for (const mode of ['eight', 'four']) {
   console.log(`${mode}: DAMA 50 beat 20 in ${high}/${N} seeded matches (${(high / N * 100).toFixed(1)}%)`);
   assert(high >= N * 0.7, `${mode}: higher DAMA win rate below 70%`);
 }
-console.log('| Mode | DAMA | Made / visit | Made / scoring visit | Fouls | Mean power |');
+console.log('| Mode | DAMA | Balls or points / visit | Balls or points / scoring visit | Fouls | Mean power |');
 console.log('|---|---:|---:|---:|---:|---:|');
 for (const mode of ['eight', 'four']) for (const dama of [10, 30, 80]) {
   const s = [0, 1].map(() => ({ shots: 0, made: 0, power: 0, fouls: 0, visits: 0, runs: 0, scoringVisits: 0 }));
