@@ -89,8 +89,11 @@ let flow = null;
 const scene = createScene(canvas, app, PH);
 if (!scene) {
   const d = document.createElement('div'); d.id = 'nogl';
-  d.textContent = '이 기기에서 3D 그래픽을 켤 수 없어 게임을 띄우지 못했습니다. 인터넷 연결을 확인한 뒤 다시 열어 주세요.';
-  app.textContent = ''; app.appendChild(d); return;
+  const message = document.createElement('p');
+  message.textContent = window.THREE ? '3D 그래픽(WebGL)을 시작하지 못했습니다. 브라우저의 그래픽 가속을 켜거나 다른 브라우저에서 열어 주세요.' : '게임의 그래픽 파일을 불러오지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.';
+  const retry = document.createElement('button'); retry.className = 'btn'; retry.textContent = '다시 시도'; retry.onclick = () => location.reload();
+  const content = document.createElement('div'); content.append(message, retry); d.appendChild(content);
+  app.textContent = ''; app.appendChild(d); app.classList.remove('boot'); return;
 }
 scene.setCloth(prefs.cloth); scene.setCue(prefs.cues[0]); scene.setQuality(prefs.quality);
 useBalls(prefs.ballSkin); scene.setTrail(prefs.trail);

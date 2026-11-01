@@ -63,6 +63,7 @@ function stepSim(dt) {
 }
 function frame(now) {
   requestAnimationFrame(frame);
+  checkPixelRatio();
   const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   const paused = !$('#sheet').hidden || (st.screen === 'home' && !deskTableShown());

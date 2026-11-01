@@ -75,10 +75,12 @@
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
   function resize() {
-    W = app.clientWidth; H = app.clientHeight; if (!W || !H) return;
+    W = app.clientWidth; H = app.clientHeight; if (!W || !H || gl.isContextLost()) return;
     portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     const dpr = Math.min(window.devicePixelRatio || 1, 3), cap = quality === 'high' ? 9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
-    renderer.setPixelRatio(Math.max(1, Math.min(dpr, Math.sqrt(cap / (W * H)))));
+    // Large monitors may need a ratio below 1. CSS pixels still define the camera and input coordinates.
+    const maxSide = Math.min(renderer.capabilities.maxTextureSize, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    renderer.setPixelRatio(Math.min(dpr, Math.sqrt(cap / (W * H)), maxSide / W, maxSide / H));
     renderer.setSize(W, H, false);
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
     if (!rt || rt.width !== size.x || rt.height !== size.y) {
@@ -116,6 +118,13 @@
     dirty = 3;
   }
   function setQuality(q) { quality = q; resize(); }
+
+  // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
+  canvas.addEventListener('webglcontextlost', e => e.preventDefault());
+  canvas.addEventListener('webglcontextrestored', () => {
+    staticDirty = true; stale = false; dirty = 3; guideKey = '';
+    renderer.shadowMap.needsUpdate = true; resize();
+  });
 
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   function toTable(e, R) {
