@@ -28,13 +28,6 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('dp8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('dp8.' + k, JSON.stringify(v)); } catch (e) {} },
 };
-// Pool table sizes. Real regulation numbers: playing surface, ball diameter, pocket openings.
-const TABLES = [
-  { id: 'bar', name: '당구장 7피트', short: '7피트', d: '198×99cm · 공 57mm. 공이 크게 보이고 가장 쉽습니다.', cfg: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 } },
-  { id: 'club', name: '클럽 8피트', short: '8피트', d: '224×112cm · 공 57mm. 동호인이 많이 쓰는 중간 크기.', cfg: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 } },
-  { id: 'pro', name: '대회 9피트', short: '9피트', d: '254×127cm · 공 57mm. 프로 대회 규격, 가장 넓고 어렵습니다.', cfg: { R: 0.028575, HL: 1.27, HW: 0.635, cornerMouth: 0.127, sideMouth: 0.14 } },
-  { id: 'pub', name: '영국식 6피트', short: '6피트', d: '183×91cm · 공 51mm. 작은 공에 좁은 포켓.', cfg: { R: 0.0254, HL: 0.915, HW: 0.4575, cornerMouth: 0.089, sideMouth: 0.095 } },
-];
 const prefs = (() => {
   const saved = store.get('prefs', {});
   const p = Object.assign({ mode: 'eight', names: ['플레이어 1', '플레이어 2'], vsAI: false, level: 1, target: 10, table: 'bar', cloth: 0, cue: 0,
@@ -70,9 +63,8 @@ const savePrefs = () => store.set('prefs', prefs);
 const tableCache = {};
 const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysics(cfg));
 const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
-// carom: the medium table four-ball is played on (254x127cm, 65.5mm balls); carom3: the match table of three-cushion (284x142cm, 61.5mm)
 const PH = {};
-function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', { R: 0.03275, pockets: false }); PH.carom3 = tableOf('carom3', { R: 0.03075, HL: 1.42, HW: 0.71, pockets: false }); }
+function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); }
 usePhysics();
 const game = createGame(PH);
 const drills = createDrills(), puzzles = createPuzzles();

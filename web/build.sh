@@ -17,7 +17,7 @@ script() {
   echo 'const TEXTURES = {'; for f in tex/*.webp; do printf "'%s': 'data:image/webp;base64,%s',\n" "$(basename "$f" .webp)" "$(base64 -w0 "$f")"; done; echo '};'
   # sounds an item names for itself (content/: sound.file), carried as data the same way
   echo 'const SOUNDS = {'; for f in sound/*.mp3 sound/*.ogg sound/*.wav; do [ -e "$f" ] || continue; printf "'%s': 'data:audio/%s;base64,%s',\n" "$(basename "${f%.*}")" "${f##*.}" "$(base64 -w0 "$f")"; done; echo '};'
-  cat content/*.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
+  cat content/*.js tables.js economy.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
   echo 'function createScene(canvas, app, PH) {'; cat scene/*.js; echo '}'
   cat sounds.js audio.js | grep -v '^if (typeof module'
   echo 'function createReel(d) {'; cat reel/*.js; echo '}'
