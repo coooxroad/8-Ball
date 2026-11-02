@@ -395,7 +395,7 @@
   }
   /* Tables that are something else (look: 'sky' | 'soccer' | 'desk'): their cloth a picture drawn here for the table shown,
      their rails a plain colour; the sky also moves (skyMat, drawn like the pool's water), and on a pool table the soccer
-     pitch has a goal over every pocket. Looks only: they play as cloth. */
+     pitch has a goal over every pocket, the basketball court ('court') a hoop. Looks only: they play as cloth. */
   const lookTex = {};
   function lookFloor(kind) {
     const key = kind + ':' + cur.HL + 'x' + cur.HW; if (lookTex[key]) return lookTex[key];
@@ -426,6 +426,32 @@
         g.beginPath(); const a = Math.acos(Math.min(1, (pd - pd * 0.72) / (cr * 0.85))); g.ellipse(X(sx * (L - pd * 0.72)), Y(0), cr * 0.85 * kx, cr * 0.85 * ky, 0, sx > 0 ? Math.PI - a : -a, sx > 0 ? Math.PI + a : a); g.stroke();
         for (const sy of [-1, 1]) { g.beginPath(); g.ellipse(X(sx * L), Y(sy * Wd), 0.04 * kx, 0.04 * ky, 0, 0, 7); g.stroke(); }
       }
+    } else if (kind === 'court') {
+      // maple boards along the length, their joints staggered, then the court's lines and the painted keys
+      const bw = 0.04 * ky;
+      for (let y = 0, row = 0; y < H2; y += bw, row++) {
+        let x = -((row * 137) % 300);
+        while (x < W2) { const len = 260 + rnd() * 420, l = 58 + rnd() * 9; g.fillStyle = `hsl(${30 + rnd() * 6},${52 + rnd() * 10}%,${l}%)`; g.fillRect(x, y, len, bw); g.fillStyle = 'rgba(90,55,25,.35)'; g.fillRect(x, y, 1.5, bw); x += len; }
+        g.fillStyle = 'rgba(90,55,25,.25)'; g.fillRect(0, y, W2, 1.2);
+      }
+      for (let k = 0; k < 9000; k++) { g.fillStyle = `rgba(120,75,35,${0.03 + rnd() * 0.05})`; g.fillRect(rnd() * W2, rnd() * H2, 6 + rnd() * 30, 1); }
+      const m = 0.035, L = P.HL - m, Wd = P.HW - m;
+      const key = (sx, fill) => { g.fillStyle = fill; g.fillRect(Math.min(X(sx * L), X(sx * (L - L * 0.27))), Y(Wd * 0.28), Math.abs(X(sx * L) - X(sx * (L - L * 0.27))), Y(-Wd * 0.28) - Y(Wd * 0.28)); };
+      key(-1, 'rgba(30,70,170,.55)'); key(1, 'rgba(30,70,170,.55)');
+      g.fillStyle = 'rgba(30,70,170,.3)'; g.beginPath(); g.ellipse(X(0), Y(0), Wd * 0.26 * kx, Wd * 0.26 * ky, 0, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.92)'; g.lineWidth = 0.007 * kx;
+      const line = pts => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, X(x), Y(y))); g.stroke(); };
+      line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
+      for (const r of [Wd * 0.26, Wd * 0.1]) { g.beginPath(); g.ellipse(X(0), Y(0), r * kx, r * ky, 0, 0, 7); g.stroke(); }
+      for (const sx of [-1, 1]) {
+        const kx2 = sx * (L - L * 0.27);
+        line([[sx * L, -Wd * 0.28], [kx2, -Wd * 0.28], [kx2, Wd * 0.28], [sx * L, Wd * 0.28]]);
+        g.beginPath(); g.ellipse(X(kx2), Y(0), Wd * 0.28 * kx, Wd * 0.28 * ky, 0, 0, 7); g.stroke();
+        // the three-point line: straight from the baseline, then the arc round the basket
+        const r3 = Wd * 0.94, yc = Wd * 0.86, cx = sx * (L - L * 0.06), A = Math.asin(yc / r3), arc = [];
+        for (let k = 0; k <= 40; k++) { const t = -A + 2 * A * k / 40; arc.push([cx - sx * r3 * Math.cos(t), r3 * Math.sin(t)]); }
+        line([[sx * L, -yc], arc[0]]); line(arc); line([arc[arc.length - 1], [sx * L, yc]]);
+      }
     } else if (kind === 'desk') {
       g.fillStyle = '#c9a274'; g.fillRect(0, 0, W2, H2);                          // birch ply, its grain along the length
       for (let k = 0; k < 520; k++) { const y = rnd() * H2, a = 0.04 + rnd() * 0.08; g.strokeStyle = rnd() < 0.6 ? `rgba(120,78,40,${a})` : `rgba(255,236,200,${a})`; g.lineWidth = 1 + rnd() * 3;
@@ -447,9 +473,29 @@
   const goalGrp = new THREE.Group(); sScene.add(goalGrp);
   const postMat = new THREE.MeshStandardMaterial({ color: col(0xf4f6f2), roughness: 0.35, metalness: 0.1, envMapIntensity: 0.6 });
   const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+  // the court's hoops: a backboard behind each pocket, an orange rim over it, a net hanging into it
+  const rimMat = new THREE.MeshStandardMaterial({ color: col(0xf0641e), roughness: 0.4, metalness: 0.4, envMapIntensity: 0.8 });
+  const boardMat = new THREE.MeshPhysicalMaterial({ color: col(0xffffff), roughness: 0.05, transparent: true, opacity: 0.35, clearcoat: 1, envMapIntensity: 1.2, depthWrite: false });
+  function setHoops() {
+    const R = cur.R, hgt = R * 2.6;
+    for (const p of cur.POCKETS) {
+      const a = Math.atan2(-p.y, -p.x), ux = Math.cos(a), uy = Math.sin(a), tx = -uy, ty = ux, rr = p.r * 0.8;
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.0028, 8, 32), rimMat); rim.position.set(p.x, p.y, hgt); rim.castShadow = true; rim.layers.enable(OCCL); goalGrp.add(rim);
+      const bx = p.x - ux * (rr + 0.012), by = p.y - uy * (rr + 0.012), board = new THREE.Mesh(new THREE.BoxGeometry(0.004, rr * 3.2, rr * 2.2), boardMat);
+      board.position.set(bx, by, hgt + rr * 0.6); board.rotation.z = a; goalGrp.add(board);
+      const sq = new THREE.Mesh(new THREE.BoxGeometry(0.0045, rr * 1.3, rr * 0.9), new THREE.MeshBasicMaterial({ color: 0xf0641e, wireframe: true })); sq.position.set(bx, by, hgt + rr * 0.55); sq.rotation.z = a; goalGrp.add(sq);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.004, 0.004), rimMat); arm.position.set(p.x - ux * (rr + 0.006), p.y - uy * (rr + 0.006), hgt); arm.rotation.z = a; goalGrp.add(arm);
+      const v = [], N = 12;
+      for (let i = 0; i < N; i++) { const t0 = i / N * 2 * Math.PI, t1 = (i + 0.5) / N * 2 * Math.PI;      // the net: crossing strands, narrowing down
+        v.push(p.x + Math.cos(t0) * rr, p.y + Math.sin(t0) * rr, hgt, p.x + Math.cos(t1) * rr * 0.6, p.y + Math.sin(t1) * rr * 0.6, hgt - R * 1.6);
+        v.push(p.x + Math.cos(t1) * rr * 0.6, p.y + Math.sin(t1) * rr * 0.6, hgt - R * 1.6, p.x + Math.cos(t0 + 2 * Math.PI / N) * rr, p.y + Math.sin(t0 + 2 * Math.PI / N) * rr, hgt); }
+      const ng = new THREE.BufferGeometry(); ng.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); goalGrp.add(new THREE.LineSegments(ng, netMat));
+    }
+  }
   function setGoals(on) {
     const gs = new Set(); while (goalGrp.children.length) gs.add(goalGrp.children.pop().geometry); gs.forEach(q => q.dispose());
     if (!on || !cur || !cur.POCKETED) return;
+    if (on === 'court') return setHoops();
     const R = cur.R, hgt = R * 2.2, post = new THREE.CylinderGeometry(0.0035, 0.0035, hgt, 10);
     for (const p of cur.POCKETS) {
       // facing the middle of the table; the frame stands on the mouth, the net goes back over the hole
@@ -485,10 +531,10 @@
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
       renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.55; staticDirty = true; dirty = 3; return;
     }
-    setGoals(c.look === 'soccer'); waterMesh.material = c.look === 'sky' ? skyMat : waterMat;
+    setGoals(c.look === 'soccer' || (c.look === 'court' && 'court')); waterMesh.material = c.look === 'sky' ? skyMat : waterMat;
     if (c.look) {
       feltMat.map = lookFloor(c.look); feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1);
-      feltMat.roughness = c.look === 'desk' ? 0.55 : 1; feltMat.envMapIntensity = c.look === 'desk' ? 0.3 : 0.08;
+      feltMat.roughness = c.look === 'desk' ? 0.55 : c.look === 'court' ? 0.6 : 1; feltMat.envMapIntensity = c.look === 'desk' ? 0.3 : c.look === 'court' ? 0.3 : 0.08;
       cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)); cushMat.roughness = c.look === 'desk' ? 0.5 : 0.9;
       woodMat.map = woodTex; woodMat.color.copy(col(c.wood)).multiplyScalar(c.look === 'desk' ? 1.4 : 1.1); woodU.uWs.value.set(0.62, 2.3);
       if (c.look !== 'desk') { woodMat.clearcoat = 0.6; woodMat.roughness = 0.45; }
