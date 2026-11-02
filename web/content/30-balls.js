@@ -6,8 +6,9 @@
    seed } (a lumpy 3D shape inside the ball's sphere), holes [[lat, lon, radius, depth]] (finger holes), skin (the surface:
    a colour picture tex/ball-<name>.webp, or a colour), mark 'tint' | 'label' (how a skinned ball shows which it is),
    paint 'planets' | 'soccer' (the whole surface painted in code, scene/35-paint.js),
-   finish { rough, coat, metal, bump, bumpScale, toon, facets } (how the surface takes the light; toon: true drawn as a comic
-   - three flat steps of light, print dots in the shade, a black outline; facets: [round, up] a mirror ball's flat facets).
+   finish { rough, coat, metal, bump, bumpScale, toon, facets, env, spots } (how the surface takes the light; toon: true drawn as a comic
+   - three flat steps of light, print dots in the shade, a black outline; facets: [round, up] a mirror ball's flat facets; env:
+   how strongly it mirrors the room; spots 'rainbow': a faceted set throws coloured light, not white).
    sound (also on a cue): { rate: pitch, 1 as recorded (1.1 higher), tone: brightness, 1 as recorded, gain: loudness,
    1 as recorded, file: a recording in web/sound/ (name without extension) to use instead }. Left out: the usual sound. */
 const BALL_HEX = [0xf4efe2, 0xf2b705, 0x1747b8, 0xd3241c, 0x5a2a93, 0xee7410, 0x0c7a44, 0x7c1a20, 0x111111];
@@ -40,6 +41,12 @@ const BALLSKINS = [
     cue: 0xe2e0d8, yel: 0xf6c84a, red: 0xd65c34, dots: false, paint: 'planets', finish: { rough: 0.55, coat: 0.3 } },
   // the five-and-six panel ball
   { id: 'soccer', name: '축구공', rarity: 1, note: '오각형·육각형 가죽 조각을 꿰맨 축구공, 색은 공 번호대로', pal: null,
-    cue: 0xf6f6f2, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'soccer', finish: { rough: 0.45, coat: 0.5 } }
+    cue: 0xf6f6f2, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'soccer', finish: { rough: 0.45, coat: 0.5 } },
+  // cut crystal: each ball a gem in its colour, faceted, throwing rainbow light on the cloth (scene/35-paint.js, 57-comic.js)
+  { id: 'crystal', name: '크리스탈', rarity: 3, note: '보석처럼 깎은 크리스탈 공, 굴러가며 천 위에 무지개빛을 뿌립니다', pal: null,
+    cue: 0xd6e8fa, yel: 0xf6d24a, red: 0xe0405a, dots: false, paint: 'crystal', finish: { rough: 0.05, coat: 1, facets: [22, 12], env: 1.6, spots: 'rainbow' } },
+  // basketballs, each in its colour
+  { id: 'basketball', name: '농구공', rarity: 1, note: '오돌토돌한 가죽에 검은 줄, 색은 공 번호대로', pal: null,
+    cue: 0xf4f2ec, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'basketball', finish: { rough: 0.75, coat: 0 } }
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };

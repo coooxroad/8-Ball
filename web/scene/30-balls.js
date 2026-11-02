@@ -153,6 +153,8 @@
   const bumpTex = {};
   function finishOf(k, mat) {
     const f = k.finish || {};
+    if (mat.userData.env0 == null) mat.userData.env0 = mat.envMapIntensity;
+    mat.envMapIntensity = mat.userData.env0 * (f.env || 1);                        // (env: how strongly it mirrors the room - a gem, more)
     mat.roughness = f.rough != null ? f.rough : 0.2; mat.metalness = f.metal || 0; mat.clearcoat = f.coat != null ? f.coat : 1; mat.clearcoatRoughness = f.coat != null && f.coat < 0.5 ? 0.4 : 0.04;
     let b = null;
     if (k.holes) b = holeBump(k);

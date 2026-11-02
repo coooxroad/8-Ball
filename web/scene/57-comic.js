@@ -1,7 +1,7 @@
   /* Comic hits and mirror-ball lights (content/30-balls.js finish.toon / finish.facets).
      A comic set: a hard hit pops a sound-word bubble out of the page where it happened (tex/fx-pow: 쾅! 딱! 팍!
      퉁!) - it jumps up, holds, fades. A mirror-ball set: each ball throws a ring of small lights onto the cloth round it,
-     turning as the ball rolls. */
+     turning as the ball rolls (finish.spots 'rainbow': in the colours a crystal splits light into). */
   const pops = [];
   let popTex = null, popWait = 0;
   loadTex('fx-pow', 0, t => { popTex = t; });
@@ -46,7 +46,8 @@
       const q = b.q, turn = Math.atan2(2 * (q[3] * q[2] + q[0] * q[1]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])) + q[0] * 3;
       for (let k = 0; k < 9; k++) {
         const a = turn + k * 2.399, r = R * (1.7 + 1.6 * ((k * 0.618) % 1));
-        L.push({ x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r, z: 0.002, s0: R * (0.28 + 0.2 * ((k * 0.382) % 1)), s1: null, a0: 0.55, life: Infinity, age: 0, vx: 0, vy: 0, vz: 0, g: 0, tw: 0, r: 1, gr: 0.97, b: 0.9, sh: 0.5 });
+        const rb = skin.finish.spots === 'rainbow' ? fxCol.setHSL(((k * 0.137 + turn * 0.05) % 1 + 1) % 1, 0.9, 0.62) : null;   // (a crystal splits the light into colours)
+        L.push({ x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r, z: 0.002, s0: R * (0.28 + 0.2 * ((k * 0.382) % 1)), s1: null, a0: rb ? 0.7 : 0.55, life: Infinity, age: 0, vx: 0, vy: 0, vz: 0, g: 0, tw: 0, r: rb ? rb.r : 1, gr: rb ? rb.g : 0.97, b: rb ? rb.b : 0.9, sh: 0.5 });
       }
     }
     for (const o of L) o.s1 = o.s0;

@@ -4,7 +4,9 @@
        planets  the cue ball the Moon; 1 Venus, 2 the Earth, 3 Mars, 4 Neptune (violet), 5 Jupiter, 6 Uranus, 7 Mercury
                 (dark), 8 a black hole with its glowing ring; carom: the Moon, the Sun, Mars
        soccer   the five-and-six panel ball: the cue ball white with black pentagons; solids coloured all over the white
-                panels, stripes coloured round the middle; carom yellow and red */
+                panels, stripes coloured round the middle; carom yellow and red
+       crystal  cut gems: facets in shades of the ball's colour with bright edges and glints (finish.facets cuts them)
+       basketball  pebbled leather with black seams, coloured as the ball (the 8 black with light seams) */
   const ballDir = (u, v) => { const ph = u * 2 * Math.PI, th = v * Math.PI; return [-Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th)]; };
   // smooth noise on the sphere itself (no seam at the back, no pinch at the poles)
   const nh = (x, y, z) => { const s = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return s - Math.floor(s); };
@@ -58,6 +60,14 @@
     }
     return (soccerMap = { kind, panel, hexc });
   }
+  // a basketball's seams, worked out once: two great circles through the poles and two rings round them
+  let bballMask = null;
+  function bballSeams(W, H) {
+    if (bballMask) return bballMask;
+    const m = new Uint8Array(W * H), e = 0.022;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const p = ballDir((x + 0.5) / W, (y + 0.5) / H); if (Math.abs(p[0]) < e || Math.abs(p[2]) < e || Math.abs(Math.abs(p[1]) - 0.7) < e * 0.8) m[y * W + x] = 1; }
+    return (bballMask = m);
+  }
   function paintBall(g, W, H, sk, kind, n, hex, colOf) {
     const pool = kind === 'pool', stripe = pool && n > 8, base = pool ? (n > 8 ? n - 8 : n) : 0;
     const colour = pool ? (n === 0 ? null : colOf(n)) : n === 0 ? null : n === 1 ? hex(sk.yel) : hex(sk.red);
@@ -67,6 +77,32 @@
       if (stripe) {                                                      // stripes: white ice caps over the top and the bottom
         g.fillStyle = '#f4f7fa'; g.fillRect(0, 0, W, H * 0.24); g.fillRect(0, H * 0.76, W, H * 0.24);
         for (const [a, b] of [[H * 0.24, H * 0.29], [H * 0.76, H * 0.71]]) { const gr = g.createLinearGradient(0, a, 0, b); gr.addColorStop(0, 'rgba(244,247,250,1)'); gr.addColorStop(1, 'rgba(244,247,250,0)'); g.fillStyle = gr; g.fillRect(0, Math.min(a, b), W, Math.abs(b - a)); }
+      }
+    } else if (sk.paint === 'crystal' || sk.paint === 'basketball') {
+      // a gem cut in facets (each facet its own shade of the ball's colour, a bright edge round it, a glint here and there),
+      // or a basketball (pebbled leather, black seams: two great circles and two rings); stripes clear/white with the colour round the middle
+      const rgb = h => { const v = parseInt(h.slice(1), 16); return [v >> 16, (v >> 8) & 255, v & 255]; };
+      const gem = sk.paint === 'crystal', eight = pool && n === 8, c = colour ? rgb(colour) : gem ? [214, 232, 250] : [244, 242, 236];
+      const plain = gem ? [226, 238, 250] : [244, 242, 236], fu = (sk.finish && sk.finish.facets) || [22, 12];
+      surface(g, W, H, (x, y, z) => {
+        const band = stripe && Math.abs(y) > 0.42, base3 = band ? plain : c;
+        if (gem) { const th = Math.acos(Math.max(-1, Math.min(1, y))) / Math.PI, ph = (Math.atan2(z, -x) / (2 * Math.PI) + 1) % 1, fi = Math.floor(ph * fu[0]) * 31 + Math.floor(th * fu[1]) * 17;
+          const k = 0.72 + 0.5 * nh(fi, 3, 7); return mixc([0, 0, 0], base3, Math.min(1.25, k)).map(v => Math.min(255, v)); }
+        const pebble = 0.9 + 0.12 * noise3(x * 40, y * 40, z * 40);
+        return base3.map(v => v * pebble);
+      });
+      if (gem) {
+        g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2;
+        for (let i = 0; i <= fu[0]; i++) { g.beginPath(); g.moveTo(i * W / fu[0], 0); g.lineTo(i * W / fu[0], H); g.stroke(); }
+        for (let j = 0; j <= fu[1]; j++) { g.beginPath(); g.moveTo(0, j * H / fu[1]); g.lineTo(W, j * H / fu[1]); g.stroke(); }
+        let sd = n * 13 + 5; const r = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+        g.fillStyle = '#ffffff';
+        for (let k = 0; k < 14; k++) { const x = r() * W, y = H * (0.15 + r() * 0.7), q = 3 + r() * 5; g.beginPath(); g.moveTo(x, y - q * 2); g.lineTo(x + q * 0.4, y); g.lineTo(x, y + q * 2); g.lineTo(x - q * 0.4, y); g.fill(); g.beginPath(); g.moveTo(x - q * 2, y); g.lineTo(x, y + q * 0.4); g.lineTo(x + q * 2, y); g.lineTo(x, y - q * 0.4); g.fill(); }
+      } else {
+        // the seams, drawn on the sphere: two great circles through the poles and two rings round them
+        const id = g.getImageData(0, 0, W, H), d = id.data, sc = eight ? [230, 230, 230] : [26, 22, 20], m = bballSeams(W, H);
+        for (let i = 0; i < W * H; i++) if (m[i]) { d[i * 4] = sc[0]; d[i * 4 + 1] = sc[1]; d[i * 4 + 2] = sc[2]; }
+        g.putImageData(id, 0, 0);
       }
     } else {
       const S = soccerPattern(W, H), id = g.createImageData(W, H), d = id.data;
