@@ -518,7 +518,9 @@
   let clothI = 0, iced = false, watery = false;
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice; watery = !!c.water;
-    waterMesh.visible = watery; woodU.uWs.value.set(0.62, 2.3); woodMat.clearcoat = 1; woodMat.roughness = 0.36;
+    // (the moving layer over the floor: the pool's water or the night sky's - chosen before anything returns, so the one
+    // shown last does not stay)
+    waterMesh.visible = watery; waterMesh.material = c.look === 'sky' ? skyMat : waterMat; setGoals(false); woodU.uWs.value.set(0.62, 2.3); woodMat.clearcoat = 1; woodMat.roughness = 0.36;
     if (watery) {
       if (!poolTex || poolTex.P !== cur) { if (poolTex) poolTex.dispose(); poolTex = makePoolFloor(); poolTex.P = cur; }
       poolTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); poolTex.offset.set(0.5, 0.5);
@@ -531,7 +533,7 @@
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
       renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.55; staticDirty = true; dirty = 3; return;
     }
-    setGoals(c.look === 'soccer' || (c.look === 'court' && 'court')); waterMesh.material = c.look === 'sky' ? skyMat : waterMat;
+    setGoals(c.look === 'soccer' || (c.look === 'court' && 'court'));
     if (c.look) {
       feltMat.map = lookFloor(c.look); feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1);
       feltMat.roughness = c.look === 'desk' ? 0.55 : c.look === 'court' ? 0.6 : 1; feltMat.envMapIntensity = c.look === 'desk' ? 0.3 : c.look === 'court' ? 0.3 : 0.08;
