@@ -43,7 +43,7 @@ const ranked = {
 
   play(r) {
     const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, opp: r.opp, standIn: r.standIn || null,
-      inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, dama: net.me ? net.me.dama : ECONOMY.DAMA_START };
+      inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: net.me ? net.me.dama : ECONOMY.DAMA_START };
     ranked.connect();
     const names = []; names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name;
     const rules = RANKED_RULES[o.mode];
@@ -77,6 +77,7 @@ const ranked = {
     if (m.t === 'shot') o.inbox.push({ n: m.n, shot: m.shot });
     else if (m.t === 'timeout') o.inbox.push({ n: m.n, timeout: true });
     else if (m.t === 'aim') ranked.aimFrom(m);
+    else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
     else if (m.t === 'away') toast(`${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
     else if (m.t === 'back') toast(`${o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
     else if (m.t === 'result') ranked.result(m);
@@ -142,6 +143,23 @@ const ranked = {
     const o = ranked.on; if (!o) return;
     if (game.turn === o.seat || o.standIn) ranked.send({ t: 'timeout', n: o.n, as: game.turn });
     o.n++;
+  },
+  /* After each shot has settled: the device that struck it says how the table and the game stand ('res'); the other compares
+     its own and, should they differ, takes the striker's - so the two can never go on playing different games (the physics
+     is meant to give the same numbers everywhere, physics.js DMath; this is the guard if it ever does not). */
+  settled(turn) {
+    const o = ranked.on; if (!o || o.done || o.standIn) return;            // (a stand-in's game is all on this device)
+    const n = o.n - 1, st2 = game.serialize();
+    if (turn === o.seat) ranked.send({ t: 'res', n, st: st2 });
+    else { o.mine[n] = st2; if (o.res[n]) ranked.compare(n); }
+  },
+  compare(n) {
+    const o = ranked.on, a = o.res[n], b = o.mine[n]; if (!a || !b) return;
+    delete o.res[n]; delete o.mine[n];
+    const same = a.turn === b.turn && JSON.stringify(a.placing) === JSON.stringify(b.placing) && a.balls.every((q, i) => q[2] === b.balls[i][2] && (!q[2] || (q[0] === b.balls[i][0] && q[1] === b.balls[i][1])));
+    if (same || game.over || o.n !== n + 1) return;
+    o.desync = (o.desync || 0) + 1; console.warn('ranked: shot', n, 'came out differently here; the striker\'s table is taken');
+    game.restore(a); st.rev++; scene.invalidate(); match.cue(); flow.hud(); beginTurn(false);
   },
   // each frame: this player's aiming, a few times a second, for the other screen
   // (15 a second while it moves, nothing while it is still; and the other player's, shown)

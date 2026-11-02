@@ -1,6 +1,29 @@
 /* Cue-sports physics: 2D table plane, full 3D spin. Units are metres and seconds.
    createPhysics({ R, pockets, HL, HW, cornerMouth, sideMouth }) builds one table: a pool table with six pockets
    in any regulation size, or a carom table with none. */
+/* The same numbers on every device. Math.sin, cos, exp, tanh and hypot are left by the language to each engine's own library,
+   and two phones (or a phone and the server) can differ in the last bit - which a break turns into a different game: in a
+   ranked game each device plays the other's shots itself, so they must come out exactly alike. These use only + - * / and
+   sqrt, which every engine must round the same way. (Accurate to about one part in 10^16.) */
+const DMath = (() => {
+  const LN2_HI = 6.93147180369123816490e-01, LN2_LO = 1.90821492927058770002e-10, INV_LN2 = 1.44269504088896338700e+00;
+  const PIO2_1 = 1.57079632673412561417e+00, PIO2_1T = 6.07710050650619224932e-11, INV_PIO2 = 6.36619772367581382433e-01;
+  function exp(x) {
+    if (x !== x) return x; if (x > 709) return Infinity; if (x < -745) return 0;
+    const k = Math.round(x * INV_LN2), r = (x - k * LN2_HI) - k * LN2_LO;
+    let t = 1, s = 1; for (let i = 1; i <= 14; i++) { t = t * r / i; s += t; }
+    if (k > 0) for (let i = 0; i < k; i++) s *= 2; else for (let i = 0; i < -k; i++) s *= 0.5;
+    return s;
+  }
+  // sin and cos of r in [-pi/4, pi/4]
+  const ks = r => { const r2 = r * r; let t = r, s = r; for (let i = 1; i <= 9; i++) { t = -t * r2 / ((2 * i) * (2 * i + 1)); s += t; } return s; };
+  const kc = r => { const r2 = r * r; let t = 1, s = 1; for (let i = 1; i <= 9; i++) { t = -t * r2 / ((2 * i - 1) * (2 * i)); s += t; } return s; };
+  function sin(x) { const k = Math.round(x * INV_PIO2), r = (x - k * PIO2_1) - k * PIO2_1T, q = ((k % 4) + 4) % 4; return q === 0 ? ks(r) : q === 1 ? kc(r) : q === 2 ? -ks(r) : -kc(r); }
+  function cos(x) { const k = Math.round(x * INV_PIO2), r = (x - k * PIO2_1) - k * PIO2_1T, q = ((k % 4) + 4) % 4; return q === 0 ? kc(r) : q === 1 ? -ks(r) : q === 2 ? -kc(r) : ks(r); }
+  function tanh(x) { const a = x < 0 ? -x : x; if (a > 22) return x < 0 ? -1 : 1; const e = exp(2 * a), t = (e - 1) / (e + 1); return x < 0 ? -t : t; }
+  const hypot = (x, y, z) => Math.sqrt(x * x + y * y + (z ? z * z : 0));
+  return { exp, sin, cos, tanh, hypot };
+})();
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -30,11 +53,11 @@ function createPhysics(cfg) {
   // Cushions: a nose line plus (on a pool table) an angled jaw facing at each end.
   const CUSHIONS = [], SEGS = [];
   (function build() {
-    const C38 = Math.cos(38 * Math.PI / 180), S38 = Math.sin(38 * Math.PI / 180);
-    const C75 = Math.cos(75 * Math.PI / 180), S75 = Math.sin(75 * Math.PI / 180);
-    const seg = (p, q) => { const l = Math.hypot(q[0] - p[0], q[1] - p[1]); SEGS.push({ ax: p[0], ay: p[1], bx: q[0], by: q[1], len: l, tx: (q[0] - p[0]) / l, ty: (q[1] - p[1]) / l }); };
+    const C38 = DMath.cos(38 * Math.PI / 180), S38 = DMath.sin(38 * Math.PI / 180);
+    const C75 = DMath.cos(75 * Math.PI / 180), S75 = DMath.sin(75 * Math.PI / 180);
+    const seg = (p, q) => { const l = DMath.hypot(q[0] - p[0], q[1] - p[1]); SEGS.push({ ax: p[0], ay: p[1], bx: q[0], by: q[1], len: l, tx: (q[0] - p[0]) / l, ty: (q[1] - p[1]) / l }); };
     function add(ax, ay, bx, by, ox, oy, aCorner, bCorner) {
-      const len = Math.hypot(bx - ax, by - ay), tx = (bx - ax) / len, ty = (by - ay) / len;
+      const len = DMath.hypot(bx - ax, by - ay), tx = (bx - ax) / len, ty = (by - ay) / len;
       const ja = aCorner ? [C38, S38, 0.065 * kc] : [C75, S75, 0.05 * ks];
       const jb = bCorner ? [C38, S38, 0.065 * kc] : [C75, S75, 0.05 * ks];
       const c = {
@@ -79,9 +102,9 @@ function createPhysics(cfg) {
   const NO_WALLS = [];
   function walls(list) {
     return (list || []).map(q => {
-      const c = Math.cos(q.ang || 0), s = Math.sin(q.ang || 0), hl = q.len / 2, ht = (q.thick || 0.03) / 2;
+      const c = DMath.cos(q.ang || 0), s = DMath.sin(q.ang || 0), hl = q.len / 2, ht = (q.thick || 0.03) / 2;
       const at = (u, v) => [q.x + c * u - s * v, q.y + s * u + c * v], P = [at(-hl, -ht), at(hl, -ht), at(hl, ht), at(-hl, ht)], faces = [];
-      for (let i = 0; i < 4; i++) { const a = P[i], b = P[(i + 1) % 4], l = Math.hypot(b[0] - a[0], b[1] - a[1]); faces.push({ ax: a[0], ay: a[1], bx: b[0], by: b[1], len: l, tx: (b[0] - a[0]) / l, ty: (b[1] - a[1]) / l }); }
+      for (let i = 0; i < 4; i++) { const a = P[i], b = P[(i + 1) % 4], l = DMath.hypot(b[0] - a[0], b[1] - a[1]); faces.push({ ax: a[0], ay: a[1], bx: b[0], by: b[1], len: l, tx: (b[0] - a[0]) / l, ty: (b[1] - a[1]) / l }); }
       return { x: q.x, y: q.y, len: q.len, thick: ht * 2, ang: q.ang || 0, h: q.h || 0.04, faces, reach: hl + ht + R };
     });
   }
@@ -95,7 +118,7 @@ function createPhysics(cfg) {
     b.x = b.px = x; b.y = b.py = y; b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.pz = b.vz = 0; b.hot = 0; b.spit = 0; b.on = true;
     if (rnd) {
       const a = rnd() * Math.PI * 2, tl = (rnd() - 0.5) * 0.9;
-      const cz = Math.cos(a / 2), sz = Math.sin(a / 2), cx = Math.cos(tl / 2), sx = Math.sin(tl / 2);
+      const cz = DMath.cos(a / 2), sz = DMath.sin(a / 2), cx = DMath.cos(tl / 2), sx = DMath.sin(tl / 2);
       b.q = [cz * sx, sz * sx, sz * cx, cz * cx];
     }
   }
@@ -106,16 +129,16 @@ function createPhysics(cfg) {
        side on a raised cue sets the ball spinning about the line it travels along, and the cloth pushes back sideways, so it
        curves (masse) - once it is on the cloth: in the air nothing turns it. */
   function strike(w, ang, V, a, bb, el) {
-    const c = w.balls[w.cue], dx = Math.cos(ang), dy = Math.sin(ang);
+    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
-    const ce = Math.cos(el), se = Math.sin(el);
+    const ce = DMath.cos(el), se = DMath.sin(el);
     c.vx = V * ce * dx; c.vy = V * ce * dy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
     const up = lift(V, el); c.z = 0; c.vz = up > 0 ? up : 0;
     if (se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
-      const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = Math.hypot(ux, uy);
+      const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = DMath.hypot(ux, uy);
       if (us > 1e-4) { const dec = Math.min(PINCH * MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
     }
     w.ev = newEv();
@@ -133,7 +156,7 @@ function createPhysics(cfg) {
      The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
      of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
   const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35;
-  const lift = (V, el) => { const u = Math.max(0, ANG_K * V * Math.sin(el) - ANG_C); return ANG_Z * Math.tanh(u / ANG_Z); };
+  const lift = (V, el) => { const u = Math.max(0, ANG_K * V * DMath.sin(el) - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
@@ -153,7 +176,7 @@ function createPhysics(cfg) {
         const down = Math.sqrt(b.vz * b.vz + 2 * G * b.z), bounce = down > LAND;
         b.x += b.vx * tl; b.y += b.vy * tl; b.z = 0; rem -= tl;
         // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
-        const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
+        const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = DMath.hypot(ux, uy);
         if (us > 1e-4) { const dec = Math.min(MU_LAND * (bounce ? 1 + E_LAND : 1) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
         if (bounce) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; }
         else { b.vz = 0; b.x += b.vx * rem; b.y += b.vy * rem; break; }
@@ -168,7 +191,7 @@ function createPhysics(cfg) {
       if (b.z <= 0) {
         b.z = 0;
         // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
-        const down = -b.vz, ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
+        const down = -b.vz, ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = DMath.hypot(ux, uy);
         if (us > 1e-4 && down > 0) { const dec = Math.min(MU_LAND * (1 + E_LAND) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
         if (down > LAND) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; } else b.vz = 0;
       }
@@ -177,7 +200,7 @@ function createPhysics(cfg) {
     }
     // ice: much more slippery than the cloth it replaces
     const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? MU_R0 * 0.53 : MU_R0, MU_SP = w.ice ? MU_SP0 * 0.3 : MU_SP0;
-    const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = Math.hypot(ux, uy);
+    const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = DMath.hypot(ux, uy);
     if (us > 1e-4) {
       const dec = MU_S * G * h;
       if (us <= 3.5 * dec) {
@@ -191,7 +214,7 @@ function createPhysics(cfg) {
     } else {
       // The cloth holds a rolling ball back by the same amount at any speed - except over the last stretch, where it lets go a
       // little, so the ball trickles to rest instead of stopping as if it had been switched off.
-      const sp = Math.hypot(b.vx, b.vy), dec = MU_R * G * h * (sp < CREEP ? 0.35 + 0.65 * sp / CREEP : 1);
+      const sp = DMath.hypot(b.vx, b.vy), dec = MU_R * G * h * (sp < CREEP ? 0.35 + 0.65 * sp / CREEP : 1);
       if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
@@ -200,8 +223,8 @@ function createPhysics(cfg) {
          however hard the ball was hit (and twice the pace put twice the side on), so a given side bends a given cushion by
          the same amount at any pace. A third of it is gone after a metre; after three cushions or so it is all but spent.
          A ball turning on the spot still winds down at the old rate. */
-      const run = Math.hypot(b.vx, b.vy) * h;
-      b.wz *= Math.exp(-run / SIDE_RUN);
+      const run = DMath.hypot(b.vx, b.vy) * h;
+      b.wz *= DMath.exp(-run / SIDE_RUN);
       const dz = (2.5 * MU_SP * G / R) * h * 0.25;
       if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
     } else {
@@ -209,14 +232,14 @@ function createPhysics(cfg) {
       if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
     }
     b.x += b.vx * h; b.y += b.vy * h;
-    const spd = Math.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
+    const spd = DMath.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
     if (b.spit > 0) b.spit -= h;
     if (w.track) turn(b, h);
   }
   function turn(b, h) {
-    const wm = Math.hypot(b.wx, b.wy, b.wz);
+    const wm = DMath.hypot(b.wx, b.wy, b.wz);
     if (wm > 1e-6) {
-      const ang = wm * h, s = Math.sin(ang / 2) / wm, c = Math.cos(ang / 2);
+      const ang = wm * h, s = DMath.sin(ang / 2) / wm, c = DMath.cos(ang / 2);
       const dx = b.wx * s, dy = b.wy * s, dzq = b.wz * s, q = b.q, qx = q[0], qy = q[1], qz = q[2], qw = q[3];
       q[0] = c * qx + dx * qw + dy * qz - dzq * qy;
       q[1] = c * qy + dy * qw + dzq * qx - dx * qz;
@@ -247,7 +270,7 @@ function createPhysics(cfg) {
       // back to the instant it touched, so that the cushion is met where and how it really was met - then on from there
       tau = Math.min(SUBH, (R - d) / -vn); b.x -= b.vx * tau; b.y -= b.vy * tau;
       u = (b.x - s.ax) * s.tx + (b.y - s.ay) * s.ty; u = u < 0 ? 0 : u > s.len ? s.len : u;
-      const qx = s.ax + s.tx * u, qy = s.ay + s.ty * u, ex = b.x - qx, ey = b.y - qy, el = Math.hypot(ex, ey);
+      const qx = s.ax + s.tx * u, qy = s.ay + s.ty * u, ex = b.x - qx, ey = b.y - qy, el = DMath.hypot(ex, ey);
       if (el > 1e-9) { nx = ex / el; ny = ey / el; if (el < R) { b.x = qx + nx * R; b.y = qy + ny * R; } }
       vn = b.vx * nx + b.vy * ny;
       if (vn >= 0) { b.x += b.vx * tau; b.y += b.vy * tau; return; }
@@ -305,7 +328,7 @@ function createPhysics(cfg) {
     if (dv >= 0 || vv < 1e-12) return;                             // already parting
     const tau = Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv);
     for (const q of [a, b]) { q.x -= q.vx * tau; q.y -= q.vy * tau; q.z = Math.max(0, q.z - q.vz * tau); }
-    dx = b.x - a.x; dy = b.y - a.y; dz = b.z - a.z; const d = Math.hypot(dx, dy, dz) || 1, nx = dx / d, ny = dy / d, nz = dz / d;
+    dx = b.x - a.x; dy = b.y - a.y; dz = b.z - a.z; const d = DMath.hypot(dx, dy, dz) || 1, nx = dx / d, ny = dy / d, nz = dz / d;
     const rel = rx * nx + ry * ny + rz * nz;
     if (rel < 0) {
       const jn = -(1 + E_BALL) / 2 * rel;
@@ -353,7 +376,7 @@ function createPhysics(cfg) {
       for (const k of inv) { const q = bs[k]; q.x -= q.vx * T; q.y -= q.vy * T; }
       const deg = new Map(); for (const k of inv) deg.set(k, 0); for (const c of group) { deg.set(c.i, deg.get(c.i) + 1); deg.set(c.j, deg.get(c.j) + 1); }
       for (const c of group) {
-        const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+        const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, d = DMath.hypot(dx, dy) || 1;
         c.nx = dx / d; c.ny = dy / d; c.rel0 = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny;
         c.target = c.rel0 < 0 ? -E_BALL * c.rel0 : 0; c.lam = 0; c.w = 1 / Math.max(deg.get(c.i), deg.get(c.j));
       }
@@ -403,7 +426,7 @@ function createPhysics(cfg) {
   let TR_N = null;
   function traceSub(w, c, vx, vy) {
     const T = w.trace; T.p.push(c.x, c.y);
-    const si = Math.hypot(vx, vy), so = Math.hypot(c.vx, c.vy);
+    const si = DMath.hypot(vx, vy), so = DMath.hypot(c.vx, c.vy);
     if (si > 0.02 && so > 0.005) {
       const ix = vx / si, iy = vy / si, ox = c.vx / so, oy = c.vy / so;
       if (ix * ox + iy * oy < 0.995) T.k.push({ x: c.x, y: c.y, din: [ix, iy], dout: [ox, oy], n: TR_N });
@@ -503,7 +526,7 @@ function createPhysics(cfg) {
 
   function step(w, dt) {
     let vmax = 0;
-    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = Math.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
+    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = DMath.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
@@ -586,20 +609,20 @@ function createPhysics(cfg) {
         if (!w2.ev.at) { out.pre.push(c.x, c.y, c.z); if (c.vx === 0 && c.vy === 0 && c.z === 0 && c.vz === 0) break; continue; }
         out.at = w2.ev.at; tc = t;
         if (out.at[3] >= 0) {
-          out.hit = out.at[3]; o = w2.balls[out.hit]; const s = Math.hypot(o.vx, o.vy), b0 = w.balls[out.hit];
+          out.hit = out.at[3]; o = w2.balls[out.hit]; const s = DMath.hypot(o.vx, o.vy), b0 = w.balls[out.hit];
           if (s > 1e-6) { out.obj = { x0: b0.x, y0: b0.y, dx: o.vx / s, dy: o.vy / s, x1: o.x, y1: o.y }; ldx = o.vx / s; ldy = o.vy / s; oGo = true; out.objPath.push(b0.x, b0.y, 0, o.x, o.y, o.z); }
         }
         out.post.push(out.at[0], out.at[1], out.at[2], c.x, c.y, c.z);
       } else {
         out.post.push(c.x, c.y, c.z);
         if (out.turn < 0) {
-          const mx = c.x - lx, my = c.y - ly, ml = Math.hypot(mx, my);
+          const mx = c.x - lx, my = c.y - ly, ml = DMath.hypot(mx, my);
           if (ml < 1e-7) out.turn = out.post.length - 3;
           else { if ((cdx || cdy) && (mx * cdx + my * cdy) / ml < 0.9994) out.turn = out.post.length - 6; cdx = mx / ml; cdy = my / ml; }
         }
         if (o && o.on && (o.vx || o.vy || o.vz)) out.objPath.push(o.x, o.y, o.z);
         if (oGo) {
-          const s = Math.hypot(o.vx, o.vy);
+          const s = DMath.hypot(o.vx, o.vy);
           if (!o.on || s < 1e-6 || (o.vx * ldx + o.vy * ldy) / s < 0.9994) oGo = false;   // potted, stopped, or knocked off its line
           else { out.obj.x1 = o.x; out.obj.y1 = o.y; ldx = o.vx / s; ldy = o.vy / s; }
         }
@@ -612,7 +635,7 @@ function createPhysics(cfg) {
   }
 
   function pathClear(w, x0, y0, x1, y1, skip, rad) {
-    const len = Math.hypot(x1 - x0, y1 - y0); if (len < 1e-9) return true;
+    const len = DMath.hypot(x1 - x0, y1 - y0); if (len < 1e-9) return true;
     const tx = (x1 - x0) / len, ty = (y1 - y0) / len, lim = (rad || 2 * R) - 0.0015;
     for (const b of w.balls) {
       if (!b.on || skip.indexOf(b.id) >= 0) continue;
@@ -635,7 +658,7 @@ function createPhysics(cfg) {
   function findFree(w, x, y, skipId) {
     if (isFree(w, x, y, skipId)) return [x, y];
     for (let r = 0.01; r < 1.5; r += 0.01) for (let k = 0; k < 24; k++) {
-      const a = k * Math.PI / 12, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      const a = k * Math.PI / 12, px = x + DMath.cos(a) * r, py = y + DMath.sin(a) * r;
       if (isFree(w, px, py, skipId)) return [px, py];
     }
     return [x, y];
@@ -645,4 +668,4 @@ function createPhysics(cfg) {
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
   return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
-if (typeof module !== 'undefined') module.exports = createPhysics;
+if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; }

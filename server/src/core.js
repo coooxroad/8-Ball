@@ -35,6 +35,7 @@ export class VaultCore {
 
   init(secretHash) { if (this.get('secret')) return false; this.set('secret', secretHash); this.set('since', Date.now()); this.set('dama', E.ECONOMY.DAMA_START); return true; }
   authed(secretHash) { const s = this.get('secret'); return !!s && s === secretHash; }
+  known(kind, id) { return (KINDS[kind] || []).some(q => q.id === id); }
   owns(kind, id) { const it = (KINDS[kind] || []).find(q => q.id === id); return !!it && (!(it.rarity > 0) || this.sql.exec(`SELECT 1 FROM owned WHERE kind = ? AND id = ?`, kind, id).toArray().length > 0); }
   me() {
     // (one read for everything owned; the 일반 things are everyone's)

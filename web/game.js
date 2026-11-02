@@ -240,7 +240,8 @@ function createGame(PH, makeAI) {
   g.cueBall = () => g.world.balls[g.world.cue];
   // 4구 starts with the balls rolled out across the table: each set rolling in a direction and at a speed of chance; the
   // physics then runs until they stop (the app, frame by frame; the server, at once - the same steps, so the same places)
-  g.rollOut = rnd => { for (const b of g.world.balls) if (b.on) { const a = rnd() * Math.PI * 2, v = 0.5 + rnd() * 0.9; b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; } };
+  // (the same on every device and the server: physics.js DMath where it is loaded alongside)
+  g.rollOut = rnd => { const M = typeof DMath !== 'undefined' ? DMath : Math; for (const b of g.world.balls) if (b.on) { const a = rnd() * Math.PI * 2, v = 0.5 + rnd() * 0.9; b.vx = M.cos(a) * v; b.vy = M.sin(a) * v; } };
   g.legal = () => g.mode.legal(g, g.turn);
   /* How hard the cue ball is struck (m/s) for a power from 0 to 1: 0.35 + B * power^E above LOW. That curve bottoms out at
      0.35 m/s, which already rolls a ball most of half a metre - so below LOW it bends down, smoothly (same value and slope

@@ -139,6 +139,8 @@ export class RoomCore {
     if (!m || typeof m !== 'object' || this.get('status') !== 'playing') return null;
     const r = this.get('room'), other = 1 - seat;
     if (m.t === 'aim') { this.send(other, { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null }); return null; }
+    // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
+    if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.send(other, { t: 'res', n: m.n, st: m.st }); return null; }
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
       const as = r.standIn && seat === 0 && m.as === 1 ? 1 : seat;

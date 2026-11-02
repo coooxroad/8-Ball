@@ -53,6 +53,7 @@ const match = {
       if (r.score >= 20) keep(r, true);
       if (bad.score >= 20) keep(bad, false);
     }
+    if (match.ctx.online && shot) ranked.settled(shot.turn);
     if (game.over) return match.finish();
     if (game.turn !== shot.turn && match.innings) match.innings[game.turn]++;   // (a new visit to the table)
     toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
