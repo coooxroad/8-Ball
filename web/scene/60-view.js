@@ -14,7 +14,7 @@
   }
   // the lamps' shift is in screen terms (right, up), so it follows the table's turn on an upright screen
   function applyLook() { const r = lampsOn ? 0.8 : 0, u = lampsOn ? 0.6 : 0; lampShift = portrait ? [u, -r] : [r, u]; placeLamps(); }
-  let portrait = false, lying = false, dirty = 3, quality = 'auto', W = 0, H = 0;
+  let portrait = false, lying = false, dirty = 3, quality = 'auto', W = 0, H = 0, dynScale = 1;
   const ins = { t: 60, l: 62, r: 70, b: 6 }, insTo = { t: 60, l: 62, r: 70, b: 6 };
   /* Looking round in 3D. While the view is turning, the table is drawn directly every frame (nothing stored would fit a
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
@@ -81,11 +81,14 @@
     // at exactly the screen's resolution it comes out soft - which shows on a computer's screen (one pixel a pixel). So
     // while it leans there it is drawn at twice the screen's pixels, and the browser has detail to spare. Phones and tablets
     // draw at two already and are left as they are (their frame rate first).
-    const lean = app.classList.contains('tilt'), dpr = Math.min(window.devicePixelRatio || 1, 3), want = lean && dpr < 2 ? 2 : dpr;
+    // In play on '자동' the 3D is drawn at most two pixels a screen point: phones are 2.6 to 3 now, and the difference does not show
+    // at arm's length while it is close to half the pixels to fill (the page's text and buttons stay at the screen's own).
+    // '높음' draws at the screen's full density. dynScale: the frame-rate guard's last resort (app/90-loop.js perfTick).
+    const lean = app.classList.contains('tilt'), dpr = Math.min(window.devicePixelRatio || 1, 3), want = lean ? Math.max(2, dpr) : quality === 'high' ? dpr : Math.min(dpr, 2) * dynScale;
     const cap = quality === 'high' ? (lean ? 14e6 : 9e6) : quality === 'low' ? 1.6e6 : (lean ? 8e6 : 4.2e6);
     // (never under one screen pixel a pixel - that is what looks blurred - unless the GPU cannot hold a picture that big)
     const maxSide = Math.min(renderer.capabilities.maxTextureSize, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
-    renderer.setPixelRatio(Math.min(Math.max(1, Math.min(want, Math.sqrt(cap / (W * H)))), maxSide / W, maxSide / H));
+    renderer.setPixelRatio(Math.min(Math.max(Math.min(1, want), Math.min(want, Math.sqrt(cap / (W * H)))), maxSide / W, maxSide / H));
     renderer.setSize(W, H, false);
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
     if (!rt || rt.width !== size.x || rt.height !== size.y) {
@@ -123,6 +126,7 @@
     dirty = 3;
   }
   function setQuality(q) { quality = q; resize(); }
+  function setScale(k) { k = Math.max(0.85, Math.min(1, k)); if (Math.abs(k - dynScale) < 0.01) return; dynScale = k; resize(); }
 
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());

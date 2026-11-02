@@ -19,6 +19,7 @@
   }
   if (!gl) return null;
   try { renderer = new THREE.WebGLRenderer({ canvas, context: gl }); } catch (e) { return null; }
+  renderer.info.autoReset = false;                   // (counted a whole frame - every pass - for the frame-rate display; reset in frame())
   const RW = 0.095, RAIL_Z = 0.04, FOV = 40;
   const LAMPS = [[-0.78, 0, 1.05], [0, 0, 1.05], [0.78, 0, 1.05]];   // three shades hanging over the long axis
   const CW = PH.pool.CW;

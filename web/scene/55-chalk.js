@@ -18,7 +18,21 @@
   function chalkFit(P, R) {
     chalk.P = P; chalkMesh.scale.set(2 * P.HL, 2 * P.HW, 1); chalkMesh.position.set(0, 0, 0.0012);
   }
-  function chalkClear() { chalkG.clearRect(0, 0, CH_W, CH_H); chalk.pts.length = 0; chalk.corners.length = 0; chalk.last = null; chalk.open = null; chalkTex.needsUpdate = true; }
+  /* The cloth picture goes to the graphics card a few times a second, not every frame: sending the whole 1024x512 picture
+     each frame the ball moved was what made the chalk trail stutter on phones. The stretch drawn since it last went is
+     shown meanwhile as a plain line of the same colour over it (fresh: those points), so the line still keeps up with the
+     ball. force: send now (a corner written, the ball stopped). */
+  const rFresh = makeRibbon(); scene.add(rFresh); rFresh.renderOrder = 2; rFresh.material.depthTest = true; rFresh.visible = false;
+  const fresh = []; let upAt = 0;
+  function markFlush(force, R, col, wid) {
+    const now = performance.now();
+    if (chalk.dirty && (force || now - upAt > 110)) { chalkTex.needsUpdate = true; chalk.dirty = false; upAt = now; fresh.length = 0; }
+    if (fresh.length < 2 || col == null) { rFresh.visible = false; return; }
+    const pts = []; for (const p of fresh) pts.push(p.x, p.y, -R + 0.0016);
+    ribbon(rFresh, pts, { m: wid, color: col, op: 0.8 }, R);
+  }
+  function freshTo(a, b) { if (!fresh.length) fresh.push(a); fresh.push(b); }
+  function chalkClear() { chalkG.clearRect(0, 0, CH_W, CH_H); fresh.length = 0; rFresh.visible = false; chalk.pts.length = 0; chalk.corners.length = 0; chalk.last = null; chalk.open = null; chalkTex.needsUpdate = true; }
   // one stretch of chalk: a few thin passes slightly off one another, each broken here and there, as a stick drags on cloth
   function chalkLine(a, b) {
     const g = chalkG, s = chS(), w = Math.max(1.6, 0.0032 * s);
@@ -67,7 +81,7 @@
       const L = chalk.pts.length, p = { x: T.p[i], y: T.p[i + 1] }, q = chalk.pts[L - 1];
       if (!q) { chalk.pts.push(p); continue; }
       if (Math.hypot(p.x - q.x, p.y - q.y) < 0.004) continue;
-      chalkLine(q, p); chalk.pts.push(p); chalk.dirty = true;
+      chalkLine(q, p); freshTo(q, p); chalk.pts.push(p); chalk.dirty = true;
     }
     T.p.length = 0;
     for (const k of T.k) {
@@ -77,14 +91,14 @@
     }
     T.k.length = 0;
     // the corner left open is written once the ball is clear of it (or has stopped)
-    const o = chalk.open;
+    const o = chalk.open; let wrote = false;
     if (o && (!moving || !c || !c.on || Math.hypot(c.x - o.x, c.y - o.y) > 0.04)) {
       chalk.open = null;
       const t = o.din[0] * o.dout[0] + o.din[1] * o.dout[1];
-      if (t < Math.cos(0.12)) { chalkAngle(o, o.din, o.dout, o.n); chalk.dirty = true; fxSounds.push({ file: 'fx-chalk', v: 0.5, x: o.x, y: o.y }); }
+      if (t < Math.cos(0.12)) { chalkAngle(o, o.din, o.dout, o.n); chalk.dirty = true; wrote = true; fxSounds.push({ file: 'fx-chalk', v: 0.5, x: o.x, y: o.y }); }
     }
-    if (chalk.dirty) { chalkTex.needsUpdate = true; chalk.dirty = false; }
+    markFlush(wrote || !moving, R, 0xf0f2ea, 0.0034);
     chalkMesh.visible = chalk.pts.length > 1;
     return moving;
   }
-  function chalkOff() { chalkClear(); chalkMesh.visible = false; chalkMat.opacity = 1; traceOff(); chalk.open = null; }
+  function chalkOff() { chalkClear(); rFresh.visible = false; chalkMesh.visible = false; chalkMat.opacity = 1; traceOff(); chalk.open = null; }

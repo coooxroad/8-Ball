@@ -1,5 +1,5 @@
 /* ================= frame loop ================= */
-let lastT = 0, acc = 0, fpsN = 0, fpsT = 0;
+let lastT = 0, acc = 0;
 // which balls may be hit: recomputed when the table changes (st.rev), not on every frame
 const NONE = [], legal = { rev: -1, turn: -1, ids: NONE };
 function legalNow() { if (legal.rev !== st.rev || legal.turn !== game.turn) { legal.rev = st.rev; legal.turn = game.turn; legal.ids = game.legal(); } return legal.ids; }
@@ -71,7 +71,7 @@ let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
   checkPixelRatio();
-  const dt = Math.min(0.1, (now - lastT) / 1000 || 0); lastT = now;
+  const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   // (a ranked game goes on under a sheet: the other player is still playing)
   const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown());
@@ -112,10 +112,26 @@ function frame(now) {
   }, dt);
   drainFalls(); drainFx();
   if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
-  if (prefs.fps) {
-    fpsN++; fpsT += dt;
-    if (fpsT >= 0.5) { $('#fps').textContent = `${Math.round(fpsN / fpsT)} FPS · ${scene.pixelRatio.toFixed(2)}x` + (drew ? '' : ' · 대기'); fpsN = 0; fpsT = 0; }
+  perfTick(raw, drew);
+}
+/* How the frames are coming, from the real time between them (not the game's capped dt), counting only frames that drew
+   something (a still screen draws nothing, and that is as it should be). Every two seconds:
+   - the display (설정 · 초당 프레임 표시): frames a second, how many came late (over 25 ms), the slowest one in twenty
+     (p95), what the frame drew (draw calls · thousands of triangles) and the 3D's pixel density;
+   - the guard, last resort, in play on '자동' only: when one frame in ten is slower than 25 ms (under 40 a second) the 3D is
+     drawn a step coarser (5% at a time, down to 85%), and back up once it has kept up for six seconds. Nothing else changes. */
+const perf = { gaps: [], t: 0, n: 0, ok: 0, calls: 0, tris: 0 };
+function perfTick(raw, drew) {
+  perf.t += raw;
+  if (drew && raw > 0 && raw < 400) { perf.gaps.push(raw); perf.calls = scene.info.render.calls; perf.tris = scene.info.render.triangles; }
+  if (perf.t < 2000) return;
+  const g = perf.gaps.sort((a, b) => a - b), n = g.length, at = q => g[Math.min(n - 1, Math.floor(n * q))];
+  if (prefs.fps) $('#fps').textContent = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > 25).length / n)}% · p95 ${Math.round(at(0.95))}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k · ${scene.pixelRatio.toFixed(2)}x` : `대기 · ${scene.pixelRatio.toFixed(2)}x`;
+  if (prefs.quality === 'auto' && st.screen === 'play' && n >= 30) {
+    if (at(0.9) > 25) { perf.ok = 0; scene.setScale(scene.scale - 0.05); }
+    else if (at(0.9) < 18 && ++perf.ok >= 3 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); }
   }
+  perf.gaps.length = 0; perf.t = 0;
 }
 
 /* ================= saving ================= */

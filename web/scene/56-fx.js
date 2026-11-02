@@ -6,7 +6,8 @@
        puff    a comic puff of wind as it sets off, and little clouds behind it
        ink     a brush stroke: thick and wet where the ball went slowly, dry and split where it flew; a blot at each turn
        fire    flames behind it and a scorch on the cloth; sparks off the cushions
-       splash  drops thrown up either side, rings spreading on the cloth, a burst at every cushion */
+       splash  drops thrown up either side, rings spreading on the cloth, a burst at every cushion
+       grass   the grass laid flat behind it in a paler stripe, earth and blades thrown up, a clod at every cushion */
   const FX_SHAPES = { dot: 0, star: 1, puff: 2, flame: 3, drop: 4 };
   const FX_VS = `
     attribute vec4 aCol; attribute float aSize; attribute float aShape;
@@ -119,6 +120,8 @@
       for (let i = 0; i < n; i++) { const a = fxRand() * Math.PI * 2, v = 0.3 + fxRand() * 0.9; fxSpawn(fxMix, { shape: 'drop', hex: 0xe6f8ff, x, y, z, vx: Math.cos(a) * v + (k.n ? k.n[0] * 0.6 : 0), vy: Math.sin(a) * v + (k.n ? k.n[1] * 0.6 : 0), vz: 0.8 + fxRand() * 1.3, g: -9.8, s0: 0.011 + fxRand() * 0.008, life: 2, a0: 0.9, ring: i % 3 === 0 }); }
       fxRing(x, y, 0.0018, R, R * 5, 1.1, 0.7); fxRing(x, y, 0.0018, R * 0.6, R * 3, 0.8, 0.5);
       if (sp > 0.25) fxSounds.push({ file: 'fx-splash', v: Math.min(1, sp / 2.5) * 0.8, x, y });
+    } else if (fx.kind === 'grass' && fromRail && sp > 0.5) {
+      for (let i = 0; i < 10; i++) { const a = fxRand() * Math.PI * 2, v = 0.2 + fxRand() * 0.6; fxSpawn(fxMix, { shape: 'drop', hex: fxRand() < 0.6 ? 0x6b4a2a : 0x4f9a3a, x, y, z, vx: Math.cos(a) * v + k.n[0] * 0.4, vy: Math.sin(a) * v + k.n[1] * 0.4, vz: 0.5 + fxRand() * 0.8, g: -9.8, s0: 0.007 + fxRand() * 0.007, life: 1.5, a0: 0.95 }); }
     } else if (fx.kind === 'puff' && fromRail && sp > 0.6) {
       fxSpawn(fxMix, { shape: 'puff', hex: fxPal.puff[(fxRand() * 4) | 0], x: x + k.n[0] * 0.02, y: y + k.n[1] * 0.02, z: z + 0.01, s0: 0.07, s1: 0.16, life: 1.1, a0: 0.85 });
     }
@@ -130,6 +133,7 @@
     if (fx.kind === 'ink') {
       // slow: a full wet stroke; fast: thinner, and the brush runs dry - the edges split into hairs with gaps between
       const wid = Math.max(0.011, Math.min(0.034, 0.034 - v * 0.004)), dry = Math.min(1, Math.max(0, (v - 1.5) / 3));
+      freshTo(a, b); fx.inkW = wid * (1 - dry * 0.45);
       fxMark((g, s) => {
         const px = -uy, py = ux; g.lineCap = 'round';
         g.strokeStyle = 'rgba(14,14,18,.9)'; g.lineWidth = wid * (1 - dry * 0.45) * s;
@@ -144,7 +148,7 @@
       return;
     }
     fx.gap += d;
-    const step = { stars: 0.016, puff: 0.06, fire: 0.012, splash: 0.02 }[fx.kind] || 0.02;
+    const step = { stars: 0.016, puff: 0.06, fire: 0.012, splash: 0.02, grass: 0.012 }[fx.kind] || 0.02;
     while (fx.gap >= step) {
       fx.gap -= step; const t = 1 - fx.gap / d, x = a.x + (b.x - a.x) * Math.max(0, Math.min(1, t)), y = a.y + (b.y - a.y) * Math.max(0, Math.min(1, t));
       if (fx.kind === 'stars') {
@@ -158,6 +162,13 @@
         fxSpawn(fxAdd, { shape: 'flame', hex: 0xffa040, burn: true, x: x - uy * side - ux * 0.01, y: y + ux * side - uy * 0.01, z: z + 0.012, vz: 0.12 + fxRand() * 0.1, s0: 0.05 + Math.min(0.03, v * 0.008), s1: 0.018, life: 0.32 + fxRand() * 0.25, a0: 0.6 });
         if (fxRand() < 0.18) fxSpawn(fxAdd, { shape: 'dot', hex: 0xffd27a, x, y, z: z + 0.01, vx: (fxRand() - 0.5) * 0.5, vy: (fxRand() - 0.5) * 0.5, vz: 0.3 + fxRand() * 0.4, g: -1.5, s0: 0.009, s1: 0.003, life: 0.5 });
         fxMark((g, s) => { g.strokeStyle = 'rgba(34,18,8,.055)'; g.lineWidth = R * 1.1 * s; g.lineCap = 'round'; g.beginPath(); g.moveTo(chX(x - ux * step), chY(y - uy * step)); g.lineTo(chX(x), chY(y)); g.stroke(); });
+      } else if (fx.kind === 'grass') {
+        // the blades laid flat where it rolled (a paler stripe, the way a mower leaves one), and a little earth and grass thrown up
+        fxMark((g, s) => { const w = R * 1.5 * s, x0 = chX(x - ux * step), y0 = chY(y - uy * step), x1 = chX(x), y1 = chY(y);
+          g.lineCap = 'round'; g.strokeStyle = 'rgba(150,215,120,.16)'; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+          g.strokeStyle = 'rgba(40,90,30,.22)'; g.lineWidth = 1.2; for (const o of [-0.5, 0.5]) { const ox = -uy * o * w, oy = -ux * o * w; g.beginPath(); g.moveTo(x0 + ox, y0 + oy); g.lineTo(x1 + ox, y1 + oy); g.stroke(); } });
+        if (v > 0.4 && fxRand() < 0.55) { const sd = fxRand() < 0.5 ? -1 : 1, q = 0.2 + fxRand() * 0.4;
+          fxSpawn(fxMix, { shape: fxRand() < 0.5 ? 'drop' : 'dot', hex: fxRand() < 0.55 ? 0x6b4a2a : 0x4f9a3a, x, y, z, vx: -uy * sd * q - ux * 0.15, vy: ux * sd * q - uy * 0.15, vz: 0.4 + fxRand() * 0.6, g: -9.8, s0: 0.006 + fxRand() * 0.006, life: 1.5, a0: 0.95 }); }
       } else if (fx.kind === 'splash') {
         if (v < 0.15) continue;
         for (const sd of [-1, 1]) { const q = 0.25 + fxRand() * 0.5 * Math.min(1.6, v * 0.5); fxSpawn(fxMix, { shape: 'drop', hex: fxRand() < 0.5 ? 0xffffff : 0xcfefff, x: x + -uy * sd * R * 0.8, y: y + ux * sd * R * 0.8, z, vx: -uy * sd * q - ux * 0.1, vy: ux * sd * q - uy * 0.1, vz: 0.5 + fxRand() * 0.6 * Math.min(1.6, v * 0.5), g: -9.8, s0: 0.015 + fxRand() * 0.013, life: 2, a0: 0.9, ring: fxRand() < 0.3 }); }
@@ -215,7 +226,7 @@
     let live = fxStep(fxAdd, dt, R) | fxStep(fxMix, dt, R);
     renderer.getDrawingBufferSize(fxScaleV); const sc = camera.projectionMatrix.elements[5] * fxScaleV.y / 2;
     fxAdd.mat.uniforms.uScale.value = fxMix.mat.uniforms.uScale.value = sc;
-    if (chalk.dirty) { chalkTex.needsUpdate = true; chalk.dirty = false; }
+    markFlush(!moving, R, fx.kind === 'ink' ? 0x0e0e12 : null, fx.inkW || 0.02);
     return moving || !!live || (fx.fade > 0 && fx.fade < 1);
   }
   function fxOff() { setFx(null); }

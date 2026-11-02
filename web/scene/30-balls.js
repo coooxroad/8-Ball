@@ -12,6 +12,7 @@
   function ballTexture(kind, n) {
     const hex = h => '#' + h.toString(16).padStart(6, '0'), sk = skin, colOf = k => sk.pal ? hex(sk.pal[(k - 1) % 8]) : ballCss(k);
     const W = 1024, H = 512, c = mkCanvas(W, H), g = c.getContext('2d'), ivory = hex(sk.cue);
+    if (sk.paint) { paintBall(g, W, H, sk, kind, n, hex, colOf); return tex(c); }   // (painted in code: scene/35-paint.js)
     if (sk.skin != null) { skinTexture(g, W, H, sk, kind, n, hex, colOf); holesOn(g, W, H, sk); seamsOn(g, W, H, sk); return tex(c); }
     const dots = (bgc, dc, rad) => {
       g.fillStyle = bgc; g.fillRect(0, 0, W, H); g.fillStyle = dc;
@@ -238,16 +239,31 @@
     g.putImageData(im, 0, 0); const url = c.toDataURL('image/png'); if (done) shots[key] = url; dirty = 3; staticDirty = true;
     return url;
   }
+  // the shadows' markers into the two drawings: each one on show, in the order the balls are
+  const blobM = new THREE.Matrix4();
+  function blobSync(set, on) {
+    const [ci, li] = set.ims; let nc = 0, nl = 0;
+    if (on) for (const s of set.blob) {
+      if (!s.visible) continue;
+      s.children.forEach((o, k) => { blobM.compose(o.position, o.quaternion, o.scale); if (k) li.setMatrixAt(nl++, blobM); else ci.setMatrixAt(nc++, blobM); });
+    }
+    ci.count = nc; li.count = nl; ci.visible = nc > 0; li.visible = nl > 0;
+    ci.instanceMatrix.needsUpdate = li.instanceMatrix.needsUpdate = true;
+  }
   function ballSet(kind, n, R) {
     const mesh = [], blob = [];
     for (let i = 0; i < n; i++) {
       const m = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({ map: ballTexture(kind, i), roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.7 }));
       m.scale.setScalar(R); m.visible = false; scene.add(m); mesh.push(m);
+      // (a ball's shadows: where each one lies is kept here, in plain markers; they are drawn all together - blobSync)
       const s = new THREE.Group(); s.visible = false; scene.add(s); blob.push(s);
-      const c = new THREE.Mesh(unitPlane, blobMat); c.scale.set(R * 2.7, R * 2.7, 1); c.position.z = 0.0009; c.renderOrder = 1; s.add(c);
-      for (let k = 0; k < LAMPS.length; k++) { const l = new THREE.Mesh(unitPlane, lampShadowMat); l.scale.set(R * 3.3, R * 3.3, 1); l.position.z = 0.0008; l.renderOrder = 1; s.add(l); }
+      const c = new THREE.Object3D(); c.scale.set(R * 2.7, R * 2.7, 1); c.position.z = 0.0009; s.add(c);
+      for (let k = 0; k < LAMPS.length; k++) { const l = new THREE.Object3D(); l.scale.set(R * 3.3, R * 3.3, 1); l.position.z = 0.0008; s.add(l); }
     }
-    return { mesh, blob, R };
+    // every ball's contact shadow in one draw, and every lamp shadow in another (rather than four draws a ball: 64 for 8볼)
+    const ims = [new THREE.InstancedMesh(unitPlane, blobMat, n), new THREE.InstancedMesh(unitPlane, lampShadowMat, n * LAMPS.length)];
+    for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
+    return { mesh, blob, R, ims };
   }
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
   // another ball set: each ball's picture drawn again (the meshes stay)

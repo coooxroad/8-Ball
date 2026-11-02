@@ -50,6 +50,9 @@
     a.set(-cur.HL, -cur.HW, 0).project(camera); b.set(cur.HL, cur.HW, 0).project(camera);
   }
   // every frame the table is also drawn into the depth buffer only, so a ball dropping into a pocket goes behind the rail
+  // (the parts that can stand in front of a ball on the cloth - rails, cushions, pocket rims, barricades - are also on layer
+  // OCCL: seen tilted with nothing falling, only they need to be in the depth buffer, not the whole table, legs and all)
+  const OCCL = 2;
   const depthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
   const unmask = () => { const b = renderer.state.buffers; b.color.setMask(true); b.depth.setMask(true); };
 
