@@ -3,44 +3,60 @@
   const cueShadow = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
   cueShadow.renderOrder = 1; scene.add(cueShadow);
   /* A cue's other parts (content/20-cues.js parts): things that are not turned on a lathe, x along the cue from the tip,
-     z up. box [from, to, width, height] (a crossguard); ball [at, radius] (a pommel); prongs [from, to, spread, radius] (a
-     trident's two outer prongs, pointed at the tip end, and the bar that holds them); frets [from, to, count, width, z] (a
-     guitar's, closer together towards the body); pegs [from, to, count, size] (tuning pegs out of both sides); guitar
-     [from, to, width, thickness] (the body: two bouts and a waist, lying flat, a sound hole and a bridge, and six strings
-     from the head to the bridge). */
+     z up. box [from, to, width, height] (a crossguard, a headstock: z, color); ball [at, radius] (a pommel; facets: [round,
+     up] cut like a gem); frets [from, to, count, width, z] (closer together towards the body; dots: the inlays); pegs [from, to,
+     count, size] (tuning pegs out of both sides, out: how far); keys [from, to, count, radius] (a flute's keys along its top,
+     and the rod that carries them); acoustic [from, to, width, depth] (a guitar's body lying flat, its bottom at the tip:
+     spruce top with rosette, sound hole, pickguard and bridge, mahogany sides and back; strings [x, z] run from the bridge
+     to the head). */
+  const woodTop = (() => { let t = null; return () => t || (t = (() => {
+    const c = mkCanvas(512, 512), g = c.getContext('2d');
+    g.fillStyle = '#e8c88e'; g.fillRect(0, 0, 512, 512);
+    for (let k = 0; k < 90; k++) { g.strokeStyle = `rgba(150,105,55,${0.05 + (k % 3) * 0.03})`; g.lineWidth = 1 + (k % 4); g.beginPath(); g.moveTo(0, k * 5.7 + (k % 2)); g.lineTo(512, k * 5.7 + ((k * 7) % 5)); g.stroke(); }
+    return tex(c); })()); })();
   function cuePart(q, mat) {
     const add = (g, m) => { const o = new THREE.Mesh(g, m || mat); cue.add(o); return o; };
     if (q.box) { const [a, b, w, h] = q.box; add(new THREE.BoxGeometry(b - a, w, h)).position.set((a + b) / 2, 0, q.z || 0); }
-    else if (q.ball) { const [at, r] = q.ball; add(new THREE.SphereGeometry(r, 18, 12)).position.set(at, 0, 0); }
-    else if (q.prongs) {
-      const [a, b, sp, r] = q.prongs;
-      for (const sd of [-1, 1]) {
-        const g = new THREE.CylinderGeometry(r, r, b - a, 10); g.rotateZ(-Math.PI / 2); add(g).position.set((a + b) / 2, sd * sp, 0);
-        const c = new THREE.ConeGeometry(r * 1.6, r * 6, 10); c.rotateZ(Math.PI / 2); add(c).position.set(a - r * 3, sd * sp, 0);
-      }
-      add(new THREE.BoxGeometry(r * 3, 2 * sp + 2 * r, r * 2.2)).position.set(b, 0, 0);
+    else if (q.ball) {
+      const [at, r] = q.ball, g = q.facets ? new THREE.SphereGeometry(r, q.facets[0], q.facets[1]) : new THREE.SphereGeometry(r, 18, 12);
+      if (q.facets) mat.flatShading = true; add(g).position.set(at, 0, 0);
     } else if (q.frets) {
       const [a, b, n, w, z] = q.frets, at = k => a + (b - a) * (1 - Math.pow(2, -k / 12)) / (1 - Math.pow(2, -n / 12));
-      for (let k = 1; k <= n; k++) add(new THREE.BoxGeometry(0.0016, w, 0.0012)).position.set(at(k), 0, z);
+      for (let k = 1; k <= n; k++) add(new THREE.BoxGeometry(0.0018, w, 0.0014)).position.set(at(k), 0, z);
+      if (q.dots) { const dm = new THREE.MeshStandardMaterial({ color: col(0xf2eee4), roughness: 0.3 });
+        for (const k of [3, 5, 7, 9, 12, 15]) for (const o of k === 12 ? [-w * 0.25, w * 0.25] : [0]) { const dot = add(new THREE.CylinderGeometry(w * 0.07, w * 0.07, 0.001, 12), dm); dot.position.set((at(k - 1) + at(k)) / 2, o, z - 0.0002); dot.rotation.x = Math.PI / 2; } }
     } else if (q.pegs) {
       const [a, b, n, sz] = q.pegs;
-      for (let k = 0; k < n; k++) for (const sd of [-1, 1]) { const g = new THREE.CylinderGeometry(sz * 0.35, sz * 0.35, sz * 2.2, 8); add(g).position.set(a + (b - a) * (k + 0.5) / n, sd * (q.out || 0.015), 0); }
-    } else if (q.guitar) {
-      const [a, b, w, th] = q.guitar, L = b - a, N = 40, top = [];
-      // the outline's half-width along the body: the upper bout, the waist, the lower bout (bigger, towards the butt)
-      const half = u => Math.max(0.78 * w / 2 * Math.sqrt(Math.max(0, 1 - ((u - 0.3) / 0.3) ** 2)), w / 2 * Math.sqrt(Math.max(0, 1 - ((u - 0.68) / 0.33) ** 2)), u > 0.08 && u < 0.92 ? w * 0.3 : 0);
-      for (let i = 0; i <= N; i++) { const u = i / N; top.push([a + u * L, Math.max(0.004, half(u))]); }
-      const sh = new THREE.Shape(); sh.moveTo(top[0][0], -top[0][1]); for (const [x, y] of top) sh.lineTo(x, y); for (let i = N; i >= 0; i--) sh.lineTo(top[i][0], -top[i][1]);
-      const g = new THREE.ExtrudeGeometry(sh, { depth: th, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 2, curveSegments: 4 }); g.translate(0, 0, -th / 2);
-      // the top: a sunburst, dark at the edge
-      const cv = mkCanvas(256, 128), cg = cv.getContext('2d'), gr = cg.createRadialGradient(150, 64, 4, 150, 64, 130);
-      gr.addColorStop(0, '#f4b34a'); gr.addColorStop(0.55, '#d9772a'); gr.addColorStop(0.85, '#7a2e12'); gr.addColorStop(1, '#2a120a'); cg.fillStyle = gr; cg.fillRect(0, 0, 256, 128);
-      const t = tex(cv); t.repeat.set(1 / L, 1 / w); t.offset.set(-a / L, 0.5);
-      add(g, new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.6 }));
-      add(new THREE.CircleGeometry(w * 0.16, 28), new THREE.MeshBasicMaterial({ color: 0x0a0604 })).position.set(a + L * 0.36, 0, th / 2 + 0.0032);
-      add(new THREE.BoxGeometry(0.012, w * 0.42, 0.004), new THREE.MeshStandardMaterial({ color: col(0x1a100a), roughness: 0.5 })).position.set(a + L * 0.72, 0, th / 2 + 0.004);
-      const v = [], zt = th / 2 + 0.0065, zh = q.zHead || 0.006;
-      for (let k = 0; k < 6; k++) { const y0 = (k - 2.5) * 0.0028, y1 = (k - 2.5) * w * 0.06; v.push(q.head || 0.04, y0, zh, a + L * 0.72, y1, zt); }
+      for (let k = 0; k < n; k++) for (const sd of [-1, 1]) { const g = new THREE.CylinderGeometry(sz * 0.35, sz * 0.35, sz * 2.2, 8); add(g).position.set(a + (b - a) * (k + 0.5) / n, sd * (q.out || 0.015), q.z || 0); }
+    } else if (q.keys) {
+      const [a, b, n, r] = q.keys, top = q.z || 0.0105;
+      for (let k = 0; k < n; k++) { const g = new THREE.CylinderGeometry(r, r, 0.003, 18); g.rotateX(Math.PI / 2); add(g).position.set(a + (b - a) * (k + 0.5) / n, (k % 3 === 2 ? 0.004 : 0), top); }
+      const rod = new THREE.CylinderGeometry(0.0013, 0.0013, b - a, 8); rod.rotateZ(-Math.PI / 2); add(rod).position.set((a + b) / 2, -0.009, top - 0.003);
+    } else if (q.acoustic) {
+      const [a, b, w, dp] = q.acoustic, L = b - a, N = 48, edge = [];
+      // the outline: the lower bout (the wider) nearest the tip, the waist, the upper bout towards the neck - one smooth line
+      const half = u => { const lo = 0.5 * w * Math.sqrt(Math.max(0, 1 - ((u - 0.3) / 0.31) ** 2)), up = 0.38 * w * Math.sqrt(Math.max(0, 1 - ((u - 0.76) / 0.25) ** 2)), waist = 0.31 * w;
+        return Math.max(lo, up, u > 0.25 && u < 0.85 ? waist : 0, 0.002); };
+      for (let i = 0; i <= N; i++) { const u = i / N; edge.push([a + u * L, half(u)]); }
+      for (let k = 0; k < 2; k++) for (let i = 1; i < N; i++) edge[i][1] = (edge[i - 1][1] + 2 * edge[i][1] + edge[i + 1][1]) / 4;   // (smoothed)
+      const sh = new THREE.Shape(); sh.moveTo(edge[0][0], 0); for (const [x, y] of edge) sh.lineTo(x, y); for (let i = N; i >= 0; i--) sh.lineTo(edge[i][0], -edge[i][1]);
+      const side = new THREE.ExtrudeGeometry(sh, { depth: dp, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 2, curveSegments: 4 }); side.translate(0, 0, -dp / 2);
+      add(side, new THREE.MeshPhysicalMaterial({ color: col(0x5a2a14), roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 0.5 }));
+      // the top: spruce, its grain along the cue, a rosette round the sound hole, the pickguard, the bridge - drawn, then laid on
+      const c = mkCanvas(1024, 512), g = c.getContext('2d'), X = x => (x - a) / L * 1024, Y = y => (0.5 - y / w) * 512;
+      g.drawImage(woodTop().image, 0, 0, 1024, 512);
+      const hx = X(a + L * 0.62), hr = 0.13 * 512 * 0.5;           // (the sound hole: in picture pixels across the body)
+      for (const [r, cl, lw] of [[hr * 1.55, '#2a1608', 6], [hr * 1.42, '#f0e4c8', 3], [hr * 1.3, '#2a1608', 4]]) { g.strokeStyle = cl; g.lineWidth = lw; g.beginPath(); g.ellipse(hx, 256, r * 2 * w / L, r, 0, 0, 7); g.stroke(); }
+      g.fillStyle = '#0b0603'; g.beginPath(); g.ellipse(hx, 256, hr * 2 * w / L, hr, 0, 0, 7); g.fill();
+      g.fillStyle = 'rgba(30,14,8,.85)'; g.beginPath(); g.ellipse(hx - hr * 1.6 * w / L, 256 + hr * 1.5, hr * 1.8 * w / L, hr * 0.75, 0.4, 0, 7); g.fill();                       // pickguard
+      g.fillStyle = '#24130a'; g.fillRect(X(a + L * 0.2) - 12, Y(w * 0.2), 24, Y(-w * 0.2) - Y(w * 0.2)); g.fillStyle = '#efe6d2'; g.fillRect(X(a + L * 0.2) + 4, Y(w * 0.12), 4, Y(-w * 0.12) - Y(w * 0.12));   // bridge, saddle
+      const t = tex(c); t.repeat.set(1 / L, 1 / w); t.offset.set(-a / L, 0.5);
+      const capG = new THREE.ShapeGeometry(sh, 6);
+      add(capG, new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.5 })).position.z = dp / 2 + 0.0021;
+      const back = add(new THREE.ShapeGeometry(sh, 6), new THREE.MeshStandardMaterial({ color: col(0x3e1c0c), roughness: 0.4 })); back.position.z = -dp / 2 - 0.0021; back.rotation.x = Math.PI;
+      // strings: from the saddle to the head
+      const [hx2, hz] = q.strings || [1.25, 0.012], v = [], zt = dp / 2 + 0.006;
+      for (let k = 0; k < 6; k++) { const y0 = (k - 2.5) * w * 0.035, y1 = (k - 2.5) * 0.0042; v.push(a + L * 0.2 + 0.002, y0, zt, hx2, y1, hz); }
       const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
       cue.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xe8e4da })));
     }
@@ -54,13 +70,16 @@
       cue.add(new THREE.Mesh(g, mat));
     };
     const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
+    // (cut crystal: clear, faceted, catching the room's lamps; opacity k)
+    const glass = (h, k) => new THREE.MeshPhysicalMaterial({ color: col(h), roughness: 0.03, metalness: 0.1, transparent: true, opacity: k, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 2.4, flatShading: true, depthWrite: false });
     /* A cue with its own make (content/20-cues.js: profile, glow): its sections as given, tip first - and a lit blade, a
        bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
     if (d.profile) {
       /* a section's own options: rough, metal; sides (6: a pencil's flats); pic (a picture from web/tex wrapped round it,
          its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour) */
       for (const [x0, x1, r0, r1, h, o] of d.profile) {
-        const q = o || {}, m = std(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
+        // (glass: cut crystal - clear, faceted, catching the room's lights)
+        const q = o || {}, m = q.glass ? glass(h, q.glass) : std(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
         if (q.lit != null) { m.emissive = col(q.lit); m.emissiveIntensity = 1.6; }
         if (q.pic) {
           const at = cue.children.length, rep = q.rep || [1, Math.max(1, Math.round((x1 - x0) / 0.12))];
@@ -71,7 +90,7 @@
         }
         part(x0, x1, r0, r1, m, q.sides, q.flat);
       }
-      for (const q of d.parts || []) cuePart(q, std(q.color, q.rough != null ? q.rough : 0.4, q.metal || 0));
+      for (const q of d.parts || []) cuePart(q, q.glass ? glass(q.color, q.glass) : std(q.color != null ? q.color : 0xffffff, q.rough != null ? q.rough : 0.4, q.metal || 0));
       if (d.glow) {
         const G = d.glow, core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
         // (each layer ends round at the tip, not cut square: a cap of its own radius)

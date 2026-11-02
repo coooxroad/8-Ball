@@ -107,28 +107,51 @@ const CUES = [
     ],
     parts: [{ box: [0.86, 0.885, 0.12, 0.016], color: 0xb08d4a, rough: 0.3, metal: 1 }, { ball: [1.36, 0.022], color: 0xb08d4a, rough: 0.3, metal: 1 }],
     spec: [['길이', '136cm'], ['칼날', '양날 강철'], ['손잡이', '놋쇠 십자 가드'], ['그립', '가죽 감기'], ['폼멜', '놋쇠 공']] },
-  // a trident: the middle prong is the tip, two more either side; a bronze shaft, a sea-blue stone at the head
-  { id: 'trident', name: '삼지창', rarity: 4, note: '세 갈래 창끝, 청동 자루, 바다빛 보석', stat: { power: 8, spin: 4, guide: 4 },
+  // an acoustic guitar swung by its neck: the body's bottom is the tip, the neck runs back to the head at the butt
+  { id: 'guitar', name: '통기타', rarity: 3, note: '몸통으로 치는 통기타: 스프루스 상판, 로즈우드 지판, 끝엔 헤드와 줄감개', stat: { power: -2, spin: 8, guide: 6 },
     profile: [
-      [0, 0.03, 0.003, 0.0042, 0xd9c48a, { rough: 0.25, metal: 1 }],
-      [0.03, 0.125, 0.0042, 0.0042, 0xc8b070, { rough: 0.28, metal: 1 }],
-      [0.125, 0.15, 0.009, 0.009, 0x2fd0e0, { rough: 0.2, lit: 0x0aa8c8 }],
-      [0.15, 1.1, 0.0085, 0.0115, 0x6b5a3a, { rough: 0.35, metal: 0.85 }],
-      [1.1, 1.38, 0.0115, 0.0128, 0x2b2118, { rough: 0.8 }],
-      [1.38, 1.45, 0.0128, 0.0135, 0x9a8450, { rough: 0.3, metal: 1 }]
+      [0, 0.012, 0.005, 0.006, 0xe8e2d4, { rough: 0.4 }],
+      [0.012, 0.44, 0.012, 0.012, 0x5a2a14, { rough: 0.4 }],
+      [0.44, 1.12, 0.0135, 0.0125, 0x6a3418, { rough: 0.45, flat: 0.75 }],
+      [1.12, 1.3, 0.008, 0.008, 0x2a1408, { rough: 0.5 }]
     ],
-    parts: [{ prongs: [0.03, 0.12, 0.017, 0.0032], color: 0xc8b070, rough: 0.28, metal: 1 }],
-    spec: [['길이', '145cm'], ['창끝', '세 갈래 청동'], ['보석', '바다빛 돌'], ['자루', '청동'], ['그립', '검은 가죽']] },
-  // a guitar played the wrong way round: the head is the tip, frets up the neck, the body at the butt (strings and all)
-  { id: 'guitar', name: '기타', rarity: 3, note: '헤드가 팁, 프렛이 박힌 넥, 끝엔 선버스트 기타 몸통', stat: { power: -2, spin: 8, guide: 6 },
+    parts: [
+      { acoustic: [0.005, 0.46, 0.27, 0.075], strings: [1.14, 0.0135], color: 0x5a2a14 },
+      { box: [0.44, 1.12, 0.046, 0.005], z: 0.0095, color: 0x2a1610, rough: 0.6 },
+      { frets: [0.46, 1.11, 19, 0.046, 0.0125], dots: true, color: 0xc9ccd0, rough: 0.3, metal: 1 },
+      { box: [1.11, 1.12, 0.046, 0.007], z: 0.0105, color: 0xefe8d8, rough: 0.4 },
+      { box: [1.12, 1.3, 0.07, 0.014], z: 0.004, color: 0x2a1408, rough: 0.35 },
+      { pegs: [1.15, 1.28, 3, 0.007], out: 0.04, z: 0.004, color: 0xd8d8d8, rough: 0.3, metal: 1 }
+    ],
+    spec: [['길이', '130cm'], ['몸통', '스프루스 상판, 마호가니 옆판'], ['넥', '로즈우드 지판, 프렛 19'], ['헤드', '크롬 줄감개 여섯'], ['치는 곳', '몸통 바닥']] },
+  // a flute as long as a cue: silver, the crown at the tip, a lip plate, keys all down its top
+  { id: 'flute', name: '플루트', rarity: 2, note: '은빛 관에 줄지은 키, 입술 대는 곳까지', stat: { power: -3, spin: 6, guide: 5 },
     profile: [
-      [0, 0.012, 0.006, 0.0062, 0x3a2414, { rough: 0.6 }],
-      [0.012, 0.15, 0.012, 0.012, 0x3a2414, { rough: 0.5, sides: 4, flat: 0.45 }],
-      [0.15, 0.97, 0.0105, 0.0125, 0x3b2416, { rough: 0.6, flat: 0.55 }],
-      [0.97, 1.45, 0.012, 0.012, 0x3b2416, { rough: 0.6 }]
+      [0, 0.02, 0.0085, 0.0095, 0xe6e9ee, { rough: 0.12, metal: 1 }],
+      [0.02, 0.3, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }],
+      [0.3, 0.31, 0.0105, 0.0105, 0xeef0f4, { rough: 0.12, metal: 1 }],
+      [0.31, 1.1, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }],
+      [1.1, 1.11, 0.0105, 0.0105, 0xeef0f4, { rough: 0.12, metal: 1 }],
+      [1.11, 1.32, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }]
     ],
-    parts: [{ frets: [0.16, 0.95, 18, 0.02, 0.0068], color: 0xc9ccd0, rough: 0.3, metal: 1 }, { pegs: [0.025, 0.14, 3, 0.006], out: 0.014, color: 0xd8d8d8, rough: 0.3, metal: 1 },
-      { guitar: [0.96, 1.47, 0.17, 0.035], head: 0.03, zHead: 0.0055, color: 0xffffff }],
-    spec: [['길이', '147cm'], ['헤드', '마호가니, 크롬 줄감개'], ['넥', '로즈우드 지판, 프렛 18'], ['몸통', '선버스트'], ['줄', '6줄']] }
+    parts: [
+      { box: [0.11, 0.15, 0.022, 0.003], z: 0.0098, color: 0xeef0f4, rough: 0.12, metal: 1 },
+      { keys: [0.36, 1.06, 13, 0.0068], z: 0.0102, color: 0xeef0f4, rough: 0.12, metal: 1 },
+      { keys: [1.14, 1.3, 3, 0.0062], z: 0.0102, color: 0xeef0f4, rough: 0.12, metal: 1 }
+    ],
+    spec: [['길이', '132cm'], ['관', '은도금 니켈'], ['키', '열여섯, 닫힌 키'], ['머리', '입술판과 크라운'], ['소리', '맑은 휘슬']] },
+  // cut crystal: a faceted clear shaft, silver rings, a gem at the butt
+  { id: 'crystal', name: '크리스탈', rarity: 4, note: '깎은 크리스탈 상대, 은빛 링, 끝엔 보석', stat: { power: 6, spin: 6, guide: 4 },
+    profile: [
+      [0, 0.012, 0.006, 0.0062, 0xcfe8ff, { glass: 0.85 }],
+      [0.012, 0.74, 0.0064, 0.0104, 0xe8f4ff, { glass: 0.5, sides: 8 }],
+      [0.74, 0.756, 0.0108, 0.0108, 0xe6e9ee, { rough: 0.12, metal: 1 }],
+      [0.756, 1.03, 0.0106, 0.0122, 0xdcecff, { glass: 0.55, sides: 8 }],
+      [1.03, 1.04, 0.0124, 0.0124, 0xe6e9ee, { rough: 0.12, metal: 1 }],
+      [1.04, 1.3, 0.0123, 0.0136, 0xf0f6ff, { glass: 0.6, sides: 12 }],
+      [1.3, 1.42, 0.0136, 0.0146, 0xe6e9ee, { rough: 0.12, metal: 1 }]
+    ],
+    parts: [{ ball: [1.445, 0.024], facets: [10, 6], glass: 0.7, color: 0xbfe2ff }],
+    spec: [['길이', '147cm'], ['상대', '팔각으로 깎은 크리스탈'], ['링', '은'], ['끝', '깎은 보석'], ['빛', '면마다 반짝임']] }
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
