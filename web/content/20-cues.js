@@ -4,6 +4,9 @@
      sound?: see 30-balls.js }
    Or a cue of its own make: profile [[from, to, radius at from, radius at to, colour, { rough, metal }?], ...] (metres, from
    the tip) in place of the eight colours, and glow { from, to, color, core, r } (a lit blade). tasks/gpt-skins.md 2-1.
+   A section's options: rough, metal, sides (6: a pencil's flats; 4 with flat: a blade's diamond), flat (squashed top to
+   bottom), pic / rep (a picture wrapped round it), lit (its own light). parts: [{ box | ball | prongs | frets | pegs |
+   guitar: [...], color, rough?, metal? }] - what is not turned on a lathe (scene/40-cue.js cuePart says each one's numbers).
    Card picture: ui/cue-<id>.webp (2400x110, tip on the left). */
 const CUES = [
   { id: 'maple', name: '메이플 클래식', rarity: 1, note: '단풍나무 상대에 흑단 하대, 네 갈래 포인트', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710, stat: { power: 2, spin: 2, guide: 0 },
@@ -92,6 +95,40 @@ const CUES = [
       [1.3, 1.44, 0.0136, 0.0146, 0x1d2a22, { rough: 0.35, metal: 0.4 }],
       [1.44, 1.47, 0.0146, 0.014, 0xb07a3a, { rough: 0.3, metal: 0.9 }]
     ], sound: { file: 'fx-fire' },
-    spec: [['무게', '21oz · 595g'], ['팁', '불씨 팁'], ['몸통', '청동 비늘 감기'], ['장식', '청동 고리'], ['타격음', '화르륵']] }
+    spec: [['무게', '21oz · 595g'], ['팁', '불씨 팁'], ['몸통', '청동 비늘 감기'], ['장식', '청동 고리'], ['타격음', '화르륵']] },
+  // a knight's sword: a flat diamond blade to a point, a brass crossguard, a leather grip, a round pommel
+  { id: 'sword', name: '기사의 검', rarity: 2, note: '날 선 강철 칼날, 놋쇠 십자 손잡이, 가죽 그립', stat: { power: 5, spin: 0, guide: 3 },
+    profile: [
+      [0, 0.07, 0.003, 0.016, 0xdfe4ea, { rough: 0.18, metal: 1, sides: 4, flat: 0.22 }],
+      [0.07, 0.86, 0.016, 0.018, 0xd3d8de, { rough: 0.22, metal: 1, sides: 4, flat: 0.22 }],
+      [0.86, 0.9, 0.012, 0.012, 0x8a6a32, { rough: 0.35, metal: 0.9 }],
+      [0.9, 1.3, 0.0125, 0.0135, 0x4a2c18, { rough: 0.85 }],
+      [1.3, 1.34, 0.0105, 0.0105, 0x8a6a32, { rough: 0.35, metal: 0.9 }]
+    ],
+    parts: [{ box: [0.86, 0.885, 0.12, 0.016], color: 0xb08d4a, rough: 0.3, metal: 1 }, { ball: [1.36, 0.022], color: 0xb08d4a, rough: 0.3, metal: 1 }],
+    spec: [['길이', '136cm'], ['칼날', '양날 강철'], ['손잡이', '놋쇠 십자 가드'], ['그립', '가죽 감기'], ['폼멜', '놋쇠 공']] },
+  // a trident: the middle prong is the tip, two more either side; a bronze shaft, a sea-blue stone at the head
+  { id: 'trident', name: '삼지창', rarity: 4, note: '세 갈래 창끝, 청동 자루, 바다빛 보석', stat: { power: 8, spin: 4, guide: 4 },
+    profile: [
+      [0, 0.03, 0.003, 0.0042, 0xd9c48a, { rough: 0.25, metal: 1 }],
+      [0.03, 0.125, 0.0042, 0.0042, 0xc8b070, { rough: 0.28, metal: 1 }],
+      [0.125, 0.15, 0.009, 0.009, 0x2fd0e0, { rough: 0.2, lit: 0x0aa8c8 }],
+      [0.15, 1.1, 0.0085, 0.0115, 0x6b5a3a, { rough: 0.35, metal: 0.85 }],
+      [1.1, 1.38, 0.0115, 0.0128, 0x2b2118, { rough: 0.8 }],
+      [1.38, 1.45, 0.0128, 0.0135, 0x9a8450, { rough: 0.3, metal: 1 }]
+    ],
+    parts: [{ prongs: [0.03, 0.12, 0.017, 0.0032], color: 0xc8b070, rough: 0.28, metal: 1 }],
+    spec: [['길이', '145cm'], ['창끝', '세 갈래 청동'], ['보석', '바다빛 돌'], ['자루', '청동'], ['그립', '검은 가죽']] },
+  // a guitar played the wrong way round: the head is the tip, frets up the neck, the body at the butt (strings and all)
+  { id: 'guitar', name: '기타', rarity: 3, note: '헤드가 팁, 프렛이 박힌 넥, 끝엔 선버스트 기타 몸통', stat: { power: -2, spin: 8, guide: 6 },
+    profile: [
+      [0, 0.012, 0.006, 0.0062, 0x3a2414, { rough: 0.6 }],
+      [0.012, 0.15, 0.012, 0.012, 0x3a2414, { rough: 0.5, sides: 4, flat: 0.45 }],
+      [0.15, 0.97, 0.0105, 0.0125, 0x3b2416, { rough: 0.6, flat: 0.55 }],
+      [0.97, 1.45, 0.012, 0.012, 0x3b2416, { rough: 0.6 }]
+    ],
+    parts: [{ frets: [0.16, 0.95, 18, 0.02, 0.0068], color: 0xc9ccd0, rough: 0.3, metal: 1 }, { pegs: [0.025, 0.14, 3, 0.006], out: 0.014, color: 0xd8d8d8, rough: 0.3, metal: 1 },
+      { guitar: [0.96, 1.47, 0.17, 0.035], head: 0.03, zHead: 0.0055, color: 0xffffff }],
+    spec: [['길이', '147cm'], ['헤드', '마호가니, 크롬 줄감개'], ['넥', '로즈우드 지판, 프렛 18'], ['몸통', '선버스트'], ['줄', '6줄']] }
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
