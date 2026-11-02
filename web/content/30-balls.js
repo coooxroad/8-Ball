@@ -30,11 +30,11 @@ const BALLSKINS = [
     shape: { lumps: 0.105, squash: [1, 0.9, 0.96], n: 13, eyes: 8, seed: 37 }, finish: { rough: 0.92, coat: 0 },
     sound: { rate: 0.9, tone: 0.65, gain: 0.72 } },
   // a mirror ball: flat mirror facets in the ball's colour, and small lights thrown on the cloth round it (scene/57-comic.js)
-  { id: 'disco', name: '디스코볼', rarity: 3, note: '거울 조각이 촘촘한 미러볼, 굴러가며 천 위에 빛 조각을 뿌립니다', pal: null,
+  { id: 'disco', name: '디스코볼', rarity: 3, vfx: true, note: '거울 조각이 촘촘한 미러볼, 굴러가며 천 위에 빛 조각을 뿌립니다', pal: null,
     cue: 0xe9edf2, yel: 0xf3c43a, red: 0xe0473c, dots: false, skin: 0xaab1ba, mark: 'tint', sticker: 1.3,
     finish: { rough: 0.14, metal: 0.72, coat: 0, facets: [26, 14] } },
   // a comic: flat colours, the shading in print dots, black outlines, and 쾅! on hard hits (scene/57-comic.js)
-  { id: 'comic', name: '만화', rarity: 4, note: '만화책에서 튀어나온 공: 굵은 외곽선과 망점, 세게 맞으면 쾅!', pal: null,
+  { id: 'comic', name: '만화', rarity: 1, vfx: true, note: '만화책에서 튀어나온 공: 굵은 외곽선과 망점, 세게 맞으면 쾅!', pal: null,
     cue: 0xfbf6ea, yel: 0xffd21f, red: 0xf0322a, dots: false, finish: { toon: true } },
   // the planets: the Moon for the cue ball, Venus to Mercury for 1-7, a black hole for the 8 (scene/35-paint.js)
   { id: 'planets', name: '행성', rarity: 4, note: '달 큐볼, 금성·지구·화성·목성…, 8번은 빛나는 고리의 블랙홀. 줄무늬는 하얀 극관', pal: null,
@@ -43,7 +43,7 @@ const BALLSKINS = [
   { id: 'soccer', name: '축구공', rarity: 1, note: '오각형·육각형 가죽 조각을 꿰맨 축구공, 색은 공 번호대로', pal: null,
     cue: 0xf6f6f2, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'soccer', finish: { rough: 0.45, coat: 0.5 } },
   // cut crystal: each ball a gem in its colour, faceted, throwing rainbow light on the cloth (scene/35-paint.js, 57-comic.js)
-  { id: 'crystal', name: '크리스탈', rarity: 3, note: '빛을 머금은 크리스탈 공: 가장자리는 무지개로 갈라지고 면마다 반짝, 천 위엔 무지개 빛', pal: null,
+  { id: 'crystal', name: '크리스탈', rarity: 3, vfx: true, note: '빛을 머금은 크리스탈 공: 가장자리는 무지개로 갈라지고 면마다 반짝, 천 위엔 무지개 빛', pal: null,
     cue: 0xd6e8fa, yel: 0xf6d24a, red: 0xe0405a, dots: false, paint: 'crystal', finish: { rough: 0.04, coat: 1, env: 1.8, crystal: { rim: 0.7, sparkle: 0.09, cut: 11, sticker: 1 }, spots: 'rainbow' } },
   // basketballs, each in its colour
   { id: 'basketball', name: '농구공', rarity: 1, note: '오돌토돌한 가죽에 검은 줄, 색은 공 번호대로', pal: null,
