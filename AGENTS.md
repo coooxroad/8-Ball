@@ -42,7 +42,7 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
 | `web/audio.js`, `web/sounds.js` | 소리. 공·큐 소리는 녹음(`sounds.js`), 나머지는 합성 | 모름 |
 | `web/sound/` | 아이템이 자기 소리로 쓰는 녹음 파일(선택). 빌드가 페이지 안에 넣는다 | — |
 | `web/reel/` | 하이라이트 재생. 편집 하나당 파일 하나 (한 범위) | 앎 |
-| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 랭킹전은 `54-ranked.js` | 앎 |
+| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 랭킹전은 `54-ranked.js`, 친구 초대 `55-invite.js`, 당구드롭 `56-drop.js` | 앎 |
 | `web/index.html` | 마크업만. `<!--STYLE-->` 자리에 빌드가 스타일을 넣는다 | — |
 | `web/style/` | 스타일. 무엇을 꾸미는지에 따라 파일이 나뉜다(아래 5절) | — |
 | `web/ui/`, `web/tex/` | 화면 재료 그림 / 3D 재질 그림(WebP). 쓰임과 9-slice 값은 `web/ui/README.md` | — |
@@ -140,6 +140,8 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   끝나면 방이 기록을 처음부터 다시 쳐 보고(`Replay` open 모드: 차례·공 위치 확인) **그 결과로** 승자·코인·DAMA를 정해 양쪽 금고에
   알린다(`/room/result`, 방마다 한 번). 맞지 않는 샷을 보낸 쪽, 기권한 쪽, 30초 넘게 끊긴 쪽이 진다. 대역 경기도 DAMA·코인이 보통 경기와 **똑같다**(숫자로도 대역인 걸 알 수 없게, 소유자 지시).
   앱 쪽은 `web/app/54-ranked.js`(찾기·방 연결·상대 샷 받기)가 `match`(50-match.js)에 `ctx.online`으로 붙는다. 샷 시간 45초 고정.
+- 친구 초대: 같은 `Room`을 kind 'invite'로 연다(코드는 로비 DO 'invites'의 `InviteCore`). 당구드롭·레슨 보상은 금고(`core.js`
+  `drop`, `lessons`)가 정한다 — 앱은 연출만. 숫자는 `economy.js`의 `DROP`, `LESSON_PRIZE`.
   조준 중의 큐(각도·세기·스핀·세우기)는 움직일 때만 `aim`으로 보내고, 받는 쪽은 `AIM_LAG`만큼 늦게 이어서 그린다. 장비(`gear`: 큐·공·
   테이블·트레일 id)는 대기열 요청에 실려 금고가 가진 것만 남기고 상대에게 간다. 큐·트레일은 각자 것, 공·테이블은 더 희귀한 쪽(`lookOf`).
 - 3단계(아직): 투어(판돈 보관), 구글 계정 연동, 다이아 결제(구글 플레이 결제를 서버가 확인).
