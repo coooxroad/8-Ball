@@ -56,6 +56,17 @@ function trailPic(kind, wide) {
 }
 const streak = (q, big) => q.kind ? el('i', { class: 'trl pic' + (big ? ' big' : ''), style: `--pic:url(${trailPic(q.kind, big)})` })
   : el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
+// a cue opened in the tray: the 3D cue photographed whole, and its tip end, middle and butt close (each taken once); a
+// wide one (a guitar) is all there is to see whole, so it alone, large
+const cueShots = {};
+function cueShow(i) {
+  const c = CUES[i], p = cueShots[c.id] || (cueShots[c.id] = (() => {
+    const all = scene.cuePortrait(i, 2000, null, 'auto'), wide = scene.portraitSpan > 0.1;
+    return { all, wide, bits: wide ? [] : [[-0.012, 0.21, '팁 쪽'], [0.63, 0.86, '가운데'], [1.25, 1.48, '손잡이']].map(([a, b, t]) => [scene.cuePortrait(i, 1600, null, 'auto', a, b), t]) };
+  })());
+  return el('div', { class: 'cueshow' + (p.wide ? ' wide' : '') }, [el('img', { class: 'all', src: p.all, alt: c.name, draggable: 'false' }),
+    ...p.bits.map(([u, t]) => el('figure', null, [el('img', { src: u, alt: '', draggable: 'false' }), el('figcaption', { text: t })]))]);
+}
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 // (a table with a look has the whole of it on its card, not a swatch tiled)
 const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` + (q.look ? ';background-size:cover;background-position:center' : '') });
@@ -94,7 +105,7 @@ function statRow(r) {
 }
 const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
-    show: (c, stage) => { stage.dataset.win = '0'; dkPut(stage, [cueImg(c, 'cuebig'), el('div', { class: 'cuezoom' }, cueImg(c))]); },
+    show: (c, stage, i) => { stage.dataset.win = '0'; dkPut(stage, cueShow(i)); },
     about: c => [c.note, ...(c.spec || [])], stats: c => cueStats(c, CUES[prefs.cues[0]]), wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],
@@ -133,7 +144,7 @@ function shelfPage(d, shop) {
       if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
         cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
       cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
     }
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
@@ -149,7 +160,7 @@ function shelfPage(d, shop) {
   K.show(q, d.stage, i);
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
-  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), dkHr()]);
+  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), fxMarks(q).length ? el('div', { class: 'dk-spec fx' }, [el('span', { text: '효과' }), fxBadges(q)]) : null, dkHr()]);
   // how it plays, first (it is what is looked for): OVR, then each number as a bar set against what is worn now
   if (K.stats) {
     const S = K.stats(q);
@@ -162,11 +173,14 @@ function shelfPage(d, shop) {
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
     const buy = async () => { const r = await net.buy(kind, q.id); toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };
-    dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
+    dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain('레슨 보상', `${MODE_KO[q.reward]} 레슨을 모두 끝내면`, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
   }
   else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { const msg = K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast(msg); }, own), dkSec('카드 목록으로', close)));
 }
+// SFX (its own sound) and VFX (effects of light beyond its look) under the rarity (content/00-rarity.js)
+const fxMarks = q => [q.sound ? ['sfx', 'SFX'] : null, q.vfx ? ['vfx', 'VFX'] : null].filter(Boolean);
+const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('span', { class: 'fxbs' + (small ? ' sm' : '') }, m.map(([k, t]) => el('span', { class: 'fxb ' + k }, [el('i'), el('b', { text: t })]))) : null; };
 // what a thing costs (economy.js: by its rarity)
-const priceText = q => { const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };
+const priceText = q => { if (q.reward) return '레슨 보상'; const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };
 const deskGear = d => shelfPage(d, false);
 const deskShop = d => shelfPage(d, true);

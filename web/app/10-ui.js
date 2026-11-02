@@ -106,14 +106,17 @@ function setPowerUI(p) {
   const tr = $('#power'), c = $('#powerCue'), REST = 48, END = 52;   // (clear of the gauge's end caps, so the chalked tip shows)
   /* The number is the stroke itself, not a share of the gauge: how fast the cue ball leaves, in km/h - so the same pull says
      more with a strong cue than with a weak one. And the meter's colours are laid out on that same scale (--gh): a cue at
-     the top of the range (STAT_MAX) pulled all the way reaches the violet at the very top; a weaker one stops short of it. */
-  const k = typeof cueK === 'function' ? cueK().power : 1, top = 1 + STAT_MAX / 100, v = p > 0 && game && game.vOf ? game.vOf(p) * k * 3.6 : 0;
+     the top of the usual range (STAT_MAX) pulled all the way reaches violet; only the break cue (POWER_MAX, a lesson reward)
+     goes on past it to blue and mint at the very top; a weaker one stops short. */
+  const k = typeof cueK === 'function' ? cueK().power : 1, top = 1 + POWER_MAX / 100, v = p > 0 && game && game.vOf ? game.vOf(p) * k * 3.6 : 0;
   $('#powerNum').innerHTML = p > 0 ? `${v.toFixed(1)}<small>km/h</small>` : '0';
   tr.style.setProperty('--gh', (top / k * 100).toFixed(1) + '%');
   c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
   // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
-  const q = Math.min(1, p), qa = Math.min(1, p * k / top), hue = 185 - 185 * Math.pow(Math.min(1, qa * 1.12), 0.85) - (qa > 0.9 ? (qa - 0.9) * 600 : 0);   // (past red, on to violet)
+  const vio = (1 + STAT_MAX / 100) / top, q = Math.min(1, p), qa = Math.min(1, p * k / top) / vio;           // (qa 1: violet)
+  const hue = qa <= 1 ? 185 - 185 * Math.pow(Math.min(1, qa * 1.12), 0.85) - (qa > 0.9 ? (qa - 0.9) * 600 : 0)   // (past red, on to violet)
+    : 300 - 140 * (qa - 1) / (1 / vio - 1);                                                                       // (the break cue: blue, then mint)
   tr.style.setProperty('--heat', `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(52 - 4 * q)}% / ${(q < 0.02 ? 0 : 0.35 + 0.6 * q).toFixed(2)})`);
   tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
   tr.style.setProperty('--pw', (q * 100).toFixed(1) + '%');                 // (the desk's lit meter: exactly the power)

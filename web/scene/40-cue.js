@@ -61,6 +61,12 @@
   function cuePart(q, mat) {
     const add = (g, m) => { const o = new THREE.Mesh(g, m || mat); cue.add(o); return o; };
     if (q.box) { const [a, b, w, h] = q.box; add(new THREE.BoxGeometry(b - a, w, h)).position.set((a + b) / 2, 0, q.z || 0); }
+    else if (q.neck) {
+      // a guitar's neck: round at the back, flat under the fretboard, tapering [x0, x1, width at x0, width at x1, thickness]
+      const [a, b, w0, w1, th] = q.neck, g = new THREE.CylinderGeometry(w1 / 2, w0 / 2, b - a, 20, 1, false, 0, Math.PI);
+      g.rotateZ(-Math.PI / 2); g.rotateX(Math.PI / 2); g.scale(1, 1, 2 * th / ((w0 + w1) / 2));   // (the round half below, the flat face up)
+      add(g).position.set((a + b) / 2, 0, q.z || 0);
+    }
     else if (q.ball) {
       const [at, r] = q.ball, g = q.facets ? new THREE.SphereGeometry(r, q.facets[0], q.facets[1]) : new THREE.SphereGeometry(r, 18, 12);
       if (q.facets) mat.flatShading = true; add(g).position.set(at, 0, 0);
@@ -95,18 +101,18 @@
       // the top: spruce, its grain along the cue, a rosette round the sound hole, the pickguard, the bridge - drawn, then laid on
       const c = mkCanvas(1024, 512), g = c.getContext('2d'), X = x => (x - a) / L * 1024, Y = y => (0.5 - y / w) * 512;
       g.drawImage(woodTop().image, 0, 0, 1024, 512);
-      const hx = X(a + L * 0.62), hr = 0.13 * 512 * 0.5;           // (the sound hole: in picture pixels across the body)
+      const bu = q.bridge || 0.2, hx = X(a + L * (q.hole || 0.62)), hr = (q.holeR || 0.065) * 512;   // (the sound hole: in picture pixels across the body)
       for (const [r, cl, lw] of [[hr * 1.55, '#2a1608', 6], [hr * 1.42, '#f0e4c8', 3], [hr * 1.3, '#2a1608', 4]]) { g.strokeStyle = cl; g.lineWidth = lw; g.beginPath(); g.ellipse(hx, 256, r * 2 * w / L, r, 0, 0, 7); g.stroke(); }
       g.fillStyle = '#0b0603'; g.beginPath(); g.ellipse(hx, 256, hr * 2 * w / L, hr, 0, 0, 7); g.fill();
       g.fillStyle = 'rgba(30,14,8,.85)'; g.beginPath(); g.ellipse(hx - hr * 1.6 * w / L, 256 + hr * 1.5, hr * 1.8 * w / L, hr * 0.75, 0.4, 0, 7); g.fill();                       // pickguard
-      g.fillStyle = '#24130a'; g.fillRect(X(a + L * 0.2) - 12, Y(w * 0.2), 24, Y(-w * 0.2) - Y(w * 0.2)); g.fillStyle = '#efe6d2'; g.fillRect(X(a + L * 0.2) + 4, Y(w * 0.12), 4, Y(-w * 0.12) - Y(w * 0.12));   // bridge, saddle
+      g.fillStyle = '#24130a'; g.fillRect(X(a + L * bu) - 12, Y(w * 0.2), 24, Y(-w * 0.2) - Y(w * 0.2)); g.fillStyle = '#efe6d2'; g.fillRect(X(a + L * bu) + 4, Y(w * 0.12), 4, Y(-w * 0.12) - Y(w * 0.12));   // bridge, saddle
       const t = tex(c); t.repeat.set(1 / L, 1 / w); t.offset.set(-a / L, 0.5);
       const capG = new THREE.ShapeGeometry(sh, 6);
       add(capG, new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.5 })).position.z = dp / 2 + 0.0021;
       const back = add(new THREE.ShapeGeometry(sh, 6), new THREE.MeshStandardMaterial({ color: col(0x3e1c0c), roughness: 0.4 })); back.position.z = -dp / 2 - 0.0021; back.rotation.x = Math.PI;
       // strings: from the saddle to the head
-      const [hx2, hz] = q.strings || [1.25, 0.012], v = [], zt = dp / 2 + 0.006;
-      for (let k = 0; k < 6; k++) { const y0 = (k - 2.5) * w * 0.035, y1 = (k - 2.5) * 0.0042; v.push(a + L * 0.2 + 0.002, y0, zt, hx2, y1, hz); }
+      const [hx2, hz, nut] = q.strings || [1.25, 0.012, 0.0042], v = [], zt = dp / 2 + 0.006, sp = q.spread || w * 0.035;
+      for (let k = 0; k < 6; k++) { const y0 = (k - 2.5) * sp, y1 = (k - 2.5) * nut; v.push(a + L * bu + 0.002, y0, zt, hx2, y1, hz); }
       const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
       cue.add(new THREE.LineSegments(sg, new THREE.LineBasicMaterial({ color: 0xe8e4da })));
     }
@@ -126,12 +132,20 @@
        bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
     if (d.profile) {
       /* a section's own options: rough, metal; sides (6: a pencil's flats); pic (a picture from web/tex wrapped round it,
-         its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour) */
+         its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour); hide (not drawn: the
+         line only carries on under raised parts, as a guitar's neck) */
       for (const [x0, x1, r0, r1, h, o] of d.profile) {
+        if (o && o.hide) continue;
         // (glass: cut crystal - clear, faceted, catching the room's lights)
         const q = o || {}, m = q.glass ? glass(h, q.glass) : std(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
         if (q.env) m.envMapIntensity = q.env;
         if (q.lit != null) { m.emissive = col(q.lit); m.emissiveIntensity = 1.6; }
+        // (check: [dark, light, round, along] - chequers wrapped round the section, as a finish flag)
+        if (q.check) {
+          const [c0, c1, nr, na] = q.check, cv = mkCanvas(nr * 16, na * 16), cg = cv.getContext('2d');
+          for (let y = 0; y < na; y++) for (let x = 0; x < nr; x++) { cg.fillStyle = '#' + ((x + y) % 2 ? c1 : c0).toString(16).padStart(6, '0'); cg.fillRect(x * 16, y * 16, 16, 16); }
+          const t = tex(cv); t.magFilter = THREE.NearestFilter; m.map = t; m.color.set(0xffffff);
+        }
         if (q.pic) {
           const at = cue.children.length, rep = q.rep || [1, Math.max(1, Math.round((x1 - x0) / 0.12))];
           loadTex(q.pic, 0, t => {
@@ -177,14 +191,19 @@
   }
 
   /* A picture of a cue from above, tip on the left, on a clear ground (for making its card: W x H pixels showing the cue's
-     1.5 m and spanY metres across). The cue in play is borrowed for it and put back as it was. */
-  function cuePortrait(i, W, H, spanY) {
+     1.5 m and spanY metres across). The cue in play is borrowed for it and put back as it was. A part of it only: from x0
+     to x1 along it (metres); spanY 'auto': as wide as the cue is (a guitar's body), and H null: as tall as that makes it. */
+  let portraitSpan = 0;                                              // (how wide the last picture was, in metres)
+  function cuePortrait(i, W, H, spanY, x0 = -0.015, x1 = 1.5) {
     const was = cueNow3d; setCue(i);
     const sc = new THREE.Scene(); sc.environment = scene.environment;
     sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 0.6)); const key = new THREE.DirectionalLight(0xfff4e6, 0.9); key.position.set(0.4, 0.6, 2); sc.add(key);
-    const cam = new THREE.OrthographicCamera(-0.015, 1.5, spanY / 2, -spanY / 2, 0.01, 10); cam.position.set(0, 0, 3); cam.lookAt(0, 0, 0);
     const keep = { p: cue.position.clone(), r: cue.rotation.clone(), v: cue.visible }, parent = cue.parent;
     parent.remove(cue); sc.add(cue); cue.position.set(0, 0, 0); cue.rotation.set(0, 0, 0); cue.visible = true; cue.updateMatrixWorld(true);
+    if (spanY === 'auto') { const bx = new THREE.Box3().setFromObject(cue); spanY = Math.max(0.026, 2.3 * Math.max(Math.abs(bx.min.y), Math.abs(bx.max.y))); }
+    if (H == null) H = Math.max(8, Math.round(W * spanY / (x1 - x0)));
+    portraitSpan = spanY;
+    const cam = new THREE.OrthographicCamera(x0, x1, spanY / 2, -spanY / 2, 0.01, 10); cam.position.set(0, 0, 3); cam.lookAt(0, 0, 0);
     const rt = new THREE.WebGLRenderTarget(W, H); rt.texture.encoding = THREE.sRGBEncoding;
     const prev = renderer.getRenderTarget(), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
     renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); unmask(); renderer.clear(); renderer.render(sc, cam);

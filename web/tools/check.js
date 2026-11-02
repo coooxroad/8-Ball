@@ -83,7 +83,7 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
   // steps finer (or no coarser) the rarer it is, and never coarser than the bare hand
   for (const c of C.CUES || []) {
     const s = c.stat, at = `content CUES '${c.id}'`;
-    if (!s || !['power', 'spin', 'guide'].every(k => Number.isInteger(s[k]) && Math.abs(s[k]) <= C.STAT_MAX)) { fail(`${at}: stat needs power, spin and guide, whole percents within ±${C.STAT_MAX}`); continue; }
+    if (!s || !['power', 'spin', 'guide'].every(k => Number.isInteger(s[k]) && Math.abs(s[k]) <= (k === 'power' && c.reward ? C.POWER_MAX : C.STAT_MAX))) { fail(`${at}: stat needs power, spin and guide, whole percents within ±${C.STAT_MAX} (a reward cue's power to ${C.POWER_MAX})`); continue; }
     if (s.power + s.spin + s.guide !== C.STAT_SUM[c.rarity]) fail(`${at}: stat adds up to ${s.power + s.spin + s.guide}, its rarity's total is ${C.STAT_SUM[c.rarity]}`);
   }
   for (const g of C.GLOVES || []) {

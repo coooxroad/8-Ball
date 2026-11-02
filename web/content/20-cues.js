@@ -20,7 +20,7 @@ const CUES = [
   { id: 'sport', name: '스포츠 그립', rarity: 1, note: '흰 상대, 남색 하대에 노란 고무 그립', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d, stat: { power: 6, spin: -4, guide: 2 },
     spec: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '화이트 코팅 메이플'], ['하대', '네이비'], ['그립', '노란 고무']] },
   // of its own make (profile, glow: top of this file): a metal hilt and a lit blade, its own strike (GPT, PR #8)
-  { id: 'saber', name: '광선검', rarity: 5, note: '은빛 손잡이와 푸른 광선, 짧은 전자 타격음', stat: { power: 8, spin: 6, guide: 6 },
+  { id: 'saber', name: '광선검', rarity: 5, vfx: true, note: '은빛 손잡이와 푸른 광선, 짧은 전자 타격음', stat: { power: 8, spin: 6, guide: 6 },
     profile: [
       [0, 1, 0.0057, 0.006, 0xeaf8ff, { rough: 0.2 }],
       [1, 1.025, 0.018, 0.018, 0x292e35, { rough: 0.3, metal: 0.9 }],
@@ -69,7 +69,7 @@ const CUES = [
     ],
     spec: [['무게', '20oz · 567g'], ['팁', '12mm 레이어드 가죽'], ['몸통', '광택 금 도금'], ['링', '검은 흑단 링 넷'], ['조인트', '금 3/8×10']] },
   // a pencil as long as a cue: graphite point, the sharpened wood, a yellow six-sided body, the metal band and the rubber
-  { id: 'pencil', name: '거대 연필', rarity: 2, note: '깎은 흑연 끝, 노란 육각 몸통, 끝엔 분홍 지우개', stat: { power: -2, spin: 4, guide: 6 },
+  { id: 'pencil', name: '거대 연필', rarity: 1, note: '깎은 흑연 끝, 노란 육각 몸통, 끝엔 분홍 지우개', stat: { power: -2, spin: 2, guide: 4 },
     profile: [
       [0, 0.03, 0.0035, 0.006, 0x2b2b30, { rough: 0.45, metal: 0.35 }],
       [0.03, 0.15, 0.006, 0.0125, 0xe7c89a, { rough: 0.85 }],
@@ -109,21 +109,23 @@ const CUES = [
     spec: [['길이', '136cm'], ['칼날', '양날 강철'], ['손잡이', '놋쇠 십자 가드'], ['그립', '가죽 감기'], ['폼멜', '놋쇠 공']] },
   // an acoustic guitar swung by its neck: the body's bottom is the tip, the neck runs back to the head at the butt
   { id: 'guitar', name: '통기타', rarity: 3, note: '몸통으로 치는 통기타: 스프루스 상판, 로즈우드 지판, 끝엔 헤드와 줄감개', stat: { power: -2, spin: 8, guide: 6 },
+    // a dreadnought's proportions on a cue's 147 cm (x1.41): body 72 cm long and 56 wide, 15 deep; neck 50 cm to the nut;
+    // the head 25. Laid face up with the cue's line through the middle of the body; the neck's top flush with the body's top
     profile: [
       [0, 0.012, 0.005, 0.006, 0xe8e2d4, { rough: 0.4 }],
-      [0.012, 0.44, 0.012, 0.012, 0x5a2a14, { rough: 0.4 }],
-      [0.44, 1.12, 0.0135, 0.0125, 0x6a3418, { rough: 0.45, flat: 0.75 }],
-      [1.12, 1.3, 0.008, 0.008, 0x2a1408, { rough: 0.5 }]
+      [0.012, 0.72, 0.012, 0.012, 0x5a2a14, { rough: 0.4 }],
+      [0.72, 1.47, 0.006, 0.006, 0x2a1408, { hide: 1 }]          // (only the line on to the butt: the neck and head are raised parts)
     ],
     parts: [
-      { acoustic: [0.005, 0.46, 0.27, 0.075], strings: [1.14, 0.0135], color: 0x5a2a14 },
-      { box: [0.44, 1.12, 0.046, 0.005], z: 0.0095, color: 0x2a1610, rough: 0.6 },
-      { frets: [0.46, 1.11, 19, 0.046, 0.0125], dots: true, color: 0xc9ccd0, rough: 0.3, metal: 1 },
-      { box: [1.11, 1.12, 0.046, 0.007], z: 0.0105, color: 0xefe8d8, rough: 0.4 },
-      { box: [1.12, 1.3, 0.07, 0.014], z: 0.004, color: 0x2a1408, rough: 0.35 },
-      { pegs: [1.15, 1.28, 3, 0.007], out: 0.04, z: 0.004, color: 0xd8d8d8, rough: 0.3, metal: 1 }
+      { acoustic: [0.005, 0.725, 0.56, 0.15], bridge: 0.435, hole: 0.7, holeR: 0.125, spread: 0.0148, strings: [1.22, 0.087, 0.0099], color: 0x5a2a14 },
+      { neck: [0.72, 1.22, 0.075, 0.061, 0.032], z: 0.0745, color: 0x6a3418, rough: 0.45 },
+      { box: [0.585, 1.22, 0.068, 0.007], z: 0.0785, color: 0x2a1610, rough: 0.6 },
+      { frets: [1.22, 0.597, 20, 0.068, 0.0825], dots: true, color: 0xc9ccd0, rough: 0.3, metal: 1 },
+      { box: [1.214, 1.224, 0.068, 0.012], z: 0.081, color: 0xefe8d8, rough: 0.4 },
+      { box: [1.224, 1.47, 0.12, 0.02], z: 0.066, color: 0x2a1408, rough: 0.35 },
+      { pegs: [1.26, 1.44, 3, 0.011], out: 0.074, z: 0.066, color: 0xd8d8d8, rough: 0.3, metal: 1 }
     ],
-    spec: [['길이', '130cm'], ['몸통', '스프루스 상판, 마호가니 옆판'], ['넥', '로즈우드 지판, 프렛 19'], ['헤드', '크롬 줄감개 여섯'], ['치는 곳', '몸통 바닥']] },
+    spec: [['길이', '147cm'], ['몸통', '드레드넛 비율: 길이 72cm, 폭 56cm'], ['상판·옆판', '스프루스, 마호가니'], ['넥', '로즈우드 지판, 프렛 20'], ['헤드', '크롬 줄감개 여섯'], ['치는 곳', '몸통 바닥']] },
   // a flute as long as a cue: bright silver, the crown at the tip, three joints, a lip plate, open-hole keys on their rods
   { id: 'flute', name: '플루트', rarity: 2, note: '은빛 세 마디 관, 입술판, 구멍 뚫린 키와 키를 잇는 막대', stat: { power: -3, spin: 6, guide: 5 },
     profile: [
@@ -145,6 +147,22 @@ const CUES = [
     ],
     parts: [{ stones: [0.75, 0.0113, 14, 0.0016], glass: 1.4, color: 0xffffff }, { stones: [1.04, 0.0129, 16, 0.0016], glass: 1.4, color: 0xffffff },
       { stones: [1.36, 0.0143, 18, 0.0017], glass: 1.4, color: 0xffffff }, { ball: [1.448, 0.024], facets: [12, 6], glass: 1.6, color: 0xbfe0ff }],
-    spec: [['길이', '147cm'], ['상대', '비틀어 깎은 크리스탈'], ['링', '백금, 큐빅'], ['끝', '브릴리언트 컷 보석'], ['빛', '가장자리 무지개, 면마다 반짝']] }
+    spec: [['길이', '147cm'], ['상대', '비틀어 깎은 크리스탈'], ['링', '백금, 큐빅'], ['끝', '브릴리언트 컷 보석'], ['빛', '가장자리 무지개, 면마다 반짝']] },
+  // the break cue: given for every 8볼 lesson done (never sold). All in the stroke - a hard phenolic tip, a stiff shaft -
+  // and nothing for control; black-and-white chequers like a finish flag on the forearm and the sleeve
+  { id: 'breaker', name: '브레이크 큐', rarity: 2, reward: 'eight', note: '8볼 레슨을 모두 끝내면 받는 큐: 힘에 모든 걸 건 체크무늬 브레이크 큐', stat: { power: 30, spin: -12, guide: -10 },
+    profile: [
+      [0, 0.008, 0.0062, 0.0063, 0x2b2622, { rough: 0.5 }],
+      [0.008, 0.03, 0.0063, 0.0064, 0xf4f2ea, { rough: 0.3 }],
+      [0.03, 0.735, 0.0064, 0.0106, 0xead8aa, { rough: 0.4 }],
+      [0.735, 0.75, 0.0108, 0.0108, 0x101012, { rough: 0.3 }],
+      [0.75, 0.772, 0.0110, 0.0110, 0xc9ccd0, { rough: 0.2, metal: 1 }],
+      [0.772, 1.04, 0.0110, 0.0122, 0x101012, { check: [0x0e0e10, 0xf3f2ee, 8, 22], rough: 0.25 }],
+      [1.04, 1.06, 0.0123, 0.0123, 0xc9ccd0, { rough: 0.2, metal: 1 }],
+      [1.06, 1.3, 0.0124, 0.0134, 0x17171b, { rough: 0.9 }],
+      [1.3, 1.45, 0.0135, 0.0146, 0x101012, { check: [0x0e0e10, 0xf3f2ee, 10, 12], rough: 0.25 }],
+      [1.45, 1.47, 0.0146, 0.0142, 0x0d0d0d, { rough: 0.9 }]
+    ],
+    spec: [['얻는 법', '8볼 레슨 전부 완료'], ['팁', '페놀 브레이크 팁'], ['상대', '단단한 메이플'], ['하대', '흑백 체크, 고무 그립'], ['성격', '힘만, 회전·조준선은 포기']] },
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
