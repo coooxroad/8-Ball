@@ -44,7 +44,9 @@ function deskPaint() {
   d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   d.head.className = 'dk-head';
   $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); }
+  invite.shown = false;
   DESK_PLACES[deskTab](d);
+  if (!invite.shown) invite.leave();                                  // (the invite's code is open only while it shows)
   // the slate: its options scroll if they must, its buttons stay put at the foot
   const acts = d.slate.querySelector('.dk-acts'), body = el('div', { class: 'dk-body' });
   while (d.slate.firstChild && d.slate.firstChild !== acts) body.appendChild(d.slate.firstChild);

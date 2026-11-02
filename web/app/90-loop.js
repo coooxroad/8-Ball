@@ -74,7 +74,7 @@ function frame(now) {
   const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   // (a ranked game goes on under a sheet: the other player is still playing)
-  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown());
+  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown()) || (!!dropView.on && !(match.ctx && match.ctx.online && st.screen === 'play'));   // (and under a 당구드롭)
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }

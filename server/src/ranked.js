@@ -78,6 +78,50 @@ export class LobbyCore {
   }
 }
 
+/* Games with an invited friend: the host opens a code (six letters and digits, nothing that reads two ways) and asks after
+   it every couple of seconds; a friend who enters the code - or opens the link with it - takes the other seat, and a room
+   opens as for a ranked game (kind 'invite': the host's rules, no DAMA, no 당구드롭). Held in memory in one Durable Object
+   (the lobby named 'invites'); a code whose host has not asked for INVITE_IDLE is gone. */
+export const INVITE_IDLE = 30000;
+const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export class InviteCore {
+  constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); }
+  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_IDLE)) this.codes.delete(c); }
+  // p: { acct, dama, name, icon, gear, mode, rules } - a host's new code (an older one of theirs closes)
+  open(p) {
+    this.sweep();
+    if (!E.RANKED_RULES[p.mode]) return { ok: false, why: 'no such game' };
+    for (const [c, v] of this.codes) if (v.host.acct === p.acct && !v.made) this.codes.delete(c);
+    let code; do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
+    this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null,
+      host: { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null } });
+    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules };
+  }
+  // the host asking: still waiting, or the game (the same answer until it is taken)
+  ask(acct, code) {
+    this.sweep(); const v = this.codes.get(code);
+    if (!v || v.host.acct !== acct) return { ok: false, why: 'gone' };
+    v.seen = this.now();
+    return v.made ? Object.assign({ ok: true }, v.made.you[0]) : { ok: true, waiting: true };
+  }
+  // what a code is (for the friend before joining): the game and who is waiting
+  peek(code) { this.sweep(); const v = this.codes.get(code); return v && !v.made ? { ok: true, mode: v.mode, rules: v.rules, host: { name: v.host.name } } : { ok: false, why: 'no such code' }; }
+  // p (the friend) takes the other seat: the room's init is returned with their answer (the lobby opens the room)
+  join(p, code) {
+    this.sweep(); const v = this.codes.get(code);
+    if (!v) return { ok: false, why: 'no such code' };
+    if (v.host.acct === p.acct) return { ok: false, why: 'your own code' };
+    if (v.made) return v.made.guest === p.acct ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'taken' };
+    const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
+    const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
+    const init = { room, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
+      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, kind: 'invite', rules: v.rules, opp: pub(seats[1 - i]) });
+    v.made = { guest: p.acct, you: [you(0), you(1)] }; v.seen = this.now();
+    return Object.assign({ ok: true, init }, you(1));
+  }
+  leave(acct, code) { const v = this.codes.get(code); if (v && v.host.acct === acct && !v.made) this.codes.delete(code); return { ok: true }; }
+}
 
 /* A ranked game: one Durable Object per game, opened by the lobby (lobby.js) for two seats. Both devices connect by
    WebSocket and play the same game: each plays its own shots and sends them; the other device plays them too (the physics
@@ -114,7 +158,9 @@ export class RoomCore {
 
   init(x) {
     if (this.get('room')) return false;
-    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now() });
+    const kind = x.kind === 'invite' ? 'invite' : 'ranked';
+    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind,
+      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode] });
     this.set('seats', x.seats); this.set('status', 'playing'); this.set('ended', [false, false]); this.set('gone', [null, null]);
     return true;
   }
@@ -122,7 +168,7 @@ export class RoomCore {
   // what a device needs to play: the game, the other player, every shot so far
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[1 - seat];
-    return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: RANKED_RULES[r.mode], standIn: seat === 0 ? r.standIn : null,
+    return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null,
       opp: { name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
   connected(seat) {
@@ -168,7 +214,7 @@ export class RoomCore {
   over(why, loser) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser }); return 'check'; }
 
   log() {
-    const r = this.get('room'), rules = RANKED_RULES[r.mode];
+    const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
     return { v: 1, mode: r.mode, table: 'bar', seed: r.seed, opts: Object.assign({ first: r.first }, rules), shots: this.shots(), winner: 0, points: [0, 0] };
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
@@ -189,9 +235,10 @@ export class RoomCore {
   }
   result(winner, points, why) {
     const r = this.get('room'), seats = this.get('seats'), res = { winner, points, why, coins: [0, 0], dama: [seats[0].dama, seats[1].dama] };
+    const inv = r.kind === 'invite';
     if (winner != null) {
-      res.dama = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0);
-      for (let s = 0; s < 2; s++) res.coins[s] = E.matchCoins('ranked', r.mode, s ? [points[1], points[0]] : points, winner === s);
+      if (!inv) res.dama = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0);
+      for (let s = 0; s < 2; s++) res.coins[s] = E.matchCoins(inv ? 'invite' : 'ranked', r.mode, s ? [points[1], points[0]] : points, winner === s);
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
     this.sql.exec(`DELETE FROM shots`);
@@ -204,7 +251,7 @@ export class RoomCore {
     const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', [false, false]);
     if (!res) return [];
     return [0, 1].filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
-      body: { room: r.room, mode: r.mode, won: res.winner === s, draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama } }));
+      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === s, draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama } }));
   }
   paid(seat) { const p = this.get('paid', [false, false]); p[seat] = true; this.set('paid', p); }
 }

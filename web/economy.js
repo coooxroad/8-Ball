@@ -6,6 +6,7 @@
      ranked (랭킹전)        my points x price x (2 if I won, 1/2 if I lost)
      friend (한 기기 둘이서) both players' points x price x 1/4, to the device's account
      cpu (컴퓨터 대전)       my points x price x 1/4
+     invite (초대한 친구와)   my points x price x 1/4 (two devices, the room checks it as a ranked game; no DAMA)
      tour (투어)            both put up the same stake; the winner takes the pot less the house's cut
    A puzzle pays once, the first time it is solved. Anything bought is priced by its rarity (content/00-rarity.js).
    DAMA is the ranked score - a rating in place of ELO (the word is billiard-hall slang, 다마). Everyone starts at
@@ -27,14 +28,29 @@ const ECONOMY = {
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 30, DAMA_K: 6, DAMA_SPREAD: 100, DAMA_FLOOR: 10,
+  /* 당구드롭: one for every ranked game won, and for a game won against the computer (at most CPU_DAILY a day). Opened, the
+     server draws its rarity (ODDS, percent, 일반..시크릿 - the taps that "upgrade" it on the screen only show the way there)
+     and then what is in it: SKIN of the time a thing of the rarity below (one not owned; none left, or a 일반 drop: coins),
+     DIA of the time diamonds, else coins. Coins are a quarter of the price of the rarity below (일반 counted as 1000; a
+     일반 drop 100). TAPS: the chances to upgrade shown on the screen. */
+  DROP: { ODDS: [44, 30, 16, 7, 2.6, 0.4], SKIN: 0.1, DIA: 0.3, COIN: [100, 250, 750, 2000, 5000, 12500], DIA_N: [1, 3, 8, 20, 50, 125], CPU_DAILY: 3, TAPS: 3 },
+  // every lesson of a game's volume done at its top level: coins and a thing found nowhere else
+  LESSON_PRIZE: { eight: { coin: 3000, kind: 'cue', id: 'breaker' } },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
 const RANKED_RULES = { eight: {}, nine: {}, four: { target: 10 }, three: { target: 5, cushions: 3 } };
+// a game with an invited friend: the host's choices, only those the game offers (anything else: the ranked rules)
+const inviteRules = (mode, r) => {
+  const o = Object.assign({}, RANKED_RULES[mode] || {}); r = r || {};
+  if (mode === 'three') { if ([3, 5, 10].includes(r.target)) o.target = r.target; if ([0, 1, 3].includes(r.cushions)) o.cushions = r.cushions; }
+  if (mode === 'four' && [5, 10, 15, 20, 30].includes(r.target)) o.target = r.target;
+  return o;
+};
 const matchCoins = (kind, mode, points, won) => {
   const per = ECONOMY.PER_POINT[mode] || 0, mine = points[0] * per;
   if (kind === 'ranked') return Math.round(mine * (won ? ECONOMY.RANKED_WIN : ECONOMY.RANKED_LOSS));
   if (kind === 'friend') return Math.round((points[0] + points[1]) * per * ECONOMY.FRIEND);
-  if (kind === 'cpu') return Math.round(mine * ECONOMY.CPU);
+  if (kind === 'cpu' || kind === 'invite') return Math.round(mine * ECONOMY.CPU);
   return 0;
 };
 const tourPayout = stake => Math.floor(stake * 2 * (1 - ECONOMY.TOUR_CUT));
@@ -44,4 +60,4 @@ const damaAfter = (a, b, aWon) => {
   const ea = 1 / (1 + Math.pow(10, (b - a) / ECONOMY.DAMA_SPREAD)), d = Math.round(ECONOMY.DAMA_K * ((aWon ? 1 : 0) - ea));
   return [Math.max(ECONOMY.DAMA_FLOOR, a + d), Math.max(ECONOMY.DAMA_FLOOR, b - d)];
 };
-if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, matchCoins, tourPayout, priceOf, damaAfter };
+if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, inviteRules, matchCoins, tourPayout, priceOf, damaAfter };

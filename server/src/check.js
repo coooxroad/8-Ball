@@ -20,6 +20,25 @@ export function playPuzzle(id, shot) {
   return g.MODES.puzzle4.judge(goal, ev, w).ok ? { ok: true } : { ok: false, why: 'the shot does not solve it' };
 }
 
+/* A lesson (web/drills.js) done at its top level: the layout is made again from the seed the device made it from (on that
+   table size), the balls set out as the app sets them (app/51-practice.js putLayout), and the shot played - does it do
+   what the lesson asks? */
+export function playLesson(id, proof) {
+  const D = E.createDrills(), d = D.byId(id), p = proof || {};
+  if (!d || d.id !== id || !d.make) return { ok: false, why: 'no such lesson' };
+  if (!shotOk(p.shot) || !Number.isInteger(p.seed)) return { ok: false, why: 'bad shot' };
+  const g = E.createGame(E.physicsFor(E.createPhysics, p.table)), rnd = E.seededRandom(p.seed >>> 0);
+  g.start('practice', ['A', ''], false, { rnd: seeded(1) });
+  const L = D.make(id, g.P, D.LEVELS, rnd, g.vOf); if (!L) return { ok: false, why: 'no layout' };
+  const P = g.P, w = g.world;
+  g.MODES.practice.setup(g, null);
+  if (L.rack) { g.MODES.eight.setup(g, E.seededRandom((p.seed ^ 0x9e3779b9) >>> 0)); g.placing = null; }
+  else { P.place(w, 0, L.cue[0], L.cue[1], null); for (const [bid, x, y] of L.balls) P.place(w, bid, x, y, null); }
+  g.isBreak = !!L.rack; P.strike(w, p.shot.aim, p.shot.V, p.shot.a, p.shot.b, p.shot.el || 0);
+  const ev = P.run(w, 40);
+  return D.judge(L, ev, w.balls[0]) === '' ? { ok: true } : { ok: false, why: 'the shot does not do it' };
+}
+
 /* A whole match, from its log (app/50-match.js keeps it): { mode, table, opts, shots: [{ s: where the balls stood (the
    highlights snapshot), aim, V, a, b, el, inHand } | { timeout: true }], winner, points }. Every shot is played from where
    the last one left the balls - only a cue ball in hand may have moved - and the rules are applied as in the app.
@@ -88,3 +107,4 @@ export class Replay {
 // all of it at once (for a server that may think as long as it likes, and for the tests)
 export const playMatch = log => new Replay(log).advance(Infinity);
 export { E };
+export const DRILLS = E.createDrills();

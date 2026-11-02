@@ -38,16 +38,28 @@ function deskPlay(d) {
     dkPut(fit, [
       panel('shop', '상점', () => deskGo('shop'), [tt('상점', '오늘의 진열', 'SHOP'), el('span', { class: 'bd-show' }, cueImg(best)), el('span', { class: 'bd-foot' }, [el('b', { text: best.name }), el('small', { class: 'rar r' + r, text: RARITY[r][0] })])]),
       panel('tour', '투어', later('투어는'), [tt('투어', '판돈을 걸고 겨루는 대회', 'ONLINE'), el('span', { class: 'bd-tag', text: '준비 중' })], 'online'),
-      panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기로 번갈아 칩니다'),
+      panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기에서, 또는 코드로 초대'),
         el('span', { class: 'bd-modes' }, GAME4.map(id => el('i', { style: `background-image:url(ui/mode-${id}.webp)` })))]),
       panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '다마가 비슷한 상대와', 'ONLINE'), el('img', { class: 'bd-tier', src: `ui/tier-${tier[0]}.webp`, alt: tier[1] }), el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `${(net.me ? net.me.dama : ECONOMY.DAMA_START)} 다마` })])], 'online')]);
   }
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }
+// inviting a friend: the code open on the server while this shows; the tray shows the two places and the code
+function deskInvite(slate, _, m) {
+  const h = invite.want(m); invite.shown = true;
+  invite.tray($('#dkStage'), m);
+  if (m === 'three') { const T = [3, 5, 10];
+    dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
+      dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]); }
+  if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); })]); }
+  dkPut(slate, [dkHr(), dkTxt(h ? '친구가 코드를 넣거나 링크를 열면 바로 시작합니다.' : '초대 코드를 만드는 중…'), dkRow('친구 코드가 있으면', '코드로 참가', invite.sheetJoin)]);
+  dkPut(slate, dkActs(dkMain('초대 링크 보내기', h ? h.code : '잠시만요', () => h && invite.share(h.code), !h),
+    dkSec('방 나가기', () => { invite.leave(); prefs.friendWay = 'local'; repaint(); })));
+}
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터
 // 대전, picked on the slate); back, if given, puts an X on the tray's head
 function deskMatch({ rail, head, foot, slate }, cpu, back) {
-  const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m];
+  const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on;
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
   if (!cpu) dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
   if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
@@ -56,11 +68,13 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? LEVELS[prefs.level] : recText(nm);
     return el('button', { class: 'dk-plate' + (i ? ' two' : ''), onclick: onTap(() => sheetName(i)) }, [el('i', { class: 'av', text: String(i + 1) }), el('span', null, [el('b', { text: nm }), el('small', { text: sub })])]);
   };
-  dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
+  if (!inv) dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
 
   dkPut(slate, dkH1(MODE_KO[m], GAME_SUB[m]));
   if (cpu) dkPut(slate, [dkHr(), dkLab('종목'), dkSeg(GAME4.map(id => [id, MODE_KO[id]]), m, v => pick(v)())]);
-  else dkPut(slate, [dkHr(), dkLab('상대'), dkSeg([['net', '온라인', true], ['friend', '친구']], 'friend', () => {})]);
+  // (with a friend: here on one device, taking turns - or invited to play from theirs, by a code: 55-invite.js)
+  else dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on]], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);
+  if (inv) return deskInvite(slate, d => d, m);
   if (prefs.vsAI) dkPut(slate, [dkLab('난이도'), dkSeg(LEVELS.map((t, i) => [i, t]), Math.min(3, prefs.level), v => { prefs.level = v; repaint(); })]);
   if (m === 'four') {
     const suji = (name, i, set) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-txt', text: name }), dkStep(SUJI, sujiOf(i), v => String(v * 10), v => { set(v); repaint(); }, true)]);

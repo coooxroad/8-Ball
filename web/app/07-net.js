@@ -41,6 +41,7 @@ const net = (() => {
     if (!owns('table', (CLOTHS[prefs.cloth] || {}).id)) prefs.cloth = 0;
     prefs.cues = prefs.cues.map(i => owns('cue', (CUES[i] || {}).id) ? i : k.cue.firstOwned());
     savePrefs(); if (st.screen === 'home') paintHome();
+    dropPaint();
   }
   // send what is waiting, oldest first; a reward the server turns down is dropped, one it did not answer stays for later
   async function flush() {
@@ -49,7 +50,7 @@ const net = (() => {
       if (!(await ensure())) return;
       for (let q = queue(); q.length; q = queue()) {
         const c = q[0], r = await call('/v1/' + c.kind, c.body); if (!r) return;
-        if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인`, 'good', 2200);
+        if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);
         if (r.me) setMe(r.me);
         if (r.pending) laterN = 0;
         store.set('claims', queue().filter(x => x.body.req !== c.body.req));
@@ -75,6 +76,18 @@ const net = (() => {
     leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
     // a ranked game's room, by WebSocket: its address for the seat's token
     roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,
+    // a game with a friend on another device (server/src/ranked.js InviteCore): a code to give them, asked after until they
+    // come; or a friend's code, to join
+    async inviteOpen(mode, rules) { if (!(await ensure())) return null; return call('/v1/invite/open', { mode, rules, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    inviteAsk: code => call('/v1/invite/ask', { code }),
+    async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
+    async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
+    // a 당구드롭 opened: the server draws it ({ rarity, prize }); null with no answer
+    async openDrop() {
+      if (!(await ensure())) return null;
+      const r = await call('/v1/drop', { req: hex(12) }); if (r && r.me) setMe(r.me); return r;
+    },
     // buying needs the server there and then: true when bought
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };
@@ -90,3 +103,6 @@ const KIND_OF = {
   cue: { list: () => CUES, firstOwned: () => Math.max(0, CUES.findIndex(c => !(c.rarity > 0))) },
   ball: { list: () => BALLSKINS }, table: { list: () => CLOTHS }, trail: { list: () => TRAILS }, glove: { list: () => GLOVES },
 };
+const KIND_KO = { cue: '큐', ball: '공', table: '테이블', trail: '트레일', glove: '장갑' };
+const itemOf = it => (KIND_OF[it.kind] ? KIND_OF[it.kind].list() : []).find(x => x.id === it.id) || null;
+const itemName = it => { const q = itemOf(it); return q ? q.name : it.id; };

@@ -47,6 +47,14 @@ let lessonVol = null;
 const VOLUMES = [['three', '3구'], ['four', '4구'], ['eight', '8볼'], ['nine', '9볼']];
 const BOOK_LEATHER = ['navy', 'burgundy', 'green', 'brown'];          // a lesson book's leather by its course (drills.COURSES; ui/book-*.webp)
 const volLessons = v => drills.list.filter(d => d.make && d.vol === v).map(d => d.id);
+// a volume's prize for doing all of it (economy.js LESSON_PRIZE): a line saying what, and how far along (a lesson counts once
+// it is done at its top level with the shot kept: 51-practice.js)
+function prizeLine(v) {
+  const p = ECONOMY.LESSON_PRIZE[v]; if (!p) return null;
+  const ids = volLessons(v), got = net.me && (net.me.prizes || []).includes(v), n = ids.filter(id => prefs.lessonProof[id]).length, what = itemName({ kind: p.kind, id: p.id });
+  return el('div', { class: 'dk-prize' + (got ? ' got' : '') }, [el('i', { class: 'pz' }), el('span', null, [el('b', { text: got ? '보상을 받았습니다' : '모두 끝내면 보상' }),
+    el('small', { text: `${p.coin.toLocaleString('ko-KR')} 코인 + ${what}${got ? '' : ids.length ? ` · ${n} / ${ids.length}` : ''}` })])]);
+}
 function deskLesson({ head, stage, slate }) {
   const top = drills.LEVELS; stage.dataset.win = '0';
   const doneOf = ids => ids.filter(id => levelOf(id) >= top).length;
@@ -55,7 +63,7 @@ function deskLesson({ head, stage, slate }) {
     dkPut(stage, el('div', { class: 'dk-cards vols' }, VOLUMES.map(([v, name], i) => { const ids = volLessons(v);
       return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
         el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name }), el('small', { text: '교본' })])),
-        el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' })]); })));
+        el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
     dkPut(slate, dkH1('교본', '레슨'));
     dkPut(slate, [dkHr(), dkTxt('종목 교본을 펼치면 그 안에 레슨 교본이 있습니다. 교본을 누르면 그 레슨이 바로 시작됩니다.'), dkHr()]);
     for (const [v, name] of VOLUMES) { const ids = volLessons(v); dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: name }), el('b', { text: ids.length ? `${doneOf(ids)} / ${ids.length}권` : '준비 중' })])); }
@@ -68,7 +76,7 @@ function deskLesson({ head, stage, slate }) {
   dkPut(head, [el('button', { class: 'dk-x', 'aria-label': '종목 교본으로', onclick: () => { SND.tap(); lessonVol = null; paintHome(); } }, el('i')), dkTitle(`${vol[1]} 교본`, ids.length ? `${ids.length}권 · 다 뗀 교본 ${doneOf(ids)}권` : '준비 중')]);
   if (!ids.length) {
     dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: `${vol[1]} 교본 준비 중` }), el('span', { text: '이 종목의 레슨을 만들고 있습니다.' })]));
-    dkPut(slate, dkH1(`${vol[1]} 교본`, '준비 중')); dkPut(slate, [dkHr(), dkTxt('이 종목의 레슨을 만들고 있습니다.')]);
+    dkPut(slate, dkH1(`${vol[1]} 교본`, '준비 중')); dkPut(slate, [dkHr(), dkTxt('이 종목의 레슨을 만들고 있습니다.'), prizeLine(lessonVol)]);
     dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('종목 교본으로', () => { lessonVol = null; paintHome(); })));
     return;
   }
@@ -81,7 +89,7 @@ function deskLesson({ head, stage, slate }) {
   })));
   const dr = drills.byId(cur);
   dkPut(slate, dkH1(`${vol[1]} 교본`, '레슨'));
-  dkPut(slate, [dkHr(), dkTxt('교본을 누르면 그 레슨이 바로 시작됩니다. 단계를 다 떼면 표지에 금박이 들어갑니다.'), dkHr()]);
+  dkPut(slate, [dkHr(), dkTxt('교본을 누르면 그 레슨이 바로 시작됩니다. 단계를 다 떼면 표지에 금박이 들어갑니다.'), prizeLine(lessonVol), dkHr()]);
   for (const course of drills.COURSES) { const l = ids.filter(id => drills.byId(id).course === course); if (!l.length) continue;
     dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: course }), el('b', { text: `${doneOf(l)} / ${l.length}권` })])); }
   dkPut(slate, [dkHr(), guideRow()]);

@@ -89,8 +89,9 @@ const match = {
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
     const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
     const innings = Math.max(inn[0], inn[1]);
-    $('#rMeta').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? '랭킹전' : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}  |  ${innings}이닝 · ${dur}`;
-    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? '랭킹전' : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이'}`;
+    const onKo = on && (on.kind === 'invite' ? '친구 초대' : '랭킹전');
+    $('#rMeta').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}  |  ${innings}이닝 · ${dur}`;
+    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이'}`;
     const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
     const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
     const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
@@ -126,12 +127,13 @@ const match = {
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
       if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
+      if (kind === 'cpu' && w === 0) line('당구드롭', `+1 (하루 ${ECONOMY.DROP.CPU_DAILY}개까지)`);
       net.claim('match', { kind, log }); match.log = null;
     }
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
     if (on) { ranked.ended(); ranked.paint(); }
     $('#rWhy').textContent = game.over.why;
-    show('result'); SND.win();
+    show('result'); SND.win(); dropPaint();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);
   },

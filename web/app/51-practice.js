@@ -1,15 +1,27 @@
 /* ================= flow: practice (free table, or a drill that checks each shot) ================= */
 // put a drill layout on the table
+// (a lesson's layout is made from a seed - kept with it - so the server can make it again to check a top-level shot: a rack
+// comes from the same seed, so 'again' puts out the very same rack)
 function putLayout(L) {
   const P = game.P, w = game.world;
   game.MODES.practice.setup(game, Math.random); scene.clearFalls();
-  if (L.rack) { game.MODES.eight.setup(game, Math.random); game.placing = null; st.aim = 0; }
+  if (L.rack) { game.MODES.eight.setup(game, L.seed != null ? seededRandom((L.seed ^ 0x9e3779b9) >>> 0) : Math.random); game.placing = null; st.aim = 0; }
   else {
     P.place(w, 0, L.cue[0], L.cue[1], Math.random);
     for (const [id, x, y] of L.balls) P.place(w, id, x, y, Math.random);
     st.aim = L.aim;
   }
   st.rev++; scene.invalidate();
+}
+/* A game's volume of lessons all done at the top level (each with its proof): the prize is claimed (economy.js
+   LESSON_PRIZE - 8볼: coins and the break cue), once; the server plays every proof again before it pays. */
+function lessonPrize(vol) {
+  const prize = ECONOMY.LESSON_PRIZE[vol]; if (!prize || (net.me && (net.me.prizes || []).includes(vol))) return;
+  const ids = drills.list.filter(d => d.make && d.vol === vol).map(d => d.id);
+  if (!ids.length || !ids.every(id => prefs.lessonProof[id])) return;
+  const proofs = {}; for (const id of ids) proofs[id] = prefs.lessonProof[id];
+  toast(`${MODE_KO[vol]} 레슨을 모두 끝냈습니다! 보상을 받는 중…`, 'good', 2600);
+  net.claim('lessons', { vol, proofs });
 }
 const practice = {
   quiet: false, save: false,
@@ -25,11 +37,15 @@ const practice = {
     toast(p.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
   },
   restart() { practice.start(); },
-  fresh() { const p = practice; p.layout = drills.make(p.drill.id, game.P, p.level, Math.random, game.vOf) || p.layout; p.again(); },   // a new layout
+  fresh() {                                                                                          // a new layout
+    const p = practice, seed = (Math.random() * 4294967296) >>> 0, L = drills.make(p.drill.id, game.P, p.level, seededRandom(seed), game.vOf);
+    if (L) { L.seed = seed; L.level = p.level; p.layout = L; }
+    p.again();
+  },
   again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
   guide: () => GUIDE_STD,
   auto: () => null,
-  beforeShot() { practice.before = game.world.balls.map(b => [b.x, b.y, b.on]); practice.beforeAim = st.aim; },
+  beforeShot(V, a, b, el) { practice.before = game.world.balls.map(q => [q.x, q.y, q.on]); practice.beforeAim = st.aim; practice.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
   afterShot() {
     const p = practice;
     if (!p.drill.make) { game.resolve(); return beginTurn(false); }
@@ -37,6 +53,8 @@ const practice = {
     game.resolve(); p.tries++;
     if (why) { p.streak = 0; toast('실패 · ' + why, 'foul', 1900); SND.bad(); return hold(1.7, p.again); }           // same layout until it goes in
     p.ok++; p.streak++;
+    // done at the top level: kept as the proof (the layout's seed, the table, the shot) the server plays again for a prize
+    if (p.layout.level === drills.LEVELS && p.layout.seed != null && p.shot) { prefs.lessonProof[p.drill.id] = { table: prefs.table, seed: p.layout.seed, shot: p.shot }; savePrefs(); lessonPrize(p.drill.vol); }
     let msg = '성공!';
     if (p.streak >= 3 && p.level < drills.LEVELS) { p.level++; p.streak = 0; prefs.drillLv[p.drill.id] = p.level; savePrefs(); p.bar(); msg = `성공! 이제 ${p.level}단계`; }
     else if (p.level < drills.LEVELS) msg = `성공! 다음 단계까지 ${3 - p.streak}번`;

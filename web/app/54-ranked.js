@@ -42,14 +42,15 @@ const ranked = {
   cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); if (!quiet) net.leaveQueue(f.mode); },
 
   play(r) {
-    const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, opp: r.opp, standIn: r.standIn || null,
+    // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)
+    const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, opp: r.opp, standIn: r.standIn || null, kind: r.kind || 'ranked',
       inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: net.me ? net.me.dama : ECONOMY.DAMA_START };
     ranked.connect();
     const names = []; names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name;
-    const rules = RANKED_RULES[o.mode];
+    const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
-    toast(`${o.opp.name} · ${o.opp.dama} 다마`, '', 2600);
+    toast(o.kind === 'invite' ? `${o.opp.name}와(과) 한 판` : `${o.opp.name} · ${o.opp.dama} 다마`, '', 2600);
   },
   // the room, kept open: a dropped connection is opened again, and what it missed is sent again
   connect() {
@@ -185,17 +186,18 @@ const ranked = {
       match.finish();
     } else if (st.screen === 'result') ranked.paint();
     if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
-    net.flush();
+    net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after: a 당구드롭 won)
   },
   // the result screen's lines for a ranked game: checking, then what it paid
   paint() {
     const o = ranked.on, side = $('#rSide'); if (!o || !side) return;
     for (const x of side.querySelectorAll('.rk')) x.remove();
     const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec rk' }, [el('span', { text: k }), el('b', { text: v })]));
-    if (!o.result) return line('랭킹전', '결과 확인 중…');
+    if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : '랭킹전', '결과 확인 중…');
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
     line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
-    line('다마', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+    if (o.kind !== 'invite') line('다마', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+    if (o.kind !== 'invite' && r.winner === me) line('당구드롭', '+1');
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },

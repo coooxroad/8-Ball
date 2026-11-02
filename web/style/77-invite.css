@@ -1,0 +1,34 @@
+/* ---------- 친구와 플레이 · 초대하기 (app/55-invite.js): two places in the felt tray, and the code to give ---------- */
+#app.desk .dk-stage .inv{position:absolute;inset:5% 4% 4%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,3vh,28px)}
+#app.desk .inv-slots{display:flex;justify-content:center;gap:clamp(14px,6%,60px);width:100%;flex:1 1 auto;min-height:0;max-height:440px}
+#app.desk .inv-slot{display:flex;flex-direction:column;align-items:center;gap:4px;width:min(30%,170px);min-height:0}
+#app.desk .inv-slot .well{position:relative;flex:1 1 auto;min-height:120px;width:100%;border-radius:22px;background:rgba(0,0,0,.2);
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.07);overflow:hidden;margin-bottom:6px}
+#app.desk .inv-slot b{font:800 17px var(--ui-font);color:#f4efe4;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app.desk .inv-slot small{font:600 13px var(--ui-font);color:rgba(230,236,246,.72)}
+/* my cue standing in its place, butt down, the ball at its foot */
+#app.desk .inv-slot .well{container-type:size}
+#app.desk .inv-slot .cue{position:absolute;left:50%;top:44%;width:84cqh;height:auto;transform:translate(-50%,-50%) rotate(-90deg);filter:drop-shadow(4px 0 4px rgba(0,0,0,.45))}
+#app.desk .inv-slot .ball{position:absolute;right:12%;bottom:6%;width:26%;height:auto;filter:drop-shadow(0 4px 4px rgba(0,0,0,.45))}
+/* the friend's place: a cue and a ball drawn in dashes, breathing while it waits */
+#app.desk .inv-slot .ghost-cue{position:absolute;left:50%;top:7%;bottom:22%;width:12px;margin-left:-6px;border:2px dashed rgba(230,238,250,.45);border-radius:6px 6px 8px 8px}
+#app.desk .inv-slot .ghost-ball{position:absolute;left:50%;bottom:6%;width:22%;aspect-ratio:1;margin-left:-11%;border:2px dashed rgba(230,238,250,.45);border-radius:50%}
+#app.desk .inv-slot.wait .well{animation:invBreathe 2.2s ease-in-out infinite}
+#app.desk .inv-slot.come .well{box-shadow:inset 0 3px 10px rgba(0,0,0,.45),inset 0 0 0 2px #7ff0c1,0 0 18px rgba(127,240,193,.45)}
+@keyframes invBreathe{50%{box-shadow:inset 0 3px 10px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.22)}}
+#app.desk .inv-code{display:flex;align-items:center;gap:14px;padding:8px 8px 8px 20px;border-radius:16px;background:#f3eee2;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 -3px 0 rgba(0,0,0,.08);max-width:100%}
+#app.desk .inv-code span{font:700 14px var(--ui-font);color:#5b5246;padding-right:14px;border-right:1px solid rgba(0,0,0,.18);white-space:nowrap}
+#app.desk .inv-code b{font:800 clamp(24px,4.4vh,36px)/1 'Outfit',var(--ui-font);letter-spacing:.14em;color:#1c1a17}
+#app.desk .inv-code button{height:44px;padding:0 22px;border:0;border-radius:12px;background:#1d1f22;color:#f3eee2;font:800 15px var(--ui-font);cursor:pointer}
+#app.desk .inv-code button[disabled]{opacity:.4}
+#sheet .txt.code{text-transform:uppercase;letter-spacing:.3em;text-align:center;font:800 26px 'Outfit',var(--ui-font)}
+/* a phone: the tray is small - the places shorter, the code plate tighter, nothing wrapping */
+#app.desk.compact .dk-stage .inv{inset:3% 3% 3%;gap:10px}
+#app.desk.compact .inv-slot{width:min(36%,150px)}
+#app.desk.compact .inv-slot .well{min-height:56px;border-radius:16px;margin-bottom:2px}
+#app.desk.compact .inv-slot b{font-size:14px}
+#app.desk.compact .inv-slot small{font-size:11.5px}
+#app.desk.compact .inv-code{gap:8px;padding:6px 6px 6px 12px;border-radius:14px}
+#app.desk.compact .inv-code span{font-size:12px;padding-right:8px}
+#app.desk.compact .inv-code b{font-size:22px;letter-spacing:.08em}
+#app.desk.compact .inv-code button{height:36px;padding:0 14px;font-size:14px;white-space:nowrap}

@@ -6,6 +6,8 @@
    00-state    what is shared, and what is worn      40-shot        the shot pipeline and the scoreboard
    05-music    the lobby's tune, win and lose songs   50-match       a game between two players (or one and the computer)
    07-net      the server: wallet, rewards, ranked    54-ranked      랭킹전: finding an opponent, playing them online
+                                                      55-invite      친구 초대: a code, and a game on two devices
+                                                      56-drop        당구드롭: a ball to open, won with a game
    10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
    20-sheets   every sheet that slides up             52-puzzle      puzzles
    30-home     what the desk and the flows share      53-demo        one given shot, played by the app
@@ -39,6 +41,7 @@ const prefs = (() => {
     music: true,
     shotClock: 40,
     ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
+    friendWay: 'local', fourTarget: 10, lessonProof: {},
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -129,7 +132,7 @@ function drawCue(cv, d, vertical) {
   // (a cue with its own make: its sections, and a lit blade - a white core in a glow of its colour - over them)
   if (d.profile) {
     const rr = r => r / 0.0146 * T / 2;
-    for (const [x0, x1, r0, r1, h] of d.profile) { g.fillStyle = css(h); g.beginPath(); g.moveTo(x(x0), T / 2 - rr(r0)); g.lineTo(x(x1), T / 2 - rr(r1)); g.lineTo(x(x1), T / 2 + rr(r1)); g.lineTo(x(x0), T / 2 + rr(r0)); g.fill(); }
+    for (const [x0, x1, r0, r1, h, o] of d.profile) { if (o && o.hide) continue; g.fillStyle = css(h); g.beginPath(); g.moveTo(x(x0), T / 2 - rr(r0)); g.lineTo(x(x1), T / 2 - rr(r1)); g.lineTo(x(x1), T / 2 + rr(r1)); g.lineTo(x(x0), T / 2 + rr(r0)); g.fill(); }
     if (d.glow) {
       const G = d.glow, r = rr(G.r || 0.0062);
       // round-ended bars: the coloured glow, then the white-hot core

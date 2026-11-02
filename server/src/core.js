@@ -4,7 +4,7 @@
    the same number again gets the first answer back and changes nothing (no paying twice by sending one request twice).
    The app never says how much it has; it says what it did, and this decides what that is worth.
    `sql` is the Durable Object's SQLite (ctx.storage.sql) - or, in the tests, node's. */
-import { E, playPuzzle, playMatch, Replay } from './check.js';
+import { E, playPuzzle, playMatch, playLesson, Replay, DRILLS } from './check.js';
 import { logError, matchKey } from './match-log.js';
 
 const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS, glove: E.GLOVES };
@@ -42,7 +42,8 @@ export class VaultCore {
     const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
     for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
     if (this.get('dama', 0) >= 1000) this.set('dama', E.ECONOMY.DAMA_START);                    // (the first accounts started at 1000)
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned,
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned, drops: this.get('drops', 0),
+      prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
   }
@@ -65,6 +66,7 @@ export class VaultCore {
     return this.once(req, () => {
       const it = (KINDS[kind] || []).find(q => q.id === id);
       if (!it) return { ok: false, why: 'no such item' };
+      if (it.reward) return { ok: false, why: 'a lesson reward, not for sale' };
       if (this.owns(kind, id)) return { ok: false, why: 'already owned' };
       const price = E.priceOf(it);
       if (this.get('coin', 0) < (price.coin || 0) || this.get('dia', 0) < (price.dia || 0)) return { ok: false, why: 'not enough' };
@@ -85,15 +87,58 @@ export class VaultCore {
     });
   }
 
-  // a ranked game's result, from its room (room.js), once per room: coins and the change in DAMA
-  ranked({ room, mode, won, draw, coins, dama }) {
+  // a game's result from its room (room.js), once per room: coins and the change in DAMA - a ranked game, or one with an
+  // invited friend (kind 'invite': no DAMA, no 당구드롭). A ranked game won brings a 당구드롭.
+  ranked({ room, mode, won, draw, coins, dama, kind }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
-      const c = Math.max(0, Math.min(20000, coins | 0)), d = Math.max(-E.ECONOMY.DAMA_K, Math.min(E.ECONOMY.DAMA_K, dama | 0));
+      const inv = kind === 'invite', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_K, Math.min(E.ECONOMY.DAMA_K, dama | 0));
       this.set('dama', Math.max(E.ECONOMY.DAMA_FLOOR, this.get('dama', E.ECONOMY.DAMA_START) + d));
-      this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, 'ranked', ?, NULL, ?, 1, ?)`, Date.now(), mode, c, draw ? 'draw' : won ? 'won' : 'lost');
-      if (c) this.pay(`ranked ${mode}`, c, 0);
+      this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
+      if (c) this.pay(`${inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
+      if (won && !inv) this.set('drops', this.get('drops', 0) + 1);
       return { ok: true };
+    });
+  }
+  // a game against the computer won: a 당구드롭, CPU_DAILY a day at most
+  cpuDrop() {
+    const d = day(), k = this.get('cpuDrops', { day: d, n: 0 }), n = k.day === d ? k.n : 0;
+    if (n >= E.ECONOMY.DROP.CPU_DAILY) return;
+    this.set('cpuDrops', { day: d, n: n + 1 }); this.set('drops', this.get('drops', 0) + 1);
+  }
+  /* A 당구드롭 opened: its rarity drawn by the odds, then what is in it (economy.js DROP). The screen shows the taps that
+     climb to that rarity; what it climbs to was decided here. */
+  drop({ req }, rnd) {
+    const R = rnd || Math.random;
+    return this.once(req, () => {
+      if (this.get('drops', 0) < 1) return { ok: false, why: 'no drop' };
+      this.set('drops', this.get('drops', 0) - 1);
+      const X = E.ECONOMY.DROP, total = X.ODDS.reduce((a, b) => a + b, 0);
+      let u = R() * total, rarity = 0; while (rarity < X.ODDS.length - 1 && u >= X.ODDS[rarity]) { u -= X.ODDS[rarity]; rarity++; }
+      const v = R(); let prize = null;
+      if (v < X.SKIN && rarity > 1) {
+        const pool = [];
+        for (const k in KINDS) for (const q of KINDS[k]) if ((q.rarity || 0) === rarity - 1 && !q.reward && !this.owns(k, q.id)) pool.push([k, q.id]);
+        if (pool.length) { const [k, id] = pool[Math.floor(R() * pool.length)]; this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, k, id, Date.now()); prize = { item: { kind: k, id } }; }
+      }
+      if (!prize && v >= X.SKIN && v < X.SKIN + X.DIA) { prize = { dia: X.DIA_N[rarity] }; this.pay(`drop ${rarity}`, 0, prize.dia); }
+      if (!prize) { prize = { coin: X.COIN[rarity] }; this.pay(`drop ${rarity}`, prize.coin, 0); }
+      return { ok: true, rarity, prize, me: this.me() };
+    });
+  }
+  /* A game's volume of lessons, every one done at its top level: each checked by playing its shot again (check.js
+     playLesson), then the prize (economy.js LESSON_PRIZE), once. proofs: { [lesson id]: { table, seed, shot } } */
+  lessons({ req, vol, proofs }) {
+    return this.once(req, () => {
+      const prize = E.ECONOMY.LESSON_PRIZE[vol]; if (!prize) return { ok: false, why: 'no prize for that' };
+      if (this.get('prize:' + vol)) return { ok: true, paid: 0, me: this.me() };
+      const ids = DRILLS.list.filter(d => d.make && d.vol === vol).map(d => d.id);
+      if (!ids.length) return { ok: false, why: 'no lessons yet' };
+      for (const id of ids) { const r = playLesson(id, proofs && proofs[id]); if (!r.ok) return { ok: false, why: `${id}: ${r.why}` }; }
+      this.set('prize:' + vol, Date.now());
+      if (prize.coin) this.pay(`lessons ${vol}`, prize.coin, 0);
+      if (prize.id && !this.owns(prize.kind, prize.id)) this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, prize.kind, prize.id, Date.now());
+      return { ok: true, paid: prize.coin || 0, item: prize.id ? { kind: prize.kind, id: prize.id } : null, me: this.me() };
     });
   }
 
@@ -135,6 +180,7 @@ export class VaultCore {
       }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, ?, ?, 'paid')`, Date.now(), kind, log.mode, null, coins, check ? 1 : 0);   // (the result is kept, not the log)
       if (coins) this.pay(`match ${kind} ${log.mode}`, coins, 0);
+      if (kind === 'cpu' && won) this.cpuDrop();
       return { ok: true, paid: coins, checked: check, me: this.me() };
     });
   }
@@ -164,6 +210,7 @@ export class VaultCore {
       const coins = E.matchCoins(row.kind, log.mode, out.points, out.winner === 0);
       this.sql.exec(`UPDATE matches SET status = 'paid', paid = ?, checked = 1, cp = NULL, log = NULL WHERE n = ?`, coins, row.n);
       if (coins) this.pay(`match ${row.kind} ${log.mode}`, coins, 0);
+      if (row.kind === 'cpu' && out.winner === 0) this.cpuDrop();
     });
     this.job = null;                                                          // retain the finished replay if the transaction fails
     return this.sql.exec(`SELECT 1 FROM matches WHERE status = 'checking' LIMIT 1`).toArray().length > 0;

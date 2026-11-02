@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
-import { LobbyCore, RoomCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -240,6 +240,70 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     if (G.winner != null) { const full = E.damaAfter(30, 40, G.winner === 0)[0] - 30;
       ok(r.winner === G.winner && r.dama[0] - 30 === full && R.payouts().length === 1, `ranked: a stand-in game counts like any (${r.why})`); } }
   console.log('ranked rooms: checked');
+}
+
+// 당구드롭: one per ranked win (never an invite game's), cpu wins at most CPU_DAILY a day; opened once each; the rarity
+// keeps to the odds; a thing found is one not owned, of the rarity below
+{
+  const v = vault(); v.init('h'); const X = E.ECONOMY.DROP;
+  ok(!v.drop({ req: req() }).ok, 'drop: none to open');
+  v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '2'.repeat(32), mode: 'eight', won: false, coins: 5, dama: -3 });
+  v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
+  ok(v.me().drops === 1 && v.me().dama === 30, 'drop: a ranked win brings one; a loss and an invite game none, an invite game moves no DAMA');
+  for (let k = 0; k < X.CPU_DAILY + 2; k++) v.cpuDrop();
+  ok(v.me().drops === 1 + X.CPU_DAILY, 'drop: computer wins bring at most CPU_DAILY a day');
+  const q = req(), a = v.drop({ req: q }), b = v.drop({ req: q });
+  ok(a.ok && b.ok && a.rarity === b.rarity && v.me().drops === X.CPU_DAILY, 'drop: the same request opens one once');
+  const seq = vals => { let i = 0; return () => vals[i++ % vals.length]; };
+  // a 신화 draw, a thing: one of 에픽, not owned, now owned
+  const odds = X.ODDS, tot = odds.reduce((x, y) => x + y, 0), at = r => (odds.slice(0, r).reduce((x, y) => x + y, 0) + odds[r] / 2) / tot;
+  const r3 = v.drop({ req: req() }, seq([at(3), 0.01, 0.5]));
+  ok(r3.ok && r3.rarity === 3 && r3.prize.item && v.owns(r3.prize.item.kind, r3.prize.item.id) && [E.CUES, E.BALLSKINS, E.CLOTHS, E.TRAILS, E.GLOVES].flat().find(q2 => q2.id === r3.prize.item.id && (q2.rarity || 0) === 2), 'drop: a thing of the rarity below');
+  const c0 = v.me().coin, r0 = v.drop({ req: req() }, seq([at(0), 0.01]));
+  ok(r0.ok && r0.rarity === 0 && r0.prize.coin === X.COIN[0] && v.me().coin === c0 + X.COIN[0], 'drop: a 일반 drop with a thing drawn pays coins instead');
+  const d0 = v.me().dia, r5 = v.drop({ req: req() }, seq([at(5), X.SKIN + 0.01]));
+  ok(r5.ok && r5.rarity === 5 && r5.prize.dia === X.DIA_N[5] && v.me().dia === d0 + X.DIA_N[5], 'drop: diamonds');
+  // the odds, over many
+  const w = vault(); w.init('h'); w.set('drops', 4000); const cnt = [0, 0, 0, 0, 0, 0];
+  for (let k = 0; k < 4000; k++) cnt[w.drop({ req: req() }).rarity]++;
+  ok(Math.abs(cnt[0] / 4000 * 100 - odds[0]) < 4 && Math.abs(cnt[1] / 4000 * 100 - odds[1]) < 4, `drop: the odds hold (${cnt.join(' ')})`);
+  ok(!v.buy({ req: req(), kind: 'cue', id: 'breaker' }).ok, 'the break cue is not for sale');
+  console.log('drops: checked');
+}
+// lessons: every 8볼 lesson done at its top level - each proof (seed, table, shot) played again - pays the coins and the
+// break cue, once; a missing or doctored proof pays nothing
+{ const v = vault(); v.init('h'); const r = v.lessons({ req: req(), vol: 'eight', proofs: {} });
+  ok(!r.ok && v.me().coin === 0 && !v.owns('cue', 'breaker'), `lessons: nothing without every lesson done (${r.why})`);
+  const D = E.createDrills(), ids = D.list.filter(d => d.make && d.vol === 'eight').map(d => d.id), proofs = {};
+  for (const id of ids) {
+    // as the app does it: a seed, the layout made from it at the top level, its reference shot struck
+    const seed = 1234567 + id.length, g = E.createGame(E.physicsFor(E.createPhysics, 'club')); g.start('practice', ['A', ''], false, {});
+    const L = D.make(id, g.P, D.LEVELS, E.seededRandom(seed), g.vOf);
+    proofs[id] = { table: 'club', seed, shot: { aim: L.demo.angle, V: g.vOf(L.demo.power), a: L.demo.a, b: L.demo.b, el: 0 } };
+  }
+  const bad = JSON.parse(JSON.stringify(proofs)); bad[ids[0]].shot.aim += 0.3;
+  ok(!v.lessons({ req: req(), vol: 'eight', proofs: bad }).ok && !v.owns('cue', 'breaker'), 'lessons: a shot that does not do it pays nothing');
+  const q = req(), r1 = v.lessons({ req: q, vol: 'eight', proofs }), r2 = v.lessons({ req: req(), vol: 'eight', proofs });
+  ok(r1.ok && r1.paid === E.ECONOMY.LESSON_PRIZE.eight.coin && v.owns('cue', 'breaker') && v.me().prizes.includes('eight') && r2.ok && r2.paid === 0 && v.me().coin === E.ECONOMY.LESSON_PRIZE.eight.coin,
+    `lessons: every lesson done pays once, with the break cue (${r1.why || ''})`);
+  console.log(`lessons: checked (${ids.length} for 8볼)`); }
+// invites: a code, the friend joins, both get the same room; a stranger cannot take a taken code
+{
+  const I = new InviteCore(), host = { acct: 'h'.repeat(32), dama: 30, name: 'H', icon: 0, mode: 'three', rules: { target: 3, cushions: 1, junk: 9 } };
+  const o = I.open(host); ok(o.ok && /^[A-Z2-9]{6}$/.test(o.code) && o.rules.target === 3 && o.rules.cushions === 1 && !('junk' in o.rules), 'invite: a code, with the host\'s rules kept to what the game offers');
+  ok(I.ask(host.acct, o.code).waiting, 'invite: the host waits');
+  ok(!I.join(host, o.code).ok, 'invite: not one\'s own code'); ok(!I.join({ acct: 'x'.repeat(32) }, 'ZZZZZZ').ok, 'invite: no such code');
+  ok(I.peek(o.code).mode === 'three', 'invite: the code says its game');
+  const g = I.join({ acct: 'g'.repeat(32), dama: 50, name: 'G', icon: 1 }, o.code), h = I.ask(host.acct, o.code);
+  ok(g.ok && g.init && g.seat === 1 && h.seat === 0 && h.room === g.room && h.token !== g.token && g.opp.name === 'H' && h.opp.name === 'G', 'invite: both in the same room');
+  ok(!I.join({ acct: 'z'.repeat(32) }, o.code).ok, 'invite: a taken code');
+  const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx); R.init(g.init);
+  ok(R.state(0).kind === 'invite' && R.state(0).rules.target === 3 && R.log().opts.cushions === 1, 'invite: the room plays the host\'s rules');
+  R.message(1, { t: 'resign' }); let k = 0; while (R.work(500) && k < 1000) k++;
+  const res = R.get('result'), pay = R.payouts();
+  ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
+  const o2 = I.open(host), o3 = I.open(host); ok(!I.peek(o2.code).ok && I.peek(o3.code).ok, 'invite: a new code closes the host\'s older one');
+  console.log('invites: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);

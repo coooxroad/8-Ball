@@ -14,6 +14,19 @@ function createDrills() {
   const COURSES = ['기본기', '큐볼 다루기', '응용', '자유롭게'];
   const list = [
     { id: 'free', name: '자유 연습', d: '규칙 없이 마음대로. 공을 옮기고 한 수 되돌릴 수 있습니다.' },
+    /* 8볼 · 기본기 1 (the first lesson, and the pattern for the rest: tasks/gpt-lessons.md). The cue ball, the 1 and a
+       corner pocket on one line: strike it straight, a touch below centre so the cue ball stops where it hits. Farther
+       apart at each level. */
+    { id: 'e-straight', name: '정면 넣기', d: '큐볼, 1번 공, 포켓이 한 줄. 똑바로 쳐서 넣습니다.', tip: '큐볼 가운데 조금 아래를 똑바로. 큐볼은 맞힌 자리에 멈춥니다.',
+      vol: 'eight', course: '기본기',
+      make(P, t, rnd) {
+        const k = [0, 2, 3, 5][Math.floor(rnd() * 4)], pk = P.POCKETS[k], m = Math.hypot(pk.nx, pk.ny);
+        const a0 = Math.atan2(-pk.ny / m, -pk.nx / m) + (rnd() - 0.5) * 0.6, ux = Math.cos(a0), uy = Math.sin(a0);
+        const d1 = 0.22 + 0.4 * t + rnd() * 0.06, d2 = 0.2 + 0.45 * t + rnd() * 0.06;
+        const ob = [pk.ax + ux * d1, pk.ay + uy * d1], cb = [ob[0] + ux * d2, ob[1] + uy * d2];
+        for (const q of [ob, cb]) if (Math.abs(q[0]) > P.HL - 2.2 * P.R || Math.abs(q[1]) > P.HW - 2.2 * P.R) return null;
+        return { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: Math.atan2(-uy, -ux), power: 0.3 + 0.18 * t, a: 0, b: -0.3 } };
+      } },
   ];
 
   const byId = id => list.find(d => d.id === id) || list[0];
