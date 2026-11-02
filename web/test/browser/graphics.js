@@ -18,11 +18,17 @@ const pause = page => page.waitForTimeout(650);
           const canvas = document.querySelector('#gl'), bar = document.querySelector('#deskBar');
           const buttons = [...bar.querySelectorAll('.dk-tab, .dk-top')].map(x => ({ ...x.getBoundingClientRect().toJSON(), scroll: x.scrollWidth, client: x.clientWidth }));
           const groups = [...bar.children].map(x => x.getBoundingClientRect().toJSON()).filter(x => x.width > 0);
-          return { pixels: canvas.width * canvas.height, buttons, groups, ratio: __dp8.scene.pixelRatio };
+          return { pixels: canvas.width * canvas.height, buttons, groups, ratio: __dp8.scene.pixelRatio, lean: document.querySelector('#app').classList.contains('tilt') };
         });
-        assert(measure.pixels > 0 && measure.pixels <= 4.2e6, `${width}x${height}@${dpr}: pixel budget`);
+        // (the desk's home, leaned back by CSS, is drawn finer so the browser's resampling stays sharp: its own budget, 8M - scene/60-view.js)
+        assert(measure.pixels > 0 && measure.pixels <= (measure.lean ? 8e6 : 4.2e6), `${width}x${height}@${dpr}: pixel budget`);
         for (const b of measure.buttons) { assert(b.left >= -1 && b.right <= width + 1, `${width}x${height}@${dpr}: bar button within screen (${JSON.stringify(b)})`); assert(b.scroll <= b.client + 1, 'bar label fits'); }
-        for (let i = 1; i < measure.groups.length; i++) assert(measure.groups[i].left >= measure.groups[i - 1].right - 1, `${width}x${height}@${dpr}: bar groups must not overlap (${JSON.stringify(measure.groups)})`);
+        // (no two groups overlap: on a phone held upright the bar is two rows - the places, then the player, wallet and keys)
+        const gs = measure.groups.filter(g => g.height > 0);
+        for (let i = 0; i < gs.length; i++) for (let j = i + 1; j < gs.length; j++) {
+          const a = gs[i], b = gs[j], across = a.left < b.right - 1 && b.left < a.right - 1, down = a.top < b.bottom - 1 && b.top < a.bottom - 1;
+          assert(!(across && down), `${width}x${height}@${dpr}: bar groups must not overlap (${JSON.stringify([a, b])})`);
+        }
         await page.evaluate(() => { const d = __dp8; d.startPractice(); }); await pause(page);
         await page.waitForFunction(() => getComputedStyle(document.querySelector('#gl')).transform === 'none');
         const input = await page.evaluate(() => {
@@ -39,7 +45,8 @@ const pause = page => page.waitForTimeout(650);
       await page.setViewportSize({ width: 1024, height: 768 }); await pause(page);
       const cdp = await page.context().newCDPSession(page), next = dpr === 1 ? 2 : 1;
       await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1024, height: 768, deviceScaleFactor: next, mobile: false });
-      try { await page.waitForFunction(r => Math.abs(__dp8.scene.pixelRatio - r) < 0.001, next); }
+      // (the desk's leaning home is drawn at two at least, whatever the screen: scene/60-view.js)
+      try { await page.waitForFunction(r => Math.abs(__dp8.scene.pixelRatio - (document.querySelector('#app').classList.contains('tilt') ? Math.max(2, r) : r)) < 0.001, next); }
       catch (e) { console.error('density state', await page.evaluate(() => ({ dpr: devicePixelRatio, ratio: __dp8.scene.pixelRatio, focus: document.activeElement.tagName, quality: __dp8.prefs.quality, size: [innerWidth, innerHeight] }))); throw e; }
       await cdp.detach();
       await page.evaluate(() => __dp8.startPractice()); await pause(page);
