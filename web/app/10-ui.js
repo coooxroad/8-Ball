@@ -104,12 +104,16 @@ function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
   // (the gauge stands upright in either orientation: the cue is drawn down it, as it is drawn back from the ball)
   const tr = $('#power'), c = $('#powerCue'), REST = 48, END = 52;   // (clear of the gauge's end caps, so the chalked tip shows)
-  // (in the glove's steps: a half or a quarter shows as one)
-  $('#powerNum').textContent = p > 0 ? String(Math.max(0.25, Math.round(p * 400) / 4)) : 0;
+  /* The number is the stroke itself, not a share of the gauge: how fast the cue ball leaves, in km/h - so the same pull says
+     more with a strong cue than with a weak one. And the meter's colours are laid out on that same scale (--gh): a cue at
+     the top of the range (STAT_MAX) pulled all the way reaches the violet at the very top; a weaker one stops short of it. */
+  const k = typeof cueK === 'function' ? cueK().power : 1, top = 1 + STAT_MAX / 100, v = p > 0 && game && game.vOf ? game.vOf(p) * k * 3.6 : 0;
+  $('#powerNum').innerHTML = p > 0 ? `${v.toFixed(1)}<small>km/h</small>` : '0';
+  tr.style.setProperty('--gh', (top / k * 100).toFixed(1) + '%');
   c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
   // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
-  const q = Math.min(1, p), hue = 185 - 185 * Math.pow(q, 0.85);
+  const q = Math.min(1, p), qa = Math.min(1, p * k / top), hue = 185 - 185 * Math.pow(Math.min(1, qa * 1.12), 0.85) - (qa > 0.9 ? (qa - 0.9) * 600 : 0);   // (past red, on to violet)
   tr.style.setProperty('--heat', `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(52 - 4 * q)}% / ${(q < 0.02 ? 0 : 0.35 + 0.6 * q).toFixed(2)})`);
   tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
   tr.style.setProperty('--pw', (q * 100).toFixed(1) + '%');                 // (the desk's lit meter: exactly the power)
