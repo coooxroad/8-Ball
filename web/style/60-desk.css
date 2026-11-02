@@ -22,7 +22,12 @@
    so the table sits in the tray as one picture. Beyond the desk's far edge is the dark of the room; the wood runs on
    under the far edge and the sides. (The sizes are worked out in deskLean(), 32-desk.js; the desk fills the plane top to bottom, so
    it reaches the bar.) */
-#deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat}
+#deskPlane{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0}
+/* the wood on a layer of its own, and the desk's contents on another: a tap rebuilds the contents, and on a phone the leaning
+   plane was being drawn again whole - for a frame or two its tiles were missing (the room showed through, the wood shifted).
+   Now only the contents' layer is drawn again; the wood never changes. */
+#deskPlane::before{content:'';position:absolute;inset:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:transform}
+#deskPlane>#desk{will-change:transform}
 #app.desk.tilt{background:#0b0806}
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
    On its side, the three columns again, narrow. */
