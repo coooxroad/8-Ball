@@ -5,7 +5,7 @@
                 (dark), 8 a black hole with its glowing ring; carom: the Moon, the Sun, Mars
        soccer   the five-and-six panel ball: the cue ball white with black pentagons; solids coloured all over the white
                 panels, stripes coloured round the middle; carom yellow and red
-       crystal  cut gems: facets in shades of the ball's colour with bright edges and glints (finish.facets cuts them)
+       crystal  cut glass in the ball's colour, a little uneven inside (the sparkle and rainbow rim: finish.crystal)
        basketball  pebbled leather with black seams, coloured as the ball (the 8 black with light seams) */
   const ballDir = (u, v) => { const ph = u * 2 * Math.PI, th = v * Math.PI; return [-Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th)]; };
   // smooth noise on the sphere itself (no seam at the back, no pinch at the poles)
@@ -83,21 +83,18 @@
       // or a basketball (pebbled leather, black seams: two great circles and two rings); stripes clear/white with the colour round the middle
       const rgb = h => { const v = parseInt(h.slice(1), 16); return [v >> 16, (v >> 8) & 255, v & 255]; };
       const gem = sk.paint === 'crystal', eight = pool && n === 8, c = colour ? rgb(colour) : gem ? [214, 232, 250] : [244, 242, 236];
-      const plain = gem ? [226, 238, 250] : [244, 242, 236], fu = (sk.finish && sk.finish.facets) || [22, 12];
+      const plain = gem ? [226, 238, 250] : [244, 242, 236];
       surface(g, W, H, (x, y, z) => {
         const band = stripe && Math.abs(y) > 0.42, base3 = band ? plain : c;
-        if (gem) { const th = Math.acos(Math.max(-1, Math.min(1, y))) / Math.PI, ph = (Math.atan2(z, -x) / (2 * Math.PI) + 1) % 1, fi = Math.floor(ph * fu[0]) * 31 + Math.floor(th * fu[1]) * 17;
-          const k = 0.72 + 0.5 * nh(fi, 3, 7); return mixc([0, 0, 0], base3, Math.min(1.25, k)).map(v => Math.min(255, v)); }
+        if (gem) { const n = fbm3(x * 2.4 + 3, y * 2.4, z * 2.4, 3), v = 0.78 + 0.34 * n;   // (the colour deep inside, a little uneven, like cut glass)
+          return base3.map(c3 => Math.min(255, c3 * v)); }
         const pebble = 0.9 + 0.12 * noise3(x * 40, y * 40, z * 40);
         return base3.map(v => v * pebble);
       });
       if (gem) {
-        g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2;
-        for (let i = 0; i <= fu[0]; i++) { g.beginPath(); g.moveTo(i * W / fu[0], 0); g.lineTo(i * W / fu[0], H); g.stroke(); }
-        for (let j = 0; j <= fu[1]; j++) { g.beginPath(); g.moveTo(0, j * H / fu[1]); g.lineTo(W, j * H / fu[1]); g.stroke(); }
-        let sd = n * 13 + 5; const r = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
-        g.fillStyle = '#ffffff';
-        for (let k = 0; k < 14; k++) { const x = r() * W, y = H * (0.15 + r() * 0.7), q = 3 + r() * 5; g.beginPath(); g.moveTo(x, y - q * 2); g.lineTo(x + q * 0.4, y); g.lineTo(x, y + q * 2); g.lineTo(x - q * 0.4, y); g.fill(); g.beginPath(); g.moveTo(x - q * 2, y); g.lineTo(x, y + q * 0.4); g.lineTo(x + q * 2, y); g.lineTo(x, y - q * 0.4); g.fill(); }
+        // a crystal's facets, sparkle and rainbow are its material's (scene/30-balls.js crystallize), which knows the body by its
+        // being painted a shade see-through: the number's sticker drawn over it is opaque and stays paint
+        g.globalCompositeOperation = 'destination-out'; g.fillStyle = 'rgba(0,0,0,.1)'; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over';
       } else {
         // the seams, drawn on the sphere: two great circles through the poles and two rings round them
         const id = g.getImageData(0, 0, W, H), d = id.data, sc = eight ? [230, 230, 230] : [26, 22, 20], m = bballSeams(W, H);

@@ -179,27 +179,66 @@
   /* A comic set (finish.toon): lit in three flat steps, dotted like print where it is in shade, a black outline (the inside
      of a slightly bigger ball, drawn behind it). A mirror set (finish.facets: [round, up]): small flat facets. */
   let toonGrad = null;
+  // where a material's light goes out (three r128 writes it in place: there is no output_fragment chunk to hook)
+  const FRAG_OUT = 'gl_FragColor = vec4( outgoingLight, diffuseColor.a );';
   function toonMat() {
     if (!toonGrad) { toonGrad = new THREE.DataTexture(new Uint8Array([70, 150, 255]), 3, 1, THREE.LuminanceFormat); toonGrad.minFilter = toonGrad.magFilter = THREE.NearestFilter; toonGrad.needsUpdate = true; }
     const m = new THREE.MeshToonMaterial({ gradientMap: toonGrad });
     m.onBeforeCompile = sh => {
-      sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>', `
+      sh.fragmentShader = sh.fragmentShader.replace(FRAG_OUT, `
         { float L = dot(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse, vec3(0.299, 0.587, 0.114)) / max(0.05, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
           vec2 q = fract(gl_FragCoord.xy / 5.0) - 0.5; float rr = clamp(0.62 - L * 0.55, 0.0, 0.46);
           outgoingLight *= mix(1.0, 0.5, step(length(q), rr)); }
-        #include <output_fragment>`);
+        ` + FRAG_OUT);
     };
     return m;
   }
   const outlineMat = new THREE.MeshBasicMaterial({ color: 0x0b0b10, side: THREE.BackSide });
+  /* Cut crystal (a ball set's finish.crystal, a cue section's glass): a material that keeps its colour and lighting and adds
+     what crystal does - a rim that splits into the rainbow, the middle a shade deeper, light gathered on the side away from
+     the lamps, and sparkles: the surface is treated as cut into small facets (in the object's own directions, so they turn
+     as it rolls) and the few facing the light just so flash white. Nothing is see-through, so nothing needs sorting. */
+  /* Cut crystal on any material (a ball, a cue's glass): seen through it, the inside breaks into facets of light and shadow
+     that shift as it turns and as the eye moves (cells of where the refracted look lands), darker towards the rim and bright
+     in the middle as a glass sphere is; a rainbow round the edge; white glints with a little fire. o: { rim, sparkle, cut,
+     deep, inner (how many facets inside, across), fire (colours in the bright facets), pos (cells along the object, for a long cue), sticker (a ball: where the picture is opaque - the number's sticker -
+     it stays paint; the body is painted a shade see-through, scene/35-paint.js) }. */
+  function crystallize(m, o) {
+    const k = o || {}, f = v => v.toFixed(3);
+    m.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vObjN; varying vec3 vObjP;').replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvObjN = objectNormal; vObjP = position;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vObjN; varying vec3 vObjP;').replace(FRAG_OUT, `
+        { vec3 Nv = normalize(normal), Vv = normalize(vViewPosition), On = normalize(vObjN); float ndv = clamp(dot(Nv, Vv), 0.0, 1.0), fr = pow(1.0 - ndv, 2.0);
+          vec3 rb = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + fr * 2.4 + On.y * 0.7 + On.x * 0.4));
+          float gem = ${k.sticker ? '1.0 - step(0.985, diffuseColor.a)' : '1.0'};
+          vec3 dif = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+          float lit = clamp(dot(dif, vec3(0.333)) / max(0.04, dot(diffuseColor.rgb, vec3(0.333))), 0.55, 1.5);
+          vec3 ip = normalize(On + refract(-Vv, Nv, 0.67) * 0.6);   // (cut as a brilliant: rings, each of wedges set half a wedge round)
+          float ring = floor((ip.z * 0.5 + 0.5) * ${f(k.inner || 3)}), wedge = floor(atan(ip.y, ip.x) * ${f((2 * (k.inner || 3) + 2) / (2 * Math.PI))} + ring * 0.5);
+          float h2 = fract(sin(ring * 7.13 + wedge * 157.1 + floor((vObjP.x + vObjP.y + vObjP.z) * ${f((k.pos || 0) * (k.inner || 3))}) * 113.7) * 43758.5453);
+          vec3 inside = diffuseColor.rgb * lit * (0.22 + 1.25 * h2) * (0.25 + 0.95 * smoothstep(0.2, 0.85, ndv)) + rb * pow(h2, 5.0) * ${f(k.fire || 0.6)} * lit;
+          outgoingLight += (inside - dif) * gem;
+          outgoingLight = outgoingLight * mix(1.0, ${f(k.deep || 0.62)} + 0.55 * fr, gem) + rb * fr * ${f(k.rim || 0.6)} * gem;
+          float back = pow(max(0.0, dot(Nv, normalize(vec3(-0.35, -0.55, 0.6)))), 6.0); outgoingLight += diffuseColor.rgb * back * 0.45 * gem;
+          vec3 rr = reflect(-Vv, Nv), q = floor((On * 0.8 + rr * 0.35 + vObjP * ${f(k.pos || 0)}) * ${f(k.cut || 10)});
+          float h = fract(sin(dot(q, vec3(12.9898, 78.233, 37.719))) * 43758.5453), a = pow(max(0.0, dot(rr, normalize(vec3(0.25, 0.45, 0.86)))), 5.0);
+          outgoingLight += mix(vec3(1.0), rb, 0.35) * step(${f(1 - (k.sparkle || 0.08))}, h) * a * 3.2 * gem;
+          diffuseColor.a = 1.0; }
+        ` + FRAG_OUT);
+    };
+    m.customProgramCacheKey = () => 'crystal:' + JSON.stringify(k);
+    return m;
+  }
   const facetGeoms = {};
   function dressBall(m, k) {
-    const f = k.finish || {}, toon = !!f.toon;
-    if (toon !== (m.material.type === 'MeshToonMaterial')) {
+    const f = k.finish || {}, want = f.toon ? 'toon' : f.crystal ? 'crystal' : 'std';
+    if ((m.material.userData.kind || 'std') !== want) {
       const old = m.material;
-      m.material = toon ? toonMat() : new THREE.MeshPhysicalMaterial({ roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: m === shotBall ? 0.9 : 0.7 });
-      m.material.map = old.map; old.dispose();
+      m.material = want === 'toon' ? toonMat() : new THREE.MeshPhysicalMaterial({ roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: m === shotBall ? 0.9 : 0.7 });
+      if (want === 'crystal') crystallize(m.material, f.crystal);
+      m.material.userData.kind = want; m.material.map = old.map; old.dispose();
     }
+    const toon = want === 'toon';
     if (f.facets) { const key = f.facets.join('x'); m.geometry = facetGeoms[key] || (facetGeoms[key] = new THREE.SphereGeometry(1, f.facets[0], f.facets[1])); }
     else m.geometry = geomOf(k);
     m.material.flatShading = !!f.facets;

@@ -37,7 +37,7 @@
   // the mirror ball's lights: a ring of dots on the cloth for every ball of the set, their angle from how the ball has turned
   let disco = null;
   function discoTick(w, R) {
-    const on = !!(skin && skin.finish && skin.finish.facets) && !!w;
+    const on = !!(skin && skin.finish && (skin.finish.facets || skin.finish.spots)) && !!w;
     if (!on) { if (disco) disco.pts.visible = false; return; }
     if (!disco) disco = fxSystem(THREE.AdditiveBlending, 220);
     const L = disco.list; L.length = 0;
