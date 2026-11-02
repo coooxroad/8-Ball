@@ -149,9 +149,9 @@
         let len = a.a0 - a.a1; while (len < 0) len += Math.PI * 2;
         // a brass plate let into the rail, a black rubber lip standing on its inner edge, and a leather liner down the cut
         const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.002, a.p.r + bev + 0.012, 48, 1, a.a1, len), metalMat);
-        m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); grp.add(m);
+        m.position.set(a.p.x, a.p.y, RAIL_Z + 0.0006); m.layers.enable(OCCL); grp.add(m);
         const lip = new THREE.Mesh(new THREE.TorusGeometry(a.p.r + 0.0035, 0.006, 10, 48, len), lipMat);
-        lip.rotation.z = a.a1; lip.position.set(a.p.x, a.p.y, RAIL_Z - 0.001); lip.castShadow = true; grp.add(lip);
+        lip.rotation.z = a.a1; lip.position.set(a.p.x, a.p.y, RAIL_Z - 0.001); lip.castShadow = true; lip.layers.enable(OCCL); grp.add(lip);
         const lv = [], ln = [], seg = 32;
         for (let k = 0; k < seg; k++) {
           const t0 = a.a1 + len * k / seg, t1 = a.a1 + len * (k + 1) / seg, r = a.p.r - 0.0012;
@@ -159,13 +159,13 @@
           q(t0, RAIL_Z); q(t0, -0.02); q(t1, RAIL_Z); q(t1, RAIL_Z); q(t0, -0.02); q(t1, -0.02);
         }
         const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lv, 3)); lg.setAttribute('normal', new THREE.Float32BufferAttribute(ln, 3));
-        const liner = new THREE.Mesh(lg, linerMat); liner.receiveShadow = true; grp.add(liner);
+        const liner = new THREE.Mesh(lg, linerMat); liner.receiveShadow = true; liner.layers.enable(OCCL); grp.add(liner);
       }
     } else { hole.moveTo(-Xb, -Yb); hole.lineTo(-Xb, Yb); hole.lineTo(Xb, Yb); hole.lineTo(Xb, -Yb); hole.closePath(); }
     rail.holes.push(hole);
     const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
     rg.translate(0, 0, RAIL_Z - 0.12 - bev);
-    const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; grp.add(railMesh);
+    const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; railMesh.layers.enable(OCCL); grp.add(railMesh);
     // Under the rails, as on a real table: a skirt (apron) all round under the rail, then the cabinet down to the floor,
     // of the same wood: its long sides lean in towards the floor and its ends slope, and it stands on its feet through
     // thick arches cut in the long sides -
@@ -243,7 +243,7 @@
       const g2 = new THREE.BufferGeometry();
       g2.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g2.computeVertexNormals();
-      const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; grp.add(m);   // no shadows on it: at these slopes they only band
+      const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.layers.enable(OCCL); grp.add(m);   // no shadows on it: at these slopes they only band
     }
     grp.visible = false; sScene.add(grp);
     return grp;
@@ -264,7 +264,7 @@
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
     falls.length = 0; guideKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
-    if (iced || watery || (CLOTHS[clothI] && CLOTHS[clothI].comic)) setCloth(clothI);
+    if (iced || watery || (CLOTHS[clothI] && CLOTHS[clothI].look)) setCloth(clothI);
   }
   // barricades (puzzles; physics walls()): dark rubber blocks with a maple top, standing on the cloth
   const wallGrp = new THREE.Group(); sScene.add(wallGrp);
@@ -273,7 +273,7 @@
     while (wallGrp.children.length) wallGrp.children.pop().geometry.dispose();
     for (const q of list || []) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(q.len, q.thick, q.h), wallMats);
-      m.position.set(q.x, q.y, q.h / 2); m.rotation.z = q.ang || 0; m.castShadow = m.receiveShadow = true; wallGrp.add(m);
+      m.position.set(q.x, q.y, q.h / 2); m.rotation.z = q.ang || 0; m.castShadow = m.receiveShadow = true; m.layers.enable(OCCL); wallGrp.add(m);
     }
     renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
   }
@@ -343,6 +343,39 @@
         gl_FragColor = vec4(vec3(0.7, 0.95, 1.0) * clamp(v, 0.0, 1.0) * 0.3, 1.0);
       }`
   }));
+  const waterMat = waterMesh.material;
+  /* The night sky (look 'sky'): over its painted dark - nebulae and still stars - this draws what moves: stars twinkling,
+     the Milky Way's glow drifting, curtains of aurora swaying, and now and then a shooting star. Added light only. */
+  const skyMat = new THREE.ShaderMaterial({
+    uniforms: waterU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec2 vP; void main() { vP = (modelMatrix * vec4(position, 1.0)).xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `varying vec2 vP; uniform float uT;
+      float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      float fbm(vec2 p) { float a = 0.5, s = 0.0; for (int k = 0; k < 4; k++) { s += a * n(p); p *= 2.03; a *= 0.5; } return s; }
+      void main() {
+        vec2 p = vP; vec3 c = vec3(0.0);
+        // twinkling stars: one in some cells of a fine grid, each with its own beat
+        vec2 g = p * 46.0, cell = floor(g), f = fract(g) - 0.5; float r = h(cell);
+        if (r > 0.86) { vec2 o = vec2(h(cell + 3.1), h(cell + 7.7)) - 0.5; float d = length(f - o * 0.6);
+          float tw = 0.55 + 0.45 * sin(uT * (1.5 + r * 4.0) + r * 40.0); c += vec3(0.85, 0.9, 1.0) * smoothstep(0.09, 0.0, d) * tw * (r - 0.86) * 9.0; }
+        // the Milky Way: a soft band across, its clouds drifting along it
+        float band = exp(-pow((p.y - 0.25 * sin(p.x * 0.9 + 0.6)) * 2.4, 2.0));
+        float neb = fbm(vec2(p.x * 1.6 - uT * 0.02, p.y * 2.2) + fbm(p * 2.5 + uT * 0.015));
+        c += vec3(0.36, 0.38, 0.7) * band * smoothstep(0.3, 0.8, neb) * 0.8;
+        // aurora: curtains swaying, green fading to violet at their ends
+        float wave = sin(p.x * 2.2 + uT * 0.35 + sin(p.y * 3.0 + uT * 0.22) * 1.2);
+        float cur = exp(-pow((p.y + 0.38 + 0.12 * wave) * 7.0, 2.0)) * (0.5 + 0.5 * sin(p.x * 9.0 + uT * 0.8 + fbm(p * 3.0) * 4.0));
+        c += mix(vec3(0.1, 0.75, 0.5), vec3(0.55, 0.25, 0.85), smoothstep(-0.5, 0.9, sin(p.x * 0.8 + uT * 0.1))) * cur * 0.32;
+        // a shooting star every few seconds, somewhere new each time
+        float k = floor(uT / 5.5), tt = fract(uT / 5.5) * 5.5;
+        if (tt < 0.7) { vec2 a = vec2(h(vec2(k, 1.0)) * 2.4 - 1.2, h(vec2(k, 2.0)) * 1.0 - 0.3), dir = normalize(vec2(1.0, -0.45));
+          vec2 head = a + dir * tt * 1.3, q = p - head; float along = dot(q, dir), across = length(q - dir * along);
+          c += vec3(1.0, 0.95, 0.85) * smoothstep(0.004, 0.0, across) * smoothstep(-0.3, 0.0, along) * step(along, 0.0) * (1.0 - tt / 0.7) * 1.6; }
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
   waterMesh.visible = false; waterMesh.renderOrder = 0; waterMesh.position.z = 0.0006; scene.add(waterMesh);
   waterMesh.material.polygonOffset = true; waterMesh.material.polygonOffsetFactor = -2; waterMesh.material.polygonOffsetUnits = -4;   // (seen low, it stays over the floor)
   const wakes = [];                                                                  // where each ball last left a ring
@@ -351,7 +384,7 @@
   function waterTick(w, dt) {
     if (!waterMesh.visible) return false;
     waterU.uT.value += dt; waterAcc += dt;
-    if (w) for (let i = 0; i < w.balls.length; i++) {
+    if (w && watery) for (let i = 0; i < w.balls.length; i++) {
       const b = w.balls[i], q = wakes[i];
       if (!b.on) { wakes[i] = null; continue; }
       if (!q) { wakes[i] = { x: b.x, y: b.y }; continue; }
@@ -360,24 +393,82 @@
     if (waterAcc < 1 / 30) return false;
     waterAcc = 0; return true;
   }
-  /* The comic table (comic: true): the cloth printed flat - its colour, halftone dots thickening towards the cushions, faint
-     speed lines out from the middle, a heavy black line round the edge; the rails flat colour. */
-  let comicTex = null;
-  const makeComic = hexFelt => {
-    const W2 = 2048, H2 = 1024, c = mkCanvas(W2, H2), g = c.getContext('2d'), base = new THREE.Color(hexFelt);
-    g.fillStyle = '#' + base.getHexString(); g.fillRect(0, 0, W2, H2);
-    g.strokeStyle = 'rgba(10,20,40,.10)'; g.lineWidth = 3;
-    for (let k = 0; k < 40; k++) { const a = k / 40 * Math.PI * 2; g.beginPath(); g.moveTo(W2 / 2 + Math.cos(a) * 90, H2 / 2 + Math.sin(a) * 90); g.lineTo(W2 / 2 + Math.cos(a) * W2, H2 / 2 + Math.sin(a) * W2); g.stroke(); }
-    const dark = base.clone().multiplyScalar(0.62); g.fillStyle = '#' + dark.getHexString();
-    const sp = 22;
-    for (let y = sp / 2; y < H2; y += sp) for (let x = (Math.round(y / sp) % 2) * sp / 2; x < W2; x += sp) {
-      const e = Math.min(x, W2 - x, (y) * 2, (H2 - y) * 2) / (W2 * 0.5), r = sp * 0.42 * Math.max(0, 1 - e * 3.2);
-      if (r > 0.6) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  /* Tables that are something else (look: 'sky' | 'soccer' | 'desk'): their cloth a picture drawn here for the table shown,
+     their rails a plain colour; the sky also moves (skyMat, drawn like the pool's water), and on a pool table the soccer
+     pitch has a goal over every pocket. Looks only: they play as cloth. */
+  const lookTex = {};
+  function lookFloor(kind) {
+    const key = kind + ':' + cur.HL + 'x' + cur.HW; if (lookTex[key]) return lookTex[key];
+    const W2 = 2048, H2 = 1024, c = mkCanvas(W2, H2), g = c.getContext('2d'), P = cur, kx = W2 / (2 * P.HL), ky = H2 / (2 * P.HW);
+    let sd = 23; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+    const X = x => (x + P.HL) * kx, Y = y => (P.HW - y) * ky;
+    if (kind === 'sky') {
+      const bg = g.createLinearGradient(0, 0, W2, H2); bg.addColorStop(0, '#0a0f2c'); bg.addColorStop(0.55, '#14123a'); bg.addColorStop(1, '#251645');
+      g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
+      for (let k = 0; k < 14; k++) {                                              // nebulae: soft clouds of colour
+        const x = rnd() * W2, y = rnd() * H2, r = 120 + rnd() * 320, hue = [220, 265, 290, 195][k % 4], gr = g.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, `hsla(${hue},70%,45%,.16)`); gr.addColorStop(1, `hsla(${hue},70%,40%,0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+      }
+      for (let k = 0; k < 2600; k++) { const a = rnd(); g.fillStyle = `rgba(${220 + a * 35},${225 + a * 30},255,${0.15 + a * 0.5})`; g.fillRect(rnd() * W2, rnd() * H2, a > 0.93 ? 2.2 : 1.2, a > 0.93 ? 2.2 : 1.2); }
+    } else if (kind === 'soccer') {
+      const bands = 12;                                                             // mown stripes across the pitch
+      for (let b = 0; b < bands; b++) { g.fillStyle = b % 2 ? '#2f8a3a' : '#3a9a45'; g.fillRect(b * W2 / bands, 0, W2 / bands + 1, H2); }
+      for (let k = 0; k < 26000; k++) { const x = rnd() * W2, y = rnd() * H2, l = 3 + rnd() * 5; g.strokeStyle = rnd() < 0.5 ? 'rgba(20,70,25,.35)' : 'rgba(120,200,110,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 2, y - l); g.stroke(); }
+      g.strokeStyle = 'rgba(250,252,248,.92)'; g.lineWidth = 0.008 * kx; g.lineCap = 'butt';
+      const m = 0.035, L = P.HL - m, Wd = P.HW - m, line = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, X(x), Y(y))); g.stroke(); };
+      line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
+      const cr = Wd * 0.32; g.beginPath(); g.ellipse(X(0), Y(0), cr * kx, cr * ky, 0, 0, 7); g.stroke();
+      g.fillStyle = 'rgba(250,252,248,.92)'; const spot = (x, y) => { g.beginPath(); g.arc(X(x), Y(y), 0.008 * kx, 0, 7); g.fill(); }; spot(0, 0);
+      for (const sx of [-1, 1]) {
+        const pd = L * 0.3, pw = Wd * 0.62, gd = L * 0.11, gw = Wd * 0.3;
+        line([[sx * L, -pw], [sx * (L - pd), -pw], [sx * (L - pd), pw], [sx * L, pw]]); line([[sx * L, -gw], [sx * (L - gd), -gw], [sx * (L - gd), gw], [sx * L, gw]]);
+        spot(sx * (L - pd * 0.72), 0);
+        g.beginPath(); const a = Math.acos(Math.min(1, (pd - pd * 0.72) / (cr * 0.85))); g.ellipse(X(sx * (L - pd * 0.72)), Y(0), cr * 0.85 * kx, cr * 0.85 * ky, 0, sx > 0 ? Math.PI - a : -a, sx > 0 ? Math.PI + a : a); g.stroke();
+        for (const sy of [-1, 1]) { g.beginPath(); g.ellipse(X(sx * L), Y(sy * Wd), 0.04 * kx, 0.04 * ky, 0, 0, 7); g.stroke(); }
+      }
+    } else if (kind === 'desk') {
+      g.fillStyle = '#c9a274'; g.fillRect(0, 0, W2, H2);                          // birch ply, its grain along the length
+      for (let k = 0; k < 520; k++) { const y = rnd() * H2, a = 0.04 + rnd() * 0.08; g.strokeStyle = rnd() < 0.6 ? `rgba(120,78,40,${a})` : `rgba(255,236,200,${a})`; g.lineWidth = 1 + rnd() * 3;
+        g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= W2; x += 64) g.lineTo(x, y + Math.sin(x * 0.004 + k) * 6 + (rnd() - 0.5) * 2); g.stroke(); }
+      for (let k = 0; k < 3; k++) { const x = 200 + rnd() * (W2 - 400), y = 120 + rnd() * (H2 - 240), r = 50 + rnd() * 30; g.strokeStyle = 'rgba(110,70,40,.12)'; g.lineWidth = 7; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke(); }  // cup rings
+      // pencil: doodles, a sum, a heart - grey graphite, faint
+      g.strokeStyle = 'rgba(52,52,60,.62)'; g.fillStyle = 'rgba(52,52,60,.62)'; g.lineWidth = 4; g.lineJoin = g.lineCap = 'round';
+      g.font = `${Math.round(0.075 * kx)}px "Gaegu", "Jua", sans-serif`; g.textAlign = 'center';
+      const doodles = [['x² + y² = r²', 0.22, 0.25], ['시험 화이팅!', 0.72, 0.78], ['3 × 7 = 21', 0.8, 0.22], ['♡', 0.36, 0.72]];
+      for (const [t, u, v] of doodles) { g.save(); g.translate(u * W2, v * H2); g.rotate((rnd() - 0.5) * 0.3); g.fillText(t, 0, 0); g.restore(); }
+      g.save(); g.translate(0.58 * W2, 0.4 * H2); g.rotate(0.2); for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(-60, -20 + k * 40); g.lineTo(60, -20 + k * 40); g.moveTo(-20 + k * 40, -60); g.lineTo(-20 + k * 40, 60); g.stroke(); }
+      g.beginPath(); g.arc(-40, -40, 12, 0, 7); g.stroke(); g.beginPath(); g.moveTo(-10, -10); g.lineTo(10, 10); g.moveTo(10, -10); g.lineTo(-10, 10); g.stroke(); g.restore();   // tic-tac-toe
+      g.save(); g.translate(0.12 * W2, 0.66 * H2); for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * 4 * Math.PI / 5; (k ? g.lineTo : g.moveTo).call(g, Math.cos(a) * 34, Math.sin(a) * 34); } g.closePath(); g.stroke(); g.restore();   // a star
+      for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(${200 + rnd() * 30},${190 + rnd() * 20},${190 + rnd() * 20},.9)`; g.beginPath(); g.ellipse(rnd() * W2, rnd() * H2, 3 + rnd() * 6, 2 + rnd() * 2, rnd() * 3, 0, 7); g.fill(); }   // eraser crumbs
     }
-    g.strokeStyle = '#0b0b10'; g.lineWidth = 14; g.strokeRect(7, 7, W2 - 14, H2 - 14);
-    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
-  };
-  const flatTex = (() => { const c = mkCanvas(4, 4), g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 4, 4); return tex(c); })();
+    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.repeat.set(1 / (2 * P.HL), 1 / (2 * P.HW)); t.offset.set(0.5, 0.5); return (lookTex[key] = t);
+  }
+  // the soccer pitch's goals: white posts and a crossbar across each pocket's mouth, a net behind over the hole
+  const goalGrp = new THREE.Group(); sScene.add(goalGrp);
+  const postMat = new THREE.MeshStandardMaterial({ color: col(0xf4f6f2), roughness: 0.35, metalness: 0.1, envMapIntensity: 0.6 });
+  const netMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 });
+  function setGoals(on) {
+    const gs = new Set(); while (goalGrp.children.length) gs.add(goalGrp.children.pop().geometry); gs.forEach(q => q.dispose());
+    if (!on || !cur || !cur.POCKETED) return;
+    const R = cur.R, hgt = R * 2.2, post = new THREE.CylinderGeometry(0.0035, 0.0035, hgt, 10);
+    for (const p of cur.POCKETS) {
+      // facing the middle of the table; the frame stands on the mouth, the net goes back over the hole
+      const a = Math.atan2(-p.y, -p.x), ux = Math.cos(a), uy = Math.sin(a), tx = -uy, ty = ux, half = p.r * 0.95, back = p.r * 1.1;
+      const cx = p.x + ux * p.r * 0.55, cy = p.y + uy * p.r * 0.55;
+      for (const sd of [-1, 1]) { const m = new THREE.Mesh(post, postMat); m.rotation.x = Math.PI / 2; m.position.set(cx + tx * half * sd, cy + ty * half * sd, hgt / 2); m.castShadow = true; m.layers.enable(OCCL); goalGrp.add(m); }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 2 * half, 10), postMat);
+      bar.rotation.z = Math.atan2(ty, tx) - Math.PI / 2; bar.position.set(cx, cy, hgt); bar.castShadow = true; bar.layers.enable(OCCL); goalGrp.add(bar);
+      const v = [], N = 6, at = (s, d, z) => [cx + tx * half * s - ux * back * d, cy + ty * half * s - uy * back * d, z];
+      const seg = (A, B) => v.push(...A, ...B);
+      for (let i = 0; i <= N; i++) { const s = -1 + 2 * i / N;                     // the net: lines across its top, back and sides
+        seg(at(s, 0, hgt), at(s, 1, hgt * 0.6)); seg(at(s, 1, hgt * 0.6), at(s, 1, 0)); }
+      for (let j = 0; j <= 4; j++) { const d = j / 4; seg(at(-1, d, hgt * (1 - 0.4 * d)), at(1, d, hgt * (1 - 0.4 * d))); }
+      for (let j = 1; j <= 3; j++) { const z = hgt * 0.6 * j / 4; seg(at(-1, 1, z), at(1, 1, z)); }
+      for (const sd of [-1, 1]) for (let j = 0; j <= 3; j++) { const d = j / 3; seg(at(sd, d, hgt * (1 - 0.4 * d)), at(sd, d, 0)); }
+      const ng = new THREE.BufferGeometry(); ng.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+      goalGrp.add(new THREE.LineSegments(ng, netMat));
+    }
+  }
   let clothI = 0, iced = false, watery = false;
   function setCloth(i) {
     const c = CLOTHS[i] || CLOTHS[0]; clothI = i; iced = !!c.ice; watery = !!c.water;
@@ -394,15 +485,17 @@
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
       renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.55; staticDirty = true; dirty = 3; return;
     }
-    if (c.comic) {
-      if (!comicTex || comicTex.P !== cur || comicTex.felt !== c.felt) { if (comicTex) comicTex.dispose(); comicTex = makeComic(c.felt); comicTex.P = cur; comicTex.felt = c.felt; }
-      comicTex.repeat.set(1 / (2 * cur.HL), 1 / (2 * cur.HW)); comicTex.offset.set(0.5, 0.5);
-      feltMat.map = comicTex; feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1); feltMat.roughness = 1; feltMat.envMapIntensity = 0.05;
-      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)).multiplyScalar(0.7); cushMat.roughness = 1;
-      woodMat.map = flatTex; woodMat.color.copy(col(c.wood)); woodU.uWs.value.set(1, 1); woodMat.clearcoat = 0; woodMat.roughness = 0.85;   // (flat paint)
-      bodyMat.map = flatTex; bodyMat.color.copy(col(0x14161c)); pedMat.map = flatTex; pedMat.color.copy(col(0x14161c));
+    setGoals(c.look === 'soccer'); waterMesh.material = c.look === 'sky' ? skyMat : waterMat;
+    if (c.look) {
+      feltMat.map = lookFloor(c.look); feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1);
+      feltMat.roughness = c.look === 'desk' ? 0.55 : 1; feltMat.envMapIntensity = c.look === 'desk' ? 0.3 : 0.08;
+      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)); cushMat.roughness = c.look === 'desk' ? 0.5 : 0.9;
+      woodMat.map = woodTex; woodMat.color.copy(col(c.wood)).multiplyScalar(c.look === 'desk' ? 1.4 : 1.1); woodU.uWs.value.set(0.62, 2.3);
+      if (c.look !== 'desk') { woodMat.clearcoat = 0.6; woodMat.roughness = 0.45; }
+      bodyMat.map = woodTex; bodyMat.color.copy(woodMat.color).multiplyScalar(0.6); pedMat.map = woodTex; pedMat.color.copy(woodMat.color).multiplyScalar(0.5);
+      waterMesh.visible = c.look === 'sky'; if (waterMesh.visible) waterMesh.scale.set(2 * cur.HL, 2 * cur.HW, 1);
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;
-      renderer.shadowMap.needsUpdate = true; blobMat.opacity = 0.85; staticDirty = true; dirty = 3; return;
+      renderer.shadowMap.needsUpdate = true; blobMat.opacity = c.look === 'sky' ? 0.6 : 0.75; staticDirty = true; dirty = 3; return;
     }
     if (iced) {
       if (!iceTex) iceTex = makeIce();

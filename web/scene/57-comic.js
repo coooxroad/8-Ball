@@ -1,5 +1,5 @@
-  /* Comic hits and mirror-ball lights (content/30-balls.js finish.toon / finish.facets, content/10-cloths.js comic).
-     A comic set or table: a hard hit pops a sound-word bubble out of the page where it happened (tex/fx-pow: 쾅! 딱! 팍!
+  /* Comic hits and mirror-ball lights (content/30-balls.js finish.toon / finish.facets).
+     A comic set: a hard hit pops a sound-word bubble out of the page where it happened (tex/fx-pow: 쾅! 딱! 팍!
      퉁!) - it jumps up, holds, fades. A mirror-ball set: each ball throws a ring of small lights onto the cloth round it,
      turning as the ball rolls. */
   const pops = [];
@@ -9,7 +9,7 @@
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false, toneMapped: false }));
     sp.visible = false; sp.renderOrder = 6; scene.add(sp); pops.push({ sp, age: 0, life: 0, size: 0 });
   }
-  const comicOn = () => !!((skin && skin.finish && skin.finish.toon) || (CLOTHS[clothI] && CLOTHS[clothI].comic));
+  const comicOn = () => !!(skin && skin.finish && skin.finish.toon);
   // a contact the physics reported (the app passes on its sound events): { t: 'ball' | 'rail', v, x, y }
   function hit(e) {
     if (!popTex || !comicOn() || popWait > 0) return;

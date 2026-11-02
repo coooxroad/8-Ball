@@ -1,8 +1,9 @@
 /* Tables (내 장비 · 테이블): the cloth's colour and the rails' wood.
-   { id, name, rarity, felt: cloth colour, wood: rail colour, grain?: 'walnut' | 'mahogany' (the rails' grain), ice?: true, water?: true, comic?: true }
+   { id, name, rarity, felt: cloth colour, wood: rail colour, grain?: 'walnut' | 'mahogany' (the rails' grain), ice?: true, water?: true, look?: 'sky' | 'soccer' | 'desk' }
    Card picture: ui/cloth-<id>.webp. The ice table is not a cloth: a sheet of ice the balls slide on (matches only).
-   The pool (water: true) plays as cloth; it only looks like a swimming pool - a tiled floor under moving water. The comic table (comic: true)
-   is printed flat with halftone dots, and a hard hit pops a sound-word out of the page (scene/57-comic.js). */
+   The pool (water: true) plays as cloth; it only looks like a swimming pool - a tiled floor under moving water. A table with a look (look:
+   'sky' | 'soccer' | 'desk') has its cloth drawn as that (scene/20-table.js lookFloor): a night sky that moves, a pitch
+   (goals over a pool table's pockets), a school desk. Looks only, all of them. */
 const CLOTHS = [
   { id: 'teal', name: '딥 틸', rarity: 0, felt: 0x0e8ba3, wood: 0x6a3a20, grain: 'mahogany' },
   { id: 'green', name: '클래식 그린', rarity: 0, felt: 0x17894e, wood: 0x5a2f1a, grain: 'walnut' },
@@ -10,7 +11,9 @@ const CLOTHS = [
   { id: 'wine', name: '버건디', rarity: 2, felt: 0x9a2536, wood: 0xa9743f },
   { id: 'charcoal', name: '차콜', rarity: 3, felt: 0x4b5562, wood: 0x15171c },
   { id: 'pool', name: '수영장', rarity: 4, felt: 0x39b4e4, wood: 0xeaf6fa, water: true },   // looks only: a tiled pool, the light of the water moving over it
-  { id: 'comic', name: '만화', rarity: 3, felt: 0x1f9fd0, wood: 0xd8231b, comic: true },   // looks only: printed flat, halftone dots, 쾅! on hard hits
+  { id: 'desk', name: '학교 책상', rarity: 2, felt: 0xa8743f, wood: 0x6e4524, look: 'desk' },     // birch top, pencil doodles and eraser crumbs
+  { id: 'soccer', name: '축구장', rarity: 3, felt: 0x2c7f36, wood: 0x1d3f25, look: 'soccer' },   // mown stripes and lines; goals over the pockets
+  { id: 'night', name: '밤하늘', rarity: 4, felt: 0x1a1d46, wood: 0x14182e, look: 'sky' },       // stars, the Milky Way, aurora, shooting stars, moving
   { id: 'ice', name: '빙판', rarity: 4, felt: 0x6fbbe8, wood: 0x2a5f9e, ice: true },      // not a cloth: a sheet of ice, and the balls slide on it
 ];
 if (typeof module !== 'undefined') module.exports = { CLOTHS };

@@ -43,6 +43,9 @@ function trailPic(kind, wide) {
     along((x, y, t, i) => { const k = 10 + r() * 8; const gr = g.createRadialGradient(x, y, 0, x, y - k * 0.4, k);
       gr.addColorStop(0, 'rgba(255,245,200,.95)'); gr.addColorStop(0.35, 'rgba(255,170,40,.8)'); gr.addColorStop(1, 'rgba(220,40,10,0)');
       g.fillStyle = gr; g.beginPath(); g.ellipse(x, y - k * 0.3, k * 0.45, k, 0, 0, 7); g.fill(); }, 9);
+  } else if (kind === 'grass') {
+    g.strokeStyle = 'rgba(150,215,120,.5)'; g.lineWidth = 16; path(); g.stroke();
+    along((x, y) => { g.fillStyle = r() < 0.55 ? '#6b4a2a' : '#4f9a3a'; for (const sd2 of [-1, 1]) { g.beginPath(); g.ellipse(x + sd2 * (10 + r() * 12), y + (r() - 0.5) * 8, 2 + r() * 2, 1.5 + r(), r() * 3, 0, 7); g.fill(); } }, 14);
   } else if (kind === 'splash') {
     along((x, y) => { g.fillStyle = r() < 0.5 ? '#fff' : '#cfefff'; for (const sd2 of [-1, 1]) { g.beginPath(); g.arc(x + sd2 * (8 + r() * 14), y + (r() - 0.5) * 8, 1.6 + r() * 2.4, 0, 7); g.fill(); } }, 12);
     g.strokeStyle = 'rgba(230,250,255,.85)'; g.lineWidth = 2; for (const [x, y] of P.slice(1, 3)) for (const k of [10, 20]) { g.beginPath(); g.ellipse(x, y, k * 1.3, k * 0.8, 0, 0, 7); g.stroke(); }
@@ -52,7 +55,8 @@ function trailPic(kind, wide) {
 const streak = (q, big) => q.kind ? el('i', { class: 'trl pic' + (big ? ' big' : ''), style: `--pic:url(${trailPic(q.kind, big)})` })
   : el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
-const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` });
+// (a table with a look has the whole of it on its card, not a swatch tiled)
+const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` + (q.look ? ';background-size:cover;background-position:center' : '') });
 /* How a cue or glove plays, as numbers and bars (content/00-rarity.js), set against what is worn now: the bar is blue up to
    what the worn one gives, green where this one gives more, red where it gives less, and the change beside the number.
    OVR is the one number for the whole: a cue's from its three (70 with nothing either way, up to 95), a glove's from how
