@@ -70,6 +70,7 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
     for (const h of k.holes || []) if (!Array.isArray(h) || !num(h[0], -90, 90) || !num(h[1], 0, 360) || !num(h[2], 0.03, 0.4) || !num(h[3] == null ? 0.3 : h[3], 0.05, 0.6)) fail(`${at}: a hole is [latitude, longitude (degrees), radius, depth (of the ball's radius)]`);
     if (typeof k.skin === 'string' && !has(`tex/ball-${k.skin}.webp`)) fail(`${at}: its surface tex/ball-${k.skin}.webp is missing`);
     if (k.skin != null && typeof k.skin !== 'string' && !num(k.skin, 0, 0xffffff)) fail(`${at}: skin is a picture's name or a colour`);
+    if (k.paint != null && !['planets', 'soccer'].includes(k.paint)) fail(`${at}: paint is 'planets' or 'soccer' (scene/35-paint.js)`);
     if (k.mark && !['tint', 'label'].includes(k.mark)) fail(`${at}: mark is 'tint' or 'label'`);
     if (k.stripes && k.stripes !== 'bands') fail(`${at}: stripes is 'bands' or left out`);
     if (k.sticker != null && !num(k.sticker, 0.5, 1.6)) fail(`${at}: sticker 0.5..1.6`);

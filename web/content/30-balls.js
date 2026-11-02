@@ -5,6 +5,7 @@
    A set may also be made otherwise (all optional; scene/30-balls.js, tasks/gpt-skins.md 2-1): shape { lumps, squash, n, eyes,
    seed } (a lumpy 3D shape inside the ball's sphere), holes [[lat, lon, radius, depth]] (finger holes), skin (the surface:
    a colour picture tex/ball-<name>.webp, or a colour), mark 'tint' | 'label' (how a skinned ball shows which it is),
+   paint 'planets' | 'soccer' (the whole surface painted in code, scene/35-paint.js),
    finish { rough, coat, metal, bump, bumpScale, toon, facets } (how the surface takes the light; toon: true drawn as a comic
    - three flat steps of light, print dots in the shade, a black outline; facets: [round, up] a mirror ball's flat facets).
    sound (also on a cue): { rate: pitch, 1 as recorded (1.1 higher), tone: brightness, 1 as recorded, gain: loudness,
@@ -33,6 +34,12 @@ const BALLSKINS = [
     finish: { rough: 0.14, metal: 0.72, coat: 0, facets: [26, 14] } },
   // a comic: flat colours, the shading in print dots, black outlines, and 쾅! on hard hits (scene/57-comic.js)
   { id: 'comic', name: '만화', rarity: 4, note: '만화책에서 튀어나온 공: 굵은 외곽선과 망점, 세게 맞으면 쾅!', pal: null,
-    cue: 0xfbf6ea, yel: 0xffd21f, red: 0xf0322a, dots: false, finish: { toon: true } }
+    cue: 0xfbf6ea, yel: 0xffd21f, red: 0xf0322a, dots: false, finish: { toon: true } },
+  // the planets: the Moon for the cue ball, Venus to Mercury for 1-7, a black hole for the 8 (scene/35-paint.js)
+  { id: 'planets', name: '행성', rarity: 4, note: '달 큐볼, 금성·지구·화성·목성…, 8번은 빛나는 고리의 블랙홀. 줄무늬는 하얀 극관', pal: null,
+    cue: 0xe2e0d8, yel: 0xf6c84a, red: 0xd65c34, dots: false, paint: 'planets', finish: { rough: 0.55, coat: 0.3 } },
+  // the five-and-six panel ball
+  { id: 'soccer', name: '축구공', rarity: 1, note: '오각형·육각형 가죽 조각을 꿰맨 축구공, 색은 공 번호대로', pal: null,
+    cue: 0xf6f6f2, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'soccer', finish: { rough: 0.45, coat: 0.5 } }
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };
