@@ -28,7 +28,7 @@ const puzzle = {
     if (k === i) k = (i + dir + L.length) % L.length;
     puzzle.start(L[k].id);
   },
-  guide: () => prefs.guides[0],
+  guide: () => GUIDE_STD,
   auto: () => null,
   beforeShot(V, a, b, el) { scene.setMarks(null); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
   afterShot() {

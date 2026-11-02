@@ -16,20 +16,11 @@ const note = text => el('p', { class: 'note', text });
 
 // one guide length per player (a handicap); a single slider when only one person is aiming
 // the knob is a matte blue that deepens as the guide gets longer
-function guideSlider(label, value, set) {
-  const tag = el('span', { class: 'gtag' }), input = el('input', { type: 'range', min: '0', max: '100', step: '1', value: String(Math.round(value * 100)), class: 'gslide', 'aria-label': label });
-  const paint = () => { const g = input.value / 100; tag.textContent = guideName(g); tag.style.left = `calc(${g * 100}% + ${(0.5 - g) * 28}px)`; input.style.setProperty('--g', g); input.style.setProperty('--gc', `hsl(${Math.round(208 + 6 * g)} ${Math.round(28 + 22 * g)}% ${Math.round(70 - 38 * g)}%)`); };
-  input.addEventListener('input', () => { paint(); set(input.value / 100); });
-  input.addEventListener('change', () => SND.tap());
-  paint();
-  return el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }), el('div', { class: 'gwrap' }, [tag, input])]);
-}
+// The aim line: its length is the same for everyone now ('보통', GUIDE_STD), longer or shorter only by the cue in hand (its
+// 조준선 stat); only its look is chosen here.
 function sheetGuide() {
-  const solo = prefs.vsAI || (st.screen === 'home' ? prefs.mode === 'practice' || prefs.mode === 'puzzle' : flow !== match);
-  const row = i => guideSlider(solo ? '길이' : st.screen === 'play' ? game.players[i].name : prefs.names[i], prefs.guides[i], v => { prefs.guides[i] = v; if (solo) prefs.guides[1] = v; savePrefs(); paintHome(); scene.invalidate(); });
   openSheet('조준선', [segRow('모양', [['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
-    row(0), solo ? null : row(1), note('첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보입니다. 보통까지는 그 뒤가 짧은 직선(예상 방향)이고, 길게부터는 회전까지 반영된 실제 경로입니다. 끝까지 밀면 공들이 멈출 때까지 다 보입니다.'),
-    solo ? null : note('실력 차이가 나면 잘하는 쪽을 짧게, 처음 하는 쪽을 길게 두세요.')]);
+    note('길이는 모두 같은 \'보통\'이고, 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보이고, 그 뒤는 짧은 직선(예상 방향)입니다.')]);
 }
 function sheetSettings() {
   openSheet('설정', [

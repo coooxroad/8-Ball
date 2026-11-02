@@ -27,7 +27,7 @@ const practice = {
   restart() { practice.start(); },
   fresh() { const p = practice; p.layout = drills.make(p.drill.id, game.P, p.level, Math.random, game.vOf) || p.layout; p.again(); },   // a new layout
   again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
-  guide: () => prefs.guides[0],
+  guide: () => GUIDE_STD,
   auto: () => null,
   beforeShot() { practice.before = game.world.balls.map(b => [b.x, b.y, b.on]); practice.beforeAim = st.aim; },
   afterShot() {

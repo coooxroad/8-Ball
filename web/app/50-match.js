@@ -33,7 +33,7 @@ const match = {
   rolled() { game.world.ev = game.P.newEv(); toast(game.mode.intro(game), '', 3600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
-  guide: () => prefs.guides[game.turn],
+  guide: () => GUIDE_STD,
   auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) {
     if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });

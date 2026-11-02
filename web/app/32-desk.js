@@ -38,10 +38,7 @@ const dkActs = (...btns) => el('div', { class: 'dk-acts' }, btns);
 // the things laid on it: a cue as its photograph, the little cream tab on what is in use
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);
-function guideRow() {
-  const a = guideName(prefs.guides[0]), b = guideName(prefs.guides[1]);
-  return dkRow('조준선', a === b || prefs.vsAI ? a : a + ' · ' + b, sheetGuide);
-}
+function guideRow() { return dkRow('조준선', '보통 · 큐에 따라', sheetGuide); }
 // the tray's head: a title over a small line, with arrows either side when there is a list to step through
 const dkTitle = (t, sub) => el('div', { class: 'tt' }, [el('h2', { text: t }), el('small', { text: sub })]);
 function dkNavHead(head, what, t, sub, go) {

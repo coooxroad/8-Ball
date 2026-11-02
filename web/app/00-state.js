@@ -22,7 +22,8 @@ const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
 // the aiming guide's length, 0 (none) to 1 (every ball's whole way): what each stretch of the slider is called
-const guideName = g => g <= 0.02 ? '끔' : g < 0.37 ? '짧게' : g < 0.63 ? '보통' : g < 0.9 ? '길게' : '전부';
+// the aim line's length in play, for everyone ('보통'); the cue in hand stretches or shortens it by its stat (90-loop.js)
+const GUIDE_STD = 0.5;
 
 /* ================= settings and saved data ================= */
 const store = {
