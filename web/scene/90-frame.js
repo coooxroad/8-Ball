@@ -1,6 +1,7 @@
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
+    takeScale();
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }

@@ -126,7 +126,11 @@
     dirty = 3;
   }
   function setQuality(q) { quality = q; resize(); }
-  function setScale(k) { k = Math.max(0.85, Math.min(1, k)); if (Math.abs(k - dynScale) < 0.01) return; dynScale = k; resize(); }
+  /* (the new scale is taken at the start of the next frame, which then draws at once: resizing the canvas wipes it, and done
+     after a frame was drawn it showed black until the next - a flash on the web) */
+  let pendScale = null;
+  function setScale(k) { k = Math.max(0.85, Math.min(1, k)); if (Math.abs(k - dynScale) < 0.01) return; pendScale = k; dirty = 3; }
+  function takeScale() { if (pendScale == null) return; dynScale = pendScale; pendScale = null; resize(); }
 
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());

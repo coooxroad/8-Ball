@@ -118,9 +118,11 @@ function frame(now) {
    something (a still screen draws nothing, and that is as it should be). Every two seconds:
    - the display (설정 · 초당 프레임 표시): frames a second, how many came late (over 25 ms), the slowest one in twenty
      (p95), what the frame drew (draw calls · thousands of triangles) and the 3D's pixel density;
-   - the guard, last resort, in play on '자동' only: when one frame in ten is slower than 25 ms (under 40 a second) the 3D is
-     drawn a step coarser (5% at a time, down to 85%), and back up once it has kept up for six seconds. Nothing else changes. */
-const perf = { gaps: [], t: 0, n: 0, ok: 0, calls: 0, tris: 0 };
+   - the guard, last resort, in play on '자동' only: when one frame in ten is slower than 25 ms (under 40 a second) for two
+     spells running (four seconds) the 3D is drawn a step coarser (5% at a time, down to 85%), and back up once it has kept up
+     for ten seconds. The change waits for the next frame's start (scene setScale/takeScale: resizing after a frame was drawn
+     showed one black frame on the web). Nothing else changes. */
+const perf = { gaps: [], t: 0, n: 0, ok: 0, slow: 0, calls: 0, tris: 0 };
 function perfTick(raw, drew) {
   perf.t += raw;
   if (drew && raw > 0 && raw < 400) { perf.gaps.push(raw); perf.calls = scene.info.render.calls; perf.tris = scene.info.render.triangles; }
@@ -128,8 +130,8 @@ function perfTick(raw, drew) {
   const g = perf.gaps.sort((a, b) => a - b), n = g.length, at = q => g[Math.min(n - 1, Math.floor(n * q))];
   if (prefs.fps) $('#fps').textContent = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > 25).length / n)}% · p95 ${Math.round(at(0.95))}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k · ${scene.pixelRatio.toFixed(2)}x` : `대기 · ${scene.pixelRatio.toFixed(2)}x`;
   if (prefs.quality === 'auto' && st.screen === 'play' && n >= 30) {
-    if (at(0.9) > 25) { perf.ok = 0; scene.setScale(scene.scale - 0.05); }
-    else if (at(0.9) < 18 && ++perf.ok >= 3 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); }
+    if (at(0.9) > 25) { perf.ok = 0; if (++perf.slow >= 2) { perf.slow = 0; scene.setScale(scene.scale - 0.05); } }   // (two slow spells running)
+    else { perf.slow = 0; if (at(0.9) < 18 && ++perf.ok >= 5 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); } }
   }
   perf.gaps.length = 0; perf.t = 0;
 }
