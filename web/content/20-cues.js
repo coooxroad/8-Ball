@@ -124,34 +124,27 @@ const CUES = [
       { pegs: [1.15, 1.28, 3, 0.007], out: 0.04, z: 0.004, color: 0xd8d8d8, rough: 0.3, metal: 1 }
     ],
     spec: [['길이', '130cm'], ['몸통', '스프루스 상판, 마호가니 옆판'], ['넥', '로즈우드 지판, 프렛 19'], ['헤드', '크롬 줄감개 여섯'], ['치는 곳', '몸통 바닥']] },
-  // a flute as long as a cue: silver, the crown at the tip, a lip plate, keys all down its top
-  { id: 'flute', name: '플루트', rarity: 2, note: '은빛 관에 줄지은 키, 입술 대는 곳까지', stat: { power: -3, spin: 6, guide: 5 },
+  // a flute as long as a cue: bright silver, the crown at the tip, three joints, a lip plate, open-hole keys on their rods
+  { id: 'flute', name: '플루트', rarity: 2, note: '은빛 세 마디 관, 입술판, 구멍 뚫린 키와 키를 잇는 막대', stat: { power: -3, spin: 6, guide: 5 },
     profile: [
-      [0, 0.02, 0.0085, 0.0095, 0xe6e9ee, { rough: 0.12, metal: 1 }],
-      [0.02, 0.3, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }],
-      [0.3, 0.31, 0.0105, 0.0105, 0xeef0f4, { rough: 0.12, metal: 1 }],
-      [0.31, 1.1, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }],
-      [1.1, 1.11, 0.0105, 0.0105, 0xeef0f4, { rough: 0.12, metal: 1 }],
-      [1.11, 1.32, 0.0095, 0.0095, 0xd8dce2, { rough: 0.15, metal: 1 }]
+      [0, 0.012, 0.0085, 0.0095, 0xd2d6dc, { rough: 0.1, metal: 1, env: 1.5 }],
+      [0.012, 1.32, 0.0095, 0.0095, 0xbfc4cb, { rough: 0.11, metal: 1, env: 1.5 }]
     ],
-    parts: [
-      { box: [0.11, 0.15, 0.022, 0.003], z: 0.0098, color: 0xeef0f4, rough: 0.12, metal: 1 },
-      { keys: [0.36, 1.06, 13, 0.0068], z: 0.0102, color: 0xeef0f4, rough: 0.12, metal: 1 },
-      { keys: [1.14, 1.3, 3, 0.0062], z: 0.0102, color: 0xeef0f4, rough: 0.12, metal: 1 }
-    ],
-    spec: [['길이', '132cm'], ['관', '은도금 니켈'], ['키', '열여섯, 닫힌 키'], ['머리', '입술판과 크라운'], ['소리', '맑은 휘슬']] },
-  // cut crystal: a faceted clear shaft, silver rings, a gem at the butt
-  { id: 'crystal', name: '크리스탈', rarity: 4, note: '깎은 크리스탈 상대, 은빛 링, 끝엔 보석', stat: { power: 6, spin: 6, guide: 4 },
+    parts: [{ flute: [0, 1.32], color: 0xe6e9ee, rough: 0.1, metal: 1, env: 1.6 }],
+    spec: [['길이', '132cm'], ['관', '은, 머리·몸통·발 세 마디'], ['키', '열세 개, 구멍 뚫린 프렌치 키'], ['머리', '입술판과 크라운'], ['소리', '맑은 휘슬']] },
+  // cut crystal: a twisted cut-glass shaft, platinum fittings set with small stones, a brilliant at the butt
+  { id: 'crystal', name: '크리스탈', rarity: 4, note: '비틀어 깎은 크리스탈 상대, 큐빅 박힌 백금 링, 끝엔 브릴리언트 보석', stat: { power: 6, spin: 6, guide: 4 },
     profile: [
-      [0, 0.012, 0.006, 0.0062, 0xcfe8ff, { glass: 0.85 }],
-      [0.012, 0.74, 0.0064, 0.0104, 0xe8f4ff, { glass: 0.5, sides: 8 }],
-      [0.74, 0.756, 0.0108, 0.0108, 0xe6e9ee, { rough: 0.12, metal: 1 }],
-      [0.756, 1.03, 0.0106, 0.0122, 0xdcecff, { glass: 0.55, sides: 8 }],
-      [1.03, 1.04, 0.0124, 0.0124, 0xe6e9ee, { rough: 0.12, metal: 1 }],
-      [1.04, 1.3, 0.0123, 0.0136, 0xf0f6ff, { glass: 0.6, sides: 12 }],
-      [1.3, 1.42, 0.0136, 0.0146, 0xe6e9ee, { rough: 0.12, metal: 1 }]
+      [0, 0.012, 0.006, 0.0062, 0xa9cdf0, { glass: 1 }],
+      [0.012, 0.74, 0.0064, 0.0104, 0x92bde6, { glass: 1, sides: 8, cut: 28 }],
+      [0.74, 0.76, 0.0112, 0.0112, 0xf1f3f6, { rough: 0.08, metal: 1, env: 1.8 }],
+      [0.76, 1.03, 0.0106, 0.0122, 0x86b4e2, { glass: 1, sides: 8, cut: 12 }],
+      [1.03, 1.05, 0.0128, 0.0128, 0xf1f3f6, { rough: 0.08, metal: 1, env: 1.8 }],
+      [1.05, 1.3, 0.0123, 0.0136, 0x98c2ea, { glass: 1, sides: 10, cut: 10 }],
+      [1.3, 1.42, 0.0137, 0.0146, 0xf1f3f6, { rough: 0.08, metal: 1, env: 1.8 }]
     ],
-    parts: [{ ball: [1.445, 0.024], facets: [10, 6], glass: 0.7, color: 0xbfe2ff }],
-    spec: [['길이', '147cm'], ['상대', '팔각으로 깎은 크리스탈'], ['링', '은'], ['끝', '깎은 보석'], ['빛', '면마다 반짝임']] }
+    parts: [{ stones: [0.75, 0.0113, 14, 0.0016], glass: 1.4, color: 0xffffff }, { stones: [1.04, 0.0129, 16, 0.0016], glass: 1.4, color: 0xffffff },
+      { stones: [1.36, 0.0143, 18, 0.0017], glass: 1.4, color: 0xffffff }, { ball: [1.448, 0.024], facets: [12, 6], glass: 1.6, color: 0xbfe0ff }],
+    spec: [['길이', '147cm'], ['상대', '비틀어 깎은 크리스탈'], ['링', '백금, 큐빅'], ['끝', '브릴리언트 컷 보석'], ['빛', '가장자리 무지개, 면마다 반짝']] }
 ];
 if (typeof module !== 'undefined') module.exports = { CUES };
