@@ -43,6 +43,8 @@ function trailPic(kind, wide) {
     along((x, y, t, i) => { const k = 10 + r() * 8; const gr = g.createRadialGradient(x, y, 0, x, y - k * 0.4, k);
       gr.addColorStop(0, 'rgba(255,245,200,.95)'); gr.addColorStop(0.35, 'rgba(255,170,40,.8)'); gr.addColorStop(1, 'rgba(220,40,10,0)');
       g.fillStyle = gr; g.beginPath(); g.ellipse(x, y - k * 0.3, k * 0.45, k, 0, 0, 7); g.fill(); }, 9);
+  } else if (kind === 'ghost') {
+    let k = 0; along((x, y) => { const a = 0.15 + 0.6 * (k / 14); g.fillStyle = `hsla(${(k * 40) % 360},100%,60%,${Math.min(0.75, a)})`; g.beginPath(); g.arc(x, y, 13, 0, 7); g.fill(); k++; }, 18);
   } else if (kind === 'grass') {
     g.strokeStyle = 'rgba(150,215,120,.5)'; g.lineWidth = 16; path(); g.stroke();
     along((x, y) => { g.fillStyle = r() < 0.55 ? '#6b4a2a' : '#4f9a3a'; for (const sd2 of [-1, 1]) { g.beginPath(); g.ellipse(x + sd2 * (10 + r() * 12), y + (r() - 0.5) * 8, 2 + r() * 2, 1.5 + r(), r() * 3, 0, 7); g.fill(); } }, 14);

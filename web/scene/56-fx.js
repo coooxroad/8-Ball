@@ -7,7 +7,8 @@
        ink     a brush stroke: thick and wet where the ball went slowly, dry and split where it flew; a blot at each turn
        fire    flames behind it and a scorch on the cloth; sparks off the cushions
        splash  drops thrown up either side, rings spreading on the cloth, a burst at every cushion
-       grass   the grass laid flat behind it in a paler stripe, earth and blades thrown up, a clod at every cushion */
+       grass   the grass laid flat behind it in a paler stripe, earth and blades thrown up, a clod at every cushion
+       ghost   afterimages: copies of the ball left behind, round the rainbow, fading (ghostTick) */
   const FX_SHAPES = { dot: 0, star: 1, puff: 2, flame: 3, drop: 4 };
   const FX_VS = `
     attribute vec4 aCol; attribute float aSize; attribute float aShape;
@@ -94,10 +95,35 @@
     return n > 0;
   }
   const fxScaleV = new THREE.Vector2();
+  /* The afterimage trail (kind 'ghost'): copies of the ball left behind it every few hundredths of a second, each in the next
+     colour round the rainbow, glowing and fading as they swell - the ball outrunning its own picture. */
+  const ghosts = [];
+  function ghostTick(c, R, dt, moving) {
+    if (!ghosts.length && fx.kind !== 'ghost') return false;
+    if (!ghosts.length) for (let i = 0; i < 24; i++) {
+      const m = new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, toneMapped: false }));
+      m.visible = false; m.renderOrder = 3; scene.add(m); ghosts.push({ m, age: 0, life: 1 });
+    }
+    fx.gt = (fx.gt || 0) + dt;
+    if (fx.kind === 'ghost' && moving && c && c.on && fx.gt >= 0.04) {
+      fx.gt = 0; let q = ghosts[0]; for (const g of ghosts) if (!g.m.visible) { q = g; break; } else if (g.age / g.life > q.age / q.life) q = g;
+      q.age = 0; q.life = 0.5; q.m.visible = true; q.m.position.set(c.x, c.y, R + (c.z || 0)); q.m.scale.setScalar(R);
+      q.m.material.color.setHSL((fx.t * 1.7) % 1, 1, 0.55);
+    }
+    let live = false;
+    for (const q of ghosts) {
+      if (!q.m.visible) continue;
+      q.age += dt; const u = q.age / q.life;
+      if (u >= 1) { q.m.visible = false; continue; }
+      q.m.material.opacity = 0.55 * Math.pow(1 - u, 1.5); q.m.scale.setScalar(R * (1 + 0.18 * u)); live = true;
+    }
+    return live;
+  }
   function setFx(t) {
     fx.kind = t ? t.kind : null; fx.item = t; fx.last = null; fx.nodes.length = 0; fx.moving = false;
     for (const s of [fxAdd, fxMix]) { s.list.length = 0; s.pts.visible = false; }
     for (const q of fxRings) q.m.visible = false;
+    for (const q of ghosts) q.m.visible = false;
   }
   // the marks on the cloth go on the chalk trail's picture
   function fxMark(draw) { draw(chalkG, chS()); chalk.dirty = true; chalkMesh.visible = true; }
@@ -223,7 +249,7 @@
     let lastK = null;
     for (const k of T.k) { if (lastK && Math.hypot(k.x - lastK.x, k.y - lastK.y) < 0.03) continue; lastK = k; if (k.din[0] * k.dout[0] + k.din[1] * k.dout[1] < Math.cos(0.12)) fxTurn(k, R); }
     T.k.length = 0;
-    let live = fxStep(fxAdd, dt, R) | fxStep(fxMix, dt, R);
+    let live = fxStep(fxAdd, dt, R) | fxStep(fxMix, dt, R) | ghostTick(c, R, dt, moving);
     renderer.getDrawingBufferSize(fxScaleV); const sc = camera.projectionMatrix.elements[5] * fxScaleV.y / 2;
     fxAdd.mat.uniforms.uScale.value = fxMix.mat.uniforms.uScale.value = sc;
     markFlush(!moving, R, fx.kind === 'ink' ? 0x0e0e12 : null, fx.inkW || 0.02);
