@@ -20,7 +20,9 @@ const must = (re, what) => { const m = html.match(re); if (!m) throw new Error('
 // the styles: the big block (the small one in <head> is the fonts, left where it is)
 const styles = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].sort((a, b) => b[1].length - a[1].length)[0];
 if (!styles || styles[1].length < 10000) throw new Error('split: the styles were not found');
-html = html.replace(styles[0], () => `<link rel="stylesheet" href="${put('style', 'css', styles[1])}">`);
+// (the sheet now lives in h/, so the pictures it names - url(ui/...) - are one folder up)
+const css = styles[1].replace(/url\(\s*(['"]?)(?!data:|https?:|\/|#|\.\.\/)([^'")]+)\1\s*\)/g, (m, q, u) => `url(${q}../${u}${q})`);
+html = html.replace(styles[0], () => `<link rel="stylesheet" href="${put('style', 'css', css)}">`);
 
 // the core, then the app with its embedded pictures and sounds taken out to files
 const core = must(/<script id="core">([\s\S]*?)<\/script>/, 'core script');
