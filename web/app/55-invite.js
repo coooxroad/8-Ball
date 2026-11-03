@@ -2,7 +2,7 @@
    On the match's setup (33-desk-play.js) the way is picked: 한 기기에서 (one device, taking turns) or 초대하기. Inviting
    opens a code on the server (server/src/ranked.js InviteCore) - six letters and digits, with a link that carries it -
    and asks after it every two seconds; the friend enters the code (or opens the link) and both are in a room, played as
-   a ranked game is (54-ranked.js, kind 'invite': the host's rules, coins as against the computer, no DAMA, no 당구드롭).
+   a ranked game is (54-ranked.js, kind 'invite': the host's rules, coins as against the computer, no DAMA).
    The code stays open only while its screen is up. */
 const INVITE_LINK = 'https://cue.co-oxroad.workers.dev/?join=';
 const invite = {
@@ -79,7 +79,7 @@ const invite = {
     const slot = (who, sub, kids, cls) => el('div', { class: 'inv-slot' + (cls ? ' ' + cls : '') }, [el('div', { class: 'well' }, kids), el('b', { text: who }), el('small', { text: sub })]);
     dkPut(stage, el('div', { class: 'inv' }, [
       el('div', { class: 'inv-slots' }, [
-        slot(prefs.names[0], '준비 완료', [el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), el('img', { class: 'ball', src: scene.ballPortrait(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0), alt: '' })]),
+        slot(prefs.names[0], '준비 완료', [el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), ballPic(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0, { class: 'ball' })]),
         slot(g ? g.name : '친구', g ? '입장! 곧 시작합니다' : '기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
       el('div', { class: 'inv-code' }, [el('span', { text: '참가 코드' }), el('b', { text: h ? h.code : '······' }),
         el('button', { disabled: h ? null : '', text: '복사', onclick: onTap(() => h && invite.copy(h.code, '참가 코드')) })])]));

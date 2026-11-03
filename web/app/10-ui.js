@@ -56,8 +56,9 @@ function show(screen) {
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
-let wide = true;
+let wide = true, layoutN = 0;
 function layout() {
+  layoutN++;
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
@@ -100,6 +101,7 @@ function checkPixelRatio() {
   if (current !== layoutDpr) { layoutDpr = current; layout(); }
 }
 
+const powerUI = { p: -1, k: 0, th: -1, num: '', h: null, lay: -1 };
 function setPowerUI(p) {
   // the cue sits against the ball at 0 and is drawn back along the track as the power rises
   // (the gauge stands upright in either orientation: the cue is drawn down it, as it is drawn back from the ball)
@@ -109,9 +111,16 @@ function setPowerUI(p) {
      the top of the usual range (STAT_MAX) pulled all the way reaches violet; only the break cue (POWER_MAX, a lesson reward)
      goes on past it to blue and mint at the very top; a weaker one stops short. */
   const k = typeof cueK === 'function' ? cueK().power : 1, top = 1 + POWER_MAX / 100, v = p > 0 && game && game.vOf ? game.vOf(p) * k * 3.6 : 0;
-  $('#powerNum').innerHTML = p > 0 ? `${v.toFixed(1)}<small>km/h</small>` : '0';
+  // (called on every move of a finger and every frame the computer lines up: nothing is written that has not changed, and
+  // the track's height is measured once per layout - reading it straight after writing styles made the page lay out again)
+  if (powerUI.lay !== layoutN || !powerUI.h) { powerUI.h = tr.clientHeight; powerUI.lay = layoutN; }   // (not kept while hidden: 0)
+  const th = powerUI.h;
+  if (powerUI.p === p && powerUI.k === k && powerUI.th === th) return;
+  powerUI.p = p; powerUI.k = k; powerUI.th = th;
+  const num = p > 0 ? v.toFixed(1) : '0';
+  if (powerUI.num !== num) { powerUI.num = num; $('#powerNum').innerHTML = p > 0 ? `${num}<small>km/h</small>` : '0'; }
   tr.style.setProperty('--gh', (top / k * 100).toFixed(1) + '%');
-  c.style.transform = `translate(-50%,${REST + p * Math.max(0, tr.clientHeight - REST - END)}px)`;
+  c.style.transform = `translate(-50%,${REST + p * Math.max(0, th - REST - END)}px)`;
   // The track itself shows the power: colour wells up from the end the cue is pulled towards, reaching further
   // and burning hotter (blue-green, yellow, orange, red) the harder the pull.
   const vio = (1 + STAT_MAX / 100) / top, q = Math.min(1, p), qa = Math.min(1, p * k / top) / vio;           // (qa 1: violet)

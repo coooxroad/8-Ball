@@ -68,29 +68,18 @@ function createHighlights() {
     return { score: 10 + 14 * ease, tag: ease > 1.1 ? '이걸 놓침' : '빗나간 샷', kind: 'miss', ball: first };
   }
 
-  // Run the shot ahead of time to learn when the moment worth showing happens (the key ball drops; in carom, the second red
-  // is hit), where on the table that is, and which way the ball was travelling as it got there.
-  function plan(P, n, shot) {
-    const w = P.makeWorld(n); restore(w, shot.snap);
-    P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el);
-    const obj = caromTargets(n, shot.snap.cue);
-    const T = 1 / 120, kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue]; let t = 0, tHit = -1, tKey = -1, kx = 0, ky = 0, ux = Math.cos(shot.aim), uy = Math.sin(shot.aim);
-    while (!P.rest(w) && t < 30) {
-      const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
-      P.step(w, T); t += T;
-      if (tHit < 0 && w.ev.firstHit != null) tHit = t;
-      if (tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(obj[0]) && w.ev.hits.includes(obj[1]))) {
-        tKey = t; if (sp > 1e-3) { ux = vx / sp; uy = vy / sp; }
-        const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
-        kx = pk ? pk.x : x0; ky = pk ? pk.y : y0;
-      }
-    }
-    return { tHit, tKey, dur: t, kx, ky, ux, uy };
-  }
   /* ---- the tape: the whole shot written down once, so that a replay can be run at any speed, backwards, or cut ---- */
   const TICK = 1 / 120, F = 8;                                         // per ball per tick: x, y, on, and the four numbers of its rotation
+  /* Written in one run of the shot (it used to be played twice: once to find the moment, once for the tape). Along the way:
+     when the moment worth showing happens (the key ball drops; in carom, the second red is hit), where on the table that
+     is, and which way the ball was travelling as it got there. A shot's tape is kept: the result screen's little table and
+     the replay, in any edit, use the same one (the shot and its table do not change). */
+  const tapes = new WeakMap();
   function record(P, n, shot) {
-    const tape = plan(P, n, shot), w = P.makeWorld(n); restore(w, shot.snap);
+    const kept = tapes.get(shot); if (kept && kept.P === P && kept.n === n) return kept.tape;
+    const w = P.makeWorld(n); restore(w, shot.snap);
+    const obj = caromTargets(n, shot.snap.cue), kb = w.balls[shot.key >= 0 ? shot.key : shot.snap.cue];
+    const tape = { tHit: -1, tKey: -1, dur: 0, kx: 0, ky: 0, ux: Math.cos(shot.aim), uy: Math.sin(shot.aim) };
     const nb = w.balls.length, S = nb * F, events = []; let data = new Float32Array(S * 600), count = 0;
     const put = () => {
       if ((count + 1) * S > data.length) { const d = new Float32Array(data.length * 2); d.set(data); data = d; }
@@ -98,11 +87,22 @@ function createHighlights() {
       count++;
     };
     put(); w.snd = w.snd || []; w.snd.length = 0; P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el);
-    while (!P.rest(w) && count < 30 * 120) { P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put(); }
+    while (!P.rest(w) && count < 30 * 120) {
+      const vx = kb.vx, vy = kb.vy, sp = Math.hypot(vx, vy), x0 = kb.x, y0 = kb.y;
+      P.step(w, TICK); for (const e of w.snd) events.push(Object.assign({ time: count * TICK }, e)); w.snd.length = 0; put();
+      const t = (count - 1) * TICK;
+      if (tape.tHit < 0 && w.ev.firstHit != null) tape.tHit = t;
+      if (tape.tKey < 0 && (shot.key >= 0 ? w.ev.pocketed.some(p => p.id === shot.key) : w.ev.hits.includes(obj[0]) && w.ev.hits.includes(obj[1]))) {
+        tape.tKey = t; if (sp > 1e-3) { tape.ux = vx / sp; tape.uy = vy / sp; }
+        const pk = shot.key >= 0 ? P.POCKETS[w.ev.pocketed.find(p => p.id === shot.key).pocket] : null;
+        tape.kx = pk ? pk.x : x0; tape.ky = pk ? pk.y : y0;
+      }
+    }
     if (tape.tKey < 0) tape.tKey = Math.min((count - 1) * TICK, 1);
     if (tape.tHit < 0) tape.tHit = tape.tKey;
     Object.assign(tape, { nb, count, data, events, dur: (count - 1) * TICK, cue: shot.snap.cue });
     if (shot.kind) blunder(P, tape, shot);
+    if (shot && typeof shot === 'object') tapes.set(shot, { P, n, tape });
     return tape;
   }
   // For a bad shot the moment worth showing is the moment it went wrong: the ball dropping that should not have, the wrong
@@ -164,6 +164,6 @@ function createHighlights() {
     if (pts[pts.length - 1] !== pt) pts.push(px, py, pt);
     return new Float32Array(pts);
   }
-  return { snapshot, restore, rate, rateWorst, plan, record, seek, at, path };
+  return { snapshot, restore, rate, rateWorst, record, seek, at, path };
 }
 if (typeof module !== 'undefined') module.exports = createHighlights;

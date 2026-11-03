@@ -12,12 +12,15 @@ function flames(now) {
   flameRaf = 0; const list = document.querySelectorAll('#records canvas.flame'); if (!list.length || st.screen !== 'records') return;
   const t = now / 1000, dpr = Math.min(2, window.devicePixelRatio || 1), PAD = 34;
   for (const cv of list) {
-    const card = cv.nextElementSibling, w = card.offsetWidth, h = card.offsetHeight, W = w + 2 * PAD, H = h + 2 * PAD; if (!w) continue;
+    // (a card scrolled out of sight is not drawn; its size and edge are measured once, not every frame)
+    if (!onScreen(cv)) continue;
+    const card = cv.nextElementSibling, m = cv._m && cv._m.lay === layoutN ? cv._m : (cv._m = { lay: layoutN, w: card.offsetWidth, h: card.offsetHeight, P: null });
+    const w = m.w, h = m.h, W = w + 2 * PAD, H = h + 2 * PAD; if (!w) { cv._m = null; continue; }
     if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px'; }
     const g = cv.getContext('2d'), cols = FLAME[cv.dataset.n] || FLAME[2], r = 18;
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
     // the edge of the card, clockwise from the top-left corner, as points with the way out at each
-    const P = [], step = 3, add = (x, y, nx, ny) => P.push([x + PAD, y + PAD, nx, ny]);
+    const P = m.P || (m.P = []), fresh = !P.length, step = 3, add = (x, y, nx, ny) => { if (fresh) P.push([x + PAD, y + PAD, nx, ny]); };
     const arc = (cx, cy, a0) => { for (let a = 0; a < Math.PI / 2; a += step / r) add(cx + Math.cos(a0 + a) * r, cy + Math.sin(a0 + a) * r, Math.cos(a0 + a), Math.sin(a0 + a)); };
     for (let x = r; x < w - r; x += step) add(x, 0, 0, -1); arc(w - r, r, -Math.PI / 2);
     for (let y = r; y < h - r; y += step) add(w, y, 1, 0); arc(w - r, h - r, 0);

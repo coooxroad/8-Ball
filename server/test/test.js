@@ -242,33 +242,13 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   console.log('ranked rooms: checked');
 }
 
-// 당구드롭: one per ranked win (never an invite game's), cpu wins at most CPU_DAILY a day; opened once each; the rarity
-// keeps to the odds; a thing found is one not owned, of the rarity below
+// a ranked game moves DAMA, an invite game does not; the break cue is not for sale
 {
-  const v = vault(); v.init('h'); const X = E.ECONOMY.DROP;
-  ok(!v.drop({ req: req() }).ok, 'drop: none to open');
-  v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '2'.repeat(32), mode: 'eight', won: false, coins: 5, dama: -3 });
-  v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
-  ok(v.me().drops === 1 && v.me().dama === 30, 'drop: a ranked win brings one; a loss and an invite game none, an invite game moves no DAMA');
-  for (let k = 0; k < X.CPU_DAILY + 2; k++) v.cpuDrop();
-  ok(v.me().drops === 1 + X.CPU_DAILY, 'drop: computer wins bring at most CPU_DAILY a day');
-  const q = req(), a = v.drop({ req: q }), b = v.drop({ req: q });
-  ok(a.ok && b.ok && a.rarity === b.rarity && v.me().drops === X.CPU_DAILY, 'drop: the same request opens one once');
-  const seq = vals => { let i = 0; return () => vals[i++ % vals.length]; };
-  // a 신화 draw, a thing: one of 에픽, not owned, now owned
-  const odds = X.ODDS, tot = odds.reduce((x, y) => x + y, 0), at = r => (odds.slice(0, r).reduce((x, y) => x + y, 0) + odds[r] / 2) / tot;
-  const r3 = v.drop({ req: req() }, seq([at(3), 0.01, 0.5]));
-  ok(r3.ok && r3.rarity === 3 && r3.prize.item && v.owns(r3.prize.item.kind, r3.prize.item.id) && [E.CUES, E.BALLSKINS, E.CLOTHS, E.TRAILS, E.GLOVES].flat().find(q2 => q2.id === r3.prize.item.id && (q2.rarity || 0) === 2), 'drop: a thing of the rarity below');
-  const c0 = v.me().coin, r0 = v.drop({ req: req() }, seq([at(0), 0.01]));
-  ok(r0.ok && r0.rarity === 0 && r0.prize.coin === X.COIN[0] && v.me().coin === c0 + X.COIN[0], 'drop: a 일반 drop with a thing drawn pays coins instead');
-  const d0 = v.me().dia, r5 = v.drop({ req: req() }, seq([at(5), X.SKIN + 0.01]));
-  ok(r5.ok && r5.rarity === 5 && r5.prize.dia === X.DIA_N[5] && v.me().dia === d0 + X.DIA_N[5], 'drop: diamonds');
-  // the odds, over many
-  const w = vault(); w.init('h'); w.set('drops', 4000); const cnt = [0, 0, 0, 0, 0, 0];
-  for (let k = 0; k < 4000; k++) cnt[w.drop({ req: req() }).rarity]++;
-  ok(Math.abs(cnt[0] / 4000 * 100 - odds[0]) < 4 && Math.abs(cnt[1] / 4000 * 100 - odds[1]) < 4, `drop: the odds hold (${cnt.join(' ')})`);
+  const v = vault(); v.init('h');
+  v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
+  ok(v.me().dama === 33 && v.me().drops === undefined, 'ranked: a win moves DAMA, an invite game none; no drops any more');
   ok(!v.buy({ req: req(), kind: 'cue', id: 'breaker' }).ok, 'the break cue is not for sale');
-  console.log('drops: checked');
+  console.log('ranked wins: checked');
 }
 // lessons: every 8볼 lesson done at its top level - each proof (seed, table, shot) played again - pays the coins and the
 // break cue, once; a missing or doctored proof pays nothing

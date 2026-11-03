@@ -8,6 +8,9 @@
    and the canvas resolution is fixed up front. */
   if (!window.THREE) return null;
   let renderer;
+  let pvKey = '', pvW = null, pvP = null, pvNow = null;   // the aim line's played-out shot and the inputs it was played with (90-frame.js)
+  let coveredNow = false;   // the table was out of sight last frame (90-frame.js)
+  const sProf = { guide: 0 };   // ms spent this frame playing out the aim line (the FPS display reads it: 90-loop.js perfTick)
   // Some integrated GPUs reject the preferred context; retry without MSAA or a dedicated-GPU preference.
   let gl = null;
   for (const options of [{ antialias: true, powerPreference: 'high-performance' }, { antialias: false, powerPreference: 'default' }]) {

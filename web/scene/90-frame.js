@@ -1,6 +1,9 @@
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
+    // (the table out of sight - the desk covers it: nothing is drawn, not even the water; drawn afresh once it shows again)
+    if (v.covered) { coveredNow = true; return false; }
+    if (coveredNow) { coveredNow = false; dirty = 3; }
     takeScale();
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
@@ -11,6 +14,10 @@
     if (waterTick(v.game && v.game.world, dt)) dirty = Math.max(dirty, 1);
     if (dirty <= 0) return false; dirty--; renderer.info.reset();
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    // A shaped ball (a potato, a bowling ball) is made of many triangles; small on the screen half of them look the same.
+    // '자동': half while the table is seen whole from above and a ball is under 70 screen pixels across; close up, in 3D and
+    // the player's view, all of them. '낮음': always half. '높음': always all. (The plain sphere is never changed.)
+    dressSet(set, quality === 'high' ? 0 : quality === 'low' ? 1 : !orbit.on && 2 * R * ppm * renderer.getPixelRatio() < 70 ? 1 : 0);
     // carom: ball 1 is drawn yellow unless the game says player 0 has the yellow (4구 draws the colours by lot)
     if (set === sets.carom) { const y = g.yellow == null ? 1 : g.yellow; if (y !== caromY) { const m0 = set.mesh[0].material, m1 = set.mesh[1].material, t = m0.map; m0.map = m1.map; m1.map = t; m0.needsUpdate = m1.needsUpdate = true; caromY = y; } }
     if (P !== cur || !tables.has(P)) setTable(P);
@@ -90,7 +97,14 @@
              and the guide is drawn from what happened. The length setting only decides how much of it is shown. */
           const after = gl < SIM ? 0.05 : gl <= 0.75 ? 2.4 : 2.4 + (gl - 0.75) / 0.25 * 12.6;
           const k = v.gear || { power: 1, spin: 1 };
-          const pv = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, after);
+          // (what the shot does is kept apart from how it is drawn: a camera that turns, zooms or slides draws the same path
+          // again without playing the shot out again)
+          const pk = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), after, chosen ? v.power.toFixed(4) : '-', v.spin.x.toFixed(3), v.spin.y.toFixed(3), g.turn, v.rev, (v.el || 0).toFixed(4), k.power + ',' + k.spin].join('|');
+          if (pk !== pvKey || w !== pvW || P !== pvP) {
+            const pt0 = performance.now(); pvNow = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, after); sProf.guide += performance.now() - pt0;
+            pvKey = pk; pvW = w; pvP = P;
+          }
+          const pv = pvNow;
           const at = pv.at, pre = pv.pre, post = pv.post, rail = v.aimStyle === 'rail', kind = g.mode.table;
           // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
           const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, w.cue) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, pv.hit) : cCol;
@@ -181,7 +195,7 @@
 
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable, setWalls, setCloth, setCue, setBalls, setTrail, ballPortrait, cuePortrait, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable, setWalls, setCloth, setCue, setBalls, setTrail, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     fxSounds, hit, invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
-    get pixelRatio() { return renderer.getPixelRatio(); },
+    get pixelRatio() { return renderer.getPixelRatio(); }, prof: sProf,
   };

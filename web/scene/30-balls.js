@@ -109,9 +109,10 @@
      worst a lumpy one stands a hair off the cloth or off another ball). Normals come from the shape itself, not the
      triangles, so the sphere's seam does not show. */
   const geoms = {};
-  function geomOf(k) {
+  // lod 1: half the rows and columns, for a ball small on the screen (화질 '자동' with the table seen whole, or '낮음': ballLod)
+  function geomOf(k, lod) {
     if (!k.shape && !k.holes) return sphere;
-    const key = JSON.stringify([k.shape || null, k.holes || null]); if (geoms[key]) return geoms[key];
+    const key = JSON.stringify([k.shape || null, k.holes || null, lod ? 1 : 0]); if (geoms[key]) return geoms[key];
     const sh = k.shape || {}, rnd = seededRandom((sh.seed || 1) >>> 0), lumps = Math.min(0.15, sh.lumps || 0), sq = sh.squash || [1, 1, 1];
     const unit = () => { const z = rnd() * 2 - 1, a = rnd() * 2 * Math.PI, r = Math.sqrt(1 - z * z); return [r * Math.cos(a), z, r * Math.sin(a)]; };
     const bumps = [];
@@ -132,7 +133,7 @@
       }
       return r;
     };
-    const g = new THREE.SphereGeometry(1, holes.length ? 128 : 64, holes.length ? 96 : 48), P = g.attributes.position, N = g.attributes.normal, n = P.count;
+    const dv = lod ? 2 : 1, g = new THREE.SphereGeometry(1, (holes.length ? 128 : 64) / dv, (holes.length ? 96 : 48) / dv), P = g.attributes.position, N = g.attributes.normal, n = P.count;
     let top = 0; const rs = new Float32Array(n);
     for (let i = 0; i < n; i++) { rs[i] = f(P.getX(i), P.getY(i), P.getZ(i)); top = Math.max(top, rs[i]); }
     const at = (x, y, z) => { const l = Math.hypot(x, y, z), r = f(x / l, y / l, z / l) / top; return [x / l * r, y / l * r, z / l * r]; };
@@ -230,7 +231,7 @@
     return m;
   }
   const facetGeoms = {};
-  function dressBall(m, k) {
+  function dressBall(m, k, lod) {
     const f = k.finish || {}, want = f.toon ? 'toon' : f.crystal ? 'crystal' : 'std';
     if ((m.material.userData.kind || 'std') !== want) {
       const old = m.material;
@@ -240,7 +241,7 @@
     }
     const toon = want === 'toon';
     if (f.facets) { const key = f.facets.join('x'); m.geometry = facetGeoms[key] || (facetGeoms[key] = new THREE.SphereGeometry(1, f.facets[0], f.facets[1])); }
-    else m.geometry = geomOf(k);
+    else m.geometry = geomOf(k, lod);
     m.material.flatShading = !!f.facets;
     finishOf(k, m.material);
     let ol = m.userData.outline;
@@ -257,8 +258,13 @@
   /* A photograph of one ball of a set, for the shelf cards: the ball drawn by this renderer into a small target, lit by
      the same room (so it looks as it will on the table), its number turned to the camera; kept once made. */
   const shots = {}; let shotRT = null, shotScene = null, shotBall = null, shotCam = null;
+  // ballShot: the same picture as a canvas, and whether its surface pictures had all loaded (the app keeps it on the device then:
+  // app/32-desk.js lazyPic); ballPortrait: as a data URL, kept for the session
   function ballPortrait(id, kind, n) {
     const key = id + '/' + kind + '/' + n; if (shots[key]) return shots[key];
+    const s = ballShot(id, kind, n), url = s.c.toDataURL('image/png'); if (s.done) shots[key] = url; return url;
+  }
+  function ballShot(id, kind, n) {
     const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0];
     if (!shotRT) {
       shotRT = new THREE.WebGLRenderTarget(160, 160); shotRT.texture.encoding = THREE.sRGBEncoding;
@@ -270,15 +276,15 @@
     }
     const keep = skin; skin = k; const t = ballTexture(kind, n); skin = keep;
     const done = picsOf(k).every(m => !TEXS['ball-' + m] || !!mats[m]);
-    dressBall(shotBall, k); shotBall.material.map = t; shotBall.material.color.setScalar(0.72); shotBall.material.needsUpdate = true;   // (no tone mapping off screen: a shade darker to match the table) shotBall.rotation.set(0.25, -0.18, 0);
+    dressBall(shotBall, k, 0); shotBall.material.map = t; shotBall.material.color.setScalar(0.72); shotBall.material.needsUpdate = true;   // (no tone mapping off screen: a shade darker to match the table) shotBall.rotation.set(0.25, -0.18, 0);
     const prev = renderer.getRenderTarget(), cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
     renderer.setRenderTarget(shotRT); renderer.setClearColor(0x000000, 0); unmask(); renderer.clear(); renderer.render(shotScene, shotCam);
     const px = new Uint8Array(160 * 160 * 4); renderer.readRenderTargetPixels(shotRT, 0, 0, 160, 160, px);
     renderer.setRenderTarget(prev); renderer.setClearColor(cc, ca); t.dispose();
     const c = mkCanvas(160, 160), g = c.getContext('2d'), im = g.createImageData(160, 160);
     for (let y = 0; y < 160; y++) im.data.set(px.subarray((159 - y) * 640, (160 - y) * 640), y * 640);   // (the target is upside down)
-    g.putImageData(im, 0, 0); const url = c.toDataURL('image/png'); if (done) shots[key] = url; dirty = 3; staticDirty = true;
-    return url;
+    g.putImageData(im, 0, 0); dirty = 3; staticDirty = true;
+    return { c, done };
   }
   // the shadows' markers into the two drawings: each one on show, in the order the balls are
   const blobM = new THREE.Matrix4();
@@ -294,7 +300,7 @@
   function ballSet(kind, n, R) {
     const mesh = [], blob = [];
     for (let i = 0; i < n; i++) {
-      const m = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({ map: ballTexture(kind, i), roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.7 }));
+      const m = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({ map: null, roughness: 0.2, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.7 }));
       m.scale.setScalar(R); m.visible = false; scene.add(m); mesh.push(m);
       // (a ball's shadows: where each one lies is kept here, in plain markers; they are drawn all together - blobSync)
       const s = new THREE.Group(); s.visible = false; scene.add(s); blob.push(s);
@@ -304,14 +310,31 @@
     // every ball's contact shadow in one draw, and every lamp shadow in another (rather than four draws a ball: 64 for 8볼)
     const ims = [new THREE.InstancedMesh(unitPlane, blobMat, n), new THREE.InstancedMesh(unitPlane, lampShadowMat, n * LAMPS.length)];
     for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
-    return { mesh, blob, R, ims };
+    return { mesh, blob, R, ims, kind, skin: null, lod: 0, small: false };
   }
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
   // another ball set: each ball's picture drawn again (the meshes stay)
   let caromY = 1;                                                     // which carom ball wears the yellow (frame)
+  // (each set is dressed - its pictures drawn, its shape made - when it is next drawn: a set not on the table waits, and
+  // trying skins on in the shop draws one set each time, not both)
   function setBalls(id) {
-    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0]; if (k === skin) return; skin = k; caromY = 1;
-    for (const [kind, set] of [['pool', sets.pool], ['carom', sets.carom]]) set.mesh.forEach((m, i) => { const old = m.material.map; dressBall(m, k); m.material.map = ballTexture(kind, i); m.material.needsUpdate = true; old.dispose(); });
+    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0]; if (k === skin) return; skin = k;
     dirty = 3;
+  }
+  // 화질 '낮음': each ball's picture at half the size each way (a quarter of the memory); '자동' and '높음' as drawn
+  function ballMap(kind, i) {
+    const t = ballTexture(kind, i); if (quality !== 'low') return t;
+    const c = t.image, s = mkCanvas(c.width / 2, c.height / 2); s.getContext('2d').drawImage(c, 0, 0, s.width, s.height); t.dispose(); return tex(s);
+  }
+  function dressSet(set, lod) {
+    if (set.skin === skin && set.lod === lod && set.q === quality) return;
+    if (set.skin !== skin || set.q !== quality) {
+      set.mesh.forEach((m, i) => { const old = m.material.map; dressBall(m, skin, lod); m.material.map = ballMap(set.kind, i); m.material.needsUpdate = true; if (old) old.dispose(); });
+      set.skin = skin; set.q = quality; if (set === sets.carom) caromY = 1;
+    } else for (const m of set.mesh) {
+      if ((skin.finish || {}).facets) continue;
+      m.geometry = geomOf(skin, lod); const ol = m.userData.outline; if (ol) ol.geometry = m.geometry;
+    }
+    set.lod = lod; dirty = 3;
   }
 

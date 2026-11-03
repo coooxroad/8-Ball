@@ -119,6 +119,7 @@
   }
   let cueNow3d = 0;
   function setCue(i) {
+    if (i === cueNow3d && cue.children.length) return;                    // (the same cue: nothing to build)
     cueNow3d = i; const d = CUES[i] || CUES[0];
     while (cue.children.length) { const m = cue.children.pop(); m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
     const part = (x0, x1, r0, r1, mat, sides, flat, turn) => {
@@ -194,8 +195,9 @@
      1.5 m and spanY metres across). The cue in play is borrowed for it and put back as it was. A part of it only: from x0
      to x1 along it (metres); spanY 'auto': as wide as the cue is (a guitar's body), and H null: as tall as that makes it. */
   let portraitSpan = 0;                                              // (how wide the last picture was, in metres)
-  function cuePortrait(i, W, H, spanY, x0 = -0.015, x1 = 1.5) {
-    const was = cueNow3d; setCue(i);
+  function cuePortrait(i, W, H, spanY, x0, x1) { return cueShot(i, W, H, spanY, x0, x1).toDataURL('image/png'); }
+  function cueShot(i, W, H, spanY, x0 = -0.015, x1 = 1.5) {
+    const was = cueNow3d; setCue(i); const pend = texPending;   // (a picture still loading: the shot is shown, not kept)
     const sc = new THREE.Scene(); sc.environment = scene.environment;
     sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 0.6)); const key = new THREE.DirectionalLight(0xfff4e6, 0.9); key.position.set(0.4, 0.6, 2); sc.add(key);
     const keep = { p: cue.position.clone(), r: cue.rotation.clone(), v: cue.visible }, parent = cue.parent;
@@ -212,5 +214,5 @@
     sc.remove(cue); parent.add(cue); cue.position.copy(keep.p); cue.rotation.copy(keep.r); cue.visible = keep.v; setCue(was); dirty = 3;
     const c = mkCanvas(W, H), g = c.getContext('2d'), im = g.createImageData(W, H);
     for (let y = 0; y < H; y++) im.data.set(px.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
-    g.putImageData(im, 0, 0); return c.toDataURL('image/png');
+    g.putImageData(im, 0, 0); c.done = !pend; return c;
   }

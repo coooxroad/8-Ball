@@ -13,7 +13,6 @@
    POST /v1/invite/peek { code }                      what a code is: { mode, rules, host }
    POST /v1/invite/join { code, name, icon, gear }    the friend takes the other seat: the room
    POST /v1/invite/leave { code }                     the host gives up waiting
-   POST /v1/drop    { req }                           a 당구드롭 opened: { rarity, prize }
    POST /v1/lessons { req, vol, proofs }              a volume of lessons all done: its prize
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:

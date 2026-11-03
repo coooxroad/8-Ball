@@ -219,6 +219,9 @@ for (const name of ['bar', 'pro', 'pub']) {
   // handicaps: each player goes out at their own number, and the last point needs a cushion when that rule is on
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
   { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; const r = g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g); if (r.pts !== 0) fail('cushion finish: the last point counted without a cushion'); ev.cushions = 1; if (g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g).pts !== 1) fail('cushion finish: the last point off a cushion did not count'); }
+  // both reds and the other ball: no point, no penalty, turn over; one red and the other ball is still a foul (-1)
+  { g.players[0].score = 1; const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3, 1]; ev.cushions = 1; const r = M.evaluate(ev, M.ctx(g), g); if (r.foul || r.pts !== 0 || r.keep) fail('four-ball: both reds and the other ball should be 0 points and turn over');
+    ev.hits = [2, 1]; const r2 = M.evaluate(ev, M.ctx(g), g); if (!r2.foul || r2.pts !== -1) fail('four-ball: one red and the other ball should still cost a point'); }
   { g.players[0].score = 2; g.finish = false; g._ctx = g.MODES.four.ctx(g); const w = g.world; w.ev = P.newEv(); w.ev.firstHit = 2; w.ev.hits = [2, 3]; g.resolve(); if (!g.over || g.over.winner !== 0) fail('handicap: player with 30 did not go out on the third score'); }
   // ice: the same shot runs longer, and a saved game comes back still on ice
   { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; b.ice = true; let ta = 0, tb = 0; P.strike(a, 0.3, 3, 0, 0); while (!P.rest(a) && ta < 9000) { P.step(a, 1 / 120); ta++; } P.strike(b, 0.3, 3, 0, 0); while (!P.rest(b) && tb < 9000) { P.step(b, 1 / 120); tb++; } if (!(tb > ta * 1.2)) fail('ice is not slipperier than cloth'); }
@@ -388,6 +391,32 @@ for (const name of ['bar', 'pro', 'pub']) {
   const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'ai-human.js')], { encoding: 'utf8' });
   const last = (r.stdout || '').trim().split('\n').pop();
   if (r.status !== 0) fail('person-like opponent: ' + (last || r.stderr.trim().split('\n').pop())); else console.log(last);
+}
+// the computer player in a Worker (ai-worker.js): the game rebuilt from its saved table makes the very plan the game does,
+// and a stand-in's seeded chances end where they would have
+{
+  const T = require(path.join(W, 'tables.js'));
+  Object.assign(global, { createGame: createGameRaw, createAI, createPhysics, physicsFor: T.physicsFor, seededRandom: createGameRaw.seededRandom });
+  const aiServe = require(path.join(W, 'ai-worker.js'));
+  const H = new Function('g', fs.readdirSync(path.join(W, 'ai')).sort().map(f => fs.readFileSync(path.join(W, 'ai', f), 'utf8')).join('\n'))({}).personaFor;
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  let n = 0;
+  for (const [mode, tbl] of [['eight', 'bar'], ['nine', 'club'], ['four', 'bar'], ['three', 'bar']]) for (const human of [false, true]) {
+    const g = createGameRaw(T.physicsFor(createPhysics, tbl), createAI), r0 = createGameRaw.seededRandom(777);
+    const pz = human ? H(45, createGameRaw.seededRandom(5)) : null;
+    g.start(mode, ['A', 'B'], true, { rnd: createGameRaw.seededRandom(99), level: 2, levels: [2, 2], personas: pz ? [null, pz] : undefined }); g.turn = 1;
+    if (mode !== 'four' && mode !== 'three') { const P = g.P; P.strike(g.world, 0, 6, 0, 0); P.run(g.world, 30); g.isBreak = false; g.placing = null; }
+    for (let k = 0; k < 2; k++) {
+      g.aiRnd = human ? createGameRaw.seededRandom(1000 + k) : null;
+      const job = { id: k, tbl, d: JSON.parse(JSON.stringify(g.serialize())), levels: g.levels, personas: JSON.parse(JSON.stringify(g.personas)), rnd: g.aiRnd ? g.aiRnd.state() : null };
+      let s = 4242; const mr = Math.random; Math.random = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+      const direct = g.aiPlan(), after = g.aiRnd ? g.aiRnd.state() : null;
+      s = 4242; const rep = aiServe(job); Math.random = mr;
+      if (rep.err || !same(rep.plan, direct) || rep.rnd !== after) fail(`ai worker: ${mode}${human ? ' (person-like)' : ''} plan ${k} differs${rep.err ? ' - ' + rep.err : ''}`);
+      n++;
+    }
+  }
+  console.log(`ai worker: ${n} plans the same as the game's own`);
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

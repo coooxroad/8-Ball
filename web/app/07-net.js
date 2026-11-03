@@ -31,6 +31,9 @@ const net = (() => {
   // what the server says now; announce: say so when coins came in that were not answered for at once (a match checked later)
   function setMe(m, announce) {
     const was = me; me = m; store.set('me', m); prefs.wallet = { coin: m.coin, dia: m.dia };
+    // (only the coins or diamonds moved and the shop is not open: the two numbers change, the desk is not built again)
+    const bare = x => JSON.stringify(Object.assign({}, x, { coin: 0, dia: 0 }));
+    if (was && bare(was) === bare(m) && !(st.screen === 'home' && deskTab === 'shop')) { savePrefs(); walletPaint(); return; }
     if (announce && was && m.coin > was.coin) toast(`+${(m.coin - was.coin).toLocaleString('ko-KR')} 코인 (경기 확인 완료)`, 'good', 2600);
     // what is worn but no longer (or not yet) owned goes back to the first of its kind (not in debug: everything is to hand)
     const k = KIND_OF;
@@ -41,7 +44,6 @@ const net = (() => {
     if (!owns('table', (CLOTHS[prefs.cloth] || {}).id)) prefs.cloth = 0;
     prefs.cues = prefs.cues.map(i => owns('cue', (CUES[i] || {}).id) ? i : k.cue.firstOwned());
     savePrefs(); if (st.screen === 'home') paintHome();
-    dropPaint();
   }
   // send what is waiting, oldest first; a reward the server turns down is dropped, one it did not answer stays for later
   async function flush() {
@@ -83,11 +85,6 @@ const net = (() => {
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
     async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
-    // a 당구드롭 opened: the server draws it ({ rarity, prize }); null with no answer
-    async openDrop() {
-      if (!(await ensure())) return null;
-      const r = await call('/v1/drop', { req: hex(12) }); if (r && r.me) setMe(r.me); return r;
-    },
     // buying needs the server there and then: true when bought
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };

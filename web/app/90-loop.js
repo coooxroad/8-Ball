@@ -1,5 +1,5 @@
 /* ================= frame loop ================= */
-let lastT = 0, acc = 0;
+let lastT = 0, acc = 0, lastRaw = 0;
 // which balls may be hit: recomputed when the table changes (st.rev), not on every frame
 const NONE = [], legal = { rev: -1, turn: -1, ids: NONE };
 function legalNow() { if (legal.rev !== st.rev || legal.turn !== game.turn) { legal.rev = st.rev; legal.turn = game.turn; legal.ids = game.legal(); } return legal.ids; }
@@ -38,7 +38,7 @@ function aheadStart(ca) {
 function aheadStep() {
   const a = st.ahead; if (!a || a.done) return;
   const P = game.P, w = a.w;
-  const until = performance.now() + 3;                      // three milliseconds of it a frame at the most
+  const until = performance.now() + (lastRaw > 20 ? 1.5 : 3);   // three milliseconds of it a frame at the most; half when frames are running late
   for (let k = 0; k < 400 && !a.done && (k < 4 || performance.now() < until); k++) {
     P.step(w, TICK); a.t++;
     for (const e of w.snd) if (e.t === 'ball' && (e.ia === w.cue || e.ib === w.cue)) a.last = Math.max(a.last, a.t);
@@ -70,11 +70,12 @@ function stepSim(dt) {
 let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
+  const f0 = performance.now(); prof.frame();
   checkPixelRatio();
-  const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now;
+  const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   // (a ranked game goes on under a sheet: the other player is still playing)
-  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown()) || (!!dropView.on && !(match.ctx && match.ctx.online && st.screen === 'play'));   // (and under a 당구드롭)
+  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown());
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
@@ -96,44 +97,63 @@ function frame(now) {
         follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
       }
     }
-    if (st.phase === 'sim') { alpha = stepSim(dt); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
+    if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
   }
   if (st.phase === 'aim') syncEl();
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
+  const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
     follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: flow ? flow.guide() * (st.phase === 'aim' ? cueK().guide : 1) : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
+    covered: st.screen === 'home' && !deskTableShown(),
   }, dt);
+  { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
   drainFalls(); drainFx();
   if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
+  prof.add('js', performance.now() - f0);
   perfTick(raw, drew);
 }
-/* How the frames are coming, from the real time between them (not the game's capped dt), counting only frames that drew
-   something (a still screen draws nothing, and that is as it should be). Every two seconds:
-   - the display (설정 · 초당 프레임 표시): frames a second, how many came late (over 25 ms), the slowest one in twenty
-     (p95), what the frame drew (draw calls · thousands of triangles) and the 3D's pixel density;
+/* How the frames are coming, from the real time between them (not the game's capped dt). Every two seconds:
+   - the display (설정 · 초당 프레임 표시), two lines:
+       frames a second (of frames that drew), how many came late (over 25 ms), the slowest in twenty (p95), the longest gap
+       between any two frames these two seconds and over the whole session (with what took the most time in it), the 3D's
+       pixel density;
+       the slowest single piece of work these two seconds, in ms: AI (the computer deciding), 조준 (playing out the aim line),
+       물리 (the shot itself), 그리기 (the 3D), 화면 (work outside the frame: taps, building screens - from the browser's
+       long-animation-frame / longtask report where it has one), then what the frame drew (draw calls · thousands of triangles);
    - the guard, last resort, in play on '자동' only: when one frame in ten is slower than 25 ms (under 40 a second) for two
      spells running (four seconds) the 3D is drawn a step coarser (5% at a time, down to 85%), and back up once it has kept up
      for ten seconds. The change waits for the next frame's start (scene setScale/takeScale: resizing after a frame was drawn
-     showed one black frame on the web). Nothing else changes. */
-const perf = { gaps: [], t: 0, n: 0, ok: 0, slow: 0, calls: 0, tris: 0 };
+     showed one black frame on the web). Nothing else changes.
+   A gap that spans the page being hidden (another app, the screen off) is not counted. */
+const perf = { gaps: [], t: 0, n: 0, ok: 0, slow: 0, calls: 0, tris: 0, long: 0, longWhy: '', stalls: 0 };
 function perfTick(raw, drew) {
+  if (prof.hid) { prof.hid = false; return; }                              // (the page was away: that gap is not ours)
   perf.t += raw;
+  if (raw > perf.long) { perf.long = raw; perf.longWhy = prof.why(raw); }
+  if (raw > 100) perf.stalls++;
   if (drew && raw > 0 && raw < 400) { perf.gaps.push(raw); perf.calls = scene.info.render.calls; perf.tris = scene.info.render.triangles; }
   if (perf.t < 2000) return;
+  if (perf.long > prof.worst) { prof.worst = perf.long; prof.worstWhy = perf.longWhy; }
   const g = perf.gaps.sort((a, b) => a - b), n = g.length, at = q => g[Math.min(n - 1, Math.floor(n * q))];
-  if (prefs.fps) $('#fps').textContent = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > 25).length / n)}% · p95 ${Math.round(at(0.95))}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k · ${scene.pixelRatio.toFixed(2)}x` : `대기 · ${scene.pixelRatio.toFixed(2)}x`;
+  if (prefs.fps) {
+    const ms = k => Math.round(prof.win[k] || 0), why = w => w ? ' ' + w : '';
+    const a = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > 25).length / n)}% · p95 ${Math.round(at(0.95))}ms` : '대기';
+    const b = `최장 ${Math.round(perf.long)}ms${why(perf.longWhy)}${perf.stalls ? ` · 멈춤 ${perf.stalls}회` : ''} · 세션 최장 ${Math.round(prof.worst)}ms${why(prof.worstWhy)} · ${scene.pixelRatio.toFixed(2)}x`;
+    const c = `AI ${ms('ai')} · 조준 ${ms('guide')} · 물리 ${ms('sim')} · 그리기 ${ms('draw')} · 화면 ${ms('ui')}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k`;
+    $('#fps').textContent = a + ' · ' + b + '\n' + c;
+  }
   if (prefs.quality === 'auto' && st.screen === 'play' && n >= 30) {
     if (at(0.9) > 25) { perf.ok = 0; if (++perf.slow >= 2) { perf.slow = 0; scene.setScale(scene.scale - 0.05); } }   // (two slow spells running)
     else { perf.slow = 0; if (at(0.9) < 18 && ++perf.ok >= 5 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); } }
   }
-  perf.gaps.length = 0; perf.t = 0;
+  perf.gaps.length = 0; perf.t = 0; perf.long = 0; perf.longWhy = ''; perf.stalls = 0; prof.win = {};
 }
 
 /* ================= saving ================= */
@@ -149,5 +169,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, ranked, net, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, showRecords, ranked, net, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();

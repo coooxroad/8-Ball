@@ -7,7 +7,6 @@
    05-music    the lobby's tune, win and lose songs   50-match       a game between two players (or one and the computer)
    07-net      the server: wallet, rewards, ranked    54-ranked      랭킹전: finding an opponent, playing them online
                                                       55-invite      친구 초대: a code, and a game on two devices
-                                                      56-drop        당구드롭: a ball to open, won with a game
    10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
    20-sheets   every sheet that slides up             52-puzzle      puzzles
    30-home     what the desk and the flows share      53-demo        one given shot, played by the app
@@ -39,7 +38,7 @@ const prefs = (() => {
     pz: null, suji: {}, sujiAI: 5, finish: false, cues: null, v: 0,
     aim: 'line', gv: 0,
     music: true,
-    shotClock: 40,
+    shotClock: 60,
     ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
     friendWay: 'local', fourTarget: 10, lessonProof: {},
     wallet: { coin: 0, dia: 0 } }, saved);
@@ -57,6 +56,7 @@ const prefs = (() => {
   p.cues = p.cues.map(i => CUES[i] ? i : 0);
   if (!p.suji || typeof p.suji !== 'object') p.suji = {};
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
+  if (p.clk !== 2) { if (p.shotClock === 40) p.shotClock = 60; p.clk = 2; }   // 4.0: the shot clock's default went from 40 to 60 s
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
@@ -167,3 +167,24 @@ function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; 
 const cueK = () => { const s = (CUES[cueNow] || {}).stat || {}; return { power: 1 + (s.power || 0) / 100, spin: 1 + (s.spin || 0) / 100, guide: 1 + (s.guide || 0) / 100 }; };
 const gloveStep = () => (GLOVES.find(g => g.id === prefs.glove) || {}).stat || BARE_HAND;
 function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], true); }   // (the power gauge always stands upright)
+
+/* Where the time goes, for the FPS display (90-loop.js perfTick): the frame loop and the computer add what they spent. */
+const PROF_KO = { ai: 'AI', guide: '조준', sim: '물리', draw: '그리기', ui: '화면', js: '계산' };
+const prof = {
+  cur: {}, win: {}, worst: 0, worstWhy: '', hid: false,
+  add(k, ms) { this.cur[k] = (this.cur[k] || 0) + ms; if (ms > (this.win[k] || 0)) this.win[k] = ms; },
+  // a new frame: what the last one spent, kept for naming the cause of a long gap
+  frame() { this.last = this.cur; this.cur = {}; },
+  why(gap) {   // the biggest piece of work behind a gap: this frame's own, or work the browser saw between frames
+    const c = Object.assign({}, this.last || {}); delete c.js; if (this.uiGap) { c.ui = Math.max(c.ui || 0, this.uiGap); this.uiGap = 0; }
+    let k = '', v = 0; for (const x in c) if (c[x] > v) { v = c[x]; k = x; }
+    return v > gap * 0.3 ? PROF_KO[k] : '';
+  },
+};
+document.addEventListener('visibilitychange', () => { if (document.hidden) prof.hid = true; });
+try {   // work outside our frames (taps, building a screen): the browser says how long it held the page
+  const seen = e => { const ms = e.duration; prof.add('ui', ms); prof.uiGap = Math.max(prof.uiGap || 0, ms); };
+  const kinds = (PerformanceObserver.supportedEntryTypes || []);
+  const type = kinds.includes('long-animation-frame') ? 'long-animation-frame' : kinds.includes('longtask') ? 'longtask' : null;
+  if (type) new PerformanceObserver(l => { for (const e of l.getEntries()) seen(e); }).observe({ type, buffered: false });
+} catch (e) {}

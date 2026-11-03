@@ -80,7 +80,7 @@ export class LobbyCore {
 
 /* Games with an invited friend: the host opens a code (six letters and digits, nothing that reads two ways) and asks after
    it every couple of seconds; a friend who enters the code - or opens the link with it - takes the other seat, and a room
-   opens as for a ranked game (kind 'invite': the host's rules, no DAMA, no 당구드롭). Held in memory in one Durable Object
+   opens as for a ranked game (kind 'invite': the host's rules, no DAMA). Held in memory in one Durable Object
    (the lobby named 'invites'); a code whose host has not asked for INVITE_IDLE is gone. */
 export const INVITE_IDLE = 30000;
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

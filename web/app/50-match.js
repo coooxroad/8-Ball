@@ -34,7 +34,7 @@ const match = {
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,
-  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
+  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) {
     if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });
     if (match.ctx.online) ranked.struck(JSON.parse(JSON.stringify(highlights.snapshot(game.world))), V, a, b, el);
@@ -127,13 +127,12 @@ const match = {
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
       if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
-      if (kind === 'cpu' && w === 0) line('당구드롭', `+1 (하루 ${ECONOMY.DROP.CPU_DAILY}개까지)`);
       net.claim('match', { kind, log }); match.log = null;
     }
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
     if (on) { ranked.ended(); ranked.paint(); }
     $('#rWhy').textContent = game.over.why;
-    show('result'); SND.win(); dropPaint();
+    show('result'); SND.win();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);
   },

@@ -31,5 +31,3 @@
 #app.desk.portrait #toast,#app.bcast.portrait #toast{max-width:calc(100% - 120px);font-size:15px}
 #app.desk.portrait:has(#pracBar:not([hidden])) #toast{top:112px}
 #app.desk.portrait:has(#spinPop:not([hidden])) #clock{visibility:hidden}
-#app.desk.compact.portrait .dk-drop{order:2;height:32px;padding:0 9px 0 5px;margin:0}
-#app.desk.compact.portrait .dk-drop .dk-dball{width:20px;height:20px}

@@ -1,14 +1,25 @@
   /* Pictures of real materials (web/tex, carried inside the page as data, so WebGL may read them): each takes the place
      of its drawn stand-in once it has loaded; without them the drawn ones stay. */
   const TEXS = typeof TEXTURES !== 'undefined' ? TEXTURES : {}, loader = new THREE.TextureLoader(), made = {};
+  // (a picture is decoded once: asked again - a cue built again, say - a copy of it is handed over at once; a picture
+  // changes only colours, so the shadows are left as they are)
+  let texPending = 0;
   function loadTex(name, rep, done) {
     if (!TEXS[name]) return;
+    const had = made[name];
+    if (had) {
+      const t = had.clone(); t.needsUpdate = true; t.offset.set(0, 0); t.center.set(0, 0); t.rotation = 0;   // (a copy of its own, as a fresh load gave: callers may change it)
+      if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); } else { t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.repeat.set(1, 1); }
+      if (done) done(t); staticDirty = true; dirty = 3; return;
+    }
+    texPending++;
     loader.load(TEXS[name], t => {
+      texPending--;
       t.encoding = THREE.sRGBEncoding; t.anisotropy = aniso;
       if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); }
       made[name] = t; if (done) done(t);
-      renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
-    });
+      staticDirty = true; dirty = 3;
+    }, undefined, () => { texPending--; });
   }
 
   /* reflections for the balls: a dim room with three lamp panels overhead */

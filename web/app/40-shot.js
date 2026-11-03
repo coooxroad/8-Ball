@@ -21,13 +21,49 @@ function shoot(V, a, b, el) {
 function endShot() { st.rev++; flow.afterShot(); }
 function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHold = then; flow.hud(); }
 
+/* The computer's plan is worked out in a Worker (ai-worker.js: the same game code, the same plan) so that the screen never
+   waits for a search - a few hundred milliseconds at 8볼's top level. The question goes as the turn begins and the answer is
+   taken once it is there and the thinking time is up (autoTick). The Worker is made from the page's own game code (its
+   first script, id "core"; on the web, the core file). If there is no Worker, it fails, or it has not answered in 8 s, the
+   plan is worked out here as it always was. A stand-in's seeded chances come back from the Worker and go on from there. */
+const aiw = { w: null, n: 0, wait: new Map(), dead: false };
+function aiWorker() {
+  if (aiw.w || aiw.dead) return aiw.w;
+  try {
+    const core = document.getElementById('core'), src = core && core.textContent;
+    const url = src && src.length > 1000 ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : core && core.src ? core.src : null;
+    if (!url) { aiw.dead = true; return null; }
+    const w = new Worker(url);
+    w.onmessage = e => { const r = e.data, j = aiw.wait.get(r.id); aiw.wait.delete(r.id); if (j) j.res = r; };
+    w.onerror = () => { aiw.dead = true; aiw.w = null; for (const j of aiw.wait.values()) j.res = { err: 'worker' }; aiw.wait.clear(); };
+    aiw.w = w;
+  } catch (e) { aiw.dead = true; }
+  return aiw.w;
+}
+const tableNow = () => (TABLES.find(t => tableCache[t.id] === PH.pool) || {}).id || prefs.table;
+function aiAsk(a) {
+  if (a.aiPlan) return a.aiPlan;
+  if (!a.aiJob) {
+    const w = aiWorker(), j = a.aiJob = { t: performance.now(), res: null, rnd: game.aiRnd };
+    if (w) { const id = ++aiw.n; aiw.wait.set(id, j); w.postMessage({ id, tbl: tableNow(), d: game.serialize(), levels: game.levels, personas: game.personas, rnd: game.aiRnd ? game.aiRnd.state() : null }); }
+    else j.res = { err: 'none' };
+  }
+  const j = a.aiJob;
+  if (!j.res && performance.now() - j.t > 8000) j.res = { err: 'slow' };
+  if (!j.res) return null;
+  if (j.res.err) a.aiPlan = game.aiPlan();
+  else { a.aiPlan = j.res.plan; if (j.rnd && j.res.rnd != null) j.rnd.seek(j.res.rnd); }
+  return a.aiPlan;
+}
 // The computer and the demo line up a shot the same way: wait, decide, swing the cue round, pull back, shoot.
 // plan: { angle, V, a, b, pos? }
 function autoTick(dt) {
   const a = st.auto; a.t += dt;
   if (!a.plan) {
+    if (a.src.ai) aiAsk(a);                                          // (the computer starts thinking now, off the screen's thread)
     if (a.t < a.src.think) return;
-    a.plan = a.src.plan(); if (!a.plan) return;                       // (the other player's shot has not come yet)
+    { const t0 = performance.now(); a.plan = a.src.plan(a); prof.add('ai', performance.now() - t0); }
+    if (!a.plan) return;                                              // (the other player's shot has not come yet)
     a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
     if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;

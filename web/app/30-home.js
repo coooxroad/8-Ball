@@ -31,7 +31,7 @@ function homePreview() {
 // (and resting while the desk covers it: 90-loop.js).
 const homeDemo = {
   quiet: true, save: false, guide: () => 0.5, restart() {}, beforeShot() {}, hud() {},
-  auto: () => ({ think: 0.9, showSpin: false, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }),
+  auto: () => ({ think: 0.9, showSpin: false, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }),
   afterShot() { game.resolve(); if (st.screen !== 'home') return; if (game.over) return hold(2.2, () => { if (flow === homeDemo && st.screen === 'home') homePreview(); }); useCue(prefs.cues[prefs.vsAI ? 0 : game.turn]); beginTurn(false); },
 };
 // leaving a game: `keep` leaves it saved so that it can be picked up again from the first screen

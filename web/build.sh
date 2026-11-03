@@ -12,14 +12,23 @@ mkdir -p "$A/fonts"
 #   scene/ the body of createScene(canvas, app, PH) - the 3D table, balls, cue and guide
 #   reel/  the body of createReel(d) - the reel's machinery, then one file per edit, then playing one
 #   app/   the app itself - what it shares first (00-state.js), then one file per screen or concern
+# The game itself - the DOM-free part: what can be owned, tables, money, physics, rules, lessons, puzzles, highlights, the
+# computer player - is a script of its own (id "core"), so the page can start the computer player in a Worker from it
+# (ai-worker.js; app/40-shot.js aiAsk). Its top-level names are seen by the script after it, as before.
+core() {
+  cat content/*.js tables.js economy.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
+  echo 'function createAI(g) {'; cat ai/*.js; echo '}'
+  grep -v '^if (typeof module' ai-worker.js
+}
 script() {
+  echo '<script id="core">'; core; echo '</script>'
   echo '<script>'
+  # what the 3D's pictures of things depend on (the card pictures kept on the device are taken again when it changes)
+  echo "const BUILD_ID = '$(cat content/*.js scene/*.js tex/*.webp three.min.js | sha1sum | cut -c1-12)';"
   # the table's material pictures (tex/), carried as data so WebGL may read them from a page opened as a file
   echo 'const TEXTURES = {'; for f in tex/*.webp; do printf "'%s': 'data:image/webp;base64,%s',\n" "$(basename "$f" .webp)" "$(base64 -w0 "$f")"; done; echo '};'
   # sounds an item names for itself (content/: sound.file), carried as data the same way
   echo 'const SOUNDS = {'; for f in sound/*.mp3 sound/*.ogg sound/*.wav; do [ -e "$f" ] || continue; printf "'%s': 'data:audio/%s;base64,%s',\n" "$(basename "${f%.*}")" "${f##*.}" "$(base64 -w0 "$f")"; done; echo '};'
-  cat content/*.js tables.js economy.js physics.js game.js drills.js puzzles.js highlights.js | grep -v '^if (typeof module'
-  echo 'function createAI(g) {'; cat ai/*.js; echo '}'
   echo 'function createScene(canvas, app, PH) {'; cat scene/*.js; echo '}'
   cat sounds.js audio.js | grep -v '^if (typeof module'
   echo 'function createReel(d) {'; cat reel/*.js; echo '}'

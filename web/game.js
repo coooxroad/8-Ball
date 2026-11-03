@@ -2,7 +2,8 @@
    createGame(PH, makeAI): PH the physics of each table; makeAI (createAI, web/ai/) the computer player, left out where
    nobody plays against it (the server's replays). */
 // a chance from a seed: the same numbers on every device and on the server (a ranked game's rack and roll-out)
-const seededRandom = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+// (state() and seek(): where it has got to, so the computer player can go on from there in a Worker - ai-worker.js)
+const seededRandom = s => { s = s >>> 0; const f = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; f.state = () => s; f.seek = v => { s = v >>> 0; }; return f; };
 function createGame(PH, makeAI) {
   const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
   const GROUP_KO = { solid: '단색', stripe: '줄무늬' };
@@ -138,10 +139,13 @@ function createGame(PH, makeAI) {
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
-        const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        const short = !foul && reds === 2 && c.last && ev.cushions < 1;
-        const pts = foul ? -1 : reds === 2 && !short ? 1 : 0;
-        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note: short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null };
+        // both reds and the other player's ball too: no point and no penalty, the turn just goes over (owner's house rule)
+        const both = reds === 2 && hitOpp;
+        const foul = both ? null : hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
+        const short = !foul && !both && reds === 2 && c.last && ev.cushions < 1;
+        const pts = foul ? -1 : reds === 2 && !short && !both ? 1 : 0;
+        const note = both ? '상대 공도 맞혀 점수 없음' : short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note };
       },
     },
   };

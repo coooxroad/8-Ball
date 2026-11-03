@@ -36,6 +36,9 @@ jobs:
           node-version: 22
       - name: Build the page
         run: sh web/build.sh && node web/tools/check.js
+      # (the web's page in cached parts: code, styles, pictures and sounds as files named by their contents - site/split.cjs)
+      - name: Split for the web
+        run: node site/split.cjs app/src/main/assets
       - name: Record the deployed version
         run: node site/version.cjs write app/src/main/assets/version.json
       - name: Wrangler

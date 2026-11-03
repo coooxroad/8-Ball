@@ -28,17 +28,11 @@ const ECONOMY = {
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 30, DAMA_K: 6, DAMA_SPREAD: 100, DAMA_FLOOR: 10,
-  /* 당구드롭: one for every ranked game won, and for a game won against the computer (at most CPU_DAILY a day). Opened, the
-     server draws its rarity (ODDS, percent, 일반..시크릿 - the taps that "upgrade" it on the screen only show the way there)
-     and then what is in it: SKIN of the time a thing of the rarity below (one not owned; none left, or a 일반 drop: coins),
-     DIA of the time diamonds, else coins. Coins are a quarter of the price of the rarity below (일반 counted as 1000; a
-     일반 drop 100). TAPS: the chances to upgrade shown on the screen. */
-  DROP: { ODDS: [44, 30, 16, 7, 2.6, 0.4], SKIN: 0.1, DIA: 0.3, COIN: [100, 250, 750, 2000, 5000, 12500], DIA_N: [1, 3, 8, 20, 50, 125], CPU_DAILY: 3, TAPS: 3 },
   // every lesson of a game's volume done at its top level: coins and a thing found nowhere else
   LESSON_PRIZE: { eight: { coin: 3000, kind: 'cue', id: 'breaker' } },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
-const RANKED_RULES = { eight: {}, nine: {}, four: { target: 10 }, three: { target: 5, cushions: 3 } };
+const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 } };
 // a game with an invited friend: the host's choices, only those the game offers (anything else: the ranked rules)
 const inviteRules = (mode, r) => {
   const o = Object.assign({}, RANKED_RULES[mode] || {}); r = r || {};

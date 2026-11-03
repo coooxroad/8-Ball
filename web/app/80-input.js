@@ -120,7 +120,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     const unit = gloveStep().dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
     st.aim = from + Math.round(turned / unit) * unit; off += d;
-    box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); scene.invalidate();
+    box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
     const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
     if (n !== dialN) { dialN = n; SND.dial(Math.abs(d) / 20); }
@@ -135,13 +135,16 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') || !$('#sheet').hidden) return;
     e.preventDefault();
     st.aim += dir * (e.shiftKey ? 10 : 1) * gloveStep().dial * Math.PI / 180;
-    const d = dir * 8; off += d; box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; drawDial(); SND.dial(0.3); scene.invalidate();
+    const d = dir * 8; off += d; box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); SND.dial(0.3); scene.invalidate();
   });
 })();
 /* The fine-aim dial (on the desk): a knurled rubber drum turning in its walnut slot, drawn as a real cylinder - its ridges
    crowd together towards its edges and it darkens away from the light (upper right), with brass flanges at both ends.
    dialPh is how far it has been rolled, in pixels at its face. */
 let dialPh = 0, dialN = 0;
+// (moves come faster than frames: the drum is drawn once a frame, after the moves of that frame)
+let dialQ = false;
+function dialSoon() { if (dialQ) return; dialQ = true; requestAnimationFrame(() => { dialQ = false; drawDial(); }); }
 function drawDial() {
   const box = $('#fine');
   let cv = box.querySelector('canvas.dial'); if (!cv) { cv = el('canvas', { class: 'dial' }); box.appendChild(cv); }

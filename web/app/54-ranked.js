@@ -7,7 +7,7 @@
      a stand-in's shots are worked out here, and sent as its seat's;
      the room plays the whole game again when it ends, and its result - who won, the coins, the DAMA - is the one shown.
    The seats are the room's: seat 0 on the left. */
-const RANKED_CLOCK = 45;                      // seconds to shoot in a ranked game
+const RANKED_CLOCK = 60;                      // seconds to shoot in a ranked game
 const AIM_LAG = 150, AIM_GAP = 66;            // ms the other player's cue is shown behind; ms between the aims sent while it moves
 const ranked = {
   on: null,                                   // the game being played: { seat, room, token, seed, first, mode, opp, standIn, inbox, n, sent, ws, done }
@@ -124,7 +124,7 @@ const ranked = {
   auto(o) {
     if (game.turn === o.seat) return null;
     // (a person-like stand-in lines up its own way - its preShot, played by autoTick - so it needs no fixed wait)
-    if (o.standIn) return { think: 0.4, showSpin: true, plan() { const p = game.aiPlan(); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }; } };
+    if (o.standIn) return { think: 0.4, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }; } };
     return { think: 0, showSpin: true, plan() {
       const m = o.inbox[0]; if (!m) return null;
       o.inbox.shift();
@@ -186,7 +186,7 @@ const ranked = {
       match.finish();
     } else if (st.screen === 'result') ranked.paint();
     if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
-    net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after: a 당구드롭 won)
+    net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after)
   },
   // the result screen's lines for a ranked game: checking, then what it paid
   paint() {
@@ -197,7 +197,6 @@ const ranked = {
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
     line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
     if (o.kind !== 'invite') line('다마', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
-    if (o.kind !== 'invite' && r.winner === me) line('당구드롭', '+1');
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },

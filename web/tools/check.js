@@ -8,8 +8,15 @@
    4. every id the markup has is unique, and every picture the styles or scripts name as ui/<name>.webp exists. */
 const fs = require('fs'), path = require('path'), W = path.join(__dirname, '..');
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); };
-const page = fs.readFileSync(path.join(W, '..', 'app/src/main/assets/index.html'), 'utf8'), m = page.match(/<script>([\s\S]*?)<\/script>\s*<\/body>/);
-if (!m) fail('no script found in the built page'); else try { new Function(m[1]); } catch (e) { fail('the built script does not parse: ' + e.message); }
+// (two scripts: the game's core - which the computer player's Worker is made from, so it must stand alone - then the app)
+const page = fs.readFileSync(path.join(W, '..', 'app/src/main/assets/index.html'), 'utf8');
+const core = page.match(/<script id="core">([\s\S]*?)<\/script>/), m = page.match(/<script>([\s\S]*?)<\/script>\s*<\/body>/);
+if (!m || !core) fail('the built page is missing its core or app script');
+else {
+  try { new Function(core[1]); } catch (e) { fail('the core script does not parse: ' + e.message); }
+  try { new Function(core[1] + '\n;\n' + m[1]); } catch (e) { fail('the built script does not parse: ' + e.message); }
+  if (/\b(document|window)\.[a-zA-Z]/.test(core[1].replace(/typeof document[^;]*;/g, ''))) fail('the core script touches the page (document/window): the Worker has neither');
+}
 for (const dir of ['ai', 'app', 'reel', 'scene']) {
   const seen = {};
   for (const f of fs.readdirSync(path.join(W, dir)).sort()) {

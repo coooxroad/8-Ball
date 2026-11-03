@@ -42,7 +42,7 @@ export class VaultCore {
     const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
     for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
     if (this.get('dama', 0) >= 1000) this.set('dama', E.ECONOMY.DAMA_START);                    // (the first accounts started at 1000)
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned, drops: this.get('drops', 0),
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
@@ -88,7 +88,7 @@ export class VaultCore {
   }
 
   // a game's result from its room (room.js), once per room: coins and the change in DAMA - a ranked game, or one with an
-  // invited friend (kind 'invite': no DAMA, no 당구드롭). A ranked game won brings a 당구드롭.
+  // invited friend (kind 'invite': no DAMA).
   ranked({ room, mode, won, draw, coins, dama, kind }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
@@ -96,34 +96,7 @@ export class VaultCore {
       this.set('dama', Math.max(E.ECONOMY.DAMA_FLOOR, this.get('dama', E.ECONOMY.DAMA_START) + d));
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
-      if (won && !inv) this.set('drops', this.get('drops', 0) + 1);
       return { ok: true };
-    });
-  }
-  // a game against the computer won: a 당구드롭, CPU_DAILY a day at most
-  cpuDrop() {
-    const d = day(), k = this.get('cpuDrops', { day: d, n: 0 }), n = k.day === d ? k.n : 0;
-    if (n >= E.ECONOMY.DROP.CPU_DAILY) return;
-    this.set('cpuDrops', { day: d, n: n + 1 }); this.set('drops', this.get('drops', 0) + 1);
-  }
-  /* A 당구드롭 opened: its rarity drawn by the odds, then what is in it (economy.js DROP). The screen shows the taps that
-     climb to that rarity; what it climbs to was decided here. */
-  drop({ req }, rnd) {
-    const R = rnd || Math.random;
-    return this.once(req, () => {
-      if (this.get('drops', 0) < 1) return { ok: false, why: 'no drop' };
-      this.set('drops', this.get('drops', 0) - 1);
-      const X = E.ECONOMY.DROP, total = X.ODDS.reduce((a, b) => a + b, 0);
-      let u = R() * total, rarity = 0; while (rarity < X.ODDS.length - 1 && u >= X.ODDS[rarity]) { u -= X.ODDS[rarity]; rarity++; }
-      const v = R(); let prize = null;
-      if (v < X.SKIN && rarity > 1) {
-        const pool = [];
-        for (const k in KINDS) for (const q of KINDS[k]) if ((q.rarity || 0) === rarity - 1 && !q.reward && !this.owns(k, q.id)) pool.push([k, q.id]);
-        if (pool.length) { const [k, id] = pool[Math.floor(R() * pool.length)]; this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, k, id, Date.now()); prize = { item: { kind: k, id } }; }
-      }
-      if (!prize && v >= X.SKIN && v < X.SKIN + X.DIA) { prize = { dia: X.DIA_N[rarity] }; this.pay(`drop ${rarity}`, 0, prize.dia); }
-      if (!prize) { prize = { coin: X.COIN[rarity] }; this.pay(`drop ${rarity}`, prize.coin, 0); }
-      return { ok: true, rarity, prize, me: this.me() };
     });
   }
   /* A game's volume of lessons, every one done at its top level: each checked by playing its shot again (check.js
@@ -180,7 +153,6 @@ export class VaultCore {
       }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, ?, ?, ?, 'paid')`, Date.now(), kind, log.mode, null, coins, check ? 1 : 0);   // (the result is kept, not the log)
       if (coins) this.pay(`match ${kind} ${log.mode}`, coins, 0);
-      if (kind === 'cpu' && won) this.cpuDrop();
       return { ok: true, paid: coins, checked: check, me: this.me() };
     });
   }
@@ -210,7 +182,6 @@ export class VaultCore {
       const coins = E.matchCoins(row.kind, log.mode, out.points, out.winner === 0);
       this.sql.exec(`UPDATE matches SET status = 'paid', paid = ?, checked = 1, cp = NULL, log = NULL WHERE n = ?`, coins, row.n);
       if (coins) this.pay(`match ${row.kind} ${log.mode}`, coins, 0);
-      if (row.kind === 'cpu' && out.winner === 0) this.cpuDrop();
     });
     this.job = null;                                                          // retain the finished replay if the transaction fails
     return this.sql.exec(`SELECT 1 FROM matches WHERE status = 'checking' LIMIT 1`).toArray().length > 0;

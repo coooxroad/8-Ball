@@ -9,7 +9,7 @@ const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 function ballCase(k) {
   const c = isCarom(), ids = c ? [0, 1, 2] : [0, 1, 11], kind = c ? 'carom' : 'pool';
   return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
-    ...ids.map((n, j) => el('img', { class: 'b', src: scene.ballPortrait(k.id, kind, n), alt: '', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
+    ...ids.map((n, j) => ballPic(k.id, kind, n, { class: 'b', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
 }
 /* A trail's card: the way a ball went up the card, drawn as that trail draws it (a trail with a kind; scene/55-chalk.js,
    56-fx.js) - or, for a plain one, a streak of its colour. Each drawn once. */
@@ -56,16 +56,17 @@ function trailPic(kind, wide) {
 }
 const streak = (q, big) => q.kind ? el('i', { class: 'trl pic' + (big ? ' big' : ''), style: `--pic:url(${trailPic(q.kind, big)})` })
   : el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
-// a cue opened in the tray: the 3D cue photographed whole, and its tip end, middle and butt close (each taken once); a
-// wide one (a guitar) is all there is to see whole, so it alone, large
-const cueShots = {};
+// a cue opened in the tray: the 3D cue photographed whole, and its tip end, middle and butt close (each taken once, and kept:
+// 32-desk.js lazyPic); a wide one (a guitar) is all there is to see whole, so it alone, large - known from the whole picture's
+// shape once it is there (cueShot: its height follows what the cue spans across)
 function cueShow(i) {
-  const c = CUES[i], p = cueShots[c.id] || (cueShots[c.id] = (() => {
-    const all = scene.cuePortrait(i, 2000, null, 'auto'), wide = scene.portraitSpan > 0.1;
-    return { all, wide, bits: wide ? [] : [[-0.012, 0.21, '팁 쪽'], [0.63, 0.86, '가운데'], [1.25, 1.48, '손잡이']].map(([a, b, t]) => [scene.cuePortrait(i, 1600, null, 'auto', a, b), t]) };
-  })());
-  return el('div', { class: 'cueshow' + (p.wide ? ' wide' : '') }, [el('img', { class: 'all', src: p.all, alt: c.name, draggable: 'false' }),
-    ...p.bits.map(([u, t]) => el('figure', null, [el('img', { src: u, alt: '', draggable: 'false' }), el('figcaption', { text: t })]))]);
+  const c = CUES[i], all = lazyPic(el('img', { class: 'all', alt: c.name, draggable: 'false' }), `c/${c.id}/all`, () => scene.cueShot(i, 2000, null, 'auto'));
+  const bits = [[-0.012, 0.21, '팁 쪽'], [0.63, 0.86, '가운데'], [1.25, 1.48, '손잡이']].map(([a, b, t]) =>
+    el('figure', null, [lazyPic(el('img', { alt: '', draggable: 'false' }), `c/${c.id}/${a}`, () => scene.cueShot(i, 1600, null, 'auto', a, b)), el('figcaption', { text: t })]));
+  const box = el('div', { class: 'cueshow' }, [all, ...bits]);
+  const look = () => { if (all.naturalWidth > 8 && all.naturalHeight / all.naturalWidth > 0.1 / 1.515) { box.classList.add('wide'); for (const f of bits) f.remove(); } };
+  all.addEventListener('load', look); look();
+  return box;
 }
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 // (a table with a look has the whole of it on its card, not a swatch tiled)
@@ -179,7 +180,10 @@ function shelfPage(d, shop) {
 }
 // SFX (its own sound) and VFX (effects of light beyond its look) under the rarity (content/00-rarity.js)
 const fxMarks = q => [q.sound ? ['sfx', 'SFX'] : null, q.vfx ? ['vfx', 'VFX'] : null].filter(Boolean);
-const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('span', { class: 'fxbs' + (small ? ' sm' : '') }, m.map(([k, t]) => el('span', { class: 'fxb ' + k }, [el('i'), el('b', { text: t })]))) : null; };
+// (the shimmer runs only while a badge is on screen: each moving frame repaints it, and a long list has many - fxSeen)
+const fxSeen = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) { e.target.classList.toggle('live', e.isIntersecting); if (!e.target.isConnected) fxSeen.unobserve(e.target); } }) : null;
+const fxBadge = (k, t) => { const b = el('span', { class: 'fxb ' + k + (fxSeen ? '' : ' live') }, [el('i'), el('b', { text: t })]); if (fxSeen) fxSeen.observe(b); return b; };
+const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('span', { class: 'fxbs' + (small ? ' sm' : '') }, m.map(([k, t]) => fxBadge(k, t))) : null; };
 // what a thing costs (economy.js: by its rarity)
 const priceText = q => { if (q.reward) return '레슨 보상'; const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };
 const deskGear = d => shelfPage(d, false);

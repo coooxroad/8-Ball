@@ -74,7 +74,8 @@
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
-  function resize() {
+  let sizeSig = '';
+  function resize(force) {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H || gl.isContextLost()) return;
     portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     // On the desk's home the picture is leaned back by CSS (the desk's tilt), and the browser resamples it doing so: drawn
@@ -84,11 +85,18 @@
     // In play on '자동' the 3D is drawn at most two pixels a screen point: phones are 2.6 to 3 now, and the difference does not show
     // at arm's length while it is close to half the pixels to fill (the page's text and buttons stay at the screen's own).
     // '높음' draws at the screen's full density. dynScale: the frame-rate guard's last resort (app/90-loop.js perfTick).
-    const lean = app.classList.contains('tilt'), dpr = Math.min(window.devicePixelRatio || 1, 3), want = lean ? Math.max(2, dpr) : quality === 'high' ? dpr : Math.min(dpr, 2) * dynScale;
+    // (the guard's scale is taken off the resolution the rest settles on, so it always draws fewer pixels - taken before the
+    // cap, it changed nothing on a screen already at the cap)
+    const lean = app.classList.contains('tilt'), dpr = Math.min(window.devicePixelRatio || 1, 3), want = lean ? Math.max(2, dpr) : quality === 'high' ? dpr : Math.min(dpr, 2);
     const cap = quality === 'high' ? (lean ? 14e6 : 9e6) : quality === 'low' ? 1.6e6 : (lean ? 8e6 : 4.2e6);
     // (never under one screen pixel a pixel - that is what looks blurred - unless the GPU cannot hold a picture that big)
     const maxSide = Math.min(renderer.capabilities.maxTextureSize, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
-    renderer.setPixelRatio(Math.min(Math.max(Math.min(1, want), Math.min(want, Math.sqrt(cap / (W * H)))), maxSide / W, maxSide / H));
+    const ratio = Math.min(Math.max(Math.min(1, want), Math.min(want, Math.sqrt(cap / (W * H)))), maxSide / W, maxSide / H) * (lean ? 1 : dynScale);
+    // (nothing changed - the same size, density and way up: the picture and its caches are kept as they are)
+    const sig = W + 'x' + H + '@' + ratio.toFixed(4) + (portrait ? 'p' : 'l');
+    if (!force && rt && sig === sizeSig) return;
+    sizeSig = sig;
+    renderer.setPixelRatio(ratio);
     renderer.setSize(W, H, false);
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
     if (!rt || rt.width !== size.x || rt.height !== size.y) {
@@ -125,7 +133,12 @@
     if (instant) { Object.assign(ins, insTo); applyCamera(); }
     dirty = 3;
   }
-  function setQuality(q) { quality = q; resize(); }
+  // ('낮음' also draws the lamps' shadows at half the size each way; they are drawn once and kept, so only their edges change)
+  function setQuality(q) {
+    quality = q; const sz = q === 'low' ? 1024 : 2048;
+    for (const L of lampObjs) if (L.castShadow && L.shadow.mapSize.x !== sz) { L.shadow.mapSize.set(sz, sz); if (L.shadow.map) { L.shadow.map.dispose(); L.shadow.map = null; } renderer.shadowMap.needsUpdate = true; staticDirty = true; }
+    dirty = 3; resize(true);
+  }
   /* (the new scale is taken at the start of the next frame, which then draws at once: resizing the canvas wipes it, and done
      after a frame was drawn it showed black until the next - a flash on the web) */
   let pendScale = null;
@@ -135,8 +148,8 @@
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => {
-    staticDirty = true; stale = false; dirty = 3; guideKey = '';
-    renderer.shadowMap.needsUpdate = true; resize();
+    staticDirty = true; stale = false; dirty = 3; guideKey = ''; pvKey = '';
+    renderer.shadowMap.needsUpdate = true; resize(true);
   });
 
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();

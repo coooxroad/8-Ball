@@ -33,7 +33,6 @@ export class Vault extends DurableObject {
       return json({ ok: true, dama: this.core.me().dama, gear });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
-    if (path === '/v1/drop') return json(this.core.drop(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }
     return json({ ok: false, why: 'no such thing' }, 404);

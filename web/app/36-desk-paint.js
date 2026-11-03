@@ -31,11 +31,12 @@ function deskWindow(W, H, portrait) {
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)
 const deskTableShown = () => $('#dkStage').dataset.win === '1';
+function walletPaint() { const w = prefs.wallet || {}, n = v => (v || 0).toLocaleString('ko-KR'); $('#dkWallet .coin b').textContent = n(w.coin); $('#dkWallet .dia b').textContent = n(w.dia); }
 function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));
-  { const w = prefs.wallet || {}, n = v => (v || 0).toLocaleString('ko-KR'); $('#dkWallet .coin b').textContent = n(w.coin); $('#dkWallet .dia b').textContent = n(w.dia); }
+  walletPaint();
   $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = debugOn() ? '디버그 모드' : recText(prefs.names[0]);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
