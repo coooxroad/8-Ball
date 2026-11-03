@@ -26,8 +26,10 @@
 /* the wood on a layer of its own, and the desk's contents on another: a tap rebuilds the contents, and on a phone the leaning
    plane was being drawn again whole - for a frame or two its tiles were missing (the room showed through, the wood shifted).
    Now only the contents' layer is drawn again; the wood never changes. */
-#deskPlane::before{content:'';position:absolute;inset:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:transform}
-#deskPlane>#desk{will-change:transform}
+/* (will-change: opacity, not transform: either gives the layer of its own, but with 'transform' the browser keeps drawing
+   the layer at the scale it first had - after the page is zoomed or resized, its text stayed blurred) */
+#deskPlane::before{content:'';position:absolute;inset:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:opacity}
+#deskPlane>#desk{will-change:opacity}
 #app.desk.tilt{background:#0b0806}
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
    On its side, the three columns again, narrow. */
