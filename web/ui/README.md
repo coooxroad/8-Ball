@@ -45,6 +45,7 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
 | streak | R3 220×80 | the "N연승" badge | slice 28 l r |
 | plaque | R4 900×140 | the records' title plate | slice 80 l r |
+| pp-shop, pp-tour, pp-friend, pp-rank | P1–P4 (CUE-prompts-v11) 720×1920, 1920×1080, 1920×1080, 1000×1600 | the 플레이 panels' key art, `background-size:cover` under the type (style/75-play-panels.css `--art`); calm text areas and, on 랭킹전, an empty circle for the tier badge | – |
 
 ## Table materials (`web/tex/`)
 
