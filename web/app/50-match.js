@@ -17,6 +17,7 @@ const match = {
     if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
     game.aiRnd = standIn ? seededRandom((o.seed ^ 0x2545f491) >>> 0) : null;
+    game.humanStates = [null, null]; game.humanCanResign = !!standIn;
     match.best = null; match.worst = null; match.shots = []; match.count = 0;
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot

@@ -201,7 +201,7 @@ export class RoomCore {
       const e = this.get('ended'); e[seat] = true; if (r.standIn) e[1] = true; this.set('ended', e);
       return e[0] && e[1] ? this.over('ended') : null;
     }
-    if (m.t === 'resign') return this.over('resigned', seat);
+    if (m.t === 'resign') return this.over('resigned', r.standIn && seat === 0 && m.as === 1 ? 1 : seat);
     return null;
   }
   // the room looked again: a seat gone too long loses

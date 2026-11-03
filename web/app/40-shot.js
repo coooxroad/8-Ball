@@ -45,7 +45,7 @@ function aiAsk(a) {
   if (a.aiPlan) return a.aiPlan;
   if (!a.aiJob) {
     const w = aiWorker(), j = a.aiJob = { t: performance.now(), res: null, rnd: game.aiRnd };
-    if (w) { const id = ++aiw.n; aiw.wait.set(id, j); w.postMessage({ id, tbl: tableNow(), d: game.serialize(), levels: game.levels, personas: game.personas, rnd: game.aiRnd ? game.aiRnd.state() : null }); }
+    if (w) { const id = ++aiw.n; aiw.wait.set(id, j); w.postMessage({ id, tbl: tableNow(), d: game.serialize(), levels: game.levels, personas: game.personas, humanStates: game.humanStates, humanCanResign: !!game.humanCanResign, rnd: game.aiRnd ? game.aiRnd.state() : null }); }
     else j.res = { err: 'none' };
   }
   const j = a.aiJob;
@@ -53,6 +53,10 @@ function aiAsk(a) {
   if (!j.res) return null;
   if (j.res.err) a.aiPlan = game.aiPlan();
   else { a.aiPlan = j.res.plan; if (j.rnd && j.res.rnd != null) j.rnd.seek(j.res.rnd); }
+  if (a.aiPlan && a.aiPlan.humanState) {
+    if (!game.humanStates) game.humanStates = [null, null];
+    game.humanStates[game.turn] = a.aiPlan.humanState;
+  }
   return a.aiPlan;
 }
 // The computer and the demo line up a shot the same way: wait, decide, swing the cue round, pull back, shoot.
@@ -65,7 +69,7 @@ function autoTick(dt) {
     { const t0 = performance.now(); a.plan = a.src.plan(a); prof.add('ai', performance.now() - t0); }
     if (!a.plan) return;                                              // (the other player's shot has not come yet)
     a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
-    if (a.plan.pos) { const c = game.cueBall(); c.x = c.px = a.plan.pos[0]; c.y = c.py = a.plan.pos[1]; game.placing = null; }
+    if (a.plan.pos) { const pos = a.plan.preShot && a.plan.preShot.keyframes[0].pos || a.plan.pos; const c = game.cueBall(); c.x = c.px = pos[0]; c.y = c.py = pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
     st.el = a.plan.el || game.P.restEl(); setKindUI(); flow.hud();
@@ -75,7 +79,15 @@ function autoTick(dt) {
   // a person-like player (ai/50-human.js) lines up its own way - looking about, waggling, settling - then strikes
   if (a.plan.preShot && game.aiPlan.cueAt) {
     const q = game.aiPlan.cueAt(a.plan, t); st.aim = q.angle; st.power = Math.max(0, Math.min(1, q.power)); setPowerUI(st.power);
-    if (t >= a.plan.preShot.duration) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }
+    const spin = { x: q.a / 0.5, y: q.b / 0.5 };
+    if (spin.x !== st.spin.x || spin.y !== st.spin.y) { st.spin = spin; setSpinUI(); }
+    if (q.el !== st.el) { st.el = q.el; setKindUI(); }
+    if (a.plan.pos && q.pos) { const c = game.cueBall(); if (c.x !== q.pos[0] || c.y !== q.pos[1]) { c.x = c.px = q.pos[0]; c.y = c.py = q.pos[1]; st.rev++; } }
+    if (t >= a.plan.preShot.duration) {
+      st.aim = a.plan.angle; st.auto = null;
+      if (a.plan.action === 'resign' && a.src.resign) { st.phase = 'idle'; a.src.resign(); return; }
+      shoot(a.plan.V, a.plan.a, a.plan.b, st.el);
+    }
     return;
   }
   st.aim = a.from + a.delta * e(t / 0.75);

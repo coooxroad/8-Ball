@@ -203,6 +203,34 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     return { R, sent };
   };
   const finish = R => { let k = 0; while (R.work(500) && k < 100000) k++; return R.get('result'); };
+  // Only a real stand-in room accepts a resignation for its synthetic seat. A human cannot resign the opponent.
+  for (const [standIn, sender, as, loser] of [[null, 0, 1, 0], [null, 1, 0, 1], [{ name: 'S' }, 0, 1, 1], [{ name: 'S' }, 0, undefined, 0], [{ name: 'S' }, 1, 0, 1]]) {
+    const { R } = roomOf('four', 7, 0, standIn);
+    ok(R.message(sender, { t: 'resign', as }) === 'check', 'resign: server starts replay');
+    const result = finish(R);
+    ok(result.winner === 1 - loser && result.why === 'resigned', 'resign: correct seat loses, including a stand-in');
+    ok(R.payouts().length === (standIn ? 1 : 2), 'resign: only real accounts are paid');
+  }
+  // New stroke families go through the same room log/replay as real ranked shots, including rotation and raised cues.
+  for (const mode of ['eight', 'nine', 'four', 'three']) {
+    const seed = 511, person = E.createAI(null).personaFor(60, E.seededRandom(41), { style: 'spinner' }), rules = E.RANKED_RULES[mode];
+    const G = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI), { R } = roomOf(mode, seed, 1, person);
+    G.start(mode, ['A', 'B'], true, { ...rules, first: 1, rnd: E.seededRandom(seed), personas: [person, person] });
+    G.aiRnd = E.seededRandom(seed ^ 0x2545f491);
+    if (mode === 'four') { G.rollOut(E.seededRandom((seed ^ 0x5bd1e995) >>> 0)); G.P.run(G.world, 40); G.world.ev = G.P.newEv(); }
+    let spun = false;
+    for (let n = 0; n < 8 && !G.over; n++) {
+      const who = G.turn, shot = G.aiPlan(), hand = !!G.placing;
+      if (shot.pos) G.P.place(G.world, G.world.cue, ...shot.pos);
+      if (shot.humanState) { if (!G.humanStates) G.humanStates = [null, null]; G.humanStates[who] = shot.humanState; }
+      spun = spun || Math.hypot(shot.a, shot.b) > 0.1;
+      R.message(0, { t: 'shot', n, as: who, shot: { s: JSON.parse(JSON.stringify(H2.snapshot(G.world))), aim: shot.angle, V: shot.V, a: shot.a, b: shot.b, el: shot.el, inHand: hand } });
+      G.beginShot(); G.P.strike(G.world, shot.angle, shot.V, shot.a, shot.b, shot.el); G.P.run(G.world, 40); G.resolve();
+    }
+    R.message(0, { t: 'resign', as: 1 }); const res = finish(R);
+    ok(spun, `human ${mode}: actual nonzero spin was recorded`);
+    ok(res && res.why !== 'a shot that does not fit', `human ${mode}: new plans pass ranked replay`);
+  }
   for (const mode of ['eight', 'four']) {
     const seed = 4242, first = 1, G = rankedGame(mode, seed, first);
     if (G.winner == null) { console.log(`ranked ${mode}: the computers did not finish (skipped)`); continue; }
