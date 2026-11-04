@@ -13,20 +13,32 @@ const net = (() => {
   let me = store.get('me', null), busy = false, account = store.get('acct', null);
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
   const queue = () => store.get('claims', []);
-  // one request; null when there is no answer (offline, or the server is down: try again later)
+  /* one request; null when there is no answer (offline, or the server is down: try again later). The last trouble is kept
+     (net.trouble) so a screen waiting on the server can say what it is, not just go on waiting (54-ranked.js).
+     401 from the server means it does not know this device's account (its key does not open the vault): no request will
+     ever get through with it, so it is let go and the next request opens a new one (ensure). */
+  let trouble = null;
   async function call(path, body) {
     try {
       const r = await fetch(SERVER + path, { method: body ? 'POST' : 'GET', body: body ? JSON.stringify(body) : undefined,
         headers: Object.assign({ 'Content-Type': 'application/json' }, account ? { Authorization: `Bearer ${account.id}.${account.key}` } : {}) });
-      if (r.status >= 500) return null;
-      return await r.json();
-    } catch (e) { return null; }
+      if (r.status >= 500) { trouble = { path, status: r.status, why: 'server' }; console.warn('[net]', path, r.status); return null; }
+      const j = await r.json();
+      if (r.status === 401 && account && path !== '/v1/account') {
+        console.warn('[net]', path, '401: the server does not know this account - a new one is opened');
+        trouble = { path, status: 401, why: 'account' }; account = null; store.set('acct', null); lostAccount = true;
+      } else trouble = j && j.ok === false ? { path, status: r.status, why: j.why || 'refused' } : null;
+      return j;
+    } catch (e) { trouble = { path, status: 0, why: 'offline' }; console.warn('[net]', path, String(e && e.message || e)); return null; }
   }
+  let lostAccount = false;
   async function ensure() {
     if (!SERVER) return false;
     if (account) return true;
     const r = await call('/v1/account', {}); if (!r || !r.ok) return false;
-    account = { id: r.id, key: r.key }; store.set('acct', account); return true;
+    account = { id: r.id, key: r.key }; store.set('acct', account);
+    if (lostAccount) { lostAccount = false; toast('서버가 이 기기의 계정을 몰라서 새 계정을 만들었습니다.', 'foul', 3600); }
+    return true;
   }
   // what the server says now; announce: say so when coins came in that were not answered for at once (a match checked later)
   function setMe(m, announce) {
@@ -68,7 +80,7 @@ const net = (() => {
   window.addEventListener('online', () => flush());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   return {
-    get on() { return !!SERVER; }, get me() { return me; }, owns, flush,
+    get on() { return !!SERVER; }, get me() { return me; }, get trouble() { return trouble; }, owns, flush,
     // the name changed: debug may have come or gone, so what is worn is looked at again
     renamed() { if (me) setMe(me); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
