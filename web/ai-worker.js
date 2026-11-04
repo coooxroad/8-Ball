@@ -15,6 +15,7 @@ const aiServe = (() => {
       if (tblNow !== job.tbl) { Object.assign(PHW, physicsFor(createPhysics, job.tbl)); tblNow = job.tbl; }
       if (!G.restore(job.d)) return { id: job.id, err: 'bad table' };
       G.levels = job.levels || null; G.personas = job.personas || null;
+      G.humanStates = job.humanStates || null; G.humanCanResign = !!job.humanCanResign;
       G.aiRnd = job.rnd == null ? null : seededRandom(job.rnd);
       const plan = G.aiPlan();
       return { id: job.id, plan, rnd: G.aiRnd ? G.aiRnd.state() : null };

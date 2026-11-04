@@ -16,6 +16,12 @@
     { id: 'banker', name: '쿠션파', power: 0.5, spin: 0.5, bank: 0.95, masse: 0.1, safety: 0.35, desperation: 0.4 },
     { id: 'masse', name: '맛세이파', power: 0.45, spin: 0.75, bank: 0.3, masse: 0.95, safety: 0.15, desperation: 0.65 },
     { id: 'defensive', name: '수비파', power: 0.12, spin: 0.3, bank: 0.2, masse: 0.02, safety: 0.95, desperation: 0.05 },
+    { id: 'gather', name: '모아치기파', power: 0.18, spin: 0.65, bank: 0.15, masse: 0.02, safety: 0.6, desperation: 0.1, gather: 1 },
+    { id: 'draw', name: '끌어치기파', power: 0.5, spin: 0.75, bank: 0.3, masse: 0.15, safety: 0.35, desperation: 0.35, draw: 1 },
+    { id: 'follow', name: '밀어치기파', power: 0.4, spin: 0.65, bank: 0.35, masse: 0.03, safety: 0.45, desperation: 0.25, follow: 1 },
+    { id: 'natural', name: '무회전파', power: 0.25, spin: 0.1, bank: 0.3, masse: 0.01, safety: 0.6, desperation: 0.15, natural: 1 },
+    { id: 'position', name: '포지션파', power: 0.35, spin: 0.6, bank: 0.4, masse: 0.05, safety: 0.65, desperation: 0.1, position: 1 },
+    { id: 'showman', name: '묘기파', power: 0.7, spin: 0.9, bank: 0.8, masse: 0.8, safety: 0.1, desperation: 0.7 },
   ];
   function humanSkill(dama) {
     const x = Math.max(10, Math.min(80, Number.isFinite(dama) ? dama : 30));
@@ -28,40 +34,48 @@
   }
   function personaFor(dama, random = rand, overrides = {}) {
     const pick = a => a[Math.min(a.length - 1, Math.max(0, Math.floor(random() * a.length)))];
-    const koA = ['느긋한', '동네', '오후의', '파란', '작은', '조용한', '빠른', '새벽', '월요일', '은빛', '주말', '느린', '달빛', '초록', '반듯한', '오늘도'];
-    const koB = ['초크', '한큐', '쿠션', '장갑', '펠트', '레일', '호두', '산책', '별빛', '그림자', '바람', '마루', '연습', '나무', '돌담', '구름'];
-    const enA = ['chalk', 'walnut', 'felt', 'rail', 'cloud', 'mint', 'quiet', 'cocoa', 'slow', 'olive', 'monday', 'dawn', 'linen', 'soda', 'amber', 'oak'];
-    const enB = ['day', 'room', 'walk', 'cue', 'note', 'table', 'side', 'shot', 'line', 'break', 'spin', 'blue', 'time', 'run', 'lane', 'club'];
-    const name = random() < 0.5 ? pick(koA) + pick(koB) + Math.floor(random() * 100) : pick(enA) + '_' + pick(enB) + String(Math.floor(random() * 100)).padStart(2, '0');
+    const name = humanName(random);
     const personality = humanPersonalities.find(p => p.id === overrides.personality) || pick(humanPersonalities);
     const style = humanStyles.find(p => p.id === overrides.style) || pick(humanStyles);
     const rating = Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
-    return { version: 1, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill: humanSkill(rating), level: rating < 22 ? 0 : rating < 40 ? 1 : 2, personality: { ...personality }, style: { ...style } };
+    const person = { version: 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill: humanSkill(rating), level: rating < 22 ? 0 : rating < 40 ? 1 : 2, personality: { ...personality }, style: { ...style } };
+    return { ...person, practice: humanPractice(person) };
   }
   function humanPerson(persona) {
     // Existing ranked rooms may carry only name/icon/DAMA/level. Identity selects stable axes across reloads and turns;
     // no extra gameplay random draws or mutation of the room's saved persona are needed for this compatibility path.
     const identity = `${persona.name || ''}|${persona.icon || 0}|${persona.dama || 30}`;
     let hash = 2166136261; for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
-    return { ...persona, skill: Number.isFinite(persona.skill) ? Math.max(0, Math.min(1, persona.skill)) : humanSkill(persona.dama),
+    const person = { ...persona, skill: Number.isFinite(persona.skill) ? Math.max(0, Math.min(1, persona.skill)) : humanSkill(persona.dama),
       personality: persona.personality || { ...humanPersonalities[hash % humanPersonalities.length] },
       style: persona.style || { ...humanStyles[(hash >>> 8) % humanStyles.length] } };
+    return { ...person, practice: humanPractice(person) };
   }
-  function humanPresentation(shot, person, difficulty) {
+  function humanPresentation(shot, person, difficulty, context = {}) {
     const p = person.personality, jitter = () => rand() * 2 - 1;
     const think = Math.max(1.5, Math.min(12, 1.5 + (1 - p.tempo) * 3 + difficulty * (1.5 + p.hesitation * 3) + rand() * 1.2));
-    const kind = rand() < p.taunt ? 'taunt' : rand() < p.hesitation ? 'reconsider' : 'settle';
+    const event = rand(), mistap = 0.008 + (1 - person.practice.dexterity) * 0.035 + (p.id === 'fidgety' ? 0.015 : 0);
+    const cancel = p.hesitation * 0.16 + (difficulty > 1.3 ? 0.035 : 0), taunt = p.taunt * 0.18;
+    const kind = event < mistap ? 'mistap' : event < mistap + cancel ? 'cancel' : event < mistap + cancel + taunt ? 'taunt' : rand() < p.hesitation * 0.3 ? 'reconsider' : 'settle';
     const frames = [], power = Math.max(0, Math.min(1, g.powerOf(shot.V)));
-    const frame = (t, angle, pull = 0, aimPower = 0) => ({ t, angle, a: shot.a, b: shot.b, el: shot.el, power: aimPower, pull });
+    const frame = (t, angle, pull = 0, aimPower = 0, pos = shot.pos || null) => ({ t, angle, a: t < think * 0.5 ? 0 : shot.a, b: t < think * 0.5 ? 0 : shot.b, el: shot.el, power: aimPower, pull, pos });
     frames.push(frame(0, shot.angle + jitter() * 0.18));
-    if (kind === 'taunt') {
+    if (kind === 'mistap') {
+      const c = g.world.balls[g.world.cue], x = (rand() * 2 - 1) * g.P.HL, y = (rand() * 2 - 1) * g.P.HW;
+      const wrong = Math.atan2(y - c.y, x - c.x);
+      frames.push(frame(think * 0.16, wrong), frame(think * 0.27, wrong), frame(think * 0.42, shot.angle));
+    } else if (kind === 'cancel') {
+      const other = context.alternative, angle = other ? other.angle : shot.angle + jitter() * 0.35, pos = other && other.pos || shot.pos || null;
+      frames[0] = frame(0, angle, 0, 0, pos);
+      frames.push(frame(think * 0.23, angle, 0.6, power * 0.65, pos), frame(think * 0.32, angle, 0, 0, pos), frame(think * 0.55, shot.angle));
+    } else if (kind === 'taunt') {
       const n = 6 + Math.floor(rand() * 7), amplitude = 0.22 + rand() * 0.65;
       for (let i = 1; i <= n; i++) frames.push(frame(think * 0.67 * i / n, shot.angle + (i % 2 ? -1 : 1) * amplitude * (0.7 + rand() * 0.3), i % 2 ? 0.25 : 0));
     } else if (kind === 'reconsider') {
       frames.push(frame(think * 0.28, shot.angle + jitter() * 0.12), frame(think * 0.5, shot.angle + jitter() * 0.04), frame(think * 0.65, shot.angle + jitter() * 0.09));
     } else frames.push(frame(think * 0.55, shot.angle + jitter() * 0.015));
     frames.push(frame(think * 0.76, shot.angle), frame(think * 0.88, shot.angle, 0.25, power * 0.25), frame(think, shot.angle, 1, power));
-    return { think, preShot: { version: 1, kind, duration: think, keyframes: frames } };
+    return { think, preShot: { version: 2, kind, duration: think, keyframes: frames } };
   }
   function humanCueAt(shot, seconds) {
     // Presentation never consumes random numbers or changes the shot. Any frame rate reaches the same final pose.
@@ -70,6 +84,7 @@
     const a = keys[i - 1], b = keys[i], u = Math.max(0, Math.min(1, (t - a.t) / Math.max(1e-9, b.t - a.t))), v = u * u * (3 - 2 * u);
     const out = { t }; for (const k of ['a', 'b', 'el', 'power', 'pull']) out[k] = a[k] + (b[k] - a[k]) * v;
     const da = Math.atan2(Math.sin(b.angle - a.angle), Math.cos(b.angle - a.angle)); out.angle = a.angle + da * v;
+    out.pos = t >= b.t ? b.pos || null : a.pos || null;
     return out;
   }
   // 90-plan.js returns only { plan }; function properties expose matching/presentation without changing that entry point.

@@ -124,7 +124,7 @@ const ranked = {
   auto(o) {
     if (game.turn === o.seat) return null;
     // (a person-like stand-in lines up its own way - its preShot, played by autoTick - so it needs no fixed wait)
-    if (o.standIn) return { think: 0.4, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }; } };
+    if (o.standIn) return { think: 0.4, showSpin: true, ai: true, resign() { ranked.resign(1 - o.seat); }, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot, action: p.action }; } };
     return { think: 0, showSpin: true, plan() {
       const m = o.inbox[0]; if (!m) return null;
       o.inbox.shift();
@@ -175,7 +175,7 @@ const ranked = {
   },
   // the game ended here: the room plays it again and says how it ended
   ended() { const o = ranked.on; if (!o) return; ranked.send({ t: 'end' }); },
-  resign() { const o = ranked.on; if (!o || o.done) return; ranked.send({ t: 'resign' }); },
+  resign(as) { const o = ranked.on; if (!o || o.done) return; ranked.send(o.standIn && as === 1 - o.seat ? { t: 'resign', as } : { t: 'resign' }); },
   // the room's word: who won, the coins, the DAMA. Ended here already: the result screen gets the numbers; not ended here
   // (the other player resigned or left): it ends now
   result(m) {

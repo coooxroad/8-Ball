@@ -35,12 +35,12 @@ function strike(g, p) {
 }
 // Every personality/style combination works in all four modes; frame sampling never consumes gameplay randomness.
 const profiles = g0.aiPlan.profiles;
-assert.equal(profiles.personalities.length, 6); assert.equal(profiles.styles.length, 6);
+assert.equal(profiles.personalities.length, 6); assert.equal(profiles.styles.length, 12);
 for (const [dama, skill] of [[10, 0.05], [30, 0.4], [60, 0.8], [80, 0.95], [120, 0.95]]) assert.equal(profile(g0, dama).skill, skill);
 for (let d = 11; d <= 80; d++) assert(profile(g0, d).skill >= profile(g0, d - 1).skill);
 const names = new Set(), random = seeded(10), combos = new Set(), icons = new Set();
 for (let i = 0; i < 2000; i++) { const p = g0.aiPlan.personaFor(30, random); names.add(p.name); combos.add(p.personality.id + '/' + p.style.id); assert(Number.isInteger(p.icon) && p.icon >= 0 && p.icon < 8); icons.add(p.icon); assert(!/봇|AI|컴퓨터|시발|씨발/.test(p.name)); assert.deepEqual(JSON.parse(JSON.stringify(p)), p); }
-assert(names.size >= 200); assert.equal(combos.size, 36); assert.equal(icons.size, 8);
+assert(names.size >= 200); assert.equal(combos.size, 72); assert.equal(icons.size, 8);
 for (const mode of ['eight', 'nine', 'four', 'three']) {
   for (const character of profiles.personalities) for (const style of profiles.styles) {
     const g = fresh(), p = frozen(profile(g, 50, 5, { personality: character.id, style: style.id }));
@@ -121,4 +121,5 @@ for (const mode of ['eight', 'four']) for (const dama of [10, 30, 80]) {
   console.log(`| ${mode} | ${dama} | ${(total.runs / total.visits).toFixed(2)} | ${(total.runs / Math.max(1, total.scoringVisits)).toFixed(2)} | ${(total.fouls / total.shots * 100).toFixed(1)}% | ${(total.power / total.shots * 100).toFixed(1)}% |`);
 }
 assert(metrics.time / metrics.plans < 40, `average plan ${metrics.time / metrics.plans}ms exceeds 40ms`);
-console.log(`human AI passed: ${metrics.plans} plans, ${(metrics.time / metrics.plans).toFixed(2)}ms average, ${metrics.worst.toFixed(2)}ms worst, ${metrics.sims} simulations max; ${names.size} distinct names; 36 personality/style combinations.`);
+require('./ai-human-behavior');
+console.log(`human AI passed: ${metrics.plans} plans, ${(metrics.time / metrics.plans).toFixed(2)}ms average, ${metrics.worst.toFixed(2)}ms worst, ${metrics.sims} simulations max; ${names.size} distinct names; 72 personality/style combinations.`);
