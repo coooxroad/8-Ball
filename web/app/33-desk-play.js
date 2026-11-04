@@ -19,6 +19,14 @@ function rackOf(id) {
   for (const [n, x, y] of at) box.appendChild(ballPic(prefs.ballSkin, kind, n, { style: `left:calc(${(x - mx).toFixed(3)} * var(--d));top:calc(${(y - my).toFixed(3)} * var(--d))` }));
   return box;
 }
+// the cue named on the shop's board: one of the shop's cues at random, kept a minute (the desk paints again often: a wallet
+// update, a tap) so it does not change under the eye. A stand-in for what the board will show later.
+let shopShown = null;
+function shopPick() {
+  if (shopShown && Date.now() - shopShown.t < 60000 && CUES.includes(shopShown.c)) return shopShown.c;
+  const pool = CUES.filter(c => !c.reward), c = pool[Math.floor(Math.random() * pool.length)] || CUES[0];
+  shopShown = { c, t: Date.now() }; return c;
+}
 function deskPlay(d) {
   if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'games'; paintHome(); });
   d.stage.dataset.win = '0';
@@ -34,9 +42,9 @@ function deskPlay(d) {
     dkPut(fit, ['four', 'eight', 'three', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game')));
   } else {
     const later = what => () => toast(`${what} 서버가 열리면 시작합니다.`, '', 2200);
-    const best = CUES.reduce((a, c) => (c.rarity || 0) > (a.rarity || 0) ? c : a, CUES[0]), r = best.rarity || 0, tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
+    const best = shopPick(), r = best.rarity || 0, tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
     dkPut(fit, [
-      panel('shop', '상점', () => deskGo('shop'), [tt('상점', '오늘의 진열', 'SHOP'), el('span', { class: 'bd-show' }, cueImg(best)), el('span', { class: 'bd-foot' }, [el('b', { text: best.name }), el('small', { class: 'rar r' + r, text: RARITY[r][0] })])]),
+      panel('shop', '상점', () => deskGo('shop'), [tt('상점', null, 'SHOP'), el('span', { class: 'bd-show' }, cueImg(best)), el('span', { class: 'bd-foot' }, [el('b', { text: best.name }), el('small', { class: 'rar r' + r, text: RARITY[r][0] })])]),
       panel('tour', '투어', later('투어는'), [tt('투어', '판돈을 걸고 겨루는 대회', 'ONLINE'), el('span', { class: 'bd-tag', text: '준비 중' })], 'online'),
       panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기에서, 또는 코드로 초대'),
         el('span', { class: 'bd-modes' }, GAME4.map(id => el('i', { style: `background-image:url(ui/mode-${id}.webp)` })))]),

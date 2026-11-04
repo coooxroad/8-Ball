@@ -26,7 +26,35 @@ function deskWindow(W, H, portrait) {
   const tr = scene.tableOutline(ins), pts = tr.pts.map(([px, py]) => `${(px - dx).toFixed(1)}px ${(py - dy).toFixed(1)}px`);
   pl.style.clipPath = win ? `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${pts.join(', ')}, ${pts[0]})` : 'none';
   let sh = $('#dkShade'); if (!sh) { sh = el('div', { id: 'dkShade' }, el('i')); sg.appendChild(sh); } else if (sh.parentNode !== sg) sg.appendChild(sh);
+  boardSides();
   sh.hidden = !win; Object.assign(sh.style, { left: (tr.x - dx - x) + 'px', top: (tr.y - dy - y) + 'px', width: tr.w + 'px', height: tr.h + 'px' }); sh.style.setProperty('--tl', Math.max(5, Math.round(tr.h * 0.045)) + 'px'); sh.style.setProperty('--tr', tr.r.toFixed(1) + 'px');
+}
+/* The 플레이 boards stand on the desk as blocks, seen as from the eye above it: every upright edge of a block runs towards
+   the point on the desk right below the eye (the nadir), as the walls of buildings do in a picture taken looking down.
+   The desk leans by CSS (deskLean: perspective P about the middle of its bottom edge, tilted t), so in the desk's own flat
+   coordinates that point is P·sin t below the middle of the bottom edge, and the eye P·cos t above the desk. A block's
+   foot, h below its face, is then its face drawn smaller about that point (by H / (H + h)); the side between them is
+   drawn as SIDE_STEPS such outlines, the face's edge lightest, down to the darkest at the desk. So a board left of the
+   middle shows its right side, one right of it its left, and all their near sides - and their far corners, joined, make
+   the desk's trapezoid. Pressed, the face goes down part of the way (--kp). */
+const SIDE_STEPS = 9;
+function boardSides() {
+  const pl = $('#deskPlane'), bs = document.querySelectorAll('#dkBoards .bd'); if (!bs.length || !pl.offsetWidth) return;
+  const t = parseFloat(app.style.getPropertyValue('--tilt')) || 0.26, P = parseFloat(app.style.getPropertyValue('--pp')) || 2300;
+  const H = P * Math.cos(t), fx = pl.offsetWidth / 2, fy = pl.offsetHeight + P * Math.sin(t);
+  const h = wide ? 36 : 24, k = H / (H + h), kp = H / (H + h * 0.6);
+  for (const b of bs) {
+    let x = 0, y = 0; for (let n = b; n && n !== pl; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+    b.style.setProperty('--fx', (fx - x).toFixed(1) + 'px'); b.style.setProperty('--fy', (fy - y).toFixed(1) + 'px'); b.style.setProperty('--kp', kp.toFixed(5));
+    let ly = b.querySelectorAll(':scope > .ly');
+    if (ly.length !== SIDE_STEPS) {
+      for (const o of ly) o.remove();
+      for (let i = SIDE_STEPS; i >= 1; i--) b.insertBefore(el('i', { class: 'ly' + (i === SIDE_STEPS ? ' foot' : i === 1 ? ' rim' : ''),
+        style: `--m:${Math.round(100 * (i - 1) / (SIDE_STEPS - 1))}%` }), b.firstChild);
+      ly = b.querySelectorAll(':scope > .ly');
+    }
+    ly.forEach((o, j) => o.style.setProperty('--k', (1 - (1 - k) * (SIDE_STEPS - j) / SIDE_STEPS).toFixed(5)));   // (j 0: the foot)
+  }
 }
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)

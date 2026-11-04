@@ -21,31 +21,21 @@
 #dkBoards .bd-eight{grid-area:eight}
 #dkBoards .bd-three{grid-area:three}
 #dkBoards .bd-nine{grid-area:nine}
-/* A panel is a block lying on the desk, not a card floating over it: the face is its picture, and its thickness - in
-   the panel's own colour - shows along the left and bottom edges, the sides away from the light at the upper right.
-   The side is drawn as solid one-unit steps (--tk a step), lightest at the face's edge where it catches the light (a
-   glossy rim) and darker down to the desk, with a tight shadow under it - no wide soft shadow that would lift it off the
-   wood. Pressed, the block goes down by its thickness. --sl / --sd: the side's light and dark, set per panel. */
+/* A panel is a block standing on the desk: its face is the picture, its sides (.ly, app/36-desk-paint.js boardSides) its
+   own colour, drawn as from the eye above the desk - each upright edge runs towards the point below the eye, so the boards
+   left of the middle show their right side, those right of it their left, all their near side. Each step of the side is
+   the face's outline drawn a little smaller about that point; the face's edge catches the light (a glossy rim), the side
+   darkens down to the desk, lit a little more on the faces towards the light (upper right). --sl / --sd: the side's light
+   and dark, set per panel. Pressed, the face goes part of the way down. */
 #app.desk{--game-font:'Black Han Sans',var(--ui-font)}
-#dkBoards{--tk:1.35px}
-#app.desk.compact #dkBoards{--tk:.8px}
-#dkBoards .bd{position:relative;container-type:size;--u:min(1cqw,1.5cqh);--sl:#e9d3a2;--sd:#8a6a3a;border:0;padding:0;margin:0;border-radius:13px;cursor:pointer;color:#fff;text-align:left;
-  background:var(--sd);
-  box-shadow:
-    calc(var(--tk)*-1) calc(var(--tk)*1) 0 color-mix(in srgb,#fff 45%,var(--sl)),
-    calc(var(--tk)*-2) calc(var(--tk)*2) 0 var(--sl),
-    calc(var(--tk)*-3) calc(var(--tk)*3) 0 color-mix(in srgb,var(--sl) 86%,var(--sd)),
-    calc(var(--tk)*-4) calc(var(--tk)*4) 0 color-mix(in srgb,var(--sl) 72%,var(--sd)),
-    calc(var(--tk)*-5) calc(var(--tk)*5) 0 color-mix(in srgb,var(--sl) 58%,var(--sd)),
-    calc(var(--tk)*-6) calc(var(--tk)*6) 0 color-mix(in srgb,var(--sl) 42%,var(--sd)),
-    calc(var(--tk)*-7) calc(var(--tk)*7) 0 color-mix(in srgb,var(--sl) 26%,var(--sd)),
-    calc(var(--tk)*-8) calc(var(--tk)*8) 0 var(--sd),
-    calc(var(--tk)*-9) calc(var(--tk)*9) 0 color-mix(in srgb,var(--sd) 55%,#000),
-    calc(var(--tk)*-10) calc(var(--tk)*11) calc(var(--tk)*5) rgba(0,0,0,.4);
-  transition:transform .08s,box-shadow .08s}
-#dkBoards .bd:active{transform:translate(calc(var(--tk)*-6),calc(var(--tk)*6));
-  box-shadow:calc(var(--tk)*-1) calc(var(--tk)*1) 0 color-mix(in srgb,#fff 45%,var(--sl)),calc(var(--tk)*-2) calc(var(--tk)*2) 0 color-mix(in srgb,var(--sl) 50%,var(--sd)),
-    calc(var(--tk)*-3) calc(var(--tk)*3) 0 color-mix(in srgb,var(--sd) 55%,#000),calc(var(--tk)*-4) calc(var(--tk)*5) calc(var(--tk)*3) rgba(0,0,0,.35)}
+#dkBoards .bd{position:relative;container-type:size;--u:min(1cqw,1.5cqh);--sl:#e9d3a2;--sd:#8a6a3a;--fx:50%;--fy:200%;--kp:.995;border:0;padding:0;margin:0;border-radius:13px;cursor:pointer;color:#fff;text-align:left;
+  background:none;box-shadow:none}
+#dkBoards .bd .ly{position:absolute;inset:0;border-radius:13px;pointer-events:none;transform-origin:var(--fx) var(--fy);transform:scale(var(--k,1));
+  --c:color-mix(in srgb,var(--sd) var(--m),var(--sl));background:linear-gradient(215deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 38%,color-mix(in srgb,var(--c) 80%,#000))}
+#dkBoards .bd .ly.rim{--c:color-mix(in srgb,var(--sl) 60%,#fff)}
+#dkBoards .bd .ly.foot{--c:color-mix(in srgb,var(--sd) 70%,#000);box-shadow:-3px 4px 5px rgba(0,0,0,.38)}
+#dkBoards .bd .sk,#dkBoards .bd .in{transform-origin:var(--fx) var(--fy);transition:transform .08s}
+#dkBoards .bd:active .sk,#dkBoards .bd:active .in{transform:scale(var(--kp))}
 /* (the face's own edge: a bright line where the light meets it, upper right; a dark one where it turns to the side) */
 #dkBoards .sk{position:absolute;inset:0;border-radius:13px;overflow:hidden;box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.4),inset 1px -1px 0 rgba(0,0,0,.25)}
 #dkBoards .in{position:absolute;inset:3px;display:flex;flex-direction:column;pointer-events:none;padding:calc(var(--u)*5);box-sizing:border-box}
@@ -100,8 +90,6 @@
 #dkBoards .bd-shop .bd-tt em{align-self:center;color:#fbf0d6;background:linear-gradient(#7a4a22,#4e2c10)}
 /* (the shop's words: dark brown ink on the cream, outlined in white) */
 #dkBoards .bd-shop .bd-tt b{font-size:calc(var(--u)*15);color:#3a2210;--ink:#fff8e8}
-#dkBoards .bd-shop .bd-tt small{color:#5a3414;font-size:calc(var(--u)*4.6);text-shadow:none}
-#dkBoards .bd-shop .bd-tt small::before{content:'— '}#dkBoards .bd-shop .bd-tt small::after{content:' —'}
 #dkBoards .bd-shop .bd-show{position:absolute;left:0;right:0;top:30%;bottom:22%;display:grid;place-items:center;overflow:hidden}
 #dkBoards .bd-shop .bd-show img{width:min(150%,calc(var(--u)*150));transform:rotate(-62deg);filter:drop-shadow(-3px 5px 4px rgba(60,35,10,.4))}
 #dkBoards .bd-shop .bd-foot b{font-size:calc(var(--u)*7.5);color:#3a2210;--ink:#fff8e8}
