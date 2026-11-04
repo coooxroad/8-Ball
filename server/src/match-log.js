@@ -7,7 +7,29 @@ const BALLS = { eight: 16, nine: 10, four: 4, three: 3 };
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const integer = (v, lo, hi) => Number.isInteger(v) && num(v, lo, hi);
-export const shotOk = s => object(s) && num(s.aim, -20, 20) && num(s.V, 0, 12) && num(s.a, -1, 1) && num(s.b, -1, 1) && num(s.el ?? 0, 0, Math.PI / 2);
+// (V: a bound for the physics only - the break cue's full break is 9.585 × 1.30 = 12.46 m/s; what a seat's own cue can
+// strike is check.js vMax)
+export const shotOk = s => object(s) && num(s.aim, -20, 20) && num(s.V, 0, 14) && num(s.a, -1, 1) && num(s.b, -1, 1) && num(s.el ?? 0, 0, Math.PI / 2);
+
+// One shot of a match's log (or one a device sends its room, ranked.js RoomCore): null when it has the right shape -
+// how it was struck within bounds, where every ball stood - else what is wrong with it. mode: the game (how many balls).
+export function shotError(s, mode) {
+  if (!object(s)) return 'bad shot';
+  if (s.timeout === true) return null;
+  if (!shotOk(s) || !object(s.s) || !integer(s.s.cue, 0, BALLS[mode] - 1) ||
+      !Array.isArray(s.s.balls) || s.s.balls.length !== BALLS[mode]) return 'bad shot';
+  for (const b of s.s.balls) {
+    if (!Array.isArray(b) || b.length !== 6 || !b.slice(0, 2).every(Number.isFinite) ||
+        ![0, 1, false, true].includes(b[2]) || !b.slice(3, 5).every(Number.isFinite) ||
+        !Array.isArray(b[5]) || b[5].length !== 4 || !b[5].every(Number.isFinite)) return 'bad snapshot';
+  }
+  return null;
+}
+// the first shot of a log that has not (shotError), or null - so the seat that sent it can be held to it (check.js Replay)
+export function badShotAt(log) {
+  if (!object(log) || !Object.hasOwn(BALLS, log.mode) || !Array.isArray(log.shots)) return null;
+  const i = log.shots.findIndex(s => shotError(s, log.mode)); return i < 0 ? null : i;
+}
 
 // These checks also run before sampling: malformed data must never enter the account's verification queue.
 export function logError(log) {
@@ -20,17 +42,7 @@ export function logError(log) {
       (o.targets != null && (!Array.isArray(o.targets) || o.targets.length !== 2 || !o.targets.every(v => integer(v, 1, 60))))) return 'bad rules';
   for (const key of ['tens', 'finish', 'ice']) if (o[key] != null && typeof o[key] !== 'boolean') return 'bad rules';
   if (!Array.isArray(log.points) || log.points.length !== 2 || !log.points.every(v => integer(v, 0, 10000))) return 'bad points';
-  for (const s of log.shots) {
-    if (!object(s)) return 'bad shot';
-    if (s.timeout === true) continue;
-    if (!shotOk(s) || !object(s.s) || !integer(s.s.cue, 0, BALLS[log.mode] - 1) ||
-        !Array.isArray(s.s.balls) || s.s.balls.length !== BALLS[log.mode]) return 'bad shot';
-    for (const b of s.s.balls) {
-      if (!Array.isArray(b) || b.length !== 6 || !b.slice(0, 2).every(Number.isFinite) ||
-          ![0, 1, false, true].includes(b[2]) || !b.slice(3, 5).every(Number.isFinite) ||
-          !Array.isArray(b[5]) || b[5].length !== 4 || !b[5].every(Number.isFinite)) return 'bad snapshot';
-    }
-  }
+  const at = badShotAt(log); if (at != null) return shotError(log.shots[at], log.mode);
   return null;
 }
 

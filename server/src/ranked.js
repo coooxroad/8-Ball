@@ -1,6 +1,7 @@
 /* Ranked games: the lobby that pairs players and the room a game is played in - their rules, testable in node.
    lobby.js and room.js are the Durable Objects that hold them. */
 import { E, Replay } from './check.js';
+import { shotError } from './match-log.js';
 
 /* The ranked lobby: one Durable Object per game (8볼, 9볼, 4구, 3구). Players waiting for a ranked game ask it every couple
    of seconds; it pairs two whose DAMA is close, the range widening the longer they wait. Nobody close enough after a
@@ -174,6 +175,12 @@ export const ROOM_TABLE = 'bar';
 // a seat that never comes into its room at all (the app closed as the game was found, the room never reached) loses after
 // this long from the room's opening - not only one that came and went (RETURN_WITHIN). A stand-in's seat is always there.
 export const JOIN_WITHIN = 45000;
+/* The room's own shot clock (Codex B15): the app gives a turn RANKED_CLOCK (60 s, web/app/54-ranked.js) and then sends the
+   turn's timeout itself - but an app whose screen stopped (sent to the back, frozen) while its connection stayed open sends
+   nothing, and the other player would wait for ever. So when nothing at all has come - no shot, no timeout - for this long
+   while both are there, the room ends the game, and the seat whose turn it was (as the replay finds it) loses. Long enough
+   for any fair turn: the clock, the balls rolling, a connection's 30 s away (RETURN_WITHIN) and some over. */
+export const IDLE_AFTER = 150000;
 // the stand-in (seat 1) may resign here: its turn, and far behind (the replayed game, g)
 export const standInMayResign = g => !!g && !g.over && g.turn === 1 && g.farBehind(1) > 0;          // ms a seat may be gone before it loses
 
@@ -209,7 +216,7 @@ export class RoomCore {
       opp: { name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
   connected(seat) {
-    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); }
+    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j[0] && j[1]) this.set('turnAt', Date.now()); }
     const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.send(1 - seat, { t: 'back', seat }); }
     this.send(seat, this.state(seat));
   }
@@ -227,10 +234,19 @@ export class RoomCore {
     if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.send(other, { t: 'res', n: m.n, st: m.st }); return null; }
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
+      // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
+      // answer for). A shot not of the right shape is never kept nor passed on: it ends the game against the device that
+      // sent it (Codex B13). Only the fields a shot has are kept.
       const as = r.standIn && seat === 0 && m.as === 1 ? 1 : seat;
       if (m.n !== this.count()) return null;
       if (this.count() >= 600) return this.over('too long');
-      const body = m.t === 'timeout' ? { timeout: true, seat: as } : Object.assign({}, m.shot, { seat: as });
+      let body;
+      if (m.t === 'timeout') body = { timeout: true, seat: as, by: seat };
+      else {
+        const q = m.shot; if (shotError(q, r.mode) || (q && q.timeout)) return this.over('a shot that does not fit', seat);
+        body = { s: { cue: q.s.cue, ice: !!q.s.ice, balls: q.s.balls }, aim: q.aim, V: q.V, a: q.a, b: q.b, el: q.el || 0, inHand: !!q.inHand, seat: as, by: seat };
+      }
+      this.set('turnAt', Date.now());
       this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, m.n, JSON.stringify(body));
       if (!(r.standIn && as === 1)) this.send(other, { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined });
       return null;
@@ -252,7 +268,15 @@ export class RoomCore {
     // (never came in at all, by the time given: that seat loses - both, and the game is nobody's)
     const j = this.get('joined', [true, true]), by = this.get('joinBy', 0);
     if (by && now >= by && !(j[0] && j[1])) return this.over('left', j[0] ? 1 : j[1] ? 0 : null);
+    // (both there, and nothing from either for IDLE_AFTER: whose turn it was is the replay's to say - work)
+    if (j[0] && j[1] && !gone[0] && !gone[1] && now - this.get('turnAt', now) >= IDLE_AFTER) return this.over('idle');
     return null;
+  }
+  // when the room should look again for a turn gone quiet (both there), in ms from now; null when it need not
+  idleIn() {
+    const j = this.get('joined', [true, true]), gone = this.get('gone');
+    if (this.get('status') !== 'playing' || !(j[0] && j[1]) || gone.some(Boolean)) return null;
+    return Math.max(0, this.get('turnAt', Date.now()) + IDLE_AFTER - Date.now());
   }
   // still waiting for a seat to come in for the first time (the room looks again then)
   waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !(j[0] && j[1]) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
@@ -260,7 +284,8 @@ export class RoomCore {
 
   log() {
     const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
-    return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first }, rules), shots: this.shots(), winner: 0, points: [0, 0] };
+    const cues = this.get('seats').map(q => (q.gear && typeof q.gear.cue === 'string' && q.gear.cue) || null);   // (check.js vMax)
+    return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first }, rules), cues, shots: this.shots(), winner: 0, points: [0, 0] };
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
      that resigned, left or sent a shot that does not fit; else (the game stopped with no winner and nobody to blame) a
@@ -272,8 +297,11 @@ export class RoomCore {
     if (!out) { const c = this.job.rp.lastCp; if (c && c.i - this.job.saved >= 4) { this.set('cp', c); this.job.saved = c.i; } return true; }
     const end = this.get('end'), shots = this.shots(), g = this.job.rp.g; this.job = null;
     let winner = null, why = end.why, points = out.points || this.get('cp', { points: [0, 0] }).points;
-    if (!out.ok) { const bad = out.at != null && shots[out.at] ? shots[out.at].seat : null; if (bad != null) { winner = 1 - bad; why = 'a shot that does not fit'; } }
+    // (the device that sent a shot that does not fit loses: by, or for a shot kept before by was, its seat)
+    if (!out.ok) { const sh = out.at != null ? shots[out.at] : null, bad = sh ? (sh.by != null ? sh.by : sh.seat) : null; if (bad != null) { winner = 1 - bad; why = 'a shot that does not fit'; } }
     else if (out.winner != null) { winner = out.winner; why = 'ended'; }
+    // gone quiet (timers, IDLE_AFTER): the seat whose turn it was loses - in a stand-in's game, the one device playing it
+    else if (end.why === 'idle') { winner = this.get('room').standIn ? 1 : 1 - g.turn; }
     // a stand-in may give up only on its own turn and only when it is far behind (game.js farBehind) - the same rule its
     // own play follows. A resignation sent for it otherwise came from the player it would let win: that player loses.
     if (winner == null && end.standIn && !standInMayResign(g)) { winner = 1; why = 'a resign that does not fit'; }

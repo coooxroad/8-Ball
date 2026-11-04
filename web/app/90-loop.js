@@ -51,7 +51,7 @@ function aheadStep() {
 function rollOut(rnd) {
   const w = game.world, P = game.P; w.ev = P.newEv();
   game.rollOut(rnd || Math.random);
-  st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = true; st.phase = 'sim';
+  st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = flow; st.phase = 'sim';   // (rolling: the flow it is for)
 }
 function stepSim(dt) {
   const w = game.world, P = game.P;
@@ -64,7 +64,7 @@ function stepSim(dt) {
   if (n === 30) acc = 0;
   const alpha = acc / TICK;
   drain(); SND.rolling(flow.quiet ? 0 : Math.min(8, vmax));
-  if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { st.rolling = false; st.rev++; flow.rolled(); } else endShot(); } }
+  if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { const f = st.rolling; st.rolling = false; st.rev++; if (f === flow) flow.rolled(); else st.phase = 'idle'; } else endShot(); } }
   return alpha;
 }
 let wallsShown = null;
@@ -99,7 +99,7 @@ function frame(now) {
     }
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
-    else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold; st.afterHold = null; f(); } }
+    else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
   }
   if (st.phase === 'aim') syncEl();
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
@@ -159,7 +159,7 @@ function perfTick(raw, drew) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save || (flow === match && match.ctx && match.ctx.online)) return;   // (a ranked game is not picked up later)
-  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count }, log: match.log, inn: match.innings };
+  const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count }, log: match.log, inn: match.innings, el: match.t0 ? Date.now() - match.t0 : 0 };   // el: ms played (Codex B20)
   store.set('save', d);
 }
 function start() {

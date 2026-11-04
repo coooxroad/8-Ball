@@ -7,7 +7,7 @@ import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
 import { googleWho, forgetGoogleKeys } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
-import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -291,6 +291,48 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     R.message(0, { t: 'end' }); const r = finish(R);
     if (G.winner != null) { const full = E.damaAfter(30, 40, G.winner === 0)[0] - 30;
       ok(r.winner === G.winner && r.dama[0] - 30 === full && R.payouts().length === 1, `ranked: a stand-in game counts like any (${r.why})`); } }
+  // Codex B11-B15: what a seat sends is held to the game
+  { const G = rankedGame('eight', 7, 0), s0 = G.msgs[0].seat, play = (R, msgs) => { for (const x of msgs) R.message(x.seat, x.m); };
+    const sendWith = (change, by) => { const { R, sent } = roomOf('eight', 7, 0); const m = JSON.parse(JSON.stringify(G.msgs[0].m)); change(m.shot); R.message(by == null ? s0 : by, m); return { R, sent }; };
+    // B11: a seat cannot run out the other's clock
+    { const { R } = roomOf('eight', 7, 0); R.message(1 - s0, { t: 'timeout', n: 0 }); R.message(s0, { t: 'resign' });
+      const r = finish(R); ok(r.winner === s0 && r.why === 'a shot that does not fit', `B11: a timeout sent on the other's turn loses (${r.why})`); }
+    { const { R } = roomOf('eight', 7, 0); R.message(s0, { t: 'timeout', n: 0 }); R.message(s0, { t: 'resign' });
+      const r = finish(R); ok(r.winner === 1 - s0 && r.why === 'resigned', `B11: a seat's own timeout stands (${r.why})`); }
+    // B12: the cue ball is the game's; one in hand goes on the cloth, clear, behind the head string on a break
+    { const { R } = sendWith(sh => { sh.s.cue = 1; }); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok(r.winner === 1 - s0 && r.why === 'a shot that does not fit', `B12: another ball as the cue ball loses (${r.why})`); }
+    for (const [x, y, what] of [[100, 0, 'off the table'], [0.2, 0, 'past the head string'], [null, null, 'on a ball']]) {
+      const { R } = sendWith(sh => { const c = sh.s.balls[0]; if (x == null) { const o = sh.s.balls.find((b, k) => k && b[2]); c[0] = o[0]; c[1] = o[1]; } else { c[0] = x; c[1] = y; } });
+      R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok(r.winner === 1 - s0 && r.why === 'a shot that does not fit', `B12: a break's cue ball ${what} loses (${r.why})`);
+    }
+    { const { R } = sendWith(sh => { sh.s.balls[0][0] = -0.7; sh.s.balls[0][1] = 0.2; }); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok(r.why === 'resigned', `B12: a break's cue ball anywhere fair behind the string stands (${r.why})`); }
+    // B13: a shot not of the right shape is not passed on, and the seat that sent it loses
+    { const { R, sent } = roomOf('eight', 7, 0); ok(R.message(s0, { t: 'shot', n: 0, shot: { aim: 0, V: 2 } }) === 'check', 'B13: a bad shot ends the game at once');
+      ok(!sent[1 - s0].some(m => m.t === 'shot'), 'B13: a bad shot is not passed on'); const r = finish(R);
+      ok(r.winner === 1 - s0 && r.why === 'a shot that does not fit', `B13: the seat that sent a bad shot loses (${r.why})`); }
+    { const { R, sent } = roomOf('eight', 7, 0); const m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.junk = 'x'.repeat(100); R.message(s0, m);
+      const got = sent[1 - s0].find(q => q.t === 'shot'); ok(got && !('junk' in got.shot) && got.shot.by === s0, 'B13: only a shot\'s own fields are passed on, with who sent it'); }
+    { const { R } = roomOf('eight', 11, 0, { name: 'S' }); const m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.s.cue = 1; R.message(0, Object.assign(m, { as: 0 }));
+      R.message(0, { t: 'resign', as: 1 }); const r = finish(R); ok(r.winner === 1, `B13: a stand-in game's bad shot is its player's device's (${r.why})`); }
+    // B14: no harder than the seat's cue at full gauge (a break: the break's own extra counts)
+    const vTop = (cue, brk) => { const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')); g.start('eight', ['A', 'B'], false, { rnd: E.seededRandom(7) }); g.isBreak = brk; const c = E.CUES.find(q => q.id === cue); return g.vOf(1) * (1 + ((c && c.stat.power) || 0) / 100); };
+    const gearRoom = cue => { const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx);
+      R.init({ room: 'f'.repeat(32), mode: 'eight', seed: 7, first: 0, seats: [0, 1].map(s => ({ acct: String(s).repeat(32), token: 't' + s, name: 'P' + s, icon: 0, dama: 30, gear: { cue } })) }); return R; };
+    for (const [cue, V, fits] of [[null, vTop(null, true), true], ['breaker', vTop('breaker', true), true], [null, vTop('breaker', true), false], ['saber', vTop('saber', true) * 1.001, false]]) {
+      const R = gearRoom(cue), m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.V = V; R.message(s0, m); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok((r.why === 'resigned') === fits, `B14: a break at ${V.toFixed(3)} m/s with ${cue || 'the usual cue'} ${fits ? 'stands' : 'loses'} (${r.why})`);
+    }
+    // B15: nothing from either for IDLE_AFTER while both are there - the seat whose turn it was loses
+    { const { R } = roomOf('eight', 7, 0); R.connected(0); R.connected(1); play(R, G.msgs.slice(0, 1)); ok(R.timers() === null && R.idleIn() > IDLE_AFTER - 1000, 'B15: a turn just begun is not quiet');
+      R.set('turnAt', Date.now() - IDLE_AFTER - 1); ok(R.timers() === 'check', 'B15: a turn gone quiet ends the game');
+      const turn = (() => { const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')); const rp = new Replay(R.log(), null, true); rp.advance(Infinity); return rp.g.turn; })();
+      const r = finish(R); ok(r.winner === 1 - turn && r.why === 'idle', `B15: whose turn went quiet loses (${r.why})`); }
+    { const { R } = roomOf('eight', 7, 0); R.connected(0); R.connected(1); R.disconnected(1); R.set('turnAt', Date.now() - IDLE_AFTER - 1);
+      ok(R.idleIn() === null && R.timers() === null, 'B15: a seat away is the away rule\'s (RETURN_WITHIN), not the quiet turn\'s'); }
+  }
   console.log('ranked rooms: checked');
 }
 

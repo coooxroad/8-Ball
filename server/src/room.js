@@ -42,7 +42,12 @@ export class Room extends DurableObject {
     if (this.core.timers() === 'check') return this.soon(20);
     const st = this.core.get('status');
     if (st === 'checking') { if (this.core.work(SLICE)) return this.soon(20); }
-    if (st === 'playing') { const gone = this.core.get('gone'), wj = this.core.waitingJoin(); if (gone.some(Boolean)) return this.soon(5000); if (wj != null) return this.soon(wj + 500); }
+    if (st === 'playing') {
+      const gone = this.core.get('gone'), wj = this.core.waitingJoin(), idle = this.core.idleIn();
+      if (gone.some(Boolean)) return this.soon(5000);
+      if (wj != null) return this.soon(wj + 500);
+      if (idle != null) return this.soon(idle + 500);          // (the room's shot clock: RoomCore.timers, IDLE_AFTER)
+    }
     // paid out: each vault told, again a little later if one did not answer
     let left = false;
     for (const p of this.core.payouts()) {

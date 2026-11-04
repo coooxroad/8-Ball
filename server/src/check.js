@@ -2,7 +2,7 @@
    The physics gives the same result for the same input, so a shot sent with where the balls stood and how it was struck
    ends exactly where the app saw it end - and a made-up result does not. */
 import * as E from './gen/engine.js';
-import { logError, shotOk } from './match-log.js';
+import { logError, shotOk, badShotAt } from './match-log.js';
 
 const seeded = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 const H = E.createHighlights();
@@ -54,7 +54,7 @@ export class Replay {
   // shot's index is in the answer (at), so the seat that sent it can be held to it.
   constructor(log, cp, open) {
     this.log = log; this.open = !!open; const o = log && log.opts || {};
-    const why = logError(log); if (why) { this.out = { ok: false, why }; return; }
+    const why = logError(log); if (why) { const at = badShotAt(log); this.out = at == null ? { ok: false, why } : { ok: false, why: `shot ${at}: ${why}`, at }; return; }
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
     // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
     const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
@@ -69,7 +69,11 @@ export class Replay {
   // the next shot set going, or the end of the match
   begin() {
     const g = this.g, log = this.log, o = log.opts || {};
-    while (this.i < log.shots.length && !g.over && log.shots[this.i].timeout) { g.timeout(); this.i++; }
+    // (a timeout is the turn of the seat whose clock ran out: a seat cannot run out another's - Codex B11)
+    while (this.i < log.shots.length && !g.over && log.shots[this.i].timeout) {
+      const t = log.shots[this.i]; if (t.seat != null && t.seat !== g.turn) return this.out = { ok: false, why: `shot ${this.i}: a timeout not on this seat's turn`, at: this.i };
+      g.timeout(); this.i++;
+    }
     if (this.i >= log.shots.length || g.over) {
       if (this.open) return this.out = { ok: true, points: this.points, winner: g.over ? g.over.winner : null };
       if (!g.over) return this.out = { ok: false, why: 'the match does not end' };
@@ -85,9 +89,25 @@ export class Replay {
       const b = w.balls[j], v = sh.s.balls[j];
       if (!!v[2] !== b.on || (b.on && (Math.abs(v[0] - b.x) > 1e-7 || Math.abs(v[1] - b.y) > 1e-7))) return this.out = { ok: false, why: `shot ${i}: ball ${j} is not where the last shot left it`, at: i };
     }
+    // the cue ball is the game's, not the shot's to say; one in hand goes on the cloth, clear of the others, behind the head
+    // string on a break (as app/80-input.js tryPlace and the computer put it) - Codex B12
+    if (sh.s.cue !== w.cue) return this.out = { ok: false, why: `shot ${i}: not the cue ball`, at: i };
+    if (g.placing && (i > 0 || this.open)) {
+      const v = sh.s.balls[w.cue];
+      if (!v[2] || !g.P.isFree(w, v[0], v[1], w.cue) || (g.placing === 'kitchen' && v[0] > -g.P.HL / 2 + 1e-9)) return this.out = { ok: false, why: `shot ${i}: the cue ball cannot go there`, at: i };
+    }
+    // no harder than the seat's cue strikes at full gauge (Codex B14)
+    if (this.open && Array.isArray(log.cues) && sh.V > this.vMax(g.turn)) return this.out = { ok: false, why: `shot ${i}: harder than the cue can strike`, at: i };
     H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed', at: i };
     this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); this.t = 0; this.running = true;
     return null;
+  }
+  /* The hardest a seat can strike: the full gauge (g.vOf(1), a break's extra included) times its cue's power stat - the
+     sum a stroke makes (web/app/80-input.js) - and never less than an ordinary cue's: a stand-in's plan (web/ai) strikes up
+     to g.vOf(1) whatever it holds. log.cues: each seat's cue id (the room's, from the players' gear; null: the usual). */
+  vMax(seat) {
+    const id = this.log.cues[seat], c = E.CUES.find(q => q.id === id), k = 1 + ((c && c.stat && c.stat.power) || 0) / 100;
+    return this.g.vOf(1) * Math.max(1, k) * (1 + 1e-9);
   }
   advance(steps) {
     while (!this.out && steps > 0) {

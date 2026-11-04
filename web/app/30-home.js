@@ -51,5 +51,6 @@ function resume(d) {
     targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   match.log = d.log || null; match.innings = d.inn || [1, 1];
+  match.t0 = Date.now() - (+d.el > 0 ? +d.el : 0);                        // (the time played before, not the time it lay saved)
   prefs.mode = game.modeId; st.aim = d.aim || 0; match.enter();
 }

@@ -58,6 +58,6 @@ function paintRecords() {
       el('div', { class: 'who' }, [el('b', { text: n }), el('span', { text: `${r.w}승 ${r.l}패 · 승률 ${Math.round(r.w / (r.w + r.l) * 100)}% · 최다 ${r.best}연승` })]),
       formChips(r.form), r.streak >= 2 ? el('span', { class: 'run', text: r.streak + '연승' }) : null]);
     return el('div', { class: 'rwrap' }, [fireOf(r.streak) ? el('canvas', { class: 'flame', 'data-n': Math.min(5, r.streak) }) : null, card]); })));
-  body.appendChild(flatBtn('전적 모두 지우기', () => { rec = {}; store.set('rec', rec); series.key = ''; paintRecords(); }));
+  body.appendChild(flatBtn('전적 모두 지우기', () => { rec = recBook({}); store.set('rec', rec); series.key = ''; paintRecords(); }));
   lightFlames();
 }

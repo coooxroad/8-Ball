@@ -111,11 +111,12 @@ const ranked = {
     const at = performance.now() - AIM_LAG; let i = 0; while (i < b.length - 1 && b[i + 1].t <= at) i++;
     const p = b[i], q = b[Math.min(b.length - 1, i + 1)], u = q === p || q.t <= p.t ? 1 : Math.max(0, Math.min(1, (at - p.t) / (q.t - p.t)));
     let d = q.aim - p.aim; d -= Math.round(d / (2 * Math.PI)) * 2 * Math.PI;                 // (the short way round)
-    const aim = p.aim + d * u, power = p.power + (q.power - p.power) * u;
-    if (aim === st.aim && power === st.power) return;
+    const aim = p.aim + d * u, power = p.power + (q.power - p.power) * u, sx = p.sx + (q.sx - p.sx) * u, sy = p.sy + (q.sy - p.sy) * u, el = p.el + (q.el - p.el) * u;
+    // (all of it compared: a strike point or a raised cue moved alone shows too - Codex B18)
+    if (aim === st.aim && power === st.power && sx === st.spin.x && sy === st.spin.y && el === st.el) return;
     st.aim = a.from = aim; st.power = power; setPowerUI(power);
-    st.spin = { x: p.sx + (q.sx - p.sx) * u, y: p.sy + (q.sy - p.sy) * u }; setSpinUI();
-    st.el = p.el + (q.el - p.el) * u; setKindUI(); scene.invalidate();
+    st.spin = { x: sx, y: sy }; setSpinUI();
+    st.el = el; setKindUI(); scene.invalidate();
   },
   /* What each seat has on (gear ids, null the usual; ours from here, theirs from the room) and so what this game looks like:
      each player's own cue and trail, and the ball set and table of whichever player has the rarer (seat 0's if equal). An ice
@@ -195,7 +196,10 @@ const ranked = {
   result(m) {
     const o = ranked.on; if (!o || o.done) return;
     o.done = true; o.result = m; o.closing = null;
-    const why = m.why === 'left' ? `${o.opp.name}이(가) 나갔습니다.` : m.why === 'resigned' ? '기권했습니다.' : m.why === 'a shot that does not fit' ? '맞지 않는 샷이 있었습니다.' : '경기가 끝났습니다.';
+    const mine = m.winner === o.seat;
+    const why = m.why === 'left' ? (mine ? `${o.opp.name}이(가) 나갔습니다.` : '연결이 끊겨 돌아오지 못했습니다.') : m.why === 'resigned' ? '기권했습니다.'
+      : m.why === 'idle' ? (mine ? `${o.opp.name}이(가) 너무 오래 치지 않았습니다.` : '너무 오래 치지 않아 경기가 끝났습니다.')
+      : m.why === 'a shot that does not fit' ? '맞지 않는 샷이 있었습니다.' : '경기가 끝났습니다.';
     const undo = () => { const b = match.before; if (!b) return; [0, 1].forEach(i => { rec[game.players[i].name] = b.rec[i]; }); series.s = b.series.slice(); store.set('rec', rec); match.before = null; };
     if (flow === match && m.winner == null && (st.screen === 'play' || st.screen === 'result')) {
       undo(); ranked.voided(m);

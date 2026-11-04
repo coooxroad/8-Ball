@@ -1,6 +1,7 @@
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
-  st.phase = 'aim'; st.clock = clockLimit(); st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
+  // (a turn begins clean: a 4구 roll-out left mid-roll by another flow is not this flow's - Codex B19)
+  st.rolling = false; st.phase = 'aim'; st.clock = clockLimit(); st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {
@@ -19,7 +20,8 @@ function shoot(V, a, b, el) {
   flow.hud();
 }
 function endShot() { st.rev++; flow.afterShot(); }
-function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHold = then; flow.hud(); }
+// (what comes after is the flow's that asked for it: another flow begun meanwhile does not get it - Codex B19)
+function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHold = then; st.holdFlow = flow; flow.hud(); }
 
 /* The computer's plan is worked out in a Worker (ai-worker.js: the same game code, the same plan) so that the screen never
    waits for a search - a few hundred milliseconds at 8볼's top level. The question goes as the turn begins and the answer is

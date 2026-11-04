@@ -78,7 +78,10 @@ const SND = createAudio(() => prefs.sound);
 const highlights = createHighlights();
 if (!game.MODES[prefs.mode]) prefs.mode = 'eight';
 if (drills.byId(prefs.drill).id !== prefs.drill) prefs.drill = 'free';
-let rec = store.get('rec', {});
+// (a player's name is a key: kept in an object with no prototype, so a name like __proto__ or constructor is a name like any
+// other - Codex B21)
+const recBook = o => Object.assign(Object.create(null), o && typeof o === 'object' ? o : {});
+let rec = recBook(store.get('rec', {}));
 const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
 const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
