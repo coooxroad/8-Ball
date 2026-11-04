@@ -120,7 +120,7 @@ const SHELVES = {
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
   glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
-    about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다. 좋은 장갑일수록 세기와 미세 조준 다이얼이 더 잘게 움직입니다(손가락 움직임은 같습니다).', ...GLOVE_SPEC],
+    about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다. 장갑에 따라 샷 세기와 미세 조준을 더 작은 단위로 조절할 수 있습니다.', ...GLOVE_SPEC],
     // (the finest a glove may go, for the bars: a quarter of a power step, three hundredths of a degree)
     stats: g => gloveStats(g, GLOVES.find(x => x.id === prefs.glove)),
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },

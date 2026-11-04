@@ -65,7 +65,7 @@ function deskLesson({ head, stage, slate }) {
         el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name }), el('small', { text: '교본' })])),
         el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
     dkPut(slate, dkH1('교본', '레슨'));
-    dkPut(slate, [dkHr(), dkTxt('종목 교본을 펼치면 그 안에 레슨 교본이 있습니다. 교본을 누르면 그 레슨이 바로 시작됩니다.'), dkHr()]);
+    dkPut(slate, [dkHr(), dkTxt('종목을 고른 뒤 배우고 싶은 레슨을 누르세요.'), dkHr()]);
     for (const [v, name] of VOLUMES) { const ids = volLessons(v); dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: name }), el('b', { text: ids.length ? `${doneOf(ids)} / ${ids.length}권` : '준비 중' })])); }
     const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
     dkPut(slate, dkActs(cur ? dkMain('이어서 하기', `${drills.byId(cur).name} · ${levelOf(cur)}단계`, () => practice.start(cur)) : dkMain('준비 중', '레슨을 새로 만들고 있습니다', () => {}, true)));
