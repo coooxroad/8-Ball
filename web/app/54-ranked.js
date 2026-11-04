@@ -32,8 +32,7 @@ const ranked = {
       if (r && r.ok && r.room) { ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
-      const T = net.trouble, why = r && r.ok ? null : !T ? '서버 응답 없음' : T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'account' ? '계정 다시 만드는 중'
-        : T.why === 'server' ? `서버 오류 ${T.status}` : `서버: ${T.why}`;
+      const why = r && r.ok ? null : net.troubleText() || '서버 응답 없음';
       f.fails = why ? (f.fails || 0) + 1 : 0;
       bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · ` + (f.fails >= 2 ? why : '상대 찾는 중');
       if (why) console.warn('[ranked] queue:', why, r);

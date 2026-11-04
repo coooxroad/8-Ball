@@ -22,7 +22,7 @@ const net = (() => {
     try {
       const r = await fetch(SERVER + path, { method: body ? 'POST' : 'GET', body: body ? JSON.stringify(body) : undefined,
         headers: Object.assign({ 'Content-Type': 'application/json' }, account ? { Authorization: `Bearer ${account.id}.${account.key}` } : {}) });
-      if (r.status >= 500) { trouble = { path, status: r.status, why: 'server' }; console.warn('[net]', path, r.status); return null; }
+      if (r.status >= 500) { const e = await r.json().catch(() => null); trouble = { path, status: r.status, why: 'server', error: e && e.error || '' }; console.warn('[net]', path, r.status, trouble.error); return null; }
       const j = await r.json();
       if (r.status === 401 && account && path !== '/v1/account') {
         console.warn('[net]', path, '401: the server does not know this account - a new one is opened');
@@ -32,6 +32,9 @@ const net = (() => {
     } catch (e) { trouble = { path, status: 0, why: 'offline' }; console.warn('[net]', path, String(e && e.message || e)); return null; }
   }
   let lostAccount = false;
+  // what the last trouble was, in a few words for a screen (null: none)
+  const troubleText = () => { const T = trouble; if (!T) return null;
+    return T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'account' ? '계정 다시 만드는 중' : T.why === 'server' ? `서버 오류 ${T.status}${T.error ? ' · ' + T.error.slice(0, 60) : ''}` : `서버: ${T.why}`; };
   async function ensure() {
     if (!SERVER) return false;
     if (account) return true;
@@ -80,7 +83,7 @@ const net = (() => {
   window.addEventListener('online', () => flush());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   return {
-    get on() { return !!SERVER; }, get me() { return me; }, get trouble() { return trouble; }, owns, flush,
+    get on() { return !!SERVER; }, get me() { return me; }, get trouble() { return trouble; }, troubleText, owns, flush,
     // the name changed: debug may have come or gone, so what is worn is looked at again
     renamed() { if (me) setMe(me); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })

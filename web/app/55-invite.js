@@ -15,12 +15,15 @@ const invite = {
     const key = mode + JSON.stringify(invite.rulesOf(mode)), h = invite.host;
     if (h && h.key === key) return h;
     if (invite.opening === key) return null;
+    if (invite.err && invite.errKey === key) return null;           // (it failed: not again on its own - the slate has 다시 시도)
     if (h) invite.leave();
     invite.opening = key;
     net.inviteOpen(mode, invite.rulesOf(mode)).then(r => {
       if (invite.opening !== key) { if (r && r.ok) net.inviteLeave(r.code); return; }
       invite.opening = null;
-      if (!r || !r.ok) { toast(r ? '초대 코드를 만들 수 없습니다.' : '서버에 연결할 수 없습니다.', 'foul', 2200); return; }
+      // (the slate says why, and offers to try again - it used to stay on '만드는 중' for good)
+      if (!r || !r.ok) { invite.err = net.troubleText() || '서버 응답 없음'; invite.errKey = key; toast('초대 코드를 만들 수 없습니다.', 'foul', 2200); if (st.screen === 'home') paintHome(); return; }
+      invite.err = null;
       invite.host = { code: r.code, mode, key, timer: 0, guest: null };
       invite.poll(); if (st.screen === 'home') paintHome();
     });

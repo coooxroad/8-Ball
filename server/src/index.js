@@ -27,8 +27,17 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
 const hex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 
+/* Anything that throws on the way - here or in a Durable Object behind - comes back as an answer the app can read: with
+   its CORS headers and what went wrong. (Cloudflare's own error page has no CORS headers, so a page saw only a failed
+   fetch, and could not say why: 54-ranked.js, 55-invite.js show it now.) */
 export default {
   async fetch(request, env) {
+    try { return await frontDoor(request, env); }
+    catch (e) { console.error('front door', new URL(request.url).pathname, e && e.stack || e); return json({ ok: false, why: 'error', error: String(e && e.message || e).slice(0, 200) }, 500); }
+  },
+};
+async function frontDoor(request, env) {
+  {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const url = new URL(request.url);
     if (url.pathname === '/' || url.pathname === '/v1') return json({ ok: true, name: 'cue-server' });
@@ -68,5 +77,5 @@ export default {
     const r = await vault.fetch('https://vault' + url.pathname, {
       method: request.method, headers: { 'X-Key': m[2], 'Content-Type': 'application/json' }, body: request.method === 'POST' ? await request.text() : undefined });
     return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
-  },
-};
+  }
+}
