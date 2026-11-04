@@ -4,7 +4,7 @@
    device) and sent when there is a connection, now or days later; the server checks it and pays it, once. Nothing here
    ever sets a balance. With no SERVER set the game plays offline as it always has, with everything to hand.
    All talking to the server is in this file: the screens call net.*, never fetch. */
-const SERVER = 'https://cue-server.co-oxroad.workers.dev';          // ('' plays offline with everything to hand)
+const SERVER = 'https://cue-server.oxcorp.workers.dev';          // ('' plays offline with everything to hand)
 // The owner's debug name: a player named this has everything unlocked on this device - every item, every puzzle stage -
 // for trying things out. Only what the device shows: the server's coins and what it says is owned are not touched.
 const DEBUG_NAME = '이환컴퍼니';

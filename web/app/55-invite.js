@@ -4,7 +4,7 @@
    and asks after it every two seconds; the friend enters the code (or opens the link) and both are in a room, played as
    a ranked game is (54-ranked.js, kind 'invite': the host's rules, coins as against the computer, no DAMA).
    The code stays open only while its screen is up. */
-const INVITE_LINK = 'https://cue.co-oxroad.workers.dev/?join=';
+const INVITE_LINK = 'https://cue.oxcorp.workers.dev/?join=';
 const invite = {
   host: null,                 // the open code: { code, mode, key (the rules it was opened with), timer, guest }
   shown: false,               // whether the setup screen showed it this paint (else it is closed: 36-desk-paint.js)

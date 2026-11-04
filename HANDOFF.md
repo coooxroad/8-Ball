@@ -104,12 +104,12 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
   `main`에 푸시하면 `.github/workflows/server.yml`이 `server/`의 검사 후 배포. 주소는 그 워크플로 로그의 "Where it is" 단계,
   그 주소를 `web/app/07-net.js`의 `SERVER`에 넣으면 앱이 서버를 쓰기 시작한다(비어 있으면 예전처럼 오프라인, 모든 아이템 사용).
 - 정한 것: 랭킹전 점수 **DAMA**는 ELO를 대신하는 점수일 뿐("다마"는 공식 용어가 아닌 당구장 은어, 수지와 연결하지 않음) — 30에서 시작, 비슷한 상대면 ±3.
-- 웹 버전: `site/` → `https://cue.co-oxroad.workers.dev`(배포 워크플로 `site.yml`). 디버그 이름 `이환컴퍼니`: 그 기기에서 모든 제한 해제. 코인: 1점당 4구 100·8볼 60·3구 150·9볼 60, 랭킹전 내 점수×(승 2·패 ½),
+- 웹 버전: `site/` → `https://cue.oxcorp.workers.dev`(배포 워크플로 `site.yml`). 디버그 이름 `이환컴퍼니`: 그 기기에서 모든 제한 해제. 코인: 1점당 4구 100·8볼 60·3구 150·9볼 60, 랭킹전 내 점수×(승 2·패 ½),
   친구와 한 기기 둘 합×¼, 컴퓨터 대전 내 점수×¼, 투어 승자 독식 수수료 10%, 퍼즐 처음 한 번 150. 가격은 희귀도별(economy.js).
 - 소유자는 해외결제 카드가 없어 유료 플랜 불가(오라클도 카드 필요). 그래서 무료로 전부 확인하는 `CHECK_MATCHES="slices"`:
   경기를 150걸음씩 조각내 알람으로 다시 친다(`server/src/check.js`의 `Replay`, `core.js`의 `work`). 부담을 줄이려고 일부만
   확인(무작위 25%·큰 판·새 계정 첫 3판·걸린 계정 전부), 나머지는 바로 지급. 유료가 되면 economy.js에서 비율만 올린다.
-- 서버 주소 `https://cue-server.co-oxroad.workers.dev`(앱에 연결됨). 이 작업 환경에서는 workers.dev에 접속이 막혀 있어서,
+- 서버 주소 `https://cue-server.oxcorp.workers.dev`(앱에 연결됨). 이 작업 환경에서는 workers.dev에 접속이 막혀 있어서,
   실제 서버 확인은 배포 워크플로의 live 검사(`server/tools/live.mjs`) 결과를 `gh run view --log`로 본다.
 - 소유자 질문 "검증 대신 암호화만?" → 앱 안에 키가 있어야 하니 꺼내면 끝(웹 페이지라 더 쉽다). 보조 장치일 뿐 검증을 대신 못 한다고 답함.
 - 로컬에서 끝까지 확인한 방법: `cd server && npx wrangler dev --port 8787 --local --var CHECK_MATCHES:true`, 빌드된 페이지의
@@ -218,7 +218,7 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
   시크릿 무지개 테의 8번. 바 위 보라 공 버튼과 결과 화면 버튼에 남은 개수.
 - **친구와 플레이**: 종목을 고르면 오른쪽에 `한 기기에서 | 초대하기`. 초대하기는 서버에 6자리 코드(`InviteCore`, 로비 DO
   'invites' 하나가 메모리로 들고 있음, 새 DO 클래스 없음)를 열고 2초마다 묻는다. 친구가 코드를 넣거나 링크
-  `https://cue.co-oxroad.workers.dev/?join=코드`를 열면 같은 방(`Room`, kind 'invite')에서 랭킹전과 똑같이 친다.
+  `https://cue.oxcorp.workers.dev/?join=코드`를 열면 같은 방(`Room`, kind 'invite')에서 랭킹전과 똑같이 친다.
   규칙은 방장 것(`inviteRules`), 코인은 컴퓨터전처럼 내 점수×¼, 다마·드롭 없음. 화면을 떠나면 코드가 닫힌다.
 - **레슨 보상**: 8볼 레슨을 전부 5단계에서 성공하면 3,000코인 + **브레이크 큐**(에픽, 상점 X, `reward: 'eight'`). 레슨 배치는
   이제 씨앗으로 만들고(`51-practice.js`), 5단계 성공 샷을 증거로 저장, 다 모이면 `/v1/lessons`로 보내 서버가 하나하나 다시
@@ -299,6 +299,10 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
   서버가 던진 오류는 Cloudflare 오류 페이지(CORS 헤더 없음)로 나가서 페이지는 이유를 못 읽었다 → `index.js` 정문을 try/catch로 감싸
   `{ ok: false, why: 'error', error }`(500, CORS)로 돌려준다. 앱은 대기 막대와 초대 슬레이트에 그 글자를 보이고(`net.troubleText`),
   초대는 실패하면 저절로 다시 묻지 않고 '다시 시도' 버튼.
+- **진짜 원인(소유자가 찾음)**: Cloudflare의 workers.dev 하위 도메인이 `co-oxroad` → `oxcorp`로 바뀌어 있었다. 앱은 옛 주소
+  (`cue-server.co-oxroad…`)로 묻고, 서버는 `cue-server.oxcorp.workers.dev`, 웹은 `cue.oxcorp.workers.dev`. 배포 뒤 검사는
+  주소를 배포 로그에서 읽어서 계속 통과했다. → `SERVER`, `INVITE_LINK`, 하네스의 차단 주소를 고치고, `server.yml`·`site.yml`에
+  "앱에 적힌 주소 = 배포된 주소" 확인을 넣었다(다르면 배포 작업이 빨간불). 위의 '계정을 모름 → 새 계정', 오류 표시는 그대로 둔다.
 
 ## 7. 남은 일
 

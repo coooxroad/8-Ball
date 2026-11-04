@@ -45,4 +45,9 @@ jobs:
         run: |
           U=$(grep -o 'https://[a-z0-9.-]*workers.dev' deploy.log | head -1)
           echo "$U"
+          # (the app must be asking this address: the Cloudflare subdomain once changed under it, and every device went
+          # quiet while the checks here, which read the address from the deploy, kept passing - web/app/07-net.js SERVER)
+          A=$(grep -o "const SERVER = '[^']*'" ../web/app/07-net.js | cut -d"'" -f2)
+          test "$A" = "$U" || { echo "FAIL the app asks $A, the server is at $U - change SERVER in web/app/07-net.js"; exit 1; }
+          echo "ok   the app asks this address"
           node tools/live.mjs "$U"

@@ -57,6 +57,9 @@ jobs:
         run: |
           U=$(grep -o 'https://[a-z0-9.-]*workers.dev' deploy.log | head -1)
           test -n "$U" || { echo 'FAIL no deployment address'; exit 1; }
+          # (the invite links the app sends must open this page - web/app/55-invite.js INVITE_LINK)
+          A=$(grep -o "const INVITE_LINK = '[^']*'" ../web/app/55-invite.js | cut -d"'" -f2 | sed 's#/?join=##')
+          test "$A" = "$U" || { echo "FAIL invite links open $A, the web is at $U - change INVITE_LINK in web/app/55-invite.js"; exit 1; }
           echo "$U (APK build $APK_BUILD, commit $SOURCE_SHA)"
           # (a new address can take a minute or two to answer)
           for i in $(seq 1 18); do
