@@ -9,6 +9,7 @@ import { logError, matchKey } from './match-log.js';
 
 const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS, glove: E.GLOVES };
 const day = () => new Date().toISOString().slice(0, 10);
+export const MAX_DEVICES = 8;
 
 export class VaultCore {
   // tx(fn): runs fn as one transaction - all of it happens or none (ctx.storage.transactionSync in the Durable Object)
@@ -34,7 +35,16 @@ export class VaultCore {
   }
 
   init(secretHash) { if (this.get('secret')) return false; this.set('secret', secretHash); this.set('since', Date.now()); this.set('dama', E.ECONOMY.DAMA_START); return true; }
-  authed(secretHash) { const s = this.get('secret'); return !!s && s === secretHash; }
+  // (any of the account's keys opens it: the first device's, and each device linked since - link.js, devices)
+  authed(secretHash) { const s = this.get('secret'); return !!s && (s === secretHash || this.get('devices', []).some(d => d.h === secretHash)); }
+  // another device linked to this account: its key's hash (from the front door, never from a device). At most MAX_DEVICES
+  // besides the first; the longest unused goes when there would be more.
+  addDevice(secretHash) {
+    if (!this.get('secret') || typeof secretHash !== 'string' || !/^[0-9a-f]{64}$/.test(secretHash)) return { ok: false, why: 'bad device' };
+    const d = this.get('devices', []).filter(x => x.h !== secretHash); d.push({ h: secretHash, at: Date.now() });
+    while (d.length > MAX_DEVICES) d.shift();
+    this.set('devices', d); return { ok: true, devices: 1 + d.length };
+  }
   known(kind, id) { return (KINDS[kind] || []).some(q => q.id === id); }
   owns(kind, id) { const it = (KINDS[kind] || []).find(q => q.id === id); return !!it && (!(it.rarity > 0) || this.sql.exec(`SELECT 1 FROM owned WHERE kind = ? AND id = ?`, kind, id).toArray().length > 0); }
   me() {
@@ -42,7 +52,7 @@ export class VaultCore {
     const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
     for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
     if (this.get('dama', 0) >= 1000) this.set('dama', E.ECONOMY.DAMA_START);                    // (the first accounts started at 1000)
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned,
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned, devices: 1 + this.get('devices', []).length,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };

@@ -57,3 +57,6 @@
 #app.desk .sheet .tgl i{display:none}
 #app.desk .sheet #sheetBody>*+.field{padding-top:14px;background:url(ui/divider.webp) top center/100% 6px no-repeat}
 #app.desk .sheet .tglrow .lab{font-size:15px;color:#e3ddd1}
+/* the account (20-sheets.js sheetLinkMake): its short id, and a link code shown large enough to read across a table */
+.acct-id{font:600 14px var(--num);letter-spacing:.06em;color:var(--sub)}
+.linkcode{margin:8px 0 2px;text-align:center;font:700 40px/1.1 var(--num);letter-spacing:.14em;color:var(--fg);user-select:all;-webkit-user-select:all}

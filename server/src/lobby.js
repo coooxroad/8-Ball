@@ -1,11 +1,20 @@
 /* The ranked lobby's Durable Object: one for each game. The rules are LobbyCore (ranked.js). */
 import { DurableObject } from 'cloudflare:workers';
 import { LobbyCore, InviteCore } from './ranked.js';
+import { LinkCore } from './link.js';
 
 export class Lobby extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.core = null; }
   async fetch(request) {
     const body = await request.json().catch(() => ({})), path = new URL(request.url).pathname;
+    // the lobby named 'links': codes and Google accounts that link devices to an account (link.js; kept in its SQLite)
+    if (path.startsWith('/link/')) {
+      const K = this.links || (this.links = new LinkCore(this.ctx.storage.sql)), what = path.slice(6);
+      if (what === 'make') return Response.json(Object.assign({ ok: true }, K.make(body.acct)));
+      if (what === 'use') { const r = K.use(body.code); return Response.json(r.acct ? { ok: true, acct: r.acct } : { ok: false, why: r.why }); }
+      if (what === 'google') { const r = K.google(body.sub, body.acct || null); return Response.json(r.acct ? Object.assign({ ok: true }, r) : { ok: false, why: r.why }); }
+      return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
+    }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)
     if (path.startsWith('/invite/')) {
       const I = this.inv || (this.inv = new InviteCore()), what = path.slice(8);

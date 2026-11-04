@@ -4,6 +4,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
+import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
+import { googleWho, forgetGoogleKeys } from '../src/google.js';
+import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
@@ -333,6 +336,46 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
   const o2 = I.open(host), o3 = I.open(host); ok(!I.peek(o2.code).ok && I.peek(o3.code).ok, 'invite: a new code closes the host\'s older one');
   console.log('invites: checked');
+}
+// linking devices (link.js, core.js devices): a code works once, within its time, and only the last one made; wrong tries
+// are capped a minute; any of an account's keys opens it, at most MAX_DEVICES besides the first
+{
+  let t = 1000, n = 0; const { sql } = sqlOf(), K = new LinkCore(sql, () => t, k => Uint8Array.from({ length: k }, () => (n = (n * 7 + 3) % 251)));
+  const a = K.make('a'.repeat(32)); ok(/^[A-Z2-9]{8}$/.test(a.code) && a.until === t + CODE_MS, `link: a code of 8 (${a.code})`);
+  const b = K.make('a'.repeat(32)); ok(K.use(a.code).why === 'no such code', 'link: a newer code replaces the last one');
+  ok(K.use(b.code.toLowerCase().replace(/(....)/, '$1-')).acct === 'a'.repeat(32), 'link: a code typed in any case, with a dash, works');
+  ok(K.use(b.code).why === 'no such code', 'link: and only once');
+  const c = K.make('c'.repeat(32)); t += CODE_MS + 1; ok(K.use(c.code).why === 'no such code', 'link: not after its time');
+  t += 120000; for (let i = 0; i < TRIES_PER_MIN; i++) K.use('ZZZZZZZZ');
+  const d = K.make('d'.repeat(32)); ok(K.use(d.code).why === 'slow down', 'link: too many wrong tries a minute hold everyone off');
+  t += 61000; ok(K.use(d.code).acct === 'd'.repeat(32), 'link: and a minute later it works');
+  ok(K.google('g1', null).why === 'not tied', 'link: a Google account tied to nothing, signed in with no account: nothing');
+  ok(K.google('g1', 'e'.repeat(32)).tied && K.google('g1', 'f'.repeat(32)).acct === 'e'.repeat(32), 'link: a Google account is tied once, to the first account');
+  const v = vault(); v.init('1'.repeat(64)); ok(v.authed('1'.repeat(64)) && !v.authed('2'.repeat(64)), 'devices: the first key opens it');
+  ok(v.addDevice('2'.repeat(64)).ok && v.authed('2'.repeat(64)) && v.authed('1'.repeat(64)) && v.me().devices === 2, 'devices: a linked key opens it too');
+  for (let i = 3; i < 3 + MAX_DEVICES + 2; i++) v.addDevice(i.toString(16).padStart(64, '0'));
+  ok(v.me().devices === 1 + MAX_DEVICES && v.authed('1'.repeat(64)) && !v.authed('2'.repeat(64)), 'devices: at most MAX_DEVICES linked, the oldest goes, the first stays');
+  ok(!v.addDevice('not a hash').ok && !vault().addDevice('3'.repeat(64)).ok, 'devices: only a real hash, only to an opened account');
+  console.log('linking: checked');
+}
+// Google sign-in (google.js): a token signed with the published key, for this app, in date - and nothing else
+{
+  const pair = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
+  const jwk = Object.assign(await crypto.subtle.exportKey('jwk', pair.publicKey), { kid: 'k1' });
+  const get = async () => ({ ok: true, json: async () => ({ keys: [jwk] }) }), now = 1.8e12;
+  const b64 = o => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
+  const tok = async (body, kid = 'k1', key = pair.privateKey) => { const h = b64({ alg: 'RS256', kid, typ: 'JWT' }), p = b64(body);
+    const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(h + '.' + p)); return h + '.' + p + '.' + Buffer.from(sig).toString('base64url'); };
+  const good = { iss: 'https://accounts.google.com', aud: 'app.apps.googleusercontent.com', sub: '1234', email: 'x@y.z', exp: now / 1000 + 600 };
+  forgetGoogleKeys();
+  ok((await googleWho(await tok(good), 'app.apps.googleusercontent.com', get, now)).sub === '1234', 'google: a good token says who it is');
+  ok((await googleWho(await tok(good), null, get, now)).why === 'google not set up', 'google: nothing without a client id');
+  ok((await googleWho(await tok({ ...good, aud: 'other' }), 'app.apps.googleusercontent.com', get, now)).why === 'not for this app', 'google: another app\'s token is refused');
+  ok((await googleWho(await tok({ ...good, exp: now / 1000 - 1 }), 'app.apps.googleusercontent.com', get, now)).why === 'not for this app', 'google: an expired token is refused');
+  const other = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
+  ok((await googleWho(await tok(good, 'k1', other.privateKey), 'app.apps.googleusercontent.com', get, now)).why === 'bad signature', 'google: a token not signed by Google is refused');
+  ok((await googleWho('a.b', 'app.apps.googleusercontent.com', get, now)).why === 'bad token', 'google: not a token');
+  console.log('google sign-in: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);

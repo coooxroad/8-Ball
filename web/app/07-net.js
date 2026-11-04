@@ -129,6 +129,17 @@ const net = (() => {
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
     async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
+    /* Linking devices to one account (server/src/link.js): a code from this device for another (make: { code, until }),
+       or another device's code typed in here (use). Using one, this device takes a key of its own for that account; the
+       account it had is put aside in acctOld with what it showed (never deleted), and the wallet is asked for at once. */
+    get accountId() { return account ? account.id : null; },
+    async linkMake() { if (!(await ensure())) return null; return call('/v1/link/make', {}); },
+    async linkUse(code) {
+      const r = await call('/v1/link/use', { code }); if (!r || !r.ok || !r.id || !r.key) return r;
+      if (account && account.id !== r.id) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+      account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null); flush();
+      return r;
+    },
     // buying needs the server there and then: true when bought
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };

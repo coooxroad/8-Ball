@@ -19,6 +19,8 @@ export class Vault extends DurableObject {
     if (path === '/init') return this.core.init(await hashOf(body.key)) ? json({ ok: true }) : json({ ok: false }, 409);
     // from a ranked game's room (never from outside: the front door passes on only /v1/ paths)
     if (path === '/room/result') return json(this.core.ranked(body));
+    // from the front door only (it passes on only /v1/ paths): a device linked to this account (link.js)
+    if (path === '/link/add') return json(this.core.addDevice(body.hash));
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
     if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); return json({ ok: true, me }); }

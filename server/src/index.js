@@ -17,6 +17,7 @@
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
+import { googleWho } from './google.js';
 export { Vault } from './vault.js';
 export { Lobby } from './lobby.js';
 export { Room } from './room.js';
@@ -26,6 +27,38 @@ const MODES = ['eight', 'nine', 'four', 'three'];
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400' };
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
 const hex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))));
+
+/* POST /v1/link/make                  (this device's key) a code to give another device: { code, until }
+   POST /v1/link/use { code }          a code from another device: this device gets a key of its own for that account
+                                       { id, key } - the device keeps its old account's key aside (07-net.js)
+   POST /v1/link/google { token }      a Google sign-in (google.js): the account tied to it - tied now to this device's
+                                       account (its key sent) if it had none - and a key for it when it is another account
+                                       { id, key? , tied }
+   GET  /v1/link/google-config         { clientId } (null: no Google sign-in set up) */
+async function linkRoute(what, request, env, m) {
+  const links = env.LOBBY.get(env.LOBBY.idFromName('links')), ask = (p, b) => links.fetch('https://lobby/link/' + p, { method: 'POST', body: JSON.stringify(b) }).then(r => r.json());
+  // (the account this request's key opens, or null)
+  const mine = async () => { if (!m) return null; const t = await (await env.VAULT.get(env.VAULT.idFromName(m[1])).fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2] } })).json(); return t.ok ? m[1] : null; };
+  // a new key for this device on account `acct`
+  const keyFor = async acct => { const key = hex(crypto.getRandomValues(new Uint8Array(32)));
+    const r = await (await env.VAULT.get(env.VAULT.idFromName(acct)).fetch('https://vault/link/add', { method: 'POST', body: JSON.stringify({ hash: await hashOf(key) }) })).json();
+    return r.ok ? { id: acct, key, devices: r.devices } : null; };
+  if (what === 'google-config') return json({ ok: true, clientId: env.GOOGLE_CLIENT_ID || null });
+  const body = await request.json().catch(() => ({}));
+  if (what === 'make') { const acct = await mine(); if (!acct) return json({ ok: false, why: 'who are you' }, 401); return json(await ask('make', { acct })); }
+  if (what === 'use') {
+    const r = await ask('use', { code: String(body.code || '').slice(0, 20) }); if (!r.ok) return json(r, r.why === 'slow down' ? 429 : 200);
+    const k = await keyFor(r.acct); return k ? json(Object.assign({ ok: true }, k)) : json({ ok: false, why: 'no such account' });
+  }
+  if (what === 'google') {
+    const who = await googleWho(body.token, env.GOOGLE_CLIENT_ID); if (!who.sub) return json({ ok: false, why: who.why });
+    const acct = await mine(), r = await ask('google', { sub: who.sub, acct }); if (!r.ok) return json(r);
+    if (r.acct === acct) return json({ ok: true, id: acct, tied: r.tied, same: true });
+    const k = await keyFor(r.acct); return k ? json(Object.assign({ ok: true, tied: false }, k)) : json({ ok: false, why: 'no such account' });
+  }
+  return json({ ok: false, why: 'no such thing' }, 404);
+}
 
 /* Anything that throws on the way - here or in a Durable Object behind - comes back as an answer the app can read: with
    its CORS headers and what went wrong. (Cloudflare's own error page has no CORS headers, so a page saw only a failed
@@ -51,6 +84,9 @@ async function frontDoor(request, env) {
     if (room) return env.ROOM.get(env.ROOM.idFromName(room[1])).fetch(request);
     if (!url.pathname.startsWith('/v1/')) return json({ ok: false, why: 'no such thing' }, 404);
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
+    // linking devices to one account (link.js): before the key is required - the device being linked may have none
+    const link = /^\/v1\/link\/(make|use|google|google-config)$/.exec(url.pathname);
+    if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
     const vault = env.VAULT.get(env.VAULT.idFromName(m[1]));
     const inv = /^\/v1\/invite\/(open|ask|peek|join|leave)$/.exec(url.pathname);
