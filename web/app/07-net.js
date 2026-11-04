@@ -13,35 +13,62 @@ const net = (() => {
   let me = store.get('me', null), busy = false, account = store.get('acct', null);
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
   const queue = () => store.get('claims', []);
-  /* one request; null when there is no answer (offline, or the server is down: try again later). The last trouble is kept
-     (net.trouble) so a screen waiting on the server can say what it is, not just go on waiting (54-ranked.js).
-     401 from the server means it does not know this device's account (its key does not open the vault): no request will
-     ever get through with it, so it is let go and the next request opens a new one (ensure). */
+  /* One request; null when there is no answer (offline, the server down or too slow: try again later). Every request has
+     a time limit (ms; AbortController) - a fetch that never ends would hold whatever waits on it (the ranked queue's
+     polling) for good. The answer carries its HTTP status (r.status, not enumerable). The last trouble is kept
+     (net.trouble) so a screen waiting on the server can say what it is.
+     The account's key is the only way into its vault, so it is never thrown away. A 401 is only believed when it is about
+     the account in use now (an old request's late 401 changes nothing) and when /v1/me, asked at once with that same
+     account, says 401 too: then this account is not the server's (another server, a wiped one) - it is put aside in
+     'acctOld' (kept, with what it was), and a new one is opened. */
   let trouble = null;
-  async function call(path, body) {
+  async function call(path, body, ms) {
+    const who = account, ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), ms || 15000) : 0;
     try {
-      const r = await fetch(SERVER + path, { method: body ? 'POST' : 'GET', body: body ? JSON.stringify(body) : undefined,
-        headers: Object.assign({ 'Content-Type': 'application/json' }, account ? { Authorization: `Bearer ${account.id}.${account.key}` } : {}) });
+      const r = await fetch(SERVER + path, { method: body ? 'POST' : 'GET', body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined,
+        headers: Object.assign({ 'Content-Type': 'application/json' }, who ? { Authorization: `Bearer ${who.id}.${who.key}` } : {}) });
       if (r.status >= 500) { const e = await r.json().catch(() => null); trouble = { path, status: r.status, why: 'server', error: e && e.error || '' }; console.warn('[net]', path, r.status, trouble.error); return null; }
-      const j = await r.json();
-      if (r.status === 401 && account && path !== '/v1/account') {
-        console.warn('[net]', path, '401: the server does not know this account - a new one is opened');
-        trouble = { path, status: 401, why: 'account' }; account = null; store.set('acct', null); lostAccount = true;
-      } else trouble = j && j.ok === false ? { path, status: r.status, why: j.why || 'refused' } : null;
+      const j = await r.json().catch(() => ({ ok: false, why: 'not json' }));
+      Object.defineProperty(j, 'status', { value: r.status, enumerable: false });
+      if (r.status === 401 && who && who === account && path !== '/v1/me') { trouble = { path, status: 401, why: 'account' }; doubt(who); }
+      else if (r.status === 401 && who && path === '/v1/me') trouble = { path, status: 401, why: 'account' };
+      else trouble = j && j.ok === false ? { path, status: r.status, why: j.why || 'refused' } : null;
       return j;
-    } catch (e) { trouble = { path, status: 0, why: 'offline' }; console.warn('[net]', path, String(e && e.message || e)); return null; }
+    } catch (e) {
+      trouble = { path, status: 0, why: ctl && ctl.signal.aborted ? 'slow' : 'offline' }; console.warn('[net]', path, String(e && e.message || e)); return null;
+    } finally { clearTimeout(timer); }
   }
-  let lostAccount = false;
+  // a 401 about the account in use: asked once more, plainly; only a second 401 for the same account lets it go (put aside)
+  let doubting = null, lostAccount = false;
+  function doubt(who) {
+    if (doubting) return doubting;
+    return doubting = (async () => {
+      const m = await call('/v1/me');
+      if (m && m.status === 401 && account === who) {
+        console.warn('[net] the server does not know this account - it is kept aside and a new one opened');
+        const old = store.get('acctOld', []); if (!old.some(a => a.id === who.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, who)); store.set('acctOld', old);
+        account = null; store.set('acct', null); lostAccount = true;
+      }
+    })().finally(() => { doubting = null; });
+  }
   // what the last trouble was, in a few words for a screen (null: none)
   const troubleText = () => { const T = trouble; if (!T) return null;
-    return T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'account' ? '계정 다시 만드는 중' : T.why === 'server' ? `서버 오류 ${T.status}${T.error ? ' · ' + T.error.slice(0, 60) : ''}` : `서버: ${T.why}`; };
+    return T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'slow' ? '서버 응답이 늦음' : T.why === 'account' ? '계정 확인 중'
+      : T.why === 'server' ? `서버 오류 ${T.status}${T.error ? ' · ' + T.error.slice(0, 60) : ''}` : `서버: ${T.why}`; };
+  // (one account at a time: requests that find none wait for the one being opened, rather than each opening its own)
+  let opening = null;
   async function ensure() {
     if (!SERVER) return false;
+    if (doubting) await doubting;
     if (account) return true;
-    const r = await call('/v1/account', {}); if (!r || !r.ok) return false;
-    account = { id: r.id, key: r.key }; store.set('acct', account);
-    if (lostAccount) { lostAccount = false; toast('서버가 이 기기의 계정을 몰라서 새 계정을 만들었습니다.', 'foul', 3600); }
-    return true;
+    if (!opening) opening = (async () => {
+      const r = await call('/v1/account', {}, 20000); if (!r || !r.ok || !r.id || !r.key) return false;
+      account = { id: r.id, key: r.key }; store.set('acct', account);
+      if (lostAccount) { lostAccount = false; toast('서버가 이 기기의 계정을 몰라서 새 계정을 만들었습니다. 옛 계정은 기기에 보관됩니다.', 'foul', 4000); }
+      return true;
+    })().finally(() => { opening = null; });
+    return opening;
   }
   // what the server says now; announce: say so when coins came in that were not answered for at once (a match checked later)
   function setMe(m, announce) {
@@ -66,7 +93,9 @@ const net = (() => {
     try {
       if (!(await ensure())) return;
       for (let q = queue(); q.length; q = queue()) {
-        const c = q[0], r = await call('/v1/' + c.kind, c.body); if (!r) return;
+        // (kept for later unless the server has decided: paid, or turned down for good. No answer, a 401 (the account
+        // in doubt), 403, 408 or 429 (try later) leave it waiting - a reward is never lost to a passing fault)
+        const c = q[0], r = await call('/v1/' + c.kind, c.body); if (!r || [401, 403, 408, 429].includes(r.status)) return;
         if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);
         if (r.me) setMe(r.me);
         if (r.pending) laterN = 0;
