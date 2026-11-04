@@ -120,6 +120,20 @@ for (const mode of ['eight', 'four']) for (const dama of [10, 30, 80]) {
   const total = Object.fromEntries(Object.keys(s[0]).map(k => [k, s[0][k] + s[1][k]]));
   console.log(`| ${mode} | ${dama} | ${(total.runs / total.visits).toFixed(2)} | ${(total.runs / Math.max(1, total.scoringVisits)).toFixed(2)} | ${(total.fouls / total.shots * 100).toFixed(1)}% | ${(total.power / total.shots * 100).toFixed(1)}% |`);
 }
-assert(metrics.time / metrics.plans < 40, `average plan ${metrics.time / metrics.plans}ms exceeds 40ms`);
+/* (how long a plan takes, measured against how long this machine takes to play one stroke out - copy the table, strike,
+   run it - so the bound holds on a fast machine and a slow one alike. 15 strokes: the 40 ms it was set at, on the machine
+   where a plan took 30 ms (about 11 strokes) - the same headroom. The yardstick is the middle of several runs, taken now that the machine is warm.) */
+const strokeMs = (() => {
+  const g = fresh(), runs = [];
+  for (let k = 0; k < 7; k++) {
+    g.start('eight', ['A', 'B'], false, { rnd: seeded(5) }); const P = g.P, t0 = performance.now();
+    for (let i = 0; i < 60; i++) { const w = P.clone(g.world); P.strike(w, (i * 0.37) % 6.28, 1.5 + (i % 7) * 0.8, 0, 0); P.run(w, 20); }
+    runs.push((performance.now() - t0) / 60);
+  }
+  return runs.sort((x, y) => x - y)[3];
+})();
+const planStrokes = metrics.time / metrics.plans / strokeMs;
+console.log(`plan cost: ${(metrics.time / metrics.plans).toFixed(1)} ms average = ${planStrokes.toFixed(1)} strokes played out (a stroke ${strokeMs.toFixed(2)} ms here)`);
+assert(planStrokes < 15, `average plan costs ${planStrokes.toFixed(1)} strokes, more than 15`);
 require('./ai-human-behavior');
 console.log(`human AI passed: ${metrics.plans} plans, ${(metrics.time / metrics.plans).toFixed(2)}ms average, ${metrics.worst.toFixed(2)}ms worst, ${metrics.sims} simulations max; ${names.size} distinct names; 72 personality/style combinations.`);
