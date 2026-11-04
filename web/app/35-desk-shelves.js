@@ -2,7 +2,8 @@
    cards, each with the thing in it; tapping a card opens it in the tray - large, or tried on the live table - with an X
    at the top left back to the cards, and the slate says what it is and wears it (상점: buys it, once the shop opens).
    Opening a card only tries it on (the scene shows it); X or another place puts back what is worn. */
-let shelfOpen = null;                                                 // the card opened in the tray, or null for all the cards
+// shelfOpen: the card opened in the tray, or null for all the cards; cueView: a cue opened shows 'trial' (시타) or 'pics'
+let shelfOpen = null, cueView = 'trial';
 const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 // a set of balls in its case, a ball in each cup (cup centres 23.6, 50 and 76.4% down): carom white, yellow, red; else
 // the cue ball, the 1 and the 3
@@ -106,7 +107,13 @@ function statRow(r) {
 }
 const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
-    show: (c, stage, i) => { stage.dataset.win = '0'; dkPut(stage, cueShow(i)); },
+    // (opened: tried on the live table - 시타, 37-cue-trial.js - or its photographs, by the button at the tray's corner)
+    show: (c, stage, i) => {
+      const sw = el('button', { class: 'trial-sw', text: cueView === 'pics' ? '시타' : '사진', onclick: () => { SND.tap(); cueView = cueView === 'pics' ? 'trial' : 'pics'; if (cueView === 'pics') { cueTrial.stop(); useCue(prefs.cues[0]); homePreview(); } paintHome(); } });
+      if (cueView === 'pics') { cueTrial.stop(); stage.dataset.win = '0'; dkPut(stage, [cueShow(i), sw]); return; }
+      const tag = el('div', { class: 'trial-tag' }); stage.dataset.win = '1'; dkPut(stage, [tag, sw]); cueTrial.start(i, tag);
+    },
+    undo: () => { if (!cueTrial.on) return; cueTrial.stop(); useCue(prefs.cues[0]); homePreview(); },
     about: c => [c.note, ...(c.spec || [])], stats: c => cueStats(c, CUES[prefs.cues[0]]), wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],

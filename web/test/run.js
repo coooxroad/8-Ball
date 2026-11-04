@@ -418,5 +418,28 @@ for (const name of ['bar', 'pro', 'pub']) {
   }
   console.log(`ai worker: ${n} plans the same as the game's own`);
 }
+// 시타 (app/37-cue-trial.js): with every cue, each stroke leaves the cue ball on the table having met no more cushions
+// than the stroke means it to (so the ball that went further is the cue that plays stronger), and drops what it should
+{
+  const { CUES, TRIAL_TABLE, TRIAL_SCENES } = require(path.join(W, 'content', '20-cues.js'));
+  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES[TRIAL_TABLE])), carom: createPhysics({ R: 0.03275, pockets: false }) });
+  g.start('practice', ['', ''], false, {}); const P = g.P, out = [];
+  for (const S of TRIAL_SCENES) {
+    let lo = 9, hi = -9;
+    for (const c of [{ name: '(능력치 0)', stat: {} }, ...CUES]) {
+      const s = c.stat || {}, kp = 1 + (s.power || 0) / 100, ks = 1 + (s.spin || 0) / 100;
+      const w = P.makeWorld(16); for (let i = 1; i < 16; i++) { w.balls[i].on = false; w.balls[i].x = 9 + i; w.balls[i].y = 9; }
+      P.place(w, 0, S.cue[0], S.cue[1]); for (const [id, x, y] of S.balls) P.place(w, id, x, y);
+      P.strike(w, S.angle, g.vOf(S.p) * kp, S.a * 0.5 * ks, S.b * 0.5 * ks, 0);
+      const ev = P.run(w, 20), b = w.balls[0];
+      if (!b.on) { fail(`시타 ${S.name} with ${c.name}: the cue ball dropped`); continue; }
+      if (ev.cushions > S.rails) fail(`시타 ${S.name} with ${c.name}: the cue ball met ${ev.cushions} cushion(s), more than ${S.rails}`);
+      for (const id of S.drop || []) if (w.balls[id].on) fail(`시타 ${S.name} with ${c.name}: ball ${id} stayed up`);
+      const d = Math.hypot(b.x - S.cue[0], b.y - S.cue[1]); lo = Math.min(lo, d); hi = Math.max(hi, d);
+    }
+    out.push(`${S.name} ${lo.toFixed(2)}-${hi.toFixed(2)}m`);
+  }
+  console.log(`시타: ${CUES.length + 1} cues, ${out.join(', ')}`);
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

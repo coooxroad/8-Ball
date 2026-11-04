@@ -142,3 +142,13 @@
 .fxbs.sm .fxb{padding:3px 6px 3px 5px;gap:3px}
 .fxbs.sm .fxb i{width:11px;height:11px}
 .fxbs.sm .fxb b{font-size:9px;letter-spacing:.06em}
+/* 시타 (app/37-cue-trial.js): over the live table, which stroke this is and what this cue makes of it; the corner button
+   to the cue's photographs and back */
+#app.desk .dk-stage .trial-tag{position:absolute;left:14px;top:12px;z-index:4;display:flex;flex-direction:column;gap:2px;max-width:calc(100% - 120px);
+  padding:7px 12px 8px;border-radius:10px;background:rgba(8,14,24,.72);color:#f6ead0;box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+#app.desk .dk-stage .trial-tag b{font:800 15px var(--ui-font)}
+#app.desk .dk-stage .trial-tag span{font:600 12px/1.35 var(--ui-font);opacity:.88}
+#app.desk .dk-stage .trial-sw{position:absolute;right:12px;top:12px;z-index:5;height:34px;padding:0 14px;border:0;border-radius:999px;cursor:pointer;
+  background:rgba(8,14,24,.72);color:#f6ead0;font:700 13px var(--ui-font);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+#app.desk.compact .dk-stage .trial-tag b{font-size:13px}
+#app.desk.compact .dk-stage .trial-tag span{font-size:11px}
