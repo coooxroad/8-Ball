@@ -3,13 +3,21 @@
 import { E, Replay } from './check.js';
 
 /* The ranked lobby: one Durable Object per game (8볼, 9볼, 4구, 3구). Players waiting for a ranked game ask it every couple
-   of seconds; it pairs two whose DAMA is close, the range widening the longer they wait. Nobody close enough after
-   STAND_IN_AFTER: a stand-in takes the other seat - a person-like computer player (web/ai/), shown as a player like any
+   of seconds; it pairs two whose DAMA is close, the range widening the longer they wait. Nobody close enough after a
+   while - each player's own, drawn when they start waiting (standInDelay) - a stand-in takes the other seat - a person-like computer player (web/ai/), shown as a player like any
    other. A pair (or a player and a stand-in) get a room (room.js) and each a token for their seat.
    What is waiting is held in memory only: a lobby that restarts loses at most a few seconds of waiting. */
 
-export const STAND_IN_AFTER = 20000;                  // ms of waiting before a stand-in takes the other seat
-const GONE = 8000;                                    // a waiting player not heard from for this long has left
+/* How long a player waits before a stand-in sits down, drawn for each player as they start waiting - always the same wait
+   would give it away (owner's numbers): 30% of the time 10-20 s, 50% 20-30 s, 20% 30-60 s, evenly within each. */
+export function standInDelay(rnd) {
+  const u = rnd(), v = rnd();
+  return Math.round(u < 0.3 ? 10000 + v * 10000 : u < 0.8 ? 20000 + v * 10000 : 30000 + v * 30000);
+}
+export const STAND_IN_AFTER = 60000;                  // ms of waiting after which a stand-in is always there (the longest standInDelay)
+/* a waiting player not heard from for this long has left (and starts again from nothing). The app asks every two seconds;
+   one slow answer, or a moment away from the app, must not set a long wait back to the start (it was 8 s). */
+const GONE = 15000;
 const range = waited => Math.min(60, 4 + 2 * waited / 1000);    // DAMA apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -38,7 +46,7 @@ export function standInGear(rnd) {
 }
 
 export class LobbyCore {
-  constructor(mode, now) { this.mode = mode; this.now = now || (() => Date.now()); this.wait = new Map(); this.made = new Map(); }
+  constructor(mode, now, delayOf) { this.mode = mode; this.now = now || (() => Date.now()); this.delayOf = delayOf || (() => standInDelay(Math.random)); this.wait = new Map(); this.made = new Map(); }
   /* p: { acct, dama, name, icon } asks again. Answers { waiting, waited } or the game it is in:
      { room, seat, token, seed, first, opp: { name, icon, dama }, standIn?: persona } - the same answer until it is taken */
   ask(p) {
@@ -47,7 +55,7 @@ export class LobbyCore {
     if (this.made.has(p.acct)) return this.made.get(p.acct).you;
     for (const [k, w] of this.wait) if (t - w.seen > GONE) this.wait.delete(k);
     let me = this.wait.get(p.acct);
-    if (!me) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t });
+    if (!me) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
     me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null;
     // the closest of those close enough (by either one's wait)
     let best = null, bd = Infinity;
@@ -57,7 +65,7 @@ export class LobbyCore {
       if (d <= Math.max(range(t - me.since), range(t - o.since)) && d < bd) { bd = d; best = o; }
     }
     if (best) return this.pair(me, best, null, t);
-    if (t - me.since >= STAND_IN_AFTER) {
+    if (t - me.since >= Math.min(STAND_IN_AFTER, me.standInAt)) {
       const seedR = Math.random, persona = standIn(me.dama, seedR);
       return this.pair(me, { acct: null, dama: persona.dama, name: persona.name, icon: persona.icon, gear: standInGear(seedR) }, persona, t);
     }

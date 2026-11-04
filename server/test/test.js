@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
-import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -162,7 +162,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
 }
 // ranked: the lobby pairs by DAMA (the range widening with the wait), and after a while seats a stand-in
 {
-  let t = 0; const L = new LobbyCore('eight', () => t);
+  let t = 0; const L = new LobbyCore('eight', () => t, () => 20000);
   ok(L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }).waiting, 'lobby: one alone waits');
   const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in DAMA are paired at once');
   const a = L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }); ok(a.room === b.room && a.seat === 1 && a.token !== b.token && a.seed === b.seed, 'lobby: the other hears the same room, its own seat');
@@ -172,6 +172,18 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   L.ask({ acct: 'c', dama: 20 }); t = 20000; L.ask({ acct: 'd', dama: 70 });
   t = 20500; const c = L.ask({ acct: 'c', dama: 20 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
   t = 40000; ok(L.ask({ acct: 'e', dama: 30 }).waiting && !L.wait.has('d'), 'lobby: one not heard from has left');
+  // each player's own wait before a stand-in (standInDelay): 30% 10-20 s, 50% 20-30 s, 20% 30-60 s
+  { const n = 20000, ds = []; let s = 7; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+    for (let i = 0; i < n; i++) ds.push(standInDelay(rnd));
+    const share = (a, b) => ds.filter(d => d >= a && d < b).length / n;
+    ok(ds.every(d => d >= 10000 && d <= 60000), 'stand-in wait: always 10-60 s');
+    ok(Math.abs(share(10000, 20000) - 0.3) < 0.02 && Math.abs(share(20000, 30000) - 0.5) < 0.02 && Math.abs(share(30000, 60001) - 0.2) < 0.02,
+      `stand-in wait: 30 / 50 / 20% (${[share(10000, 20000), share(20000, 30000), share(30000, 60001)].map(x => (x * 100).toFixed(1)).join(' / ')})`);
+    // a player asking every two seconds gets theirs at their own time, and one answer late by 10 s does not start it again
+    let u = 0; const M = new LobbyCore('nine', () => u, () => 13000);
+    for (; u < 13000; u += 2000) ok(M.ask({ acct: 'q', dama: 30, name: 'Q' }).waiting, 'stand-in wait: waits its own time');
+    u = 23000; const got = M.ask({ acct: 'q', dama: 30, name: 'Q' });
+    ok(got.room && got.standIn, 'stand-in wait: there at its time, a slow answer between'); }
   // what each has on reaches the other; a stand-in dresses too
   { const G = new LobbyCore('nine', () => 0); G.ask({ acct: 'g', dama: 30, name: 'G', gear: { cue: 'gold', ball: null, table: 'pool', trail: 'fire' } });
     const h = G.ask({ acct: 'h', dama: 30, name: 'H', gear: { cue: null, ball: 'disco', table: null, trail: null } });

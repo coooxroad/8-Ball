@@ -145,7 +145,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - 검사: `cd server && npm test`(규칙, 같은 요청 두 번, 잔액 부족, 바뀐 샷·옮긴 공 잡기, 하루 상한).
   배포: `main`에 푸시하면 `.github/workflows/server.yml`이 검사 후 배포한다(저장소 Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
 - 랭킹전(`server/src/ranked.js`의 규칙, `lobby.js`·`room.js`는 그 Durable Object): 종목마다 로비 하나가 DAMA가 가까운 둘을
-  짝짓는다(기다릴수록 범위가 넓어짐). 20초 안에 없으면 **대역**(사람 같은 컴퓨터 상대, `web/ai/`)이 앉는다 — 화면에는 컴퓨터라고
+  짝짓는다(기다릴수록 범위가 넓어짐). 플레이어마다 정해지는 시간(30%는 10~20초, 50%는 20~30초, 20%는 30~60초, `ranked.js` `standInDelay`) 안에 없으면 **대역**(사람 같은 컴퓨터 상대, `web/ai/`)이 앉는다 — 화면에는 컴퓨터라고
   쓰지 않는다. 경기마다 방 하나: 두 기기가 WebSocket으로 붙고, 각자 자기 샷을 쳐서 보내면 상대 기기가 같은 물리로 그대로 친다
   (치기 전 공 위치를 샷에 실어 보내 맞춘다). 시작 배치는 방의 씨앗(`seededRandom`)으로 두 기기와 서버가 똑같이 만든다.
   끝나면 방이 기록을 처음부터 다시 쳐 보고(`Replay` open 모드: 차례·공 위치 확인) **그 결과로** 승자·코인·DAMA를 정해 양쪽 금고에
