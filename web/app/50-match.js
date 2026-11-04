@@ -4,7 +4,7 @@ const match = {
   ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
-    usePhysics(); scene.clearFalls();
+    usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn() };
     const key = c.names.join('\u0001') + c.mode;
@@ -18,7 +18,7 @@ const match = {
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
     game.aiRnd = standIn ? seededRandom((o.seed ^ 0x2545f491) >>> 0) : null;
     game.humanStates = [null, null]; game.humanCanResign = !!standIn;
-    match.best = null; match.worst = null; match.shots = []; match.count = 0;
+    match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null;
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
     match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
@@ -66,6 +66,9 @@ const match = {
   },
   finish() {
     const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
+    // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
+    // records back as they were before and finishes again with the room's winner, so it is never counted twice)
+    if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
     const rw = recOf(pw.name), rl = recOf(pl.name);
     rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
     rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);

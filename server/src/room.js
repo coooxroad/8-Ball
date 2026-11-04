@@ -1,6 +1,6 @@
 /* A ranked game's Durable Object: one for each game being played. The rules are RoomCore (ranked.js). */
 import { DurableObject } from 'cloudflare:workers';
-import { RoomCore, RETURN_WITHIN } from './ranked.js';
+import { RoomCore, RETURN_WITHIN, JOIN_WITHIN } from './ranked.js';
 
 const SLICE = 150;
 
@@ -13,7 +13,8 @@ export class Room extends DurableObject {
   async soon(ms) { const a = await this.ctx.storage.getAlarm(); if (!a || a > Date.now() + ms) await this.ctx.storage.setAlarm(Date.now() + ms); }
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname === '/init') return this.core.init(await request.json()) ? Response.json({ ok: true }) : Response.json({ ok: false }, { status: 409 });
+    // (opened: the room looks again once a seat has had its time to come in - RoomCore.timers)
+    if (url.pathname === '/init') { if (!this.core.init(await request.json())) return Response.json({ ok: false }, { status: 409 }); await this.soon(JOIN_WITHIN + 500); return Response.json({ ok: true }); }
     // /v1/room/<id>?token=...: a seat's device, by WebSocket
     if (request.headers.get('Upgrade') !== 'websocket') return Response.json({ ok: false, why: 'websocket only' }, { status: 426 });
     if (!this.core.get('room')) return Response.json({ ok: false, why: 'no such room' }, { status: 404 });
@@ -41,7 +42,7 @@ export class Room extends DurableObject {
     if (this.core.timers() === 'check') return this.soon(20);
     const st = this.core.get('status');
     if (st === 'checking') { if (this.core.work(SLICE)) return this.soon(20); }
-    if (st === 'playing') { const gone = this.core.get('gone'); if (gone.some(Boolean)) return this.soon(5000); }
+    if (st === 'playing') { const gone = this.core.get('gone'), wj = this.core.waitingJoin(); if (gone.some(Boolean)) return this.soon(5000); if (wj != null) return this.soon(wj + 500); }
     // paid out: each vault told, again a little later if one did not answer
     let left = false;
     for (const p of this.core.payouts()) {

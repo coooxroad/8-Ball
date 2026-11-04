@@ -7,7 +7,7 @@ import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
 import { googleWho, forgetGoogleKeys } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
-import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -336,6 +336,33 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
   const o2 = I.open(host), o3 = I.open(host); ok(!I.peek(o2.code).ok && I.peek(o3.code).ok, 'invite: a new code closes the host\'s older one');
   console.log('invites: checked');
+}
+// online games (Codex B04-B07): the room's table; a room heard of only once open, and a failed one undone; a new search
+// never lands in an old room; a seat that never comes in loses in its time
+{
+  let t = 0; const L = Object.assign(new LobbyCore('eight', () => t, () => 20000), { deferReady: true });
+  L.ask({ acct: 'a', dama: 30, name: 'A', seek: 's1' }); const b = L.ask({ acct: 'b', dama: 31, name: 'B', seek: 's2' });
+  ok(b.room && b.table === ROOM_TABLE && L.lastInit.room === b.room, 'online: the pair hears the room\'s table');
+  ok(L.ask({ acct: 'a', dama: 30, name: 'A', seek: 's1' }).waiting, 'online: the other hears "waiting" while the room is being opened');
+  L.unpair(b.room); const re = L.ask({ acct: 'a', dama: 30, name: 'A', seek: 's1' });
+  ok(re.room && re.room !== b.room && L.lastInit.room === re.room, 'online: a room that could not open is undone - the two are paired again into a new one');
+  const c = L.lastInit.room; L.ready(c); const a2 = L.ask({ acct: 'a', dama: 30, name: 'A', seek: 's1' });
+  ok(a2.room === c, 'online: once open, the same search hears it (again, if its answer was lost)');
+  const a3 = L.ask({ acct: 'a', dama: 30, name: 'A', seek: 's9' }); ok(a3.waiting && !a3.room, 'online: a new search does not land in the old room');
+  const I = Object.assign(new InviteCore(), { deferReady: true }), op = I.open({ acct: 'h', dama: 30, name: 'H', mode: 'nine' });
+  const j = I.join({ acct: 'g', dama: 30, name: 'G' }, op.code); ok(j.ok && I.ask('h', op.code).waiting, 'invite: the host hears "waiting" while the room opens');
+  I.unjoin(op.code); ok(I.join({ acct: 'g', dama: 30, name: 'G' }, op.code).init, 'invite: a room that could not open may be joined again');
+  I.ready(op.code); ok(I.ask('h', op.code).room && I.ask('h', op.code).table === ROOM_TABLE, 'invite: then the host hears the room');
+  const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx), seats = [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: 30 }];
+  R.init({ room: 'e'.repeat(32), mode: 'eight', seed: 1, first: 0, standIn: null, seats });
+  const t0 = Date.now(), real = Date.now; R.connected(0);
+  ok(R.log().table === ROOM_TABLE, 'online: the room plays it again on its own table');
+  Date.now = () => t0 + JOIN_WITHIN - 1000; ok(R.timers() === null && R.waitingJoin() > 0, 'online: a seat not yet in has its time');
+  Date.now = () => t0 + JOIN_WITHIN + 10; ok(R.timers() === 'check' && R.get('end').loser === 1, 'online: a seat that never came in loses');
+  Date.now = real;
+  const S = new RoomCore(sqlOf().sql, () => {}, fn => fn()); S.init({ room: 'f'.repeat(32), mode: 'nine', seed: 1, first: 0, standIn: { name: 'S' }, seats: [seats[0], { acct: null, token: 't1', name: 'S', dama: 30 }] });
+  S.connected(0); Date.now = () => t0 + JOIN_WITHIN + 10; ok(S.timers() === null, 'online: a stand-in\'s seat is always there'); Date.now = real;
+  console.log('online rooms (B04-B07): checked');
 }
 // linking devices (link.js, core.js devices): a code works once, within its time, and only the last one made; wrong tries
 // are capped a minute; any of an account's keys opens it, at most MAX_DEVICES besides the first

@@ -69,7 +69,8 @@ const tableCache = {};
 const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysics(cfg));
 const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
 const PH = {};
-function usePhysics() { PH.pool = poolOf(prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); }
+// (tbl: a table the game was given - an online game's is the room's, never this device's choice: 54-ranked.js)
+function usePhysics(tbl) { PH.pool = poolOf(tbl || prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); }
 usePhysics();
 const game = createGame(PH, createAI);
 const drills = createDrills(), puzzles = createPuzzles();

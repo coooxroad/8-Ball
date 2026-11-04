@@ -17,7 +17,7 @@ export class Lobby extends DurableObject {
     }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)
     if (path.startsWith('/invite/')) {
-      const I = this.inv || (this.inv = new InviteCore()), what = path.slice(8);
+      const I = this.inv || (this.inv = Object.assign(new InviteCore(), { deferReady: true })), what = path.slice(8);
       if (what === 'open') return Response.json(I.open(body));
       if (what === 'ask') return Response.json(I.ask(body.acct, body.code));
       if (what === 'peek') return Response.json(I.peek(body.code));
@@ -25,22 +25,26 @@ export class Lobby extends DurableObject {
       if (what === 'join') {
         const r = I.join(body, body.code);
         if (r.ok && r.init) {
-          const res = await this.env.ROOM.get(this.env.ROOM.idFromName(r.init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(r.init) });
-          if (!res.ok) return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 });
-          delete r.init;
+          // (the room opened before anyone hears of it; if it could not be, the join is undone and may be tried again)
+          const res = await this.env.ROOM.get(this.env.ROOM.idFromName(r.init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(r.init) }).catch(() => null);
+          if (!res || !(res.ok || res.status === 409)) { I.unjoin(body.code); return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 }); }
+          I.ready(body.code); delete r.init;
         }
         return Response.json(r);
       }
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
-    if (!this.core) this.core = new LobbyCore(body.mode);
+    if (!this.core) this.core = Object.assign(new LobbyCore(body.mode), { deferReady: true });
     if (new URL(request.url).pathname === '/leave') { this.core.leave(body.acct); return Response.json({ ok: true }); }
     const before = this.core.lastInit, r = this.core.ask(body);
     // a new pair: its room is opened before either player hears of it
     if (this.core.lastInit !== before) {
+      // (the room is opened before either player hears of it - the other asking meanwhile hears 'waiting'; if it could not
+      // be opened, the pair is undone and both wait on as they were. A room already there (409) is this one, opened.)
       const init = this.core.lastInit;
-      const res = await this.env.ROOM.get(this.env.ROOM.idFromName(init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) });
-      if (!res.ok) return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 });
+      const res = await this.env.ROOM.get(this.env.ROOM.idFromName(init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) }).catch(() => null);
+      if (!res || !(res.ok || res.status === 409)) { this.core.unpair(init.room); return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 }); }
+      this.core.ready(init.room);
     }
     return Response.json(Object.assign({ ok: true }, r));
   }

@@ -46,17 +46,24 @@ export function standInGear(rnd) {
 }
 
 export class LobbyCore {
-  constructor(mode, now, delayOf) { this.mode = mode; this.now = now || (() => Date.now()); this.delayOf = delayOf || (() => standInDelay(Math.random)); this.wait = new Map(); this.made = new Map(); }
-  /* p: { acct, dama, name, icon } asks again. Answers { waiting, waited } or the game it is in:
-     { room, seat, token, seed, first, opp: { name, icon, dama }, standIn?: persona } - the same answer until it is taken */
+  /* deferReady: a pair's room is told it is open only once it is (lobby.js opens it, then ready(room); a failure: unpair) -
+     until then those asking hear 'waiting'. Off in the tests of this core alone. */
+  constructor(mode, now, delayOf) { this.mode = mode; this.now = now || (() => Date.now()); this.delayOf = delayOf || (() => standInDelay(Math.random)); this.wait = new Map(); this.made = new Map(); this.pending = new Map(); this.deferReady = false; }
+  /* p: { acct, dama, name, icon, seek } asks again. Answers { waiting, waited } or the game it is in:
+     { room, seat, token, seed, first, opp: { name, icon, dama }, standIn?: persona } - the same answer until it is taken.
+     seek: the app's id for this one search. The room found is answered again (a lost answer, asked again) only to the same
+     search; a new search - after a game ended, or given up - starts waiting afresh instead of being sent back to the old
+     room. (No seek: as before, the same room for a minute.) */
   ask(p) {
     const t = this.now();
     for (const [k, m] of this.made) if (t - m.at > 60000) this.made.delete(k);
-    if (this.made.has(p.acct)) return this.made.get(p.acct).you;
+    const had = this.made.get(p.acct);
+    if (had && (had.seek == null || p.seek == null || had.seek === p.seek)) return had.ready ? had.you : { waiting: true, waited: 0, opening: true };
+    if (had) this.made.delete(p.acct);
     for (const [k, w] of this.wait) if (t - w.seen > GONE) this.wait.delete(k);
     let me = this.wait.get(p.acct);
-    if (!me) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
-    me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null;
+    if (!me || (p.seek != null && me.seek != null && me.seek !== p.seek)) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
+    me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null; me.seek = p.seek;
     // the closest of those close enough (by either one's wait)
     let best = null, bd = Infinity;
     for (const o of this.wait.values()) {
@@ -78,11 +85,21 @@ export class LobbyCore {
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     const init = { room, mode: this.mode, seed, first, standIn: persona,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
-    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
-    this.made.set(a.acct, { at: t, you: you(0) });
-    if (b.acct) this.made.set(b.acct, { at: t, you: you(1) });
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
+    const ready = !this.deferReady;
+    this.made.set(a.acct, { at: t, you: you(0), seek: a.seek, room, ready });
+    if (b.acct) this.made.set(b.acct, { at: t, you: you(1), seek: b.seek, room, ready });
+    this.pending.set(room, [a, b]);
     this.lastInit = init;
     return you(0);
+  }
+  // the room is open: those paired into it may hear of it
+  ready(room) { this.pending.delete(room); for (const m of this.made.values()) if (m.room === room) m.ready = true; }
+  // the room could not be opened: the pair is undone, and both go back to waiting as they were (their wait not lost)
+  unpair(room) {
+    const seats = this.pending.get(room) || []; this.pending.delete(room);
+    for (const [k, m] of this.made) if (m.room === room) this.made.delete(k);
+    for (const s of seats) if (s && s.acct) this.wait.set(s.acct, s);
   }
 }
 
@@ -93,7 +110,7 @@ export class LobbyCore {
 export const INVITE_IDLE = 30000;
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class InviteCore {
-  constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); }
+  constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); this.deferReady = false; }
   sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_IDLE)) this.codes.delete(c); }
   // p: { acct, dama, name, icon, gear, mode, rules } - a host's new code (an older one of theirs closes)
   open(p) {
@@ -110,7 +127,7 @@ export class InviteCore {
     this.sweep(); const v = this.codes.get(code);
     if (!v || v.host.acct !== acct) return { ok: false, why: 'gone' };
     v.seen = this.now();
-    return v.made ? Object.assign({ ok: true }, v.made.you[0]) : { ok: true, waiting: true };
+    return v.made && v.made.ready ? Object.assign({ ok: true }, v.made.you[0]) : { ok: true, waiting: true };
   }
   // what a code is (for the friend before joining): the game and who is waiting
   peek(code) { this.sweep(); const v = this.codes.get(code); return v && !v.made ? { ok: true, mode: v.mode, rules: v.rules, host: { name: v.host.name } } : { ok: false, why: 'no such code' }; }
@@ -119,15 +136,17 @@ export class InviteCore {
     this.sweep(); const v = this.codes.get(code);
     if (!v) return { ok: false, why: 'no such code' };
     if (v.host.acct === p.acct) return { ok: false, why: 'your own code' };
-    if (v.made) return v.made.guest === p.acct ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'taken' };
+    if (v.made) return v.made.guest !== p.acct ? { ok: false, why: 'taken' } : v.made.ready ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'opening' };
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     const init = { room, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
-    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, kind: 'invite', rules: v.rules, opp: pub(seats[1 - i]) });
-    v.made = { guest: p.acct, you: [you(0), you(1)] }; v.seen = this.now();
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, table: ROOM_TABLE, kind: 'invite', rules: v.rules, opp: pub(seats[1 - i]) });
+    v.made = { guest: p.acct, you: [you(0), you(1)], ready: !this.deferReady }; v.seen = this.now();
     return Object.assign({ ok: true, init }, you(1));
   }
+  ready(code) { const v = this.codes.get(code); if (v && v.made) v.made.ready = true; }
+  unjoin(code) { const v = this.codes.get(code); if (v) v.made = null; }
   leave(acct, code) { const v = this.codes.get(code); if (v && v.host.acct === acct && !v.made) this.codes.delete(code); return { ok: true }; }
 }
 
@@ -148,6 +167,13 @@ export class InviteCore {
    'aim' / 'shot' / 'timeout', { t: 'away', seat } / { t: 'back', seat }, { t: 'result', winner, points, coins, dama, why }. */
 
 export const RETURN_WITHIN = 30000;
+/* The pool table an online game is played on: the room's, the same on both devices and in the replay - never a player's own
+   choice of table size (a 클럽 8피트 player's balls were not where the room's 7피트 replay put them: a fair shot judged
+   foul play). */
+export const ROOM_TABLE = 'bar';
+// a seat that never comes into its room at all (the app closed as the game was found, the room never reached) loses after
+// this long from the room's opening - not only one that came and went (RETURN_WITHIN). A stand-in's seat is always there.
+export const JOIN_WITHIN = 45000;
 // the stand-in (seat 1) may resign here: its turn, and far behind (the replayed game, g)
 export const standInMayResign = g => !!g && !g.over && g.turn === 1 && g.farBehind(1) > 0;          // ms a seat may be gone before it loses
 
@@ -172,6 +198,7 @@ export class RoomCore {
     this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind,
       rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode] });
     this.set('seats', x.seats); this.set('status', 'playing'); this.set('ended', [false, false]); this.set('gone', [null, null]);
+    this.set('joined', [false, !!x.standIn]); this.set('joinBy', Date.now() + JOIN_WITHIN);
     return true;
   }
   seatOf(token) { const s = this.get('seats', []); return s.findIndex(q => q.token === token); }
@@ -182,6 +209,7 @@ export class RoomCore {
       opp: { name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
   connected(seat) {
+    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); }
     const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.send(1 - seat, { t: 'back', seat }); }
     this.send(seat, this.state(seat));
   }
@@ -221,13 +249,18 @@ export class RoomCore {
     if (this.get('status') !== 'playing') return null;
     const gone = this.get('gone'), now = Date.now();
     for (let s = 0; s < 2; s++) if (gone[s] && now - gone[s] >= RETURN_WITHIN) return this.over('left', s);
+    // (never came in at all, by the time given: that seat loses - both, and the game is nobody's)
+    const j = this.get('joined', [true, true]), by = this.get('joinBy', 0);
+    if (by && now >= by && !(j[0] && j[1])) return this.over('left', j[0] ? 1 : j[1] ? 0 : null);
     return null;
   }
+  // still waiting for a seat to come in for the first time (the room looks again then)
+  waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !(j[0] && j[1]) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
   over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {
     const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
-    return { v: 1, mode: r.mode, table: 'bar', seed: r.seed, opts: Object.assign({ first: r.first }, rules), shots: this.shots(), winner: 0, points: [0, 0] };
+    return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first }, rules), shots: this.shots(), winner: 0, points: [0, 0] };
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
      that resigned, left or sent a shot that does not fit; else (the game stopped with no winner and nobody to blame) a
