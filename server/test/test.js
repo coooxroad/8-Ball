@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
-import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -204,13 +204,22 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   };
   const finish = R => { let k = 0; while (R.work(500) && k < 100000) k++; return R.get('result'); };
   // Only a real stand-in room accepts a resignation for its synthetic seat. A human cannot resign the opponent.
-  for (const [standIn, sender, as, loser] of [[null, 0, 1, 0], [null, 1, 0, 1], [{ name: 'S' }, 0, 1, 1], [{ name: 'S' }, 0, undefined, 0], [{ name: 'S' }, 1, 0, 1]]) {
+  // (a stand-in's resignation, sent by the human's device, is held to the game: at the start it is nowhere near behind,
+  // so the device that sent it loses - see the farBehind checks below for one that holds)
+  for (const [standIn, sender, as, loser, why] of [[null, 0, 1, 0], [null, 1, 0, 1], [{ name: 'S' }, 0, 1, 0, 'a resign that does not fit'], [{ name: 'S' }, 0, undefined, 0], [{ name: 'S' }, 1, 0, 1]]) {
     const { R } = roomOf('four', 7, 0, standIn);
     ok(R.message(sender, { t: 'resign', as }) === 'check', 'resign: server starts replay');
     const result = finish(R);
-    ok(result.winner === 1 - loser && result.why === 'resigned', 'resign: correct seat loses, including a stand-in');
+    ok(result.winner === 1 - loser && result.why === (why || 'resigned'), `resign: correct seat loses, including a stand-in (${result.why})`);
     ok(R.payouts().length === (standIn ? 1 : 2), 'resign: only real accounts are paid');
   }
+  // when a stand-in may give up: its turn, far behind, late enough (game.js farBehind - the rule its own play follows)
+  { const G = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI); G.start('four', ['A', 'B'], false, { target: 5, first: 1, rnd: E.seededRandom(3) });
+    G.turn = 1; Object.assign(G.players[0], { score: 4, shots: 6 }); Object.assign(G.players[1], { score: 0, shots: 5 });
+    ok(standInMayResign(G), 'stand-in resign: allowed 0:4 of 5, late, on its turn');
+    G.turn = 0; ok(!standInMayResign(G), 'stand-in resign: not on the other player\'s turn'); G.turn = 1;
+    G.players[1].score = 2; ok(!standInMayResign(G), 'stand-in resign: not when it is close');
+    G.players[1].score = 0; G.players[1].shots = 2; ok(!standInMayResign(G), 'stand-in resign: not this early'); }
   // New stroke families go through the same room log/replay as real ranked shots, including rotation and raised cues.
   for (const mode of ['eight', 'nine', 'four', 'three']) {
     const seed = 511, person = E.createAI(null).personaFor(60, E.seededRandom(41), { style: 'spinner' }), rules = E.RANKED_RULES[mode];

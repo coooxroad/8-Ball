@@ -139,7 +139,9 @@ export class InviteCore {
    To a device: { t: 'state', ... } on connecting (everything so far, to carry on after a reconnect), the other's
    'aim' / 'shot' / 'timeout', { t: 'away', seat } / { t: 'back', seat }, { t: 'result', winner, points, coins, dama, why }. */
 
-export const RETURN_WITHIN = 30000;          // ms a seat may be gone before it loses
+export const RETURN_WITHIN = 30000;
+// the stand-in (seat 1) may resign here: its turn, and far behind (the replayed game, g)
+export const standInMayResign = g => !!g && !g.over && g.turn === 1 && g.farBehind(1) > 0;          // ms a seat may be gone before it loses
 
 // a ranked game's rules (web/economy.js): what each game is played to
 export const RANKED_RULES = E.RANKED_RULES;
@@ -201,7 +203,9 @@ export class RoomCore {
       const e = this.get('ended'); e[seat] = true; if (r.standIn) e[1] = true; this.set('ended', e);
       return e[0] && e[1] ? this.over('ended') : null;
     }
-    if (m.t === 'resign') return this.over('resigned', r.standIn && seat === 0 && m.as === 1 ? 1 : seat);
+    // (a stand-in's resignation comes from the other player's device - whom it lets win: it is checked against the game as
+    // the room plays it again, see work)
+    if (m.t === 'resign') return r.standIn && seat === 0 && m.as === 1 ? this.over('resigned', 1, true) : this.over('resigned', seat);
     return null;
   }
   // the room looked again: a seat gone too long loses
@@ -211,7 +215,7 @@ export class RoomCore {
     for (let s = 0; s < 2; s++) if (gone[s] && now - gone[s] >= RETURN_WITHIN) return this.over('left', s);
     return null;
   }
-  over(why, loser) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser }); return 'check'; }
+  over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {
     const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
@@ -225,10 +229,13 @@ export class RoomCore {
     if (!this.job) { const cp = this.get('cp', null); this.job = { rp: new Replay(this.log(), cp, true), saved: cp ? cp.i : 0 }; }
     const out = this.job.rp.advance(steps);
     if (!out) { const c = this.job.rp.lastCp; if (c && c.i - this.job.saved >= 4) { this.set('cp', c); this.job.saved = c.i; } return true; }
-    const end = this.get('end'), shots = this.shots(); this.job = null;
+    const end = this.get('end'), shots = this.shots(), g = this.job.rp.g; this.job = null;
     let winner = null, why = end.why, points = out.points || this.get('cp', { points: [0, 0] }).points;
     if (!out.ok) { const bad = out.at != null && shots[out.at] ? shots[out.at].seat : null; if (bad != null) { winner = 1 - bad; why = 'a shot that does not fit'; } }
     else if (out.winner != null) { winner = out.winner; why = 'ended'; }
+    // a stand-in may give up only on its own turn and only when it is far behind (game.js farBehind) - the same rule its
+    // own play follows. A resignation sent for it otherwise came from the player it would let win: that player loses.
+    if (winner == null && end.standIn && !standInMayResign(g)) { winner = 1; why = 'a resign that does not fit'; }
     if (winner == null && end.loser != null) winner = 1 - end.loser;
     this.result(winner, points, why);
     return false;

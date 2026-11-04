@@ -16,16 +16,9 @@
     const previous = g.humanStates && g.humanStates[g.turn], old = previous || {};
     let misses = old.misses || 0;
     if (me.shots > (old.shots || 0)) misses = me.made > (old.made || 0) ? 0 : misses + 1;
-    let loss = 0;
-    if (total >= 6 && me.shots >= 3 && !g.isBreak && !g.over) {
-      if (g.mode.table === 'carom') {
-        const a = me.score / g.targets[g.turn], b = opp.score / g.targets[1 - g.turn];
-        if (b >= 0.7 && opp.score - me.score >= 3) loss = Math.max(0, Math.min(1, (b - a - 0.25) / 0.65));
-      } else if (g.modeId === 'eight' && me.group && opp.group) {
-        const a = g.mode.remaining(g, g.turn).length, b = g.mode.remaining(g, 1 - g.turn).length;
-        if (b <= 2 && a >= b + 3) loss = Math.min(1, (a - b - 2) / 4);
-      } else if (g.modeId === 'nine' && opp.made >= me.made + 4 && g.mode.lowest(g) >= 7 && misses >= 2) loss = 0.6;
-    }
+    // (the rule is the game's - g.farBehind - so the server can check a resignation against it; 9볼 here also wants two misses running)
+    let loss = g.farBehind(g.turn);
+    if (g.modeId === 'nine' && misses < 2) loss = 0;
     const p = person.personality, grit = person.practice.grit;
     const tilt = Math.max(0, Math.min(1, (old.tilt || 0) * 0.65 + Math.min(3, misses) * p.nerves * 0.08 + loss * (1 - grit) * 0.35));
     const freshVisit = old.shots !== me.shots, eligible = freshVisit && loss > 0 && total - (old.eventAt == null ? -20 : old.eventAt) >= 4;

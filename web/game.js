@@ -247,6 +247,23 @@ function createGame(PH, makeAI) {
   // (the same on every device and the server: physics.js DMath where it is loaded alongside)
   g.rollOut = rnd => { const M = typeof DMath !== 'undefined' ? DMath : Math; for (const b of g.world.balls) if (b.on) { const a = rnd() * Math.PI * 2, v = 0.5 + rnd() * 0.9; b.vx = M.cos(a) * v; b.vy = M.sin(a) * v; } };
   g.legal = () => g.mode.legal(g, g.turn);
+  /* How far behind a player is, 0 (not, or too early to say) .. 1 (hopeless): what lets a person-like stand-in give up
+     or play loosely (ai/53-temper.js), and what the server checks a stand-in's resignation against (server/src/ranked.js) -
+     the one rule in one place, so the two can never disagree. Not before six shots in all and three of the player's own. */
+  g.farBehind = who => {
+    const me = g.players[who], opp = g.players[1 - who]; if (!me || !opp) return 0;
+    if (me.shots + opp.shots < 6 || me.shots < 3 || g.isBreak || g.over) return 0;
+    if (g.mode.table === 'carom') {
+      const a = me.score / g.targets[who], b = opp.score / g.targets[1 - who];
+      return b >= 0.7 && opp.score - me.score >= 3 ? Math.max(0, Math.min(1, (b - a - 0.25) / 0.65)) : 0;
+    }
+    if (g.modeId === 'eight' && me.group && opp.group) {
+      const a = g.mode.remaining(g, who).length, b = g.mode.remaining(g, 1 - who).length;
+      return b <= 2 && a >= b + 3 ? Math.min(1, (a - b - 2) / 4) : 0;
+    }
+    if (g.modeId === 'nine' && opp.made >= me.made + 4 && g.mode.lowest(g) >= 7) return 0.6;
+    return 0;
+  };
   /* How hard the cue ball is struck (m/s) for a power from 0 to 1: 0.35 + B * power^E above LOW. That curve bottoms out at
      0.35 m/s, which already rolls a ball most of half a metre - so below LOW it bends down, smoothly (same value and slope
      where they join), to a touch that moves the ball millimetres.
