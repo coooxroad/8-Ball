@@ -33,11 +33,19 @@ const { open } = require('./harness.js');
           assert(Math.abs(current.w - native[i].w) <= 2 && Math.abs(current.h - native[i].h) <= 2, 'desk layout changed with pixel density');
           assert.equal(current.hole.length, native[i].hole.length);
           current.hole.forEach((v, j) => assert(Math.abs(v - native[i].hole[j]) <= 3, 'table opening shifted at a different pixel density'));
-          assert.deepEqual(current.canvas, native[i].canvas, 'HTML text increased the WebGL buffer');
         }
       }
       if (w > 900 && dpr < 2) { assert(plain.density > 1); assert(plain.pixels <= 8e6); }
       else assert.equal(plain.density, 1);
+      // Compare at the same DPR: WebGL may legitimately have its own per-device pixel budget.
+      const independent = await page.evaluate(() => {
+        const app = document.querySelector('#app'), cv = document.querySelector('#gl'), before = [cv.width, cv.height];
+        const density = app.style.getPropertyValue('--desk-density');
+        app.style.setProperty('--desk-density', '1'); __dp8.scene.resize(true);
+        const after = [cv.width, cv.height]; app.style.setProperty('--desk-density', density);
+        return { before, after };
+      });
+      assert.deepEqual(independent.after, independent.before, 'HTML density changed the WebGL buffer');
       await tap(page.locator('.dk-tab[data-t="gear"]'));
       await tap(page.locator('#dkRail .dk-rb', { hasText: '테이블' }));
       await page.waitForFunction(() => document.querySelector('#dkHead').textContent.includes('테이블'));
