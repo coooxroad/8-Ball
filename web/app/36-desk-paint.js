@@ -6,6 +6,11 @@
 function deskLean(W, H, portrait) {
   const t = (wide ? 15 : portrait ? 12 : 10) * Math.PI / 180, P = 2.8 * Math.max(H, 600), c = Math.cos(t), sn = Math.sin(t);
   const bar = wide ? 62 : portrait ? 56 : 48, up = Y => Y * P / (c * P - Y * sn), hb = up(H - bar), k = P / (P + hb * sn);
+  // Low-DPI text needs more samples before the desk is tilted. Only the HTML contents are enlarged, then scaled back;
+  // the wood and WebGL stay at their own resolution. Native HiDPI needs no extra layer; cap the extra work at 8M pixels.
+  const dpr = window.devicePixelRatio || 1;
+  const density = wide && CSS.supports('zoom', '2') ? Math.max(1, Math.min(2 / dpr, Math.sqrt(8e6 / (W * hb)) / dpr)) : 1;
+  app.style.setProperty('--desk-density', (Math.floor(density * 1000) / 1000).toFixed(3));
   app.style.setProperty('--tilt', t + 'rad');
   app.style.setProperty('--pp', P + 'px');
   app.style.setProperty('--ovh', (hb - (H - bar)).toFixed(1) + 'px');
@@ -18,7 +23,9 @@ function deskLean(W, H, portrait) {
 // and a strip below it is the near rail's front.
 function deskWindow(W, H, portrait) {
   const pl = $('#deskPlane'), dk = $('#desk'), sg = $('#dkStage'), win = sg.dataset.win === '1';
-  let x = dk.offsetLeft, y = dk.offsetTop; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+  // CSS zoom changes the desk's own offset units; its children still use the original desk coordinates.
+  const density = parseFloat(app.style.getPropertyValue('--desk-density')) || 1;
+  let x = dk.offsetLeft * density, y = dk.offsetTop * density; for (let n = sg; n && n !== dk; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
   const dx = pl.offsetLeft, dy = pl.offsetTop, sw = sg.offsetWidth, sh0 = sg.offsetHeight;   // (x, y: the stage in the plane; dx, dy: the plane in the app)
   const ins = { t: dy + y + 4, l: dx + x + 4, r: W - (dx + x + sw) + 4, b: H - (dy + y + sh0) + 4 };
   ins.lie = portrait && sw > sh0; scene.setInsets(ins);              // a phone held upright: the tray is wider than tall, so the table lies down in it
@@ -40,11 +47,12 @@ function deskWindow(W, H, portrait) {
 const SIDE_STEPS = 9;
 function boardSides() {
   const pl = $('#deskPlane'), bs = document.querySelectorAll('#dkBoards .bd'); if (!bs.length || !pl.offsetWidth) return;
+  const dk = $('#desk'), density = parseFloat(app.style.getPropertyValue('--desk-density')) || 1;
   const t = parseFloat(app.style.getPropertyValue('--tilt')) || 0.26, P = parseFloat(app.style.getPropertyValue('--pp')) || 2300;
   const H = P * Math.cos(t), fx = pl.offsetWidth / 2, fy = pl.offsetHeight + P * Math.sin(t);
   const h = wide ? 36 : 24, k = H / (H + h), kp = H / (H + h * 0.6);
   for (const b of bs) {
-    let x = 0, y = 0; for (let n = b; n && n !== pl; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+    let x = 0, y = 0; for (let n = b; n && n !== pl; n = n.offsetParent) { const scale = n === dk ? density : 1; x += n.offsetLeft * scale; y += n.offsetTop * scale; }
     b.style.setProperty('--fx', (fx - x).toFixed(1) + 'px'); b.style.setProperty('--fy', (fy - y).toFixed(1) + 'px'); b.style.setProperty('--kp', kp.toFixed(5));
     let ly = b.querySelectorAll(':scope > .ly');
     if (ly.length !== SIDE_STEPS) {

@@ -17,7 +17,8 @@
   border:0 solid transparent;--s:.4;border-image:url(ui/well.webp) 50 48 48 48 fill/calc(50px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) stretch;
   background:none;color:#e9eef5;font:700 14px var(--ui-font);cursor:pointer}
 #app.desk .dk-card:active{transform:translateY(1px)}
-#app.desk .dk-card .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#app.desk .dk-card .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none}
+#app.desk:not(.compact) .dk-card .nm{font-size:17px}
 #app.desk .dk-card .price{font:700 11px var(--ui-font);color:#2b241c;background:#e9dcb8;border-radius:99px;padding:2px 8px}
 #app.desk .dk-card>i,#app.desk .dk-card>img{flex:1;min-height:0;width:100%}
 #app.desk .dk-card .cuecard{position:relative;overflow:hidden;display:block;container-type:size}
@@ -81,7 +82,8 @@
 #app.desk .dk-tier{grid-column:1/-1;display:flex;align-items:center;gap:10px;height:22px;margin:4px 2px -4px;color:#f4ecd8;font:800 13px var(--ui-font);letter-spacing:.04em}
 #app.desk .dk-tier::before{content:"";width:16px;height:3px;border-radius:2px;background:#f4ecd8}
 #app.desk .dk-tier::after{content:"";flex:1;height:2px;border-radius:1px;background:linear-gradient(90deg,#f4ecd8,rgba(244,236,216,.25))}
-#app.desk .dk-tier span{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+#app.desk .dk-tier span{text-shadow:none}
+#app.desk:not(.compact) .dk-tier{font-size:15px}
 #app.desk .dk-cards{grid-auto-rows:auto}
 #app.desk .dk-cards>.dk-card{height:clamp(170px,30vh,240px)}
 #app.desk.compact .dk-cards>.dk-card{height:150px}
