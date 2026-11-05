@@ -21,6 +21,13 @@
     if (gl) break;
   }
   if (!gl) return null;
+  // A fast PC may still give the browser a CPU renderer. Read this once; do not probe the driver in the frame loop.
+  let rendererName = '', softwareGL = false;
+  try {
+    const debug = gl.getExtension('WEBGL_debug_renderer_info');
+    rendererName = String(gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '');
+    softwareGL = /swiftshader|llvmpipe|softpipe|software rasterizer|microsoft basic render/i.test(rendererName);
+  } catch (e) {}   // privacy settings may hide the renderer; the frame-time guard still works
   try { renderer = new THREE.WebGLRenderer({ canvas, context: gl }); } catch (e) { return null; }
   renderer.info.autoReset = false;                   // (counted a whole frame - every pass - for the frame-rate display; reset in frame())
   const RW = 0.095, RAIL_Z = 0.04, FOV = 40;
