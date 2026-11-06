@@ -39,28 +39,50 @@ function createPhysics(cfg) {
   const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const len3 = a => Math.sqrt(dot3(a, a));
   const invI = 2.5 / (R * R);
-  function impulse(b, j, r) {
-    b.vx += j[0]; b.vy += j[1]; b.vz += j[2];
-    const t = cross3(r, j); b.wx += invI * t[0]; b.wy += invI * t[1]; b.wz += invI * t[2];
-  }
   function pointVelocity(b, r) {
-    const v = cross3([b.wx, b.wy, b.wz], r); return [b.vx + v[0], b.vy + v[1], b.vz + v[2]];
+    return [b.vx + b.wy * r[2] - b.wz * r[1], b.vy + b.wz * r[0] - b.wx * r[2], b.vz + b.wx * r[1] - b.wy * r[0]];
   }
-  // Coulomb impulse for a sphere against a stationary surface. Normal restitution and tangential friction share
-  // the same contact point; a spin gain always has the matching change in linear momentum.
-  function surfaceImpulse(b, r, n, restitution, friction) {
-    const u = pointVelocity(b, r), vn = dot3(u, n); if (vn >= 0) return 0;
-    const rn = cross3(r, n), jn = -(1 + restitution) * vn / (1 + invI * dot3(rn, rn));
-    impulse(b, n.map(x => x * jn), r);
-    surfaceFriction(b, r, n, jn, friction);
-    return jn;
-  }
-  function surfaceFriction(b, r, n, jn, friction) {
-    const v = pointVelocity(b, r), normal = dot3(v, n), slip = v.map((x, i) => x - normal * n[i]), speed = len3(slip);
-    if (speed > 1e-12) {
-      const t = slip.map(x => x / speed), rt = cross3(r, t), jt = Math.min(friction * jn, speed / (1 + invI * dot3(rt, rt)));
-      impulse(b, t.map(x => -jt * x), r);
+  // Every rigid sphere contact uses this solver: ball/ball, rubber nose and supporting bed. Normal reaction and
+  // Coulomb friction are solved together, so a support impulse cannot be added after a rebound was already chosen.
+  // Jacobi passes read one state and apply all changes together, preserving simultaneous-contact symmetry.
+  function solveContacts(bs, contacts) {
+    const degree = new Uint8Array(bs.length), changes = new Float64Array(bs.length * 6);
+    for (const c of contacts) { degree[c.i]++; if (c.j >= 0) degree[c.j]++; }
+    for (const c of contacts) {
+      const a = pointVelocity(bs[c.i], c.r), b = c.j >= 0 ? pointVelocity(bs[c.j], c.rb) : [0, 0, 0];
+      const vn = (a[0] - b[0]) * c.n[0] + (a[1] - b[1]) * c.n[1] + (a[2] - b[2]) * c.n[2];
+      c.target = -c.e * Math.min(0, vn); c.lam = c.tx = c.ty = c.tz = 0;
+      c.k = c.j >= 0 ? 2 : 1; c.weight = 0.9 / Math.max(degree[c.i], c.j >= 0 ? degree[c.j] : 1);
     }
+    for (let it = 0; it < 240; it++) {
+      changes.fill(0); let largest = 0;
+      for (const c of contacts) {
+        const a = bs[c.i], r = c.r, n = c.n;
+        let ux = a.vx + a.wy * r[2] - a.wz * r[1], uy = a.vy + a.wz * r[0] - a.wx * r[2], uz = a.vz + a.wx * r[1] - a.wy * r[0];
+        if (c.j >= 0) { const b = bs[c.j], q = c.rb; ux -= b.vx + b.wy * q[2] - b.wz * q[1]; uy -= b.vy + b.wz * q[0] - b.wx * q[2]; uz -= b.vz + b.wx * q[1] - b.wy * q[0]; }
+        const vn = ux * n[0] + uy * n[1] + uz * n[2], next = Math.max(0, c.lam + c.weight * (c.target - vn) / c.k), dn = next - c.lam; c.lam = next;
+        let tx = c.tx - c.weight * (ux - vn * n[0]) / (3.5 * c.k),
+          ty = c.ty - c.weight * (uy - vn * n[1]) / (3.5 * c.k), tz = c.tz - c.weight * (uz - vn * n[2]) / (3.5 * c.k);
+        const size = Math.sqrt(tx * tx + ty * ty + tz * tz), limit = c.mu * next;
+        if (size > limit) { const scale = limit / size; tx *= scale; ty *= scale; tz *= scale; }
+        const jx = dn * n[0] + tx - c.tx, jy = dn * n[1] + ty - c.ty, jz = dn * n[2] + tz - c.tz;
+        largest = Math.max(largest, Math.abs(dn), Math.abs(tx - c.tx), Math.abs(ty - c.ty), Math.abs(tz - c.tz)); c.tx = tx; c.ty = ty; c.tz = tz;
+        let k = c.i * 6; changes[k] += jx; changes[k + 1] += jy; changes[k + 2] += jz;
+        changes[k + 3] += invI * (r[1] * jz - r[2] * jy); changes[k + 4] += invI * (r[2] * jx - r[0] * jz); changes[k + 5] += invI * (r[0] * jy - r[1] * jx);
+        if (c.j >= 0) { const q = c.rb; k = c.j * 6; changes[k] -= jx; changes[k + 1] -= jy; changes[k + 2] -= jz;
+          changes[k + 3] -= invI * (q[1] * jz - q[2] * jy); changes[k + 4] -= invI * (q[2] * jx - q[0] * jz); changes[k + 5] -= invI * (q[0] * jy - q[1] * jx); }
+      }
+      for (let i = 0; i < bs.length; i++) if (degree[i]) { const b = bs[i], k = i * 6;
+        b.vx += changes[k]; b.vy += changes[k + 1]; b.vz += changes[k + 2]; b.wx += changes[k + 3]; b.wy += changes[k + 4]; b.wz += changes[k + 5]; }
+      if (largest < 1e-10) break;
+    }
+    // Remove the remaining solver tolerance at a supporting plane, so -1e-20 m/s cannot keep a grounded ball moving.
+    for (const c of contacts) if (c.j < 0 && c.e === 0 && c.n[2] === 1 && bs[c.i].z === 0 && bs[c.i].vz < 0) bs[c.i].vz = 0;
+  }
+  const bedContact = (i, mu) => ({ i, j: -1, n: [0, 0, 1], r: [0, 0, -R], e: 0, mu });
+  function surfaceImpulse(b, r, n, restitution, friction) {
+    if (dot3(pointVelocity(b, r), n) >= 0) return 0;
+    const c = { i: 0, j: -1, r, n, e: restitution, mu: friction }; solveContacts([b], [c]); return c.lam;
   }
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
@@ -347,8 +369,10 @@ function createPhysics(cfg) {
     const height = ON_WALL ? 0 : Math.max(-0.8, Math.min(0.8, 0.4 - b.z / R));
     const horizontal = Math.sqrt(1 - height * height), n = [nx * horizontal, ny * horizontal, -height], r = n.map(x => -R * x);
     const e = POCKETED ? 0.8 : 0.84;
-    surfaceImpulse(b, r, n, e, 0.14);
-    if (b.z === 0 && b.vz < 0) surfaceImpulse(b, [0, 0, -R], [0, 0, 1], 0, MU_S0);
+    const contacts = [{ i: 0, j: -1, r, n, e, mu: 0.14 }];
+    if (b.z === 0) contacts.push(bedContact(0, w.ice ? 0.022 : MU_S0));
+    solveContacts([b], contacts);
+    if (b.z === 0 && b.vz < 0) b.vz = 0;
     if (w.trace && b.id === w.cue) TR_N = [nx, ny];
     if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
   }
@@ -374,31 +398,6 @@ function createPhysics(cfg) {
      ball is served first because of its number. Then whatever those blows set closing next (the next row of a rack) is
      the next instant, and so on until nothing is closing. It used to go pair by pair in the balls' order, and two balls
      side by side came off at 2.36 and 1.19 m/s, and the other way round when their numbers were swapped. */
-  function ballFriction(bs, group) {
-    const mu = 0.04 * effects.throw; if (mu === 0) return;
-    for (const c of group) c.jt = [0, 0, 0];
-    // Jacobi updates preserve simultaneous-contact symmetry. The same tangential impulse changes both balls'
-    // velocity and spin, and is bounded by the normal impulse (the Coulomb cone).
-    for (let it = 0; it < 24; it++) {
-      const changes = new Map(); let largest = 0;
-      for (const c of group) {
-        if (!(c.lam > 0)) continue;
-        const n = [c.nx, c.ny, c.nz || 0], ra = n.map(x => R * x), rb = ra.map(x => -x);
-        const va = pointVelocity(bs[c.i], ra), vb = pointVelocity(bs[c.j], rb), rel = vb.map((x, k) => x - va[k]), vn = dot3(rel, n);
-        const trial = c.jt.map((x, k) => x - (c.w || 1) * (rel[k] - vn * n[k]) / 7), size = len3(trial), max = mu * c.lam;
-        if (size > max) for (let k = 0; k < 3; k++) trial[k] *= max / size;
-        const dj = trial.map((x, k) => x - c.jt[k]); c.jt = trial; largest = Math.max(largest, len3(dj));
-        for (const [id, sign, r] of [[c.i, -1, ra], [c.j, 1, rb]]) {
-          if (!changes.has(id)) changes.set(id, [0, 0, 0, 0, 0, 0]);
-          const v = changes.get(id), j = dj.map(x => sign * x), torque = cross3(r, j);
-          for (let k = 0; k < 3; k++) { v[k] += j[k]; v[k + 3] += torque[k] * invI; }
-        }
-      }
-      for (const [id, v] of changes) { const b = bs[id]; b.vx += v[0]; b.vy += v[1]; b.vz += v[2]; b.wx += v[3]; b.wy += v[4]; b.wz += v[5]; }
-      if (largest < 1e-10) break;
-    }
-    for (const b of bs) if (b.z === 0 && b.vz < 0) surfaceImpulse(b, [0, 0, -R], [0, 0, 1], 0, MU_S0);
-  }
   const SIM_EPS = 1e-7;                                         // touches this close in time (s) count as one instant
   let overlapSeen = false;                                      // (set by contacts: some pair is pressed into another)
   function contacts(w, bs, n, h) {
@@ -427,32 +426,15 @@ function createPhysics(cfg) {
       const inv = new Set(); for (const c of group) { inv.add(c.i); inv.add(c.j); }
       // back to the instant they touched
       for (const k of inv) { const q = bs[k]; q.x -= q.vx * T; q.y -= q.vy * T; q.z = Math.max(0, q.z - q.vz * T); }
-      const deg = new Map(); for (const k of inv) deg.set(k, 0); for (const c of group) { deg.set(c.i, deg.get(c.i) + 1); deg.set(c.j, deg.get(c.j) + 1); }
-      const bedImpulse = new Map(); for (const k of inv) if (bs[k].z === 0) bedImpulse.set(k, 0);
+      const groupContacts = [];
       for (const c of group) {
         const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d = DMath.hypot(dx, dy, dz) || 1;
         c.nx = dx / d; c.ny = dy / d; c.nz = dz / d; c.rel0 = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny + (b.vz - a.vz) * c.nz;
-        c.target = c.rel0 < 0 ? -E_BALL * c.rel0 : 0; c.lam = 0; c.w = 1 / Math.max(deg.get(c.i), deg.get(c.j));
+        c.n = [-c.nx, -c.ny, -c.nz]; c.r = [R * c.nx, R * c.ny, R * c.nz]; c.rb = c.r.map(x => -x);
+        c.e = E_BALL; c.mu = 0.04 * effects.throw; groupContacts.push(c);
       }
-      // the blows, all from the same state each pass, until they agree
-      for (let it = 0; it < 200; it++) {
-        let moved = 0; const dv = new Map(); for (const k of inv) dv.set(k, [0, 0, 0]);
-        for (const c of group) {
-          const a = bs[c.i], b = bs[c.j], rel = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny + (b.vz - a.vz) * c.nz;
-          const nl = Math.max(0, c.lam + c.w * (c.target - rel) / 2), d = nl - c.lam; c.lam = nl;
-          if (d !== 0) { const ai = dv.get(c.i), bj = dv.get(c.j); ai[0] -= d * c.nx; ai[1] -= d * c.ny; ai[2] -= d * c.nz; bj[0] += d * c.nx; bj[1] += d * c.ny; bj[2] += d * c.nz; if (Math.abs(d) > moved) moved = Math.abs(d); }
-        }
-        for (const [k, v] of dv) { bs[k].vx += v[0]; bs[k].vy += v[1]; bs[k].vz += v[2]; }
-        // The bed is an active unilateral contact during ball impacts, not a velocity clamp afterwards. In particular,
-        // a falling ball hits a supported ball, not a second freely falling mass. Solve and release its reaction too.
-        for (const [k, old] of bedImpulse) {
-          const next = Math.max(0, old - bs[k].vz), delta = next - old; bs[k].vz += delta; bedImpulse.set(k, next);
-          moved = Math.max(moved, Math.abs(delta));
-        }
-        if (moved < 1e-10) break;
-      }
-      ballFriction(bs, group);
-      for (const [k, jn] of bedImpulse) if (jn > 0) surfaceFriction(bs[k], [0, 0, -R], [0, 0, 1], jn, w.ice ? 0.022 : MU_S0);
+      for (const k of inv) if (bs[k].z === 0) groupContacts.push(bedContact(k, w.ice ? 0.022 : MU_S0));
+      solveContacts(bs, groupContacts);
       // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
       const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
       if (met.length) {

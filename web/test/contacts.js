@@ -35,6 +35,11 @@ for (const R of [0.0254, 0.028575, 0.03075, 0.03275]) {
   const rail = P.makeWorld(1); P.place(rail, 0, P.HL - R - 1e-8, 0);
   const b = rail.balls[0]; b.vx = 2; b.vy = 1; const before = energy(P, rail); P.step(rail, 1e-6);
   assert(Math.abs(b.wz) > 1 && b.vx < 0); assert(energy(P, rail) <= before);
+  // The raised cushion's restitution still holds while the bed supports the same ball. Applying the bed afterwards
+  // would reduce this separating speed and silently change the rubber's restitution.
+  const nose = [-Math.sqrt(0.84), 0, -0.4], arm = nose.map(x => -R * x);
+  const contactVelocity = [b.vx + b.wy * arm[2] - b.wz * arm[1], b.vy + b.wz * arm[0] - b.wx * arm[2], b.vz + b.wx * arm[1] - b.wy * arm[0]];
+  close(contactVelocity.reduce((s, x, i) => s + x * nose[i], 0), 0.84 * 2 * Math.sqrt(0.84), 1e-4);
   // Normal spin is not erased unconditionally. Strong draw, stun and roll have distinct rebound states.
   const spins = [-200, 0, 200].map(wy => { const w = P.makeWorld(1); P.place(w, 0, P.HL - R - 1e-8, 0); w.balls[0].vx = 2; w.balls[0].wy = wy; P.step(w, 1e-6); return w.balls[0].wy; });
   assert(new Set(spins.map(x => x.toFixed(5))).size === 3, 'different incoming roll collapsed to one state');
@@ -42,6 +47,9 @@ for (const R of [0.0254, 0.028575, 0.03075, 0.03275]) {
   falling.balls[0].z = 0.15; falling.balls[0].vz = -30; P.step(falling, 1 / 120);
   assert.equal(falling.ev.firstHit, 1, 'vertical speed was omitted from collision subdivision');
   assert(falling.balls.every(b => b.z >= 0 && (b.z > 0 || b.vz >= 0)), 'grounded collision left unsupported downward velocity');
+  const supported = P.makeWorld(2); P.place(supported, 0, 0, 0); P.place(supported, 1, 0, 0);
+  supported.balls[0].z = 2 * R - 1e-8; supported.balls[0].vz = -2; P.step(supported, 1e-7);
+  assert(supported.balls[0].vz > 1.8 && supported.balls[1].vz === 0, 'falling-ball restitution ignored the lower ball\'s bed support');
 }
 // The optional effects change only their own source, not cloth/cushion friction or jump height.
 {
