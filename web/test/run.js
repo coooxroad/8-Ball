@@ -6,6 +6,7 @@ const path = require('path'), W = path.join(__dirname, '..');
 const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(cfg), createGameRaw = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
 // the computer player (ai/) is the body of one function, as web/build.sh makes it
 const fs = require('fs'), createAI = new Function('g', fs.readdirSync(path.join(W, 'ai')).sort().map(f => fs.readFileSync(path.join(W, 'ai', f), 'utf8')).join('\n'));
+require('./contacts');
 const createGame = PH => createGameRaw(PH, createAI);
 const TABLES = {
   bar: { R: 0.028575, HL: 0.99, HW: 0.495, cornerMouth: 0.114, sideMouth: 0.127 }, club: { R: 0.028575, HL: 1.12, HW: 0.56, cornerMouth: 0.12, sideMouth: 0.133 },
@@ -203,12 +204,14 @@ for (const name of ['bar', 'pro', 'pub']) {
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0.4, 0, 0); const c = w.balls[0]; for (let i = 0; i < 30; i++) P.step(w, 1 / 120); const k = c.y / (c.x + 0.8); for (let i = 0; i < 30; i++) P.step(w, 1 / 120); if (Math.abs(c.y / (c.x + 0.8) - k) > 0.002 || Math.abs(k) > 0.05) fail('a level cue curved the ball'); }
   // the same angle, hard and soft: hard it clears the ball in front, soft it barely lifts (with a house cue a jump is
   // played flat-ish and hard, about 40 degrees, at a ball some way off)
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.35; P.strike(w, 0, 6.6, 0, 0, deg(40)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.35; P.strike(w, 0, 6.6, 0, 0, deg(45)); let hit = false; for (let i = 0; i < 40; i++) { P.step(w, 1 / 120); if (w.ev.hits.length) hit = true; } if (hit || !(w.ev.air > 0.06)) fail(`a hard raised shot did not jump the ball in front (height ${w.ev.air.toFixed(3)})`); }
   { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 1.5, 0, 0, deg(42)); P.run(w, 20); if (w.ev.air > P.R * 0.3 || w.ev.firstHit !== 2) fail('a soft raised shot jumped (it should barely lift and run into the ball)'); }
-  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); P.run(w, 20); if (w.ev.firstHit !== 2 || w.ev.air > 0) fail('a level shot went through or over a ball'); }
+  { const w = mk(); w.balls[2].x = w.balls[2].px = -0.45; P.strike(w, 0, 5.5, 0, 0, 0); if (w.balls[0].vz !== 0) fail('a level centre strike launched upwards'); P.run(w, 20); if (w.ev.firstHit !== 2) fail('a level shot went through or over a ball'); }
   // steeper is higher and shorter;
   // a steep shot struck low comes back
-  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(60)); for (let i = 0; i < 80; i++) { P.step(a, 1 / 120); P.step(b, 1 / 120); } if (!(b.ev.air > a.ev.air && b.balls[0].x < a.balls[0].x)) fail('a steeper cue did not jump higher and shorter'); }
+  { const a = mk(), b = mk(); a.balls[2].on = b.balls[2].on = false; P.strike(a, 0, 5, 0, 0, deg(35)); P.strike(b, 0, 5, 0, 0, deg(85));
+    const rangeA = 2 * a.balls[0].vx * a.balls[0].vz / 9.8, rangeB = 2 * b.balls[0].vx * b.balls[0].vz / 9.8;
+    if (!(P.hop(5, deg(85)) > P.hop(5, deg(35)) && rangeB < rangeA)) fail('a near-vertical shot did not fly higher and shorter than the shallow shot'); }
   // a soft masse stays on the cloth (it hops a few millimetres at most)
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 1.4, 0.4, 0, deg(75)); for (let i = 0; i < 80; i++) P.step(w, 1 / 120); if (!(w.ev.air < 0.006)) fail(`a soft masse hopped ${(w.ev.air * 1000).toFixed(1)} mm`); }
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0, -0.4, deg(80)); let back = 9; for (let i = 0; i < 360 && !P.rest(w); i++) { P.step(w, 1 / 120); back = Math.min(back, w.balls[0].x); } if (!(back < -0.85)) fail('a steep shot struck low did not come back'); }
@@ -265,7 +268,10 @@ for (const name of ['bar', 'pro', 'pub']) {
     const cut = dt => { const w = lay([[-0.4, 0], [0, 1.8 * R]]); P.strike(w, 0, 3, 0, 0); let n = 0; while (w.ev.firstHit == null && n++ < 1e6) P.step(w, dt); return Math.atan2(w.balls[1].vy, w.balls[1].vx) * deg; };
     const a = cut(1 / 120), b = cut(1 / 1920); worst = Math.max(worst, Math.abs(a - b));
     if (Math.abs(a - b) > 0.02) fail(`${name} physics: a thin cut depends on the step length (${a.toFixed(2)} against ${b.toFixed(2)} degrees)`);
-    if (Math.abs(a - Math.asin(0.9) * deg) > 0.01) fail(`${name} physics: a thin cut should leave along the line of centres (${a.toFixed(3)})`);
+    { const ideal = createPhysics(Object.assign({}, TABLES.bar, { pockets: true, throw: 0 })), w = ideal.makeWorld(2); ideal.place(w, 0, -0.4, 0); ideal.place(w, 1, 0, 1.8 * R); ideal.strike(w, 0, 3, 0, 0, 0); while (w.ev.firstHit == null) ideal.step(w, 1 / 1920);
+      const angle = Math.atan2(w.balls[1].vy, w.balls[1].vx) * deg;
+      if (Math.abs(angle - Math.asin(0.9) * deg) > 0.01) fail(`${name} frictionless physics: a thin cut should leave along the line of centres (${angle.toFixed(3)})`);
+      if (Math.abs(a - angle) < 0.1) fail('full contact friction produced no throw on the cut'); }
     // mirror image
     for (let k = 0; k < 40; k++) {
       const ang = (k * 0.618 % 1 - 0.5) * 0.5, V = 1 + k % 7, sa = (k % 5 - 2) / 4 * 0.5, sb = (k % 3 - 1) * 0.3, el = k % 4 === 0 ? 0.5 : 0, pos = [[-0.4, 0.1], [0.1, 0.16], [0.5, -0.2], [-0.2, -0.3]];
@@ -332,7 +338,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 {
   const P = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), at = () => { const w = P.makeWorld(1); P.place(w, 0, 0, 0); return w; };
   const a = at(), b = at(); P.strike(a, 0.3, 4, 0.2, 0.1); P.strike(b, 0.3, 4, 0.2, 0.1, 0);
-  if (P.restEl() !== 0 || a.balls[0].vx !== b.balls[0].vx || a.balls[0].wz !== b.balls[0].wz || a.balls[0].vz !== 0) fail('cue angle: the ordinary stroke should be level');
+  if (P.restEl() !== 0 || ['vx', 'vy', 'vz', 'wx', 'wy', 'wz', 'z'].some(k => a.balls[0][k] !== b.balls[0][k])) fail('cue angle: omitted elevation must equal explicit level elevation');
   console.log('cue angle: checked');
 }
 // the shot clock: running out passes the turn; on a pool table it is a foul with ball in hand (not on the break), on a

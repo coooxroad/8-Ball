@@ -27,15 +27,41 @@ const DMath = (() => {
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
-  /* One physics, the one the game is played on. The rule for it: what a player pictures is what happens. Everything a
-     player draws in their head stays and is made plain and steady - follow and draw, side opening or closing the angle off
-     a cushion, a raised cue curving or jumping the ball. Everything real that nobody pictures is left out: the cue ball
-     pushed off line by side (squirt), the struck ball dragged off the line of centres (throw), the ordinary stroke curving
-     the ball, the angle off a cushion changing with the pace, side lingering for cushion after cushion. And balls stop in
-     good time. (There were two more before: the original one, and a realistic one the puzzles were made on. Both are gone.) */
-  /* MU_SP: friction against turning on the spot. Side dies at 2.5 * MU_SP * g / R radians per second, every second: 34 with
-     0.04 (measured tables give 5 to 15 - but on the move, side here fades with the distance run instead, see SIDE_RUN). */
-  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.04, E_BALL = 0.96;
+  /* One deterministic contact model for play, preview and server verification. Resolve impulses and their torques
+     together before tuning optional cue deflection or ball/ball throw. Never compensate for a missing contact by
+     drawing a different path or assigning a jump from the cue angle. Side decay is a cloth torque, not distance loss. */
+  const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.01, E_BALL = 0.96;
+  // The contact model is solved with friction first. These two policy controls are applied only at their source:
+  // cue deflection at launch, and tangential ball/ball impulses. They never change cushion or cloth friction.
+  const effects = Object.freeze({ squirt: cfg.squirt == null ? 1 : Math.max(0, Math.min(1, cfg.squirt)),
+    throw: cfg.throw == null ? 1 : Math.max(0, Math.min(1, cfg.throw)) });
+  const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len3 = a => Math.sqrt(dot3(a, a));
+  const invI = 2.5 / (R * R);
+  function impulse(b, j, r) {
+    b.vx += j[0]; b.vy += j[1]; b.vz += j[2];
+    const t = cross3(r, j); b.wx += invI * t[0]; b.wy += invI * t[1]; b.wz += invI * t[2];
+  }
+  function pointVelocity(b, r) {
+    const v = cross3([b.wx, b.wy, b.wz], r); return [b.vx + v[0], b.vy + v[1], b.vz + v[2]];
+  }
+  // Coulomb impulse for a sphere against a stationary surface. Normal restitution and tangential friction share
+  // the same contact point; a spin gain always has the matching change in linear momentum.
+  function surfaceImpulse(b, r, n, restitution, friction) {
+    const u = pointVelocity(b, r), vn = dot3(u, n); if (vn >= 0) return 0;
+    const rn = cross3(r, n), jn = -(1 + restitution) * vn / (1 + invI * dot3(rn, rn));
+    impulse(b, n.map(x => x * jn), r);
+    surfaceFriction(b, r, n, jn, friction);
+    return jn;
+  }
+  function surfaceFriction(b, r, n, jn, friction) {
+    const v = pointVelocity(b, r), normal = dot3(v, n), slip = v.map((x, i) => x - normal * n[i]), speed = len3(slip);
+    if (speed > 1e-12) {
+      const t = slip.map(x => x / speed), rt = cross3(r, t), jt = Math.min(friction * jn, speed / (1 + invI * dot3(rt, rt)));
+      impulse(b, t.map(x => -jt * x), r);
+    }
+  }
   const CM = cfg.cornerMouth || 0.125, SM = cfg.sideMouth || 0.14, kc = CM / 0.125, ks = SM / 0.14;
   const GC = CM * Math.SQRT1_2, GS = SM / 2, CW = 0.05, PO = 0.03 * kc, SO = 0.05 * ks;
   const RC = 0.068 * kc, RS = 0.062 * ks, SC = RC * 0.91, SS = RS * 0.87, AI = 0.03 * kc;
@@ -123,45 +149,106 @@ function createPhysics(cfg) {
     }
   }
 
-  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). One angle does everything a raised cue does:
-       the ball leaves with only the level part of the blow (V cos el);
-       the downward part drives it into the slate, which throws it back up - hard enough and it jumps;
-       side on a raised cue sets the ball spinning about the line it travels along, and the cloth pushes back sideways, so it
-       curves (masse) - once it is on the cloth: in the air nothing turns it. */
-  function strike(w, ang, V, a, bb, el) {
-    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
-    if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
-    const ce = DMath.cos(el), se = DMath.sin(el);
-    c.vx = V * ce * dx; c.vy = V * ce * dy;
-    const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
-    c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = lift(V, el); c.z = 0; c.vz = up > 0 ? up : 0;
-    if (se > 0) {
-      // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
-      const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = DMath.hypot(ux, uy);
-      if (us > 1e-4) { const dec = Math.min(PINCH * MU_S0 * V * se * (1 + (c.vz > 0 ? JUMP : 0)), (2 / 7) * us), nx = ux / us, ny = uy / us; c.vx -= dec * nx; c.vy -= dec * ny; c.wx -= (2.5 / R) * dec * ny; c.wy += (2.5 / R) * dec * nx; }
+  // Contact coordinates are in the plane perpendicular to the cue. The same surface point is used by the impulse
+  // calculation and by the drawn cue, including at 90 degrees (where a vertical screen offset becomes horizontal).
+  function cueContact(ang, a, bb, el) {
+    const ca = DMath.cos(ang), sa = DMath.sin(ang), ce = DMath.cos(el), se = DMath.sin(el);
+    const m = DMath.hypot(a, bb), scale = m > 0.6 ? 0.6 / m : 1; a *= scale; bb *= scale;
+    const along = Math.sqrt(Math.max(0, 1 - a * a - bb * bb));
+    const axis = [ca * ce, sa * ce, -se];
+    const point = [R * (sa * a + ca * se * bb - ca * ce * along),
+      R * (-ca * a + sa * se * bb - sa * ce * along), R * (ce * bb + se * along)];
+    return { point, axis, a, b: bb };
+  }
+  const restEl = () => 0;
+  const launchCache = new Map();
+  // Resolve the short tip/ball/bed contact before free flight. Unlike an assigned jump velocity, the compliant bed
+  // cannot launch the ball through a tip which is still above it: the tip has finite mass and receives the reaction.
+  // This is a lumped contact approximation, not a flexible shaft or cloth simulation. Millisecond displacements are
+  // collapsed to the impact point; other balls are resolved by the world's continuous collision solver afterwards.
+  function contactLaunch(V, a, bb, el, withBed) {
+    const geo = cueContact(0, a, bb, el), d = geo.axis, tipR = 0.006;
+    if (V === 0) return { velocity: [0, 0, 0], spin: [0, 0, 0], height: 0, tip: geo.point.slice(), tipVelocity: [0, 0, 0], duration: 0, contacts: 0, contact: geo };
+    const mass = 1700 * (4 / 3) * Math.PI * R * R * R, cueMass = 0.55 / mass, endMass = 0.01 / mass;
+    const p = [0, 0, 0], v = [0, 0, 0], omega = [0, 0, 0], tip = geo.point.map(x => x * (R + tipR) / R);
+    const u = d.map(x => x * V * (1 + 1 / cueMass) / 1.773);
+    const h = 1 / 192000, stiffness = 1360000 / mass, bed = 1360000 / mass;
+    const invEnd = 1 / endMass, axisInv = 1 / cueMass - invEnd;
+    let touched = false, contacts = 0, touching = false, elapsed = 0;
+    for (let step = 0; step < 2400; step++) {
+      elapsed = (step + 1) * h;
+      let fx = 0, fy = 0, fz = 0, tx = 0, ty = 0, tz = 0;
+      const dx = p[0] - tip[0], dy = p[1] - tip[1], dz = p[2] - tip[2], distance = Math.sqrt(dx * dx + dy * dy + dz * dz), penetration = R + tipR - distance;
+      if (penetration > 0 && distance > 1e-12) {
+        if (!touching) contacts++; touching = touched = true;
+        const nx = dx / distance, ny = dy / distance, nz = dz / distance, rx = -R * nx, ry = -R * ny, rz = -R * nz;
+        const ux = v[0] + omega[1] * rz - omega[2] * ry - u[0],
+          uy = v[1] + omega[2] * rx - omega[0] * rz - u[1], uz = v[2] + omega[0] * ry - omega[1] * rx - u[2];
+        const vn = ux * nx + uy * ny + uz * nz, nd = nx * d[0] + ny * d[1] + nz * d[2];
+        const eff = 1 + invEnd + nd * nd * axisInv;
+        const fn = Math.max(0, stiffness * penetration - 0.18 * Math.sqrt(stiffness / eff) * vn);
+        fx = nx * fn; fy = ny * fn; fz = nz * fn;
+        const sx = ux - vn * nx, sy = uy - vn * ny, sz = uz - vn * nz, speed = Math.sqrt(sx * sx + sy * sy + sz * sz);
+        if (speed > 1e-12) {
+          const td = (sx * d[0] + sy * d[1] + sz * d[2]) / speed, kt = 3.5 + invEnd + td * td * axisInv;
+          const ft = Math.min(0.7 * fn, speed / (h * kt)) / speed;
+          fx -= ft * sx; fy -= ft * sy; fz -= ft * sz;
+        }
+        tx = ry * fz - rz * fy; ty = rz * fx - rx * fz; tz = rx * fy - ry * fx;
+      } else touching = false;
+      let floorX = 0, floorY = 0, floorZ = 0;
+      if (withBed && p[2] < 0) {
+        floorZ = Math.max(0, -bed * p[2] - 1.2 * Math.sqrt(bed) * v[2]);
+        const sx = v[0] - R * omega[1], sy = v[1] + R * omega[0], speed = Math.sqrt(sx * sx + sy * sy);
+        if (speed > 1e-12) { const ft = Math.min(MU_S0 * floorZ, speed / (3.5 * h)) / speed; floorX = -ft * sx; floorY = -ft * sy; }
+        tx += R * floorY; ty -= R * floorX;
+      }
+      const axial = fx * d[0] + fy * d[1] + fz * d[2];
+      v[0] += (fx + floorX) * h; v[1] += (fy + floorY) * h; v[2] += (fz + floorZ) * h;
+      omega[0] += tx * invI * h; omega[1] += ty * invI * h; omega[2] += tz * invI * h;
+      u[0] -= (fx * invEnd + d[0] * axial * axisInv) * h;
+      u[1] -= (fy * invEnd + d[1] * axial * axisInv) * h;
+      u[2] -= (fz * invEnd + d[2] * axial * axisInv) * h;
+      for (let i = 0; i < 3; i++) { p[i] += v[i] * h; tip[i] += u[i] * h; }
+      if (touched && penetration < -0.00001 && (!withBed || p[2] >= 0) && step > 30) break;
     }
+    // Launch policy is isolated here, after the physical contact. Rotating velocity preserves kinetic energy; it
+    // removes only lateral cue deflection, not the massé spin or the subsequent cloth/cushion response.
+    return { velocity: v, spin: omega, height: withBed ? Math.max(0, p[2]) : 0, tip, tipVelocity: u, duration: elapsed, contacts, contact: geo };
+  }
+  function launch(V, a, bb, el) {
+    const key = [V, a, bb, el].join(','); if (launchCache.has(key)) return launchCache.get(key);
+    const result = contactLaunch(V, a, bb, el, true);
+    if (effects.squirt < 1) {
+      // Measure deflection with the bed absent, so the correction cannot erase the sideways impulse of a massé.
+      const free = contactLaunch(V, a, bb, el, false), speed = len3(free.velocity);
+      if (speed > 1e-12) {
+        let from = free.velocity.map(x => x / speed), to = free.contact.axis;
+        if (el !== 0) { const m = DMath.hypot(from[0], from[1]), k = DMath.hypot(to[0], to[1]);
+          if (m > 1e-8 && k > 1e-8) { from = [from[0] / m, from[1] / m, 0]; to = [to[0] / k, to[1] / k, 0]; } else to = from; }
+        const target = from.map((x, i) => effects.squirt * x + (1 - effects.squirt) * to[i]), length = len3(target);
+        if (length > 1e-12) {
+          const unit = target.map(x => x / length), axis = cross3(from, unit), qw = 1 + dot3(from, unit), qlen = Math.sqrt(dot3(axis, axis) + qw * qw);
+          if (qlen > 1e-12) { const q = axis.map(x => x / qlen), w = qw / qlen;
+            for (const v of [result.velocity, result.spin]) { const c = cross3(q, v), cc = cross3(q, c); for (let i = 0; i < 3; i++) v[i] += 2 * (w * c[i] + cc[i]); }
+          }
+        }
+      }
+    }
+    for (const v of [result.velocity, result.spin, result.tip, result.tipVelocity, result.contact.point, result.contact.axis]) Object.freeze(v);
+    Object.freeze(result.contact); Object.freeze(result);
+    if (launchCache.size >= 256) launchCache.delete(launchCache.keys().next().value); launchCache.set(key, result); return result;
+  }
+  function strike(w, ang, V, a, bb, el) {
+    if (el == null) el = restEl(w, ang, bb);
+    const shot = launch(Math.max(0, V), a || 0, bb || 0, el), c = w.balls[w.cue], ca = DMath.cos(ang), sa = DMath.sin(ang);
+    c.vx = ca * shot.velocity[0] - sa * shot.velocity[1]; c.vy = sa * shot.velocity[0] + ca * shot.velocity[1]; c.vz = Math.max(0, shot.velocity[2]);
+    c.wx = ca * shot.spin[0] - sa * shot.spin[1]; c.wy = sa * shot.spin[0] + ca * shot.spin[1]; c.wz = shot.spin[2]; c.z = shot.height;
     w.ev = newEv();
   }
-  /* The ordinary stroke is level, 0 degrees, shown as 0 and played as 0 - nobody pictures their everyday stroke curving the
-     ball - and the angle set is the angle played. (The cue is still drawn leaning a little, as a real one does.) */
-  const restEl = () => 0;
-  /* The raised cue: how fast the ball leaves the cloth, upwards - the plainest picture: the steeper the cue, the higher the
-     ball goes, as players expect and as a jump cue really does (a ball close in front is jumped at sixty degrees or more,
-     one further off at forty). Three numbers, each a thing: ANG_K how much of the downward drive the slate gives back up;
-     ANG_C what the cloth swallows (a soft stroke, a masse, stays down); ANG_Z the most a ball can be sent up at all - the
-     cue is still on top of it - so that full power is a high jump, not a flight off the table. Fitted so that, on a pool
-     table: a ball 6 cm in front is jumped at 60 degrees from about three-quarter power, 3 cm in front at 70; one a quarter
-     of a metre off at 45; half a metre off at 40, or 30 at full power; full power goes 10-14 cm up; a 30% masse hops 3 mm.
-     The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
-     of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
-  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35;
-  const lift = (V, el) => { const u = Math.max(0, ANG_K * V * DMath.sin(el) - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
-  const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
-  const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
-        CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
-        // every raised cue lifts the ball by what it lifts it, and it bounces on until a bounce is too small to matter
-        LAND = 0.03, E_LAND = 0.5;
+  // A damping ratio of 0.6 in the unilateral bed contact gives about 0.25 restitution. Use the same cloth friction
+  // and restitution on subsequent landings; changing from cue contact to flight must not change the material.
+  const CREEP = 0.18, CLEAR = 0.034, MU_LAND = MU_S0, LAND = 0.03, E_LAND = 0.25;
 
   function motion(w, b, h) {
     if (b.z > 0 || b.vz > 0) {
@@ -180,20 +267,6 @@ function createPhysics(cfg) {
         if (us > 1e-4) { const dec = Math.min(MU_LAND * (bounce ? 1 + E_LAND : 1) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
         if (bounce) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; }
         else { b.vz = 0; b.x += b.vx * rem; b.y += b.vy * rem; break; }
-      }
-      if (w.track) turn(b, h);
-      return;
-    }
-    if (b.z > 0 || b.vz > 0) {
-      // in the air: nothing but gravity, until it comes down (and bounces once or twice if it came down hard)
-      b.vz -= G * h; b.z += b.vz * h; b.x += b.vx * h; b.y += b.vy * h;
-      if (b.id === w.cue && b.z > w.ev.air) w.ev.air = b.z;
-      if (b.z <= 0) {
-        b.z = 0;
-        // coming down, the cloth grips the spinning ball for an instant: the harder the landing, the more of its spin turns into travel
-        const down = -b.vz, ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = DMath.hypot(ux, uy);
-        if (us > 1e-4 && down > 0) { const dec = Math.min(MU_LAND * (1 + E_LAND) * down, (2 / 7) * us), nx = ux / us, ny = uy / us; b.vx -= dec * nx; b.vy -= dec * ny; b.wx -= (2.5 / R) * dec * ny; b.wy += (2.5 / R) * dec * nx; }
-        if (down > LAND) { if (w.snd && down > 0.7) w.snd.push({ t: 'land', v: down, x: b.x, y: b.y, id: b.id }); b.vz = down * E_LAND; } else b.vz = 0;
       }
       if (w.track) turn(b, h);
       return;
@@ -218,19 +291,8 @@ function createPhysics(cfg) {
       if (sp <= dec || sp < 0.005) { b.vx = b.vy = 0; b.wx = b.wy = 0; }
       else { const s = (sp - dec) / sp; b.vx *= s; b.vy *= s; b.wy = b.vx / R; b.wx = -b.vy / R; }
     }
-    if (!w.ice) {
-      /* The game's side fades with the distance the ball runs, not with time: the same share of it is left at the cushion
-         however hard the ball was hit (and twice the pace put twice the side on), so a given side bends a given cushion by
-         the same amount at any pace. A third of it is gone after a metre; after three cushions or so it is all but spent.
-         A ball turning on the spot still winds down at the old rate. */
-      const run = DMath.hypot(b.vx, b.vy) * h;
-      b.wz *= DMath.exp(-run / SIDE_RUN);
-      const dz = (2.5 * MU_SP * G / R) * h * 0.25;
-      if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
-    } else {
-      const dz = (2.5 * MU_SP * G / R) * h;
-      if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
-    }
+    const dz = (2.5 * MU_SP * G / R) * h;
+    if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
     b.x += b.vx * h; b.y += b.vy * h;
     const spd = DMath.hypot(b.vx, b.vy), cool = b.hot - 7 * h; b.hot = spd > cool ? spd : cool;
     if (b.spit > 0) b.spit -= h;
@@ -280,28 +342,15 @@ function createPhysics(cfg) {
   }
   let SUBH = 1 / 360;                                             // the length of the step being taken (for the rewinds above and below)
   function hitRail(w, b, nx, ny, vn) {
-    const tx = -ny, ty = nx;
-    {
-      /* The game's cushion: a mirror, with side as the one thing that bends it off the rail - and with the ball's roll left
-         as it was, as on a real table. Off the rail itself, angle in = angle out at an ordinary pace (a hard ball sinks into
-         the rubber and comes off a touch wider, a slow one a touch narrower); side grips the rail and opens or closes that
-         angle in proportion to how much there is.
-         The roll: the cushion's nose, above the ball's middle, takes off the roll the ball had INTO the rail, so it leaves
-         the rail with none across (a stun), while the roll it had ALONG the rail stays. So afterwards the cloth bends it:
-         a rolling ball runs on a little longer along the rail (wider), follow more so, draw the other way (narrower), a
-         stunned ball not at all - and a masse keeps curving. That bend is what a player learns to read; the guide shows
-         it from "길게" on. */
-      const c = -vn, eT = POCKETED ? 0.8 : 0.84, eN = Math.min(eT + 0.05, Math.max(eT - 0.08, eT + 0.02 * (2.5 - c)));
-      const vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + eT) * c;
-      let ds = (2 / 7) * RB * b.wz; if (ds > lim) ds = lim; else if (ds < -lim) ds = -lim;
-      const dvt = -(1 - eT) * vt + ds;
-      b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
-      b.wz -= (2.5 / RB) * ds;
-      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
-      if (w.trace && b.id === w.cue) TR_N = [nx, ny];
-      if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
-      return;
-    }
+    // The rubber nose is above the centre of a grounded ball. Its impulse can change roll and sidespin; the bed then
+    // absorbs downward travel with its own Coulomb impulse. Barricades have a vertical face, not a cushion nose.
+    const height = ON_WALL ? 0 : Math.max(-0.8, Math.min(0.8, 0.4 - b.z / R));
+    const horizontal = Math.sqrt(1 - height * height), n = [nx * horizontal, ny * horizontal, -height], r = n.map(x => -R * x);
+    const e = POCKETED ? 0.8 : 0.84;
+    surfaceImpulse(b, r, n, e, 0.14);
+    if (b.z === 0 && b.vz < 0) surfaceImpulse(b, [0, 0, -R], [0, 0, 1], 0, MU_S0);
+    if (w.trace && b.id === w.cue) TR_N = [nx, ny];
+    if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
   }
   let ON_WALL = false;                                             // (the face being met is a barricade's, not a cushion's)
   function noteWall(w, b, vn) {
@@ -318,46 +367,50 @@ function createPhysics(cfg) {
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }
 
-  /* Two balls of which at least one is off the cloth. Everything in three dimensions: where they touched, how fast they were
-     closing, and the blow - so a ball coming down on another is thrown back up by it and knocks it on, and the meeting is
-     counted as a hit. A ball that is on the cloth cannot be driven down into it: the slate takes that. */
-  function hitAir(w, a, b, i, j, h) {
-    let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx * dx + dy * dy + dz * dz;
-    if (d2 >= 4 * R * R || d2 < 1e-14) return;
-    const rx = b.vx - a.vx, ry = b.vy - a.vy, rz = b.vz - a.vz, vv = rx * rx + ry * ry + rz * rz, dv = dx * rx + dy * ry + dz * rz;
-    if (dv >= 0 || vv < 1e-12) return;                             // already parting
-    const tau = Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv);
-    for (const q of [a, b]) { q.x -= q.vx * tau; q.y -= q.vy * tau; q.z = Math.max(0, q.z - q.vz * tau); }
-    dx = b.x - a.x; dy = b.y - a.y; dz = b.z - a.z; const d = DMath.hypot(dx, dy, dz) || 1, nx = dx / d, ny = dy / d, nz = dz / d;
-    const rel = rx * nx + ry * ny + rz * nz;
-    if (rel < 0) {
-      const jn = -(1 + E_BALL) / 2 * rel;
-      a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
-      for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
-      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
-      if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
-    }
-    for (const q of [a, b]) { q.x += q.vx * tau; q.y += q.vy * tau; q.z = Math.max(0, q.z + q.vz * tau); }
-  }
-  /* Balls on the cloth meeting balls on the cloth. The meetings are taken in the order they happened (each pair, found a
+  /* All ball contacts, including airborne ones. The meetings are taken in the order they happened (each pair, found a
      little way into each other, is taken back to the instant it touched), and meetings that happened at the same instant
      - a ball struck square between two that touch, a rack - are settled TOGETHER: one set of blows, worked out at once
      (projected Jacobi on the contacts, each blow giving the pair back e of its closing speed and none pulling), so that no
      ball is served first because of its number. Then whatever those blows set closing next (the next row of a rack) is
      the next instant, and so on until nothing is closing. It used to go pair by pair in the balls' order, and two balls
      side by side came off at 2.36 and 1.19 m/s, and the other way round when their numbers were swapped. */
+  function ballFriction(bs, group) {
+    const mu = 0.04 * effects.throw; if (mu === 0) return;
+    for (const c of group) c.jt = [0, 0, 0];
+    // Jacobi updates preserve simultaneous-contact symmetry. The same tangential impulse changes both balls'
+    // velocity and spin, and is bounded by the normal impulse (the Coulomb cone).
+    for (let it = 0; it < 24; it++) {
+      const changes = new Map(); let largest = 0;
+      for (const c of group) {
+        if (!(c.lam > 0)) continue;
+        const n = [c.nx, c.ny, c.nz || 0], ra = n.map(x => R * x), rb = ra.map(x => -x);
+        const va = pointVelocity(bs[c.i], ra), vb = pointVelocity(bs[c.j], rb), rel = vb.map((x, k) => x - va[k]), vn = dot3(rel, n);
+        const trial = c.jt.map((x, k) => x - (c.w || 1) * (rel[k] - vn * n[k]) / 7), size = len3(trial), max = mu * c.lam;
+        if (size > max) for (let k = 0; k < 3; k++) trial[k] *= max / size;
+        const dj = trial.map((x, k) => x - c.jt[k]); c.jt = trial; largest = Math.max(largest, len3(dj));
+        for (const [id, sign, r] of [[c.i, -1, ra], [c.j, 1, rb]]) {
+          if (!changes.has(id)) changes.set(id, [0, 0, 0, 0, 0, 0]);
+          const v = changes.get(id), j = dj.map(x => sign * x), torque = cross3(r, j);
+          for (let k = 0; k < 3; k++) { v[k] += j[k]; v[k + 3] += torque[k] * invI; }
+        }
+      }
+      for (const [id, v] of changes) { const b = bs[id]; b.vx += v[0]; b.vy += v[1]; b.vz += v[2]; b.wx += v[3]; b.wy += v[4]; b.wz += v[5]; }
+      if (largest < 1e-10) break;
+    }
+    for (const b of bs) if (b.z === 0 && b.vz < 0) surfaceImpulse(b, [0, 0, -R], [0, 0, 1], 0, MU_S0);
+  }
   const SIM_EPS = 1e-7;                                         // touches this close in time (s) count as one instant
   let overlapSeen = false;                                      // (set by contacts: some pair is pressed into another)
   function contacts(w, bs, n, h) {
     const out = []; overlapSeen = false;
     for (let i = 0; i < n; i++) {
-      const a = bs[i]; if (!a.on || a.z !== 0 || a.vz !== 0) continue;
+      const a = bs[i]; if (!a.on) continue;
       for (let j = i + 1; j < n; j++) {
-        const b = bs[j]; if (!b.on || b.z !== 0 || b.vz !== 0) continue;
-        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        const b = bs[j]; if (!b.on) continue;
+        const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx * dx + dy * dy + dz * dz;
         if (d2 >= 4 * R * R + 1e-12 || d2 < 1e-14) continue;
         if (d2 < 4 * R * R - 1e-12) overlapSeen = true;
-        const rvx = b.vx - a.vx, rvy = b.vy - a.vy, vv = rvx * rvx + rvy * rvy, dv = dx * rvx + dy * rvy;
+        const rvx = b.vx - a.vx, rvy = b.vy - a.vy, rvz = b.vz - a.vz, vv = rvx * rvx + rvy * rvy + rvz * rvz, dv = dx * rvx + dy * rvy + dz * rvz;
         if (dv >= -1e-12 || vv < 1e-12) continue;                  // not closing
         const tau = d2 < 4 * R * R ? Math.max(0, Math.min(h, (dv + Math.sqrt(dv * dv + vv * (4 * R * R - d2))) / vv)) : 0;
         out.push({ i, j, tau });
@@ -365,7 +418,7 @@ function createPhysics(cfg) {
     }
     return out;
   }
-  function collideGround(w, bs, n, h) {
+  function collideBalls(w, bs, n, h) {
     const cue = w.cue;
     for (let round = 0; round < 64; round++) {
       const all = contacts(w, bs, n, h); if (!all.length) break;
@@ -373,51 +426,61 @@ function createPhysics(cfg) {
       const group = all.filter(c => c.tau >= T - SIM_EPS);
       const inv = new Set(); for (const c of group) { inv.add(c.i); inv.add(c.j); }
       // back to the instant they touched
-      for (const k of inv) { const q = bs[k]; q.x -= q.vx * T; q.y -= q.vy * T; }
+      for (const k of inv) { const q = bs[k]; q.x -= q.vx * T; q.y -= q.vy * T; q.z = Math.max(0, q.z - q.vz * T); }
       const deg = new Map(); for (const k of inv) deg.set(k, 0); for (const c of group) { deg.set(c.i, deg.get(c.i) + 1); deg.set(c.j, deg.get(c.j) + 1); }
+      const bedImpulse = new Map(); for (const k of inv) if (bs[k].z === 0) bedImpulse.set(k, 0);
       for (const c of group) {
-        const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, d = DMath.hypot(dx, dy) || 1;
-        c.nx = dx / d; c.ny = dy / d; c.rel0 = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny;
+        const a = bs[c.i], b = bs[c.j], dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d = DMath.hypot(dx, dy, dz) || 1;
+        c.nx = dx / d; c.ny = dy / d; c.nz = dz / d; c.rel0 = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny + (b.vz - a.vz) * c.nz;
         c.target = c.rel0 < 0 ? -E_BALL * c.rel0 : 0; c.lam = 0; c.w = 1 / Math.max(deg.get(c.i), deg.get(c.j));
       }
       // the blows, all from the same state each pass, until they agree
       for (let it = 0; it < 200; it++) {
-        let moved = 0; const dv = new Map(); for (const k of inv) dv.set(k, [0, 0]);
+        let moved = 0; const dv = new Map(); for (const k of inv) dv.set(k, [0, 0, 0]);
         for (const c of group) {
-          const a = bs[c.i], b = bs[c.j], rel = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny;
+          const a = bs[c.i], b = bs[c.j], rel = (b.vx - a.vx) * c.nx + (b.vy - a.vy) * c.ny + (b.vz - a.vz) * c.nz;
           const nl = Math.max(0, c.lam + c.w * (c.target - rel) / 2), d = nl - c.lam; c.lam = nl;
-          if (d !== 0) { const ai = dv.get(c.i), bj = dv.get(c.j); ai[0] -= d * c.nx; ai[1] -= d * c.ny; bj[0] += d * c.nx; bj[1] += d * c.ny; if (Math.abs(d) > moved) moved = Math.abs(d); }
+          if (d !== 0) { const ai = dv.get(c.i), bj = dv.get(c.j); ai[0] -= d * c.nx; ai[1] -= d * c.ny; ai[2] -= d * c.nz; bj[0] += d * c.nx; bj[1] += d * c.ny; bj[2] += d * c.nz; if (Math.abs(d) > moved) moved = Math.abs(d); }
         }
-        for (const [k, v] of dv) { bs[k].vx += v[0]; bs[k].vy += v[1]; }
+        for (const [k, v] of dv) { bs[k].vx += v[0]; bs[k].vy += v[1]; bs[k].vz += v[2]; }
+        // The bed is an active unilateral contact during ball impacts, not a velocity clamp afterwards. In particular,
+        // a falling ball hits a supported ball, not a second freely falling mass. Solve and release its reaction too.
+        for (const [k, old] of bedImpulse) {
+          const next = Math.max(0, old - bs[k].vz), delta = next - old; bs[k].vz += delta; bedImpulse.set(k, next);
+          moved = Math.max(moved, Math.abs(delta));
+        }
         if (moved < 1e-10) break;
       }
+      ballFriction(bs, group);
+      for (const [k, jn] of bedImpulse) if (jn > 0) surfaceFriction(bs[k], [0, 0, -R], [0, 0, 1], jn, w.ice ? 0.022 : MU_S0);
       // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
       const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
       if (met.length) {
-        const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, 0, met[0]];
+        const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, met[0]];
         if (w.ev.firstHit == null) w.ev.firstHit = met[0];
         for (const o of met) if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
       }
       if (w.snd) for (const c of group) if (-c.rel0 > 0.03 && c.lam > 0) { const a = bs[c.i], b = bs[c.j]; w.snd.push({ t: 'ball', v: -c.rel0, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id }); }
       // and on from that instant with the new speeds
-      for (const k of inv) { const q = bs[k]; q.x += q.vx * T; q.y += q.vy * T; }
+      for (const k of inv) { const q = bs[k]; if (q.z === 0 && q.vz < 0) surfaceImpulse(q, [0, 0, -R], [0, 0, 1], 0, MU_S0); q.x += q.vx * T; q.y += q.vy * T; q.z = Math.max(0, q.z + q.vz * T);
+        if (q.z === 0 && q.vz < 0) surfaceImpulse(q, [0, 0, -R], [0, 0, 1], 0, MU_S0); }
     }
     // Overlaps left over (balls pressed together, a ball placed in contact): pushed apart the same way, all pairs at once.
     if (!overlapSeen) return;
     for (let it = 0; it < 8; it++) {
       const push = new Map(); let any = false;
       for (let i = 0; i < n; i++) {
-        const a = bs[i]; if (!a.on || a.z !== 0) continue;
+        const a = bs[i]; if (!a.on) continue;
         for (let j = i + 1; j < n; j++) {
-          const b = bs[j]; if (!b.on || b.z !== 0) continue;
-          const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+          const b = bs[j]; if (!b.on) continue;
+          const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx * dx + dy * dy + dz * dz;
           if (d2 >= 4 * R * R - 1e-12 || d2 < 1e-14) continue;
-          const d = Math.sqrt(d2), ov = (2 * R - d) / 2, nx = dx / d, ny = dy / d; any = true;
-          const pa = push.get(i) || [0, 0], pb = push.get(j) || [0, 0]; pa[0] -= nx * ov; pa[1] -= ny * ov; pb[0] += nx * ov; pb[1] += ny * ov; push.set(i, pa); push.set(j, pb);
+          const d = Math.sqrt(d2), ov = (2 * R - d) / 2, nx = dx / d, ny = dy / d, nz = dz / d; any = true;
+          const pa = push.get(i) || [0, 0, 0], pb = push.get(j) || [0, 0, 0]; pa[0] -= nx * ov; pa[1] -= ny * ov; pa[2] -= nz * ov; pb[0] += nx * ov; pb[1] += ny * ov; pb[2] += nz * ov; push.set(i, pa); push.set(j, pb);
         }
       }
       if (!any) break;
-      for (const [k, p] of push) { bs[k].x += p[0]; bs[k].y += p[1]; }
+      for (const [k, p] of push) { bs[k].x += p[0]; bs[k].y += p[1]; bs[k].z = Math.max(0, bs[k].z + p[2]); }
     }
   }
   /* The trace (only when something has asked for one, as the chalk trail does: w.trace = { p: [], k: [] }): the cue ball's
@@ -438,17 +501,7 @@ function createPhysics(cfg) {
     const bs = w.balls, n = bs.length;
     for (let i = 0; i < n; i++) if (bs[i].on) motion(w, bs[i], h);
     const tc = w.trace && bs[w.cue].on ? bs[w.cue] : null, tvx = tc ? tc.vx : 0, tvy = tc ? tc.vy : 0;
-    // a ball off the cloth meeting another: the three-dimensional blow, pair by pair (rare, and never two at once)
-    for (let i = 0; i < n; i++) {
-      const a = bs[i]; if (!a.on) continue;
-      for (let j = i + 1; j < n; j++) {
-        const b = bs[j]; if (!b.on) continue;
-        if (a.z === 0 && b.z === 0 && a.vz === 0 && b.vz === 0) continue;
-        const dx = b.x - a.x, dy = b.y - a.y; if (dx * dx + dy * dy >= 4 * R * R) continue;
-        hitAir(w, a, b, i, j, h);
-      }
-    }
-    collideGround(w, bs, n, h);
+    collideBalls(w, bs, n, h);
     // the barricades: as the cushions below, the face met first first; a ball above a block's top goes over it
     if (w.walls.length) for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on || (b.vx === 0 && b.vy === 0)) continue;
@@ -526,7 +579,7 @@ function createPhysics(cfg) {
 
   function step(w, dt) {
     let vmax = 0;
-    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = DMath.hypot(b.vx, b.vy); if (s > vmax) vmax = s; }
+    for (const b of w.balls) if (b.on) { b.px = b.x; b.py = b.y; b.pz = b.z; const s = DMath.hypot(b.vx, b.vy, b.vz); if (s > vmax) vmax = s; }
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
@@ -665,7 +718,7 @@ function createPhysics(cfg) {
   }
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
-  const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  const hop = (V, el, a, bb) => { const s = launch(V, a || 0, bb || 0, el || 0), up = Math.max(0, s.velocity[2]); return s.height + up * up / (2 * G); };
+  return { hop, launch, cueContact, effects, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; }
