@@ -6,7 +6,7 @@
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
     // Spend the budget across more routes with the coupled contact model, while retaining the existing CPU bound.
-    const budget = Math.round(36 + 52 * skill * skill); let sims = 0;
+    const budget = Math.round(36 + 24 * skill * skill); let sims = 0;
     const exploreMasse = g.masse && rand() < style.masse * (0.45 + 0.5 * skill);
     const speed = (x) => clamp(x, g.vOf(0), g.vOf(1));
     const add = (angle, V, id, extra = {}) => {
