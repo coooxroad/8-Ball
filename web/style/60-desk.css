@@ -12,7 +12,7 @@
    onto what it stands on. Each image is drawn round the element at a scale --s, the transparent margin drawn outside the
    box (outset), so the element's box is the piece's top face plus its lip; --lip is padded at the foot so the content
    sits in the middle of the top face, and pressed pieces move it down as far as their top face went. */
-#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--es:.42;--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
+#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--es:.42;--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px;--desk-density:1}
 #app.desk.compact{--es:.3;--bar:56px;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px}
 #app.desk.compact:not(.portrait){--es:.22;--bar:48px;--tilt:11deg;--ovh:40px;--ovw:50px}
 /* ---------- the desk as a plane seen from above and a little behind ----------
@@ -34,8 +34,11 @@
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
    On its side, the three columns again, narrow. */
 #desk{position:absolute;inset:0 var(--ovw);z-index:5;display:grid;grid-template-columns:minmax(190px,18%) minmax(0,1fr) minmax(300px,25%);gap:20px;padding:18px 20px calc(130px*var(--es) + 16px);box-sizing:border-box}
+/* Lay out at the original size, rasterize the contents more densely, then restore their screen size before tilting.
+   A native HiDPI display uses density 1. The live table is a sibling canvas, so this never multiplies its pixel count. */
+#desk{zoom:var(--desk-density);left:calc(var(--ovw)/var(--desk-density));right:auto;width:calc(100%*var(--desk-density) - 2*var(--ovw));height:calc(100%*var(--desk-density));transform:scale(calc(1/var(--desk-density)));transform-origin:0 0}
 /* (while 랭킹전 looks for an opponent its strip sits at the top: the desk's contents move down out from under it) */
-#app.rk #desk{top:46px}
+#app.rk #desk{top:calc(46px/var(--desk-density));height:calc(100%*var(--desk-density) - 46px)}
 #app.desk.compact.portrait #desk{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(220px,1fr) auto;padding:14px 16px 18px;gap:14px}
 #app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px}
 /* the room's light, warm from the upper right and falling away to the lower left; under the pieces on the desk, and
@@ -166,6 +169,7 @@
 .dk-hr{flex:none;height:1px;background:rgba(255,255,255,.1)}
 .dk-lab{font:700 14px var(--ui-font);color:var(--slate-sub)}
 .dk-txt{font:500 16px/1.55 var(--ui-font);color:#e3ddd1;word-break:keep-all}
+#app.desk:not(.compact) .dk-txt{font-size:18px}
 .dk-txt b{color:#7fb1ef;font-weight:700}
 .dk-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 #app.desk .dk-row .dk-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
