@@ -20,7 +20,9 @@ const note = text => el('p', { class: 'note', text });
 // 조준선 stat); only its look is chosen here.
 function sheetGuide() {
   openSheet('조준선', [segRow('모양', [['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
-    note('길이는 모두 같은 \'보통\'이고, 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보이고, 그 뒤는 짧은 직선(예상 방향)입니다.')]);
+    segRow('길이', [[false, '보통'], [true, '끝까지 (물리 테스트)']], !!prefs.guideAll, v => { prefs.guideAll = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
+    note(prefs.guideAll ? '끝까지: 큐볼과 맞는 공들이 멈출 때까지 실제로 갈 길을 모두 보여 줍니다(큐 능력치와 상관없이). 온라인 대전에서는 늘 보통입니다.'
+      : '길이는 모두 같은 \'보통\'이고, 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보이고, 그 뒤는 짧은 직선(예상 방향)입니다.')]);
 }
 function sheetSettings() {
   openSheet('설정', [

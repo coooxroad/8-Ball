@@ -25,6 +25,9 @@ const TICK = 1 / 120;
 // the aiming guide's length, 0 (none) to 1 (every ball's whole way): what each stretch of the slider is called
 // the aim line's length in play, for everyone ('보통'); the cue in hand stretches or shortens it by its stat (90-loop.js)
 const GUIDE_STD = 0.5;
+/* '끝까지' (조준선 sheet, for trying the physics out): every ball's whole way, from the stroke to rest, at any cue - but never
+   in an online game (the other player sees the usual line), nor while the computer or the other player is at the table. */
+const guideWhole = () => !!prefs.guideAll && !(flow === match && match.ctx && match.ctx.online);
 
 /* ================= settings and saved data ================= */
 const store = {

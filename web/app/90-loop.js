@@ -123,7 +123,7 @@ function frame(now) {
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
     follow, contact: st.phase === 'strike' ? st.cueAnim : null, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
-    gear: st.phase === 'aim' ? cueK() : null, level: flow ? flow.guide() * (st.phase === 'aim' ? cueK().guide : 1) : 0,
+    gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : guideWhole() ? 1 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
     covered: st.screen === 'home' && !deskTableShown(),
   }, dt);
