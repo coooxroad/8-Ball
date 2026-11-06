@@ -11,12 +11,7 @@
       { a: -side, b: 0.12, stroke: 'left', preference: s.spin * 0.3 + (shot.kind === 'bank' ? s.bank * 0.2 : 0) },
     ];
     if (s.spin > 0.55) strokes.push({ a: 0.4, b: -0.25, stroke: 'draw-right', preference: s.spin * 0.25 }, { a: -0.4, b: 0.3, stroke: 'follow-left', preference: s.spin * 0.25 });
-    return strokes.sort((a, b) => b.preference - a.preference).map(x => {
-      // A route is the intended ball direction. Compensate the cue's resolved deflection when proposing its aim;
-      // otherwise every sidespin variant wastes a simulation on missing the same first ball. Motor error is later.
-      const v = g.P.launch(shot.V, x.a, x.b, shot.el || 0).velocity;
-      return { ...shot, ...x, angle: shot.angle - Math.atan2(v[1], v[0]) };
-    });
+    return strokes.sort((a, b) => b.preference - a.preference).map(x => ({ ...shot, ...x }));
   }
   function humanCaromPosition(world, who) {
     const cue = world.balls[who], ids = g.mode.legal({ ...g, world }, who), P = g.P;

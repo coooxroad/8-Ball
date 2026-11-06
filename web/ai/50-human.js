@@ -5,8 +5,7 @@
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
-    // Spend the budget across more routes with the coupled contact model, while retaining the existing CPU bound.
-    const budget = Math.round(36 + 24 * skill * skill); let sims = 0;
+    const budget = Math.round(36 + 64 * skill * skill); let sims = 0;
     const exploreMasse = g.masse && rand() < style.masse * (0.45 + 0.5 * skill);
     const speed = (x) => clamp(x, g.vOf(0), g.vOf(1));
     const add = (angle, V, id, extra = {}) => {
@@ -111,10 +110,6 @@
           // Geometric tangent ranking finds plausible caroms before any costly simulation.
           const other = ordered.find(b => b.id !== T.id), rank = humanCaromRank(h, angle, other, need);
           add(angle, need ? 4.4 : 2.5, T.id, { rank, cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom' });
-          // The contact model can keep a gentle elevated draw on the cloth. Explore those routes as well as the
-          // old hard, high side-spin shots, which now often fly over their intended first target.
-          if (exploreMasse && i % 2 === 0) add(angle, need ? 3.2 : 2.5, T.id,
-            { a: 0, b: -0.35, el: 0.4, rank: rank + 0.1, cut: Math.abs(f), kind: 'masse', difficulty: 1.3 });
         }
         if (skill > 0.25 || style.bank > 0.7) for (let ix = -2; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) {
           const n = Math.abs(ix) + Math.abs(iy); if (!n || n > Math.max(1, need)) continue;
@@ -132,7 +127,7 @@
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
     };
-    const visible = (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : skill > 0.6 ? 14 : 8);
+    const visible = (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : 8);
     const strokes = visible.map(k => humanStrokes(k, person));
     // Round-robin routes and stroke families before refining the best one; the first pot must not end all exploration.
     for (let v = 0; v < 7 && sims < budget - 12; v++) for (const options of strokes) {

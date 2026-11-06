@@ -72,15 +72,17 @@
       const dx = Math.cos(v.aim), dy = Math.sin(v.aim), cx0 = fo ? fo.x : c.x, cy0 = fo ? fo.y : c.y, pullV = fo ? fo.pull : v.pull, spinV = fo ? fo.spin : v.spin;
       // raised for a masse or a jump: the butt comes up and the tip comes down onto the top of the ball
       const e = fo ? fo.el : v.el || 0, ce = Math.cos(e), se = Math.sin(e);
-      // Share the sphere contact and effective equipment offset with the physics, including the vertical-cue case.
-      const gear = v.gear || { spin: 1 }, a = fo ? fo.a : v.contact ? v.contact.a : spinV.x * 0.5 * gear.spin,
-        b = fo ? fo.b : v.contact ? v.contact.b : spinV.y * 0.5 * gear.spin;
-      const impact = P.cueContact(v.aim, a || 0, b || 0, e), p = impact.point, axis = impact.axis;
-      const px = cx0 + p[0] - axis[0] * pullV, py = cy0 + p[1] - axis[1] * pullV, pz = R + p[2] - axis[2] * pullV;
+      const tx = cx0 - dx * ce * (R + pullV), ty = cy0 - dy * ce * (R + pullV);
+      // Seen from straight above, a cue that is really tilted leans away across the picture (the butt is much nearer the eye),
+      // so there it is drawn lying flat and shortened, the way it would look with no perspective; in the 3D views it is truly raised.
+      // The cue is drawn at its angle with a small lean for looks (the ordinary stroke is a level 0), and moved sideways and
+      // up or down, staying parallel, to the point on the ball that the spin setting says it strikes.
+      const off = spinV.x * 0.5 * R, lift = spinV.y * 0.5 * R * ce, px = tx + dy * off, py = ty - dx * off;
       // From above, a raised cue is raised too, in true perspective (the butt nearer the eye, so wider), only shortened so its
       // butt stays within a third of a metre of the cloth; its shadow lies on the cloth below and falls away from it.
       const kl = orbit.on || e < 0.03 ? 1 : Math.min(1, 0.32 / (1.47 * se));
-      cue.scale.set(kl, 1, 1); cue.position.set(px, py, pz); cue.rotation.set(0, -e, v.aim + Math.PI);
+      if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? 0.085 : 0) + e), v.aim + Math.PI); }
+      else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const half = 0.735 * kl * ce, sx = px - dx * half + 0.012 + 0.025 * se, sy = py - dy * half - 0.014 - 0.025 * se;
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * kl * Math.max(0.12, ce), 0.022 * (1 + 0.5 * se), 1); cueShadow.material.opacity = 0.22 * (1 - 0.55 * se);   // (a raised cue's shadow is fainter)
     }

@@ -172,7 +172,7 @@ function drawDial() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 옆회전. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
+    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
@@ -214,11 +214,10 @@ function syncEl() {
 // (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
 function elSay() {
   const P = game.P; if (st.el < 0.009) return '';
-  const gear = cueK(), kp = gear.power, a = st.spin.x * 0.5 * gear.spin, b = st.spin.y * 0.5 * gear.spin,
-    h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, st.el, a, b), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
+  const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
   if (h > P.R * 2) return '공을 넘는 점프';
-  if (h > 0.012) return P.hop(game.vOf(1) * kp, st.el, a, b) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
-  if (P.hop(game.vOf(1) * kp, st.el, a, b) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
+  if (h > 0.012) return P.hop(game.vOf(1) * kp, st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
+  if (P.hop(game.vOf(1) * kp, st.el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
   return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
 }
 function setKindUI() {

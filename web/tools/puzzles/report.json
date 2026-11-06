@@ -3,8 +3,8 @@
     {
       "stage": 0,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -12,73 +12,82 @@
       ],
       "puzzles": [
         {
-          "id": 104,
-          "good": 395,
-          "total": 441,
-          "percent": 89.56916099773242
-        },
-        {
-          "id": 103,
-          "good": 389,
-          "total": 441,
-          "percent": 88.20861678004535
-        },
-        {
           "id": 101,
-          "good": 382,
-          "total": 441,
-          "percent": 86.62131519274377
-        },
-        {
-          "id": 110,
-          "good": 369,
-          "total": 441,
-          "percent": 83.6734693877551
-        },
-        {
-          "id": 108,
-          "good": 301,
-          "total": 441,
-          "percent": 68.25396825396825
-        },
-        {
-          "id": 106,
-          "good": 263,
-          "total": 441,
-          "percent": 59.63718820861678
-        },
-        {
-          "id": 109,
-          "good": 207,
-          "total": 441,
-          "percent": 46.93877551020408
-        },
-        {
-          "id": 105,
-          "good": 159,
-          "total": 441,
-          "percent": 36.054421768707485
-        },
-        {
-          "id": 107,
-          "good": 143,
-          "total": 441,
-          "percent": 32.426303854875286
+          "attempt": 6,
+          "percent": 88.88888888888889,
+          "good": 392,
+          "total": 441
         },
         {
           "id": 102,
-          "good": 84,
-          "total": 441,
-          "percent": 19.047619047619047
+          "attempt": 13,
+          "percent": 83.90022675736961,
+          "good": 370,
+          "total": 441
+        },
+        {
+          "id": 103,
+          "attempt": 3,
+          "percent": 82.53968253968254,
+          "good": 364,
+          "total": 441
+        },
+        {
+          "id": 104,
+          "attempt": 14,
+          "percent": 80.95238095238095,
+          "good": 357,
+          "total": 441
+        },
+        {
+          "id": 105,
+          "attempt": 10,
+          "percent": 60.317460317460316,
+          "good": 266,
+          "total": 441
+        },
+        {
+          "id": 106,
+          "attempt": 12,
+          "percent": 59.41043083900227,
+          "good": 262,
+          "total": 441
+        },
+        {
+          "id": 107,
+          "attempt": 2,
+          "percent": 43.53741496598639,
+          "good": 192,
+          "total": 441
+        },
+        {
+          "id": 108,
+          "attempt": 4,
+          "percent": 32.19954648526077,
+          "good": 142,
+          "total": 441
+        },
+        {
+          "id": 109,
+          "attempt": 11,
+          "percent": 29.931972789115648,
+          "good": 132,
+          "total": 441
+        },
+        {
+          "id": 110,
+          "attempt": 15,
+          "percent": 28.571428571428573,
+          "good": 126,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 1,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -86,73 +95,82 @@
       ],
       "puzzles": [
         {
-          "id": 205,
-          "good": 395,
-          "total": 441,
-          "percent": 89.56916099773242
-        },
-        {
-          "id": 207,
-          "good": 382,
-          "total": 441,
-          "percent": 86.62131519274377
-        },
-        {
           "id": 201,
-          "good": 364,
-          "total": 441,
-          "percent": 82.53968253968254
-        },
-        {
-          "id": 206,
-          "good": 339,
-          "total": 441,
-          "percent": 76.87074829931973
-        },
-        {
-          "id": 204,
-          "good": 299,
-          "total": 441,
-          "percent": 67.80045351473923
+          "attempt": 15,
+          "percent": 82.99319727891157,
+          "good": 366,
+          "total": 441
         },
         {
           "id": 202,
-          "good": 252,
-          "total": 441,
-          "percent": 57.142857142857146
-        },
-        {
-          "id": 208,
-          "good": 187,
-          "total": 441,
-          "percent": 42.40362811791383
-        },
-        {
-          "id": 210,
-          "good": 141,
-          "total": 441,
-          "percent": 31.972789115646258
-        },
-        {
-          "id": 209,
-          "good": 90,
-          "total": 441,
-          "percent": 20.408163265306122
+          "attempt": 29,
+          "percent": 75.51020408163265,
+          "good": 333,
+          "total": 441
         },
         {
           "id": 203,
-          "good": 21,
-          "total": 441,
-          "percent": 4.761904761904762
+          "attempt": 24,
+          "percent": 72.78911564625851,
+          "good": 321,
+          "total": 441
+        },
+        {
+          "id": 204,
+          "attempt": 8,
+          "percent": 70.97505668934241,
+          "good": 313,
+          "total": 441
+        },
+        {
+          "id": 205,
+          "attempt": 33,
+          "percent": 70.52154195011337,
+          "good": 311,
+          "total": 441
+        },
+        {
+          "id": 206,
+          "attempt": 1,
+          "percent": 54.19501133786848,
+          "good": 239,
+          "total": 441
+        },
+        {
+          "id": 207,
+          "attempt": 25,
+          "percent": 52.38095238095238,
+          "good": 231,
+          "total": 441
+        },
+        {
+          "id": 208,
+          "attempt": 3,
+          "percent": 45.35147392290249,
+          "good": 200,
+          "total": 441
+        },
+        {
+          "id": 209,
+          "attempt": 23,
+          "percent": 39.002267573696145,
+          "good": 172,
+          "total": 441
+        },
+        {
+          "id": 210,
+          "attempt": 41,
+          "percent": 33.78684807256236,
+          "good": 149,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 2,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -161,72 +179,81 @@
       "puzzles": [
         {
           "id": 301,
-          "good": 243,
-          "total": 441,
-          "percent": 55.10204081632653
-        },
-        {
-          "id": 303,
-          "good": 143,
-          "total": 441,
-          "percent": 32.426303854875286
-        },
-        {
-          "id": 304,
-          "good": 136,
-          "total": 441,
-          "percent": 30.839002267573697
-        },
-        {
-          "id": 308,
-          "good": 126,
-          "total": 441,
-          "percent": 28.571428571428573
-        },
-        {
-          "id": 309,
-          "good": 51,
-          "total": 441,
-          "percent": 11.564625850340136
-        },
-        {
-          "id": 310,
-          "good": 47,
-          "total": 441,
-          "percent": 10.657596371882086
-        },
-        {
-          "id": 306,
-          "good": 41,
-          "total": 441,
-          "percent": 9.297052154195011
-        },
-        {
-          "id": 305,
-          "good": 35,
-          "total": 441,
-          "percent": 7.936507936507937
+          "attempt": 9,
+          "percent": 52.38095238095238,
+          "good": 231,
+          "total": 441
         },
         {
           "id": 302,
-          "good": 35,
-          "total": 441,
-          "percent": 7.936507936507937
+          "attempt": 6,
+          "percent": 16.780045351473923,
+          "good": 74,
+          "total": 441
+        },
+        {
+          "id": 303,
+          "attempt": 11,
+          "percent": 15.873015873015873,
+          "good": 70,
+          "total": 441
+        },
+        {
+          "id": 304,
+          "attempt": 5,
+          "percent": 15.419501133786849,
+          "good": 68,
+          "total": 441
+        },
+        {
+          "id": 305,
+          "attempt": 1,
+          "percent": 13.151927437641723,
+          "good": 58,
+          "total": 441
+        },
+        {
+          "id": 306,
+          "attempt": 3,
+          "percent": 12.244897959183673,
+          "good": 54,
+          "total": 441
         },
         {
           "id": 307,
-          "good": 9,
-          "total": 441,
-          "percent": 2.0408163265306123
+          "attempt": 8,
+          "percent": 7.936507936507937,
+          "good": 35,
+          "total": 441
+        },
+        {
+          "id": 308,
+          "attempt": 2,
+          "percent": 6.122448979591836,
+          "good": 27,
+          "total": 441
+        },
+        {
+          "id": 309,
+          "attempt": 10,
+          "percent": 2.947845804988662,
+          "good": 13,
+          "total": 441
+        },
+        {
+          "id": 310,
+          "attempt": 4,
+          "percent": 1.3605442176870748,
+          "good": 6,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 3,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -234,73 +261,82 @@
       ],
       "puzzles": [
         {
-          "id": 409,
+          "id": 401,
+          "attempt": 30,
+          "percent": 85.71428571428571,
           "good": 378,
-          "total": 441,
-          "percent": 85.71428571428571
+          "total": 441
         },
         {
           "id": 402,
-          "good": 345,
-          "total": 441,
-          "percent": 78.2312925170068
-        },
-        {
-          "id": 408,
-          "good": 315,
-          "total": 441,
-          "percent": 71.42857142857143
+          "attempt": 86,
+          "percent": 85.71428571428571,
+          "good": 378,
+          "total": 441
         },
         {
           "id": 403,
-          "good": 315,
-          "total": 441,
-          "percent": 71.42857142857143
-        },
-        {
-          "id": 405,
-          "good": 297,
-          "total": 441,
-          "percent": 67.34693877551021
-        },
-        {
-          "id": 401,
-          "good": 294,
-          "total": 441,
-          "percent": 66.66666666666667
-        },
-        {
-          "id": 406,
-          "good": 273,
-          "total": 441,
-          "percent": 61.904761904761905
-        },
-        {
-          "id": 407,
-          "good": 259,
-          "total": 441,
-          "percent": 58.73015873015873
-        },
-        {
-          "id": 410,
-          "good": 231,
-          "total": 441,
-          "percent": 52.38095238095238
+          "attempt": 91,
+          "percent": 85.71428571428571,
+          "good": 378,
+          "total": 441
         },
         {
           "id": 404,
-          "good": 196,
-          "total": 441,
-          "percent": 44.44444444444444
+          "attempt": 16,
+          "percent": 84.35374149659864,
+          "good": 372,
+          "total": 441
+        },
+        {
+          "id": 405,
+          "attempt": 47,
+          "percent": 83.6734693877551,
+          "good": 369,
+          "total": 441
+        },
+        {
+          "id": 406,
+          "attempt": 15,
+          "percent": 80.95238095238095,
+          "good": 357,
+          "total": 441
+        },
+        {
+          "id": 407,
+          "attempt": 17,
+          "percent": 80.0453514739229,
+          "good": 353,
+          "total": 441
+        },
+        {
+          "id": 408,
+          "attempt": 106,
+          "percent": 76.87074829931973,
+          "good": 339,
+          "total": 441
+        },
+        {
+          "id": 409,
+          "attempt": 113,
+          "percent": 76.19047619047619,
+          "good": 336,
+          "total": 441
+        },
+        {
+          "id": 410,
+          "attempt": 117,
+          "percent": 66.66666666666667,
+          "good": 294,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 4,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -308,163 +344,152 @@
       ],
       "puzzles": [
         {
-          "id": 502,
-          "good": 386,
+          "id": 501,
+          "attempt": 2,
+          "percent": 66.66666666666667,
+          "good": 294,
           "total": 441,
-          "percent": 87.52834467120181,
           "open": [
-            0.3700783100769311,
+            3.0101640861811347,
+            1.2823392796739912,
+            0,
+            0.55,
+            0
+          ]
+        },
+        {
+          "id": 502,
+          "attempt": 29,
+          "percent": 61.904761904761905,
+          "good": 273,
+          "total": 441,
+          "open": [
+            0.3660783100769311,
             4.828411054871667,
             0,
             0.55,
             0
-          ],
-          "openGood": 38,
-          "openTotal": 49
+          ]
         },
         {
           "id": 503,
-          "good": 366,
+          "attempt": 8,
+          "percent": 54.19501133786848,
+          "good": 239,
           "total": 441,
-          "percent": 82.99319727891157,
           "open": [
-            -0.14630594731814786,
+            -0.14430594731814786,
             1.2823392796739912,
             0,
             0,
             0
-          ],
-          "openGood": 25,
-          "openTotal": 49
+          ]
         },
         {
-          "id": 507,
-          "good": 229,
+          "id": 504,
+          "attempt": 15,
+          "percent": 53.51473922902494,
+          "good": 236,
           "total": 441,
-          "percent": 51.92743764172336,
           "open": [
-            -0.9135670210059518,
-            2.1336925402880147,
+            -3.0563731799946954,
+            1.2823392796739912,
             0,
             0.55,
             0
-          ],
-          "openGood": 25,
-          "openTotal": 49
+          ]
         },
         {
           "id": 505,
-          "good": 162,
+          "attempt": 32,
+          "percent": 30.612244897959183,
+          "good": 135,
           "total": 441,
-          "percent": 36.734693877551024,
           "open": [
-            -0.4543856633469257,
+            -0.3843856633469257,
             1.2823392796739912,
             0,
             0.55,
             0
-          ],
-          "openGood": 25,
-          "openTotal": 49
-        },
-        {
-          "id": 510,
-          "good": 113,
-          "total": 441,
-          "percent": 25.62358276643991,
-          "open": [
-            -2.6914695923666634,
-            1.6670410635761885,
-            0,
-            0.55,
-            0
-          ],
-          "openGood": 28,
-          "openTotal": 49
-        },
-        {
-          "id": 509,
-          "good": 79,
-          "total": 441,
-          "percent": 17.913832199546484,
-          "open": [
-            0.301202312702511,
-            2.1336925402880147,
-            0,
-            0.55,
-            0
-          ],
-          "openGood": 28,
-          "openTotal": 49
-        },
-        {
-          "id": 508,
-          "good": 50,
-          "total": 441,
-          "percent": 11.337868480725623,
-          "open": [
-            -0.34407110774128596,
-            3.17632418362048,
-            0,
-            0,
-            0
-          ],
-          "openGood": 29,
-          "openTotal": 49
+          ]
         },
         {
           "id": 506,
-          "good": 32,
+          "attempt": 25,
+          "percent": 21.31519274376417,
+          "good": 94,
           "total": 441,
-          "percent": 7.2562358276643995,
           "open": [
             -0.08395426112119253,
             2.1336925402880147,
             0,
             0.55,
             0
-          ],
-          "openGood": 28,
-          "openTotal": 49
+          ]
         },
         {
-          "id": 501,
-          "good": 18,
+          "id": 507,
+          "attempt": 5,
+          "percent": 17.46031746031746,
+          "good": 77,
           "total": 441,
-          "percent": 4.081632653061225,
           "open": [
-            3.0101640861811347,
-            2.051742847478386,
+            -0.9715670210059518,
+            2.1336925402880147,
             0,
             0.55,
             0
-          ],
-          "openGood": 28,
-          "openTotal": 49
+          ]
         },
         {
-          "id": 504,
-          "good": 17,
+          "id": 508,
+          "attempt": 10,
+          "percent": 17.233560090702948,
+          "good": 76,
           "total": 441,
-          "percent": 3.854875283446712,
           "open": [
-            -3.1463731799946952,
+            -0.34807110774128597,
+            3.17632418362048,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "id": 509,
+          "attempt": 7,
+          "percent": 12.92517006802721,
+          "good": 57,
+          "total": 441,
+          "open": [
+            0.301202312702511,
+            2.1336925402880147,
+            0,
+            0.55,
+            0
+          ]
+        },
+        {
+          "id": 510,
+          "attempt": 28,
+          "percent": 2.2675736961451247,
+          "good": 10,
+          "total": 441,
+          "open": [
+            -2.6914695923666634,
             1.2823392796739912,
             0,
             0.55,
             0
-          ],
-          "openGood": 28,
-          "openTotal": 49
+          ]
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 5,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -472,73 +497,82 @@
       ],
       "puzzles": [
         {
-          "id": 607,
-          "good": 241,
-          "total": 441,
-          "percent": 54.64852607709751
+          "id": 601,
+          "attempt": 8,
+          "percent": 34.69387755102041,
+          "good": 153,
+          "total": 441
         },
         {
           "id": 602,
-          "good": 170,
-          "total": 441,
-          "percent": 38.54875283446712
-        },
-        {
-          "id": 606,
-          "good": 114,
-          "total": 441,
-          "percent": 25.85034013605442
-        },
-        {
-          "id": 604,
-          "good": 111,
-          "total": 441,
-          "percent": 25.170068027210885
-        },
-        {
-          "id": 601,
-          "good": 110,
-          "total": 441,
-          "percent": 24.94331065759637
-        },
-        {
-          "id": 609,
-          "good": 79,
-          "total": 441,
-          "percent": 17.913832199546484
-        },
-        {
-          "id": 605,
-          "good": 73,
-          "total": 441,
-          "percent": 16.55328798185941
-        },
-        {
-          "id": 608,
-          "good": 68,
-          "total": 441,
-          "percent": 15.419501133786849
-        },
-        {
-          "id": 610,
-          "good": 32,
-          "total": 441,
-          "percent": 7.2562358276643995
+          "attempt": 6,
+          "percent": 31.519274376417233,
+          "good": 139,
+          "total": 441
         },
         {
           "id": 603,
-          "good": 23,
-          "total": 441,
-          "percent": 5.215419501133787
+          "attempt": 1,
+          "percent": 23.12925170068027,
+          "good": 102,
+          "total": 441
+        },
+        {
+          "id": 604,
+          "attempt": 3,
+          "percent": 14.285714285714286,
+          "good": 63,
+          "total": 441
+        },
+        {
+          "id": 605,
+          "attempt": 10,
+          "percent": 14.058956916099774,
+          "good": 62,
+          "total": 441
+        },
+        {
+          "id": 606,
+          "attempt": 2,
+          "percent": 11.564625850340136,
+          "good": 51,
+          "total": 441
+        },
+        {
+          "id": 607,
+          "attempt": 11,
+          "percent": 10.884353741496598,
+          "good": 48,
+          "total": 441
+        },
+        {
+          "id": 608,
+          "attempt": 9,
+          "percent": 7.2562358276643995,
+          "good": 32,
+          "total": 441
+        },
+        {
+          "id": 609,
+          "attempt": 5,
+          "percent": 4.988662131519274,
+          "good": 22,
+          "total": 441
+        },
+        {
+          "id": 610,
+          "attempt": 4,
+          "percent": 4.761904761904762,
+          "good": 21,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 6,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "eabf180768d07e879cf3cb93df0f79c37bbeb14f1a18626e7f00fdbd5be7b076",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -546,73 +580,82 @@
       ],
       "puzzles": [
         {
-          "id": 704,
-          "good": 272,
-          "total": 441,
-          "percent": 61.678004535147394
-        },
-        {
-          "id": 709,
-          "good": 145,
-          "total": 441,
-          "percent": 32.87981859410431
-        },
-        {
-          "id": 708,
-          "good": 126,
-          "total": 441,
-          "percent": 28.571428571428573
-        },
-        {
-          "id": 706,
-          "good": 124,
-          "total": 441,
-          "percent": 28.117913832199548
-        },
-        {
-          "id": 707,
-          "good": 69,
-          "total": 441,
-          "percent": 15.646258503401361
+          "id": 701,
+          "attempt": 28,
+          "percent": 81.17913832199547,
+          "good": 358,
+          "total": 441
         },
         {
           "id": 702,
-          "good": 54,
-          "total": 441,
-          "percent": 12.244897959183673
-        },
-        {
-          "id": 705,
-          "good": 45,
-          "total": 441,
-          "percent": 10.204081632653061
-        },
-        {
-          "id": 710,
-          "good": 31,
-          "total": 441,
-          "percent": 7.029478458049887
+          "attempt": 27,
+          "percent": 74.37641723356009,
+          "good": 328,
+          "total": 441
         },
         {
           "id": 703,
-          "good": 7,
-          "total": 441,
-          "percent": 1.5873015873015872
+          "attempt": 6,
+          "percent": 72.10884353741497,
+          "good": 318,
+          "total": 441
         },
         {
-          "id": 701,
-          "good": 7,
-          "total": 441,
-          "percent": 1.5873015873015872
+          "id": 704,
+          "attempt": 54,
+          "percent": 60.54421768707483,
+          "good": 267,
+          "total": 441
+        },
+        {
+          "id": 705,
+          "attempt": 16,
+          "percent": 58.956916099773245,
+          "good": 260,
+          "total": 441
+        },
+        {
+          "id": 706,
+          "attempt": 3,
+          "percent": 54.64852607709751,
+          "good": 241,
+          "total": 441
+        },
+        {
+          "id": 707,
+          "attempt": 15,
+          "percent": 33.560090702947846,
+          "good": 148,
+          "total": 441
+        },
+        {
+          "id": 708,
+          "attempt": 11,
+          "percent": 33.333333333333336,
+          "good": 147,
+          "total": 441
+        },
+        {
+          "id": 709,
+          "attempt": 1,
+          "percent": 24.489795918367346,
+          "good": 108,
+          "total": 441
+        },
+        {
+          "id": 710,
+          "attempt": 8,
+          "percent": 11.337868480725623,
+          "good": 50,
+          "total": 441
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     },
     {
       "stage": 7,
       "seed": 20261101,
-      "physics": "5af92d928619d95758962b39e7b4106b8ea321bc3846dcad4fc099ef99779fae",
-      "rules": "06b6832ef459ecab56deac5dbce4cc960585beaa873ae8f3600572bd6321d9ba",
+      "physics": "d92adf6dcf529bdb5eb7fef2170371963176300dc0a193f5a68e904d1a4e4f96",
+      "rules": "4b49ce97447d751c52c82bd8279707f51e79bfc9cd562be08a122b0ee3fc12da",
       "samples": 441,
       "percentRange": [
         1,
@@ -620,26 +663,53 @@
       ],
       "puzzles": [
         {
-          "id": 806,
-          "good": 187,
+          "id": 801,
+          "attempt": 31,
+          "percent": 83.6734693877551,
+          "good": 369,
           "total": 441,
-          "percent": 42.40362811791383,
           "open": [
-            0.297444132,
-            6.089588815,
+            2.795347317,
+            3.096916079,
             0,
             0,
             0
           ],
-          "openGood": 157,
+          "openGood": 299,
           "openTotal": 441,
-          "wallCount": 1
+          "openPercent": 67.80045351473923,
+          "blockedWalls": 1,
+          "wallCount": 3,
+          "solutionWalls": 1,
+          "solutionCushions": 2
+        },
+        {
+          "id": 802,
+          "attempt": 30,
+          "percent": 67.12018140589569,
+          "good": 296,
+          "total": 441,
+          "open": [
+            1.545494479,
+            2.187034854,
+            0,
+            0,
+            0
+          ],
+          "openGood": 427,
+          "openTotal": 441,
+          "openPercent": 96.82539682539682,
+          "blockedWalls": 1,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
         },
         {
           "id": 803,
-          "good": 160,
+          "attempt": 4,
+          "percent": 43.08390022675737,
+          "good": 190,
           "total": 441,
-          "percent": 36.281179138321995,
           "open": [
             0.538452117,
             1.250280798,
@@ -647,31 +717,41 @@
             0,
             0
           ],
-          "openGood": 260,
+          "openGood": 413,
           "openTotal": 441,
-          "wallCount": 2
+          "openPercent": 93.65079365079364,
+          "blockedWalls": 2,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
         },
         {
-          "id": 801,
+          "id": 804,
+          "attempt": 18,
+          "percent": 33.333333333333336,
           "good": 147,
           "total": 441,
-          "percent": 33.333333333333336,
           "open": [
-            2.783347317,
-            4.0259909027,
+            0.593939541,
+            2.187034854,
             0,
             0,
             0
           ],
-          "openGood": 278,
+          "openGood": 365,
           "openTotal": 441,
-          "wallCount": 3
+          "openPercent": 82.76643990929705,
+          "blockedWalls": 1,
+          "wallCount": 2,
+          "solutionWalls": 2,
+          "solutionCushions": 3
         },
         {
           "id": 805,
-          "good": 113,
+          "attempt": 3,
+          "percent": 28.571428571428573,
+          "good": 126,
           "total": 441,
-          "percent": 25.62358276643991,
           "open": [
             -2.084603701,
             6.089588815,
@@ -679,47 +759,83 @@
             0,
             0
           ],
-          "openGood": 381,
+          "openGood": 356,
           "openTotal": 441,
-          "wallCount": 1
+          "openPercent": 80.72562358276645,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 2,
+          "solutionCushions": 3
         },
         {
-          "id": 810,
-          "good": 94,
+          "id": 806,
+          "attempt": 25,
+          "percent": 22.90249433106576,
+          "good": 101,
           "total": 441,
-          "percent": 21.31519274376417,
           "open": [
-            0.455285461,
-            4.828411055,
+            0.291444132,
+            6.089588815,
             0,
             0,
             0
           ],
-          "openGood": 252,
+          "openGood": 340,
           "openTotal": 441,
-          "wallCount": 1
+          "openPercent": 77.09750566893425,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 3,
+          "solutionCushions": 2
         },
         {
-          "id": 804,
-          "good": 38,
+          "id": 807,
+          "attempt": 24,
+          "percent": 21.08843537414966,
+          "good": 93,
           "total": 441,
-          "percent": 8.616780045351474,
           "open": [
-            0.541939541,
-            2.187034854,
+            -2.604112905,
+            4.707700778,
             0,
             0,
             0
           ],
-          "openGood": 228,
+          "openGood": 309,
           "openTotal": 441,
-          "wallCount": 2
+          "openPercent": 70.06802721088435,
+          "blockedWalls": 1,
+          "wallCount": 3,
+          "solutionWalls": 2,
+          "solutionCushions": 3
+        },
+        {
+          "id": 808,
+          "attempt": 32,
+          "percent": 15.646258503401361,
+          "good": 69,
+          "total": 441,
+          "open": [
+            0.852731506,
+            3.176324184,
+            0,
+            0,
+            0
+          ],
+          "openGood": 273,
+          "openTotal": 441,
+          "openPercent": 61.904761904761905,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 2,
+          "solutionCushions": 4
         },
         {
           "id": 809,
-          "good": 22,
+          "attempt": 8,
+          "percent": 15.419501133786849,
+          "good": 68,
           "total": 441,
-          "percent": 4.988662131519274,
           "open": [
             1.224769828,
             6.089588815,
@@ -727,60 +843,36 @@
             0,
             0
           ],
-          "openGood": 367,
+          "openGood": 344,
           "openTotal": 441,
-          "wallCount": 3
+          "openPercent": 78.00453514739229,
+          "blockedWalls": 2,
+          "wallCount": 3,
+          "solutionWalls": 4,
+          "solutionCushions": 2
         },
         {
-          "id": 808,
-          "good": 21,
+          "id": 810,
+          "attempt": 9,
+          "percent": 8.16326530612245,
+          "good": 36,
           "total": 441,
-          "percent": 4.761904761904762,
           "open": [
-            0.972731506,
-            2.2234269288,
+            0.455285461,
+            4.828411055,
             0,
             0,
             0
           ],
-          "openGood": 231,
+          "openGood": 403,
           "openTotal": 441,
-          "wallCount": 1
-        },
-        {
-          "id": 802,
-          "good": 18,
-          "total": 441,
-          "percent": 4.081632653061225,
-          "open": [
-            1.511494479,
-            2.187034854,
-            0,
-            0,
-            0
-          ],
-          "openGood": 226,
-          "openTotal": 441,
-          "wallCount": 2
-        },
-        {
-          "id": 807,
-          "good": 15,
-          "total": 441,
-          "percent": 3.401360544217687,
-          "open": [
-            -2.5981129050000003,
-            4.707700778,
-            0,
-            0,
-            0
-          ],
-          "openGood": 258,
-          "openTotal": 441,
-          "wallCount": 3
+          "openPercent": 91.38321995464852,
+          "blockedWalls": 1,
+          "wallCount": 1,
+          "solutionWalls": 1,
+          "solutionCushions": 5
         }
-      ],
-      "answersRetunedFor": "contact-model"
+      ]
     }
   ]
 }
