@@ -82,19 +82,22 @@ function frame(now) {
     shotClock(dt); eyeTick(); ranked.tick();
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
-      const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.el || 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k);
+      if (ca.t >= 0.1) { const c = game.cueBall(), s = game.P.launch(ca.V, ca.a, ca.b, ca.el || 0);
+        const recoil = s.tipVelocity[0] * s.contact.axis[0] + s.tipVelocity[1] * s.contact.axis[1] + s.tipVelocity[2] * s.contact.axis[2] < 0;
+        st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, a: ca.a, b: ca.b, recoil, el: ca.el || 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
-    // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
+    // Follow-through or recoil follows the resolved contact; an upward rebound must not meet a descending drawn cue.
     if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) {
       const f = st.follow; f.t += Math.max(0, dt);
       if (f.t > 0.42) st.follow = null;
       else {
-        const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el);
+        const R = game.P.R, se = Math.sin(f.el), point = game.P.cueContact(st.aim, f.a, f.b, f.el).point;
         let reach = Math.min(0.11, 0.025 + f.V * 0.014);
-        if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
+        if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + point[2] - 0.006) / se));
+        if (f.recoil) reach = -0.1;  // the coupled tip/bed impact sent the cue back: do not draw it pushing through a rising ball
         const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
-        follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
+        follow = { x: f.x, y: f.y, pull: -reach * ease, el: f.el, a: f.a, b: f.b, spin: f.spin };
       }
     }
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
@@ -107,7 +110,7 @@ function frame(now) {
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
-    follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
+    follow, contact: st.phase === 'strike' ? st.cueAnim : null, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: flow ? flow.guide() * (st.phase === 'aim' ? cueK().guide : 1) : 0,
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
