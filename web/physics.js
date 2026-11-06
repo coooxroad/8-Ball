@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 2;                                   // 2: the contact model (PR #14, 2026-11-06)
+const PHYS_V = 3;                                   // 2: the contact model (PR #14, 2026-11-06); 3: squirt off (11-07)
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -36,7 +36,9 @@ function createPhysics(cfg) {
   const MU_S0 = 0.2, MU_R0 = 0.016, MU_SP0 = 0.01, E_BALL = 0.96;
   // The contact model is solved with friction first. These two policy controls are applied only at their source:
   // cue deflection at launch, and tangential ball/ball impulses. They never change cushion or cloth friction.
-  const effects = Object.freeze({ squirt: cfg.squirt == null ? 1 : Math.max(0, Math.min(1, cfg.squirt)),
+  // squirt is off in play (owner, 2026-11-07): a level cue sends the ball where it points, side or not. 1 is the measured
+  // deflection (web/test/contacts.js keeps checking it), for a later choice.
+  const effects = Object.freeze({ squirt: cfg.squirt == null ? 0 : Math.max(0, Math.min(1, cfg.squirt)),
     throw: cfg.throw == null ? 1 : Math.max(0, Math.min(1, cfg.throw)) });
   const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];

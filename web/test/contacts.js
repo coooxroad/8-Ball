@@ -53,7 +53,7 @@ for (const R of [0.0254, 0.028575, 0.03075, 0.03275]) {
 }
 // The optional effects change only their own source, not cloth/cushion friction or jump height.
 {
-  const full = createPhysics({ R: 0.028575, pockets: false }), tuned = createPhysics({ R: 0.028575, pockets: false, squirt: 0, throw: 0 });
+  const full = createPhysics({ R: 0.028575, pockets: false, squirt: 1, throw: 1 }), tuned = createPhysics({ R: 0.028575, pockets: false, squirt: 0, throw: 0 });
   const a = full.makeWorld(1), b = tuned.makeWorld(1); full.strike(a, 0, 3, 0.4, 0, 0); tuned.strike(b, 0, 3, 0.4, 0, 0);
   assert(Math.abs(a.balls[0].vy) > 0.01); assert(Math.abs(b.balls[0].vy) < 1e-8);
   close(energy(full, a), energy(tuned, b), 1e-7);

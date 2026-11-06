@@ -200,7 +200,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   const P = createPhysics({ R: 0.03275, pockets: false }), mk = () => { const w = P.makeWorld(4); [[-0.8, 0], [9, 9], [0.2, 0], [9, 9]].forEach((b, i) => P.place(w, i, b[0], b[1])); w.balls[1].on = w.balls[3].on = false; return w; };
   const deg = d => d * Math.PI / 180;
   for (const side of [0.4, -0.4]) { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, side, 0, deg(70)); for (let i = 0; i < 120; i++) P.step(w, 1 / 120); if (!(w.balls[0].y * side < -0.05)) fail(`a raised cue with side ${side} did not curve that way (y ${w.balls[0].y.toFixed(3)})`); }
-  // (level, side only pushes it a degree or two off the line of the cue - squirt - and it stays on that straight line)
+  // (level, side does not curve it: squirt is off, so it goes the cue's way, and on a straight line)
   { const w = mk(); w.balls[2].on = false; P.strike(w, 0, 3.5, 0.4, 0, 0); const c = w.balls[0]; for (let i = 0; i < 30; i++) P.step(w, 1 / 120); const k = c.y / (c.x + 0.8); for (let i = 0; i < 30; i++) P.step(w, 1 / 120); if (Math.abs(c.y / (c.x + 0.8) - k) > 0.002 || Math.abs(k) > 0.05) fail('a level cue curved the ball'); }
   // the same angle, hard and soft: hard it clears the ball in front, soft it barely lifts (with a house cue a jump is
   // played flat-ish and hard, about 40 degrees, at a ball some way off)
