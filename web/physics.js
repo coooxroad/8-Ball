@@ -246,7 +246,8 @@ function createPhysics(cfg) {
   function launch(V, a, bb, el) {
     const key = [V, a, bb, el].join(','); if (launchCache.has(key)) return launchCache.get(key);
     const result = contactLaunch(V, a, bb, el, true);
-    if (effects.squirt < 1) {
+    // (only a side strike is deflected: a centre-line one is left exactly as struck, not turned by rounding)
+    if (effects.squirt < 1 && a !== 0) {
       // Measure deflection with the bed absent, so the correction cannot erase the sideways impulse of a massé.
       const free = contactLaunch(V, a, bb, el, false), speed = len3(free.velocity);
       if (speed > 1e-12) {

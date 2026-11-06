@@ -87,9 +87,9 @@
       "puzzles": [
         {
           "id": 205,
-          "good": 395,
+          "good": 390,
           "total": 441,
-          "percent": 89.56916099773242
+          "percent": 88.43537414965986
         },
         {
           "id": 207,
@@ -135,9 +135,9 @@
         },
         {
           "id": 209,
-          "good": 90,
+          "good": 97,
           "total": 441,
-          "percent": 20.408163265306122
+          "percent": 21.99546485260771
         },
         {
           "id": 203,
@@ -146,7 +146,7 @@
           "percent": 4.761904761904762
         }
       ],
-      "answersRetunedFor": "contact-model"
+      "answersRetunedFor": "squirt-off"
     },
     {
       "stage": 2,
@@ -191,9 +191,9 @@
         },
         {
           "id": 310,
-          "good": 47,
+          "good": 46,
           "total": 441,
-          "percent": 10.657596371882086
+          "percent": 10.430839002267573
         },
         {
           "id": 306,
@@ -220,7 +220,7 @@
           "percent": 2.0408163265306123
         }
       ],
-      "answersRetunedFor": "contact-model"
+      "answersRetunedFor": "squirt-off"
     },
     {
       "stage": 3,
@@ -339,9 +339,9 @@
         },
         {
           "id": 507,
-          "good": 229,
+          "good": 226,
           "total": 441,
-          "percent": 51.92743764172336,
+          "percent": 51.24716553287982,
           "open": [
             -0.9135670210059518,
             2.1336925402880147,
@@ -458,7 +458,7 @@
           "openTotal": 49
         }
       ],
-      "answersRetunedFor": "contact-model"
+      "answersRetunedFor": "squirt-off"
     },
     {
       "stage": 5,
@@ -532,7 +532,7 @@
           "percent": 5.215419501133787
         }
       ],
-      "answersRetunedFor": "contact-model"
+      "answersRetunedFor": "squirt-off"
     },
     {
       "stage": 6,
@@ -637,9 +637,9 @@
         },
         {
           "id": 803,
-          "good": 160,
+          "good": 163,
           "total": 441,
-          "percent": 36.281179138321995,
+          "percent": 36.961451247165535,
           "open": [
             0.538452117,
             1.250280798,
@@ -780,7 +780,7 @@
           "wallCount": 3
         }
       ],
-      "answersRetunedFor": "contact-model"
+      "answersRetunedFor": "squirt-off"
     }
   ]
 }
