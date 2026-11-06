@@ -1,5 +1,8 @@
 /* ================= frame loop ================= */
 let lastT = 0, acc = 0, lastRaw = 0;
+// Keep a deadline on the display's clock: at 144 Hz, resetting it to 'now' after each frame would fall to 48 FPS.
+// High quality keeps the native refresh rate; auto/low avoid doing 144-240 renders a second for a billiards table.
+const framePace = { due: 0, hz: 0 };
 // which balls may be hit: recomputed when the table changes (st.rev), not on every frame
 const NONE = [], legal = { rev: -1, turn: -1, ids: NONE };
 function legalNow() { if (legal.rev !== st.rev || legal.turn !== game.turn) { legal.rev = st.rev; legal.turn = game.turn; legal.ids = game.legal(); } return legal.ids; }
@@ -70,6 +73,13 @@ function stepSim(dt) {
 let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
+  const hz = prefs.quality === 'high' ? 0 : scene.softwareRendering ? 30 : 60;
+  if (hz) {
+    const step = 1000 / hz;
+    if (framePace.hz !== hz) { framePace.hz = hz; framePace.due = 0; }
+    if (framePace.due && now < framePace.due - 0.25) return;
+    framePace.due = !framePace.due || now - framePace.due > step ? now + step : framePace.due + step;
+  } else { framePace.hz = 0; framePace.due = 0; }
   const f0 = performance.now(); prof.frame();
   checkPixelRatio();
   const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
@@ -127,33 +137,44 @@ function frame(now) {
        the slowest single piece of work these two seconds, in ms: AI (the computer deciding), 조준 (playing out the aim line),
        물리 (the shot itself), 그리기 (the 3D), 화면 (work outside the frame: taps, building screens - from the browser's
        long-animation-frame / longtask report where it has one), then what the frame drew (draw calls · thousands of triangles);
-   - the guard, last resort, in play on '자동' only: when one frame in ten is slower than 25 ms (under 40 a second) for two
-     spells running (four seconds) the 3D is drawn a step coarser (5% at a time, down to 85%), and back up once it has kept up
-     for ten seconds. The change waits for the next frame's start (scene setScale/takeScale: resizing after a frame was drawn
-     showed one black frame on the web). Nothing else changes.
+   - on '자동', the visible live table can shed pixels on the desk, in play or in a replay. Very slow frames count too;
+     two slow windows lower only the 3D resolution (down to half per axis), then stable windows restore it gradually.
+     A software renderer targets 30 FPS, so its normal 33ms cadence must not trigger the 60-FPS slow-frame threshold.
+     The change waits for the next frame's start (scene setScale/takeScale); text and physics keep their own resolution.
    A gap that spans the page being hidden (another app, the screen off) is not counted. */
-const perf = { gaps: [], t: 0, n: 0, ok: 0, slow: 0, calls: 0, tris: 0, long: 0, longWhy: '', stalls: 0 };
+const perf = { gaps: [], t: 0, frames: 0, ok: 0, slow: 0, calls: 0, tris: 0, long: 0, longWhy: '', stalls: 0 };
 function perfTick(raw, drew) {
   if (prof.hid) { prof.hid = false; return; }                              // (the page was away: that gap is not ours)
   perf.t += raw;
+  if (raw > 0) perf.frames++;
   if (raw > perf.long) { perf.long = raw; perf.longWhy = prof.why(raw); }
   if (raw > 100) perf.stalls++;
-  if (drew && raw > 0 && raw < 400) { perf.gaps.push(raw); perf.calls = scene.info.render.calls; perf.tris = scene.info.render.triangles; }
+  if (drew && raw > 0) { perf.gaps.push(raw); perf.calls = scene.info.render.calls; perf.tris = scene.info.render.triangles; }
   if (perf.t < 2000) return;
   if (perf.long > prof.worst) { prof.worst = perf.long; prof.worstWhy = perf.longWhy; }
   const g = perf.gaps.sort((a, b) => a - b), n = g.length, at = q => g[Math.min(n - 1, Math.floor(n * q))];
   if (prefs.fps) {
     const ms = k => Math.round(prof.win[k] || 0), why = w => w ? ' ' + w : '';
-    const a = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > 25).length / n)}% · p95 ${Math.round(at(0.95))}ms` : '대기';
+    const late = framePace.hz === 30 ? 45 : 25;
+    const a = n ? `${Math.round(n * 1000 / perf.t)} FPS · 늦음 ${Math.round(100 * g.filter(x => x > late).length / n)}% · p95 ${Math.round(at(0.95))}ms` : '대기';
     const b = `최장 ${Math.round(perf.long)}ms${why(perf.longWhy)}${perf.stalls ? ` · 멈춤 ${perf.stalls}회` : ''} · 세션 최장 ${Math.round(prof.worst)}ms${why(prof.worstWhy)} · ${scene.pixelRatio.toFixed(2)}x`;
     const c = `AI ${ms('ai')} · 조준 ${ms('guide')} · 물리 ${ms('sim')} · 그리기 ${ms('draw')} · 화면 ${ms('ui')}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k`;
-    $('#fps').textContent = a + ' · ' + b + '\n' + c;
+    const gpu = scene.softwareRendering ? 'WebGL: 소프트웨어 렌더링' : 'WebGL: ' + (scene.rendererName || '장치 정보 없음');
+    $('#fps').textContent = a + ' · ' + b + '\n' + c + '\n' + gpu;
   }
-  if (prefs.quality === 'auto' && st.screen === 'play' && n >= 30) {
-    if (at(0.9) > 25) { perf.ok = 0; if (++perf.slow >= 2) { perf.slow = 0; scene.setScale(scene.scale - 0.05); } }   // (two slow spells running)
-    else { perf.slow = 0; if (at(0.9) < 18 && ++perf.ok >= 5 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); } }
-  }
-  perf.gaps.length = 0; perf.t = 0; perf.long = 0; perf.longWhy = ''; perf.stalls = 0; prof.win = {};
+  const live = st.screen === 'play' || st.screen === 'reel' || (st.screen === 'home' && deskTableShown());
+  if (prefs.quality === 'auto' && live && n >= 3) {
+    const target = scene.softwareRendering ? 30 : 60, rate = perf.frames * 1000 / perf.t;
+    // Healthy 60-FPS pacing on a 75-Hz monitor includes 26.7ms gaps; sparse on-demand draws are not GPU overload either.
+    if (rate < target * 0.8 && at(0.9) > (scene.softwareRendering ? 45 : 25)) {
+      perf.ok = 0; if (++perf.slow >= 2) { perf.slow = 0; scene.setScale(scene.scale - (at(0.9) > 60 ? 0.2 : 0.1)); }
+    } else {
+      perf.slow = 0;
+      if (rate < target * 0.9 || at(0.9) >= 1900 / target) perf.ok = 0;
+      else if (++perf.ok >= 5 && scene.scale < 1) { perf.ok = 0; scene.setScale(scene.scale + 0.05); }
+    }
+  } else { perf.ok = 0; perf.slow = 0; }
+  perf.gaps.length = 0; perf.t = 0; perf.frames = 0; perf.long = 0; perf.longWhy = ''; perf.stalls = 0; prof.win = {};
 }
 
 /* ================= saving ================= */
