@@ -28,6 +28,7 @@ const { open } = require('./harness.js');
         changes.length = 0; d.prefs.quality = 'auto';
         out.push({ monitor: hz, draws: run(hz, 5), changes: changes.slice() });
       }
+      d.prefs.quality = 'low'; changes.length = 0; out.push({ low: true, draws: run(144, 5), changes: changes.slice() });
       d.prefs.quality = 'high'; out.push({ high: true, draws: run(240, 1) });
       Object.defineProperty(d.scene, 'softwareRendering', { configurable: true, value: true });
       changes.length = 0; d.prefs.quality = 'auto'; d.prefs.fps = true;
@@ -52,7 +53,8 @@ const { open } = require('./harness.js');
       return { out, lobby, covered, sizes };
     });
     for (const r of result.out) {
-      const expected = r.high ? 240 : r.software ? 150 : 300;
+      // ('자동' keeps the screen's own rate - the owner's choice; '낮음' stops at 60, a software renderer at 30)
+      const expected = r.high ? 240 : r.software ? 150 : r.low ? 300 : r.monitor * 5;
       assert(Math.abs(r.draws - expected) <= 2, `cadence: ${JSON.stringify(r)}`);
       if (!r.high) assert.deepEqual(r.changes, [], 'healthy monitor cadence must not lower resolution');
       if (r.software) { assert(r.fps.includes('30 FPS')); assert(r.fps.includes('늦음 0%')); assert(r.fps.includes('소프트웨어 렌더링')); }
@@ -62,7 +64,7 @@ const { open } = require('./harness.js');
     for (const s of result.sizes) assert(s.pixels > 0 && s.pixels <= (s.q === 'low' ? 1.6e6 : 4.2e6), `buffer budget: ${JSON.stringify(s)}`);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify(result));
-    console.log('PC rendering policy passed: 60/75/120/144/240Hz, software fallback cadence, lobby guard, 4K/low buffers');
+    console.log('PC rendering policy passed: 자동 at 60/75/120/144/240Hz, 낮음 at 60, software fallback cadence, lobby guard, 4K/low buffers');
   } finally { await browser.close(); }
   // Use the real reported renderer as well. Selecting low must not enlarge an automatic software-rendered buffer.
   const actual = await open(1920, 1080, 1);

@@ -1,7 +1,8 @@
 /* ================= frame loop ================= */
 let lastT = 0, acc = 0, lastRaw = 0;
 // Keep a deadline on the display's clock: at 144 Hz, resetting it to 'now' after each frame would fall to 48 FPS.
-// High quality keeps the native refresh rate; auto/low avoid doing 144-240 renders a second for a billiards table.
+// '높음' and '자동' keep the screen's own refresh rate (the owner's choice, 11-04: 주사율 기기 그대로); '낮음' stops at 60, and
+// a software renderer at 30 whatever the setting but '높음'.
 const framePace = { due: 0, hz: 0 };
 // which balls may be hit: recomputed when the table changes (st.rev), not on every frame
 const NONE = [], legal = { rev: -1, turn: -1, ids: NONE };
@@ -73,7 +74,7 @@ function stepSim(dt) {
 let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
-  const hz = prefs.quality === 'high' ? 0 : scene.softwareRendering ? 30 : 60;
+  const hz = prefs.quality === 'high' ? 0 : scene.softwareRendering ? 30 : prefs.quality === 'low' ? 60 : 0;
   if (hz) {
     const step = 1000 / hz;
     if (framePace.hz !== hz) { framePace.hz = hz; framePace.due = 0; }
