@@ -2,8 +2,7 @@
    cards, each with the thing in it; tapping a card opens it in the tray - large, or tried on the live table - with an X
    at the top left back to the cards, and the slate says what it is and wears it (상점: buys it, once the shop opens).
    Opening a card only tries it on (the scene shows it); X or another place puts back what is worn. */
-// shelfOpen: the card opened in the tray, or null for all the cards; cueView: a cue opened shows 'trial' (시타) or 'pics'
-let shelfOpen = null, cueView = 'trial';
+let shelfOpen = null;                                                 // the card opened in the tray, or null for all the cards
 const hx6 = h => '#' + h.toString(16).padStart(6, '0');
 // a set of balls in its case, a ball in each cup (cup centres 23.6, 50 and 76.4% down): carom white, yellow, red; else
 // the cue ball, the 1 and the 3
@@ -57,16 +56,21 @@ function trailPic(kind, wide) {
 }
 const streak = (q, big) => q.kind ? el('i', { class: 'trl pic' + (big ? ' big' : ''), style: `--pic:url(${trailPic(q.kind, big)})` })
   : el('i', { class: 'trl' + (big ? ' big' : '') + (q.color === 'rainbow' ? ' rb' : q.color ? '' : ' none'), style: q.color && q.color !== 'rainbow' ? `--c:${hx6(q.color)}` : '' });
-// a cue opened in the tray: the 3D cue photographed whole, and its tip end, middle and butt close (each taken once, and kept:
-// 32-desk.js lazyPic); a wide one (a guitar) is all there is to see whole, so it alone, large - known from the whole picture's
-// shape once it is there (cueShot: its height follows what the cue spans across)
+/* A cue opened in the tray lies on the tray itself (no table under it, so nothing but the cue to look at): photographed
+   whole once (and kept: 32-desk.js lazyPic), laid along the tray's diagonal from the lower left up to the right, the tip
+   at the top, as large as fits. The angle and size follow the tray's shape (a phone's or a tablet's), worked out again
+   when it changes. In the picture the tip is at the left (scene cueShot), so it is turned half round and up. */
 function cueShow(i) {
-  const c = CUES[i], all = lazyPic(el('img', { class: 'all', alt: c.name, draggable: 'false' }), `c/${c.id}/all`, () => scene.cueShot(i, 2000, null, 'auto'));
-  const bits = [[-0.012, 0.21, '팁 쪽'], [0.63, 0.86, '가운데'], [1.25, 1.48, '손잡이']].map(([a, b, t]) =>
-    el('figure', null, [lazyPic(el('img', { alt: '', draggable: 'false' }), `c/${c.id}/${a}`, () => scene.cueShot(i, 1600, null, 'auto', a, b)), el('figcaption', { text: t })]));
-  const box = el('div', { class: 'cueshow' }, [all, ...bits]);
-  const look = () => { if (all.naturalWidth > 8 && all.naturalHeight / all.naturalWidth > 0.1 / 1.515) { box.classList.add('wide'); for (const f of bits) f.remove(); } };
-  all.addEventListener('load', look); look();
+  const c = CUES[i], img = lazyPic(el('img', { class: 'all', alt: c.name, draggable: 'false' }), `c/${c.id}/all`, () => { const k = scene.cueShot(i, 2000, null, 'auto'); return { c: k, done: k.done }; });   // (lazyPic wants { c, done })
+  const box = el('div', { class: 'cuelay' }, img);
+  const fit = () => {
+    const W = box.clientWidth, H = box.clientHeight, nw = img.naturalWidth, nh = img.naturalHeight; if (!W || !H || nw < 8) return;
+    const a = Math.atan2(H, W), r = nh / nw, ca = Math.cos(a), sa = Math.sin(a);
+    const w = Math.min(W / (ca + r * sa), H / (sa + r * ca));                 // (the turned picture's box within the tray's)
+    img.style.width = w + 'px'; img.style.transform = `translate(-50%,-50%) rotate(${180 - a * 180 / Math.PI}deg)`;
+  };
+  img.addEventListener('load', fit);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(box); else requestAnimationFrame(fit);
   return box;
 }
 const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
@@ -107,13 +111,7 @@ function statRow(r) {
 }
 const SHELVES = {
   cue: { name: '큐', list: () => CUES, worn: () => prefs.cues[0], pic: c => el('i', { class: 'cuecard' }, cueImg(c)),
-    // (opened: tried on the live table - 시타, 37-cue-trial.js - or its photographs, by the button at the tray's corner)
-    show: (c, stage, i) => {
-      const sw = el('button', { class: 'trial-sw', text: cueView === 'pics' ? '시타' : '사진', onclick: () => { SND.tap(); cueView = cueView === 'pics' ? 'trial' : 'pics'; if (cueView === 'pics') { cueTrial.stop(); useCue(prefs.cues[0]); homePreview(); } paintHome(); } });
-      if (cueView === 'pics') { cueTrial.stop(); stage.dataset.win = '0'; dkPut(stage, [cueShow(i), sw]); return; }
-      const tag = el('div', { class: 'trial-tag' }); stage.dataset.win = '1'; dkPut(stage, [tag, sw]); cueTrial.start(i, tag);
-    },
-    undo: () => { if (!cueTrial.on) return; cueTrial.stop(); useCue(prefs.cues[0]); homePreview(); },
+    show: (c, stage, i) => { stage.dataset.win = '0'; dkPut(stage, cueShow(i)); },
     about: c => [c.note, ...(c.spec || [])], stats: c => cueStats(c, CUES[prefs.cues[0]]), wear: (c, i) => { prefs.cues[0] = i; prefs.cue = i; if (!prefs.vsAI && prefs.cues[1] === undefined) prefs.cues[1] = i; useCue(i); return `${c.name}를 들었습니다.`; } },
   ball: { name: '공', list: () => BALLSKINS, worn: () => Math.max(0, BALLSKINS.findIndex(b => b.id === prefs.ballSkin)), pic: ballCase,
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],

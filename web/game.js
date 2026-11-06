@@ -139,13 +139,11 @@ function createGame(PH, makeAI) {
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
-        // both reds and the other player's ball too: no point and no penalty, the turn just goes over (owner's house rule)
-        const both = reds === 2 && hitOpp;
-        const foul = both ? null : hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        const short = !foul && !both && reds === 2 && c.last && ev.cushions < 1;
-        const pts = foul ? -1 : reds === 2 && !short && !both ? 1 : 0;
-        const note = both ? '상대 공도 맞혀 점수 없음' : short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null;
-        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note };
+        // the other player's ball is a foul (-1) even when both reds were hit too (owner, 2026-11-06)
+        const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
+        const short = !foul && reds === 2 && c.last && ev.cushions < 1;
+        const pts = foul ? -1 : reds === 2 && !short ? 1 : 0;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note: short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null };
       },
     },
   };

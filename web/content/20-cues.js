@@ -165,13 +165,4 @@ const CUES = [
     ],
     spec: [['얻는 법', '8볼 레슨 전부 완료'], ['팁', '페놀 브레이크 팁'], ['상대', '단단한 메이플'], ['하대', '흑백 체크, 고무 그립'], ['성격', '힘만, 회전·조준선은 포기']] },
 ];
-/* 시타 (app/37-cue-trial.js): the three strokes a cue is tried with in the shop, on this table. p: the gauge, a/b: the
-   strike point (-1..1), cue: where the cue ball is, balls: [[id, x, y]], angle: the aim,
-   rails: the most cushions the cue ball meets with any cue, drop: balls that go down with any cue (web/test/run.js). */
-const TRIAL_TABLE = 'bar';
-const TRIAL_SCENES = [
-  { name: '① 파워', note: '같은 세기로 큐볼만 굴리기', p: 0.17, a: 0, b: 0, cue: [-0.85, 0], balls: [], angle: 0, rails: 0 },
-  { name: '② 밀어치기', note: '같은 세기 · 맨 윗당점으로 정면', p: 0.24, a: 0, b: 1, cue: [-0.7, -0.35], balls: [[3, 0.3, 0.15]], angle: 0.4636476090008061, rails: 0, drop: [3] },
-  { name: '③ 옆회전', note: '같은 세기 · 맨 옆당점으로 쿠션', p: 0.22, a: -1, b: 0, cue: [-0.75, 0.3], balls: [], angle: -0.9, rails: 1 },
-];
-if (typeof module !== 'undefined') module.exports = { CUES, TRIAL_TABLE, TRIAL_SCENES };
+if (typeof module !== 'undefined') module.exports = { CUES };
