@@ -50,7 +50,7 @@ const invite = {
     toast('친구의 방을 찾는 중…', '', 1400);
     const r = await net.inviteJoin(code);
     if (r && r.ok && r.room) { invite.leave(); closeSheet(); return ranked.found(r); }
-    toast(!r ? '서버에 연결할 수 없습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.' : r.why === 'your own code' ? '내가 만든 코드입니다.' : '그런 코드의 방이 없습니다.', 'foul', 2400);
+    toast(!r ? '서버에 연결할 수 없습니다.' : r.why === 'update' ? '새 버전으로 업데이트해야 친구와 플레이할 수 있습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.' : r.why === 'your own code' ? '내가 만든 코드입니다.' : '그런 코드의 방이 없습니다.', 'foul', 2400);
   },
   copy(text, what) {
     const done = () => toast(`${what}를 복사했습니다.`, 'good', 1600);

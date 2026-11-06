@@ -30,6 +30,7 @@ const ranked = {
       const r = await net.queue(mode, f.seek);
       if (ranked.finding !== f) return;
       if (r && r.ok && r.room) { ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
+      if (r && r.why === 'update') { ranked.cancel(true); toast('물리가 바뀌었습니다. 새 버전으로 업데이트해야 랭킹전을 할 수 있습니다.', 'foul', 4000); return; }   // (server/src/version.js)
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
       const why = r && r.ok ? null : net.troubleText() || '서버 응답 없음';

@@ -18,6 +18,9 @@
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
 import { googleWho } from './google.js';
+import { PHYS_V } from './version.js';
+// (a device on other physics - version.js - is told to update rather than matched: queue and invites)
+const samePhysics = body => (body && Number.isInteger(body.phys) ? body.phys : 1) === PHYS_V;
 export { Vault } from './vault.js';
 export { Lobby } from './lobby.js';
 export { Room } from './room.js';
@@ -93,6 +96,7 @@ async function frontDoor(request, env) {
     if (inv) {
       const body = await request.json().catch(() => ({})), code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       if (inv[1] === 'open' && !MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
+      if ((inv[1] === 'open' || inv[1] === 'join') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
@@ -103,6 +107,7 @@ async function frontDoor(request, env) {
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {
       const body = await request.json().catch(() => ({}));
       if (!MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
+      if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));

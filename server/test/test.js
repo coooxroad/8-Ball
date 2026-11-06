@@ -5,6 +5,7 @@ import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
+import { PHYS_V } from '../src/version.js';
 import { googleWho, forgetGoogleKeys } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
@@ -334,6 +335,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       ok(R.idleIn() === null && R.timers() === null, 'B15: a seat away is the away rule\'s (RETURN_WITHIN), not the quiet turn\'s'); }
   }
   console.log('ranked rooms: checked');
+  // the server's physics version is the engine's: a change to web/physics.js that moves PHYS_V there must move it here too
+  ok(Number.isInteger(E.PHYS_V) && E.PHYS_V === PHYS_V, `physics version: engine ${E.PHYS_V}, server ${PHYS_V}`);
 }
 
 // a ranked game moves DAMA, an invite game does not; the break cue is not for sale

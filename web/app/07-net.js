@@ -54,7 +54,7 @@ const net = (() => {
   }
   // what the last trouble was, in a few words for a screen (null: none)
   const troubleText = () => { const T = trouble; if (!T) return null;
-    return T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'slow' ? '서버 응답이 늦음' : T.why === 'account' ? '계정 확인 중'
+    return T.why === 'offline' ? '서버에 연결할 수 없음' : T.why === 'slow' ? '서버 응답이 늦음' : T.why === 'account' ? '계정 확인 중' : T.why === 'update' ? '새 버전으로 업데이트해야 합니다'
       : T.why === 'server' ? `서버 오류 ${T.status}${T.error ? ' · ' + T.error.slice(0, 60) : ''}` : `서버: ${T.why}`; };
   // (one account at a time: requests that find none wait for the one being opened, rather than each opening its own)
   let opening = null;
@@ -119,16 +119,16 @@ const net = (() => {
     claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
     // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)
     // (seek: this one search's id - the lobby answers a room found only to it, so a new search never lands in an old room)
-    async queue(mode, seek) { if (!(await ensure())) return null; return call('/v1/queue', { mode, seek, name: prefs.names[0], icon: 0, gear: ranked.gear() }, 10000); },
+    async queue(mode, seek) { if (!(await ensure())) return null; return call('/v1/queue', { mode, seek, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }, 10000); },
     leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
     // a ranked game's room, by WebSocket: its address for the seat's token
     roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,
     // a game with a friend on another device (server/src/ranked.js InviteCore): a code to give them, asked after until they
     // come; or a friend's code, to join
-    async inviteOpen(mode, rules) { if (!(await ensure())) return null; return call('/v1/invite/open', { mode, rules, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    async inviteOpen(mode, rules) { if (!(await ensure())) return null; return call('/v1/invite/open', { mode, rules, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteAsk: code => call('/v1/invite/ask', { code }),
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
-    async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
     /* Linking devices to one account (server/src/link.js): a code from this device for another (make: { code, until }),
        or another device's code typed in here (use). Using one, this device takes a key of its own for that account; the

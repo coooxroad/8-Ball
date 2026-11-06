@@ -24,6 +24,9 @@ const DMath = (() => {
   const hypot = (x, y, z) => Math.sqrt(x * x + y * y + (z ? z * z : 0));
   return { exp, sin, cos, tanh, hypot };
 })();
+/* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
+   physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
+const PHYS_V = 1;
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -668,4 +671,4 @@ function createPhysics(cfg) {
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
   return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
-if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; }
+if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }
