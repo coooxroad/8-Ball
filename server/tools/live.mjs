@@ -1,5 +1,6 @@
 /* After a deploy: is the server up and behaving? A new account, its wallet, a wrong key turned away, a request without
    its number refused, and a ranked wait that ends with an opponent. node tools/live.mjs <address> */
+import { PHYS_V } from '../src/version.js';   // (the queue turns away another physics: src/version.js)
 const U = process.argv[2]; let bad = 0; const check = (c, m) => { console.log((c ? 'ok   ' : 'FAIL ') + m); if (!c) bad++; };
 const j = async (p, o) => { const r = await fetch(U + p, o); return { status: r.status, body: await r.json().catch(() => null) }; };
 const hello = await j('/'); check(hello.body && hello.body.ok, 'answers');
@@ -14,7 +15,7 @@ const noreq = await j('/v1/buy', { method: 'POST', headers: auth, body: JSON.str
 {
   const t0 = Date.now(); let last = null, got = null;
   while (Date.now() - t0 < 75000) {
-    const q = await j('/v1/queue', { method: 'POST', headers: auth, body: JSON.stringify({ mode: 'nine', name: 'live-check', icon: 0, gear: {} }) });
+    const q = await j('/v1/queue', { method: 'POST', headers: auth, body: JSON.stringify({ mode: 'nine', phys: PHYS_V, name: 'live-check', icon: 0, gear: {} }) });
     last = q; if (q.body && q.body.ok && q.body.room) { got = q.body; break; }
     if (!q.body || !q.body.ok) break;
     await new Promise(r => setTimeout(r, 2000));
