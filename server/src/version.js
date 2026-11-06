@@ -2,4 +2,4 @@
    physics would see other shots than the room checks against, so it is not let into a ranked game or a friend's room
    (index.js: why 'update') - it is told to update instead. A device too old to say counts as 1, the physics before
    the version was kept. Raised whenever physics.js changes what a shot does. */
-export const PHYS_V = 3;                            // 2: the contact model (PR #14, 2026-11-06); 3: squirt off (11-07)
+export const PHYS_V = 2;                            // 2: the contact model (PR #14, 2026-11-06)
