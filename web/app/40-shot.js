@@ -11,12 +11,12 @@ function beginTurn(first) {
   }
   flow.hud(); scene.invalidate(); snapshot();
 }
-function shoot(V, a, b, el, ft) {
-  el = el || 0; if (ft == null) ft = null;                                   // ft: the stroke (null: the ordinary push)
+function shoot(V, a, b, el) {
+  el = el || 0;
   { const L = lookNow(); if (L) scene.setTrail(L.trails[game.turn]); }      // (a ranked game: the trail of the player shooting)
-  flow.beforeShot(V, a, b, el, ft); game.beginShot();
+  flow.beforeShot(V, a, b, el); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
-  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el, ft };
+  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el };
   flow.hud();
 }
 function endShot() { st.rev++; flow.afterShot(); }
@@ -88,13 +88,13 @@ function autoTick(dt) {
     if (t >= a.plan.preShot.duration) {
       st.aim = a.plan.angle; st.auto = null;
       if (a.plan.action === 'resign' && a.src.resign) { st.phase = 'idle'; a.src.resign(); return; }
-      shoot(a.plan.V, a.plan.a, a.plan.b, st.el, a.plan.ft);
+      shoot(a.plan.V, a.plan.a, a.plan.b, st.el);
     }
     return;
   }
   st.aim = a.from + a.delta * e(t / 0.75);
   st.power = a.pw * e((t - 0.85) / 0.45); setPowerUI(st.power);
-  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el, a.plan.ft); }
+  if (t > 1.45) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }
 }
 
 /* ================= scoreboard ================= */

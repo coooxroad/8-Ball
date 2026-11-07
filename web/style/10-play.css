@@ -93,25 +93,10 @@
 #kindBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
 #kindBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#8a4dff}
 #elPad{width:190px;height:112px;border-radius:14px;background:var(--seg);touch-action:none;display:block}
-/* the stroke slider (a cue with the stroke trait, app/80-input.js setStrokeUI) */
-#strokeBox{display:flex;flex-direction:column;gap:6px;width:190px}
-#strokeBox[hidden]{display:none}
-#strokeBox .lab{display:flex;align-items:baseline;gap:6px}
-#strokeBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
-#strokeBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#3a8fd0}
-#ftPad{width:100%;accent-color:#6cc2ea;height:28px}
-#strokeBox .ends{display:flex;justify-content:space-between;font-size:11px;font-weight:700;opacity:.7}
-#app.desk #strokeBox{width:230px}
-#app.desk #strokeBox .lab{color:#d9e1ea}
-#app.desk #strokeBox .lab b{color:#f3e2b4}
 #spinBtn{overflow:visible}
 #spinTag{position:absolute;right:0;top:-13px;font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .portrait #spinTag{right:auto;left:0}
 @media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}
-/* a short screen (a phone on its side): the ball on the left with its reset under it, the cue angle and the stroke beside
-   it - one column would run off the top */
-@media (max-height:520px){#spinPop{display:grid;grid-template-columns:auto auto;align-items:center;justify-items:center}
-  #spinPad{grid-column:1;grid-row:1/span 2}#spinReset{grid-column:1;grid-row:3}#kindBox{grid-column:2;grid-row:1/span 2}#strokeBox{grid-column:2;grid-row:3}}
 /* (on a phone the balls go under the name) */
 /* the shot clock: a bar running down under the scoreboard, under the player at the table (broadcast pieces to come) */
 #clock{position:fixed;top:64px;left:50%;width:220px;margin-left:-110px;height:22px;display:flex;align-items:center;gap:8px;z-index:4;pointer-events:none;--k:1;--c:#2a78d2}

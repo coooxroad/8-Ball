@@ -14,8 +14,8 @@
         const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g), railed = w2.ev.railed.includes(w2.cue);
         if (r.pts > 0) { const showy = railed && (sp[0] || sp[1]); flair.push({ angle: all[i][0], V: all[i][1], a: sp[0], b: sp[1], s: (railed ? 3 : 0) + (sp[0] || sp[1] ? 1.5 : 0) + Math.min(3, w2.ev.cushions) * 0.6 + Math.random() }); if (showy) fancy++; }
       }
-      // when the raised cue is allowed it likes to use it: a hard raised stroke straight at a red (40 degrees - with the
-      // ordinary push it stays on the cloth, physics.js stroke), or a masse bending in from the side (66 to 77 degrees)
+      // when the raised cue is allowed it likes to use it: a jump straight at a red (40 degrees, hard), or a masse bending in
+      // from the side (66 to 77 degrees, soft enough to stay on the cloth)
       if (g.masse && flair.length && Math.random() < 0.6) {
         const trick = (angle, V, a, el) => { const w2 = g.P.clone(w); g.P.strike(w2, angle, V, a, 0, el); const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g); if (r.pts > 0 && !w2.ev.off.length) { flair.push({ angle, V, a, b: 0, el, s: 9 + Math.random() }); return true; } return false; };
         search: for (const id of g.mode.legal(g, g.turn)) { const T = w.balls[id], base = Math.atan2(T.y - c.y, T.x - c.x), far = Math.hypot(T.x - c.x, T.y - c.y);

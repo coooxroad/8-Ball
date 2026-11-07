@@ -36,7 +36,7 @@ function drainFx() {
    in either, so a shot that hits nothing still starts at its own pace. */
 function aheadStart(ca) {
   if (!prefs.fast || (flow && flow.quiet)) { st.ahead = null; return; }
-  const P = game.P, w = P.clone(game.world); w.snd = []; P.strike(w, st.aim, ca.V, ca.a, ca.b, ca.el, ca.ft);
+  const P = game.P, w = P.clone(game.world); w.snd = []; P.strike(w, st.aim, ca.V, ca.a, ca.b, ca.el);
   st.ahead = { w, t: 0, last: 36, done: false };
 }
 function aheadStep() {
@@ -94,20 +94,18 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.el || 0, ft: ca.ft, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el, ca.ft); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.el || 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
-    // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away - as far
-    // as the stroke goes (physics.js stroke): the ordinary short push as it always was, pushed right through three times
-    // that, and cut off it stops at the ball and is drawn straight back
+    // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
     if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) {
       const f = st.follow; f.t += Math.max(0, dt);
       if (f.t > 0.42) st.follow = null;
       else {
-        const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el), m = f.ft == null ? 1 : Math.min(2.6, 0.1 + 3 * f.ft);
-        let reach = Math.min(0.11 * m, (0.025 + f.V * 0.014) * m);
+        const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el);
+        let reach = Math.min(0.11, 0.025 + f.V * 0.014);
         if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
-        const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k), back = m < 0.5 ? Math.min(1, Math.max(0, (f.t - 0.11) / 0.14)) : 0;
-        follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease + back * (reach + 0.07), el: f.el, spin: f.spin };
+        const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
+        follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
       }
     }
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
@@ -119,7 +117,7 @@ function frame(now) {
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
-    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, ft: st.phase === 'strike' && st.cueAnim ? st.cueAnim.ft : strokeFt(), rev: st.rev, animating,
+    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
     follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : guideWhole() ? 1 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),

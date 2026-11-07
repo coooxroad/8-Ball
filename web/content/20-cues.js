@@ -13,7 +13,7 @@ const CUES = [
     spec: [['무게', '19.5oz · 553g'], ['팁', '12mm 레이어드 가죽'], ['상대', '북미산 하드 메이플'], ['하대', '흑단, 네 갈래 포인트'], ['조인트', '스테인리스 3/8×10']] },
   { id: 'carbon', name: '블랙 카본', rarity: 2, note: '검은 카본 상대, 무광 하대에 붉은 링', shaft: 0x1c1e22, ferrule: 0x1c1e22, tip: 0x3c6fd0, joint: 0xe2392b, fore: 0x121316, points: null, wrap: 0x2b2e34, sleeve: 0x121316, stat: { power: 1, spin: 7, guide: 0 },
     spec: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '카본 파이버'], ['하대', '무광 블랙, 붉은 링'], ['조인트', '퀵 릴리스']] },
-  { id: 'rose', name: '로즈우드 인레이', rarity: 4, note: '붉은 장미목 하대, 금색 포인트와 흰 리넨 그립', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c, stat: { power: 6, spin: 5, guide: 5 }, traits: ['stroke'],
+  { id: 'rose', name: '로즈우드 인레이', rarity: 4, note: '붉은 장미목 하대, 금색 포인트와 흰 리넨 그립', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c, stat: { power: 6, spin: 5, guide: 5 },
     spec: [['무게', '19.5oz · 553g'], ['팁', '12mm 레이어드 가죽'], ['상대', '메이플'], ['하대', '로즈우드, 금색 인레이'], ['그립', '아이리시 리넨']] },
   { id: 'house', name: '하우스 큐', rarity: 0, note: '당구장 벽에 걸린 통짜 나무 큐', shaft: 0xdcb87c, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xc79556, fore: 0xc79556, points: null, wrap: 0xb5793f, sleeve: 0x8a5a2c, stat: { power: -3, spin: 0, guide: 3 },
     spec: [['무게', '18oz · 510g'], ['팁', '13mm 단일 가죽'], ['몸통', '통짜 메이플 원피스'], ['쓰임', '당구장 벽걸이 큐'], ['조인트', '없음']] },
@@ -165,12 +165,4 @@ const CUES = [
     ],
     spec: [['얻는 법', '8볼 레슨 전부 완료'], ['팁', '페놀 브레이크 팁'], ['상대', '단단한 메이플'], ['하대', '흑백 체크, 고무 그립'], ['성격', '힘만, 회전·조준선은 포기']] },
 ];
-/* Traits: what a cue lets its player do that others do not - not more of a number (stat), a control of its own. Each is
-   named and shown under the cue's OVR (app/35-desk-shelves.js), with its icon (style/71-shelves.css .trait-<id>).
-     stroke  예리한 스트로크: the stroke is chosen, from cut off at the ball to pushed right through (physics.js stroke; the
-             slider in the spin panel, app/80-input.js); every other cue plays the ordinary short push. */
-const TRAITS = {
-  stroke: { name: '예리한 스트로크', note: '밀어치는 정도를 고를 수 있습니다. 0%는 끊어치기 - 큐를 세워 치면 공이 뜨고 회전이 빨리 먹습니다. 100%는 팔로스로우 - 길게 휘고 옆회전이 오래 남습니다. 다른 큐는 늘 짧게 밀어 칩니다.' },
-};
-const cueHas = (c, t) => !!(c && Array.isArray(c.traits) && c.traits.includes(t));
-if (typeof module !== 'undefined') module.exports = { CUES, TRAITS, cueHas };
+if (typeof module !== 'undefined') module.exports = { CUES };
