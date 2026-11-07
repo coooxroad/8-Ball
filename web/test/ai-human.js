@@ -58,13 +58,17 @@ for (const mode of ['eight', 'nine', 'four', 'three']) {
 // Contrasting styles in an identical hard position must affect actual shots, and showboating must affect only the timeline.
 {
   const g = fresh(); g.start('four', ['A', 'B'], true, { rnd: seeded(90) });
-  const samples = [];
+  const samples = [], raised = {}, strike0 = g.P.strike;
   for (let seed = 1; seed <= 30; seed++) for (const style of ['power', 'defensive', 'masse', 'banker']) {
     g.aiRnd = seeded(seed); g.personas = [profile(g, 20, 2, { personality: 'playful', style }), null];
-    const shot = measured(g); samples.push({ style, ...shot });
+    g.P.strike = (...a) => { if (a[5] > 0) raised[style] = (raised[style] || 0) + 1; return strike0(...a); };
+    try { const shot = measured(g); samples.push({ style, ...shot }); } finally { g.P.strike = strike0; }
   }
   assert(samples.some(p => p.style === 'power' && Math.abs(g.powerOf(p.V) - 1) < 1e-9), 'power style never releases at 100%');
-  assert(samples.some(p => p.style === 'masse' && p.el > 0), 'masse style never raises cue');
+  // (a masse from the opening of 4구 almost never scores - a few in two thousand - so whether one of these thirty plays
+  // it is luck, and a small change to the physics turns it either way; what the style must do is look for them: it plays
+  // raised cues out, the others hardly)
+  assert((raised.masse || 0) > 3 * Math.max(1, raised.power || 0, raised.defensive || 0, raised.banker || 0), `masse style does not look for raised-cue shots (${JSON.stringify(raised)})`);
   assert(samples.some(p => p.style === 'banker' && p.decision === 'bank'), 'banker never chooses a cushion');
   assert(samples.some(p => p.preShot.kind === 'taunt'), 'no cue-shaking timeline');
   const taunt = samples.find(p => p.preShot.kind === 'taunt'); assert(taunt.preShot.keyframes.some(k => Math.abs(k.angle - taunt.angle) > 0.2));
