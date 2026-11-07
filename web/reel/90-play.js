@@ -44,8 +44,6 @@ function tick(dt) {
   const bn = Math.floor(rel / r.beat);
   if (bn !== r.bn) { r.bn = bn; if (r.style.beat) r.style.beat(bn); if (r.dropped && !r.style.worst && !r.style.bare && r.outAt == null) again(app, 'pulse'); }
   scene.setCam(cam); drawOverlay(dt);
-  // (the cue's follow-through after the strike, in real time whatever the edit's pace: reel/00-core.js cueUp)
-  if (r.fol) { r.fol.t += dt; r.follow = followPose(r.fol); if (!r.follow) r.fol = null; } else r.follow = null;
-  return { alpha: 1, pull: r.pull, cue: r.cue || !!r.follow, follow: r.follow };
+  return { alpha: 1, pull: r.pull, cue: r.cue };
 }
 return { play, tick, skip: stop, STYLES: BEST.map(id => [id, STYLES[id].name]), WORST, get playing() { return !!r; }, get style() { return r && r.id; } };

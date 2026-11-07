@@ -141,9 +141,7 @@ function rushLines(W, H, k) {
 // the cue being drawn back for D seconds, then the strike; true while it is still drawing back
 function cueUp(since, D) {
   if (since < D) { r.cue = true; r.pull = 0.03 + 0.24 * st.power * ease((since - D * 0.25) / (D * 0.65)); return true; }
-  if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); if (!r.style.bare) { kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); }
-    // then the cue goes on through, or is snatched back, as the shot's stroke went (app/90-loop.js followPose)
-    const b = r.best; r.fol = { t: 0, x: r.cue0[0], y: r.cue0[1], V: b.V, el: b.el || 0, ft: b.ft == null ? null : b.ft, spin: { x: (b.a || 0) / 0.5, y: (b.b || 0) / 0.5 } }; }
+  if (!r.struck) { r.struck = true; SND.cue(r.best.V, 0); if (!r.style.bare) { kick('beat'); sparks(r.cue0[0], r.cue0[1], '#fff', 8, 1); } }
   r.cue = false; return false;
 }
 // from a wide view down to just behind the cue

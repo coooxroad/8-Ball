@@ -34,17 +34,6 @@ function drainFx() {
    played out on a copy alongside the real one (the physics gives the same answer every time) - a slice of it each frame, so
    that working it out never costs a frame. Until the copy has finished, play stays at its own pace. Not before 0.3 seconds
    in either, so a shot that hits nothing still starts at its own pace. */
-/* The cue after the hit, as far as the stroke goes (physics.js stroke): f = { t (seconds since the hit), x, y (where the
-   ball was), V, el, ft, spin }; null once it is over. The ordinary short push as it always was; pushed right through,
-   up to about three times as far; cut off, it stops at the ball and is drawn straight back. Play and replays (reel) alike. */
-function followPose(f) {
-  if (f.t > 0.42) return null;
-  const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el), m = f.ft == null ? 1 : Math.min(2.6, 0.1 + 3 * f.ft);
-  let reach = Math.min(0.11 * m, (0.025 + f.V * 0.014) * m);
-  if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
-  const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k), back = m < 0.5 ? Math.min(1, Math.max(0, (f.t - 0.11) / 0.14)) : 0;
-  return { x: f.x, y: f.y, pull: -0.004 - reach * ease + back * (reach + 0.07), el: f.el, spin: f.spin };
-}
 function aheadStart(ca) {
   if (!prefs.fast || (flow && flow.quiet)) { st.ahead = null; return; }
   const P = game.P, w = P.clone(game.world); w.snd = []; P.strike(w, st.aim, ca.V, ca.a, ca.b, ca.el, ca.ft);
@@ -110,9 +99,19 @@ function frame(now) {
     // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away - as far
     // as the stroke goes (physics.js stroke): the ordinary short push as it always was, pushed right through three times
     // that, and cut off it stops at the ball and is drawn straight back
-    if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) { st.follow.t += Math.max(0, dt); follow = followPose(st.follow); if (!follow) st.follow = null; }
+    if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) {
+      const f = st.follow; f.t += Math.max(0, dt);
+      if (f.t > 0.42) st.follow = null;
+      else {
+        const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el), m = f.ft == null ? 1 : Math.min(2.6, 0.1 + 3 * f.ft);
+        let reach = Math.min(0.11 * m, (0.025 + f.V * 0.014) * m);
+        if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
+        const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k), back = m < 0.5 ? Math.min(1, Math.max(0, (f.t - 0.11) / 0.14)) : 0;
+        follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease + back * (reach + 0.07), el: f.el, spin: f.spin };
+      }
+    }
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
-    else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; if (clip.follow) follow = clip.follow; } }
+    else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
   }
   if (st.phase === 'aim') syncEl();
