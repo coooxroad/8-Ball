@@ -144,7 +144,7 @@ for (const name of ['bar', 'pro', 'pub']) {
     z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
     w.cue = 0;
     for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
-      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4], z.sol[5]); const ev = P.run(t, 30);
+      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4]); const ev = P.run(t, 30);
       if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; fail(`puzzle ${z.id}: its stored answer does not solve it`); break; }
     }
   }
