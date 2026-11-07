@@ -12,6 +12,11 @@ const AIM_LAG = 150, AIM_GAP = 66;            // ms the other player's cue is sh
 const ranked = {
   on: null,                                   // the game being played: { seat, room, token, seed, first, mode, opp, standIn, inbox, n, sent, ws, done }
   finding: null,                              // waiting in the lobby: { mode, t0, timer }
+  // the 랭킹전 panel: the four game panels open (33-desk-play.js), as for 친구와 플레이; picking one starts looking
+  pick() {
+    if (!net.on) return toast('랭킹전은 서버가 열리면 시작합니다.', '', 2200);
+    playFor = 'rank'; playStep = 'games'; paintHome();
+  },
   /* Waiting: the lobby is asked again every two seconds, and a strip at the top says so (#rkBar) with the time waited and
      a way out - meanwhile the rest of the app is free (훈련, 상점, anything). An opponent found: whatever was open is left
      and the game begins. */
@@ -43,8 +48,7 @@ const ranked = {
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)
-  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode);
-    if (st.screen === 'home' && deskTab === 'play') paintHome(); },          // (the 랭킹전 slate says whether it is looking)
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); },
 
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)

@@ -263,12 +263,3 @@
 #app.desk.compact .dk-x{width:34px;height:34px}
 #app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px var(--ui-font);color:#a9b6c6}
 #app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
-/* 랭킹전's slate (33-desk-play.js deskRank): the tier's emblem beside its name and the player's 다마 */
-#app.desk .dk-rank{display:flex;align-items:center;gap:14px;padding:4px 0 10px}
-#app.desk .dk-rank img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
-#app.desk .dk-rank b{display:block;font:800 28px/1.1 var(--ui-font);color:#f3eee3}
-#app.desk .dk-rank small{display:block;margin-top:4px;font:700 15px var(--num);color:#a9b6c6}
-/* a long name on a rail key (친구와 플레이): one line where there is room, else broken between words, never inside one */
-#app.desk .dk-rb{word-break:keep-all}
-#app.desk:not(.compact) .dk-rb.long{font-size:21px;white-space:nowrap}
-
