@@ -129,16 +129,19 @@
 #dkBoards .bd-challenge{grid-area:challenge}
 #dkBoards .bd-arcade{grid-area:arcade}
 #dkBoards .bd.ivory{--sl:#f1ead8;--sd:#8f8772;--ink:#22262b}
+#dkBoards .bd.sky{--sl:#d4efff;--sd:#6f93a8;--ink:#1d2a36}
 #dkBoards .bd.charcoal{--sl:#41474e;--sd:#0c0f11;--ink:#f3eee3}
 #dkBoards .bd.ivory .sk{background:linear-gradient(200deg,#faf6ec,#ebe4d1)}
+#dkBoards .bd.sky .sk{background:linear-gradient(200deg,#c4ecff,#aed8ef)}
 #dkBoards .bd.charcoal .sk{background:linear-gradient(200deg,#2e3439,#1b1f23)}
-#dkBoards .bd.ivory .sk::before,#dkBoards .bd.ivory .sk::after,#dkBoards .bd.charcoal .sk::before,#dkBoards .bd.charcoal .sk::after{display:none}
-#dkBoards .bd.ivory .bd-tt,#dkBoards .bd.charcoal .bd-tt{text-align:left}
-#dkBoards .bd.ivory .bd-tt b,#dkBoards .bd.charcoal .bd-tt b{font:800 calc(var(--u)*9.5)/1.12 var(--ui-font);letter-spacing:-.02em;color:var(--ink);text-shadow:none}
-#dkBoards .bd.ivory .bd-tt small,#dkBoards .bd.charcoal .bd-tt small,#dkBoards .bd.ivory .bd-foot small,#dkBoards .bd.charcoal .bd-foot small{font:700 calc(var(--u)*3.6)/1.35 var(--ui-font);text-shadow:none;box-shadow:none;background:none;margin:calc(var(--u)*1.6) 0 0;padding:0}
+#dkBoards .bd.ivory .sk::before,#dkBoards .bd.ivory .sk::after,#dkBoards .bd.sky .sk::before,#dkBoards .bd.sky .sk::after,#dkBoards .bd.charcoal .sk::before,#dkBoards .bd.charcoal .sk::after{display:none}
+#dkBoards .bd.ivory .bd-tt,#dkBoards .bd.charcoal .bd-tt,#dkBoards .bd.sky .bd-tt{text-align:left}
+#dkBoards .bd.ivory .bd-tt b,#dkBoards .bd.charcoal .bd-tt b,#dkBoards .bd.sky .bd-tt b{font:800 calc(var(--u)*9.5)/1.12 var(--ui-font);letter-spacing:-.02em;color:var(--ink);text-shadow:none}
+#dkBoards .bd.ivory .bd-tt small,#dkBoards .bd.charcoal .bd-tt small,#dkBoards .bd.ivory .bd-foot small,#dkBoards .bd.charcoal .bd-foot small,#dkBoards .bd.sky .bd-tt small,#dkBoards .bd.sky .bd-foot small{font:700 calc(var(--u)*3.6)/1.35 var(--ui-font);text-shadow:none;box-shadow:none;background:none;margin:calc(var(--u)*1.6) 0 0;padding:0}
 #dkBoards .bd.ivory .bd-tt small,#dkBoards .bd.ivory .bd-foot small{color:#6a665c}
+#dkBoards .bd.sky .bd-tt small,#dkBoards .bd.sky .bd-foot small{color:#4a6577}
 #dkBoards .bd.charcoal .bd-tt small,#dkBoards .bd.charcoal .bd-foot small{color:#a9b6c6}
-#dkBoards .bd.ivory .bd-tt em,#dkBoards .bd.charcoal .bd-tt em{align-self:flex-start;transform:none;font:800 calc(var(--u)*2.9)/1.2 var(--ui-font);letter-spacing:.06em;color:#fff;background:#2f6fd6;box-shadow:none;border-radius:999px}
+#dkBoards .bd.ivory .bd-tt em,#dkBoards .bd.charcoal .bd-tt em,#dkBoards .bd.sky .bd-tt em{align-self:flex-start;transform:none;font:800 calc(var(--u)*2.9)/1.2 var(--ui-font);letter-spacing:.06em;color:#fff;background:#2f6fd6;box-shadow:none;border-radius:999px}
 #dkBoards .bd.soon .bd-tt em{background:#8a8f96}
-#dkBoards .bd.ivory .bd-foot,#dkBoards .bd.charcoal .bd-foot{text-align:left}
-#dkBoards .bd.ivory .bd-foot b,#dkBoards .bd.charcoal .bd-foot b{font:800 calc(var(--u)*7)/1.15 var(--ui-font);color:var(--ink);text-shadow:none}
+#dkBoards .bd.ivory .bd-foot,#dkBoards .bd.charcoal .bd-foot,#dkBoards .bd.sky .bd-foot{text-align:left}
+#dkBoards .bd.ivory .bd-foot b,#dkBoards .bd.charcoal .bd-foot b,#dkBoards .bd.sky .bd-foot b{font:800 calc(var(--u)*7)/1.15 var(--ui-font);color:var(--ink);text-shadow:none}

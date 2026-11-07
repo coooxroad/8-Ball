@@ -1,6 +1,6 @@
 /* 플레이: four panels side by side on the desk, over the same ground as the rail, tray and slate, so the desk's lean makes
-   them one trapezoid as it does those: 친구와 플레이, 챌린지 over 아케이드, and 랭킹전 with the player's tier - blocks of
-   the shop's ivory and charcoal (5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
+   them one trapezoid as it does those: 랭킹전 with the player's tier, 아케이드 and 챌린지 over 친구와 플레이 - blocks of
+   the shop's ivory and charcoal, and a pale sky for 아케이드 (owner, 5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
    with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
 let playStep = 'boards';                                              // 'boards' | 'games' | 'setup'
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
@@ -48,7 +48,7 @@ function deskPlay(d) {
       panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
         el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'ivory'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'charcoal soon'),
-      panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'ivory soon'),
+      panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'sky soon'),
       panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '다마가 비슷한 상대와', 'ONLINE'),
         el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `${dama} 다마` })])], 'charcoal')]);
   }
