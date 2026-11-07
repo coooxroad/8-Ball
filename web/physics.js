@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 6;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics again
+const PHYS_V = 6;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -158,7 +158,7 @@ function createPhysics(cfg) {
      of a metre off at 45; half a metre off at 40, or 30 at full power; full power goes 10-14 cm up; a 30% masse hops 3 mm.
      The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
      of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
-  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35;
+  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35, RAIL_ROLL = 0.4;
   const lift = (V, el) => { const u = Math.max(0, ANG_K * V * DMath.sin(el) - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
@@ -289,18 +289,18 @@ function createPhysics(cfg) {
          as it was, as on a real table. Off the rail itself, angle in = angle out at an ordinary pace (a hard ball sinks into
          the rubber and comes off a touch wider, a slow one a touch narrower); side grips the rail and opens or closes that
          angle in proportion to how much there is.
-         The roll: the cushion's nose, above the ball's middle, takes off the roll the ball had INTO the rail, so it leaves
-         the rail with none across (a stun), while the roll it had ALONG the rail stays. So afterwards the cloth bends it:
-         a rolling ball runs on a little longer along the rail (wider), follow more so, draw the other way (narrower), a
-         stunned ball not at all - and a masse keeps curving. That bend is what a player learns to read; the guide shows
-         it from "길게" on. */
+         The roll: the cushion's nose, above the ball's middle, takes most of the roll the ball had INTO the rail - not all:
+         RAIL_ROLL of it stays, still turning towards the rail as the ball leaves it - while the roll it had ALONG the rail
+         stays whole. So afterwards the cloth bends it, in a curve you can see: a rolling ball is pulled round towards the
+         rail's direction (the angle opens), follow more so, draw the other way (it closes), a stunned ball not at all - and
+         a masse keeps curving. That bend is what a player learns to read; the guide shows it from "길게" on. */
       const c = -vn, eT = POCKETED ? 0.8 : 0.84, eN = Math.min(eT + 0.05, Math.max(eT - 0.08, eT + 0.02 * (2.5 - c)));
       const vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + eT) * c;
       let ds = (2 / 7) * RB * b.wz; if (ds > lim) ds = lim; else if (ds < -lim) ds = -lim;
       const dvt = -(1 - eT) * vt + ds;
       b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
       b.wz -= (2.5 / RB) * ds;
-      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
+      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny, wt = (b.wx * tx + b.wy * ty) * RAIL_ROLL; b.wx = wn * nx + wt * tx; b.wy = wn * ny + wt * ty; }
       if (w.trace && b.id === w.cue) TR_N = [nx, ny];
       if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
       return;
