@@ -106,9 +106,8 @@ function dkNavHead(head, what, t, sub, go) {
 }
 
 function deskGo(tab) {
-  if (tab === deskTab && st.screen === 'home') { if (tab === 'play' && playStep !== 'boards') { playStep = 'boards'; paintHome(); } return; }   // (플레이 again: back to its boards)
+  if (tab === deskTab && st.screen === 'home') return;
   gearOff(); const was = deskTab; deskTab = tab;
-  if (tab === 'play' && was !== 'play') playStep = 'boards';
   const game4 = m => GAME4.includes(m);
   if (tab === 'play') { prefs.trainCpu = false; prefs.vsAI = false; if (!game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight'; }   // (플레이 is against people; the computer is in 훈련)
   if (tab === 'train' && !trainOf()) { if (game4(prefs.mode)) prefs.lastMode = prefs.mode;
@@ -120,7 +119,7 @@ function deskGo(tab) {
 // the rail: a slot for each choice with its key down in it, the chosen key inlaid with felt and its red dot
 function railBtn(on, label, sub, fn, soon, icon) {
   const kids = dkLabelled(label, sub);
-  return el('div', { class: 'dk-slot' }, el('button', { class: 'dk-rb' + (soon ? ' soon' : '') + (icon ? ' iconed' : ''), 'aria-pressed': String(on), onclick: onTap(fn) },
+  return el('div', { class: 'dk-slot' }, el('button', { class: 'dk-rb' + (soon ? ' soon' : '') + (icon ? ' iconed' : '') + (label.length > 5 ? ' long' : ''), 'aria-pressed': String(on), onclick: onTap(fn) },
     icon ? [el('i', { class: 'mi', style: `background-image:url(ui/${icon}.webp)` }), el('span', { class: 'lb' }, kids)] : kids));
 }
 

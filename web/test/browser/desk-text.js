@@ -13,8 +13,8 @@ const { open } = require('./harness.js');
       const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const tap = async locator => { const b = await locator.first().boundingBox(); assert(b); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await settle(); };
       // Compare the table opening with the native-density layout, including the ranked-search strip.
-      await tap(page.locator('[data-b="friend"]'));
-      await tap(page.locator('[data-b="eight"]'));
+      await tap(page.locator('#dkRail .dk-rb', { hasText: '친구와 플레이' }));
+      await tap(page.locator('#dkSlate .dk-seg button', { hasText: '8볼' }));
       const measure = () => page.evaluate(() => {
         const d = document.querySelector('#desk'), p = document.querySelector('#deskPlane'), g = document.querySelector('#gl');
         const s = +document.querySelector('#app').style.getPropertyValue('--desk-density');
