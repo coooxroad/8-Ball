@@ -326,6 +326,12 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       const R = gearRoom(cue), m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.V = V; R.message(s0, m); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
       ok((r.why === 'resigned') === fits, `B14: a break at ${V.toFixed(3)} m/s with ${cue || 'the usual cue'} ${fits ? 'stands' : 'loses'} (${r.why})`);
     }
+    // a stroke of its own (web/physics.js stroke) only from a cue with the stroke trait (content/20-cues.js TRAITS)
+    for (const [cue, fits] of [[null, false], ['house', false], ['rose', true]]) {
+      const R = gearRoom(cue), m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.ft = 0.6; R.message(s0, m); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok((r.why === 'resigned') === fits, `a stroke from ${cue || 'the usual cue'} ${fits ? 'stands' : 'loses'} (${r.why})`);
+    }
+    { const { R, sent } = roomOf('eight', 7, 0); const m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.ft = 2; R.message(s0, m); ok(!sent[1 - s0].some(q => q.t === 'shot'), 'a stroke out of 0-1 is not passed on'); }
     // B15: nothing from either for IDLE_AFTER while both are there - the seat whose turn it was loses
     { const { R } = roomOf('eight', 7, 0); R.connected(0); R.connected(1); play(R, G.msgs.slice(0, 1)); ok(R.timers() === null && R.idleIn() > IDLE_AFTER - 1000, 'B15: a turn just begun is not quiet');
       R.set('turnAt', Date.now() - IDLE_AFTER - 1); ok(R.timers() === 'check', 'B15: a turn gone quiet ends the game');

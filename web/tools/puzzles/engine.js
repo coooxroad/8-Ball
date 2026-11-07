@@ -15,9 +15,9 @@ function world(balls, yellow = true, walls = []) {
 }
 let simulations = 0;
 function play(balls, sol, goal, yellow = true, seconds = 30, walls = []) {
-  const [angle, V, a, b, el] = sol;
-  if (![angle, V, a, b, el].every(Number.isFinite) || V < g.vOf(0) || V > g.vOf(1) || a * a + b * b > 0.640000001 || el < 0 || el > Math.PI / 2) return { ok: false };
-  const w = world(balls, yellow, walls); P.strike(w, angle, V, a, b, el); const ev = P.run(w, seconds); simulations++;
+  const [angle, V, a, b, el, ft] = sol;                                // (ft: the stroke, physics.js stroke; none: the ordinary push)
+  if (![angle, V, a, b, el].every(Number.isFinite) || (ft != null && !(ft >= 0 && ft <= 1)) || V < g.vOf(0) || V > g.vOf(1) || a * a + b * b > 0.640000001 || el < 0 || el > Math.PI / 2) return { ok: false };
+  const w = world(balls, yellow, walls); P.strike(w, angle, V, a, b, el, ft); const ev = P.run(w, seconds); simulations++;
   return { ok: P.rest(w) && g.MODES.puzzle4.judge(goal, ev, w).ok, ev, w };
 }
 function width(balls, sol, goal, yellow = true, steps = 10, walls = []) {

@@ -150,7 +150,7 @@ function shelfPage(d, shop) {
       if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
         cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
       cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
     }
     dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
@@ -172,6 +172,9 @@ function shelfPage(d, shop) {
     const S = K.stats(q);
     dkPut(d.slate, [el('div', { class: 'dk-ovr' }, [el('span', { text: 'OVR' }), el('b', { text: S.ovr }), el('em', { class: S.ovrD ? (S.ovrD[0] === '+' ? 'up' : 'down') : '', text: S.ovrD }),
       el('small', { text: i === worn ? '장착 중' : '장착한 것과 비교' })])]);
+    // its traits, under the OVR: what it lets its player do (content/20-cues.js TRAITS)
+    const tr = (q.traits || []).filter(t => TRAITS[t]);
+    if (tr.length) dkPut(d.slate, el('div', { class: 'dk-traits' }, tr.map(t => el('div', { class: 'dk-trait' }, [el('i', { class: 'trait-ico trait-' + t }), el('b', { text: TRAITS[t].name }), el('small', { text: TRAITS[t].note })]))));
     for (const r of S.rows) dkPut(d.slate, statRow(r));
     dkPut(d.slate, dkHr());
   }
@@ -188,6 +191,8 @@ const fxMarks = q => [q.sound ? ['sfx', 'SFX'] : null, q.vfx ? ['vfx', 'VFX'] : 
 // (the shimmer runs only while a badge is on screen: each moving frame repaints it, and a long list has many - fxSeen)
 const fxSeen = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) { e.target.classList.toggle('live', e.isIntersecting); if (!e.target.isConnected) fxSeen.unobserve(e.target); } }) : null;
 const fxBadge = (k, t) => { const b = el('span', { class: 'fxb ' + k + (fxSeen ? '' : ' live') }, [el('i'), el('b', { text: t })]); if (fxSeen) fxSeen.observe(b); return b; };
+// a card's trait marks, under its OVR
+const traitMarks = q => { const tr = (q.traits || []).filter(t => TRAITS[t]); return tr.length ? el('span', { class: 'traits' }, tr.map(t => el('i', { class: 'trait-ico trait-' + t, title: TRAITS[t].name }))) : null; };
 const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('span', { class: 'fxbs' + (small ? ' sm' : '') }, m.map(([k, t]) => fxBadge(k, t))) : null; };
 // what a thing costs (economy.js: by its rarity)
 const priceText = q => { if (q.reward) return '레슨 보상'; const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };

@@ -244,7 +244,7 @@ export class RoomCore {
       if (m.t === 'timeout') body = { timeout: true, seat: as, by: seat };
       else {
         const q = m.shot; if (shotError(q, r.mode) || (q && q.timeout)) return this.over('a shot that does not fit', seat);
-        body = { s: { cue: q.s.cue, ice: !!q.s.ice, balls: q.s.balls }, aim: q.aim, V: q.V, a: q.a, b: q.b, el: q.el || 0, inHand: !!q.inHand, seat: as, by: seat };
+        body = { s: { cue: q.s.cue, ice: !!q.s.ice, balls: q.s.balls }, aim: q.aim, V: q.V, a: q.a, b: q.b, el: q.el || 0, ...(q.ft != null ? { ft: q.ft } : {}), inHand: !!q.inHand, seat: as, by: seat };
       }
       this.set('turnAt', Date.now());
       this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, m.n, JSON.stringify(body));

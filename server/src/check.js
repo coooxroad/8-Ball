@@ -15,7 +15,7 @@ export function playPuzzle(id, shot) {
   const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')), rnd = seeded(1);
   g.start('puzzle4', ['A', ''], false, { rnd }); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
   w.walls = P.walls(z.walls); z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], rnd)); w.cue = 0; g.goal = goal;
-  P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el || 0);
+  P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el || 0, shot.ft);
   const ev = P.run(w, 40);
   return g.MODES.puzzle4.judge(goal, ev, w).ok ? { ok: true } : { ok: false, why: 'the shot does not solve it' };
 }
@@ -34,7 +34,7 @@ export function playLesson(id, proof) {
   g.MODES.practice.setup(g, null);
   if (L.rack) { g.MODES.eight.setup(g, E.seededRandom((p.seed ^ 0x9e3779b9) >>> 0)); g.placing = null; }
   else { P.place(w, 0, L.cue[0], L.cue[1], null); for (const [bid, x, y] of L.balls) P.place(w, bid, x, y, null); }
-  g.isBreak = !!L.rack; P.strike(w, p.shot.aim, p.shot.V, p.shot.a, p.shot.b, p.shot.el || 0);
+  g.isBreak = !!L.rack; P.strike(w, p.shot.aim, p.shot.V, p.shot.a, p.shot.b, p.shot.el || 0, p.shot.ft);
   const ev = P.run(w, 40);
   return D.judge(L, ev, w.balls[0]) === '' ? { ok: true } : { ok: false, why: 'the shot does not do it' };
 }
@@ -98,8 +98,10 @@ export class Replay {
     }
     // no harder than the seat's cue strikes at full gauge (Codex B14)
     if (this.open && Array.isArray(log.cues) && sh.V > this.vMax(g.turn)) return this.out = { ok: false, why: `shot ${i}: harder than the cue can strike`, at: i };
+    // a stroke of its own only with a cue that has the stroke trait (content/20-cues.js TRAITS.stroke): every other plays the push
+    if (this.open && Array.isArray(log.cues) && sh.ft != null && !this.strokeOk(g.turn)) return this.out = { ok: false, why: `shot ${i}: a stroke the cue does not have`, at: i };
     H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed', at: i };
-    this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); this.t = 0; this.running = true;
+    this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0, sh.ft); this.t = 0; this.running = true;
     return null;
   }
   /* The hardest a seat can strike: the full gauge (g.vOf(1), a break's extra included) times its cue's power stat - the
@@ -109,6 +111,7 @@ export class Replay {
     const id = this.log.cues[seat], c = E.CUES.find(q => q.id === id), k = 1 + ((c && c.stat && c.stat.power) || 0) / 100;
     return this.g.vOf(1) * Math.max(1, k) * (1 + 1e-9);
   }
+  strokeOk(seat) { const id = this.log.cues[seat], c = E.CUES.find(q => q.id === id); return !!(c && Array.isArray(c.traits) && c.traits.includes('stroke')); }
   advance(steps) {
     while (!this.out && steps > 0) {
       if (!this.running) { if (this.begin()) break; continue; }

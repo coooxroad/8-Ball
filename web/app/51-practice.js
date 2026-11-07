@@ -45,7 +45,7 @@ const practice = {
   again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
   guide: () => GUIDE_STD,
   auto: () => null,
-  beforeShot(V, a, b, el) { practice.before = game.world.balls.map(q => [q.x, q.y, q.on]); practice.beforeAim = st.aim; practice.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
+  beforeShot(V, a, b, el, ft) { practice.before = game.world.balls.map(q => [q.x, q.y, q.on]); practice.beforeAim = st.aim; practice.shot = { aim: st.aim, V, a, b, el: el || 0, ft }; },
   afterShot() {
     const p = practice;
     if (!p.drill.make) { game.resolve(); return beginTurn(false); }

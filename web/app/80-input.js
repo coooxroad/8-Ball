@@ -105,7 +105,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     const p = st.power;
     // (the cue in hand: its hardest stroke, and how far its strike point turns the ball)
     const k = cueK();
-    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); else { st.power = 0; setPowerUI(0); }
+    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el, strokeFt()); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -171,7 +171,7 @@ function drawDial() {
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
-    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
+    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI(); setStrokeUI();
     $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
   });
   const set = e => {
@@ -210,22 +210,32 @@ function syncEl() {
   const el = trickOK() ? Math.max(0, st.elWant || 0) : 0;
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
+/* The stroke slider (a cue with the stroke trait only): how far the cue follows through, in steps of 5%. Kept for next
+   time (prefs.ft); said in a word, and on the spin button when it is not the ordinary push. */
+function setStrokeUI() {
+  const on = cueStroke(), box = $('#strokeBox'); box.hidden = !on; if (!on) return;
+  const v = Math.round(st.ft * 100); $('#ftPad').value = v; $('#ftVal').textContent = v + '%';
+  $('#ftSay').textContent = v <= 5 ? '끊어치기' : v < 25 ? '짧게 끊음' : v <= 35 ? '보통' : v < 80 ? '밀어 줌' : '팔로스로우';
+}
+$('#ftPad').addEventListener('input', e => { st.ft = Math.max(0, Math.min(1, +e.target.value / 100)); prefs.ft = st.ft; savePrefs(); setStrokeUI(); setKindUI(); scene.invalidate(); });
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
 // (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
 function elSay() {
   const P = game.P; if (st.el < 0.009) return '';
-  const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
+  const kp = cueK().power, ft = strokeFt(), hop = V => P.hop(V, st.el, ft), h = hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
   if (h > P.R * 2) return '공을 넘는 점프';
-  if (h > 0.012) return P.hop(game.vOf(1) * kp, st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
-  if (P.hop(game.vOf(1) * kp, st.el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
-  return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
+  if (h > 0.012) return hop(game.vOf(1) * kp) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
+  if (hop(game.vOf(1) * kp) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
+  // (the ordinary push never jumps a ball - only a stroke cut off at it, physics.js stroke)
+  return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : ft == null || ft >= P.FT_JUMP ? '밀어 치면 안 뜸' : '안 뜸';
 }
 function setKindUI() {
   const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
   // the ordinary stroke says nothing; a cue set any other way is shown on the spin button
-  const plain = st.el < 0.009;
-  const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
+  const ft = strokeFt(), ftOdd = ft != null && Math.abs(ft - 0.3) > 0.001, plain = st.el < 0.009 && !ftOdd;
+  const tag = $('#spinTag'); tag.hidden = plain;
+  tag.textContent = [st.el >= 0.009 ? '큐 ' + deg + '°' + (say ? ' · ' + say : '') : '', ftOdd ? '스트로크 ' + Math.round(ft * 100) + '%' : ''].filter(Boolean).join(' · ');
   // The side view: the cloth, the cue ball at the pivot of a brass protractor, and the player's own cue leaning at its angle
   // with its tip on the ball (on the desk the made pictures, elsewhere drawn).
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;

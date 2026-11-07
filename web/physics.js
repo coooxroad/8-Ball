@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 4;                                   // 2-3: the contact model (PR #14); 4: back to the game physics (11-07)
+const PHYS_V = 5;                                   // 2-3: the contact model (PR #14); 4: back to the game physics (11-07); 5: the stroke, the cushion's roll
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -126,19 +126,21 @@ function createPhysics(cfg) {
     }
   }
 
-  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). One angle does everything a raised cue does:
+  /* a: side, bb: above or below centre. el: how far the cue is raised (radians). ft: the stroke (stroke, below).
+     One angle does everything a raised cue does:
        the ball leaves with only the level part of the blow (V cos el);
-       the downward part drives it into the slate, which throws it back up - hard enough and it jumps;
+       the downward part drives it into the slate, which throws it back up - hard enough, and the cue gone, and it jumps;
        side on a raised cue sets the ball spinning about the line it travels along, and the cloth pushes back sideways, so it
        curves (masse) - once it is on the cloth: in the air nothing turns it. */
-  function strike(w, ang, V, a, bb, el) {
-    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
+  function strike(w, ang, V, a, bb, el, ft) {
+    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang), sk = stroke(ft);
+    w.grip = sk.grip; w.sideK = sk.side;                // (the cue ball's, for this shot: motion)
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
     const ce = DMath.cos(el), se = DMath.sin(el);
     c.vx = V * ce * dx; c.vy = V * ce * dy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = lift(V, el); c.z = 0; c.vz = up > 0 ? up : 0;
+    const up = lift(V, el) * sk.lift; c.z = 0; c.vz = up > 0 ? up : 0;
     if (se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
       const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = DMath.hypot(ux, uy);
@@ -158,9 +160,26 @@ function createPhysics(cfg) {
      of a metre off at 45; half a metre off at 40, or 30 at full power; full power goes 10-14 cm up; a 30% masse hops 3 mm.
      The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
      of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
-  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35;
+  const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35, RAIL_ROLL = 0.4;
   const lift = (V, el) => { const u = Math.max(0, ANG_K * V * DMath.sin(el) - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
+  /* The stroke: how far the cue follows through the ball, ft, 0 to 1 - one number, not kinds of stroke. 0 is a stroke cut
+     off at the ball (끊어치기), 1 a long push through it (팔로스로우); everyone's ordinary stroke is the short push, FT_STD
+     (a cue with the stroke trait sets it, content/20-cues.js). What it changes, and only for the cue ball:
+       the jump: the slate throws a raised-cue ball back up only if the cue is already gone - a push holds it down. So the
+       ball jumps (as lift says) only when the cue is cut off near the ball, fully at 0 and not at all from FT_JUMP on;
+       the ordinary stroke never jumps a ball, and a raised cue square on top of the ball, pushed, does not move it at all.
+       the grip: how hard the sliding cue ball bites the cloth - cut off, the spin takes hold soon and the ball bends short
+       and sharp (after a ball, off a cushion, a masse); pushed through, it slides on and bends long and wide. One friction
+       for the cue ball's whole run, the same every time.
+       the side: pushed through, side lasts further (SIDE_RUN longer).
+     A level, ordinary stroke is exactly the game's stroke as it always was (grip 1, side 1, no jump). */
+  const FT_STD = 0.3, FT_JUMP = 0.25, GRIP_CUT = 1.5, GRIP_PUSH = 0.6, SIDE_PUSH = 1.3;
+  const stroke = ft => {
+    const f = ft == null ? FT_STD : Math.max(0, Math.min(1, ft));
+    const out = f <= FT_STD ? (FT_STD - f) / FT_STD : 0, thru = f > FT_STD ? (f - FT_STD) / (1 - FT_STD) : 0;
+    return { lift: Math.max(0, 1 - f / FT_JUMP), grip: 1 + (GRIP_CUT - 1) * out - (1 - GRIP_PUSH) * thru, side: 1 + (SIDE_PUSH - 1) * thru };
+  };
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
         // every raised cue lifts the ball by what it lifts it, and it bounces on until a bounce is too small to matter
@@ -202,7 +221,7 @@ function createPhysics(cfg) {
       return;
     }
     // ice: much more slippery than the cloth it replaces
-    const MU_S = w.ice ? 0.022 : MU_S0, MU_R = w.ice ? MU_R0 * 0.53 : MU_R0, MU_SP = w.ice ? MU_SP0 * 0.3 : MU_SP0;
+    const cueB = b.id === w.cue, MU_S = (w.ice ? 0.022 : MU_S0) * (cueB && w.grip ? w.grip : 1), MU_R = w.ice ? MU_R0 * 0.53 : MU_R0, MU_SP = w.ice ? MU_SP0 * 0.3 : MU_SP0;
     const ux = b.vx - R * b.wy, uy = b.vy + R * b.wx, us = DMath.hypot(ux, uy);
     if (us > 1e-4) {
       const dec = MU_S * G * h;
@@ -227,7 +246,7 @@ function createPhysics(cfg) {
          the same amount at any pace. A third of it is gone after a metre; after three cushions or so it is all but spent.
          A ball turning on the spot still winds down at the old rate. */
       const run = DMath.hypot(b.vx, b.vy) * h;
-      b.wz *= DMath.exp(-run / SIDE_RUN);
+      b.wz *= DMath.exp(-run / (SIDE_RUN * (cueB && w.sideK ? w.sideK : 1)));
       const dz = (2.5 * MU_SP * G / R) * h * 0.25;
       if (Math.abs(b.wz) <= dz) b.wz = 0; else b.wz -= Math.sign(b.wz) * dz;
     } else {
@@ -289,18 +308,18 @@ function createPhysics(cfg) {
          as it was, as on a real table. Off the rail itself, angle in = angle out at an ordinary pace (a hard ball sinks into
          the rubber and comes off a touch wider, a slow one a touch narrower); side grips the rail and opens or closes that
          angle in proportion to how much there is.
-         The roll: the cushion's nose, above the ball's middle, takes off the roll the ball had INTO the rail, so it leaves
-         the rail with none across (a stun), while the roll it had ALONG the rail stays. So afterwards the cloth bends it:
-         a rolling ball runs on a little longer along the rail (wider), follow more so, draw the other way (narrower), a
-         stunned ball not at all - and a masse keeps curving. That bend is what a player learns to read; the guide shows
-         it from "길게" on. */
+         The roll: the cushion's nose, above the ball's middle, takes most of the roll the ball had INTO the rail - not all:
+         RAIL_ROLL of it stays, still turning towards the rail as the ball leaves it - while the roll it had ALONG the rail
+         stays whole. So afterwards the cloth bends it, in a curve you can see: a rolling ball is pulled round towards the
+         rail's direction (the angle opens), follow more so, draw the other way (it closes), a stunned ball not at all - and
+         a masse keeps curving. That bend is what a player learns to read; the guide shows it from "길게" on. */
       const c = -vn, eT = POCKETED ? 0.8 : 0.84, eN = Math.min(eT + 0.05, Math.max(eT - 0.08, eT + 0.02 * (2.5 - c)));
       const vt = b.vx * tx + b.vy * ty, lim = 0.35 * (1 + eT) * c;
       let ds = (2 / 7) * RB * b.wz; if (ds > lim) ds = lim; else if (ds < -lim) ds = -lim;
       const dvt = -(1 - eT) * vt + ds;
       b.vx += -(1 + eN) * vn * nx + dvt * tx; b.vy += -(1 + eN) * vn * ny + dvt * ty;
       b.wz -= (2.5 / RB) * ds;
-      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny; b.wx = wn * nx; b.wy = wn * ny; }
+      if (b.z === 0) { const wn = b.wx * nx + b.wy * ny, wt = (b.wx * tx + b.wy * ty) * RAIL_ROLL; b.wx = wn * nx + wt * tx; b.wy = wn * ny + wt * ty; }
       if (w.trace && b.id === w.cue) TR_N = [nx, ny];
       if (ON_WALL) noteWall(w, b, vn); else noteRail(w, b, vn);
       return;
@@ -601,8 +620,8 @@ function createPhysics(cfg) {
      or -1]); post: its path afterwards, for `after` seconds; turn: where in post it next changed course; obj: the struck
      ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1); objPath: the struck ball's whole way,
      for as long as the preview runs. */
-  function preview(w, ang, V, a, bb, el, after) {
-    const w2 = clone(w); strike(w2, ang, V, a, bb, el);
+  function preview(w, ang, V, a, bb, el, after, ft) {
+    const w2 = clone(w); strike(w2, ang, V, a, bb, el, ft);
     const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null, objPath: [] };
     let t = 0, tc = 0, o = null, oGo = false, ldx = 0, ldy = 0, cdx = 0, cdy = 0;
     while (t < 9 + (after || 0) && c.on) {
@@ -668,7 +687,7 @@ function createPhysics(cfg) {
   }
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
-  const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  const hop = (V, el, ft) => { const up = lift(V, el || 0) * stroke(ft).lift; return up > 0 ? up * up / (2 * G) : 0; };   // (how high, at most)
+  return { hop, FT_STD, FT_JUMP, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }

@@ -64,7 +64,9 @@
           let dx = p.ax - T.x, dy = p.ay - T.y; const dTP = Math.hypot(dx, dy); dx /= dTP; dy /= dTP;
           if (dx * p.nx + dy * p.ny < (p.corner ? 0.3 : 0.55) || !P.pathClear(w, T.x, T.y, p.ax, p.ay, [0, t])) continue;
           const gx = T.x - dx * 2 * R, gy = T.y - dy * 2 * R; if (!inside(gx, gy)) continue;
-          // a ball in the way of the cue ball, and jumping allowed: over it (with a house cue a jump is a hard stroke at about 40 degrees)
+          // a ball in the way of the cue ball, and the raised cue allowed: try over it (a hard stroke at about 40 degrees). The
+          // computer plays the ordinary push, which never jumps (physics.js stroke), so the playout turns these down - kept for a
+          // computer that one day cuts its stroke off
           if (g.masse) { const jx = gx - c.x, jy = gy - c.y, jl = Math.hypot(jx, jy); if (jl > 0.5 && (jx * dx + jy * dy) / jl > 0.6 && !P.pathClear(w, c.x, c.y, gx, gy, [0, t])) tricks.push({ angle: Math.atan2(jy, jx), len: jl + dTP - 1, flair: 4.5, Vs: [5.4, 6.0, 6.75], step: 0.004, el: 0.7 }); }
           // the cue ball off a cushion first
           for (const rl of rails) {

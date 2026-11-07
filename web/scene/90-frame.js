@@ -99,9 +99,9 @@
           const k = v.gear || { power: 1, spin: 1 };
           // (what the shot does is kept apart from how it is drawn: a camera that turns, zooms or slides draws the same path
           // again without playing the shot out again)
-          const pk = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), after, chosen ? v.power.toFixed(4) : '-', v.spin.x.toFixed(3), v.spin.y.toFixed(3), g.turn, v.rev, (v.el || 0).toFixed(4), k.power + ',' + k.spin].join('|');
+          const pk = [v.aim.toFixed(6), c.x.toFixed(4), c.y.toFixed(4), after, chosen ? v.power.toFixed(4) : '-', v.spin.x.toFixed(3), v.spin.y.toFixed(3), g.turn, v.rev, (v.el || 0).toFixed(4), k.power + ',' + k.spin, v.ft == null ? '-' : v.ft.toFixed(3)].join('|');
           if (pk !== pvKey || w !== pvW || P !== pvP) {
-            const pt0 = performance.now(); pvNow = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, after); sProf.guide += performance.now() - pt0;
+            const pt0 = performance.now(); pvNow = P.preview(w, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, after, v.ft); sProf.guide += performance.now() - pt0;
             pvKey = pk; pvW = w; pvP = P;
           }
           const pv = pvNow;

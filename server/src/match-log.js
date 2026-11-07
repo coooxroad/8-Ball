@@ -9,7 +9,7 @@ const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const integer = (v, lo, hi) => Number.isInteger(v) && num(v, lo, hi);
 // (V: a bound for the physics only - the break cue's full break is 9.585 × 1.30 = 12.46 m/s; what a seat's own cue can
 // strike is check.js vMax)
-export const shotOk = s => object(s) && num(s.aim, -20, 20) && num(s.V, 0, 14) && num(s.a, -1, 1) && num(s.b, -1, 1) && num(s.el ?? 0, 0, Math.PI / 2);
+export const shotOk = s => object(s) && num(s.aim, -20, 20) && num(s.V, 0, 14) && num(s.a, -1, 1) && num(s.b, -1, 1) && num(s.el ?? 0, 0, Math.PI / 2) && (s.ft == null || num(s.ft, 0, 1));   // ft: the stroke (web/physics.js)
 
 // One shot of a match's log (or one a device sends its room, ranked.js RoomCore): null when it has the right shape -
 // how it was struck within bounds, where every ball stood - else what is wrong with it. mode: the game (how many balls).

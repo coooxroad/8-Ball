@@ -95,7 +95,7 @@ const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs
 /* What is on screen and where the current shot is.
    screen: home | play | result | records | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
-const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null, clock: 0 };
+const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, ft: prefs.ft == null ? 0.3 : prefs.ft, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null, clock: 0 };
 let flow = null;
 
 const scene = createScene(canvas, app, PH);
@@ -171,6 +171,12 @@ function useBalls(id) { scene.setBalls(id); SND.voice('ball', (BALLSKINS.find(b 
 function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); SND.voice('cue', CUES[i].sound); if (st.screen === 'play') paintPowerCue(); }
 // what the gear in hand does (content/00-rarity.js): the cue now in hand - its hardest stroke, how much the strike point
 // turns the ball, how long the guide - and the glove's steps for the power and the fine-aim dial
+/* The stroke (physics.js stroke): how far the cue follows through, 0 (끊어치기) to 1 (팔로스로우). Only a cue with the stroke
+   trait (content/20-cues.js TRAITS.stroke) lets it be chosen - st.ft, kept in prefs.ft; with any other the ordinary short push
+   (null: physics FT_STD). strokeFt() is what a shot is struck with. */
+// (a 맛세이·점프 puzzle lets anyone choose it: its jumps want a stroke cut off - puzzles.js STAGES trick)
+const cueStroke = () => cueHas(CUES[cueNow], 'stroke') || (flow === puzzle && !!puzzle.cur && !!puzzles.STAGES[puzzle.cur.stage].trick);
+const strokeFt = () => cueStroke() ? st.ft : null;
 const cueK = () => { const s = (CUES[cueNow] || {}).stat || {}; return { power: 1 + (s.power || 0) / 100, spin: 1 + (s.spin || 0) / 100, guide: 1 + (s.guide || 0) / 100 }; };
 const gloveStep = () => (GLOVES.find(g => g.id === prefs.glove) || {}).stat || BARE_HAND;
 function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], true); }   // (the power gauge always stands upright)
