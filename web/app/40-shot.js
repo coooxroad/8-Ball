@@ -70,7 +70,7 @@ function autoTick(dt) {
     if (a.t < a.src.think) return;
     { const t0 = performance.now(); a.plan = a.src.plan(a); prof.add('ai', performance.now() - t0); }
     if (!a.plan) return;                                              // (the other player's shot has not come yet)
-    a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V));
+    a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V)); a.p0 = st.power;
     if (a.plan.pos) { const pos = a.plan.preShot && a.plan.preShot.keyframes[0].pos || a.plan.pos; const c = game.cueBall(); c.x = c.px = pos[0]; c.y = c.py = pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
     if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
@@ -90,6 +90,14 @@ function autoTick(dt) {
       if (a.plan.action === 'resign' && a.src.resign) { st.phase = 'idle'; a.src.resign(); return; }
       shoot(a.plan.V, a.plan.a, a.plan.b, st.el);
     }
+    return;
+  }
+  /* the other player online (54-ranked.js): their cue has been shown live as they moved it (aimShow), so it is only
+     brought the last of the way and struck - it used to be swung and drawn back again over 1.45 s after the shot came,
+     the whole of that behind the other screen */
+  if (a.plan.quick) {
+    const u = e(t / 0.15); st.aim = a.from + a.delta * u; st.power = a.p0 + (a.pw - a.p0) * u; setPowerUI(st.power);
+    if (t >= 0.18) { st.aim = a.plan.angle; st.auto = null; shoot(a.plan.V, a.plan.a, a.plan.b, st.el); }
     return;
   }
   st.aim = a.from + a.delta * e(t / 0.75);

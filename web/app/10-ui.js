@@ -69,7 +69,7 @@ function layout() {
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(playInsets(H, portrait));
-  if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); }
+  if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); if (!$('#spinPop').hidden) { fitSpinPop(); setSpinUI(); setKindUI(); } }
   setPowerUI(st.power);
 }
 // in play: clear of the HUD above and the controls at the sides (landscape) or below (upright)
@@ -135,6 +135,15 @@ function setPowerUI(p) {
    plain pad is all ball, the ring at 72%. A cue with no strike limit (content/20-cues.js TRAITS reach) has its furthest
    further out (72%, plain 90%) and the ordinary furthest drawn inside it (.sring). */
 const padRing = () => { const desk = $('#app').classList.contains('desk'), far = typeof spinMax === 'function' && spinMax() > 1; return far ? (desk ? 0.72 : 0.9) : (desk ? 0.6 : 0.72); };
+/* The spin pop always on the screen: a browser's own bars make the page shorter than the screen (a phone upright, not
+   full screen, had the pad off the top). Smaller first (no hint, a smaller pad and side view), then, if still too tall,
+   from the top of the screen down over the controls under it. */
+function fitSpinPop() {
+  const pop = $('#spinPop'); pop.classList.remove('tight', 'top', 'wide'); if (pop.hidden) return;
+  const off = () => pop.getBoundingClientRect().top < 6;
+  if (off()) { pop.classList.add('tight'); if (off()) pop.classList.add('top'); }
+  if (pop.getBoundingClientRect().left < 6) pop.classList.add('wide');   // (a narrow phone: over the column of controls too)
+}
 function setSpinUI() {
   // the dot sits where the finger set it: the cue's furthest (spinMax) on the ring (padRing) - the pad measured, since
   // it is 150, 160 or 200 px by the look (and the button 60 or 78)

@@ -2,6 +2,9 @@
 import { DurableObject } from 'cloudflare:workers';
 import { LobbyCore, InviteCore } from './ranked.js';
 import { LinkCore } from './link.js';
+// a new room is made near the player whose ask made the pair (index.js nearOf); a hint Cloudflare does not know is left out
+const NEAR = ['wnam', 'enam', 'sam', 'weur', 'eeur', 'apac', 'oc', 'afr', 'me'];
+const roomNear = body => (body && NEAR.includes(body.near) ? { locationHint: body.near } : undefined);
 
 export class Lobby extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.core = null; }
@@ -26,7 +29,7 @@ export class Lobby extends DurableObject {
         const r = I.join(body, body.code);
         if (r.ok && r.init) {
           // (the room opened before anyone hears of it; if it could not be, the join is undone and may be tried again)
-          const res = await this.env.ROOM.get(this.env.ROOM.idFromName(r.init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(r.init) }).catch(() => null);
+          const res = await this.env.ROOM.get(this.env.ROOM.idFromName(r.init.room), roomNear(body)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(r.init) }).catch(() => null);
           if (!res || !(res.ok || res.status === 409)) { I.unjoin(body.code); return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 }); }
           I.ready(body.code); delete r.init;
         }
@@ -42,7 +45,7 @@ export class Lobby extends DurableObject {
       // (the room is opened before either player hears of it - the other asking meanwhile hears 'waiting'; if it could not
       // be opened, the pair is undone and both wait on as they were. A room already there (409) is this one, opened.)
       const init = this.core.lastInit;
-      const res = await this.env.ROOM.get(this.env.ROOM.idFromName(init.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) }).catch(() => null);
+      const res = await this.env.ROOM.get(this.env.ROOM.idFromName(init.room), roomNear(body)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) }).catch(() => null);
       if (!res || !(res.ok || res.status === 409)) { this.core.unpair(init.room); return Response.json({ ok: false, why: 'could not open a room' }, { status: 500 }); }
       this.core.ready(init.room);
     }

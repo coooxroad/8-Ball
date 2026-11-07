@@ -171,8 +171,9 @@ function drawDial() {
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
-    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now(); setSpinUI(); setKindUI();
+    if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now();
     $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
+    fitSpinPop(); setSpinUI(); setKindUI();                          // (fitted with its hint in: the hint is most of its height)
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);

@@ -248,3 +248,10 @@
   #app:not(.portrait) #elPad,#app.desk:not(.portrait) #elPad{width:200px;height:110px}
   #app.desk:not(.portrait) #spinPop{padding:14px 18px 18px}
 }
+/* (app/10-ui.js fitSpinPop: a pop that would run off the top is made smaller, then hung from the top) */
+#spinPop.tight{gap:8px}
+#spinPop.tight #spinHint{display:none}
+#app #spinPop.tight #spinPad{width:150px;height:150px}
+#app #spinPop.tight #elPad{height:104px}
+#app #spinPop.top.top,#app.desk #spinPop.top.top{top:6px;bottom:auto;z-index:30}
+#app #spinPop.wide.wide,#app.desk #spinPop.wide.wide{right:6px;left:auto;z-index:30}

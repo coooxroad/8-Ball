@@ -143,7 +143,7 @@ const ranked = {
       if (m.timeout) { setTimeout(() => { if (ranked.on === o && flow === match) match.timeout(); }, 0); return null; }
       // the table exactly as it was when they struck (the same physics has brought it there anyway; this keeps it so)
       const sh = m.shot; highlights.restore(game.world, sh.s); game.placing = null;
-      return { angle: sh.aim, V: sh.V, a: sh.a, b: sh.b, el: sh.el || 0, pos: null };
+      return { angle: sh.aim, V: sh.V, a: sh.a, b: sh.b, el: sh.el || 0, pos: null, quick: true };
     } };
   },
   // every shot struck here (by this device's player or its stand-in) goes to the room; every shot counts toward the next n
