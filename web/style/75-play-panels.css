@@ -124,8 +124,8 @@
 #dkBoards.boards .bd-shop .bd-show,#dkBoards.boards .bd-modes{display:none}
 /* 5.0: the four boards as plain blocks of the shop's two colours - ivory (its keys) and charcoal (its slate) - with the
    shop's own type on them and nothing else yet: pictures will come back one by one, drawn to match (33-desk-play.js) */
-#dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr);grid-template-areas:"friend challenge rank" "friend arcade rank"}
-#app.desk.portrait #dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank rank" "friend friend" "challenge arcade"}
+#dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank arcade challenge" "rank friend friend"}
+#app.desk.portrait #dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank rank" "arcade challenge" "friend friend"}
 #dkBoards .bd-challenge{grid-area:challenge}
 #dkBoards .bd-arcade{grid-area:arcade}
 #dkBoards .bd.ivory{--sl:#f1ead8;--sd:#8f8772;--ink:#22262b}
