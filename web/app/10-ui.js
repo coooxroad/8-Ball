@@ -13,7 +13,7 @@ const hex = n => '#' + n.toString(16).padStart(6, '0');
 // every button press: wake the audio (browsers only allow that inside a tap), click, then act
 const onTap = fn => () => { SND.init(); SND.tap(); fn(); };
 const press = (id, fn) => $(id).addEventListener('click', onTap(fn));
-const LEVELS = ['쉬움', '보통', '어려움', '미친'];
+const LEVELS = ['쉬움', '보통', '어려움', '프로'];   // (the last was '미친' until 5.0)
 // a seg whose choice can also be dragged along: the bar follows the finger and settles on the nearest choice
 function slider(id, get, set) {
   const box = $(id), n = box.children.length; let cur = -1, down = false;
@@ -130,10 +130,18 @@ function setPowerUI(p) {
   tr.style.setProperty('--reach', (12 + 88 * q).toFixed(0) + '%');
   tr.style.setProperty('--pw', (q * 100).toFixed(1) + '%');                 // (the desk's lit meter: exactly the power)
 }
+/* Where on the pad the cue in hand's furthest strike is, as a share of its width - the ring drawn there (style/10-play.css
+   #spinPad::before). On the desk the ball is the inner 79% of the pad (its bezel round it) and the ring is at 60%; the
+   plain pad is all ball, the ring at 72%. A cue with no strike limit (content/20-cues.js TRAITS reach) has its furthest
+   further out (72%, plain 90%) and the ordinary furthest drawn inside it (.sring). */
+const padRing = () => { const desk = $('#app').classList.contains('desk'), far = typeof spinMax === 'function' && spinMax() > 1; return far ? (desk ? 0.72 : 0.9) : (desk ? 0.6 : 0.72); };
 function setSpinUI() {
-  const s = st.spin, k = 0.36;
-  $('#spinDot').style.transform = `translate(${s.x * k * 60}px,${-s.y * k * 60}px)`;
-  $('#spinPadDot').style.transform = `translate(${s.x * k * 150}px,${-s.y * k * 150}px)`;
+  // the dot sits where the finger set it: the cue's furthest (spinMax) on the ring (padRing) - the pad measured, since
+  // it is 150, 160 or 200 px by the look (and the button 60 or 78)
+  const s = st.spin, M = typeof spinMax === 'function' ? spinMax() : 1, k = padRing() / M / 2, btn = $('#spinBtn'), pad = $('#spinPad');
+  $('#spinDot').style.transform = `translate(${s.x * k * (btn.clientWidth || 60)}px,${-s.y * k * (btn.clientWidth || 60)}px)`;
+  $('#spinPadDot').style.transform = `translate(${s.x * k * (pad.clientWidth || 150)}px,${-s.y * k * (pad.clientWidth || 150)}px)`;
+  pad.classList.toggle('reach', M > 1);
 }
 
 /* Full screen, on the web (the app is full screen already, and a web page installed to the home screen opens that way

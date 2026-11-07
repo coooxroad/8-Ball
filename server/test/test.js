@@ -189,9 +189,9 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     u = 23000; const got = M.ask({ acct: 'q', dama: 30, name: 'Q' });
     ok(got.room && got.standIn, 'stand-in wait: there at its time, a slow answer between'); }
   // what each has on reaches the other; a stand-in dresses too
-  { const G = new LobbyCore('nine', () => 0); G.ask({ acct: 'g', dama: 30, name: 'G', gear: { cue: 'gold', ball: null, table: 'pool', trail: 'fire' } });
+  { const G = new LobbyCore('nine', () => 0); G.ask({ acct: 'g', dama: 30, name: 'G', gear: { cue: 'rose', ball: null, table: 'pool', trail: 'fire' } });
     const h = G.ask({ acct: 'h', dama: 30, name: 'H', gear: { cue: null, ball: 'disco', table: null, trail: null } });
-    ok(h.opp.gear && h.opp.gear.cue === 'gold' && h.opp.gear.table === 'pool', 'lobby: the other player\'s gear comes with the room');
+    ok(h.opp.gear && h.opp.gear.cue === 'rose' && h.opp.gear.table === 'pool', 'lobby: the other player\'s gear comes with the room');
     ok(G.lastInit.seats.every(q => q.gear), 'lobby: the room is told both players\' gear'); }
   ok(c.opp.gear && ['cue', 'ball', 'table', 'trail'].every(k => k in c.opp.gear), 'lobby: a stand-in has gear on');
   console.log('ranked lobby: checked');
@@ -325,6 +325,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     for (const [cue, V, fits] of [[null, vTop(null, true), true], ['breaker', vTop('breaker', true), true], [null, vTop('breaker', true), false], ['saber', vTop('saber', true) * 1.001, false]]) {
       const R = gearRoom(cue), m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.V = V; R.message(s0, m); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
       ok((r.why === 'resigned') === fits, `B14: a break at ${V.toFixed(3)} m/s with ${cue || 'the usual cue'} ${fits ? 'stands' : 'loses'} (${r.why})`);
+    }
+    // B16 (5.0): no further from the cue ball's centre than any cue strikes (a cue with no strike limit, or the computer)
+    for (const [a, fits] of [[0.78, true], [0.9, false]]) {
+      const R = gearRoom(null), m = JSON.parse(JSON.stringify(G.msgs[0].m)); m.shot.a = a; m.shot.b = 0; R.message(s0, m); R.message(1 - s0, { t: 'resign' }); const r = finish(R);
+      ok((r.why === 'resigned') === fits, `B16: a strike ${a} of the radius out ${fits ? 'stands' : 'loses'} (${r.why})`);
     }
     // B15: nothing from either for IDLE_AFTER while both are there - the seat whose turn it was loses
     { const { R } = roomOf('eight', 7, 0); R.connected(0); R.connected(1); play(R, G.msgs.slice(0, 1)); ok(R.timers() === null && R.idleIn() > IDLE_AFTER - 1000, 'B15: a turn just begun is not quiet');

@@ -51,6 +51,13 @@ const prefs = (() => {
   if (!p.trainCpu) p.vsAI = false;                                      // (the computer is played from 훈련 only)
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
+  /* Cues are kept by id (cueIds, cueId), worn by their place in CUES: a cue taken out (5.0: 황금, 거대 연필, 드래곤, 기사의 검,
+     크리스탈) moves the others up, and the id still finds them. A save from before kept only the places, in the order of
+     CUES then (OLD_CUE_ORDER); a cue no longer there goes back to the first. */
+  const OLD_CUE_ORDER = ['maple', 'carbon', 'rose', 'house', 'sport', 'saber', 'gold', 'pencil', 'dragon', 'sword', 'guitar', 'flute', 'crystal', 'breaker'];
+  const cueAt = id => Math.max(0, CUES.findIndex(c => c.id === id));
+  if (!Array.isArray(p.cueIds)) { p.cueIds = (Array.isArray(p.cues) ? p.cues : [p.cue, p.cue]).map(i => OLD_CUE_ORDER[i] || null); p.cueId = OLD_CUE_ORDER[p.cue] || null; }
+  p.cues = p.cueIds.length === 2 ? p.cueIds.map(cueAt) : null; p.cue = cueAt(p.cueId);
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   if (!['line', 'rail'].includes(p.aim)) p.aim = 'line';                    // looks tried and dropped
@@ -64,7 +71,7 @@ const prefs = (() => {
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
-const savePrefs = () => store.set('prefs', prefs);
+const savePrefs = () => { prefs.cueIds = (prefs.cues || []).map(i => (CUES[i] || CUES[0]).id); prefs.cueId = (CUES[prefs.cue] || CUES[0]).id; store.set('prefs', prefs); };   // (cues by id: above)
 
 /* Everything plays on the one physics (physics.js: what you picture is what happens). usePhysics() puts the tables of the
    chosen size where the game looks for them; it is called before a game is started. */
@@ -128,7 +135,8 @@ applyBackdrop();
 // forearm with its points, wrap, sleeve, bumper). Used by the power control and by the cue chooser.
 // Drawn tip-first along the canvas's long side; `vertical` puts the tip at the top.
 function drawCue(cv, d, vertical) {
-  const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
+  // (a width set exactly - paintPowerCue - is taken as set: clientWidth rounds it to a whole CSS pixel)
+  const dpr = Math.min(3, window.devicePixelRatio || 1), cw = parseFloat(cv.style.width) || cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const g = cv.getContext('2d'), L = vertical ? cv.height : cv.width, T = vertical ? cv.width : cv.height;
   if (vertical) g.setTransform(0, 1, 1, 0, 0, 0);                                    // swap the axes: x runs down the cue
@@ -168,12 +176,25 @@ let cueNow = prefs.cues[0];
 SND.voice('cue', (CUES[cueNow] || CUES[0]).sound);
 // the ball set on the table, and how it sounds (content/30-balls.js: sound)
 function useBalls(id) { scene.setBalls(id); SND.voice('ball', (BALLSKINS.find(b => b.id === id) || BALLSKINS[0]).sound); }
-function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i); SND.voice('cue', CUES[i].sound); if (st.screen === 'play') paintPowerCue(); }
+// how far from the centre the strike point may go with the cue in hand, in pad units (1: half the ball's radius; a
+// trait's cue goes further - content/20-cues.js TRAITS); a point set with another cue is pulled in to it
+const spinMax = () => spinMaxOf(CUES[cueNow]);
+function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; scene.setCue(i);
+  { const M = spinMax(), m = Math.hypot(st.spin.x, st.spin.y); if (m > M) { st.spin = { x: st.spin.x * M / m, y: st.spin.y * M / m }; setSpinUI(); } } SND.voice('cue', CUES[i].sound); if (st.screen === 'play') paintPowerCue(); }
 // what the gear in hand does (content/00-rarity.js): the cue now in hand - its hardest stroke, how much the strike point
 // turns the ball, how long the guide - and the glove's steps for the power and the fine-aim dial
 const cueK = () => { const s = (CUES[cueNow] || {}).stat || {}; return { power: 1 + (s.power || 0) / 100, spin: 1 + (s.spin || 0) / 100, guide: 1 + (s.guide || 0) / 100 }; };
 const gloveStep = () => (GLOVES.find(g => g.id === prefs.glove) || {}).stat || BARE_HAND;
-function paintPowerCue() { drawCue($('#powerCue'), CUES[cueNow] || CUES[0], true); }   // (the power gauge always stands upright)
+/* The cue in the power gauge, upright. As thick as a cue of its length (1.47 m to about 35 mm drawn, a little fuller than
+   the real 29 mm) and never thicker than the look gives it - a gauge made short by a small or zoomed screen used to keep
+   its full width and look fat. A whole, even count of device pixels wide, so that the canvas is never resampled and,
+   centred, lands on pixel edges - a zoom of 125% had it blurred. */
+function paintPowerCue() {
+  const cv = $('#powerCue'); cv.style.width = '';
+  const dpr = Math.min(3, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
+  if (w && h && h > w * 3) { let px = Math.max(6, Math.round(Math.min(w, h / 42) * dpr)); px -= px % 2; cv.style.width = px / dpr + 'px'; }
+  drawCue(cv, CUES[cueNow] || CUES[0], true);
+}
 
 /* Where the time goes, for the FPS display (90-loop.js perfTick): the frame loop and the computer add what they spent. */
 const PROF_KO = { ai: 'AI', guide: '조준', sim: '물리', draw: '그리기', ui: '화면', js: '계산' };

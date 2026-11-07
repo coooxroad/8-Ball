@@ -176,7 +176,8 @@ function drawDial() {
   });
   const set = e => {
     const r = pad.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width * 2 - 1, y = -((e.clientY - r.top) / r.height * 2 - 1);
-    x /= 0.72; y /= 0.72; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    // the ring is the furthest the cue in hand strikes (spin 1, or a trait's more: spinMax) - padRing
+    const M = spinMax(), f = padRing() / M; x /= f; y /= f; const m = Math.hypot(x, y); if (m > M) { x *= M / m; y *= M / m; }
     st.spin = { x, y }; setSpinUI(); if (st.el) setKindUI(); scene.invalidate();
   };
   let id = null;

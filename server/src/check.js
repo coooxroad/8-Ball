@@ -2,6 +2,8 @@
    The physics gives the same result for the same input, so a shot sent with where the balls stood and how it was struck
    ends exactly where the app saw it end - and a made-up result does not. */
 import * as E from './gen/engine.js';
+// the furthest from the cue ball's centre a shot may be struck, as a share of its radius (see Replay.begin)
+const STRIKE_MAX = Math.max(0.79, ...E.CUES.map(c => 0.5 * E.spinMaxOf(c) * (1 + ((c.stat && c.stat.spin) || 0) / 100))) + 1e-9;
 import { logError, shotOk, badShotAt } from './match-log.js';
 
 const seeded = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
@@ -98,6 +100,9 @@ export class Replay {
     }
     // no harder than the seat's cue strikes at full gauge (Codex B14)
     if (this.open && Array.isArray(log.cues) && sh.V > this.vMax(g.turn)) return this.out = { ok: false, why: `shot ${i}: harder than the cue can strike`, at: i };
+    // no further from the ball's centre than any cue strikes (one with no strike limit, at full pad - content/20-cues.js
+    // TRAITS) or the computer does (a stand-in's plan: web/ai/50-human.js, 0.79 of the radius)
+    if (this.open && Math.hypot(sh.a || 0, sh.b || 0) > STRIKE_MAX) return this.out = { ok: false, why: `shot ${i}: struck further out than a cue can`, at: i };
     H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed', at: i };
     this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); this.t = 0; this.running = true;
     return null;
