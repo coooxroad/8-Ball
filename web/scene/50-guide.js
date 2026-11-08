@@ -25,7 +25,7 @@
       vertexShader: ribVS, fragmentShader: ribFS, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
     m.frustumCulled = false; m.renderOrder = 10; m.visible = false; guide.add(m); return m;
   }
-  const rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), RIBS = [rPre, rObj, rPost];
+  const rPre = makeRibbon(), rObj = makeRibbon(), rPost = makeRibbon(), rRail = makeRibbon(), RIBS = [rPre, rObj, rPost, rRail]; rRail.renderOrder = 9;   // (the rail under the lines)
   // The cue ball's trail (내 장비 · 트레일): where it has been in the last moment, as a ribbon fading behind it.
   const rTrail = makeRibbon(); scene.add(rTrail); rTrail.renderOrder = 2; rTrail.material.depthTest = true;
   let trail = null, trailT = 0; const trailPts = [];

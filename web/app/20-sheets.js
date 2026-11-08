@@ -19,7 +19,9 @@ const note = text => el('p', { class: 'note', text });
 // The aim line: its length is the same for everyone now ('보통', GUIDE_STD), longer or shorter only by the cue in hand (its
 // 조준선 stat); only its look is chosen here.
 function sheetGuide() {
-  openSheet('조준선', [segRow('모양', [['line', '선'], ['rail', '레일']], prefs.aim, v => { prefs.aim = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
+  // (one look now - the line, with the cue ball's own way on as a band past the ghost ball; the whole way only for testing)
+  if (!debugOn()) return openSheet('조준선', [note('조준선 길이는 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이, 그 뒤는 예상 방향이 선으로 보이고, 고스트볼 뒤로는 공이 맞지 않았다면 그대로 갔을 길이 레일로 보입니다.')]);
+  openSheet('조준선', [
     segRow('길이', [[false, '보통'], [true, '끝까지 (물리 테스트)']], !!prefs.guideAll, v => { prefs.guideAll = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
     note(prefs.guideAll ? '끝까지: 큐볼과 맞는 공들이 멈출 때까지 실제로 갈 길을 모두 보여 줍니다(큐 능력치와 상관없이). 온라인 대전에서는 늘 보통입니다.'
       : '길이는 모두 같은 \'보통\'이고, 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보이고, 그 뒤는 짧은 직선(예상 방향)입니다.')]);

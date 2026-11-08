@@ -105,7 +105,7 @@
             pvKey = pk; pvW = w; pvP = P;
           }
           const pv = pvNow;
-          const at = pv.at, pre = pv.pre, post = pv.post, rail = v.aimStyle === 'rail', kind = g.mode.table;
+          const at = pv.at, pre = pv.pre, post = pv.post, rail = false, kind = g.mode.table;
           // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
           const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, w.cue) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, pv.hit) : cCol;
           // Until the cue is drawn back there is no power yet, and the guide plays a middling one. Whatever depends on the
@@ -126,6 +126,14 @@
             let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
             let tl = 0, nx = 0, ny = 0;
             if (pv.hit != null) { const b0 = w.balls[pv.hit]; nx = b0.x - at[0]; ny = b0.y - at[1]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; tl = Math.sqrt(Math.max(0, 1 - Math.pow(ux * nx + uy * ny, 2))); }
+            /* Past the ghost ball, under the line, the rail: the cue ball's own width carried straight on as it was going,
+               as if nothing were met - to the cushion. The line says what will happen; the rail is where it is aimed, so the
+               two together show how thick the hit is and what lies beyond (owner, 11-08: the rail look folded into this). */
+            if (pv.hit != null) {
+              const tx = ux > 0 ? (P.HL - R - at[0]) / ux : ux < 0 ? (-P.HL + R - at[0]) / ux : 1e9, ty = uy > 0 ? (P.HW - R - at[1]) / uy : uy < 0 ? (-P.HW + R - at[1]) / uy : 1e9;
+              const run = Math.max(0, Math.min(tx, ty));
+              if (run > R) ribbon(rRail, line(at[0], at[1], 0, ux, uy, run), { m: 2 * R, mode: 3, ch: 0, color: cCol, op: 0.32 * dim, alpha: t => 1 - 0.7 * t }, R);
+            }
             if (gl < SIM) {
               const k = grow(gl);
               if (pv.hit != null) {

@@ -27,7 +27,8 @@ const TICK = 1 / 120;
 const GUIDE_STD = 0.5;
 /* '끝까지' (조준선 sheet, for trying the physics out): every ball's whole way, from the stroke to rest, at any cue - but never
    in an online game (the other player sees the usual line), nor while the computer or the other player is at the table. */
-const guideWhole = () => !!prefs.guideAll && !(flow === match && match.ctx && match.ctx.online);
+// (the whole way to rest is a tool for testing the physics: the debug name's only, never online - owner, 11-08)
+const guideWhole = () => !!prefs.guideAll && typeof debugOn === 'function' && debugOn() && !(flow === match && match.ctx && match.ctx.online);
 
 /* ================= settings and saved data ================= */
 const store = {
@@ -60,7 +61,7 @@ const prefs = (() => {
   p.cues = p.cueIds.length === 2 ? p.cueIds.map(cueAt) : null; p.cue = cueAt(p.cueId);
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
-  if (!['line', 'rail'].includes(p.aim)) p.aim = 'line';                    // looks tried and dropped
+  p.aim = 'line';                                                            // (the rail look is folded into the line: scene/90-frame.js - owner, 11-08)
   if (p.gv !== 2) { p.guides = p.guides.map(k => [0, 0.25, 0.5, 0.75][k] ?? 0.5); p.gv = 2; }   // guide lengths were four steps, now a slider
   if (!Array.isArray(p.cues) || p.cues.length !== 2) p.cues = [p.cue, p.cue];             // a cue each
   p.cues = p.cues.map(i => CUES[i] ? i : 0);

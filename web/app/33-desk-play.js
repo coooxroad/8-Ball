@@ -45,7 +45,7 @@ function deskPlay(d) {
     const soon = what => () => toast(`${what} 준비 중입니다.`, '', 2200), dama = net.me ? net.me.dama : ECONOMY.DAMA_START;
     const tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
     dkPut(fit, [
-      panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'setup'; repaintLive(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
+      panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'setup'; if (net.on) prefs.friendWay = 'invite'; repaintLive(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
         el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'card'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon'),
       panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'card soon'),
