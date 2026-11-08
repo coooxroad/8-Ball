@@ -34,7 +34,7 @@ export class VaultCore {
     this.sql.exec(`INSERT INTO ledger (at, what, coin, dia) VALUES (?, ?, ?, ?)`, Date.now(), what, coin || 0, dia || 0);
   }
 
-  init(secretHash) { if (this.get('secret')) return false; this.set('secret', secretHash); this.set('since', Date.now()); this.set('dama', E.ECONOMY.DAMA_START); return true; }
+  init(secretHash) { if (this.get('secret')) return false; this.set('secret', secretHash); this.set('since', Date.now()); this.set('dama', E.ECONOMY.DAMA_START); this.set('rd', E.ECONOMY.RD_START); this.set('r5', 1); return true; }
   // (any of the account's keys opens it: the first device's, and each device linked since - link.js, devices)
   authed(secretHash) { const s = this.get('secret'); return !!s && (s === secretHash || this.get('devices', []).some(d => d.h === secretHash)); }
   // another device linked to this account: its key's hash (from the front door, never from a device). At most MAX_DEVICES
@@ -51,8 +51,13 @@ export class VaultCore {
     // (one read for everything owned; the 일반 things are everyone's)
     const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
     for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
-    if (this.get('dama', 0) >= 1000) this.set('dama', E.ECONOMY.DAMA_START);                    // (the first accounts started at 1000)
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), owned, devices: 1 + this.get('devices', []).length,
+    /* 5.0: the rating went from DAMA's small scale (started at 30, an even game moving 3) to chess.com's (500, Glicko -
+       economy.js); an account from before is moved over once, its distance from the start kept at four times the size,
+       and a little surer than a new one (it has played). (An account from the very first days, at 1000, starts again.) */
+    if (!this.get('r5')) { const old = this.get('dama', null);
+      if (old != null) { this.set('dama', old >= 1000 ? E.ECONOMY.DAMA_START : Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(E.ECONOMY.DAMA_START + (old - 30) * 4))); this.set('rd', old >= 1000 ? E.ECONOMY.RD_START : 250); }
+      this.set('r5', 1); }
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), rd: Math.round(this.rd()), owned, devices: 1 + this.get('devices', []).length,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
@@ -97,13 +102,16 @@ export class VaultCore {
     });
   }
 
-  // a game's result from its room (room.js), once per room: coins and the change in DAMA - a ranked game, or one with an
-  // invited friend (kind 'invite': no DAMA).
-  ranked({ room, mode, won, draw, coins, dama, kind }) {
+  // how sure this account's rating is now: as last set, less sure for every day since its last ranked game (economy.js)
+  rd() { return E.rdNow(this.get('rd', E.ECONOMY.RD_START), (Date.now() - this.get('rdAt', Date.now())) / 86400000); }
+  // a game's result from its room (room.js), once per room: coins, the change in DAMA and how sure it is now - a ranked
+  // game, or one with an invited friend (kind 'invite': no DAMA).
+  ranked({ room, mode, won, draw, coins, dama, kind, rd }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
-      const inv = kind === 'invite', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_K, Math.min(E.ECONOMY.DAMA_K, dama | 0));
+      const inv = kind === 'invite', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_STEP_MAX, Math.min(E.ECONOMY.DAMA_STEP_MAX, dama | 0));
       this.set('dama', Math.max(E.ECONOMY.DAMA_FLOOR, this.get('dama', E.ECONOMY.DAMA_START) + d));
+      if (!inv && Number.isFinite(rd)) { this.set('rd', Math.max(E.ECONOMY.RD_MIN, Math.min(E.ECONOMY.RD_MAX, rd))); this.set('rdAt', Date.now()); }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
       return { ok: true };

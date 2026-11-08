@@ -22,6 +22,8 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
 
 // accounts
 { const v = vault(); ok(v.init('h1'), 'init'); ok(!v.init('h2'), 'init twice'); ok(v.authed('h1') && !v.authed('h2'), 'auth'); ok(v.me().dama === E.ECONOMY.DAMA_START, 'dama start'); }
+{ const v = vault(); v.init('h'); v.set('r5', 0); v.set('dama', 19); const m = v.me(); ok(m.dama === 456 && m.rd === 250 && v.me().dama === 456, `rating: an account from before 5.0 is moved to the new scale once (${m.dama})`);
+  const w = vault(); w.init('h'); w.set('r5', 0); w.set('dama', 1000); ok(w.me().dama === E.ECONOMY.DAMA_START, 'rating: one from the first days starts again'); }
 
 // the shop: price by rarity, only with the money, once per request, nothing changed when short
 {
@@ -99,7 +101,12 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   console.log('unchecked matches: checked');
 }
 // DAMA and the tour
-{ const [a, b] = E.damaAfter(30, 30, true); ok(a === 33 && b === 27, `dama: an even game moves each by 3 (${a}, ${b})`); const [c] = E.damaAfter(30, 80, true); ok(c > 33, 'beating someone higher earns more'); const [, d] = E.damaAfter(10, 30, true); ok(d >= E.ECONOMY.DAMA_FLOOR, 'nobody below the floor'); ok(E.tourPayout(1000) === 1800, 'tour: the pot less 10%'); }
+{ const [a, b, ra] = E.damaAfter(500, 500, true); ok(a - 500 === 500 - b && a - 500 > 100 && ra < 350, `rating: two new players move a lot, evenly, and are surer after (${a}, ${b}, ${Math.round(ra)})`);
+  const [c, d] = E.damaAfter(1500, 1500, true, 50, 50); ok(c - 1500 >= 5 && c - 1500 <= 9 && c - 1500 === 1500 - d, `rating: two settled players move a few points (${c - 1500})`);
+  const [e] = E.damaAfter(1500, 1800, true, 50, 50); ok(e - 1500 > c - 1500, 'rating: beating someone higher earns more');
+  const [f] = E.damaAfter(1500, 1500, true, 50, 350); ok(f - 1500 < c - 1500, 'rating: a win over someone unknown counts for less');
+  const [, g] = E.damaAfter(500, 110, false); ok(g >= E.ECONOMY.DAMA_FLOOR, 'rating: nobody below the floor');
+  ok(E.rdNow(50, 365) > 200 && E.rdNow(50, 0) === 50 && E.rdNow(340, 9999) === E.ECONOMY.RD_MAX, 'rating: less sure after a long time away'); ok(E.tourPayout(1000) === 1800, 'tour: the pot less 10%'); }
 // the free plan's way: a new account's first matches are queued, checked a slice at a time and paid at the end; a doctored
 // one is turned down, and after that every match of the account is checked
 {
@@ -170,11 +177,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }).waiting, 'lobby: one alone waits');
   const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in DAMA are paired at once');
   const a = L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }); ok(a.room === b.room && a.seat === 1 && a.token !== b.token && a.seed === b.seed, 'lobby: the other hears the same room, its own seat');
-  ok(L.ask({ acct: 'c', dama: 20, name: 'C' }).waiting && L.ask({ acct: 'd', dama: 70, name: 'D' }).waiting, 'lobby: far apart, they wait');
-  t = 5000; L.ask({ acct: 'c', dama: 20 }); t = 10000; L.ask({ acct: 'c', dama: 20 }); L.ask({ acct: 'd', dama: 70 }); t = 14000; L.ask({ acct: 'c', dama: 20 });
-  t = 16000; ok(L.ask({ acct: 'd', dama: 70 }).waiting, 'lobby: 50 apart is still too far after 16 s');
-  L.ask({ acct: 'c', dama: 20 }); t = 20000; L.ask({ acct: 'd', dama: 70 });
-  t = 20500; const c = L.ask({ acct: 'c', dama: 20 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
+  ok(L.ask({ acct: 'c', dama: 460, name: 'C' }).waiting && L.ask({ acct: 'd', dama: 660, name: 'D' }).waiting, 'lobby: far apart, they wait');
+  t = 5000; L.ask({ acct: 'c', dama: 460 }); t = 10000; L.ask({ acct: 'c', dama: 460 }); L.ask({ acct: 'd', dama: 660 }); t = 14000; L.ask({ acct: 'c', dama: 460 });
+  t = 16000; ok(L.ask({ acct: 'd', dama: 660 }).waiting, 'lobby: 200 apart is still too far after 16 s');
+  L.ask({ acct: 'c', dama: 460 }); t = 20000; L.ask({ acct: 'd', dama: 660 });
+  t = 20500; const c = L.ask({ acct: 'c', dama: 460 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
   t = 40000; ok(L.ask({ acct: 'e', dama: 30 }).waiting && !L.wait.has('d'), 'lobby: one not heard from has left');
   // each player's own wait before a stand-in (standInDelay): 30% 10-20 s, 50% 20-30 s, 20% 30-60 s
   { const n = 20000, ds = []; let s = 7; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -348,7 +355,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
 {
   const v = vault(); v.init('h');
   v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
-  ok(v.me().dama === 33 && v.me().drops === undefined, 'ranked: a win moves DAMA, an invite game none; no drops any more');
+  ok(v.me().dama === E.ECONOMY.DAMA_START + 3 && v.me().drops === undefined, 'ranked: a win moves DAMA, an invite game none; no drops any more');
   ok(!v.buy({ req: req(), kind: 'cue', id: 'breaker' }).ok, 'the break cue is not for sale');
   console.log('ranked wins: checked');
 }

@@ -184,4 +184,5 @@
 @keyframes barFill{from{width:0}}
 @keyframes barGlint{from{background-position:200% 0,0 0}to{background-position:-200% 0,0 0}}
 #dkBoards .bd.card .bd-bar small{display:block;margin-top:calc(var(--u)*1.2);font:700 calc(var(--u)*3)/1.3 var(--ui-font);color:rgba(255,255,255,.75)}
-
+/* (the cards' ambient occlusion, as the desk's pieces have: style/60-desk.css - here, after the side's own shadow) */
+#dkBoards .bd .ly.foot{box-shadow:0 0 4px 2px rgba(0,0,0,.7),0 0 22px 7px rgba(0,0,0,.42),-2px 3px 3px rgba(0,0,0,.55),-6px 9px 12px rgba(0,0,0,.32),-14px 20px 26px rgba(0,0,0,.28)}

@@ -32,7 +32,7 @@ export class Vault extends DurableObject {
          its owner's own device.) */
       let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
       const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;
-      return json({ ok: true, dama: this.core.me().dama, gear });
+      const me = this.core.me(); return json({ ok: true, dama: me.dama, rd: me.rd, gear });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));

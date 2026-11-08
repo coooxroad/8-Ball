@@ -19,7 +19,7 @@ export const STAND_IN_AFTER = 60000;                  // ms of waiting after whi
 /* a waiting player not heard from for this long has left (and starts again from nothing). The app asks every two seconds;
    one slow answer, or a moment away from the app, must not set a long wait back to the start (it was 8 s). */
 const GONE = 15000;
-const range = waited => Math.min(60, 4 + 2 * waited / 1000);    // DAMA apart that is close enough, after waiting so long (ms)
+const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
 // a stand-in: a person-like player near this DAMA. web/ai/51-people.js (personaFor) when it is there, else a plain one
@@ -27,11 +27,12 @@ const NAMES = ['큐잡이', '쓰리쿠션러', '빈쿠션왕', '당구장죽돌�
   '끌어치기', '초크한통', 'bank88', '레일러너', '포켓헌터', 'side_spin', '중대고수', '저녁당구', 'nineball_j', '큐대한자루'];
 export function standIn(dama, rnd) {
   const ai = E.createAI ? E.createAI(null) : null;
-  // (a few DAMA either side, as a person waiting at the same time would be)
-  if (ai && ai.personaFor) return ai.personaFor(Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 8)), rnd);
-  const d = Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 8));
-  return { name: NAMES[Math.floor(rnd() * NAMES.length)] + (rnd() < 0.4 ? Math.floor(rnd() * 90 + 10) : ''), icon: Math.floor(rnd() * 8), dama: d,
-    level: d < 22 ? 0 : d < 40 ? 1 : 2 };      // (never the top level: it does not miss, and nobody is like that)
+  // (a few points either side, as a person waiting at the same time would be; its skill from the rating on DAMA's old small
+  // scale, which the people in web/ai are made for: 30 at the start, four times smaller steps; a settled rating's sureness)
+  const d = Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 32)), old = Math.max(10, Math.round(30 + (d - E.ECONOMY.DAMA_START) / 4));
+  if (ai && ai.personaFor) return Object.assign(ai.personaFor(old, rnd), { dama: d, rd: 150 });
+  return { name: NAMES[Math.floor(rnd() * NAMES.length)] + (rnd() < 0.4 ? Math.floor(rnd() * 90 + 10) : ''), icon: Math.floor(rnd() * 8), dama: d, rd: 150,
+    level: old < 22 ? 0 : old < 40 ? 1 : 2 };      // (never the top level: it does not miss, and nobody is like that)
 }
 
 /* What a player has on (their cue, ball set, table, trail - ids, each checked by the vault to be theirs; null: the usual),
@@ -63,7 +64,7 @@ export class LobbyCore {
     if (had) this.made.delete(p.acct);
     for (const [k, w] of this.wait) if (t - w.seen > GONE) this.wait.delete(k);
     let me = this.wait.get(p.acct);
-    if (!me || (p.seek != null && me.seek != null && me.seek !== p.seek)) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
+    if (!me || (p.seek != null && me.seek != null && me.seek !== p.seek)) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, rd: p.rd, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
     me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null; me.seek = p.seek;
     // the closest of those close enough (by either one's wait)
     let best = null, bd = Infinity;
@@ -75,7 +76,7 @@ export class LobbyCore {
     if (best) return this.pair(me, best, null, t);
     if (t - me.since >= Math.min(STAND_IN_AFTER, me.standInAt)) {
       const seedR = Math.random, persona = standIn(me.dama, seedR);
-      return this.pair(me, { acct: null, dama: persona.dama, name: persona.name, icon: persona.icon, gear: standInGear(seedR) }, persona, t);
+      return this.pair(me, { acct: null, dama: persona.dama, rd: persona.rd, name: persona.name, icon: persona.icon, gear: standInGear(seedR) }, persona, t);
     }
     return { waiting: true, waited: t - me.since };
   }
@@ -85,7 +86,7 @@ export class LobbyCore {
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [a, b];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     const init = { room, mode: this.mode, seed, first, standIn: persona,
-      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
+      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
     const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
     const ready = !this.deferReady;
     this.made.set(a.acct, { at: t, you: you(0), seek: a.seek, room, ready });
@@ -141,7 +142,7 @@ export class InviteCore {
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     const init = { room, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
-      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null })) };
+      seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
     const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, table: ROOM_TABLE, kind: 'invite', rules: v.rules, opp: pub(seats[1 - i]) });
     v.made = { guest: p.acct, you: [you(0), you(1)], ready: !this.deferReady }; v.seen = this.now();
     return Object.assign({ ok: true, init }, you(1));
@@ -313,7 +314,7 @@ export class RoomCore {
     const r = this.get('room'), seats = this.get('seats'), res = { winner, points, why, coins: [0, 0], dama: [seats[0].dama, seats[1].dama] };
     const inv = r.kind === 'invite';
     if (winner != null) {
-      if (!inv) res.dama = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0);
+      if (!inv) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
       for (let s = 0; s < 2; s++) res.coins[s] = E.matchCoins(inv ? 'invite' : 'ranked', r.mode, s ? [points[1], points[0]] : points, winner === s);
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
@@ -327,7 +328,7 @@ export class RoomCore {
     const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', [false, false]);
     if (!res) return [];
     return [0, 1].filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
-      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === s, draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama } }));
+      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === s, draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined } }));
   }
   paid(seat) { const p = this.get('paid', [false, false]); p[seat] = true; this.set('paid', p); }
 }
