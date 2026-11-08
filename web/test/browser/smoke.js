@@ -11,8 +11,6 @@ const { open } = require('./harness.js');
     const tapOn = async sel => { const b = await page.locator(sel).first().boundingBox(); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(400); };
     const tapText = async (sel, t) => { const b = await page.locator(sel, { hasText: t }).first().boundingBox(); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(400); };
     const out = [];
-    await tapOn('#dkRec'); out.push(await page.evaluate(() => __dp8.st.screen + ':' + document.querySelectorAll('.rcard').length));
-    await tapOn('.dk-tab[data-t="play"]'); out.push('back:' + await page.evaluate(() => __dp8.st.screen));
     await tapOn('#dkSet'); out.push('sheet:' + await page.evaluate(() => !document.querySelector('#sheet').hidden)); await tapOn('#sheetX');
     for (const [tab, rb] of [['train', '자유 연습'], ['play', '8볼']]) {
       await tapOn(`.dk-tab[data-t="${tab}"]`); if (tab === 'play') { await tapOn('[data-b="friend"]'); await page.waitForTimeout(600); await tapText('#dkRail .dk-rb', '8볼'); await page.waitForTimeout(600); } else await tapText('#dkRail .dk-rb', rb); await tapOn('#dkSlate .dk-main'); await page.waitForTimeout(700);

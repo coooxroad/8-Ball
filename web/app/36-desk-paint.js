@@ -71,7 +71,6 @@ function walletPaint() { const w = prefs.wallet || {}, n = v => (v || 0).toLocal
 function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
-  $('#dkRec').setAttribute('aria-pressed', String(st.screen === 'records'));
   walletPaint();
   $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = debugOn() ? '디버그 모드' : recText(prefs.names[0]);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
@@ -92,6 +91,5 @@ function deskPaint() {
 }
 $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-tab'); if (!b) return; SND.init(); SND.tap(); deskGo(b.dataset.t); });
 press('#dkSet', sheetSettings);
-press('#dkRec', () => { if (st.screen === 'records') goHome(true); else { showRecords(); deskPaint(); } });
 press('#dkMe', () => sheetName(0));
 press('#dkFull', fullToggle); paintFull();

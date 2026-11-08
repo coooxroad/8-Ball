@@ -273,3 +273,13 @@
 #app.desk.compact .dk-tab,#app.desk.compact .dk-top{height:34px}
 #app.desk.compact .dk-cur{height:30px}
 #app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:32px}
+/* (owner, 11-08) the places with their icons, so they read at a glance; settings a bare icon, no key round it */
+#app.desk .dk-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+#app.desk .dk-tab .ti{flex:none;width:20px;height:20px;opacity:.9}
+#app.desk .dk-tab[aria-selected="true"] .ti{opacity:1}
+#app.desk .dk-top.dk-ico{border-image:none;background:none;box-shadow:none;padding:0 8px;color:#d9d3c6;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+#app.desk .dk-top.dk-ico:active{transform:scale(.92);border-image:none}
+#app.desk.compact .dk-tab .ti{width:17px;height:17px}
+#app.desk.compact.portrait .dk-tab{gap:5px}
+
+#app.desk .dk-top.dk-ico::after,#app.desk .dk-top.dk-ico::before{display:none}
