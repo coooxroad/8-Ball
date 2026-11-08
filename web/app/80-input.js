@@ -163,10 +163,10 @@ function drawDial() {
     g.fillStyle = 'rgba(0,0,0,.6)'; if (along) g.fillRect(fl, at - t / 2, T - 2 * fl, t); else g.fillRect(at - t / 2, fl, t, T - 2 * fl);
     g.fillStyle = `rgba(255,255,255,${hi.toFixed(3)})`; if (along) g.fillRect(fl, at + t / 2, T - 2 * fl, Math.max(0.5, c)); else g.fillRect(at + t / 2, fl, Math.max(0.5, c), T - 2 * fl);
   }
-  // the brass flanges at the drum's two ends, shaded round the same way
-  const brass = along ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
-  for (let i = 0; i <= 16; i++) { const th = (i / 16 - 0.5) * Math.PI, k = Math.pow(Math.max(0, Math.cos(th - lit)), 1.3); brass.addColorStop(i / 16, `rgb(${Math.round(70 + 170 * k)},${Math.round(50 + 140 * k)},${Math.round(18 + 70 * k)})`); }
-  g.fillStyle = brass; if (along) { g.fillRect(0, 0, fl, h); g.fillRect(w - fl, 0, fl, h); } else { g.fillRect(0, 0, w, fl); g.fillRect(0, h - fl, w, fl); }
+  // the silver flanges at the drum's two ends, shaded round the same way (brass until 11-09: the controls are slate and silver)
+  const metal = along ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
+  for (let i = 0; i <= 16; i++) { const th = (i / 16 - 0.5) * Math.PI, k = Math.pow(Math.max(0, Math.cos(th - lit)), 1.3); metal.addColorStop(i / 16, `rgb(${Math.round(62 + 170 * k)},${Math.round(66 + 172 * k)},${Math.round(72 + 174 * k)})`); }
+  g.fillStyle = metal; if (along) { g.fillRect(0, 0, fl, h); g.fillRect(w - fl, 0, fl, h); } else { g.fillRect(0, 0, w, fl); g.fillRect(0, h - fl, w, fl); }
 }
 (function spinCtl() {
   const pop = $('#spinPop'), pad = $('#spinPad');

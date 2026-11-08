@@ -111,7 +111,7 @@ function paintPill(i, s) {
   box.classList.toggle('on', !!s.on);
   box.querySelector('.nm').textContent = s.name;
   box.querySelector('.sub').textContent = s.think ? '생각 중' : s.sub; box.classList.toggle('think', !!s.think);
-  box.querySelector('.pts').textContent = s.pts == null ? '' : s.pts;
+  const pts = box.querySelector('.pts'); pts.textContent = s.pts == null ? '' : s.pts; pts.dataset.goal = s.goal == null ? '' : s.goal;
   tray.textContent = '';
   for (const t of s.tray || []) { const c = tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t)); if (s.pop && s.pop.includes(t)) c.classList.add('pop'); }
 }

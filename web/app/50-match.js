@@ -59,9 +59,20 @@ const match = {
     if (game.turn !== shot.turn && match.innings) match.innings[game.turn]++;   // (a new visit to the table)
     toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
   },
+  // a player's rating for the score bar: online, the room's for both seats; otherwise the device owner's own on the
+  // first plate (the computer, and a friend at the same device, have none)
+  rating(i) {
+    const o = match.ctx && match.ctx.online;
+    if (o) { const r = i === o.seat ? o.dama : o.opp && o.opp.dama; return typeof r === 'number' ? r : null; }
+    return i === 0 && !game.players[0].ai ? (net.me && typeof net.me.dama === 'number' ? net.me.dama : ECONOMY.DAMA_START) : null;
+  },
   hud() {
     const m = game.mode, pop = st.phase === 'aim' || st.phase === 'auto' ? game.world.ev.pocketed.map(q => q.id) : null;
-    for (let i = 0; i < 2; i++) paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, pop, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) }, m.status(game, i)));
+    for (let i = 0; i < 2; i++) {
+      // under the name the player's rating, then what the game says (the group in 8볼, the next ball in 9볼)
+      const s = m.status(game, i), r = match.rating(i); s.sub = [r == null ? '' : `레이팅 ${r}`, s.sub].filter(Boolean).join(' · ');
+      paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, pop, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) }, s));
+    }
     paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {

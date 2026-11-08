@@ -131,7 +131,8 @@ function createGame(PH, makeAI) {
         g.placing = null; g.isBreak = false;
       },
       intro: g => `${g.players[g.turn].name} 선수, 흰 공으로 먼저 칩니다. 빨간 공 두 개를 모두 맞히세요.`,
-      status: (g, pi) => ({ sub: g.tens ? `수지 ${g.targets[pi] * 10}` : `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
+      // (goal: the points to reach, written faint behind the score; the line under the name is the player's rating - app)
+      status: (g, pi) => ({ sub: '', goal: g.targets[pi] * (g.tens ? 10 : 1), tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
       badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
       // last: this player is one point from home and the house rule says that point has to come off a cushion
@@ -160,7 +161,7 @@ function createGame(PH, makeAI) {
       g.placing = null; g.isBreak = false;
     },
     intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
-    status: (g, pi) => ({ sub: `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score }),
+    status: (g, pi) => ({ sub: '', goal: g.targets[pi], tray: [], pts: g.players[pi].score }),
     badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
     legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
     ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },

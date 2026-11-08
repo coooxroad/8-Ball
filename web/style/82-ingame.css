@@ -1,0 +1,65 @@
+/* ---------- in play: the lobby's charcoal and blue in place of walnut and brass (owner, 11-08) ----------
+   Every control and the score bar is one material: a charcoal slate with a little thickness under it (a darker lip, like
+   the ivory keys on the desk), edged with one thin line of silver. Blue is what is live - whose turn it is, a key held
+   down - as the selected tab is in the lobby. The power meter keeps its colours, green to red as the cue is drawn.
+   The score bar keeps its shape from the broadcast one, made a plain rectangle: under each name the player's rating,
+   and in each score box the points to reach written large and faint behind the score. No tour tab. */
+#app.desk{--sl1:#3b4149;--sl2:#262a30;--slLip:#121418;--silver:rgba(214,221,230,.78);--silverHi:rgba(255,255,255,.2);--live1:#4a86e0;--live2:#1f57b8;
+  --slate:linear-gradient(var(--sl1),var(--sl2));--slEdge:inset 0 0 0 1px var(--silver),inset 0 2px 0 var(--silverHi);
+  --slDrop:0 3px 0 var(--slLip),-4px 9px 12px rgba(0,0,0,.45)}
+
+/* the score bar */
+#app.bcast{--navy:#1b1f24;--blue1:var(--live1);--blue2:var(--live2);--gold1:#e9edf2;--gold2:#aeb7c2}
+#app.bcast #hud .pill{background:var(--slate);color:#9aa6b4;box-shadow:var(--slDrop)}
+#app.bcast #hud .pill::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:var(--slEdge)}
+#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#f3eee3}
+#app.bcast #hud .pill.on{color:#b9c4d2}
+#app.bcast:not(.portrait) #hud .pill .sub{color:#9aa6b4;font-weight:700;letter-spacing:.01em}
+#app.bcast:not(.portrait) #hud #p0,#app.bcast:not(.portrait) #hud #p1{clip-path:none}
+#app.bcast #hud .pill .av{background:#14171b;color:#e9e4da;box-shadow:inset 0 0 0 1px var(--silver)}
+#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{position:relative;overflow:hidden;color:#f3eee3;background:linear-gradient(#30353c,#1d2025);box-shadow:inset 1px 0 0 rgba(255,255,255,.08),inset -1px 0 0 rgba(0,0,0,.35)}
+#app.bcast #hud .pill.on .pts{background:linear-gradient(var(--live1),var(--live2));color:#fff}
+#app.bcast #hud .pill.on::after{width:4px;background:linear-gradient(var(--live1),var(--live2))}
+/* the points to reach, large and faint behind the score */
+#app.bcast #hud .pts[data-goal]::before{content:attr(data-goal);position:absolute;right:3px;bottom:1px;z-index:-1;
+  font:800 calc(var(--bh)*.5)/1 'Outfit',sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.26)}
+#app.bcast:not(.portrait) #hud .pts,#app.bcast:not(.portrait) #hud .pill.on .pts{min-width:calc(var(--bh)*1.5)}
+#app.bcast #hud .pts[data-goal]{isolation:isolate}
+#app.bcast #hud .pts[data-goal=""]::before{content:none}
+#app.bcast.portrait #hud .pts[data-goal]::before{font-size:15px;right:2px}
+#app.bcast:not(.portrait) #badge{background:linear-gradient(#22262c,#16191d);border-top:0;color:#9aa6b4;box-shadow:var(--slEdge),var(--slDrop)}
+#app.bcast #hud.out #badge{background:linear-gradient(#d23a36,#86171a);box-shadow:inset 0 0 0 1px var(--silver),var(--slDrop)}
+#app.bcast:not(.portrait) #hud::before,#app.bcast.compact:not(.portrait) #hud::before{content:none;display:none}
+/* the shot clock's bar under the bar, clear of its lip */
+#app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 9px)}
+#app.bcast #clock i{height:4px;background:rgba(18,20,24,.9)}
+/* 4구 plates keep their ball: white or yellow */
+#app.bcast.carom #hud .pill .av{box-shadow:0 1px 2px rgba(0,0,0,.45)}
+/* messages: a slate tag under the bar */
+#app.bcast #toast{background:linear-gradient(#353b42,#24282e);color:#f3eee3;border-top:3px solid var(--live1);box-shadow:inset 0 0 0 1px var(--silver),0 3px 0 var(--slLip),0 10px 22px rgba(0,0,0,.4)}
+#app.bcast #toast.foul{border-top-color:#e0453c;color:#ffd9d6}
+#app.bcast #toast.good{border-top-color:#f2b93b}
+
+/* the round keys: pause, the view keys and 3D */
+#app.desk #menuBtn,#app.desk #viewBtn,#app.desk #views .btn{background:var(--slate);color:#e9e4da;box-shadow:var(--slEdge),var(--slDrop);transition:transform 80ms ease-out,box-shadow 80ms ease-out}
+#app.desk #menuBtn:active,#app.desk #viewBtn:active,#app.desk #views .btn:active{background:var(--slate);transform:translateY(2px);box-shadow:var(--slEdge),0 1px 0 var(--slLip),-3px 5px 8px rgba(0,0,0,.4)}
+#app.desk #viewBtn[aria-pressed="true"],#app.desk #views .btn[aria-pressed="true"]{background:linear-gradient(var(--live1),var(--live2));color:#fff}
+
+/* the power gauge: a slate housing, the meter behind a silver-edged window, the cue lying in it */
+#app.desk #power{background:var(--slate);border-radius:10px;box-shadow:var(--slEdge),var(--slDrop)}
+#app.desk #power::after,#app.desk.portrait #power::after{inset:34px auto 34px 10px;width:52px;border:0;border-image:none;border-radius:4px;z-index:2;pointer-events:none;
+  background:linear-gradient(100deg,rgba(255,255,255,.1),rgba(255,255,255,0) 40%);box-shadow:inset 0 0 0 1px var(--silver),inset 0 3px 6px rgba(0,0,0,.55)}
+#app.desk #power::before{border-radius:4px}
+#app.desk.portrait #power::after{inset:30px auto 30px 7px;width:42px}
+#app.desk #powerNum,#app.desk.portrait #powerNum{color:#e9e4da;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+
+/* the fine-aim drum: a slate frame with a silver-edged window, a silver pointer */
+#app.desk #fine,#app.desk.portrait #fine{background:var(--slate);border-radius:10px;box-shadow:var(--slEdge),var(--slDrop)}
+#app.desk #fine::before{inset:42px 15px;border:0;border-image:none;border-radius:3px;box-shadow:inset 0 0 0 1px var(--silver),inset 0 10px 10px -4px rgba(0,0,0,.65),inset 0 -10px 10px -4px rgba(0,0,0,.65)}
+#app.desk.compact:not(.portrait) #fine::before{inset:30px 15px}
+#app.desk.portrait #fine::before{inset:28px 12px;border-image:none}
+#app.desk #fine::after{background:#e9edf2;filter:drop-shadow(0 0 3px rgba(150,190,255,.6))}
+
+/* spin: the cue ball in a slate ring, a silver line round the ball */
+#app.desk #spinBtn,#app.desk #spinPad{background:radial-gradient(circle closest-side,transparent calc(79% - 1px),var(--silver) 79%,transparent calc(79% + 1.6px)),
+  url(ui/spin-ball.webp) center/79% no-repeat,var(--slate);box-shadow:var(--slEdge),var(--slDrop)}
