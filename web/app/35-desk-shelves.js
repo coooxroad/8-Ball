@@ -195,8 +195,10 @@ const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('spa
 const traitMarks = (q, small) => {
   const ts = (q.traits || []).filter(t => TRAITS[t]);
   if (!ts.length) return null;
-  if (small) return el('span', { class: 'trts' }, ts.map(t => el('i', { class: 'trt t-' + t, title: TRAITS[t].name })));
-  return el('div', { class: 'dk-traits' }, ts.map(t => el('div', { class: 'dk-trait' }, [el('i', { class: 'trt t-' + t }), el('b', { text: TRAITS[t].name }), el('small', { text: TRAITS[t].say })])));
+  // (its rim's light runs only while it is on screen, like the SFX and VFX marks: fxSeen)
+  const mark = (t, title) => { const m = el('i', { class: 'trt t-' + t + (fxSeen ? '' : ' live'), title }); if (fxSeen) fxSeen.observe(m); return m; };
+  if (small) return el('span', { class: 'trts' }, ts.map(t => mark(t, TRAITS[t].name)));
+  return el('div', { class: 'dk-traits' }, ts.map(t => el('div', { class: 'dk-trait' }, [mark(t), el('b', { text: TRAITS[t].name }), el('small', { text: TRAITS[t].say })])));
 };
 // what a thing costs (economy.js: by its rarity)
 const priceText = q => { if (q.reward) return '레슨 보상'; const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };

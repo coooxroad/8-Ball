@@ -55,10 +55,14 @@ function aheadStep() {
 function rollOut(rnd) {
   const w = game.world, P = game.P; w.ev = P.newEv();
   game.rollOut(rnd || Math.random);
-  st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = flow; st.phase = 'sim';   // (rolling: the flow it is for)
+  st.ahead = null; st.simTick = 0; acc = 0; st.settle = 0; st.rolling = flow; st.phase = 'sim'; st.hsDone = true; st.hitStop = 0;   // (rolling: the flow it is for)
 }
 function stepSim(dt) {
   const w = game.world, P = game.P;
+  /* Hit stop: on a hard stroke, and when the cue ball meets the first ball hard, everything holds still for a few
+     hundredths of a second - the blow is felt before the balls run (owner, 11-08). Only the picture waits: the physics
+     takes the very same steps after, so the result is the same as without it. */
+  if (st.hitStop > 0) { st.hitStop -= dt; drain(); return acc / TICK; }
   // once everything is crawling, run the clock faster so nobody waits on the last roll
   let vmax = 0; for (const b of w.balls) if (b.on) { const s = Math.abs(b.vx) + Math.abs(b.vy); if (s > vmax) vmax = s; }
   // fast play: once the cue ball has met every ball it is going to meet this shot, the rest runs at double speed
@@ -66,6 +70,10 @@ function stepSim(dt) {
   acc += dt * (fast ? 2 : 1);
   let n = 0; while (acc >= TICK && n < 30) { P.step(w, TICK); acc -= TICK; n++; st.simTick++; }
   if (n === 30) acc = 0;
+  if (!st.hsDone && w.ev && w.ev.at) {
+    st.hsDone = true; const c = w.balls[w.cue], s = Math.hypot(c.vx, c.vy);
+    if (w.ev.at[3] >= 0 && !flow.quiet && !st.rolling && s > 1.6) st.hitStop = 0.035 + 0.035 * Math.min(1, (s - 1.6) / 3);
+  }
   const alpha = acc / TICK;
   drain(); SND.rolling(flow.quiet ? 0 : Math.min(8, vmax));
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { const f = st.rolling; st.rolling = false; st.rev++; if (f === flow) flow.rolled(); else st.phase = 'idle'; } else endShot(); } }
@@ -94,11 +102,11 @@ function frame(now) {
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
       const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.el || 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
+      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.el || 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.hsDone = false; st.hitStop = !flow.quiet && ca.V > 3 ? 0.03 + 0.03 * Math.min(1, (ca.V - 3) / 3.5) : 0; st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
     if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) {
-      const f = st.follow; f.t += Math.max(0, dt);
+      const f = st.follow; if (!(st.hitStop > 0)) f.t += Math.max(0, dt);
       if (f.t > 0.42) st.follow = null;
       else {
         const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el);
