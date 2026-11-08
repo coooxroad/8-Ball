@@ -79,6 +79,17 @@ function stepSim(dt) {
   if (P.rest(w) && !scene.falling) { st.settle += dt; if (st.settle > 0.12) { if (st.rolling) { const f = st.rolling; st.rolling = false; st.rev++; if (f === flow) flow.rolled(); else st.phase = 'idle'; } else endShot(); } }
   return alpha;
 }
+/* Chalking the cue at the start of a player's own turn (beginTurn): the cube comes down on the tip, a few twists with a
+   dry scrape each, then off. Any touch, key or wheel stops it at once - it never stands between a player and the shot. */
+const CHALK = 1.3;
+for (const ev of ['pointerdown', 'keydown', 'wheel']) window.addEventListener(ev, () => { st.chalk = null; }, { capture: true, passive: true });
+function chalkTick(dt) {
+  const c = st.chalk; if (!c) return false;
+  if (st.phase !== 'aim' || st.screen !== 'play') { st.chalk = null; return false; }
+  c.t += dt; if (c.t >= CHALK) { st.chalk = null; return true; }
+  if (c.t > 0.22 && c.t < 1.0) { const n = Math.floor((c.t - 0.22) * 22 / Math.PI); if (n !== c.n) { c.n = n; SND.chalk(); } }
+  return true;
+}
 let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
@@ -98,6 +109,8 @@ function frame(now) {
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
+    // (the cue drawn back a little off the ball while it is chalked, and brought up again)
+    if (chalkTick(dt)) { animating = true; if (st.chalk) { const t = st.chalk.t; pull += 0.07 * Math.max(0, Math.min(1, t / 0.2, (CHALK - t) / 0.3)); } }
     shotClock(dt); eyeTick(); ranked.tick();
     if (st.phase === 'strike') {
       const ca = st.cueAnim; ca.t += dt; animating = true;
@@ -126,7 +139,7 @@ function frame(now) {
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
-    follow, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
+    follow, chalk: st.chalk ? st.chalk.t : null, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : guideWhole() ? 1 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',

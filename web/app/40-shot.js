@@ -9,6 +9,9 @@ function beginTurn(first) {
     for (const id of game.legal()) { const b = game.world.balls[id], d = Math.hypot(b.x - c.x, b.y - c.y); if (d < bd) { bd = d; best = b; } }
     if (best) st.aim = Math.atan2(best.y - c.y, best.x - c.x);
   }
+  // a player's own turn in a match begins with their cue chalked (90-loop.js chalkTick): never the other player's - the
+  // computer's or the one at the other end of a game online - and gone at the first touch
+  st.chalk = !auto && flow === match && !flow.quiet && !game.players[game.turn].ai ? { t: 0, n: -1 } : null;
   flow.hud(); scene.invalidate(); snapshot();
 }
 function shoot(V, a, b, el) {

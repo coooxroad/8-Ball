@@ -71,6 +71,7 @@ function createAudio(isOn) {
         roll: [make(0.24, 0.015, [[180, 0.06, 0.18]], [0.65, 0.05, 0.07])],                                 // the ball settling at the bottom of the pocket
         tick: [make(0.05, 0.0005, [[1250, 0.005, 0.5], [2600, 0.0025, 0.25], [620, 0.009, 0.2]])],           // a fingernail on wood
         note: [make(0.6, 0.001, [[523.25, 0.16, 0.6], [1046.5, 0.07, 0.22], [2093, 0.03, 0.08]])],           // one soft mallet note (C5)
+        chalk: [make(0.16, 0.03, [], [1, 0.55, 0.05])],                                                      // chalk twisted on a cue tip: a short dry scrape
       };
       // balls rolling on cloth: a low murmur that follows how much is moving
       const rn = Math.floor(ac.sampleRate * 1.5), rb = ac.createBuffer(1, rn, ac.sampleRate), rd = rb.getChannelData(0);
@@ -313,6 +314,7 @@ function createAudio(isOn) {
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
     bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
     // a key that will not go (locked, coming later): a dull knock (app/12-press.js)
+    chalk() { uiHit('chalk', 0.07, 5200, 0, 1); },
     nope() { uiHit('tick', 0.2, 900, 0, 0.55); uiHit('tick', 0.12, 900, 0.07, 0.5); },
     // the big moments' burst of light (a purchase): a bright rising shimmer
     burst() { [1.5, 2, 2.5, 3].forEach((r, i) => uiHit('note', 0.12, 9000, i * 0.045, r)); },

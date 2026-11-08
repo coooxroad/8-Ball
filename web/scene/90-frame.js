@@ -65,7 +65,7 @@
     if (ringsTick(dt)) dirty = Math.max(dirty, 2);
     if (popsTick(dt)) dirty = Math.max(dirty, 2);
     discoTick(w, R);
-    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on;
+    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on; if (!cue.visible) chalkCube.visible = false;
     // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
     const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }
     if (cue.visible) {
@@ -84,6 +84,17 @@
       if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? 0.085 : 0) + e), v.aim + Math.PI); }
       else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const half = 0.735 * kl * ce, sx = px - dx * half + 0.012 + 0.025 * se, sy = py - dy * half - 0.014 - 0.025 * se;
+      /* chalking (v.chalk: its time, 0 .. CHALK s): the cube comes down over the tip, is twisted back and forth on it, and
+         lifted off and away. Drawn from above, so the twist is shown as the cube turning on the spot. */
+      const ct = v.chalk == null ? -1 : v.chalk;
+      chalkCube.visible = ct >= 0 && ct < 1.3 && !fo;
+      if (chalkCube.visible) {
+        const inn = Math.min(1, ct / 0.22), out = Math.max(0, (ct - 1.0) / 0.3), e1 = 1 - (1 - inn) * (1 - inn), tw = ct > 0.22 && ct < 1.0 ? Math.sin((ct - 0.22) * 22) : 0;
+        const tz = R + lift + 0.002, rise = (1 - e1) * 0.07 + out * out * 0.09;
+        chalkCube.position.set(px + dx * 0.004 - dy * tw * 0.0015, py + dy * 0.004 + dx * tw * 0.0015, tz + 0.005 + rise);
+        chalkCube.rotation.set(0, 0, v.aim + tw * 0.55);
+        chalkCube.material.opacity = chalkCube.children[0].material.opacity = Math.min(e1, 1 - out);
+      }
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * kl * Math.max(0.12, ce), 0.022 * (1 + 0.5 * se), 1); cueShadow.material.opacity = 0.22 * (1 - 0.55 * se);   // (a raised cue's shadow is fainter)
     }
     if (guide.visible) {

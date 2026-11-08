@@ -2,6 +2,12 @@
   const cue = new THREE.Group(); cue.rotation.order = 'ZYX'; scene.add(cue);
   const cueShadow = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
   cueShadow.renderOrder = 1; scene.add(cueShadow);
+  /* the blue chalk cube put on the tip at the start of the player's own turn (90-frame.js, v.chalk): a hollow face over
+     the tip, twisted back and forth, then lifted off */
+  const cubeMat = new THREE.MeshStandardMaterial({ color: col(0x2f6fd6), roughness: 0.95, transparent: true, opacity: 1 });
+  const chalkCube = new THREE.Mesh(new THREE.BoxGeometry(0.027, 0.027, 0.022), cubeMat); chalkCube.visible = false; scene.add(chalkCube);
+  const chalkTop = new THREE.Mesh(new THREE.PlaneGeometry(0.015, 0.015), new THREE.MeshBasicMaterial({ color: col(0x1d4fa8), transparent: true, opacity: 1 }));
+  chalkTop.position.z = 0.0111; chalkCube.add(chalkTop);
   /* A cue's other parts (content/20-cues.js parts): things that are not turned on a lathe, x along the cue from the tip,
      z up. box [from, to, width, height] (a crossguard, a headstock: z, color); ball [at, radius] (a pommel; facets: [round,
      up] cut like a gem); frets [from, to, count, width, z] (closer together towards the body; dots: the inlays); pegs [from, to,
