@@ -392,6 +392,14 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const res = R.get('result'), pay = R.payouts();
   ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
   const o2 = I.open(host), o3 = I.open(host); ok(!I.peek(o2.code).ok && I.peek(o3.code).ok, 'invite: a new code closes the host\'s older one');
+  // the list of open rooms: only listed ones, never their codes; a password guards taking one from the list
+  { const L = new InviteCore(), a = L.open({ acct: 'a'.repeat(32), dama: 500, name: 'A', mode: 'eight', listed: true }), b = L.open({ acct: 'b'.repeat(32), dama: 600, name: 'B', mode: 'four', listed: true, pw: '1234' });
+    L.open({ acct: 'c'.repeat(32), dama: 700, name: 'C', mode: 'nine' });
+    const ls = L.list().rooms; ok(ls.length === 2 && ls.every(r => /^[0-9a-f]{12}$/.test(r.id) && !('code' in r)) && ls.find(r => r.host.name === 'B').lock && !ls.find(r => r.host.name === 'A').lock, 'invite: the list has the listed rooms, by id, locked or not');
+    const rb = ls.find(r => r.host.name === 'B'), ra = ls.find(r => r.host.name === 'A');
+    ok(!L.byId(rb.id, '0000').ok && L.byId(rb.id, '0000').why === 'wrong password' && L.byId(rb.id, '1234').code === b.code && L.byId(ra.id).code === a.code, 'invite: a password guards a room taken from the list');
+    for (let i = 0; i < 12; i++) L.byId(rb.id, 'x'); ok(L.byId(rb.id, '1234').why === 'locked', 'invite: too many wrong passwords close it to the list');
+    L.join({ acct: 'g'.repeat(32), dama: 500, name: 'G' }, a.code); ok(L.list().rooms.length === 1 && L.byId(ra.id).why === 'taken', 'invite: a taken room leaves the list'); }
   console.log('invites: checked');
 }
 // online games (Codex B04-B07): the room's table; a room heard of only once open, and a failed one undone; a new search

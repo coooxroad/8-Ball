@@ -114,15 +114,41 @@ const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class InviteCore {
   constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); this.deferReady = false; }
   sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_IDLE)) this.codes.delete(c); }
-  // p: { acct, dama, name, icon, gear, mode, rules } - a host's new code (an older one of theirs closes)
+  /* p: { acct, dama, name, icon, gear, mode, rules, listed, pw } - a host's new code (an older one of theirs closes).
+     listed: the room shows in the list of open rooms (방 참가하기) under an id of its own - never its code, so a room with a
+     password (pw) can only be taken from the list with it; the code, given by the host, is the invitation and lets in
+     without one. */
   open(p) {
     this.sweep();
     if (!E.RANKED_RULES[p.mode]) return { ok: false, why: 'no such game' };
     for (const [c, v] of this.codes) if (v.host.acct === p.acct && !v.made) this.codes.delete(c);
     let code; do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
-    this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null,
+    const pw = typeof p.pw === 'string' && p.pw ? p.pw.slice(0, 12) : null;
+    this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null, at: this.now(),
+      listed: !!p.listed, id: p.listed ? hex(6) : null, pw, tries: 0,
       host: { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null } });
-    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules };
+    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw };
+  }
+  // the open rooms anyone may take from the list, newest first: the game, its rules, the host, whether it has a password
+  list() {
+    this.sweep(); const out = [];
+    for (const v of this.codes.values()) if (v.listed && !v.made) out.push({ id: v.id, mode: v.mode, rules: v.rules, at: v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } });
+    out.sort((a, b) => b.at - a.at); return { ok: true, rooms: out.slice(0, 40).map(r => { delete r.at; return r; }) };
+  }
+  // the code of a listed room, for taking it from the list: with its password if it has one (a room tried wrong too often
+  // closes to the list - the host's code still lets a friend in)
+  byId(id, pw) {
+    this.sweep();
+    for (const v of this.codes.values()) {
+      if (!v.listed || v.id !== id) continue;
+      if (v.made) return { ok: false, why: 'taken' };
+      if (v.pw) {
+        if (v.tries >= 12) return { ok: false, why: 'locked' };
+        if (pw !== v.pw) { v.tries++; return { ok: false, why: 'wrong password' }; }
+      }
+      return { ok: true, code: v.code };
+    }
+    return { ok: false, why: 'no such room' };
   }
   // the host asking: still waiting, or the game (the same answer until it is taken)
   ask(acct, code) {

@@ -79,7 +79,7 @@ function deskPaint() {
   for (const k of [...d.stage.children]) if (k.id !== 'dkShade') k.remove();
   d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   d.head.className = 'dk-head';
-  $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); }
+  $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); } app.classList.remove('rkcard', 'hall');
   invite.shown = false;
   DESK_PLACES[deskTab](d);
   if (!invite.shown) invite.leave();                                  // (the invite's code is open only while it shows)

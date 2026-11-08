@@ -13,7 +13,8 @@ const { open } = require('./harness.js');
       const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const tap = async locator => { const b = await locator.first().boundingBox(); assert(b); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await settle(); };
       // Compare the table opening with the native-density layout, including the ranked-search strip.
-      await tap(page.locator('[data-b="friend"]'));
+      await tap(page.locator('[data-b="friend"]')); await page.waitForTimeout(500);
+      if (await page.locator('[data-b="way-local"]').count()) { await tap(page.locator('[data-b="way-local"]')); await page.waitForTimeout(500); }
       if (await page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }).count()) await tap(page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }));
       await tap(page.locator('#dkRail .dk-rb', { hasText: '8볼' }));
       const measure = () => page.evaluate(() => {

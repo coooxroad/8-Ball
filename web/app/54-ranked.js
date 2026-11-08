@@ -15,7 +15,7 @@ const ranked = {
   // the 랭킹전 panel: the four game panels open (33-desk-play.js), as for 친구와 플레이; picking one starts looking
   pick() {
     if (!net.on) return toast('랭킹전은 서버가 열리면 시작합니다.', '', 2200);
-    playFor = 'rank'; playStep = 'games'; paintHome();
+    playFor = 'rank'; playStep = 'rank'; playFx = 'fan'; paintHome();
   },
   /* Waiting: the lobby is asked again every two seconds, and a strip at the top says so (#rkBar) with the time waited and
      a way out - meanwhile the rest of the app is free (훈련, 상점, anything). An opponent found: whatever was open is left
@@ -26,7 +26,8 @@ const ranked = {
     bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
     const ask = async () => {
       if (ranked.finding !== f) return;
-      const s = Math.floor((Date.now() - f.t0) / 1000); bar.querySelector('.tm').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      const s = Math.floor((Date.now() - f.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; bar.querySelector('.tm').textContent = tm;
+      for (const t of document.querySelectorAll('.rk-tm')) t.textContent = tm;   // (the turned-over card's clock: 33-desk-play.js)
       const r = await net.queue(mode, f.seek);
       if (ranked.finding !== f) return;
       if (r && r.ok && r.room) { ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
@@ -48,7 +49,7 @@ const ranked = {
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)
-  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); },
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); if (!quiet && st.screen === 'home' && deskTab === 'play' && playStep === 'rank') paintHome(); },
 
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)

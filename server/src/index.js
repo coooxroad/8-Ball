@@ -13,6 +13,8 @@
    POST /v1/invite/peek { code }                      what a code is: { mode, rules, host }
    POST /v1/invite/join { code, name, icon, gear }    the friend takes the other seat: the room
    POST /v1/invite/leave { code }                     the host gives up waiting
+   POST /v1/invite/list  {}                           the open rooms ({ rooms: [{ id, mode, rules, lock, host }] })
+   (open takes listed and pw too: the room shown in that list, with a password; join takes { id, pw } from the list)
    POST /v1/lessons { req, vol, proofs }              a volume of lessons all done: its prize
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
@@ -99,7 +101,7 @@ async function frontDoor(request, env) {
     if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
     const vault = env.VAULT.get(env.VAULT.idFromName(m[1]));
-    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave)$/.exec(url.pathname);
+    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave|list)$/.exec(url.pathname);
     if (inv) {
       const body = await request.json().catch(() => ({})), code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       if (inv[1] === 'open' && !MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
@@ -108,7 +110,8 @@ async function frontDoor(request, env) {
       if (!t.ok) return json(t, 401);
       const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const r = await env.LOBBY.get(env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/' + inv[1], { method: 'POST',
-        body: JSON.stringify({ acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, rules: body.rules || null, code, near: nearOf(request) }) });
+        body: JSON.stringify({ acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, rules: body.rules || null, code, near: nearOf(request),
+          listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {
