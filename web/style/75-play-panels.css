@@ -146,3 +146,14 @@
 #dkBoards .bd.soon .bd-tt em{background:#8a8f96}
 #dkBoards .bd.ivory .bd-foot,#dkBoards .bd.charcoal .bd-foot,#dkBoards .bd.sky .bd-foot{text-align:left}
 #dkBoards .bd.ivory .bd-foot b,#dkBoards .bd.charcoal .bd-foot b,#dkBoards .bd.sky .bd-foot b{font:800 calc(var(--u)*7)/1.15 var(--ui-font);color:var(--ink);text-shadow:none}
+/* (owner, 11-08) the ivory leather stitched round, a finger's width in from its edge; 랭킹전's felt in a walnut frame,
+   the frame's sides in the same wood */
+#dkBoards .bd.ivory .sk::after{display:block;content:"";position:absolute;inset:11px;border-radius:7px;border:2px dashed rgba(122,100,66,.5);
+  box-shadow:-1px 1px 0 rgba(255,255,255,.55),inset -1px 1px 0 rgba(255,255,255,.4);background:none;opacity:1;transform:none}
+#dkBoards .bd.bd-rank{--sl:#7a4e2a;--sd:#2a170a}
+#dkBoards .bd.bd-rank .sk{border:16px solid transparent;
+  background:linear-gradient(200deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%,rgba(0,0,0,.18)) padding-box,url(ui/felt-charcoal.webp) 0 0/300px padding-box,
+    linear-gradient(200deg,rgba(255,220,170,.22),rgba(40,18,4,.4)) border-box,linear-gradient(rgba(58,26,8,.72),rgba(58,26,8,.72)) border-box,url(ui/desk.webp) 0 0/300px border-box;
+  box-shadow:inset -1.5px 1.5px 0 rgba(255,236,200,.35),inset 1px -1px 0 rgba(0,0,0,.35)}
+#dkBoards .bd.bd-rank .sk::before{display:block;content:"";position:absolute;inset:0;border-radius:4px;background:none;box-shadow:inset 2px -2px 5px rgba(0,0,0,.55),inset -1px 1px 0 rgba(0,0,0,.4)}
+#dkBoards .bd.bd-rank .in{inset:18px}
