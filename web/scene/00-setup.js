@@ -8,6 +8,7 @@
    and the canvas resolution is fixed up front. */
   if (!window.THREE) return null;
   let renderer;
+  let railKey = '', railW = null, railP = null, railPv = null;   // the rail's own played-out way (90-frame.js)
   let pvKey = '', pvW = null, pvP = null, pvNow = null;   // the aim line's played-out shot and the inputs it was played with (90-frame.js)
   let coveredNow = false;   // the table was out of sight last frame (90-frame.js)
   const sProf = { guide: 0 };   // ms spent this frame playing out the aim line (the FPS display reads it: 90-loop.js perfTick)

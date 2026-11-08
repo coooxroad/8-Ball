@@ -126,13 +126,21 @@
             let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
             let tl = 0, nx = 0, ny = 0;
             if (pv.hit != null) { const b0 = w.balls[pv.hit]; nx = b0.x - at[0]; ny = b0.y - at[1]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; tl = Math.sqrt(Math.max(0, 1 - Math.pow(ux * nx + uy * ny, 2))); }
-            /* Past the ghost ball, under the line, the rail: the cue ball's own width carried straight on as it was going,
-               as if nothing were met - to the cushion. The line says what will happen; the rail is where it is aimed, so the
-               two together show how thick the hit is and what lies beyond (owner, 11-08: the rail look folded into this). */
+            /* Past the ghost ball, under the line, the rail: the cue ball's own width on its own way as if the ball it meets
+               were not there - played out (the same stroke, spin and all, on a copy without that ball) to the cushion and a
+               little way off it. The line says what will happen; the rail is where it is aimed, so the two together show how
+               thick the hit is and what lies beyond (owner, 11-08: the rail look folded into this, with its bounce). */
             if (pv.hit != null) {
-              const tx = ux > 0 ? (P.HL - R - at[0]) / ux : ux < 0 ? (-P.HL + R - at[0]) / ux : 1e9, ty = uy > 0 ? (P.HW - R - at[1]) / uy : uy < 0 ? (-P.HW + R - at[1]) / uy : 1e9;
-              const run = Math.max(0, Math.min(tx, ty));
-              if (run > R) ribbon(rRail, line(at[0], at[1], 0, ux, uy, run), { m: 2 * R, mode: 3, ch: 0, color: cCol, op: 0.32 * dim, alpha: t => 1 - 0.7 * t }, R);
+              const rk = pk + '|' + pv.hit;
+              if (rk !== railKey || w !== railW || P !== railP) {
+                const w2 = P.clone(w); w2.balls[pv.hit].on = false;
+                railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, 1.2);
+                railKey = rk; railW = w; railP = P;
+              }
+              const rp = railPv, from = Math.max(0, pv.pre.length - 3), way = [at[0], at[1], 0];
+              for (let i = from; i < rp.pre.length; i += 3) way.push(rp.pre[i], rp.pre[i + 1], 0);
+              if (rp.at) { way.push(rp.at[0], rp.at[1], 0); if (rp.hit == null) { const after = cutPath(rp.post, 0.35); for (let i = 3; i < after.length; i += 3) way.push(after[i], after[i + 1], 0); } }
+              if (pathLen(way) > R) ribbon(rRail, way, { m: 2 * R, mode: 3, ch: 0, color: cCol, op: 0.32 * dim, alpha: t => 1 - 0.7 * t }, R);
             }
             if (gl < SIM) {
               const k = grow(gl);

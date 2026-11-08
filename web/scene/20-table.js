@@ -263,7 +263,7 @@
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);
-    falls.length = 0; guideKey = ''; pvKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
+    falls.length = 0; guideKey = ''; pvKey = ''; railKey = ''; renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3; applyCamera();
     if (iced || watery || (CLOTHS[clothI] && CLOTHS[clothI].look)) setCloth(clothI);
   }
   // barricades (puzzles; physics walls()): dark rubber blocks with a maple top, standing on the cloth

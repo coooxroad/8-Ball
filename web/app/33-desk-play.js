@@ -3,6 +3,7 @@
    the shop's ivory and charcoal, and a pale sky for 아케이드 (owner, 5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
    with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
 let playStep = 'boards';                                              // 'boards' | 'games' | 'setup'
+let rankBarShown = null;                                              // the rating the 랭킹전 card's bar last filled to
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
 const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['master', '마스터'], ['legend', '레전드']];
 // a game's balls, as the table draws them, in its usual layout ([n, x, y] in ball widths)
@@ -43,14 +44,18 @@ function deskPlay(d) {
     // (5.0: plain blocks of the shop's two colours - ivory and charcoal - with only words on them for now; pictures come
     // back one by one, drawn to match. 투어 and the shop's window are gone: 챌린지 and 아케이드 in their places.)
     const soon = what => () => toast(`${what} 준비 중입니다.`, '', 2200), dama = net.me ? net.me.dama : ECONOMY.DAMA_START;
-    const tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
+    const T = ECONOMY.TIER_AT, ti = Math.max(0, T.filter(x => dama >= x).length - 1), tier = TIERS[Math.min(TIERS.length - 1, ti)];
+    // the way to the next tier, filling like a level bar: it fills from empty when the number has changed since it was
+    // last shown, and sits still otherwise (the desk paints again often)
+    const lo = T[ti], hi = T[ti + 1], part = hi == null ? 1 : Math.max(0, Math.min(1, (dama - lo) / (hi - lo))), grow = rankBarShown !== dama; rankBarShown = dama;
+    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i'), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
     dkPut(fit, [
       panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'setup'; if (net.on) prefs.friendWay = 'invite'; repaintLive(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
         el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'card'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon'),
       panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'card soon'),
       panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '레이팅이 비슷한 상대와', 'ONLINE'),
-        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` })])], 'card')]);
+        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card')]);
   }
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }

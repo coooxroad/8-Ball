@@ -142,7 +142,7 @@
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => {
-    staticDirty = true; stale = false; dirty = 3; guideKey = ''; pvKey = '';
+    staticDirty = true; stale = false; dirty = 3; guideKey = ''; pvKey = ''; railKey = '';
     renderer.shadowMap.needsUpdate = true; resize(true);
   });
 

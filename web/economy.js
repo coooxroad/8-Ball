@@ -28,6 +28,9 @@ const ECONOMY = {
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 30, DAMA_K: 6, DAMA_SPREAD: 100, DAMA_FLOOR: 10,
+  // the tiers by rating: each tier from its number up (브론즈 실버 골드 플래티넘 다이아몬드 마스터 레전드) - a first cut
+  // (owner to decide), on this scale where an even game moves 3
+  TIER_AT: [0, 40, 55, 70, 90, 115, 145],
   // every lesson of a game's volume done at its top level: coins and a thing found nowhere else
   LESSON_PRIZE: { eight: { coin: 3000, kind: 'cue', id: 'breaker' } },
 };
