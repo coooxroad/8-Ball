@@ -179,7 +179,7 @@ function shelfPage(d, shop) {
   for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
-    const buy = async () => { const r = await net.buy(kind, q.id); toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };
+    const buy = async () => { const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };
     dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain('레슨 보상', `${MODE_KO[q.reward]} 레슨을 모두 끝내면`, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
   }
   else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { const msg = K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast(msg); }, own), dkSec('카드 목록으로', close)));

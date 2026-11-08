@@ -312,6 +312,10 @@ function createAudio(isOn) {
     dial(speed) { uiHit('tick', 0.09, 2600, 0, 1.25 + Math.min(0.5, speed || 0)); },
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
     bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
+    // a key that will not go (locked, coming later): a dull knock (app/12-press.js)
+    nope() { uiHit('tick', 0.2, 900, 0, 0.55); uiHit('tick', 0.12, 900, 0.07, 0.5); },
+    // the big moments' burst of light (a purchase): a bright rising shimmer
+    burst() { [1.5, 2, 2.5, 3].forEach((r, i) => uiHit('note', 0.12, 9000, i * 0.045, r)); },
     win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }

@@ -107,7 +107,7 @@ function dkNavHead(head, what, t, sub, go) {
 
 function deskGo(tab) {
   if (tab === deskTab && st.screen === 'home') { if (tab === 'play' && playStep !== 'boards') { playStep = 'boards'; paintHome(); } return; }   // (플레이 again: back to its boards)
-  gearOff(); const was = deskTab; deskTab = tab;
+  gearOff(); const was = deskTab; deskTab = tab; pressFx.enter = true;                     // (its cards come down in turn: 12-press.js)
   if (tab === 'play' && was !== 'play') playStep = 'boards';
   const game4 = m => GAME4.includes(m);
   if (tab === 'play') { prefs.trainCpu = false; prefs.vsAI = false; if (!game4(prefs.mode)) prefs.mode = game4(prefs.lastMode) ? prefs.lastMode : 'eight'; }   // (플레이 is against people; the computer is in 훈련)
