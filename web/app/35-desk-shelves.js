@@ -149,13 +149,15 @@ function shelfPage(d, shop) {
       const [q, i] = order[n], r = q.rarity || 0;
       if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
         cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
-      cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; paintHome(); }) },
-        [i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+      cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
+        [r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
     }
-    dkPut(d.stage, el('div', { class: 'dk-cards k-' + kind }, cards));
+    const box = el('div', { class: 'dk-cards k-' + kind }, cards); listBounce(box);
+    dkPut(d.stage, box);
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
-    dkPut(d.slate, [dkHr(), dkTxt(shop ? (net.on ? '코인과 다이아로 삽니다. 산 것은 내 장비에 들어갑니다.' : '서버가 열리면 코인과 다이아로 살 수 있습니다.') : '카드를 누르면 크게 보고 미리 볼 수 있습니다.'),
-      dkHr(), dkTxt('현재 장착: ', worn >= 0 ? list[worn].name : '없음'), dkHr(), dkTxt(kind === 'cue' ? '큐마다 최대 파워·회전·조준선이 조금씩 다릅니다(±12% 안).' : kind === 'glove' ? '장갑마다 세기와 다이얼이 움직이는 단위가 다릅니다.' : '플레이 성능은 모두 같습니다.')]);
+    // (fewer words, owner 11-08: what is worn is in the head already)
+    dkPut(d.slate, [dkHr(), dkTxt(shop ? (net.on ? '산 것은 내 장비에 들어갑니다.' : '서버가 열리면 살 수 있습니다.') : '카드를 눌러 크게 봅니다.'),
+      dkHr(), dkTxt(kind === 'cue' ? '큐마다 최대 파워·회전·조준선이 조금씩 다릅니다(±12% 안).' : kind === 'glove' ? '장갑마다 세기와 다이얼이 움직이는 단위가 다릅니다.' : '플레이 성능은 모두 같습니다.')]);
     dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
     return;
   }
@@ -164,6 +166,8 @@ function shelfPage(d, shop) {
   d.head.className = 'dk-head open';
   dkPut(d.head, [el('button', { class: 'dk-x', 'aria-label': '카드 목록으로', onclick: close }, el('i')), dkTitle(q.name, `${i + 1} / ${list.length}`)]);
   K.show(q, d.stage, i);
+  // opened: a flash of its rarity's colour from the middle of the tray (once, as it opens - not on a repaint)
+  if (shelfFlash === i) { shelfFlash = null; dkPut(d.stage, el('i', { class: 'dk-flash r' + (q.rarity || 0), 'aria-hidden': 'true' })); if ((q.rarity || 0) >= 3) SND.burst(); }
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
   dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), fxMarks(q).length ? el('div', { class: 'dk-spec fx' }, [el('span', { text: '효과' }), fxBadges(q)]) : null, dkHr()]);
@@ -179,10 +183,26 @@ function shelfPage(d, shop) {
   for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
-    const buy = async () => { const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };
+    const buy = async () => {
+      // (not enough in the wallet: said here at once - the key shakes, the wallet's chip flashes red - not asked of the server)
+      const p = priceOf(q), w = prefs.wallet || {}, short = p.dia ? (w.dia || 0) < p.dia ? 'dia' : null : p.coin && (w.coin || 0) < p.coin ? 'coin' : null;
+      if (short) { const k = document.querySelector('#dkSlate .dk-main'); if (k) { k.classList.remove('fx-no'); void k.offsetWidth; k.classList.add('fx-no'); setTimeout(() => k.classList.remove('fx-no'), 400); }
+        SND.nope(); walletShort(short); return toast(short === 'dia' ? '다이아가 모자랍니다.' : '코인이 모자랍니다.', 'foul', 2000); }
+      const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? `${q.name} 샀습니다. 내 장비에서 장착하세요.` : r.why, r.ok ? 'good' : 'foul', 2400); paintHome(); };
     dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain('레슨 보상', `${MODE_KO[q.reward]} 레슨을 모두 끝내면`, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
   }
   else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { const msg = K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast(msg); }, own), dkSec('카드 목록으로', close)));
+}
+// a card just opened, for its flash (shelfPage)
+let shelfFlash = null;
+// the list's ends: scrolled on past the top or the bottom, it gives a little and springs back
+function listBounce(box) {
+  let y0 = null;
+  const bump = dir => { if (box.classList.contains('bump')) return; box.style.setProperty('--bump', dir * 14 + 'px'); box.classList.add('bump'); setTimeout(() => box.classList.remove('bump'), 380); };
+  const atTop = () => box.scrollTop <= 0, atEnd = () => box.scrollTop + box.clientHeight >= box.scrollHeight - 1;
+  box.addEventListener('wheel', e => { if (e.deltaY > 0 && atEnd()) bump(-1); else if (e.deltaY < 0 && atTop()) bump(1); }, { passive: true });
+  box.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+  box.addEventListener('touchmove', e => { if (y0 == null) return; const dy = e.touches[0].clientY - y0; if (dy < -24 && atEnd()) { bump(-1); y0 = null; } else if (dy > 24 && atTop()) { bump(1); y0 = null; } }, { passive: true });
 }
 // SFX (its own sound) and VFX (effects of light beyond its look) under the rarity (content/00-rarity.js)
 const fxMarks = q => [q.sound ? ['sfx', 'SFX'] : null, q.vfx ? ['vfx', 'VFX'] : null].filter(Boolean);

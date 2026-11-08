@@ -81,24 +81,24 @@ function deskPlay(d) {
       // the game picked, turned over: the search for an opponent on its back
       wrap.classList.add('seek'); app.classList.add('rkcard');
       const s = Math.floor((Date.now() - f.t0) / 1000);
-      dkPut(wrap, head('랭킹전', `레이팅 ${dama} · 비슷한 상대를 찾습니다`, () => { playStep = 'boards'; paintHome(); }));
+      dkPut(wrap, head('랭킹전', `레이팅 ${dama}`, () => { playStep = 'boards'; paintHome(); }));
       dkPut(fit, el('div', { class: 'seek-card unf' + (playFx === 'flip' ? '' : ' flat') }, el('div', { class: 'fc' }, [
         el('div', { class: 'face front bd-g-' + f.mode }, [rackOf(f.mode), el('b', { text: MODE_KO[f.mode] })]),
         el('div', { class: 'face back' }, [el('i', { class: 'sp' }), el('b', { text: '상대 찾는 중' }), el('small', { text: `랭킹전 · ${MODE_KO[f.mode]}` }),
           el('span', { class: 'rk-tm', text: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }),
           el('button', { class: 'seek-x', text: '취소', onclick: onTap(() => { ranked.cancel(); playFx = 'fan'; paintHome(); }) })])])));
     } else {
-      dkPut(wrap, head('랭킹전', `종목을 고르면 레이팅이 비슷한 상대를 찾습니다 · 레이팅 ${dama}`, toBoards));
+      dkPut(wrap, head('랭킹전', `레이팅 ${dama} · 종목을 고르세요`, toBoards));
       const go = id => b => playLeave(b, () => { ranked.find(id); playFx = 'flip'; paintHome(); });
       dkPut(fit, ['four', 'three', 'eight', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game unf')));
     }
   } else if (playStep === 'friend') {
-    dkPut(wrap, head('친구와 플레이', '어떻게 할까요?', toBoards));
+    dkPut(wrap, head('친구와 플레이', '', toBoards));
     const way = (id, t, sub, fn, off) => panel('way-' + id, t, off ? () => toast('서버에 연결되면 할 수 있습니다.', '', 2000) : fn,
       [(() => { const i = el('span', { class: 'way-ico' }); i.innerHTML = WAY_ICO[id]; return i; })(), tt(t, sub)], 'card way unf' + (off ? ' soon' : ''));
     dkPut(fit, [
-      way('local', '한 기기에서', '한 화면에서 번갈아 치기', b => playLeave(b, () => { prefs.friendWay = 'local'; invite.leave(); playStep = 'setup'; repaintLive(); })),
-      way('make', '방 생성하기', '코드를 보내거나 방 목록에 올리기', b => playLeave(b, () => { prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }), !net.on),
+      way('local', '한 기기에서', '번갈아 치기', b => playLeave(b, () => { prefs.friendWay = 'local'; invite.leave(); playStep = 'setup'; repaintLive(); })),
+      way('make', '방 생성하기', '코드로 초대 · 방 목록에 올리기', b => playLeave(b, () => { prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }), !net.on),
       way('join', '방 참가하기', '열린 방 둘러보기 · 코드로 참가', b => playLeave(b, () => { playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); }), !net.on)]);
   } else if (playStep === 'halls') {
     // the hall: the desk's wood gone to the hall's floor, each open room a table on it

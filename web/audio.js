@@ -314,6 +314,7 @@ function createAudio(isOn) {
     good() { uiHit('note', 0.2, 6000, 0, 1.5); uiHit('note', 0.2, 6000, 0.09, 2); },
     bad() { uiHit('note', 0.2, 1600, 0, 0.6); },
     // a key that will not go (locked, coming later): a dull knock (app/12-press.js)
+    clink() { uiHit('note', 0.09, 9000, 0, 3); uiHit('note', 0.06, 9000, 0.06, 4); },
     chalk() { uiHit('chalk', 0.07, 5200, 0, 1); },
     nope() { uiHit('tick', 0.2, 900, 0, 0.55); uiHit('tick', 0.12, 900, 0.07, 0.5); },
     // the big moments' burst of light (a purchase): a bright rising shimmer

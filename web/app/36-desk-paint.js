@@ -67,7 +67,24 @@ function boardSides() {
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)
 const deskTableShown = () => $('#dkStage').dataset.win === '1';
-function walletPaint() { const w = prefs.wallet || {}, n = v => (v || 0).toLocaleString('ko-KR'); $('#dkWallet .coin b').textContent = n(w.coin); $('#dkWallet .dia b').textContent = n(w.dia); }
+/* The wallet: a number that changes rolls to its new value (a clink when it grows), and its chip lights a moment - green
+   up, red down. The first paint just shows it. */
+const walletShown = { coin: null, dia: null };
+function walletPaint() {
+  const w = prefs.wallet || {}, n = v => Math.round(v || 0).toLocaleString('ko-KR'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (const k of ['coin', 'dia']) {
+    const chip = $('#dkWallet .' + k), b = chip.querySelector('b'), to = w[k] || 0, from = walletShown[k]; walletShown[k] = to;
+    if (from == null || from === to || still) { if (!b._roll) b.textContent = n(to); continue; }
+    if (to > from) SND.clink();
+    chip.classList.remove('up', 'down'); void chip.offsetWidth; chip.classList.add(to > from ? 'up' : 'down'); setTimeout(() => chip.classList.remove('up', 'down'), 900);
+    const t0 = performance.now(), dur = 700, roll = b._roll = {};
+    const step = () => { if (b._roll !== roll) return; const p = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      b.textContent = n(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); else { b._roll = null; if (to > from) SND.clink(); } };
+    requestAnimationFrame(step);
+  }
+}
+// not enough to buy it: the wallet's chip flashes red and shakes
+function walletShort(k) { const chip = $('#dkWallet .' + k); if (!chip) return; chip.classList.remove('short'); void chip.offsetWidth; chip.classList.add('short'); setTimeout(() => chip.classList.remove('short'), 700); }
 function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));

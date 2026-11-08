@@ -1,0 +1,36 @@
+/* ---------- the shop's moments (app/35-desk-shelves.js, 36-desk-paint.js walletPaint) ----------
+   All by opacity and transform, each on a layer of its own, so the leaning desk under them is not drawn again. */
+
+/* 신화 and above: a slow glow breathing round the card in its rarity's colour */
+#app.desk .dk-card .rglow{position:absolute;inset:3px;z-index:0;border-radius:12px;pointer-events:none;will-change:opacity;
+  box-shadow:0 0 0 1.5px color-mix(in srgb,var(--rs) 80%,transparent),0 0 16px 3px color-mix(in srgb,var(--rs) 55%,transparent);animation:rGlow 2.8s ease-in-out infinite}
+#app.desk .dk-card.r5 .rglow{box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 0 18px 4px rgba(255,170,220,.45),0 0 26px 6px rgba(120,200,255,.3)}
+@keyframes rGlow{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* a card opened: a flash of its rarity's colour out of the middle of the tray, gone in half a second */
+#app.desk #dkStage .dk-flash{position:absolute;left:50%;top:48%;width:120%;aspect-ratio:1;z-index:4;pointer-events:none;border-radius:50%;will-change:transform,opacity;
+  background:radial-gradient(circle,color-mix(in srgb,var(--fc) 70%,#fff) 0,color-mix(in srgb,var(--fc) 45%,transparent) 22%,transparent 60%);
+  transform:translate(-50%,-50%) scale(.2);opacity:0;animation:rFlash .6s cubic-bezier(.2,.8,.3,1) forwards}
+#app.desk #dkStage .dk-flash.r0{--fc:#d7e2ee;animation-duration:.45s}
+#app.desk #dkStage .dk-flash.r1{--fc:#3f8cff}
+#app.desk #dkStage .dk-flash.r2{--fc:#a95cff}
+#app.desk #dkStage .dk-flash.r3{--fc:#ff4d5e}
+#app.desk #dkStage .dk-flash.r4{--fc:#ffb52e}
+#app.desk #dkStage .dk-flash.r5{--fc:#ff9ed8;background:conic-gradient(from 0deg,rgba(255,93,108,.5),rgba(255,194,58,.5),rgba(95,224,138,.5),rgba(79,155,255,.5),rgba(176,114,255,.5),rgba(255,93,108,.5));
+  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 60%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 60%)}
+@keyframes rFlash{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}18%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15)}}
+
+/* the wallet: lit a moment when its number changes; short of money, red and shaken */
+.dk-cur::after{content:"";position:absolute;inset:2px;border-radius:999px;pointer-events:none;opacity:0;will-change:opacity}
+.dk-cur.up::after{background:rgba(110,230,120,.38);animation:curLit .9s ease-out}
+.dk-cur.down::after{background:rgba(255,120,110,.3);animation:curLit .9s ease-out}
+.dk-cur.short::after{background:rgba(255,60,50,.55);animation:curLit .7s ease-out}
+.dk-cur.short{animation:curShake .42s cubic-bezier(.36,.07,.19,.97)}
+.dk-cur.short b{color:#ff8a80}
+@keyframes curLit{0%{opacity:1}100%{opacity:0}}
+@keyframes curShake{10%,90%{translate:-1px 0}20%,80%{translate:3px 0}30%,50%,70%{translate:-5px 0}40%,60%{translate:5px 0}}
+
+/* the list's ends: it gives a little and springs back */
+#app.desk .dk-cards.bump{animation:listBump .38s cubic-bezier(.3,.6,.4,1)}
+@keyframes listBump{40%{translate:0 var(--bump)}100%{translate:0 0}}
+@media (prefers-reduced-motion:reduce){#app.desk .dk-card .rglow,#app.desk #dkStage .dk-flash,.dk-cur.short,#app.desk .dk-cards.bump{animation:none}}
