@@ -31,3 +31,7 @@
 #app.desk.portrait #toast,#app.bcast.portrait #toast{max-width:calc(100% - 120px);font-size:15px}
 #app.desk.portrait:has(#pracBar:not([hidden])) #toast{top:112px}
 #app.desk.portrait:has(#spinPop:not([hidden])) #clock{visibility:hidden}
+/* 5.0: the slimmer bar upright too, its two rows closer */
+#app.desk.compact.portrait{--bar:86px}
+#app.desk.compact.portrait .dk-tab{height:36px}
+#app.desk.compact.portrait .dk-me{height:34px}

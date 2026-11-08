@@ -59,7 +59,7 @@ const ranked = {
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
-    toast(o.kind === 'invite' ? `${o.opp.name}와(과) 한 판` : `${o.opp.name} · ${o.opp.dama} 다마`, '', 2600);
+    toast(o.kind === 'invite' ? `${o.opp.name}와(과) 한 판` : `${o.opp.name} · 레이팅 ${o.opp.dama}`, '', 2600);
   },
   // the room, kept open: a dropped connection is opened again, and what it missed is sent again
   connect() {
@@ -215,7 +215,7 @@ const ranked = {
   // a game the room could not give to anyone: said so, and back home (no win, no loss on the records)
   voided(m) {
     st.phase = 'idle'; st.auto = null; game.over = { winner: null, why: '무효' }; store.set('save', null);
-    openSheet('무효 경기', [note(m.why === 'left' ? '두 사람 모두 들어오지 않아 경기가 성립하지 않았습니다.' : '서버가 승자를 정할 수 없어 무효가 되었습니다. 전적·다마는 그대로입니다.'),
+    openSheet('무효 경기', [note(m.why === 'left' ? '두 사람 모두 들어오지 않아 경기가 성립하지 않았습니다.' : '서버가 승자를 정할 수 없어 무효가 되었습니다. 전적·레이팅은 그대로입니다.'),
       el('button', { class: 'btn cta', text: '처음으로', onclick: () => { SND.tap(); closeSheet(); goHome(); } })]);
   },
   // the result screen's lines for a ranked game: checking, then what it paid
@@ -226,7 +226,7 @@ const ranked = {
     if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : '랭킹전', '결과 확인 중…');
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
     line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
-    if (o.kind !== 'invite') line('다마', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+    if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },

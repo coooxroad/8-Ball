@@ -129,10 +129,10 @@
 #dkBoards .bd-challenge{grid-area:challenge}
 #dkBoards .bd-arcade{grid-area:arcade}
 #dkBoards .bd.ivory{--sl:#f1ead8;--sd:#8f8772;--ink:#22262b}
-#dkBoards .bd.sky{--sl:#d4efff;--sd:#6f93a8;--ink:#1d2a36}
+#dkBoards .bd.sky{--sl:#bfe6ff;--sd:#5f8aa5;--ink:#15283a}
 #dkBoards .bd.charcoal{--sl:#41474e;--sd:#0c0f11;--ink:#f3eee3}
 #dkBoards .bd.ivory .sk{background:linear-gradient(200deg,#faf6ec,#ebe4d1)}
-#dkBoards .bd.sky .sk{background:linear-gradient(200deg,#c4ecff,#aed8ef)}
+#dkBoards .bd.sky .sk{background:linear-gradient(200deg,#a2d9fc,#8ccbf0)}
 #dkBoards .bd.charcoal .sk{background:linear-gradient(200deg,#2e3439,#1b1f23)}
 #dkBoards .bd.ivory .sk::before,#dkBoards .bd.ivory .sk::after,#dkBoards .bd.sky .sk::before,#dkBoards .bd.sky .sk::after,#dkBoards .bd.charcoal .sk::before,#dkBoards .bd.charcoal .sk::after{display:none}
 #dkBoards .bd.ivory .bd-tt,#dkBoards .bd.charcoal .bd-tt,#dkBoards .bd.sky .bd-tt{text-align:left}

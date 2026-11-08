@@ -36,7 +36,7 @@ function deskPlay(d) {
   if (playStep === 'games') {
     const rank = playFor === 'rank';
     dkPut(wrap, el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '플레이로', onclick: () => { SND.tap(); playStep = 'boards'; paintHome(); } }, el('i')),
-      dkTitle(rank ? '랭킹전' : '친구와 플레이', rank ? `종목을 고르면 다마가 비슷한 상대를 찾습니다 · ${net.me ? net.me.dama : ECONOMY.DAMA_START} 다마` : '종목을 고르세요')]));
+      dkTitle(rank ? '랭킹전' : '친구와 플레이', rank ? `종목을 고르면 레이팅이 비슷한 상대를 찾습니다 · 레이팅 ${net.me ? net.me.dama : ECONOMY.DAMA_START}` : '종목을 고르세요')]));
     const go = id => rank ? () => { playStep = 'boards'; paintHome(); ranked.find(id); } : () => { prefs.mode = id; playStep = 'setup'; repaintLive(); };
     dkPut(fit, ['four', 'eight', 'three', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game')));
   } else {
@@ -49,8 +49,8 @@ function deskPlay(d) {
         el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'ivory'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'charcoal soon'),
       panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'sky soon'),
-      panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '다마가 비슷한 상대와', 'ONLINE'),
-        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `${dama} 다마` })])], 'charcoal')]);
+      panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '레이팅이 비슷한 상대와', 'ONLINE'),
+        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` })])], 'charcoal')]);
   }
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }

@@ -52,7 +52,7 @@ async function sheetLinkMake() {
   const left = el('p', { class: 'note' });
   const tick = () => { const s = Math.max(0, Math.round((r.until - Date.now()) / 1000)); left.textContent = s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 동안 한 번 쓸 수 있습니다.` : '시간이 지났습니다. 새 코드를 만드세요.'; if (!s || $('#sheet').hidden) clearInterval(linkTick); };
   openSheet('다른 기기 연결', [el('div', { class: 'linkcode', text: codeShown(r.code) }), left,
-    note('다른 기기에서 설정 → 계정 → 코드로 연결에 이 코드를 넣으면, 그 기기도 이 계정(코인·다이아·가진 아이템·다마)을 씁니다.'),
+    note('다른 기기에서 설정 → 계정 → 코드로 연결에 이 코드를 넣으면, 그 기기도 이 계정(코인·다이아·가진 아이템·레이팅)을 씁니다.'),
     flatBtn('새 코드', sheetLinkMake)]);
   tick(); linkTick = setInterval(tick, 1000);
 }

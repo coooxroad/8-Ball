@@ -263,3 +263,13 @@
 #app.desk.compact .dk-x{width:34px;height:34px}
 #app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px var(--ui-font);color:#a9b6c6}
 #app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
+/* 5.0: a slimmer bar (owner) - the keys lower, the words as they were */
+#app.desk{--bar:52px}
+#app.desk.compact{--bar:48px}
+#app.desk.compact:not(.portrait){--bar:42px}
+#app.desk .dk-tab,#app.desk .dk-top,.dk-me{height:38px}
+#app.desk .dk-me .av{width:30px;height:30px}
+.dk-cur{height:34px}
+#app.desk.compact .dk-tab,#app.desk.compact .dk-top{height:34px}
+#app.desk.compact .dk-cur{height:30px}
+#app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:32px}
