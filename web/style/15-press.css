@@ -8,7 +8,8 @@ button,.bd{--press:rgba(255,255,255,.5)}
 .fx-down{scale:.97;transition:scale 90ms ease-out}
 .fx-up{animation:fxUp .32s var(--fx-spring)}
 @keyframes fxUp{0%{scale:.97}55%{scale:1.025}100%{scale:1}}
-.fx-clip{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:4;display:block}
+/* (laid over a key whatever its own rules for what is in it say - a card's pictures are <i> too: never in its flow) */
+.fx-clip.fx-clip{position:absolute!important;inset:0!important;margin:0!important;padding:0!important;flex:none!important;width:auto!important;height:auto!important;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:4;display:block;background:none!important;box-shadow:none!important;transform:none!important}
 .fx-rip{position:absolute;border-radius:50%;pointer-events:none;opacity:.55;transform:scale(0);animation:fxRip .6s cubic-bezier(.2,.7,.3,1) forwards;display:block}
 @keyframes fxRip{70%{opacity:.35}to{transform:scale(1);opacity:0}}
 .fx-no{animation:fxNo .36s cubic-bezier(.36,.07,.19,.97)}
@@ -18,7 +19,7 @@ button,.bd{--press:rgba(255,255,255,.5)}
 .fx-in{animation:fxIn .55s var(--fx-spring) both;animation-delay:calc(var(--fx-i,0)*45ms)}
 @keyframes fxIn{0%{opacity:0;translate:0 18px;scale:.96}100%{opacity:1;translate:0 0;scale:1}}
 /* (the main key's light, passing now and then) */
-.fx-shine{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:3;display:block}
+.fx-shine.fx-shine{position:absolute!important;inset:0!important;margin:0!important;flex:none!important;width:auto!important;height:auto!important;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:3;display:block;background:none!important}
 .fx-shine::before{content:"";position:absolute;top:-20%;bottom:-20%;left:-60%;width:40%;transform:skewX(-20deg);
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:fxShine 5.5s ease-in-out infinite;animation-delay:1.2s}
 @keyframes fxShine{0%,72%{left:-60%}100%{left:140%}}
