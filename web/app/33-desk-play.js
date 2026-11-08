@@ -50,16 +50,13 @@ function playLeave(card, then) {
 // the entrance: each card from the middle (where the card it came out of stood), turned a little, out to its place
 function playEnter(wrap) {
   const fx = playFx; playFx = null; if (!fx) return;
-  const fit = wrap.querySelector('.bd-fit'), cards = [...wrap.querySelectorAll('.unf')];
-  for (const b of cards) b.classList.add('pre');
-  requestAnimationFrame(() => {
-    const [cx, cy] = [fit.offsetWidth / 2, fit.offsetHeight / 2];
-    cards.forEach((b, i) => {
-      const [x, y] = flatMid(b, fit);
-      b.style.setProperty('--dx', (cx - x).toFixed(1) + 'px'); b.style.setProperty('--dy', (cy - y).toFixed(1) + 'px');
-      b.style.setProperty('--r', ((i - (cards.length - 1) / 2) * 6).toFixed(1) + 'deg'); b.style.setProperty('--d', (i * 55) + 'ms');
-      b.classList.remove('pre'); b.classList.add(fx);
-    });
+  // (worked out at once, the wrap just laid out: no frame drawn with the cards in their places first)
+  const fit = wrap.querySelector('.bd-fit'), cards = [...wrap.querySelectorAll('.unf')], [cx, cy] = [fit.offsetWidth / 2, fit.offsetHeight / 2];
+  cards.forEach((b, i) => {
+    const [x, y] = flatMid(b, fit);
+    b.style.setProperty('--dx', (cx - x).toFixed(1) + 'px'); b.style.setProperty('--dy', (cy - y).toFixed(1) + 'px');
+    b.style.setProperty('--r', ((i - (cards.length - 1) / 2) * 6).toFixed(1) + 'deg'); b.style.setProperty('--d', (i * 55) + 'ms');
+    b.classList.add(fx);
   });
 }
 const WAY_ICO = {
