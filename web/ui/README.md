@@ -11,6 +11,9 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 |---|---|---|---|
 | desk | oak-desk-1024 | desk surface, tiled | – |
 | felt | blue-felt-512 | felt: the tray's floor, swatch backs; tiled | – |
+| felt-charcoal | T1 (v16, owner) | 플레이's charcoal blocks (랭킹전, 챌린지); tiled | – |
+| felt-sky | T2 (v16, owner) | 플레이's 아케이드 block; tiled | – |
+| leather-ivory | T3 (v16, owner), mirrored 2×2 so it tiles without a seam | 플레이's 친구와 플레이 block; tiled | – |
 | bar | charcoal-bar-512x128 | top bar, repeat-x | – |
 | edge | E1-desk-edge 2048x200 | the desk's front edge and the floor below it, repeat-x along the bottom | – |
 | rail | A1-rail-slab | the ivory rail slab, front lip 28 | 48 48 76 48 / 20 |
