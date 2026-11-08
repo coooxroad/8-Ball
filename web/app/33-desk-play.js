@@ -48,7 +48,7 @@ function deskPlay(d) {
     // the way to the next tier, filling like a level bar: it fills from empty when the number has changed since it was
     // last shown, and sits still otherwise (the desk paints again often)
     const lo = T[ti], hi = T[ti + 1], part = hi == null ? 1 : Math.max(0, Math.min(1, (dama - lo) / (hi - lo))), grow = rankBarShown !== dama; rankBarShown = dama;
-    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i'), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
+    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
     dkPut(fit, [
       panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'setup'; if (net.on) prefs.friendWay = 'invite'; repaintLive(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
         el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'card'),
