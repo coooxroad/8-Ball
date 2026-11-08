@@ -46,11 +46,11 @@ function deskPlay(d) {
     const tier = TIERS[Math.min(TIERS.length - 1, prefs.tier || 0)];
     dkPut(fit, [
       panel('friend', '친구와 플레이', () => { playFor = 'friend'; playStep = 'games'; paintHome(); }, [tt('친구와 플레이', '한 기기에서 · 코드로 초대'),
-        el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'ivory'),
-      panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'charcoal soon'),
-      panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'sky soon'),
+        el('span', { class: 'bd-foot' }, el('small', { text: '3구 · 4구 · 8볼 · 9볼' }))], 'card'),
+      panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon'),
+      panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'card soon'),
       panel('rank', '랭킹전', () => ranked.pick(), [tt('랭킹전', '레이팅이 비슷한 상대와', 'ONLINE'),
-        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` })])], 'charcoal')]);
+        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` })])], 'card')]);
   }
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }
