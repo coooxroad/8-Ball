@@ -130,7 +130,7 @@ function createGame(PH, makeAI) {
         }
         g.placing = null; g.isBreak = false;
       },
-      intro: g => `${g.players[g.turn].name} 선수, 노란 공으로 먼저 칩니다. 빨간 공 두 개를 모두 맞히세요.`,
+      intro: g => `${g.players[g.turn].name} 선수, 흰 공으로 먼저 칩니다. 빨간 공 두 개를 모두 맞히세요.`,
       status: (g, pi) => ({ sub: g.tens ? `수지 ${g.targets[pi] * 10}` : `목표 ${g.targets[pi]}점`, tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
       badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
@@ -232,18 +232,34 @@ function createGame(PH, makeAI) {
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     // personas: a person-like computer opponent for a player (ai/), in place of a level; null for the rest
     g.personas = opts.personas || null;
-    // carom: the first to play has the yellow ball (4구; the other has the white). g.yellow is that player's index; the
-    // scene and the HUD paint ball 0 or 1 yellow by it
-    g.yellow = g.mode.table === 'carom' && modeId === 'four' ? g.turn : 1;
+    // carom: in 4구 the first to play has the white ball and the other the yellow (owner, 11-08: it was the other way).
+    // g.yellow is the yellow ball's player; the scene and the HUD paint ball 0 or 1 yellow by it
+    g.yellow = g.mode.table === 'carom' && modeId === 'four' ? 1 - g.turn : 1;
     g.mode.setup(g, opts.rnd || Math.random);
     g.world.ice = g.ice;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
   g.cueBall = () => g.world.balls[g.world.cue];
-  // 4구 starts with the balls rolled out across the table: each set rolling in a direction and at a speed of chance; the
-  // physics then runs until they stop (the app, frame by frame; the server, at once - the same steps, so the same places)
-  // (the same on every device and the server: physics.js DMath where it is loaded alongside)
-  g.rollOut = rnd => { const M = typeof DMath !== 'undefined' ? DMath : Math; for (const b of g.world.balls) if (b.on) { const a = rnd() * Math.PI * 2, v = 0.5 + rnd() * 0.9; b.vx = M.cos(a) * v; b.vy = M.sin(a) * v; } };
+  /* 4구 starts with the balls rolled out across the table, as a hall does it: the four paired off at random, each pair
+     gathered in a corner (the two corners of one diagonal, which one by chance) and rolled towards the middle - each ball
+     a little off the line and at its own speed - so they meet, scatter and stop somewhere new every time (owner, 11-08).
+     The physics then runs until they stop (the app, frame by frame; the server, at once - the same steps, so the same
+     places), the same on every device and the server: DMath where physics.js is loaded alongside, and no atan2. */
+  g.rollOut = rnd => {
+    const M = typeof DMath !== 'undefined' ? DMath : Math, P = g.P, w = g.world, { HL, HW } = P;
+    const ids = [0, 1, 2, 3]; for (let i = 3; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+    const d = rnd() < 0.5 ? 1 : -1, corners = [[1, d], [-1, -d]], NEAR = 0.065, FAR = 0.15;
+    corners.forEach(([sx, sy], k) => {
+      // the two of a pair side by side in the corner, clear of both cushions and of each other
+      P.place(w, ids[2 * k], sx * (HL - NEAR), sy * (HW - FAR), rnd);
+      P.place(w, ids[2 * k + 1], sx * (HL - FAR), sy * (HW - NEAR), rnd);
+    });
+    for (const id of ids) {
+      const b = w.balls[id], n = Math.sqrt(b.x * b.x + b.y * b.y), ux = -b.x / n, uy = -b.y / n;
+      const off = (rnd() * 2 - 1) * 0.32, c = M.cos(off), s = M.sin(off), v = 1.05 + rnd() * 0.75;
+      b.vx = (ux * c - uy * s) * v; b.vy = (ux * s + uy * c) * v;
+    }
+  };
   g.legal = () => g.mode.legal(g, g.turn);
   /* How far behind a player is, 0 (not, or too early to say) .. 1 (hopeless): what lets a person-like stand-in give up
      or play loosely (ai/53-temper.js), and what the server checks a stand-in's resignation against (server/src/ranked.js) -
