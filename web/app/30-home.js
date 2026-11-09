@@ -8,7 +8,7 @@ const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구' };
 const pzList = () => puzzles.list, PZ_NEED = 5;
 const pzOpen = si => si === 0 || debugOn() || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
-function paintHome() { deskPaint(); }
+function paintHome() { deskPaint(); if (!tutorial.asked && st.screen === 'home') setTimeout(() => { if (st.screen === 'home' && $('#sheet').hidden) tutorial.offer(); }, 700); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
 // (a new layout each time, which is also what the drill itself does).
 function homePreview() {

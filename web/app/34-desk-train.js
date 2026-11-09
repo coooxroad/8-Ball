@@ -66,7 +66,9 @@ function deskLesson({ head, stage, slate }) {
         el('span', { class: 'nm', text: ids.length ? `최고 단계 ${doneOf(ids)}/${ids.length}` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
     dkPut(slate, dkH1('교본'));
     const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
-    dkPut(slate, dkActs(cur ? dkMain('이어서 하기', drills.byId(cur).name, () => practice.start(cur)) : null));
+    dkPut(slate, dkActs(cur ? dkMain('이어서 하기', drills.byId(cur).name, () => practice.start(cur)) : null,
+      // (58-tutorial.js: the first shot, step by step - its prize once per account)
+      dkSec('튜토리얼', () => tutorial.start(), prefs.tutDone ? '완료' : `보상 코인 ${ECONOMY.TUTORIAL_PRIZE.coin} + ${itemName({ kind: 'cue', id: ECONOMY.TUTORIAL_PRIZE.id })}`)));
     return;
   }
   const vol = VOLUMES.find(x => x[0] === lessonVol), ids = volLessons(lessonVol), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0];

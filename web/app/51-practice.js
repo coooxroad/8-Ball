@@ -27,7 +27,7 @@ const practice = {
   quiet: false, save: false,
   drill: null, level: 1, streak: 0, tries: 0, ok: 0, layout: null, before: null, beforeAim: 0, edit: false,
   start(id) {
-    usePhysics();
+    tutorial.stop(); usePhysics();
     if (id) { prefs.drill = id; savePrefs(); }
     const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     game.start('practice', [prefs.names[0], ''], false, {});
@@ -38,6 +38,7 @@ const practice = {
   },
   restart() { practice.start(); },
   fresh() {                                                                                          // a new layout
+    if (practice.drill === TUT_DRILL) { practice.layout = TUT_DRILL.make(game.P); return practice.again(); }   // (58-tutorial.js: always the same)
     const p = practice, seed = (Math.random() * 4294967296) >>> 0, L = drills.make(p.drill.id, game.P, p.level, seededRandom(seed), game.vOf);
     if (L) { L.seed = seed; L.level = p.level; p.layout = L; }
     p.again();
@@ -51,6 +52,7 @@ const practice = {
     if (!p.drill.make) { game.resolve(); return beginTurn(false); }
     const why = drills.judge(p.layout, game.world.ev, game.world.balls[0]);
     game.resolve(); p.tries++;
+    if (p.drill === TUT_DRILL) { tutorial.shot(!why); if (why) { SND.bad(); hold(1.7, p.again); } return; }   // (58-tutorial.js)
     if (why) { p.streak = 0; toast('실패 · ' + why, 'foul', 1900); SND.bad(); return hold(1.7, p.again); }           // same layout until it goes in
     p.ok++; p.streak++;
     // done at the top level: kept as the proof (the layout's seed, the table, the shot) the server plays again for a prize
@@ -62,11 +64,12 @@ const practice = {
   },
   hud() {
     const p = practice;
-    paintPill(0, { name: p.drill.name, on: true, sub: p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
+    paintPill(0, { name: p.drill.name, on: true, sub: p.drill === TUT_DRILL ? '' : p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
     paintBadge('레슨', { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
   },
   // the row of buttons where the second player's panel would be
   bar() {
+    if (tutorial.on) return tutorial.bar();
     const p = practice, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
     const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === practice && st.phase === 'aim') fn(); };
