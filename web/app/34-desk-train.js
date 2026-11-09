@@ -16,7 +16,7 @@ function deskPuzzle(d) {
   // (the puzzles are being made again on the game's physics: until then the place is kept, empty)
   if (!puzzles.list.length) {
     dkPut(head, dkTitle('퍼즐'));
-    dkPut(slate, [dkH1('퍼즐'), dkHr(), dkTxt('등록된 퍼즐이 없습니다')]);   // (copy audit 03-09: said once)
+    dkPut(slate, [...dkH1('퍼즐'), dkHr(), dkTxt('등록된 퍼즐이 없습니다')]);   // (copy audit 03-09: said once)
     return;
   }
   const z = prefs.pz, L = puzzles.list.filter(q => pzOpen(q.stage)), cur = puzzles.byId(z.cur) || puzzles.list[0], S = puzzles.STAGES[cur.stage];
@@ -96,6 +96,6 @@ function deskLesson({ head, stage, slate }) {
 function deskFree({ head, slate }) {
   // (copy audit 03-11: moving balls and undoing are told when they are used)
   dkPut(head, dkTitle('자유 연습'));
-  dkPut(slate, [dkH1('자유 연습'), guideRow()]);
+  dkPut(slate, [...dkH1('자유 연습'), guideRow()]);
   dkPut(slate, dkActs(dkMain('연습 시작', null, () => practice.start('free'))));
 }
