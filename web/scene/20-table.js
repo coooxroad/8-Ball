@@ -142,9 +142,11 @@
       grp.add(m);
     }
   }
-  function buildTable(P) {
-    const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
-    // cloth bed
+  /* The table, piece by piece, each adding its meshes to grp in the order they always had: mergeStatic joins pieces in
+     that order and three draws equal-depth pieces in it, so a reordering would change the picture. */
+  // the cloth bed with the pockets cut out, the shade along the cushions, and the spots (and a pool table's head string)
+  function tableBed(grp, P) {
+    const { POCKETS, HL, HW } = P;
     const bx = HL + 0.105, by = HW + 0.118;
     const bed = new THREE.Shape(); bed.moveTo(-bx, -by); bed.lineTo(bx, -by); bed.lineTo(bx, by); bed.lineTo(-bx, by); bed.closePath();
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r, 0, Math.PI * 2, false); bed.holes.push(h); }
@@ -154,16 +156,20 @@
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
     dot(HL / 2, 0); dot(-HL / 2, 0);
     if (P.POCKETED) { const line = new THREE.Mesh(new THREE.PlaneGeometry(0.003, HW * 2), markMat); line.position.set(-HL / 2, 0, 0.0004); grp.add(line); } else dot(0, 0);
-    // pocket pits
+  }
+  // the pockets' dark pits going down through the bed
+  function pocketPits(grp, P) {
     const pit = new THREE.MeshStandardMaterial({ color: col(0x1a1613), roughness: 0.75, metalness: 0, envMapIntensity: 0.25, side: THREE.BackSide }), pitB = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    for (const p of POCKETS) {
+    for (const p of P.POCKETS) {
       const w = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.86, 0.16, 36, 1, true), pit);
       w.rotation.x = Math.PI / 2; w.position.set(p.x, p.y, -0.08); grp.add(w);
       const b = new THREE.Mesh(new THREE.CircleGeometry(p.r, 28), pitB); b.position.set(p.x, p.y, -0.16); grp.add(b);
     }
-    // rails
-    const rail = rrect(new THREE.Shape(), ox, oy, rr);
-    const hole = new THREE.Path();
+  }
+  /* The inner edge of the rails, as a hole in their outline: straight round a carom table; on a pool table it runs from
+     pocket to pocket round each mouth, and each mouth gets its brass plate, rubber lip and leather liner. */
+  function railCut(grp, P, hole, Xb, Yb, bev) {
+    const { POCKETS } = P;
     if (P.POCKETED) {
       const arcs = POCKETS.map(p => {
         if (!p.corner) { const sy = Math.sign(p.y), s2 = Math.sqrt(p.r * p.r - (CW - P.SO) ** 2); return { p, e: [-sy * s2, sy * Yb], x: [sy * s2, sy * Yb] }; }
@@ -174,7 +180,7 @@
       for (const a of arcs) { a.a0 = Math.atan2(a.e[1] - a.p.y, a.e[0] - a.p.x); a.a1 = Math.atan2(a.x[1] - a.p.y, a.x[0] - a.p.x); }
       hole.moveTo(arcs[0].x[0], arcs[0].x[1]);
       for (const i of [1, 2, 3, 4, 5, 0]) { const a = arcs[i]; hole.lineTo(a.e[0], a.e[1]); hole.absarc(a.p.x, a.p.y, a.p.r, a.a0, a.a1, true); }
-            for (const a of arcs) {
+      for (const a of arcs) {
         let len = a.a0 - a.a1; while (len < 0) len += Math.PI * 2;
         // a brass plate let into the rail, a black rubber lip standing on its inner edge, and a leather liner down the cut
         const m = new THREE.Mesh(new THREE.RingGeometry(a.p.r + bev - 0.002, a.p.r + bev + 0.012, 48, 1, a.a1, len), metalMat);
@@ -191,17 +197,16 @@
         const liner = new THREE.Mesh(lg, linerMat); liner.receiveShadow = true; liner.layers.enable(OCCL); grp.add(liner);
       }
     } else { hole.moveTo(-Xb, -Yb); hole.lineTo(-Xb, Yb); hole.lineTo(Xb, Yb); hole.lineTo(Xb, -Yb); hole.closePath(); }
-    rail.holes.push(hole);
-    const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
-    rg.translate(0, 0, RAIL_Z - 0.12 - bev);
-    const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; railMesh.layers.enable(OCCL); grp.add(railMesh);
-    // Under the rails, as on a real table: a skirt (apron) all round under the rail, then the cabinet down to the floor,
-    // of the same wood: its long sides lean in towards the floor and its ends slope, and it stands on its feet through
-    // thick arches cut in the long sides -
-    //   carom: two arches, so it stands on three broad feet (the ends and the middle), each on a dark plinth, with a chrome
-    //          line round the top of the cabinet and a chrome band round the rails;
-    //   pool:  one wide arch between flared corner feet on chrome levelling feet, a chrome line round the top.
-    // Seen from the side, in the 3D view and the highlights; from overhead the rails hide them.
+  }
+  /* Under the rails, as on a real table: a skirt (apron) all round under the rail, then the cabinet down to the floor,
+     of the same wood: its long sides lean in towards the floor and its ends slope, and it stands on its feet through
+     thick arches cut in the long sides -
+       carom: two arches, so it stands on three broad feet (the ends and the middle), each on a dark plinth, with a chrome
+              line round the top of the cabinet and a chrome band round the rails;
+       pool:  one wide arch between flared corner feet on chrome levelling feet, a chrome line round the top.
+     Seen from the side, in the 3D view and the highlights; from overhead the rails hide them. */
+  function tableCabinet(grp, P, ox, oy, rr) {
+    const { POCKETS } = P;
     const bxo = ox - 0.035, byo = oy - 0.035, br = 0.07, carom = !P.POCKETED;
     const body = rrect(new THREE.Shape(), bxo, byo, br);
     for (const p of POCKETS) { const h = new THREE.Path(); h.absarc(p.x, p.y, p.r + 0.002, 0, Math.PI * 2, true); body.holes.push(h); }   // the pockets go down through it
@@ -212,7 +217,7 @@
     for (const sy of [-1, 1]) { const m = new THREE.Mesh(BADGE, badgeMat); m.rotation.set(Math.PI / 2, 0, sy > 0 ? Math.PI : 0); m.position.set(0, sy * (byo + 0.0015), -0.19); grp.add(m); }
     {
       // the cabinet's side outline (x along the table, z up), drawn once and pushed through the table's width (y)
-      const T = -0.27, F = carom ? -0.77 : -0.75, X0 = bxo - 0.01, X1 = X0 - (carom ? 0.16 : 0.1), slope = x => X0 + (X1 - X0) * 0;   // (slope: kept straight below)
+      const T = -0.27, F = carom ? -0.77 : -0.75, X0 = bxo - 0.01, X1 = X0 - (carom ? 0.16 : 0.1);
       const sh = new THREE.Shape(); sh.moveTo(-X1, F); sh.lineTo(-X0, T); sh.lineTo(X0, T); sh.lineTo(X1, F);
       const arch = (x0, x1, top) => {                                     // an arch from the floor, rounded over the top
         const w = (x1 - x0) / 2, r = Math.min(w, (top - F) * 0.8), xm = (x0 + x1) / 2;
@@ -252,7 +257,10 @@
       const bandG = new THREE.ExtrudeGeometry(band, { depth: 0.014, bevelEnabled: false, curveSegments: 28 }); bandG.translate(0, 0, RAIL_Z - 0.078);
       grp.add(new THREE.Mesh(bandG, chromeMat));
     }
-    // sights
+  }
+  // the mother-of-pearl sights along the rails: a drawn diamond, and the made one over it once its picture is in
+  function tableSights(grp, P, Xb, Yb) {
+    const { HL, HW } = P;
     const dg = new THREE.CircleGeometry(0.0095, 4);
     const sight = (x, y, turn) => {
       const m = new THREE.Mesh(dg, pearl); if (turn) m.rotation.z = Math.PI / 2; m.position.set(x, y, RAIL_Z + 0.0006); grp.add(m);
@@ -260,8 +268,10 @@
     };
     for (const k of P.POCKETED ? [-3, -2, -1, 1, 2, 3] : [-3, -2, -1, 0, 1, 2, 3]) for (const sy of [-1, 1]) sight(k * HL / 4, sy * (Yb + RW * 0.52));
     for (const k of [-1, 0, 1]) for (const sx of [-1, 1]) sight(sx * (Xb + RW * 0.52), k * HW / 2, true);
-    // cushions
-    for (const cu of CUSHIONS) {
+  }
+  // the cushions: a sloped top down to the nose, and plain walls down to the cloth
+  function tableCushions(grp, P, Xb, Yb) {
+    for (const cu of P.CUSHIONS) {
       const back = pt => cu.o[0] !== 0 ? [cu.o[0] * Xb, pt[1]] : [pt[0], cu.o[1] * Yb];
       const top = [[...cu.ja, 0.038], [...cu.a, 0.0355], [...cu.b, 0.0355], [...cu.jb, 0.038], [...back(cu.jb), RAIL_Z], [...back(cu.ja), RAIL_Z]];
       const v = [], uv = [];
@@ -274,6 +284,22 @@
       g2.computeVertexNormals();
       const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.layers.enable(OCCL); grp.add(m);   // no shadows on it: at these slopes they only band
     }
+  }
+  function buildTable(P) {
+    const grp = new THREE.Group(), { HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
+    tableBed(grp, P);
+    pocketPits(grp, P);
+    // rails: the outline with its inner edge cut out, bevelled, standing up from the cloth
+    const rail = rrect(new THREE.Shape(), ox, oy, rr);
+    const hole = new THREE.Path();
+    railCut(grp, P, hole, Xb, Yb, bev);
+    rail.holes.push(hole);
+    const rg = new THREE.ExtrudeGeometry(rail, { depth: 0.12, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelOffset: -bev, bevelSegments: 7, curveSegments: 28 });
+    rg.translate(0, 0, RAIL_Z - 0.12 - bev);
+    const railMesh = new THREE.Mesh(rg, woodMat); railMesh.castShadow = true; railMesh.receiveShadow = true; railMesh.layers.enable(OCCL); grp.add(railMesh);
+    tableCabinet(grp, P, ox, oy, rr);
+    tableSights(grp, P, Xb, Yb);
+    tableCushions(grp, P, Xb, Yb);
     mergeStatic(grp);
     grp.visible = false; sScene.add(grp);
     return grp;
