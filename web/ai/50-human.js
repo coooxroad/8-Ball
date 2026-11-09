@@ -8,7 +8,7 @@
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
     const budget = Math.round(36 + 64 * skill * skill); let sims = 0;
     const exploreMasse = g.masse && !ordinaryFour && rand() < style.masse * (ranked ? 0.04 + 0.22 * skill : 0.45 + 0.5 * skill);
-    const seeBank = ranked ? practice.bank + style.bank * 0.24 > 0.46 : style.bank > 0.3;
+    const seeBank = (!pool || style.bank > 0.3) && (ranked ? practice.bank + style.bank * 0.24 > 0.46 : style.bank > 0.3);
     const speed = (x) => clamp(x, g.vOf(0), g.vOf(1));
     const add = (angle, V, id, extra = {}) => {
       const T = w.balls[id], origin = extra.pos ? { x: extra.pos[0], y: extra.pos[1] } : c;
@@ -50,6 +50,7 @@
       // Do not reward gratuitous force: a comfortable scoring stroke should usually leave the table under control.
       value -= g.powerOf(shot.V) * (0.25 + (1 - style.power) * 0.5);
       value -= shot.difficulty * (1 - skill) * 0.3;
+      if (ranked && pool && made) value -= shot.difficulty * (1.2 - 0.6 * skill);
       if (ordinaryFour) {
         value -= (1 - skill) * (Math.min(ev.cushions, 3) * 2.2 + Math.hypot(shot.a, shot.b) * 2);
         if (!made && safe && ev.hits.length) value += 1;
@@ -63,7 +64,7 @@
       return { ...shot, ...humanPresentation(shot, person, 0.25), decision: 'break', simulations: 0, humanState: turn.state, action: 'play' };
     }
     const spinPractice = ordinaryFour ? skill * skill : g.modeId === 'three' ? 0.25 + skill : skill;
-    const trySpin = !ranked || rand() < Math.min(1, spinPractice * (0.65 + style.spin * 0.9));
+    const trySpin = !ranked || rand() < Math.min(1, spinPractice * (0.65 + style.spin * 0.9)) || (pool && skill >= 0.83);
     const ordered = targets.map(id => w.balls[id]).sort((a, b) => distance(c, a) - distance(c, b));
     if (pool) {
       const rails = [['x', P.HL - P.R], ['x', -P.HL + P.R], ['y', P.HW - P.R], ['y', -P.HW + P.R]];
