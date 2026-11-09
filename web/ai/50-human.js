@@ -108,7 +108,7 @@
           const f = i === 0 ? 0 : Math.ceil(i / 2) / Math.ceil(steps / 2) * (i % 2 ? 1 : -1), angle = base + half * f * 0.98;
           const h = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); if (h.type !== 'ball' || h.ball !== T.id) continue;
           // Geometric tangent ranking finds plausible caroms before any costly simulation.
-          const other = ordered.find(b => b.id !== T.id), rank = humanCaromRank(h, angle, other, need);
+          const other = ordered.find(b => b.id !== T.id) || w.balls.find(b => b.on && b.id !== w.cue && b.id !== T.id), rank = humanCaromRank(h, angle, other, need);   // (the 3쿠션 opening: only the red may be aimed at, the other ball is still the second)
           add(angle, (need ? 4.4 : 2.5) * PACE.carom, T.id, { rank, cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom' });
         }
         if (skill > 0.25 || style.bank > 0.7) for (let ix = -2; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) {

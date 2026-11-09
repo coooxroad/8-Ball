@@ -200,4 +200,4 @@
 #dkBoards .bd.card.game .in{padding:calc(var(--u)*6) calc(var(--u)*5.5)}
 #dkBoards .bd.card.game .bd-tt b{font-size:calc(var(--u)*8.5)}
 #dkBoards .bd.card.game .bd-tt small{font-size:max(11px,calc(var(--u)*3.4))}
-#dkBoards .bd.card.game .rack{top:auto;bottom:calc(var(--u)*10);right:50%;transform:translateX(50%)}
+#dkBoards .bd.card.game .rack{top:auto;bottom:calc(var(--u)*12);left:50%;right:auto;transform:translateX(-50%)}

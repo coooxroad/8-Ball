@@ -65,6 +65,10 @@ function createGame(PH, makeAI) {
         }
         if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
         if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
+        // (WPA) a break stands only if a ball is potted or four object balls reach a cushion: else the other player breaks
+        // again, from a new rack (owner 11-09: the rules as they are)
+        if (c.isBreak && !potted.some(i => i !== 0) && ev.railed.filter(i => i !== 0).length < 4)
+          return { foul: '브레이크 불성립', scratch: false, respot: [], win: null, why: '', assign: null, keep: false, pts: 0, rerack: true };
         const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
         if (eight) {
           if (c.isBreak) r.respot.push(8);
@@ -108,6 +112,8 @@ function createGame(PH, makeAI) {
         else if (ev.firstHit !== c.lowest) foul = `${c.lowest}번 공을 먼저 맞혀야 합니다`;
         if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
         if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
+        // (WPA) a break stands only if a ball is potted or four object balls reach a cushion: else a foul
+        if (!foul && c.isBreak && !obj.length && ev.railed.filter(i => i !== 0).length < 4) foul = '브레이크 불성립';
         const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
         if (nine) { if (foul) r.respot.push(9); else { r.win = me; r.why = '9번 공을 넣었습니다.'; r.plain = true; return r; } }
         r.keep = !foul && obj.length > 0;
@@ -158,14 +164,16 @@ function createGame(PH, makeAI) {
     setup(g, rnd) {
       const P = g.P, { HL } = P, w = g.world;
       P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1 - g.turn, -HL / 2, 0, rnd); P.place(w, g.turn, -HL / 2, -0.18, rnd);
-      g.placing = null; g.isBreak = false;
+      g.placing = null; g.isBreak = true;            // (the opening shot: the red first - evaluate)
     },
     intro: g => g.cushions ? `쿠션 ${g.cushions}회 이상` : '',
     status: (g, pi) => ({ sub: '', goal: g.targets[pi], tray: [], pts: g.players[pi].score }),
-    badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
-    legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
-    ctx(g) { return { turn: g.turn, need: g.cushions || 0 }; },
+    badge: g => ({ text: g.isBreak ? '초구 · 빨간 공 먼저' : g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
+    legal(g, me) { return g.isBreak ? [2] : [0, 1, 2].filter(i => i !== me); },
+    ctx(g) { return { turn: g.turn, need: g.cushions || 0, opening: !!g.isBreak }; },
     evaluate(ev, c) {
+      // (the opening shot must meet the red first - a foul otherwise, the turn passes)
+      if (c.opening && ev.firstHit != null && ev.firstHit !== 2) return { foul: '초구는 빨간 공을 먼저 맞혀야 합니다', scratch: false, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
       const both = ev.hits.length >= 2, ok = both && ev.cushions >= c.need;
       const note = both && !ok ? `쿠션 ${ev.cushions}번 · ${c.need}번이 필요합니다` : ev.firstHit == null ? '아무 공도 맞히지 못했습니다' : null;
       return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: ok, pts: ok ? 1 : 0, note };
@@ -215,7 +223,7 @@ function createGame(PH, makeAI) {
     evaluate(ev) { return { foul: null, scratch: ev.pocketed.some(p => p.id === 0), respot: [], win: null, why: '', assign: null, keep: true, pts: 0 }; },
   };
 
-  const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0 });
+  const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0, foulRun: 0 });
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
@@ -236,7 +244,8 @@ function createGame(PH, makeAI) {
     // carom: in 4구 the first to play has the white ball and the other the yellow (owner, 11-08: it was the other way).
     // g.yellow is the yellow ball's player; the scene and the HUD paint ball 0 or 1 yellow by it
     g.yellow = g.mode.table === 'carom' && modeId === 'four' ? 1 - g.turn : 1;
-    g.mode.setup(g, opts.rnd || Math.random);
+    g.rnd = opts.rnd || Math.random;             // (the rack's chances - again for a new rack after a break that did not stand)
+    g.mode.setup(g, g.rnd);
     g.world.ice = g.ice;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
@@ -313,7 +322,10 @@ function createGame(PH, makeAI) {
     const m = g.mode, me = g.turn, p = g.players[me], nx = 1 - me, name = g.players[nx].name;
     p.run = 0; g.turn = nx;
     let msg = '시간 초과';
-    if (m.ballInHand && !g.isBreak) { p.fouls++; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기'; }
+    if (m.ballInHand && !g.isBreak) {
+      p.fouls++; p.foulRun = (p.foulRun || 0) + 1; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기';
+      if (m.id === 'nine' && p.foulRun >= 3) { g.over = { winner: nx, why: '연속 파울 3번', plain: false }; return { msg: '연속 파울 3번', kind: 'foul', dur: 2600 }; }
+    }
     if (m.table === 'carom') g.world.cue = g.turn;
     return { msg, kind: 'foul', dur: 2600 };
   };
@@ -321,8 +333,13 @@ function createGame(PH, makeAI) {
   // Called once every ball has stopped. Applies the result and says what happened.
   g.resolve = function () {
     const m = g.mode, P = g.P, w = g.world, me = g.turn, p = g.players[me];
-    const r = m.evaluate(w.ev, g._ctx, g), out = { r, msg: '', kind: '', dur: 1600 };
+    const r = m.evaluate(w.ev, g._ctx, g), out = { r, msg: '', kind: '', dur: 1600 }, wasBreak = g.isBreak;
     for (const b of w.balls) b.wz = 0;
+    // a break that did not stand (8볼): a new rack, and the other player breaks
+    if (r.rerack) {
+      p.shots++; p.fouls++; p.run = 0; g.turn = 1 - me; m.setup(g, g.rnd || Math.random);
+      out.msg = '브레이크 불성립 · 상대가 다시 브레이크'; out.kind = 'foul'; out.dur = 3200; return out;
+    }
     if (w.ev.off.length) {
       // a ball over the rail is a foul; it comes back on its spot (the cue ball: wherever the other player likes, on a pool table)
       const cueOff = w.ev.off.includes(w.cue);
@@ -330,7 +347,9 @@ function createGame(PH, makeAI) {
       if (m.table === 'carom') { r.pts = m.solo ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
       else {
         if (cueOff) r.scratch = true;
-        if (r.win === me) { r.win = m.id === 'eight' ? 1 - me : null; r.why = '8번 공을 넣으면서 파울이 났습니다.'; if (m.id === 'nine') r.respot.push(9); }
+        // (WPA) the 8 off the table, but on the break, loses the game
+        if (m.id === 'eight' && w.ev.off.includes(8) && !wasBreak) { r.win = 1 - me; r.why = '8번 공이 테이블 밖으로 나갔습니다.'; }
+        else if (r.win === me) { r.win = m.id === 'eight' ? 1 - me : null; r.why = '8번 공을 넣으면서 파울이 났습니다.'; if (m.id === 'nine') r.respot.push(9); }
         for (const id of w.ev.off) if (id !== w.cue && !r.respot.includes(id)) r.respot.push(id);
       }
     }
@@ -339,6 +358,9 @@ function createGame(PH, makeAI) {
     g.isBreak = false;
     p.shots++;
     if (r.foul) p.fouls++;
+    // (WPA 9볼) three fouls in a row by one player lose the game; the second is said
+    p.foulRun = r.foul ? (p.foulRun || 0) + 1 : 0;
+    if (m.id === 'nine' && p.foulRun >= 3 && r.win == null) { r.win = 1 - me; r.why = '연속 파울 3번'; }
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
     if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
@@ -350,7 +372,8 @@ function createGame(PH, makeAI) {
     if (r.foul) {
       g.turn = 1 - me; const nx = g.players[g.turn].name;
       // (copy audit 05-07: the reason, then 큐볼 놓기 or the points really lost; whose turn the score bar shows)
-      if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul} · 큐볼 놓기`; }
+      // (a scratch on the 8볼 break: behind the head string - WPA)
+      if (m.ballInHand) { g.placing = wasBreak && m.id === 'eight' ? 'kitchen' : 'any'; out.msg = `파울 · ${r.foul} · 큐볼 놓기` + (m.id === 'nine' && p.foulRun === 2 ? ' · 한 번 더 파울이면 패배' : ''); }
       else out.msg = `파울 · ${r.foul}` + (r.pts < 0 ? ` · −${-r.pts * (g.tens ? 10 : 1)}점` : '');
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {

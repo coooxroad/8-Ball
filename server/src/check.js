@@ -65,9 +65,10 @@ export class Replay {
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
     if (cp && cp.i === log.shots.length && !cp.over) cp = null;
-    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.over = cp.over || null; } }
+    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.over = cp.over || null; this.fresh = !!cp.fresh; if (cp.rnd != null && this.g.rnd.seek) this.g.rnd.seek(cp.rnd); } }
   }
-  checkpoint() { return this.running || this.out ? null : { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(this.g.serialize())), over: this.g.over && { ...this.g.over } }; }
+  // (rnd: where the rack's chances have got to - a break that does not stand is racked again from them, game.js)
+  checkpoint() { return this.running || this.out ? null : { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(this.g.serialize())), over: this.g.over && { ...this.g.over }, fresh: !!this.fresh, rnd: this.g.rnd && this.g.rnd.state ? this.g.rnd.state() : null }; }
   // the next shot set going, or the end of the match
   begin() {
     const g = this.g, log = this.log, o = log.opts || {};
@@ -86,7 +87,8 @@ export class Replay {
     if (!shotOk(sh) || !sh.s || !Array.isArray(sh.s.balls) || sh.s.balls.length !== w.balls.length) return this.out = { ok: false, why: `shot ${i}: bad`, at: i };
     if (sh.seat != null && sh.seat !== g.turn) return this.out = { ok: false, why: `shot ${i}: not this seat's turn`, at: i };
     // (the first shot of a game played on one device may start from any rack; a ranked game's from its seed's)
-    if (i > 0 || this.open) for (let j = 0; j < w.balls.length; j++) {
+    // (nor a new rack after a break that did not stand, on a game played on one device: its rack was the device's own)
+    if ((i > 0 && !this.fresh) || this.open) for (let j = 0; j < w.balls.length; j++) {
       if (j === w.cue && g.placing) continue;
       const b = w.balls[j], v = sh.s.balls[j];
       if (!!v[2] !== b.on || (b.on && (Math.abs(v[0] - b.x) > 1e-7 || Math.abs(v[1] - b.y) > 1e-7))) return this.out = { ok: false, why: `shot ${i}: ball ${j} is not where the last shot left it`, at: i };
@@ -121,7 +123,7 @@ export class Replay {
       while (steps > 0 && !P.rest(w) && this.t < 40) { P.step(w, 1 / 120); this.t += 1 / 120; steps--; }
       if (!P.rest(w) && this.t < 40) break;                                       // (out of steps for now, mid-shot)
       for (const b of w.balls) b.wz = 0;                                          // (as physics.run ends a shot)
-      const potted = w.ev.pocketed.filter(p => p.id !== 0).length, r = g.resolve().r;
+      const potted = w.ev.pocketed.filter(p => p.id !== 0).length, r = g.resolve().r; this.fresh = !!r.rerack;
       if (g.mode.table === 'carom') { if (r.pts > 0) this.points[this.me] += r.pts; } else if (!r.foul) this.points[this.me] += potted;
       this.running = false; this.i++;
       this.lastCp = this.checkpoint();                                          // (including a win at the last step of a slice)

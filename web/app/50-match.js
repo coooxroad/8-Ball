@@ -37,7 +37,7 @@ const match = {
   restart() { match.start(game.turn, match.ctx); },
   rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
-  timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
+  timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (game.over) { toast(out.msg, out.kind, out.dur); return match.finish(); } if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,
   auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
   beforeShot(V, a, b, el) {

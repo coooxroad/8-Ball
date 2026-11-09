@@ -115,7 +115,7 @@
     }
     if (!found.length) {
       // nothing obvious: sweep finely across every ball it may hit (from a few places, with the ball in hand), then round the whole clock
-      const spots = g.placing ? [[-HL / 2, 0], [0, 0], [HL / 2, 0], [0, HW / 2], [0, -HW / 2]].map(q => P.isFree(w, q[0], q[1], 0) ? q : P.findFree(w, q[0], q[1], 0)) : [null];
+      const spots = g.placing ? [[-HL / 2, 0], [0, 0], [HL / 2, 0], [0, HW / 2], [0, -HW / 2]].map(q => handSpot(q[0], q[1])) : [null];
       const order = targets.map(t => w.balls[t]);
       sweep: for (const pos of spots) {
         const fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y;
@@ -160,7 +160,7 @@
       if (g.placing) {
         for (const dist of [0.32, 0.5, 0.75]) for (const da of [0, 0.3, -0.3, 0.55, -0.55]) {
           const ca = Math.cos(da), sa = Math.sin(da), px = gx - (dx * ca - dy * sa) * dist, py = gy - (dx * sa + dy * ca) * dist;
-          if (P.isFree(w, px, py, 0)) spots.push([px, py]);
+          if (P.isFree(w, px, py, 0) && inHand(px)) spots.push([px, py]);
         }
       } else spots.push([c.x, c.y]);
       for (const s of spots) {
@@ -191,13 +191,13 @@
     for (const T of order) {
       const spots = [];
       if (g.placing) {
-        for (const [ox, oy] of [[-0.3, 0], [0.3, 0], [0, -0.3], [0, 0.3]]) if (P.isFree(w, T.x + ox, T.y + oy, 0)) { spots.push([T.x + ox, T.y + oy]); if (spots.length === 2) break; }
-        if (!spots.length) spots.push(P.findFree(w, T.x - 0.3, T.y, 0));
+        for (const [ox, oy] of [[-0.3, 0], [0.3, 0], [0, -0.3], [0, 0.3]]) if (P.isFree(w, T.x + ox, T.y + oy, 0) && inHand(T.x + ox)) { spots.push([T.x + ox, T.y + oy]); if (spots.length === 2) break; }
+        if (!spots.length) spots.push(handSpot(T.x - 0.3, T.y));
       } else spots.push(null);
       for (const pos of spots) {
         const fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y, d = Math.hypot(T.x - fx, T.y - fy);
         const base = Math.atan2(T.y - fy, T.x - fx), half = Math.asin(Math.min(1, 2 * R / Math.max(d, 2 * R))) * 0.9;
-        for (const f of [0, 0.35, -0.35, 0.7, -0.7]) for (const V of [2.4, 3.6]) {
+        for (const f of [0, 0.35, -0.35, 0.7, -0.7]) for (const V of [2.4 * PACE.pool, 3.6 * PACE.pool]) {
           const tr = { pos, angle: base + f * half, V }, r = verdict(tr.angle, V, pos);
           if (good(r)) return { pos, angle: tr.angle + gauss() * noise * 0.5, V };
           if (!firstSafe && safe(r)) firstSafe = tr;
@@ -205,7 +205,7 @@
       }
     }
     if (firstSafe) return { pos: firstSafe.pos, angle: firstSafe.angle + gauss() * noise * 0.5, V: firstSafe.V };
-    const pos = g.placing ? P.findFree(w, -HL / 2, 0, 0) : null;
+    const pos = g.placing ? handSpot(-HL / 2, 0) : null;
     for (let i = 0; i < 120; i++) { const a = i * Math.PI / 60; if (safe(verdict(a, 3 * PACE.pool, pos))) return { pos, angle: a, V: 3 * PACE.pool }; }
     const T = order[0], fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y;
     return { pos, angle: Math.atan2(T.y - fy, T.x - fx), V: 2.6 * PACE.pool };

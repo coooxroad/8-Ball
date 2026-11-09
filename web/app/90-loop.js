@@ -177,7 +177,17 @@ function frame(now) {
      The change waits for the next frame's start (scene setScale/takeScale); text and physics keep their own resolution.
    A gap that spans the page being hidden (another app, the screen off) is not counted. */
 const perf = { gaps: [], t: 0, frames: 0, ok: 0, slow: 0, calls: 0, tris: 0, long: 0, longWhy: '', stalls: 0 };
+/* What happens after the screen changes size (fullscreen above all - a tablet showed black for seconds, owner 11-09): when
+   it changed, how many size changes followed, the first frame drawn after it, and the 3D context lost or given back. Shown
+   on the frame-rate display (설정 · 초당 프레임 표시), to tell a slow redraw from a lost context. */
+const fsDiag = { t0: 0, first: 0, sizes: 0, lost: 0, back: 0, lostAt: 0, backAt: 0 };
+['fullscreenchange', 'webkitfullscreenchange'].forEach(e => document.addEventListener(e, () => { Object.assign(fsDiag, { t0: performance.now(), first: 0, sizes: 0 }); }));
+addEventListener('resize', () => { if (fsDiag.t0) fsDiag.sizes++; });
+$('#gl').addEventListener('webglcontextlost', () => { fsDiag.lost++; fsDiag.lostAt = performance.now() - (fsDiag.t0 || 0); });
+$('#gl').addEventListener('webglcontextrestored', () => { fsDiag.back++; fsDiag.backAt = performance.now() - (fsDiag.t0 || 0); });
+const fsText = () => !fsDiag.t0 && !fsDiag.lost ? '' : `\n전체화면 전환 → 첫 그림 ${fsDiag.first ? Math.round(fsDiag.first) + 'ms' : '대기'} · 크기 변경 ${fsDiag.sizes}회 · 3D 잃음 ${fsDiag.lost}회${fsDiag.lost ? ` (${Math.round(fsDiag.lostAt)}ms)` : ''} · 복구 ${fsDiag.back}회${fsDiag.back ? ` (${Math.round(fsDiag.backAt)}ms)` : ''} · 캔버스 ${$('#gl').width}×${$('#gl').height}`;
 function perfTick(raw, drew) {
+  if (drew && fsDiag.t0 && !fsDiag.first) fsDiag.first = performance.now() - fsDiag.t0;
   if (prof.hid) { prof.hid = false; return; }                              // (the page was away: that gap is not ours)
   perf.t += raw;
   if (raw > 0) perf.frames++;
@@ -194,7 +204,7 @@ function perfTick(raw, drew) {
     const b = `최장 ${Math.round(perf.long)}ms${why(perf.longWhy)}${perf.stalls ? ` · 멈춤 ${perf.stalls}회` : ''} · 세션 최장 ${Math.round(prof.worst)}ms${why(prof.worstWhy)} · ${scene.pixelRatio.toFixed(2)}x`;
     const c = `AI ${ms('ai')} · 조준 ${ms('guide')} · 물리 ${ms('sim')} · 그리기 ${ms('draw')} · 화면 ${ms('ui')}ms · ${perf.calls}회 ${Math.round(perf.tris / 1000)}k`;
     const gpu = scene.softwareRendering ? 'WebGL: 소프트웨어 렌더링' : 'WebGL: ' + (scene.rendererName || '장치 정보 없음');
-    $('#fps').textContent = a + ' · ' + b + '\n' + c + '\n' + gpu;
+    $('#fps').textContent = a + ' · ' + b + '\n' + c + '\n' + gpu + fsText();
   }
   const live = st.screen === 'play' || st.screen === 'reel' || (st.screen === 'home' && deskTableShown());
   if (prefs.quality === 'auto' && live && n >= 3) {
