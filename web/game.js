@@ -227,7 +227,7 @@ function createGame(PH, makeAI) {
   const g = {
     MODES, GROUP_KO, modeId: 'eight', mode: MODES.eight, P: PH.pool, world: null, turn: 0,
     players: [mkP('플레이어 1'), mkP('플레이어 2')], isBreak: true, placing: null, over: null, target: 10, targets: [10, 10], level: 1, _ctx: null,
-    tens: false, finish: false, potTray: false, ice: false, masse: true, goal: 'score',
+    tens: false, finish: false, potTray: false, ice: false, masse: true, goal: 'score', team: false, member: [0, 0],
   };
 
   g.start = function (modeId, names, ai, opts) {
@@ -235,7 +235,10 @@ function createGame(PH, makeAI) {
     g.modeId = modeId; g.mode = MODES[modeId]; g.P = PH[g.mode.bed] || PH[g.mode.table];
     g.world = g.P.makeWorld(g.mode.n); g.world.track = true; g.world.snd = [];
     g.players = [mkP(names[0], false), mkP(names[1], ai)];
-    g.turn = opts.first || 0; g.over = null; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
+    g.turn = opts.first || 0; g.over = null;
+    // 2:2 (opts.team): each side two players - seats A1 0, B1 1, A2 2, B2 3 - taking the side's visits in turn: a side's
+    // shooter is g.turn + 2 * g.member[g.turn], and when its visit ends the next of the two has the next one
+    g.team = !!opts.team; g.member = [0, 0]; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
     // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
@@ -320,7 +323,7 @@ function createGame(PH, makeAI) {
   // more happens - no point is lost.
   g.timeout = function () {
     const m = g.mode, me = g.turn, p = g.players[me], nx = 1 - me, name = g.players[nx].name;
-    p.run = 0; g.turn = nx;
+    p.run = 0; g.turn = nx; if (g.team) g.member[me] ^= 1;
     let msg = '시간 초과';
     if (m.ballInHand && !g.isBreak) {
       p.fouls++; p.foulRun = (p.foulRun || 0) + 1; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기';
@@ -337,7 +340,7 @@ function createGame(PH, makeAI) {
     for (const b of w.balls) b.wz = 0;
     // a break that did not stand (8볼): a new rack, and the other player breaks
     if (r.rerack) {
-      p.shots++; p.fouls++; p.run = 0; g.turn = 1 - me; m.setup(g, g.rnd || Math.random);
+      p.shots++; p.fouls++; p.run = 0; g.turn = 1 - me; if (g.team) g.member[me] ^= 1; m.setup(g, g.rnd || Math.random);
       out.msg = '브레이크 불성립 · 상대가 다시 브레이크'; out.kind = 'foul'; out.dur = 3200; return out;
     }
     if (w.ev.off.length) {
@@ -387,8 +390,11 @@ function createGame(PH, makeAI) {
       if (rem && !rem.length) { out.msg = '이제 8번 공을 넣으면 이깁니다.'; out.kind = 'good'; out.dur = 2400; }
     }
     if (m.table === 'carom') w.cue = g.turn;
+    if (g.team && g.turn !== me) g.member[me] ^= 1;          // (that side's visit over: its other player has the next)
     return out;
   };
+  // the seat whose shot it is: the side's (0, 1), or in 2:2 which of its two (0-3)
+  g.shooter = () => g.team ? g.turn + 2 * g.member[g.turn] : g.turn;
 
   // the computer player is ai/ (createAI): given, it answers g.aiPlan()
   if (makeAI) { const ai = makeAI(g); g.aiPlan = ai.plan; }
@@ -397,6 +403,7 @@ function createGame(PH, makeAI) {
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse, yellow: g.yellow,
+    team: g.team, member: g.member.slice(),
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -407,6 +414,7 @@ function createGame(PH, makeAI) {
     g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
     g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
     g.ice = !!d.ice; g.world.ice = g.ice; g.masse = d.masse !== false;
+    g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     return true;
   };
   return g;

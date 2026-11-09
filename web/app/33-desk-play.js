@@ -104,7 +104,8 @@ function deskPlay(d) {
     // (the rooms waiting for someone, then - divided off as the shop divides its rarities - the games being played, to
     // watch: owner 11-09)
     const table = (r, i) => {
-      const kind = r.mode === 'three' || r.mode === 'four' ? 'carom' : 'pool', rule = RULE_KO(r.mode, r.rules), who = r.playing ? `${r.host.name} vs ${r.guest.name}` : r.host.name;
+      const kind = r.mode === 'three' || r.mode === 'four' ? 'carom' : 'pool', rule = [r.size === 4 ? `2:2${r.playing ? '' : ` ${r.filled}/4`}` : '', RULE_KO(r.mode, r.rules)].filter(Boolean).join(' · '),
+        who = r.playing ? (r.names ? `${r.names[0]}·${r.names[2]} vs ${r.names[1]}·${r.names[3]}` : `${r.host.name} vs ${r.guest.name}`) : r.host.name;
       return el('button', { class: 'tb unf ' + kind + (r.lock ? ' lock' : '') + (r.playing ? ' live' : ''), style: `--d:${i * 40}ms`,
         'aria-label': `${r.title || `${r.host.name}의 방`}, ${MODE_KO[r.mode]}${r.playing ? ', 경기 중, 관전' : ''}${r.lock ? ', 비밀번호' : ''}`,
         onclick: onTap(() => r.playing ? (r.lock ? invite.sheetPw(r, false, true) : invite.watch(r)) : r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
@@ -152,13 +153,17 @@ function deskInvite(slate, _, m) {
     dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]); }
   if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); })]); }
+  // 1:1 or 2:2 (owner 11-09: four, the empty seats the computer's if the host likes)
+  dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); })]);
+  const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean));
+  if (four && h && h.seats) dkPut(slate, el('div', { class: 'seats' }, invite.seatRows(h.seats, 0, true)));
   // (copy audit 02-06, 02-07: one line for the state - open (the badge on the code says it is listed), opening, or why not)
-  dkPut(slate, [dkHr(), dkTxt(h ? '친구가 들어오면 바로 시작' : invite.err && !invite.opening ? `방을 열지 못했습니다 (${invite.err})` : '방 여는 중…'),
+  dkPut(slate, [dkHr(), dkTxt(h ? (four ? (full ? '모두 모였습니다 · 시작하세요' : '빈자리에 친구가 오거나 컴퓨터를 넣으세요') : '친구가 들어오면 바로 시작') : invite.err && !invite.opening ? `방을 열지 못했습니다 (${invite.err})` : '방 여는 중…'),
     // (the password is asked only of those who take the room from the list: the code is the invitation - 55-invite.js)
     dkRow(`방 이름 · ${invite.title || (h && h.title) || prefs.names[0] + '의 방'}`, '바꾸기', invite.sheetTitle),
     dkRow(invite.pw ? `비밀번호 ${'•'.repeat(invite.pw.length)}` : '비밀번호 없음', invite.pw ? '없애기' : '정하기', () => { if (invite.pw) { invite.pw = ''; repaint(); } else invite.sheetPw(null); }),
     el('div', { class: 'dk-row' }, el('button', { class: 'dk-chip', text: '코드로 참가', onclick: onTap(invite.sheetJoin) }))]);
-  dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', null, () => { invite.err = null; repaint(); }) : dkMain('초대 링크 보내기', null, () => h && invite.share(h.code), !h),
+  dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', null, () => { invite.err = null; repaint(); }) : four && full ? dkMain('경기 시작', null, () => invite.start()) : dkMain('초대 링크 보내기', null, () => h && invite.share(h.code), !h),
     dkSec('방 나가기', () => { invite.leave(); prefs.friendWay = 'local'; repaint(); })));
 }
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터

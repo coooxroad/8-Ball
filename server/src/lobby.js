@@ -30,8 +30,9 @@ export class Lobby extends DurableObject {
       // (taken from the list: its id, and the password if it has one, stand for the code)
       if (what === 'join' && body.id) { const c = I.byId(body.id, body.pw); if (!c.ok) return Response.json(c); body.code = c.code; }
       if (what === 'leave') return Response.json(I.leave(body.acct, body.code));
-      if (what === 'join') {
-        const r = I.join(body, body.code);
+      if (what === 'bot') return Response.json(I.bot(body.acct, body.code, body.seat, body.level));
+      if (what === 'join' || what === 'start') {
+        const r = what === 'start' ? I.start(body.acct, body.code) : I.join(body, body.code);
         if (r.ok && r.init) {
           // (the room opened before anyone hears of it; if it could not be, the join is undone and may be tried again)
           const res = await this.env.ROOM.get(this.env.ROOM.idFromName(r.init.room), roomNear(body)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(r.init) }).catch(() => null);

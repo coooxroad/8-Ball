@@ -37,7 +37,7 @@ export class Room extends DurableObject {
     this.core.connected(seat);
     return new Response(null, { status: 101, webSocket: client });
   }
-  seatOfSocket(ws) { const t = this.ctx.getTags(ws).find(x => /^s[01]$/.test(x)); return t ? +t[1] : -1; }
+  seatOfSocket(ws) { const t = this.ctx.getTags(ws).find(x => /^s[0-3]$/.test(x)); return t ? +t[1] : -1; }
   async webSocketMessage(ws, data) {
     const seat = this.seatOfSocket(ws); if (seat < 0 || typeof data !== 'string' || data.length > 64000) return;
     let m; try { m = JSON.parse(data); } catch (e) { return; }

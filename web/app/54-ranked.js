@@ -59,28 +59,31 @@ const ranked = {
     const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, table: r.table || 'bar', opp: r.opp, standIn: r.standIn || null, kind: r.kind || 'ranked',
       inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: net.me ? net.me.dama : ECONOMY.DAMA_START };
     ranked.connect();
-    const names = []; names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name;
+    // (2:2: r.team - the four seats; each side's name is its two players', and whose shot it is goes round - game.js)
+    if (r.team) { o.team = r.team; o.side = o.seat % 2; }
+    const names = []; if (o.team) { names[0] = `${o.team[0].name}·${o.team[2].name}`; names[1] = `${o.team[1].name}·${o.team[3].name}`; } else { names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name; }
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
-    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
+    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o, team: !!o.team });
     if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
-  /* Watching a friend's game from the list (55-invite.js watch): seat 2, neither player's - every shot is the room's, played
+  /* Watching a friend's game from the list (55-invite.js watch): seat -1, nobody's - every shot is the room's, played
      here as it comes; what was played before coming in is played at once (catchUp), so the table is where it is now.
      Nothing is sent; leaving gives nothing up. The game starts once the room's state has come (seats, seed, rules). */
   watch(r) {
     ranked.leave();
-    ranked.on = { watch: true, seat: 2, room: r.room, key: r.watch, mode: r.mode, title: r.title || '', inbox: [], n: 0, sent: [], ws: null, done: false, tries: 0, res: {}, mine: {},
+    ranked.on = { watch: true, seat: -1, room: r.room, key: r.watch, mode: r.mode, title: r.title || '', inbox: [], n: 0, sent: [], ws: null, done: false, tries: 0, res: {}, mine: {},
       opp: { name: '' }, kind: 'invite', table: 'bar', standIn: null, started: false };
     ranked.connect();
   },
   watchStart(m) {
     const o = ranked.on; o.started = true; app.classList.add('watching'); o.seed = m.seed >>> 0; o.first = m.first; o.seats = m.seats; o.rules = m.rules;
+    if (m.team) o.team = m.seats;
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     const rules = m.rules || RANKED_RULES[o.mode];
-    match.start(o.first, { names: m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
-    toast(`관전 중 · ${m.seats[0].name} vs ${m.seats[1].name}`, '', 2400);
+    match.start(o.first, { team: !!m.team, names: m.team ? [`${m.seats[0].name}·${m.seats[2].name}`, `${m.seats[1].name}·${m.seats[3].name}`] : m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
+    toast(`관전 중 · ${game.players[0].name} vs ${game.players[1].name}`, '', 2400);
   },
   /* the shots played before a watcher came in, played at once - the table, the score and whose turn it is as they are now -
      all but the last, which is played as it comes (so the watcher sees a shot, not a jump) */
@@ -118,7 +121,9 @@ const ranked = {
       }
       // everything the room has: the other seat's shots not played here yet go in line; ours it missed go again
       const have = m.shots.length;
-      for (let i = o.n + o.inbox.length; i < have; i++) if (m.shots[i].seat !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
+      const byOf = s => s.by != null ? s.by : s.seat;
+      if (m.team && !o.team) o.team = m.team;
+      for (let i = o.n + o.inbox.length; i < have; i++) if (byOf(m.shots[i]) !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
       if (o.watch) return ranked.catchUp();
       for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
       if (m.result) ranked.result(m.result); else if (o.closing) o.ws.send(JSON.stringify(o.closing));
@@ -131,8 +136,8 @@ const ranked = {
     else if (m.t === 'aim') ranked.aimFrom(m);
     else if (m.t === 'emote') emote.got(m);
     else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
-    else if (m.t === 'away') toast(`${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
-    else if (m.t === 'back') toast(`${o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
+    else if (m.t === 'away') toast(o.team ? `${(o.team[m.seat] || {}).name || '한 명'}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 그 팀이 집니다.` : `${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
+    else if (m.t === 'back') toast(`${o.team ? (o.team[m.seat] || {}).name || '한 명' : o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
     else if (m.t === 'result') ranked.result(m);
   },
   // the other player lining up: their cue moves here as it does there
@@ -148,7 +153,7 @@ const ranked = {
     while (b.length > 2 && b[1].t < now - AIM_LAG - 400) b.shift();
   },
   // the other player online is lining up a shot, and something of it has been heard here
-  aiming() { const o = ranked.on; return !!(o && o.aimBuf && o.aimBuf.length && game.turn !== o.seat && st.phase === 'auto' && st.auto && !st.auto.plan && (!game.placing || !!o.aimBuf[o.aimBuf.length - 1].pos)); },
+  aiming() { const o = ranked.on; return !!(o && o.aimBuf && o.aimBuf.length && game.shooter() !== o.seat && st.phase === 'auto' && st.auto && !st.auto.plan && (!game.placing || !!o.aimBuf[o.aimBuf.length - 1].pos)); },
   // each frame, the other player's turn: where their cue is now, between the two places heard either side of a moment ago
   aimShow() {
     const o = ranked.on, a = st.auto, b = o && o.aimBuf;
@@ -170,9 +175,11 @@ const ranked = {
      each player's own cue and trail, and the ball set and table of whichever player has the rarer (seat 0's if equal). An ice
      table is not a look - it plays differently - so it is never chosen here. */
   lookOf(o) {
-    const g = []; if (o.watch) { g[0] = o.seats[0].gear || {}; g[1] = o.seats[1].gear || {}; } else { g[o.seat] = ranked.gear(); g[1 - o.seat] = o.opp.gear || {}; }
+    // (2:2: every seat's own cue and trail; the ball set and table the rarest of the four)
+    const g = []; if (o.team) o.team.forEach((q, i) => { g[i] = i === o.seat ? ranked.gear() : (q && q.gear) || {}; });
+    else if (o.watch) { g[0] = o.seats[0].gear || {}; g[1] = o.seats[1].gear || {}; } else { g[o.seat] = ranked.gear(); g[1 - o.seat] = o.opp.gear || {}; }
     const rar = (L, id) => { const q = L.find(x => x.id === id); return q ? q.rarity || 0 : -1; };
-    const rarer = (L, k, usual) => { const a = g[0][k], b = g[1][k], w = rar(L, b) > rar(L, a) ? b : a; return L.some(x => x.id === w) ? w : usual; };
+    const rarer = (L, k, usual) => { let w = g[0][k]; for (const x of g) if (rar(L, x[k]) > rar(L, w)) w = x[k]; return L.some(x => x.id === w) ? w : usual; };
     const tbl = rarer(CLOTHS.filter(c => !c.ice), 'table', CLOTHS[0].id), usualCue = Math.max(0, CUES.findIndex(c => !(c.rarity > 0)));
     return { ball: rarer(BALLSKINS, 'ball', BALLSKINS[0].id), cloth: Math.max(0, CLOTHS.findIndex(c => c.id === tbl)),
       cues: g.map(x => { const i = CUES.findIndex(c => c.id === x.cue); return i >= 0 ? i : usualCue; }),
@@ -181,7 +188,13 @@ const ranked = {
   gear() { return { cue: (CUES[prefs.cues[0]] || {}).id || null, ball: prefs.ballSkin, table: (CLOTHS[prefs.cloth] || {}).id || null, trail: prefs.trail }; },
   // a turn that is not this device's: the stand-in, worked out here; or the other player's next shot, when it comes
   auto(o) {
-    if (game.turn === o.seat) return null;
+    if (o.team && !o.watch) {
+      // 2:2: this player's own shot; a computer seat's (the host plays them - its level, from the room); or the room's
+      const who = game.shooter(), q = o.team[who], mine = who === o.seat, bot = q && q.bot != null && o.seat === 0;
+      game.players[game.turn].ai = !mine;
+      if (mine) return null;
+      if (bot) { game.levels = [q.bot, q.bot]; return { think: 0.6, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }; } }; }
+    } else if (game.turn === o.seat) return null;
     // (a person-like stand-in lines up its own way - its preShot, played by autoTick - so it needs no fixed wait)
     if (o.standIn) return { think: 0.4, showSpin: true, ai: true, resign() { ranked.resign(1 - o.seat); }, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot, action: p.action }; } };
     return { think: 0, showSpin: true, plan() {
@@ -196,12 +209,15 @@ const ranked = {
   // every shot struck here (by this device's player or its stand-in) goes to the room; every shot counts toward the next n
   struck(snap, V, a, b, el) {
     const o = ranked.on; if (!o) return;
-    if (game.turn === o.seat || o.standIn) ranked.send({ t: 'shot', n: o.n, shot: { s: snap, aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing }, as: game.turn });
+    const who = game.shooter(), botMine = o.team && o.seat === 0 && o.team[who] && o.team[who].bot != null;
+    o.lastMine = o.team ? who === o.seat || botMine : game.turn === o.seat || !!o.standIn;
+    if (o.lastMine) ranked.send({ t: 'shot', n: o.n, shot: { s: snap, aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing }, as: o.team ? who : game.turn });
     o.n++;
   },
   timedOut() {
     const o = ranked.on; if (!o) return;
-    if (game.turn === o.seat || o.standIn) ranked.send({ t: 'timeout', n: o.n, as: game.turn });
+    const who = game.shooter(), mine = o.team ? who === o.seat || (o.seat === 0 && o.team[who] && o.team[who].bot != null) : game.turn === o.seat || !!o.standIn;
+    if (mine) ranked.send({ t: 'timeout', n: o.n, as: o.team ? who : game.turn });
     o.n++;
   },
   /* After each shot has settled: the device that struck it says how the table and the game stand ('res'); the other compares
@@ -210,7 +226,7 @@ const ranked = {
   settled(turn) {
     const o = ranked.on; if (!o || o.done || o.standIn) return;            // (a stand-in's game is all on this device)
     const n = o.n - 1, st2 = game.serialize();
-    if (turn === o.seat) ranked.send({ t: 'res', n, st: st2 });
+    if (o.team ? o.lastMine : turn === o.seat) ranked.send({ t: 'res', n, st: st2 });
     else { o.mine[n] = st2; if (o.res[n]) ranked.compare(n); }
   },
   compare(n) {
@@ -226,7 +242,7 @@ const ranked = {
   tick() {
     const o = ranked.on; if (!o || o.done) return;
     ranked.aimShow();
-    if (st.phase !== 'aim' || game.turn !== o.seat) return;
+    if (st.phase !== 'aim' || game.shooter() !== o.seat) return;
     const now = Date.now(); if (now - o.aimAt < 66) return;
     // (the cue ball too while it is in hand: where it is being put)
     const c = game.placing ? game.cueBall() : null, pos = c ? [c.x, c.y] : null;
@@ -251,7 +267,7 @@ const ranked = {
       return ranked.watchEnd(m);
     }
     o.done = true; o.result = m; o.closing = null;
-    const mine = m.winner === o.seat;
+    const mine = m.winner === (o.team ? o.side : o.seat);
     const why = m.why === 'left' ? (mine ? `${o.opp.name}이(가) 나갔습니다.` : '연결이 끊겨 돌아오지 못했습니다.') : m.why === 'resigned' ? '기권했습니다.'
       : m.why === 'idle' ? (mine ? `${o.opp.name}이(가) 너무 오래 치지 않았습니다.` : '너무 오래 치지 않아 경기가 끝났습니다.')
       : m.why === 'a shot that does not fit' ? '맞지 않는 샷이 있었습니다.' : '경기가 끝났습니다.';

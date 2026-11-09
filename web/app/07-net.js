@@ -139,6 +139,8 @@ const net = (() => {
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
     async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
+    inviteBot: (code, seat, level) => call('/v1/invite/bot', { code, seat, level }),
+    inviteStart: code => call('/v1/invite/start', { code }),
     /* Linking devices to one account (server/src/link.js): a code from this device for another (make: { code, until }),
        or another device's code typed in here (use). Using one, this device takes a key of its own for that account; the
        account it had is put aside in acctOld with what it showed (never deleted), and the wallet is asked for at once. */

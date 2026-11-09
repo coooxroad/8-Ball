@@ -94,7 +94,7 @@ const emote = {
   at: 0,           // when this device last sent one
   // the six for now: what fits the moment first, then a couple that always do
   pick() {
-    const o = ranked.on, me = o ? o.seat : 0, l = emote.last, near = game.players.some((p, i) => game.mode.target && p.score >= g8Target(i) - 1);
+    const o = ranked.on, me = o ? (o.team ? o.seat % 2 : o.seat) : 0, l = emote.last, near = game.players.some((p, i) => game.mode.target && p.score >= g8Target(i) - 1);
     if (!l) return ['grin', 'wink', 'cool', 'heart', 'think', 'party'];
     const mine = l.by === me;
     if (near && !mine && l.good) return ['thumbs', 'wow', 'heart', 'sad', 'skull', 'party'];
@@ -124,10 +124,10 @@ const emote = {
   send(id) {
     emote.close();
     const now = Date.now(); if (now - emote.at < 1600) return; emote.at = now;
-    SND.tap(); ranked.send({ t: 'emote', id }); emote.show(ranked.on ? ranked.on.seat : 0, id);
+    SND.tap(); ranked.send({ t: 'emote', id }); emote.show(ranked.on ? Math.max(0, ranked.on.seat) % 2 : 0, id);
   },
   // from the other device
-  got(m) { if (EMOTES[m.id] && ranked.on) emote.show(ranked.on.watch ? (m.seat ? 1 : 0) : 1 - ranked.on.seat, m.id); },
+  got(m) { if (EMOTES[m.id] && ranked.on) emote.show(ranked.on.watch || ranked.on.team ? (m.seat | 0) % 2 : 1 - ranked.on.seat, m.id); },
   // the emoji under that seat's plate, a few seconds (on the page, not in the plate: a plate clips what is in it)
   show(seat, id) {
     const pill = $('#p' + seat); if (!pill) return;

@@ -60,7 +60,7 @@ export class Replay {
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
     // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
     const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
-    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: !!o.finish, ice: !!o.ice });
+    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: !!o.finish, ice: !!o.ice, team: !!o.team });
     if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
@@ -74,7 +74,7 @@ export class Replay {
     const g = this.g, log = this.log, o = log.opts || {};
     // (a timeout is the turn of the seat whose clock ran out: a seat cannot run out another's - Codex B11)
     while (this.i < log.shots.length && !g.over && log.shots[this.i].timeout) {
-      const t = log.shots[this.i]; if (t.seat != null && t.seat !== g.turn) return this.out = { ok: false, why: `shot ${this.i}: a timeout not on this seat's turn`, at: this.i };
+      const t = log.shots[this.i]; if (t.seat != null && t.seat !== g.shooter()) return this.out = { ok: false, why: `shot ${this.i}: a timeout not on this seat's turn`, at: this.i };
       g.timeout(); this.i++;
     }
     if (this.i >= log.shots.length || g.over) {
@@ -85,7 +85,7 @@ export class Replay {
     }
     const sh = log.shots[this.i], w = g.world, i = this.i;
     if (!shotOk(sh) || !sh.s || !Array.isArray(sh.s.balls) || sh.s.balls.length !== w.balls.length) return this.out = { ok: false, why: `shot ${i}: bad`, at: i };
-    if (sh.seat != null && sh.seat !== g.turn) return this.out = { ok: false, why: `shot ${i}: not this seat's turn`, at: i };
+    if (sh.seat != null && sh.seat !== g.shooter()) return this.out = { ok: false, why: `shot ${i}: not this seat's turn`, at: i };
     // (the first shot of a game played on one device may start from any rack; a ranked game's from its seed's)
     // (nor a new rack after a break that did not stand, on a game played on one device: its rack was the device's own)
     if ((i > 0 && !this.fresh) || this.open) for (let j = 0; j < w.balls.length; j++) {
@@ -101,7 +101,7 @@ export class Replay {
       if (!v[2] || !g.P.isFree(w, v[0], v[1], w.cue) || (g.placing === 'kitchen' && v[0] > -g.P.HL / 2 + 1e-9)) return this.out = { ok: false, why: `shot ${i}: the cue ball cannot go there`, at: i };
     }
     // no harder than the seat's cue strikes at full gauge (Codex B14)
-    if (this.open && Array.isArray(log.cues) && sh.V > this.vMax(g.turn)) return this.out = { ok: false, why: `shot ${i}: harder than the cue can strike`, at: i };
+    if (this.open && Array.isArray(log.cues) && sh.V > this.vMax(g.shooter())) return this.out = { ok: false, why: `shot ${i}: harder than the cue can strike`, at: i };
     // no further from the ball's centre than any cue strikes (one with no strike limit, at full pad - content/20-cues.js
     // TRAITS) or the computer does (a stand-in's plan: web/ai/50-human.js, 0.79 of the radius)
     if (this.open && Math.hypot(sh.a || 0, sh.b || 0) > STRIKE_MAX) return this.out = { ok: false, why: `shot ${i}: struck further out than a cue can`, at: i };

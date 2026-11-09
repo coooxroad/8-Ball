@@ -123,7 +123,14 @@ export const INVITE_KEEP = 10 * 60000;
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class InviteCore {
   constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); this.deferReady = false; }
-  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? (v.listed && v.made.ready ? WATCH_KEEP : 120000) : INVITE_KEEP)) this.codes.delete(c); }
+  sweep() {
+    const t = this.now();
+    for (const [c, v] of this.codes) {
+      if (t - v.seen > (v.made ? (v.listed && v.made.ready ? WATCH_KEEP : 120000) : INVITE_KEEP)) { this.codes.delete(c); continue; }
+      // (2:2: a friend seated who has stopped asking - the app closed - gets up after a minute)
+      if (v.size === 4 && !v.made) for (let i = 1; i < 4; i++) { const q = v.seats[i]; if (q && !q.bot && t - (q.seen || 0) > 60000) v.seats[i] = null; }
+    }
+  }
   away(v) { return !v.made && this.now() - v.seen > INVITE_IDLE; }
   /* p: { acct, dama, name, icon, gear, mode, rules, listed, pw, title } - a host's code. A host keeps one code: opened
      again (other rules, a password, back from away) it is the same code with the new rules.
@@ -138,10 +145,14 @@ export class InviteCore {
     let code = had && had.code; if (!code) do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
     const pw = typeof p.pw === 'string' && p.pw ? p.pw.slice(0, 12) : null;
     const title = String(p.title || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 16) || `${p.name || '플레이어'}의 방`;
+    // (size 4: 2:2 - the host's seat 0, friends taking the others as they come, the computer in any the host gives it; the
+    // host starts when all four are filled. Opened again with the same size, the seats are kept)
+    const size = p.size === 4 ? 4 : 2, keep = had && had.size === size && size === 4 ? had.seats : null;
+    const host = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null };
     this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null, at: had ? had.at : this.now(),
-      listed: !!p.listed, id: p.listed ? (had && had.id) || hex(6) : null, pw, tries: had && had.pw === pw ? had.tries : 0, title,
-      host: { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null } });
-    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw, title };
+      listed: !!p.listed, id: p.listed ? (had && had.id) || hex(6) : null, pw, tries: had && had.pw === pw ? had.tries : 0, title, size,
+      seats: size === 4 ? [host].concat(keep ? keep.slice(1) : [null, null, null]) : null, host });
+    return Object.assign({ ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw, title, size }, size === 4 ? { seats: this.seatsOf(this.codes.get(code)) } : {});
   }
   /* the rooms in the list, newest first: the game, its rules, the host, whether it has a password - those waiting for
      someone, and those being played (playing: the guest too), which may be watched */
@@ -150,7 +161,8 @@ export class InviteCore {
     for (const v of this.codes.values()) {
       if (!v.listed || (!v.made && this.away(v)) || (v.made && !v.made.ready)) continue;
       const r = { id: v.id, title: v.title, mode: v.mode, rules: v.rules, at: v.made ? v.made.at : v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } };
-      if (v.made) { r.playing = true; r.guest = { name: v.made.g.name, dama: v.made.g.dama, icon: v.made.g.icon }; }
+      if (v.size === 4) { r.size = 4; r.filled = v.seats.filter(Boolean).length; if (!v.made && r.filled >= 4) continue; }
+      if (v.made) { r.playing = true; r.guest = { name: v.made.g.name, dama: v.made.g.dama, icon: v.made.g.icon }; if (v.size === 4) r.names = v.made.names; }
       out.push(r);
     }
     out.sort((a, b) => (a.playing ? 1 : 0) - (b.playing ? 1 : 0) || b.at - a.at); return { ok: true, rooms: out.slice(0, 60).map(r => { delete r.at; return r; }) };
@@ -171,7 +183,9 @@ export class InviteCore {
   }
   // a game ended (its room says so) or a player of it starting another: it leaves the list
   ended(room) { for (const [c, v] of this.codes) if (v.made && v.made.room === room) this.codes.delete(c); return { ok: true }; }
-  played(acct) { for (const [c, v] of this.codes) if (v.made && (v.host.acct === acct || v.made.guest === acct)) this.codes.delete(c); }
+  played(acct) { for (const [c, v] of this.codes) if (v.made && (v.host.acct === acct || v.made.guest === acct || (v.made.accts || []).includes(acct))) this.codes.delete(c); }
+  // a 2:2 room's seats as everyone in it sees them: who is in each (the computer, or empty)
+  seatsOf(v) { return v.seats.map(q => q ? (q.bot ? { bot: q.level || 2, name: q.name } : { name: q.name, icon: q.icon, dama: q.dama }) : null); }
   // the code of a listed room, for taking it from the list: with its password if it has one (a room tried wrong too often
   // closes to the list - the host's code still lets a friend in)
   byId(id, pw) {
@@ -188,12 +202,22 @@ export class InviteCore {
     }
     return { ok: false, why: 'no such room' };
   }
-  // the host asking: still waiting, or the game (the same answer until it is taken)
+  // the host asking (and in 2:2 anyone seated): still waiting - with the seats - or the game (the same answer until taken)
   ask(acct, code) {
     this.sweep(); const v = this.codes.get(code);
-    if (!v || v.host.acct !== acct) return { ok: false, why: 'gone' };
-    v.seen = this.now();
-    return v.made && v.made.ready ? Object.assign({ ok: true }, v.made.you[0]) : { ok: true, waiting: true };
+    const at = v && v.size === 4 ? v.seats.findIndex(q => q && !q.bot && q.acct === acct) : v && v.host.acct === acct ? 0 : -1;
+    if (!v || at < 0) return { ok: false, why: 'gone' };
+    if (at === 0) v.seen = this.now(); else v.seats[at].seen = this.now();
+    if (v.made && v.made.ready) return Object.assign({ ok: true }, v.made.you[at]);
+    return v.size === 4 ? { ok: true, waiting: true, size: 4, seat: at, seats: this.seatsOf(v) } : { ok: true, waiting: true };
+  }
+  // 2:2: the host puts the computer in an empty seat (level 0-3), or takes it out
+  bot(acct, code, seat, level) {
+    const v = this.codes.get(code);
+    if (!v || v.host.acct !== acct || v.size !== 4 || v.made) return { ok: false, why: 'gone' };
+    if (!(seat >= 1 && seat <= 3) || (v.seats[seat] && !v.seats[seat].bot)) return { ok: false, why: 'taken' };
+    v.seats[seat] = level == null || level < 0 ? null : { bot: true, level: Math.max(0, Math.min(3, level | 0)), name: '컴퓨터' };
+    return { ok: true, seats: this.seatsOf(v) };
   }
   // what a code is (for the friend before joining): the game and who is waiting
   peek(code) { this.sweep(); const v = this.codes.get(code); return v && !v.made ? { ok: true, mode: v.mode, rules: v.rules, host: { name: v.host.name } } : { ok: false, why: 'no such code' }; }
@@ -203,6 +227,17 @@ export class InviteCore {
     if (!v) return { ok: false, why: 'no such code' };
     if (v.host.acct === p.acct) return { ok: false, why: 'your own code' };
     if (this.away(v)) return { ok: false, why: 'away' };
+    if (v.size === 4) {
+      // (2:2: a seat, and wait with the others for the host to start)
+      const at = v.seats.findIndex(q => q && !q.bot && q.acct === p.acct);
+      if (v.made) return at < 0 ? { ok: false, why: 'taken' } : v.made.ready ? Object.assign({ ok: true }, v.made.you[at]) : { ok: false, why: 'opening' };
+      if (at > 0) return { ok: true, waiting: true, size: 4, seat: at, seats: this.seatsOf(v), code };
+      const free = [1, 2, 3].find(i => !v.seats[i]);
+      if (free == null) return { ok: false, why: 'full' };
+      this.played(p.acct);
+      v.seats[free] = { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null, seen: this.now() };
+      return { ok: true, waiting: true, size: 4, seat: free, seats: this.seatsOf(v), code };
+    }
     if (v.made) return v.made.guest !== p.acct ? { ok: false, why: 'taken' } : v.made.ready ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'opening' };
     this.played(p.acct);
     const room = hex(16), watch = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
@@ -213,9 +248,32 @@ export class InviteCore {
     v.made = { guest: p.acct, g: seats[1], room, watch, at: this.now(), you: [you(0), you(1)], ready: !this.deferReady }; v.seen = this.now();
     return Object.assign({ ok: true, init }, you(1));
   }
+  // 2:2: the host starts, all four seats filled - the room's init is returned with the host's answer (the lobby opens it).
+  // Sides: seats 0 and 2 against 1 and 3, as they sit; the computer's seats are played by the host's device.
+  start(acct, code) {
+    this.sweep(); const v = this.codes.get(code);
+    if (!v || v.host.acct !== acct || v.size !== 4) return { ok: false, why: 'gone' };
+    if (v.made) return v.made.ready ? Object.assign({ ok: true }, v.made.you[0]) : { ok: false, why: 'opening' };
+    if (v.seats.some(q => !q)) return { ok: false, why: 'not full' };
+    const room = hex(16), watch = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = v.seats;
+    const tokens = seats.map(() => hex(16)), pub = s => ({ name: s.name, icon: s.icon || 0, dama: s.dama, gear: s.gear || null, bot: s.bot ? s.level : undefined });
+    const init = { room, watch, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
+      seats: seats.map((s, i) => s.bot ? { acct: null, bot: true, level: s.level, token: tokens[i], name: s.name, icon: 0, dama: null, gear: null }
+        : { acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null }) };
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, table: ROOM_TABLE, kind: 'invite', rules: v.rules, opp: pub(seats[(i + 1) % 4]), team: seats.map(pub) });
+    const names = seats.map(s => s.name);
+    v.made = { guest: null, accts: seats.filter(s => !s.bot).map(s => s.acct), g: seats[1], names, room, watch, at: this.now(), you: seats.map((s, i) => you(i)), ready: !this.deferReady }; v.seen = this.now();
+    return Object.assign({ ok: true, init }, you(0));
+  }
   ready(code) { const v = this.codes.get(code); if (v && v.made) v.made.ready = true; }
   unjoin(code) { const v = this.codes.get(code); if (v) v.made = null; }
-  leave(acct, code) { const v = this.codes.get(code); if (v && v.host.acct === acct && !v.made) this.codes.delete(code); return { ok: true }; }
+  // the host closing the room; in 2:2 a friend getting up from their seat
+  leave(acct, code) {
+    const v = this.codes.get(code); if (!v || v.made) return { ok: true };
+    if (v.host.acct === acct) this.codes.delete(code);
+    else if (v.size === 4) { const at = v.seats.findIndex(q => q && !q.bot && q.acct === acct); if (at > 0) v.seats[at] = null; }
+    return { ok: true };
+  }
 }
 
 /* A ranked game: one Durable Object per game, opened by the lobby (lobby.js) for two seats. Both devices connect by
@@ -254,6 +312,10 @@ export const standInMayResign = g => !!g && !g.over && g.turn === 1 && g.farBehi
 // a ranked game's rules (web/economy.js): what each game is played to
 export const RANKED_RULES = E.RANKED_RULES;
 
+/* 2:2 (a friend's room for four, InviteCore size 4): seats A1 0, B1 1, A2 2, B2 3 - a seat's side is seat % 2, and the
+   sides are what wins and loses. A seat of the computer's (bot) is played by the host's device (seat 0), its shots sent
+   'as' that seat, as a stand-in's are. Everything below takes 2 or 4 seats. */
+const sideOf = seat => seat % 2;
 export class RoomCore {
   // sql: the room's SQLite; send(seat, msg): to that seat's device, if it is there
   constructor(sql, send, tx) {
@@ -268,57 +330,60 @@ export class RoomCore {
 
   init(x) {
     if (this.get('room')) return false;
-    const kind = x.kind === 'invite' ? 'invite' : 'ranked';
+    const kind = x.kind === 'invite' ? 'invite' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
+    const bots = seats.map((q, i) => q.bot && i > 0 ? i : -1).filter(i => i > 0);
     this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
-      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode] });
-    this.set('seats', x.seats); this.set('status', 'playing'); this.set('ended', [false, false]); this.set('gone', [null, null]);
-    this.set('joined', [false, !!x.standIn]); this.set('joinBy', Date.now() + JOIN_WITHIN);
+      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode], team: n === 4, bots });
+    this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
+    this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
     return true;
   }
+  // every seat but this one (to pass a message on)
+  others(seat, msg) { const n = this.get('seats', []).length; for (let s = 0; s < n; s++) if (s !== seat) this.send(s, msg); this.send('w', msg); }
   seatOf(token) { const s = this.get('seats', []); return s.findIndex(q => q.token === token); }
   // a watcher's key (a listed friend's game: InviteCore.watch) - never a seat's
   watches(key) { const r = this.get('room'); return !!(r && r.watch && key && key === r.watch); }
   // what a watcher needs: the game, both players, every shot so far (seat 2: neither)
   watchState() {
     const r = this.get('room'), s = this.get('seats'), pub = o => ({ name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null });
-    return { t: 'state', watch: true, seat: 2, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked',
+    return { t: 'state', watch: true, seat: -1, team: r.team || undefined, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked',
       seats: s.map(pub), shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
-  // what a device needs to play: the game, the other player, every shot so far
+  // what a device needs to play: the game, the other player (in 2:2 every seat), every shot so far
   state(seat) {
-    const r = this.get('room'), s = this.get('seats'), o = s[1 - seat];
+    const r = this.get('room'), s = this.get('seats'), o = s[r.team ? (seat + 1) % 4 : 1 - seat], pub = q => ({ name: q.name, icon: q.icon, dama: q.dama, gear: q.gear || null, bot: q.bot ? (q.level || 2) : undefined });
     return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null,
-      opp: { name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null }, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
+      opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
   }
   connected(seat) {
-    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j[0] && j[1]) this.set('turnAt', Date.now()); }
-    const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.send(1 - seat, { t: 'back', seat }); }
+    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j.every(Boolean)) this.set('turnAt', Date.now()); }
+    const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.others(seat, { t: 'back', seat }); }
     this.send(seat, this.state(seat));
   }
   // a device went away: true when the room should look again in RETURN_WITHIN
   disconnected(seat) {
     if (this.get('status') !== 'playing') return false;
-    const gone = this.get('gone'); gone[seat] = Date.now(); this.set('gone', gone); this.send(1 - seat, { t: 'away', seat }); return true;
+    const gone = this.get('gone'); gone[seat] = Date.now(); this.set('gone', gone); this.others(seat, { t: 'away', seat }); return true;
   }
   // a message from a seat's device. Answers what the Durable Object should do next: 'check' (start the replay) or null
   message(seat, m) {
     if (!m || typeof m !== 'object' || this.get('status') !== 'playing') return null;
-    const r = this.get('room'), other = 1 - seat;
+    const r = this.get('room'), other = 1 - seat, team = !!r.team;
     // a quick emote (web/app/59-emote.js): one of the known ones, passed on as it is, at most one a second and a half
     if (m.t === 'emote') {
       const id = typeof m.id === 'string' ? m.id : '', now = Date.now(), at = this.emoteAt || (this.emoteAt = [0, 0]);
-      if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.send(other, { t: 'emote', id, seat }); this.send('w', { t: 'emote', id, seat }); }
+      if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.others(seat, { t: 'emote', id, seat }); }
       return null;
     }
-    if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null }; this.send(other, a); this.send('w', a); return null; }
+    if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null, seat }; this.others(seat, a); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
-    if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') { this.send(other, { t: 'res', n: m.n, st: m.st }); this.send('w', { t: 'res', n: m.n, st: m.st }); } return null; }
+    if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.others(seat, { t: 'res', n: m.n, st: m.st }); return null; }
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
       // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
       // answer for). A shot not of the right shape is never kept nor passed on: it ends the game against the device that
       // sent it (Codex B13). Only the fields a shot has are kept.
-      const as = r.standIn && seat === 0 && m.as === 1 ? 1 : seat;
+      const as = r.standIn && seat === 0 && m.as === 1 ? 1 : team && seat === 0 && (r.bots || []).includes(m.as) ? m.as : seat;
       if (m.n !== this.count()) return null;
       if (this.count() >= 600) return this.over('too long');
       let body;
@@ -329,45 +394,46 @@ export class RoomCore {
       }
       this.set('turnAt', Date.now());
       this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, m.n, JSON.stringify(body));
-      if (!(r.standIn && as === 1)) this.send(other, { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined });
-      this.send('w', { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined });
+      const pass = { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined };
+      if (team) this.others(seat, pass); else { if (!(r.standIn && as === 1)) this.send(other, pass); this.send('w', pass); }
       return null;
     }
     if (m.t === 'end') {
       const e = this.get('ended'); e[seat] = true; if (r.standIn) e[1] = true; this.set('ended', e);
-      return e[0] && e[1] ? this.over('ended') : null;
+      return e.every(Boolean) ? this.over('ended') : null;
     }
     // (a stand-in's resignation comes from the other player's device - whom it lets win: it is checked against the game as
     // the room plays it again, see work)
-    if (m.t === 'resign') return r.standIn && seat === 0 && m.as === 1 ? this.over('resigned', 1, true) : this.over('resigned', seat);
+    // (in 2:2 a player resigning gives the game up for their side; loser: a side)
+    if (m.t === 'resign') return r.standIn && seat === 0 && m.as === 1 ? this.over('resigned', 1, true) : this.over('resigned', sideOf(seat));
     return null;
   }
   // the room looked again: a seat gone too long loses
   timers() {
     if (this.get('status') !== 'playing') return null;
     const gone = this.get('gone'), now = Date.now();
-    for (let s = 0; s < 2; s++) if (gone[s] && now - gone[s] >= RETURN_WITHIN) return this.over('left', s);
-    // (never came in at all, by the time given: that seat loses - both, and the game is nobody's)
+    for (let s = 0; s < gone.length; s++) if (gone[s] && now - gone[s] >= RETURN_WITHIN) return this.over('left', sideOf(s));
+    // (never came in at all, by the time given: that seat's side loses - both sides missing someone, the game is nobody's)
     const j = this.get('joined', [true, true]), by = this.get('joinBy', 0);
-    if (by && now >= by && !(j[0] && j[1])) return this.over('left', j[0] ? 1 : j[1] ? 0 : null);
-    // (both there, and nothing from either for IDLE_AFTER: whose turn it was is the replay's to say - work)
-    if (j[0] && j[1] && !gone[0] && !gone[1] && now - this.get('turnAt', now) >= IDLE_AFTER) return this.over('idle');
+    if (by && now >= by && !j.every(Boolean)) { const miss = [0, 1].filter(sd => j.some((x, i) => !x && sideOf(i) === sd)); return this.over('left', miss.length === 1 ? miss[0] : null); }
+    // (all there, and nothing from anyone for IDLE_AFTER: whose turn it was is the replay's to say - work)
+    if (j.every(Boolean) && !gone.some(Boolean) && now - this.get('turnAt', now) >= IDLE_AFTER) return this.over('idle');
     return null;
   }
   // when the room should look again for a turn gone quiet (both there), in ms from now; null when it need not
   idleIn() {
     const j = this.get('joined', [true, true]), gone = this.get('gone');
-    if (this.get('status') !== 'playing' || !(j[0] && j[1]) || gone.some(Boolean)) return null;
+    if (this.get('status') !== 'playing' || !j.every(Boolean) || gone.some(Boolean)) return null;
     return Math.max(0, this.get('turnAt', Date.now()) + IDLE_AFTER - Date.now());
   }
   // still waiting for a seat to come in for the first time (the room looks again then)
-  waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !(j[0] && j[1]) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
+  waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !j.every(Boolean) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
   over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {
     const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
     const cues = this.get('seats').map(q => (q.gear && typeof q.gear.cue === 'string' && q.gear.cue) || null);   // (check.js vMax)
-    return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first }, rules), cues, shots: this.shots(), winner: 0, points: [0, 0] };
+    return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first, team: !!r.team }, rules), cues, shots: this.shots(), winner: 0, points: [0, 0] };
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
      that resigned, left or sent a shot that does not fit; else (the game stopped with no winner and nobody to blame) a
@@ -380,7 +446,7 @@ export class RoomCore {
     const end = this.get('end'), shots = this.shots(), g = this.job.rp.g; this.job = null;
     let winner = null, why = end.why, points = out.points || this.get('cp', { points: [0, 0] }).points;
     // (the device that sent a shot that does not fit loses: by, or for a shot kept before by was, its seat)
-    if (!out.ok) { const sh = out.at != null ? shots[out.at] : null, bad = sh ? (sh.by != null ? sh.by : sh.seat) : null; if (bad != null) { winner = 1 - bad; why = 'a shot that does not fit'; } }
+    if (!out.ok) { const sh = out.at != null ? shots[out.at] : null, bad = sh ? (sh.by != null ? sh.by : sh.seat) : null; if (bad != null) { winner = 1 - sideOf(bad); why = 'a shot that does not fit'; } }
     else if (out.winner != null) { winner = out.winner; why = 'ended'; }
     // gone quiet (timers, IDLE_AFTER): the seat whose turn it was loses - in a stand-in's game, the one device playing it
     else if (end.why === 'idle') { winner = this.get('room').standIn ? 1 : 1 - g.turn; }
@@ -391,27 +457,28 @@ export class RoomCore {
     this.result(winner, points, why);
     return false;
   }
+  // winner: a side (in 2 seats, the seat); coins and DAMA by seat
   result(winner, points, why) {
-    const r = this.get('room'), seats = this.get('seats'), res = { winner, points, why, coins: [0, 0], dama: [seats[0].dama, seats[1].dama] };
+    const r = this.get('room'), seats = this.get('seats'), n = seats.length, res = { winner, points, why, coins: seats.map(() => 0), dama: seats.map(q => q.dama) };
     const inv = r.kind === 'invite';
     if (winner != null) {
       if (!inv) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
-      for (let s = 0; s < 2; s++) res.coins[s] = E.matchCoins(inv ? 'invite' : 'ranked', r.mode, s ? [points[1], points[0]] : points, winner === s);
+      for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : 'ranked', r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
     this.sql.exec(`DELETE FROM shots`);
-    for (let s = 0; s < 2; s++) this.send(s, Object.assign({ t: 'result' }, res, { seat: s }));
-    this.send('w', Object.assign({ t: 'result' }, res, { seat: 2 }));
+    for (let s = 0; s < n; s++) this.send(s, Object.assign({ t: 'result' }, res, { seat: s }));
+    this.send('w', Object.assign({ t: 'result' }, res, { seat: -1 }));
     return res;
   }
   // what each player's vault is told (the Durable Object sends it, again until the vault has it): coins, and DAMA as a change
   // (a player may have finished another game since this one began)
   payouts() {
-    const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', [false, false]);
+    const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', seats.map(() => false));
     if (!res) return [];
-    return [0, 1].filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
-      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === s, draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined } }));
+    return seats.map((q, s) => s).filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
+      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === sideOf(s), draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined } }));
   }
-  paid(seat) { const p = this.get('paid', [false, false]); p[seat] = true; this.set('paid', p); }
+  paid(seat) { const p = this.get('paid', this.get('seats').map(() => false)); p[seat] = true; this.set('paid', p); }
 }
 

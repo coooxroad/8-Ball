@@ -268,6 +268,37 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     ok(spun, `human ${mode}: actual nonzero spin was recorded`);
     ok(res && res.why !== 'a shot that does not fit', `human ${mode}: new plans pass ranked replay`);
   }
+  // 2:2 through the room: seats 0-3 shoot the sides' visits in turn (A1 B1 A2 B2), the host's device sends the computer's
+  // shots 'as' its seat, the replay checks who shot and names the winning side; a shot from the wrong seat loses its side
+  for (const mode of ['four', 'eight']) {
+    const seed = 99, G = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI), rules = E.inviteRules(mode, {});
+    G.start(mode, ['A', 'B'], true, Object.assign({ rnd: E.seededRandom(seed), first: 0, team: true, level: 2 }, rules));
+    if (mode === 'four') { G.rollOut(E.seededRandom((seed ^ 0x5bd1e995) >>> 0)); G.P.run(G.world, 40); G.world.ev = G.P.newEv(); }
+    const { sql, tx } = sqlOf(), sent = {}, R = new RoomCore(sql, (s2, m) => (sent[s2] || (sent[s2] = [])).push(m), tx);
+    R.init({ room: 'd'.repeat(32), mode, seed, first: 0, kind: 'invite', rules: {}, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A1', dama: 1 }, { acct: 'b'.repeat(32), token: 't1', name: 'B1', dama: 1 },
+      { acct: 'c'.repeat(32), token: 't2', name: 'A2', dama: 1 }, { acct: null, bot: true, level: 2, token: 't3', name: '컴퓨터' }] });
+    const who = [];
+    for (let n = 0; n < 150 && !G.over; n++) {
+      const seat = G.shooter(), p = G.aiPlan(), w = G.world; who.push(seat);
+      if (p.pos && G.placing) G.P.place(w, w.cue, p.pos[0], p.pos[1]);
+      const msg = { t: 'shot', n, shot: { s: JSON.parse(JSON.stringify(H2.snapshot(w))), aim: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, inHand: !!G.placing } };
+      if (seat === 3) R.message(0, Object.assign(msg, { as: 3 })); else R.message(seat, msg);
+      G.beginShot(); G.P.strike(w, p.angle, p.V, p.a || 0, p.b || 0, p.el || 0); G.P.run(w, 40); G.resolve();
+    }
+    if (!G.over) { console.log(`2:2 ${mode}: did not finish (skipped)`); continue; }
+    ok((who.length < 4 || new Set(who).size >= 3) && (who.every(x => x === 2) || (sent[2] || []).some(m => m.t === 'shot')) && (sent.w || []).some(m => m.t === 'shot'), `2:2 ${mode}: the seats take their turns, and every other seat hears each shot (${who.join('')} ${(sent[2] || []).length} ${(sent.w || []).length})`);
+    [0, 1, 2].forEach(s2 => R.message(s2, { t: 'end' })); const res = finish(R);
+    ok(res && res.winner === G.over.winner && res.why === 'ended' && res.coins.length === 4 && res.coins[3] === 0, `2:2 ${mode}: the replay names the winning side (${res && res.why} ${res && res.winner} vs ${G.over.winner} ${JSON.stringify(res && res.coins)})`);
+    ok(R.payouts().length === 3 && R.payouts().every(q => q.body.won === (q.seat % 2 === G.over.winner)), `2:2 ${mode}: the three people are paid by their side`);
+  }
+  { const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx);
+    R.init({ room: 'c'.repeat(32), mode: 'four', seed: 7, first: 0, kind: 'invite', rules: { target: 3 }, seats: [0, 1, 2, 3].map(i => ({ acct: String(i).repeat(32), token: 't' + i, name: 'P' + i, dama: 1 })) });
+    const G = E.createGame(E.physicsFor(E.createPhysics, 'bar')); G.start('four', ['A', 'B'], false, { rnd: E.seededRandom(7), first: 0, team: true, target: 3 });
+    G.rollOut(E.seededRandom((7 ^ 0x5bd1e995) >>> 0)); G.P.run(G.world, 40);
+    // (seat 2 shooting the first visit, which is seat 0's)
+    R.message(2, { t: 'shot', n: 0, shot: { s: JSON.parse(JSON.stringify(H2.snapshot(G.world))), aim: 0.3, V: 2, a: 0, b: 0, el: 0, inHand: false } });
+    R.message(1, { t: 'resign' }); const res = finish(R);
+    ok(res.winner === 1 && res.why === 'a shot that does not fit', `2:2: a shot from a seat whose turn it is not loses that side (${res.why})`); }
   for (const mode of ['eight', 'four']) {
     const seed = 4242, first = 1, G = rankedGame(mode, seed, first);
     if (G.winner == null) { console.log(`ranked ${mode}: the computers did not finish (skipped)`); continue; }
@@ -437,9 +468,23 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     R.init({ room: 'e'.repeat(32), watch: 'w'.repeat(32), mode: 'four', seed: 5, first: 0, kind: 'invite', rules: { target: 3 }, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
     ok(R.watches('w'.repeat(32)) && !R.watches('t0') && !R.watches('') && R.seatOf('w'.repeat(32)) < 0, 'room: the watch key watches and is no seat');
     R.message(0, { t: 'aim', aim: 1, power: 0.5 }); R.message(1, { t: 'emote', id: 'fire' }); R.message(0, { t: 'timeout', n: 0 });
-    const ws = R.watchState(); ok(ws.watch && ws.seat === 2 && ws.seats.length === 2 && ws.seats[1].name === 'B' && !('token' in ws.seats[0]) && !('acct' in ws.seats[0]) && ws.shots.length === 1, 'room: a watcher hears both players and every shot');
+    const ws = R.watchState(); ok(ws.watch && ws.seat === -1 && ws.seats.length === 2 && ws.seats[1].name === 'B' && !('token' in ws.seats[0]) && !('acct' in ws.seats[0]) && ws.shots.length === 1, 'room: a watcher hears both players and every shot');
     ok(['aim', 'emote', 'timeout'].every(t => sent.w.some(m => m.t === t)), 'room: watchers hear the aims, emotes and shots');
-    R.message(0, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5); ok(sent.w.some(m => m.t === 'result' && m.seat === 2), 'room: watchers hear the result'); }
+    R.message(0, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5); ok(sent.w.some(m => m.t === 'result' && m.seat === -1), 'room: watchers hear the result'); }
+  // 2:2: friends take seats as they come, the host gives the computer a seat and starts; everyone seated hears the room
+  { const L = new InviteCore(), host = { acct: 'h'.repeat(32), dama: 500, name: 'H', mode: 'four', listed: true, size: 4 };
+    const o = L.open(host); ok(o.size === 4 && o.seats.length === 4 && o.seats[0].name === 'H' && !o.seats[1], 'invite 2:2: a room for four, the host in seat 0');
+    const j1 = L.join({ acct: 'a'.repeat(32), dama: 400, name: 'A' }, o.code), j2 = L.join({ acct: 'b'.repeat(32), dama: 410, name: 'B' }, o.code);
+    ok(j1.waiting && j1.seat === 1 && j2.seat === 2 && L.ask('a'.repeat(32), o.code).seats[2].name === 'B', 'invite 2:2: friends take seats in turn and see the others');
+    ok(!L.start(host.acct, o.code).ok && L.start(host.acct, o.code).why === 'not full', 'invite 2:2: not started with an empty seat');
+    ok(!L.bot('a'.repeat(32), o.code, 3, 2).ok && L.bot(host.acct, o.code, 1, 2).why === 'taken' && L.bot(host.acct, o.code, 3, 2).seats[3].bot === 2, 'invite 2:2: only the host puts the computer in an empty seat');
+    ok(L.list().rooms.length === 0, 'invite 2:2: a full room waiting to start is not offered to others');
+    ok(L.join({ acct: 'c'.repeat(32), dama: 410, name: 'C' }, o.code).why === 'full', 'invite 2:2: a full room takes nobody else');
+    const st = L.start(host.acct, o.code);
+    ok(st.ok && st.init.seats.length === 4 && st.init.seats[3].bot && st.seat === 0 && st.team.length === 4, 'invite 2:2: the host starts; the room has four seats, one the computer\'s');
+    const ga = L.ask('a'.repeat(32), o.code), gb = L.join({ acct: 'b'.repeat(32), dama: 410, name: 'B' }, o.code);
+    ok(ga.room === st.room && ga.seat === 1 && gb.seat === 2 && ga.token !== gb.token, 'invite 2:2: each friend hears the room and their own seat');
+    const ls = L.list().rooms; ok(ls.length === 1 && ls[0].playing && ls[0].names.join() === 'H,A,B,컴퓨터', 'invite 2:2: the game being played is in the list with all four'); }
   console.log('invites: checked');
 }
 // online games (Codex B04-B07): the room's table; a room heard of only once open, and a failed one undone; a new search

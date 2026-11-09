@@ -14,8 +14,8 @@ const match = {
     // the other seat plays at its level
     const o = c.online, standIn = o && o.standIn;
     game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice,
-      rnd: o ? seededRandom(o.seed) : undefined, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
-    if (o && o.watch) game.players.forEach(p => { p.ai = true; });
+      rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
+    if (o && (o.watch || o.team)) game.players.forEach(p => { p.ai = true; });   // (2:2: set shot by shot - ranked.auto)
     else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
     game.aiRnd = standIn ? seededRandom((o.seed ^ 0x2545f491) >>> 0) : null;
@@ -33,7 +33,7 @@ const match = {
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
-  cue() { const L = lookNow(); useCue(L ? L.cues[game.turn] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
+  cue() { const L = lookNow(); useCue(L ? L.cues[game.shooter()] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
   rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
@@ -67,6 +67,7 @@ const match = {
   // first plate (the computer, and a friend at the same device, have none)
   rating(i) {
     const o = match.ctx && match.ctx.online;
+    if (o && o.team) return null;
     if (o && o.watch) { const r = o.seats && o.seats[i] && o.seats[i].dama; return typeof r === 'number' ? r : null; }
     if (o) { const r = i === o.seat ? o.dama : o.opp && o.opp.dama; return typeof r === 'number' ? r : null; }
     return i === 0 && !game.players[0].ai ? (net.me && typeof net.me.dama === 'number' ? net.me.dama : ECONOMY.DAMA_START) : null;
@@ -77,6 +78,8 @@ const match = {
     for (let i = 0; i < 2; i++) {
       // under the name the player's rating, then what the game says (the group in 8볼, the next ball in 9볼)
       const s = m.status(game, i), r = match.rating(i); s.sub = [r == null ? '' : `레이팅 ${r}`, s.sub].filter(Boolean).join(' · ');
+      // (2:2: under the side's name, whose shot it is)
+      const tm = match.ctx && match.ctx.online && match.ctx.online.team; if (tm && game.turn === i) s.sub = [`▶ ${(tm[game.shooter()] || {}).name || ''}`, s.sub].filter(Boolean).join(' · ');
       paintPill(i, Object.assign({ name: game.players[i].name, on: game.turn === i, pop, think: st.phase === 'auto' && game.turn === i && !(st.auto && st.auto.plan) }, s));
     }
     paintBadge(m.name, m.badge(game)); setBusy();
@@ -94,7 +97,7 @@ const match = {
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
     // (on a ranked game, this device's seat is the room's: 0 or 1)
-    const on = match.ctx.online, me = on ? on.seat : 0, solo = match.ctx.ai || !!on;
+    const on = match.ctx.online, me = on ? (on.team ? on.seat % 2 : on.seat) : 0, solo = match.ctx.ai || !!on;
     const mine = !solo || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
     $('#rTitle').textContent = solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
     $('#rTitle').parentNode.classList.toggle('lost', !mine);
