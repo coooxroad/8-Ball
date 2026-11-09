@@ -11,7 +11,7 @@ compatibility_flags = ["nodejs_compat"]
 # (bounded batches), "true" all at once, "false" not checked (a daily allowance)
 CHECK_MATCHES = "slices"
 # Google sign-in (src/google.js): the web OAuth client's ID - not a secret, the page shows it to Google
-GOOGLE_CLIENT_ID = "373306860735-qgfad34u67m4vvgimioc1gpct1e06a47.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "373306860735-no2ekv8kbqv0up164gaoifq2r2v7gnli.apps.googleusercontent.com"
 
 [[durable_objects.bindings]]
 name = "VAULT"
