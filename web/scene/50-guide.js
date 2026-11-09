@@ -70,7 +70,12 @@
       P.set([xs[i] + ty * w, ys[i] - tx * w, z, xs[i] - ty * w, ys[i] + tx * w, z], i * 6);
       A[2 * i] = A[2 * i + 1] = al; S[2 * i] = S[2 * i + 1] = s;
     }
-    g.attributes.position.needsUpdate = g.attributes.a.needsUpdate = g.attributes.s.needsUpdate = true;
+    // The buffers reserve a long masse path, but most lines use only a small prefix. Upload exactly the vertices
+    // drawn this time; a later, longer path writes and uploads its whole prefix again, with the same sampling.
+    for (const key of ['position', 'a', 's']) {
+      const attr = g.attributes[key]; attr.updateRange.offset = 0; attr.updateRange.count = n * 2 * attr.itemSize;
+      attr.needsUpdate = true;
+    }
     g.setDrawRange(0, (n - 1) * 6);
     const u = m.material.uniforms; u.col.value.setHex(o.color); u.op.value = o.op == null ? 1 : o.op; u.mode.value = o.mode || 0; u.per.value = o.per || 0.05; u.on.value = Math.min(0.5, 1.4 / ppm / hw); u.hw.value = hw; u.ch.value = o.ch || 0;
     m.visible = true;
