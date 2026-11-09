@@ -86,7 +86,7 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
    공 `shape`·`holes`·`skin`·`mark`·`finish`, 큐 `profile`·`glow`. 설명과 예시는 `tasks/gpt-skins.md` 2-1절, 그리는 곳은
    `scene/30-balls.js`(모양은 세트마다 한 번 만들어 공유, 물리 구 안쪽에만)·`scene/40-cue.js`·`app/00-state.js`의 `drawCue`.
    공 `finish.toon`(만화: 세 단계 빛·망점·외곽선), `finish.facets`(미러볼 면), 큐 구간 옵션 `sides`·`pic`·`rep`·`lit`,
-   테이블 `water`(수영장)·`look`(밤하늘·축구장·학교 책상·농구장)·`ice`, 공 `paint`(행성·축구공·크리스탈·농구공, `scene/35-paint.js`),
+   테이블 `water`(수영장)·`look`(밤하늘·축구장·학교 책상·농구장)·`ice`(그림은 `scene/15-looks.js`), 공 `paint`(행성·축구공·크리스탈·농구공, `scene/35-paint.js`),
    큐 구간 `flat`·`glass`, 큐 `parts`(가드·폼멜·프렛·줄감개·플루트 키·통기타 몸통).
    **트레일과 움직이는 바닥(물)은 그림이 아니라 코드로 그린다**(소유자 결정): 트레일 `kind`가 `chalk`면 `scene/55-chalk.js`,
    `stars`·`puff`·`ink`·`fire`·`splash`면 `scene/56-fx.js`(입자는 GPU가 모양을 그림), 만화 효과음 말풍선·미러볼 빛은

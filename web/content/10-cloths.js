@@ -2,7 +2,7 @@
    { id, name, rarity, felt: cloth colour, wood: rail colour, grain?: 'walnut' | 'mahogany' (the rails' grain), ice?: true, water?: true, look?: 'sky' | 'soccer' | 'desk' | 'court' }
    Card picture: ui/cloth-<id>.webp. The ice table is not a cloth: a sheet of ice the balls slide on (matches only).
    The pool (water: true) plays as cloth; it only looks like a swimming pool - a tiled floor under moving water. A table with a look (look:
-   'sky' | 'soccer' | 'desk') has its cloth drawn as that (scene/20-table.js lookFloor): a night sky that moves, a pitch
+   'sky' | 'soccer' | 'desk') has its cloth drawn as that (scene/15-looks.js lookFloor): a night sky that moves, a pitch
    (goals over a pool table's pockets), a school desk. Looks only, all of them. */
 const CLOTHS = [
   { id: 'teal', name: '딥 틸', rarity: 0, felt: 0x0e8ba3, wood: 0x6a3a20, grain: 'mahogany' },
