@@ -21,6 +21,7 @@ export class Vault extends DurableObject {
     if (path === '/room/result') return json(this.core.ranked(body));
     // from the front door only (it passes on only /v1/ paths): a device linked to this account (link.js)
     if (path === '/link/add') return json(this.core.addDevice(body.hash));
+    if (path === '/link/joined') return json(this.core.joinPrize());
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
     if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); return json({ ok: true, me }); }
@@ -32,10 +33,13 @@ export class Vault extends DurableObject {
          its owner's own device.) */
       let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
       const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;
-      const me = this.core.me(); return json({ ok: true, dama: me.dama, rd: me.rd, gear });
+      const me = this.core.me(); return json({ ok: true, dama: me.dama, rd: me.rd, gear, nick: me.joined ? me.nick : null });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));
+    if (path === '/v1/nick') return json(this.core.nick(body));
+    if (path === '/v1/tutorial') return json(this.core.tutorial(body));
+    if (path === '/v1/save') return json(this.core.save(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }
     return json({ ok: false, why: 'no such thing' }, 404);
   }

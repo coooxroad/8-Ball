@@ -16,6 +16,9 @@
    POST /v1/invite/list  {}                           the open rooms ({ rooms: [{ id, mode, rules, lock, host }] })
    (open takes listed and pw too: the room shown in that list, with a password; join takes { id, pw } from the list)
    POST /v1/lessons { req, vol, proofs }              a volume of lessons all done: its prize
+   POST /v1/nick    { nick }                          a member's name (2-10 characters)
+   POST /v1/tutorial { req }                          the tutorial done: its prize, once
+   POST /v1/save    { data }                          the app's progress, for the account's other devices
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
@@ -66,7 +69,11 @@ async function linkRoute(what, request, env, m) {
   if (what === 'google') {
     const who = await googleWho(body.token, env.GOOGLE_CLIENT_ID); if (!who.sub) return json({ ok: false, why: who.why });
     const acct = await mine(), r = await ask('google', { sub: who.sub, acct }); if (!r.ok) return json(r);
-    if (r.acct === acct) return json({ ok: true, id: acct, tied: r.tied, same: true });
+    // tied just now to this device's account: it has signed up - its prize, once (core.js joinPrize)
+    if (r.acct === acct) {
+      const j = r.tied ? await (await env.VAULT.get(env.VAULT.idFromName(acct)).fetch('https://vault/link/joined', { method: 'POST', body: '{}' })).json() : null;
+      return json({ ok: true, id: acct, tied: r.tied, same: true, joined: j && j.paid });
+    }
     const k = await keyFor(r.acct); return k ? json(Object.assign({ ok: true, tied: false }, k)) : json({ ok: false, why: 'no such account' });
   }
   return json({ ok: false, why: 'no such thing' }, 404);
@@ -108,7 +115,8 @@ async function frontDoor(request, env) {
       if ((inv[1] === 'open' || inv[1] === 'join') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
-      const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
+      // (a member plays under their own nickname, kept in their vault; a guest under the name the app gives)
+      const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const r = await env.LOBBY.get(env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/' + inv[1], { method: 'POST',
         body: JSON.stringify({ acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, rules: body.rules || null, code, near: nearOf(request),
           listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', title: typeof body.title === 'string' ? body.title.slice(0, 32) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
@@ -120,7 +128,7 @@ async function frontDoor(request, env) {
       if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
-      const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
+      const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const lobby = env.LOBBY.get(env.LOBBY.idFromName(body.mode));
       const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ near: nearOf(request), acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, seek: typeof body.seek === 'string' ? body.seek.slice(0, 32) : undefined }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });

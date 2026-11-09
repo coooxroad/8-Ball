@@ -12,11 +12,27 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.os.CancellationSignal;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialException;
+
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+
+import org.json.JSONObject;
 
 /** Full-screen shell around the game page bundled in assets/. Works offline; needs no permissions. */
 public class MainActivity extends Activity {
@@ -53,7 +69,19 @@ public class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setTextZoom(100);
 
-        web.setWebViewClient(new WebViewClient());
+        // a link out of the game (the terms, the privacy policy) opens in the browser, not over the game
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri u = request.getUrl();
+                if (u != null && ("http".equals(u.getScheme()) || "https".equals(u.getScheme()))) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (RuntimeException e) { /* no browser */ }
+                    return true;
+                }
+                return false;
+            }
+        });
+        web.addJavascriptInterface(new Bridge(), "CueAndroid");
         // <input type="file"> in the page opens the system's file picker
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -76,6 +104,54 @@ public class MainActivity extends Activity {
         setContentView(web);
         web.loadUrl(PAGE);
         hideSystemBars();
+    }
+
+    /** What the page may ask of the app (window.CueAndroid in web/app/57-account.js). */
+    private class Bridge {
+        /** Google sign-in: the system's account picker; the ID token (or null and why) goes back to window.__googleToken. */
+        @JavascriptInterface
+        public void googleSignIn(String clientId) {
+            runOnUiThread(() -> signInWithGoogle(clientId));
+        }
+    }
+
+    private void signInWithGoogle(String clientId) {
+        try {
+            CredentialManager manager = CredentialManager.create(this);
+            GetGoogleIdOption option = new GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId(clientId)
+                    .setAutoSelectEnabled(false)
+                    .build();
+            GetCredentialRequest request = new GetCredentialRequest.Builder().addCredentialOption(option).build();
+            manager.getCredentialAsync(this, request, new CancellationSignal(), this::runOnUiThread,
+                    new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                        @Override
+                        public void onResult(GetCredentialResponse result) {
+                            Credential c = result.getCredential();
+                            if (c instanceof CustomCredential && GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(c.getType())) {
+                                try {
+                                    googleAnswer(GoogleIdTokenCredential.createFrom(((CustomCredential) c).getData()).getIdToken(), null);
+                                } catch (Exception e) {
+                                    googleAnswer(null, "parse");
+                                }
+                            } else googleAnswer(null, "type");
+                        }
+
+                        @Override
+                        public void onError(GetCredentialException e) {
+                            googleAnswer(null, e.getClass().getSimpleName());
+                        }
+                    });
+        } catch (RuntimeException e) {
+            googleAnswer(null, "start");
+        }
+    }
+
+    private void googleAnswer(String token, String why) {
+        String js = "window.__googleToken&&window.__googleToken(" + (token == null ? "null" : JSONObject.quote(token)) + ","
+                + (why == null ? "null" : JSONObject.quote(why)) + ")";
+        runOnUiThread(() -> web.evaluateJavascript(js, null));
     }
 
     @Override

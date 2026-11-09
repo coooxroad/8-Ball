@@ -10,7 +10,7 @@ const SERVER = 'https://cue-server.oxcorp.workers.dev';          // ('' plays of
 const DEBUG_NAME = '이환컴퍼니';
 const debugOn = () => prefs.names[0] === DEBUG_NAME;
 const net = (() => {
-  let me = store.get('me', null), busy = false, account = store.get('acct', null);
+  let me = store.get('me', null), busy = false, account = store.get('acct', null), googleCfg;
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
   const queue = () => store.get('claims', []);
   /* One request; null when there is no answer (offline, the server down or too slow: try again later). Every request has
@@ -102,6 +102,10 @@ const net = (() => {
         store.set('claims', queue().filter(x => x.body.req !== c.body.req));
       }
       const m = await call('/v1/me'); if (m && m.ok) { setMe(m.me, true); if (m.me.checking) later(); }
+      // a member's progress (lessons, puzzles, the tutorial seen), kept on the server for their other devices: taken in
+      // (the further of the two, each thing), and sent back when this device's has moved on (57-account.js)
+      if (m && m.ok && m.me.joined) { const pulled = progressMerge(m.me.save); const mine = progressOf();
+        if (pulled || JSON.stringify(mine) !== JSON.stringify(m.me.save)) { const s = await call('/v1/save', { data: mine }); if (s && s.ok && me) { me.save = mine; store.set('me', me); } } }
     } finally { busy = false; }
   }
   // a match being checked (a slice at a time on the server): look again in a while, less often the longer it takes
@@ -144,6 +148,22 @@ const net = (() => {
       account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null); flush();
       return r;
     },
+    /* Signing up and in with Google (server/src/link.js, google.js; 57-account.js asks Google): the server's client ID (null:
+       not set up), and a Google ID token given to the server. Tied to this device's account the first time (signed up:
+       its prize, r.joined); or, when that Google account is already another CUE account, this device goes over to it -
+       the one it had is put aside in acctOld, as with a device code. */
+    async googleConfig() { if (googleCfg !== undefined) return googleCfg; const r = await call('/v1/link/google-config'); if (r && r.ok) googleCfg = r.clientId || null; return r && r.ok ? googleCfg : undefined; },
+    async google(token) {
+      await ensure();
+      const r = await call('/v1/link/google', { token }, 20000); if (!r || !r.ok) return r;
+      if (r.key && r.id) {
+        if (account && account.id !== r.id) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+        account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null);
+      }
+      await flush(); return r;
+    },
+    // a member's nickname (2-10 characters): the name the others see
+    async nick(n) { if (!(await ensure())) return null; const r = await call('/v1/nick', { nick: n }); if (r && r.ok && r.me) setMe(r.me); return r; },
     // buying needs the server there and then: true when bought
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };

@@ -59,6 +59,9 @@ export class VaultCore {
       this.set('r5', 1); }
     return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), rd: Math.round(this.rd()), owned, devices: 1 + this.get('devices', []).length,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
+      // a member (signed up with Google: link.js) and their nickname; the tutorial's prize taken; the progress kept here
+      // for the account's other devices (the app's own: lessons, puzzles - save())
+      joined: !!this.get('joined'), nick: this.get('nick', null), tut: !!this.get('tut'), save: this.get('save', null),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
   }
@@ -119,6 +122,34 @@ export class VaultCore {
   }
   /* A game's volume of lessons, every one done at its top level: each checked by playing its shot again (check.js
      playLesson), then the prize (economy.js LESSON_PRIZE), once. proofs: { [lesson id]: { table, seed, shot } } */
+  // signing up: once per account, its prize (from the front door only, when a Google account is tied to this one the
+  // first time - index.js linkRoute)
+  joinPrize() {
+    if (this.get('joined')) return { ok: true, paid: null };
+    const p = E.ECONOMY.SIGNUP_PRIZE; this.set('joined', Date.now()); this.pay('signup', p.coin || 0, p.dia || 0);
+    return { ok: true, paid: { coin: p.coin || 0, dia: p.dia || 0 } };
+  }
+  // the name the others see: 2 to 10 characters, no control characters, spaces closed up
+  nick({ nick }) {
+    const n = String(nick || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim(), len = [...n].length;
+    if (len < 2 || len > 10) return { ok: false, why: 'nick length' };
+    this.set('nick', n); return { ok: true, me: this.me() };
+  }
+  // the tutorial done: its prize, once per account
+  tutorial({ req }) {
+    return this.once(req, () => {
+      if (this.get('tut')) return { ok: true, paid: 0, me: this.me() };
+      const p = E.ECONOMY.TUTORIAL_PRIZE; this.set('tut', Date.now());
+      if (p.coin) this.pay('tutorial', p.coin, 0);
+      if (p.id && !this.owns(p.kind, p.id)) this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, p.kind, p.id, Date.now());
+      return { ok: true, paid: p.coin || 0, item: p.id ? { kind: p.kind, id: p.id } : null, me: this.me() };
+    });
+  }
+  // the app's progress, kept for the account's other devices: a small object, as the app gives it
+  save({ data }) {
+    const s = JSON.stringify(data == null ? null : data); if (s.length > 16000) return { ok: false, why: 'too big' };
+    this.set('save', data == null ? null : JSON.parse(s)); return { ok: true };
+  }
   lessons({ req, vol, proofs }) {
     return this.once(req, () => {
       const prize = E.ECONOMY.LESSON_PRIZE[vol]; if (!prize) return { ok: false, why: 'no prize for that' };

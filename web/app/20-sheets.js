@@ -37,6 +37,8 @@ function sheetSettings() {
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
     note('빠른 진행: 큐볼이 맞힐 공을 다 맞히고 나면 나머지를 두 배 빠르게 보여 줍니다(화면 테두리에 번개). 화질을 낮추면 움직임이 더 부드러워집니다.'),
     net.on ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '계정' }), el('div', { class: 'acct-id', text: acctLine() })]) : null,
+    // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
+    net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
     net.on ? el('div', { class: 'row' }, [flatBtn('다른 기기 연결', sheetLinkMake), flatBtn('코드로 연결', sheetLinkUse)]) : null,
     note('CUE 4.0'),
   ]);

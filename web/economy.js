@@ -36,6 +36,9 @@ const ECONOMY = {
   TIER_AT: [0, 800, 1100, 1400, 1700, 2000],
   // every lesson of a game's volume done at its top level: coins and a thing found nowhere else
   LESSON_PRIZE: { eight: { coin: 3000, kind: 'cue', id: 'breaker' } },
+  // signing up (a Google account tied to this one for the first time) and the tutorial done: each once per account (owner 11-09)
+  SIGNUP_PRIZE: { coin: 1000, dia: 10 },
+  TUTORIAL_PRIZE: { coin: 500, kind: 'cue', id: 'maple' },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
 const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 } };

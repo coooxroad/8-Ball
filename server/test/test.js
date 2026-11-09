@@ -361,6 +361,14 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
 }
 // lessons: every 8볼 lesson done at its top level - each proof (seed, table, shot) played again - pays the coins and the
 // break cue, once; a missing or doctored proof pays nothing
+// signing up, the nickname, the tutorial's prize, the progress kept for other devices
+{ const v = vault(); v.init('h'); const c0 = v.me().coin, d0 = v.me().dia;
+  const j1 = v.joinPrize(), j2 = v.joinPrize();
+  ok(j1.paid && j1.paid.coin === 1000 && j1.paid.dia === 10 && j2.paid === null && v.me().coin === c0 + 1000 && v.me().dia === d0 + 10 && v.me().joined, 'signup: its prize once');
+  ok(!v.nick({ nick: 'a' }).ok && !v.nick({ nick: '열한글자넘는긴닉네임이다' }).ok && v.nick({ nick: '  당구   왕 ' }).ok && v.me().nick === '당구 왕', 'signup: a nickname of 2 to 10 characters, spaces closed up');
+  const t1 = v.tutorial({ req: req() }), t2 = v.tutorial({ req: req() });
+  ok(t1.paid === 500 && t1.item.id === 'maple' && v.owns('cue', 'maple') && t2.paid === 0 && v.me().tut, 'tutorial: its prize once (the maple cue)');
+  ok(v.save({ data: { a: 1 } }).ok && v.me().save.a === 1 && !v.save({ data: { x: 'y'.repeat(17000) } }).ok, 'save: kept, not too big'); }
 { const v = vault(); v.init('h'); const r = v.lessons({ req: req(), vol: 'eight', proofs: {} });
   ok(!r.ok && v.me().coin === 0 && !v.owns('cue', 'breaker'), `lessons: nothing without every lesson done (${r.why})`);
   const D = E.createDrills(), ids = D.list.filter(d => d.make && d.vol === 'eight').map(d => d.id), proofs = {};

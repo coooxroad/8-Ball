@@ -89,7 +89,8 @@ function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
   walletPaint();
-  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = debugOn() ? '디버그 모드' : recText(prefs.names[0]);
+  // (the name, and under it whether this is a member or a guest - a guest is asked to sign up: 57-account.js)
+  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = debugOn() ? '디버그 모드' : net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : recText(prefs.names[0]);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';
@@ -108,5 +109,5 @@ function deskPaint() {
 }
 $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-tab'); if (!b) return; SND.init(); SND.tap(); deskGo(b.dataset.t); });
 press('#dkSet', sheetSettings);
-press('#dkMe', () => sheetName(0));
+press('#dkMe', () => account.sheet());
 press('#dkFull', fullToggle); paintFull();
