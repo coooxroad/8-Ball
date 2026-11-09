@@ -226,6 +226,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     return { R, sent };
   };
   const finish = R => { let k = 0; while (R.work(500) && k < 100000) k++; return R.get('result'); };
+  // quick emotes: a known one passes to the other seat, an unknown one and one too soon after the last do not
+  { const { R, sent } = roomOf('four', 7, 0);
+    R.message(0, { t: 'emote', id: 'nice' }); R.message(0, { t: 'emote', id: 'gg' }); R.message(1, { t: 'emote', id: '<b>hi</b>' });
+    const got = sent[1].filter(m => m.t === 'emote');
+    ok(got.length === 1 && got[0].id === 'nice' && got[0].seat === 0 && !sent[0].some(m => m.t === 'emote'), 'emote: one known, passed on once'); }
   // Only a real stand-in room accepts a resignation for its synthetic seat. A human cannot resign the opponent.
   // (a stand-in's resignation, sent by the human's device, is held to the game: at the start it is nowhere near behind,
   // so the device that sent it loses - see the farBehind checks below for one that holds)

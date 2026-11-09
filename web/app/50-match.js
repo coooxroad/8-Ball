@@ -4,6 +4,7 @@ const match = {
   ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
+    emote.reset();
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn() };
@@ -54,7 +55,7 @@ const match = {
       if (r.score >= 20) keep(r, true);
       if (bad.score >= 20) keep(bad, false);
     }
-    if (match.ctx.online && shot) ranked.settled(shot.turn);
+    if (match.ctx.online && shot) { ranked.settled(shot.turn); emote.shot(shot.turn, out.r); }
     if (game.over) return match.finish();
     if (game.turn !== shot.turn && match.innings) match.innings[game.turn]++;   // (a new visit to the table)
     if (out.msg) toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
@@ -67,6 +68,7 @@ const match = {
     return i === 0 && !game.players[0].ai ? (net.me && typeof net.me.dama === 'number' ? net.me.dama : ECONOMY.DAMA_START) : null;
   },
   hud() {
+    emote.sync();
     const m = game.mode, pop = st.phase === 'aim' || st.phase === 'auto' ? game.world.ev.pocketed.map(q => q.id) : null;
     for (let i = 0; i < 2; i++) {
       // under the name the player's rating, then what the game says (the group in 8볼, the next ball in 9볼)

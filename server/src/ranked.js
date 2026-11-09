@@ -19,6 +19,8 @@ export const STAND_IN_AFTER = 60000;                  // ms of waiting after whi
 /* a waiting player not heard from for this long has left (and starts again from nothing). The app asks every two seconds;
    one slow answer, or a moment away from the app, must not set a long wait back to the start (it was 8 s). */
 const GONE = 15000;
+// the quick emotes a player may send in a game (web/app/59-emote.js EMOTES: the same ids)
+const EMOTES = new Set(['hi', 'gl', 'nice', 'wow', 'lucky', 'close', 'oops', 'think', 'fire', 'cool', 'thx', 'gg', 'gj', 'lol', 'sad', 'sorry']);
 const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -265,6 +267,12 @@ export class RoomCore {
   message(seat, m) {
     if (!m || typeof m !== 'object' || this.get('status') !== 'playing') return null;
     const r = this.get('room'), other = 1 - seat;
+    // a quick emote (web/app/59-emote.js): one of the known ones, passed on as it is, at most one a second and a half
+    if (m.t === 'emote') {
+      const id = typeof m.id === 'string' ? m.id : '', now = Date.now(), at = this.emoteAt || (this.emoteAt = [0, 0]);
+      if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.send(other, { t: 'emote', id, seat }); }
+      return null;
+    }
     if (m.t === 'aim') { this.send(other, { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null }); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
     if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.send(other, { t: 'res', n: m.n, st: m.st }); return null; }

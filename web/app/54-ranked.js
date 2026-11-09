@@ -94,6 +94,7 @@ const ranked = {
     if (m.t === 'shot') { o.inbox.push({ n: m.n, shot: m.shot }); o.aimBuf = null; }   // (their next turn starts from their next aim, not this one)
     else if (m.t === 'timeout') { o.inbox.push({ n: m.n, timeout: true }); o.aimBuf = null; }
     else if (m.t === 'aim') ranked.aimFrom(m);
+    else if (m.t === 'emote') emote.got(m);
     else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
     else if (m.t === 'away') toast(`${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
     else if (m.t === 'back') toast(`${o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
