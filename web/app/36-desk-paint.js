@@ -105,6 +105,9 @@ function deskPaint() {
   const acts = d.slate.querySelector('.dk-acts'), body = el('div', { class: 'dk-body' });
   while (d.slate.firstChild && d.slate.firstChild !== acts) body.appendChild(d.slate.firstChild);
   d.slate.insertBefore(body, acts); body.scrollTop = top;
+  // (more below than shows: the options fade out at the foot, so it is seen that they scroll - owner 11-10, keys seemed gone)
+  const more = () => body.classList.toggle('more', body.scrollHeight - body.clientHeight - body.scrollTop > 4);
+  body.addEventListener('scroll', more, { passive: true }); requestAnimationFrame(more); setTimeout(more, 400);
   if (st.screen === 'home') requestAnimationFrame(layout);          // the table sits in the tray, whose size the content just set
 }
 $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-tab'); if (!b) return; SND.init(); SND.tap(); deskGo(b.dataset.t); });

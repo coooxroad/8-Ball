@@ -1,6 +1,6 @@
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = levelOf(g.turn), ctx = g.mode.ctx(g);
-    const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
+    const need = g.modeId === 'three' ? g.cushions || 0 : g.modeId === 'four' ? ctx.need || 0 : 0;       // going round the cushions takes a harder hit (3구, and 4구's finish)
     const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl].map(V => V * PACE.carom), noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
     const flair = [];                                         // top level: scoring shots it saw, and whether the cue ball went round the cushions to do it

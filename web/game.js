@@ -12,6 +12,9 @@ function createGame(PH, makeAI) {
   function shuffle(a, rnd) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   const jit = rnd => (rnd() - 0.5) * 6e-5;
 
+  // 4구's finish (MODES.four): none, a cushion, or three; true (saves and logs from before 11-10) was the one-cushion rule
+  const FINISH = { cushion: '쿠션', three: '쓰리쿠션' };
+  const finishOf = f => f === 'three' ? 'three' : f === 'cushion' || f === true ? 'cushion' : false;
   const MODES = {
     eight: {
       id: 'eight', name: '8볼', blurb: '내 공 7개 넣고 8번', table: 'pool', n: 16, ballInHand: true,
@@ -136,21 +139,30 @@ function createGame(PH, makeAI) {
         }
         g.placing = null; g.isBreak = false;
       },
-      intro: g => g.finish ? '쿠션 마무리' : '',
+      /* The finish (마무리, chosen with the game - owner 11-10: the points and the cushion are two things): with one, a
+         player who has made all their points is not done - they must then finish, the two reds again, the cue ball
+         round at least one cushion ('cushion') or three ('three') before the second red. A miss passes the turn and
+         costs nothing; a foul costs a point, and with it the finish (the point is to be made again). */
+      FINISH,
+      intro: g => g.finish ? FINISH[g.finish] + ' 마무리' : '',
       // (goal: the points to reach, written faint behind the score; the line under the name is the player's rating - app)
-      status: (g, pi) => ({ sub: '', goal: g.targets[pi] * (g.tens ? 10 : 1), tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
-      badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
+      status: (g, pi) => ({ sub: '', goal: g.targets[pi] * (g.tens ? 10 : 1), tray: [], pts: Math.min(g.players[pi].score, g.targets[pi]) * (g.tens ? 10 : 1) }),
+      badge: g => ({ text: g.finish && g.players[g.turn].score >= g.targets[g.turn] ? `마무리 · ${FINISH[g.finish]}` : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
-      // last: this player is one point from home and the house rule says that point has to come off a cushion
-      ctx(g) { return { turn: g.turn, last: !!g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 }; },
+      // last: this player has all their points and the game is played with a finish; need: the cushions it asks for
+      ctx(g) { const last = !!g.finish && g.players[g.turn].score >= g.targets[g.turn]; return { turn: g.turn, last, need: last ? (g.finish === 'three' ? 3 : 1) : 0 }; },
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
         // the other player's ball is a foul (-1) even when both reds were hit too (owner, 2026-11-06)
         const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        const short = !foul && reds === 2 && c.last && ev.cushions < 1;
-        const pts = foul ? -1 : reds === 2 && !short ? 1 : 0;
-        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts, note: short ? '마지막 점수는 쿠션을 거쳐야 합니다' : null };
+        if (c.last && !foul) {
+          const done = reds === 2 && ev.cushions >= c.need;
+          return { foul: null, scratch: false, respot: [], win: done ? me : null, why: done ? `${c.need >= 3 ? '쓰리쿠션' : '쿠션'} 마무리` : '', assign: null, keep: done, pts: done ? 1 : 0,
+            note: !done && reds === 2 ? `쿠션 ${ev.cushions}번 · 마무리는 ${c.need}번 이상` : null };
+        }
+        const pts = foul ? -1 : reds === 2 ? 1 : 0;
+        return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts };
       },
     },
   };
@@ -240,7 +252,7 @@ function createGame(PH, makeAI) {
     // shooter is g.turn + 2 * g.member[g.turn], and when its visit ends the next of the two has the next one
     g.team = !!opts.team; g.member = [0, 0]; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
     // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
-    g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = !!opts.finish; g.potTray = !!opts.potTray;
+    g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = finishOf(opts.finish); g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
     // personas: a person-like computer opponent for a player (ai/), in place of a level; null for the rest
     g.personas = opts.personas || null;
@@ -366,7 +378,9 @@ function createGame(PH, makeAI) {
     if (m.id === 'nine' && p.foulRun >= 3 && r.win == null) { r.win = 1 - me; r.why = '연속 파울 3번'; }
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
-    if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
+    // (a game with a finish: the points alone do not end it - the finish does, through the mode's own win; they stop at the target)
+    if (m.target && g.finish && m.FINISH) p.score = Math.min(p.score, g.targets[me]);
+    else if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
     if (r.win != null) { g.over = { winner: r.win, why: r.why, plain: !!r.plain }; return out; }   // (plain: an ordinary end the score says already)
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
@@ -412,7 +426,7 @@ function createGame(PH, makeAI) {
     d.balls.forEach((s, i) => { const b = g.world.balls[i]; b.x = b.px = s[0]; b.y = b.py = s[1]; b.on = !!s[2]; b.q = s[3]; });
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
     g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
-    g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = !!d.finish; g.potTray = !!d.potTray;
+    g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = finishOf(d.finish); g.potTray = !!d.potTray;
     g.ice = !!d.ice; g.world.ice = g.ice; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     return true;

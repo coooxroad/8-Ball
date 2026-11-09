@@ -111,7 +111,7 @@
           { rank: 0.7 + l * 0.5 + (1 - cos), kind: 'bank', route: 'object-bank', difficulty: 1.5 + (1 - cos) });
       }
     } else {
-      const need = g.modeId === 'three' ? g.cushions : ctx.last ? 1 : 0, L = P.HL - P.R, W = P.HW - P.R;
+      const need = g.modeId === 'three' ? g.cushions : ctx.need || 0, L = P.HL - P.R, W = P.HW - P.R;
       for (const T of ordered) {
         const d = distance(c, T), base = Math.atan2(T.y - c.y, T.x - c.x), half = Math.asin(Math.min(0.99, 2 * P.R / d));
         const steps = ordinaryFour ? 12 + 2 * Math.round(10 * skill) : skill < 0.3 ? 14 : 28;

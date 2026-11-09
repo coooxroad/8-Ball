@@ -55,7 +55,7 @@ const WAY_ICO = {
   local: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="5" width="30" height="38" rx="5"/><path d="M20 37h8"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="20" r="4"/></svg>',
   make: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M24 18v12M18 24h12"/></svg>',
   join: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M17 24h14M25 18l6 6-6 6"/></svg>' };
-const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} ${(r && r.target) || 5}점` : '';
+const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} ${(r && r.target) || 5}점` : '';
 function deskPlay(d) {
   if (playStep === 'games') playStep = 'rank';
   if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'friend'; playFx = 'fan'; paintHome(); });   // (its X: back to the three ways)
@@ -146,13 +146,16 @@ function deskPlay(d) {
   playEnter(wrap);
 }
 // inviting a friend: the code open on the server while this shows; the tray shows the two places and the code
+// 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
+const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
+const finishSeg = () => dkSeg([[false, '없음'], ['cushion', '쿠션'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
 function deskInvite(slate, _, m) {
   const h = invite.want(m); invite.shown = true;
   invite.tray($('#dkStage'), m);
   if (m === 'three') { const T = [3, 5, 10];
     dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]); }
-  if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); })]); }
+  if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); }), dkLab('마무리'), finishSeg()]); }
   // 1:1 or 2:2 (owner 11-09: four, the empty seats the computer's if the host likes)
   dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); })]);
   const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean));
@@ -191,7 +194,7 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     dkPut(slate, [dkLab('수지'),
       suji(prefs.names[0], 0, v => { prefs.suji[prefs.names[0]] = v; }),
       suji(oppName(), 1, v => { if (prefs.vsAI) prefs.sujiAI = v; else prefs.suji[prefs.names[1]] = v; }),
-      dkSeg([[0, '마무리 자유'], [1, '쿠션 마무리']], prefs.finish ? 1 : 0, v => { prefs.finish = v === 1; repaint(); })]);
+      dkLab('마무리'), finishSeg()]);
   }
   if (m === 'three') {
     const T = [3, 5, 10];

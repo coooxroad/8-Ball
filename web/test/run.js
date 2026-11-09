@@ -224,9 +224,20 @@ for (const name of ['bar', 'pro', 'pub']) {
   const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: P });
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 7, 0, 0, deg(45)); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
-  // handicaps: each player goes out at their own number, and the last point needs a cushion when that rule is on
+  // handicaps: each player goes out at their own number; with a finish (owner 11-10) the points stop at the number and the
+  // game is won by the finish after them - a cushion, or three, before the second red; a miss costs nothing, a foul a point
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
-  { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; const r = g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g); if (r.pts !== 0) fail('cushion finish: the last point counted without a cushion'); ev.cushions = 1; if (g.MODES.four.evaluate(ev, g.MODES.four.ctx(g), g).pts !== 1) fail('cushion finish: the last point off a cushion did not count'); }
+  { const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; if (M.ctx(g).last || M.evaluate(ev, M.ctx(g), g).pts !== 1) fail('finish: the points before it should count as ever');
+    g._ctx = M.ctx(g); g.world.ev = ev; g.resolve(); if (g.over || g.players[0].score !== 3 || g.turn !== 0) fail('finish: making all the points ended the game or passed the turn');
+    if (!M.ctx(g).last || M.ctx(g).need !== 1 || !/마무리/.test(M.badge(g).text)) fail('finish: the finish was not asked for after the points');
+    const miss = P.newEv(); miss.firstHit = 2; miss.hits = [2, 3]; const r = M.evaluate(miss, M.ctx(g), g); if (r.win != null || r.pts !== 0 || r.foul) fail('finish: the two reds without a cushion finished, or cost something');
+    miss.cushions = 1; if (M.evaluate(miss, M.ctx(g), g).win !== 0) fail('finish: the two reds off a cushion did not finish');
+    g._ctx = M.ctx(g); g.world.ev = miss; g.resolve(); if (!g.over || g.over.winner !== 0 || g.players[0].score !== 3 || M.status(g, 0).pts !== 30) fail('finish: the finish did not win the game, or the score went past the number'); }
+  g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: 'three', rnd }); g.players[0].score = 3;
+  { const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; ev.cushions = 2; if (M.ctx(g).need !== 3 || M.evaluate(ev, M.ctx(g), g).win != null) fail('three-cushion finish: two cushions finished');
+    ev.cushions = 3; if (M.evaluate(ev, M.ctx(g), g).win !== 0) fail('three-cushion finish: three cushions did not finish');
+    const foul = P.newEv(); foul.firstHit = 1; foul.hits = [1, 2, 3]; foul.cushions = 3; g._ctx = M.ctx(g); g.world.ev = foul; g.resolve(); if (g.over || g.players[0].score !== 2) fail('three-cushion finish: a foul did not cost the point and the finish'); }
+  g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   // the other ball is a foul (-1) even with both reds; one red and the other ball too
   { g.players[0].score = 1; const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3, 1]; ev.cushions = 1; const r = M.evaluate(ev, M.ctx(g), g); if (!r.foul || r.pts !== -1 || r.keep) fail('four-ball: both reds and the other ball should cost a point');
     ev.hits = [2, 1]; const r2 = M.evaluate(ev, M.ctx(g), g); if (!r2.foul || r2.pts !== -1) fail('four-ball: one red and the other ball should still cost a point'); }

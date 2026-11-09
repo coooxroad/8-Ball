@@ -37,15 +37,11 @@
 #app.desk.compact.portrait .dk-me{height:34px}
 
 /* ---------- 2026-11-10 pass: a phone held upright, everything reachable and readable (owner 11-10) ----------
-   The slate scrolls when its options do not fit (they were cut off under its lower edge - the invite room's rows and
-   keys with them), its keys staying at the bottom; the shelves' cards are short enough that the next row shows below
+   The slate's options fade out at the foot when more of them lie below (they scroll, but nothing said so); the shelves' cards are short enough that the next row shows below
    (the list looked as if it ended after one row) and the list fades out where it goes on; the play boards' small lines
    never smaller than can be read; the names on the plates and the scorebug given the room. */
-#app.desk.compact.portrait .dk-slate{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
-#app.desk.compact.portrait .dk-slate::-webkit-scrollbar{display:none}
-#app.desk.compact.portrait .dk-slate>*{flex-shrink:0}
-#app.desk.compact.portrait .dk-slate>.dk-acts{position:sticky;bottom:calc(-14px - var(--lip));margin-top:auto;z-index:3;
-  padding:10px 0 calc(14px + var(--lip));margin-bottom:calc(-14px - var(--lip));background:linear-gradient(rgba(27,32,33,0),rgb(27,32,33) 12px)}
+/* (the slate's options scroll in .dk-body - 36-desk-paint.js; when there is more below, it fades out at its foot) */
+.dk-body.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
 #app.desk.compact.portrait .dk-card{height:136px}
 #app.desk.compact.portrait .dk-cards{padding-bottom:30px;-webkit-mask-image:linear-gradient(#000 calc(100% - 30px),transparent);mask-image:linear-gradient(#000 calc(100% - 30px),transparent)}
 #app.desk.compact.portrait .dk-cards.books,#app.desk.compact.portrait .dk-cards.vols{-webkit-mask-image:none;mask-image:none}
@@ -82,3 +78,4 @@
 /* a long item name on a narrow card: two lines rather than cut short */
 #app.desk.compact.portrait .dk-card .nm{white-space:normal;word-break:keep-all;text-align:center;line-height:1.15;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
 #app.desk .dk-card .price{white-space:nowrap}
+#app.desk.compact.portrait .dk-slate{max-height:39vh}

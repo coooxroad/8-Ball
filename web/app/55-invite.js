@@ -14,7 +14,7 @@ const invite = {
   size: 2,                    // 1:1 (2) or 2:2 (4) - the room's seats
   seated: null,               // 2:2, a friend's room this player sits in, waiting for its host to start: { code, seat, seats, timer }
   rooms: null,                // the list of open rooms (방 참가하기): { at, list, err, timer }
-  rulesOf(mode) { return mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? { target: prefs.fourTarget } : {}; },
+  rulesOf(mode) { return mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? Object.assign({ target: prefs.fourTarget }, prefs.finish ? { finish: finishPref() } : {}) : {}; },
   // the code for this game and these rules: kept, or (another game, other rules) a new one
   want(mode) {
     const key = mode + JSON.stringify(invite.rulesOf(mode)) + '|' + invite.pw + '|' + invite.title + '|' + invite.size, h = invite.host;

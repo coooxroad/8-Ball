@@ -7,7 +7,7 @@ const match = {
     emote.reset();
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
-      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && prefs.finish, ice: iceOn() };
+      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn() };
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
