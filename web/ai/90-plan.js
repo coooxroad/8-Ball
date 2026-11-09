@@ -4,5 +4,5 @@
     if (persona && typeof humanPlan === 'function') return humanPlan(persona);
     return g.mode.table === 'carom' ? aiCarom() : aiPool();
   }
-  // personaFor (51-people.js): a person-like player near a DAMA, for the lobby's stand-in (server/src/ranked.js)
-  return { plan, personaFor: typeof personaFor === 'function' ? personaFor : null };
+  // The lobby opts into v3 using the rating it will display and settle the match against.
+  return { plan, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };

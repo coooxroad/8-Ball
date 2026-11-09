@@ -1,7 +1,7 @@
-  /* Follow, draw, stun and sidespin are deliberate alternatives even for beginners. Style changes their order;
-     simulated outcome and position still decide whether the extra spin is worth using. */
-  function humanStrokes(shot, person) {
+  /* Style orders the strokes the player considers once they decide to adjust the tip. */
+  function humanStrokes(shot, person, trySpin) {
     if (shot.kind === 'masse') return [shot];
+    if (!trySpin) return [shot];
     const s = person.style, side = shot.kind === 'bank' ? 0.32 : 0.24;
     const strokes = [
       { a: 0, b: 0, stroke: 'stun', preference: 0.12 + (s.natural || 0) * 0.6 },
@@ -12,6 +12,75 @@
     ];
     if (s.spin > 0.55) strokes.push({ a: 0.4, b: -0.25, stroke: 'draw-right', preference: s.spin * 0.25 }, { a: -0.4, b: 0.3, stroke: 'follow-left', preference: s.spin * 0.25 });
     return strokes.sort((a, b) => b.preference - a.preference).map(x => ({ ...shot, ...x }));
+  }
+
+  function humanHabitTip(person, shot, clearScore) {
+    const s = person.style, p = person.practice;
+    // Beginners sometimes set the tip out of habit, particularly when the scoring route is unclear.
+    const chance = (0.025 + p.spin * 0.10 + s.spin * 0.22) * (1 - (s.natural || 0) * 0.85) * (clearScore ? 0.72 : 1.18);
+    if (rand() >= chance) return null;
+    const follow = 1.4 + (s.follow || 0) * 4 + (s.gather || 0);
+    const draw = 0.7 + (s.draw || 0) * 4;
+    const side = 0.3 + s.spin * 1.4 + (shot.kind === 'bank' ? s.bank : 0);
+    const pick = rand() * (follow + draw + side), offset = 0.13 + rand() * (0.12 + person.skill * 0.10);
+    if (pick < follow) return { a: 0, b: offset, stroke: 'follow' };
+    if (pick < follow + draw) return { a: 0, b: -offset, stroke: 'draw' };
+    const right = rand() < 0.5 + p.sideBias * 0.35;
+    return { a: right ? offset : -offset, b: 0, stroke: right ? 'right' : 'left' };
+  }
+
+  function humanGuideAim(shot, person, tilt) {
+    const P = g.P, w = shot.pos ? P.clone(g.world) : g.world;
+    if (shot.pos) P.place(w, w.cue, ...shot.pos);
+    const cue = w.balls[w.cue], wanted = shot.angle, V = g.vOf(0.45);
+    // Read the same first-contact marker as the UI's guide before pulling back.
+    const line = angle => P.preview(w, angle, V, 0, 0, 0, 0.05);
+    const mark = line(wanted), aim = person.practice.aim, p = person.personality;
+    const target = mark.hit == null ? null : w.balls[mark.hit];
+    const [x, y] = target ? [target.x, target.y] : mark.at || [cue.x + P.HL, cue.y];
+    const depth = Math.hypot(x - cue.x, y - cue.y);
+    const width = Math.min(0.35, 2 * P.R / Math.max(2 * P.R, depth));
+    const thickness = (angle, hit) => ((target.x - hit.at[0]) * Math.sin(angle) - (target.y - hit.at[1]) * Math.cos(angle)) / (2 * P.R);
+    const loose = 1 - aim;
+    let angle = wanted + (rand() * 2 - 1) * width * (0.45 + loose * 1.35);
+    const checks = 1 + Number(rand() < 0.25 + p.hesitation * 0.5 + aim * 0.12) +
+      Number(rand() < 0.12 + person.practice.checking * 0.30 + tilt * 0.18);
+    const sweep = [angle];
+    for (let i = 0; i < checks; i++) {
+      const hit = line(angle);
+      const correction = target && hit.hit === mark.hit ?
+        (thickness(wanted, mark) - thickness(angle, hit)) * width : wanted - angle;
+      const read = (rand() * 2 - 1) * width * (0.002 + loose ** 2 * 0.027);
+      angle += correction * (0.87 + aim * 0.13 + rand() * (0.025 + loose * 0.18)) + read;
+      sweep.push(angle);
+    }
+    return sweep;
+  }
+
+  function humanFourEscape(cue, targets, person) {
+    const P = g.P, w = g.world, s = person.style, skill = person.skill;
+    // A rushed, overhit kick near a cushion can hop the rail under the same rules as a player's stroke.
+    const nearRail = Math.min(P.HL - Math.abs(cue.x), P.HW - Math.abs(cue.y)) < 0.23;
+    if (nearRail && rand() < 0.025 * s.desperation * (1 - skill)) {
+      const T = targets[0], useX = P.HL - Math.abs(cue.x) < P.HW - Math.abs(cue.y);
+      const x = useX ? 2 * Math.sign(cue.x) * (P.HL - P.R) - T.x : T.x;
+      const y = useX ? T.y : 2 * Math.sign(cue.y) * (P.HW - P.R) - T.y;
+      const angle = Math.atan2(y - cue.y, x - cue.x);
+      const hit = P.cast(w, cue.x, cue.y, Math.cos(angle), Math.sin(angle), w.cue);
+      if (hit.type === 'rail') return { pos: null, angle, V: g.vOf(0.85 + rand() * 0.15), a: 0, b: 0, el: 0.5 + rand() * 0.24, kind: 'overhit-kick', difficulty: 1.5 };
+    }
+    if (rand() >= s.masse * (0.04 + skill * 0.12)) return null;
+    for (const T of targets) {
+      const dx = T.x - cue.x, dy = T.y - cue.y, base = Math.atan2(dy, dx);
+      const hit = P.cast(w, cue.x, cue.y, Math.cos(base), Math.sin(base), w.cue);
+      if (hit.type !== 'ball' || hit.ball !== 1 - g.turn) continue;
+      const blocker = w.balls[hit.ball], gap = Math.hypot(blocker.x - cue.x, blocker.y - cue.y);
+      if (gap < 3 * P.R || gap > 0.5 || Math.hypot(dx, dy) - gap < 0.18) continue;
+      const side = rand() < 0.5 ? -1 : 1;
+      const angle = Math.atan2(blocker.y - cue.y, blocker.x - cue.x) + side * (Math.asin(2 * P.R / gap) + 0.10);
+      return { pos: null, angle, V: Math.min(g.vOf(1), 1.05 + skill * 0.22), a: side * 0.58, b: 0, el: 0.85 + skill * 0.25, kind: 'masse', difficulty: 1.6 };
+    }
+    return null;
   }
   function humanCaromPosition(world, who) {
     const cue = world.balls[who], ids = g.mode.legal({ ...g, world }, who), P = g.P;

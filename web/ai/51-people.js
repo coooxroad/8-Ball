@@ -1,5 +1,5 @@
-  /* Three independent axes: personality controls table manners, DAMA controls ability, style controls shot preferences.
-     Saved personas are plain JSON. Matching/UI can use g.aiPlan.personaFor(dama, seededRand, optionalOverrides).
+  /* Three independent axes: personality controls table manners, rating controls ability, style controls shot preferences.
+     Saved personas are plain JSON. Only the ranked lobby creates version 3 personas.
      Ranked room icons use the same 0..7 range as server/src/ranked.js. */
   const humanPersonalities = [
     { id: 'calm', name: '차분함', tempo: 0.5, aggression: 0.45, nerves: 0.12, taunt: 0, hesitation: 0.15 },
@@ -32,13 +32,26 @@
     }
     return 0.95;
   }
-  function personaFor(dama, random = rand, overrides = {}) {
+  const rankedSkills = [[500, 0.19], [800, 0.36], [1100, 0.52], [1400, 0.68], [1700, 0.83], [2000, 0.95]];
+  function rankedSkill(rating) {
+    if (!Number.isFinite(rating)) rating = rankedSkills[0][0];
+    let [lo, lowSkill] = rankedSkills[0];
+    if (rating <= lo) return lowSkill;
+    for (const [hi, highSkill] of rankedSkills.slice(1)) {
+      if (rating <= hi) return lowSkill + (highSkill - lowSkill) * (rating - lo) / (hi - lo);
+      lo = hi; lowSkill = highSkill;
+    }
+    return lowSkill;
+  }
+  function personaFor(dama, random = rand, overrides = {}, ranked = false) {
     const pick = a => a[Math.min(a.length - 1, Math.max(0, Math.floor(random() * a.length)))];
-    const name = humanName(random);
+    const name = ranked ? rankedName(random) : humanName(random);
     const personality = humanPersonalities.find(p => p.id === overrides.personality) || pick(humanPersonalities);
     const style = humanStyles.find(p => p.id === overrides.style) || pick(humanStyles);
-    const rating = Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
-    const person = { version: 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill: humanSkill(rating), level: rating < 22 ? 0 : rating < 40 ? 1 : 2, personality: { ...personality }, style: { ...style } };
+    const rating = ranked ? dama : Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
+    const skill = ranked ? rankedSkill(rating) : humanSkill(rating);
+    const level = ranked ? (rating < 800 ? 0 : rating < 1400 ? 1 : 2) : (rating < 22 ? 0 : rating < 40 ? 1 : 2);
+    const person = { version: ranked ? 3 : 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill, level, personality: { ...personality }, style: { ...style } };
     return { ...person, practice: humanPractice(person) };
   }
   function humanPerson(persona) {
@@ -46,7 +59,9 @@
     // no extra gameplay random draws or mutation of the room's saved persona are needed for this compatibility path.
     const identity = `${persona.name || ''}|${persona.icon || 0}|${persona.dama || 30}`;
     let hash = 2166136261; for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
-    const person = { ...persona, skill: Number.isFinite(persona.skill) ? Math.max(0, Math.min(1, persona.skill)) : humanSkill(persona.dama),
+    const skill = persona.version === 3 ? rankedSkill(persona.dama) :
+      Number.isFinite(persona.skill) ? Math.max(0, Math.min(1, persona.skill)) : humanSkill(persona.dama);
+    const person = { ...persona, skill,
       personality: persona.personality || { ...humanPersonalities[hash % humanPersonalities.length] },
       style: persona.style || { ...humanStyles[(hash >>> 8) % humanStyles.length] } };
     return { ...person, practice: humanPractice(person) };
@@ -54,28 +69,46 @@
   function humanPresentation(shot, person, difficulty, context = {}) {
     const p = person.personality, jitter = () => rand() * 2 - 1;
     const think = Math.max(1.5, Math.min(12, 1.5 + (1 - p.tempo) * 3 + difficulty * (1.5 + p.hesitation * 3) + rand() * 1.2));
-    const event = rand(), mistap = 0.008 + (1 - person.practice.dexterity) * 0.035 + (p.id === 'fidgety' ? 0.015 : 0);
-    const cancel = p.hesitation * 0.16 + (difficulty > 1.3 ? 0.035 : 0), taunt = p.taunt * 0.18;
+    const ranked = person.version === 3, skill = person.skill;
+    const event = rand(), mistap = 0.008 + (1 - person.practice.dexterity) * (ranked ? 0.08 : 0.035) + (p.id === 'fidgety' ? 0.015 : 0);
+    const cancel = p.hesitation * 0.16 + (difficulty > 1.3 ? 0.035 : 0) + (ranked ? (1 - skill) * difficulty * 0.035 : 0), taunt = p.taunt * 0.18;
     const kind = event < mistap ? 'mistap' : event < mistap + cancel ? 'cancel' : event < mistap + cancel + taunt ? 'taunt' : rand() < p.hesitation * 0.3 ? 'reconsider' : 'settle';
     const frames = [], power = Math.max(0, Math.min(1, g.powerOf(shot.V)));
-    const frame = (t, angle, pull = 0, aimPower = 0, pos = shot.pos || null) => ({ t, angle, a: t < think * 0.5 ? 0 : shot.a, b: t < think * 0.5 ? 0 : shot.b, el: shot.el, power: aimPower, pull, pos });
-    frames.push(frame(0, shot.angle + jitter() * 0.18));
+    const guide = context.guide || [], opening = guide[0] ?? shot.angle;
+    const setTip = ranked ? 0.57 - skill * 0.22 + person.practice.earlyTip * 0.22 + jitter() * 0.13 : 0.5;
+    const frame = (t, angle, pull = 0, aimPower = 0, pos = shot.pos || null) => {
+      const ready = t >= think * setTip;
+      return { t, angle, a: ready ? shot.a : 0, b: ready ? shot.b : 0, el: ready || !ranked ? shot.el : 0, power: aimPower, pull, pos };
+    };
+    frames.push(frame(0, guide.length ? opening : shot.angle + jitter() * (ranked ? 0.08 + (1 - skill) * 0.22 : 0.18)));
     if (kind === 'mistap') {
       const c = g.world.balls[g.world.cue], x = (rand() * 2 - 1) * g.P.HL, y = (rand() * 2 - 1) * g.P.HW;
       const wrong = Math.atan2(y - c.y, x - c.x);
-      frames.push(frame(think * 0.16, wrong), frame(think * 0.27, wrong), frame(think * 0.42, shot.angle));
+      frames.push(frame(think * 0.16, wrong), frame(think * 0.27, wrong), frame(think * 0.42, opening));
     } else if (kind === 'cancel') {
       const other = context.alternative, angle = other ? other.angle : shot.angle + jitter() * 0.35, pos = other && other.pos || shot.pos || null;
       frames[0] = frame(0, angle, 0, 0, pos);
-      frames.push(frame(think * 0.23, angle, 0.6, power * 0.65, pos), frame(think * 0.32, angle, 0, 0, pos), frame(think * 0.55, shot.angle));
+      frames.push(frame(think * 0.23, angle, 0.6, power * 0.65, pos), frame(think * 0.32, angle, 0, 0, pos), frame(think * 0.55, opening));
     } else if (kind === 'taunt') {
       const n = 6 + Math.floor(rand() * 7), amplitude = 0.22 + rand() * 0.65;
       for (let i = 1; i <= n; i++) frames.push(frame(think * 0.67 * i / n, shot.angle + (i % 2 ? -1 : 1) * amplitude * (0.7 + rand() * 0.3), i % 2 ? 0.25 : 0));
     } else if (kind === 'reconsider') {
-      frames.push(frame(think * 0.28, shot.angle + jitter() * 0.12), frame(think * 0.5, shot.angle + jitter() * 0.04), frame(think * 0.65, shot.angle + jitter() * 0.09));
-    } else frames.push(frame(think * 0.55, shot.angle + jitter() * 0.015));
-    frames.push(frame(think * 0.76, shot.angle), frame(think * 0.88, shot.angle, 0.25, power * 0.25), frame(think, shot.angle, 1, power));
-    return { think, preShot: { version: 2, kind, duration: think, keyframes: frames } };
+      frames.push(frame(think * 0.28, opening + jitter() * 0.12), frame(think * 0.5, opening + jitter() * 0.04), frame(think * 0.65, opening + jitter() * 0.09));
+    } else if (ranked && !guide.length) {
+      const overshoot = jitter() * (1 - skill) * (0.04 + difficulty * 0.025);
+      frames.push(frame(think * 0.33, shot.angle + overshoot), frame(think * 0.55, shot.angle - overshoot * 0.3));
+    } else if (!ranked) frames.push(frame(think * 0.55, shot.angle + jitter() * 0.015));
+    const settle = ranked ? 0.75 + rand() * 0.09 : 0.76;
+    if (guide.length) {
+      const last = frames[frames.length - 1].t / think;
+      const start = Math.max(last + 0.035, 0.15 + rand() * 0.12);
+      const steps = kind === 'settle' ? guide.slice(1) : guide;
+      steps.forEach((angle, i) => frames.push(frame(think * (start + (settle - start) * (i + 0.35 + rand() * 0.3) / steps.length), angle)));
+    }
+    const pullAt = ranked ? settle + (1 - settle) * (0.38 + rand() * 0.34) : 0.88;
+    const pull = ranked ? 0.15 + rand() * 0.25 : 0.25;
+    frames.push(frame(think * settle, shot.angle), frame(think * pullAt, shot.angle, pull, power * pull), frame(think, shot.angle, 1, power));
+    return { think, preShot: { version: ranked ? 3 : 2, kind, duration: think, keyframes: frames } };
   }
   function humanCueAt(shot, seconds) {
     // Presentation never consumes random numbers or changes the shot. Any frame rate reaches the same final pose.
