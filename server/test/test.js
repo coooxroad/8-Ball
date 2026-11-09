@@ -6,7 +6,7 @@ import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
 import { PHYS_V } from '../src/version.js';
-import { googleWho, forgetGoogleKeys } from '../src/google.js';
+import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
 
@@ -555,6 +555,21 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const other = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['sign', 'verify']);
   ok((await googleWho(await tok(good, 'k1', other.privateKey), 'app.apps.googleusercontent.com', get, now)).why === 'bad signature', 'google: a token not signed by Google is refused');
   ok((await googleWho('a.b', 'app.apps.googleusercontent.com', get, now)).why === 'bad token', 'google: not a token');
+  // an access token from the account chooser: Google's tokeninfo says whose and for which app
+  let asked = 0; const info = body => async () => { asked++; return { ok: true, json: async () => body }; };
+  const at = 'ya29.' + 'a'.repeat(40), CID = 'app.apps.googleusercontent.com', mine = { aud: CID, azp: CID, sub: '77', email: 'o@x.y', email_verified: 'true', exp: String(now / 1000 + 3000) };
+  forgetGoogleKeys();
+  ok((await googleWhoAccess(at, CID, info(mine), now)).email === 'o@x.y' && (await googleWhoAccess(at, CID, info(mine), now)).sub === '77' && asked === 1, 'google: an access token says who it is (asked once)');
+  forgetGoogleKeys();
+  ok((await googleWhoAccess(at, CID, info({ ...mine, aud: 'x', azp: 'x' }), now)).why === 'not for this app', 'google: another app\'s access token is refused');
+  forgetGoogleKeys();
+  ok((await googleWhoAccess(at, CID, info({ ...mine, exp: String(now / 1000 - 5) }), now)).why === 'not for this app', 'google: an expired access token is refused');
+  forgetGoogleKeys();
+  ok((await googleWhoAccess(at, CID, info({ ...mine, email_verified: 'false' }), now)).email === null, 'google: an unchecked address is no address');
+  forgetGoogleKeys();
+  ok((await googleWhoAccess(at, CID, async () => ({ ok: false }), now)).why === 'bad token', 'google: a token Google does not know is refused');
+  forgetGoogleKeys();
+  ok((await googleWhoAny(await tok(good), CID, get, now)).sub === '1234' && (await googleWhoAny(at, CID, info(mine), now)).sub === '77', 'google: either kind of token');
   console.log('google sign-in: checked');
 }
 // the admin console: giving, taking, setting the rating, each in the ledger and the log; and finding an account

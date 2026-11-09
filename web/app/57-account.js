@@ -3,7 +3,7 @@
    tying a Google account to it: once, with a prize (economy.js SIGNUP_PRIZE) and a nickname of the player's own (2-10
    characters, others may have the same); the same Google account on another device then opens this same account, and
    the progress kept only on a device (lessons, puzzles, the tutorial seen) goes with it (progressOf, progressMerge).
-   Google: on the web its own sign-in button (Google Identity Services, loaded when wanted); in the Android app the
+   Google: on the web its account chooser, every time (googleButton; Google Identity Services, loaded when wanted); in the Android app the
    system's account picker (MainActivity: Credential Manager - Google does not sign in inside an app's web view), its
    token handed to the page (window.__googleToken). Either way the token goes to the server, which checks it
    (server/src/google.js). Not set up on the server (no client ID): the sign-up is said to be coming. */
@@ -25,26 +25,31 @@ function progressMerge(s) {
 }
 
 const account = {
-  // a Google ID token, by whichever way this device has (a promise; null when not given: closed, failed)
-  googleToken(clientId, host) {
+  // the Android app: a Google ID token from the system's picker (a promise; null when not given: closed, failed)
+  googleToken(clientId) {
     if (window.CueAndroid && window.CueAndroid.googleSignIn) return new Promise(res => {
       window.__googleToken = (t, why) => { window.__googleToken = null; if (!t && why) console.warn('[google]', why); res(t || null); };
       window.CueAndroid.googleSignIn(clientId);
     });
-    // the web: Google's own button, drawn into host; the token comes when it is pressed and an account chosen
-    return new Promise(res => {
-      const draw = () => {
-        try {
-          google.accounts.id.initialize({ client_id: clientId, callback: r => res(r && r.credential || null), ux_mode: 'popup', auto_select: false });
-          host.textContent = '';
-          google.accounts.id.renderButton(host, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with', locale: 'ko', width: Math.min(320, host.clientWidth || 300) });
-        } catch (e) { console.warn('[google]', e); host.textContent = '구글 로그인을 열 수 없습니다'; res(null); }
-      };
-      if (window.google && google.accounts && google.accounts.id) return draw();
-      const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-      s.onload = draw; s.onerror = () => { host.textContent = '구글에 연결할 수 없습니다'; res(null); };
-      document.head.appendChild(s);
-    });
+    return Promise.resolve(null);
+  },
+  /* The web: our key, and on it Google's account chooser every time (OAuth prompt=select_account - '다른 계정 사용' is
+     always on it). Google's own sign-in button kept offering the account it last used, and once one was signed in there
+     was no getting to another (owner 11-10). What comes back is an access token ('openid email'); the server asks Google
+     whose it is (server/src/google.js googleWhoAccess). Closing the chooser leaves the key there to press again. */
+  googleButton(clientId, host, label) {
+    const draw = () => {
+      let client;
+      try { client = google.accounts.oauth2.initTokenClient({ client_id: clientId, scope: 'openid email', prompt: 'select_account', callback: r => { if (r && r.access_token) account.signIn(r.access_token); else if (r && r.error) console.warn('[google]', r.error); }, error_callback: e => { if (e && e.type !== 'popup_closed') console.warn('[google]', e.type); } }); }
+      catch (e) { console.warn('[google]', e); host.textContent = '구글 로그인을 열 수 없습니다'; host.classList.add('off'); return; }
+      host.textContent = '';
+      host.appendChild(el('button', { class: 'btn cta google', text: label, onclick: () => { SND.tap(); client.requestAccessToken(); } }));
+    };
+    if (window.google && google.accounts && google.accounts.oauth2) return draw();
+    host.textContent = '…';
+    const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+    s.onload = draw; s.onerror = () => { host.textContent = '구글에 연결할 수 없습니다'; host.classList.add('off'); };
+    document.head.appendChild(s);
   },
   // the token to the server, and what that turned out to be: signed up here (the prize, then a nickname), or this device
   // gone over to the account that Google account already had
@@ -94,6 +99,6 @@ const account = {
     if (window.CueAndroid && window.CueAndroid.googleSignIn) {
       // (the app: our own key - the system's picker comes up)
       host.appendChild(el('button', { class: 'btn cta google', text: member ? '구글로 로그인' : '구글로 계속하기', onclick: async () => { SND.tap(); account.signIn(await account.googleToken(id)); } }));
-    } else account.googleToken(id, host).then(t => account.signIn(t));
+    } else account.googleButton(id, host, member ? '구글로 로그인' : '구글로 계속하기');
   },
 };

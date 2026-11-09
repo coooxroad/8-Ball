@@ -27,4 +27,26 @@ export async function googleWho(token, clientId, get, now) {
   if (!ISS.includes(body.iss) || !aud.includes(clientId) || !(body.exp * 1000 > t) || !body.sub) return { why: 'not for this app' };
   return { sub: String(body.sub), email: body.email && body.email_verified !== false ? body.email : null };   // (an address Google has not checked is no address)
 }
-export const forgetGoogleKeys = () => { keys = null; keysAt = 0; };   // (tests)
+export const forgetGoogleKeys = () => { keys = null; keysAt = 0; seen.clear(); };   // (tests)
+
+/* The other way in: an access token (OAuth 2.0, 'openid email'), which the web gets from Google's account chooser with
+   prompt=select_account. The ID-token button keeps showing the Google account it last used, and with one signed in there
+   was no way to another (owner 11-10: in the admin console as in the game, only a private window got round it). Google
+   says whose it is and for which app (tokeninfo); it must be for this app, unexpired, its address checked. Asked once per
+   token, then kept a few minutes (the admin console sends it with every request). */
+const INFO = 'https://oauth2.googleapis.com/tokeninfo?access_token=', seen = new Map();
+export async function googleWhoAccess(token, clientId, get, now) {
+  if (!clientId) return { why: 'google not set up' };
+  const t = now != null ? now : Date.now(), tok = String(token || '');
+  if (!/^[\w.~+\/-]{20,4096}$/.test(tok)) return { why: 'bad token' };
+  const hit = seen.get(tok); if (hit && hit.until > t) return hit.who;
+  const r = await (get || fetch)(INFO + encodeURIComponent(tok)); if (!r.ok) return { why: 'bad token' };
+  const b = await r.json().catch(() => ({}));
+  if (b.aud !== clientId && b.azp !== clientId) return { why: 'not for this app' };
+  if (!(+b.exp * 1000 > t) || !b.sub) return { why: 'not for this app' };
+  const who = { sub: String(b.sub), email: b.email && String(b.email_verified) === 'true' ? b.email : null };
+  if (seen.size > 500) seen.clear(); seen.set(tok, { who, until: Math.min(+b.exp * 1000, t + 300000) });
+  return who;
+}
+// either kind: an ID token is three dotted parts (a JWT), anything else is taken as an access token
+export const googleWhoAny = (token, clientId, get, now) => String(token || '').split('.').length === 3 ? googleWho(token, clientId, get, now) : googleWhoAccess(token, clientId, get, now);

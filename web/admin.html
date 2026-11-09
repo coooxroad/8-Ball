@@ -60,7 +60,7 @@
 
 <section id="gate" class="card">
   <h2 style="font-size:18px;color:var(--ink)">관리자 로그인</h2>
-  <p>허용된 구글 계정으로만 들어올 수 있습니다.</p>
+  <p>허용된 구글 계정으로만 들어올 수 있습니다. 누를 때마다 계정을 고르는 창이 뜹니다.</p>
   <div id="gbtn"></div>
   <p id="gateMsg"></p>
 </section>
@@ -137,27 +137,26 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const num = n => (n | 0).toLocaleString('ko-KR');
 const when = t => t ? new Date(t).toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-let token = null, catalog = null, cur = null, toastT;
+let token = null, who = '', catalog = null, cur = null, toastT;
 
 function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 2600); }
 
-// (a Google ID token lasts an hour: kept for this tab only, and asked for again when the server says it is no good)
-try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s && s.exp > Date.now() / 1000 + 60) token = s.t; } catch (e) {}
+/* Signed in through Google's account chooser every time (prompt=select_account: '다른 계정 사용' is always on it - Google's
+   own button kept to the account it last used, owner 11-10). An access token for 'openid email', an hour long: kept for
+   this tab only, and asked for again when it runs out or the server says it is no good. */
+try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s && s.exp > Date.now() / 1000 + 60) { token = s.t; who = s.email || ''; } } catch (e) {}
 
 async function api(what, body) {
   const r = await fetch(SERVER + '/v1/admin/' + what, { method: body ? 'POST' : 'GET', headers: { 'X-Admin': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
   if (!r) return { ok: false, why: '서버에 연결할 수 없습니다' };
   const j = await r.json().catch(() => ({ ok: false, why: 'bad reply' }));
-  if (r.status === 403) { signOut(j.why === 'not an admin' ? '이 계정은 관리자가 아닙니다' : '관리자 기능이 꺼져 있습니다'); }
+  if (r.status === 403) { signOut(j.why === 'not an admin' ? `${who || '이 계정'}은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : '관리자 기능이 꺼져 있습니다'); }
   return j;
 }
 
-function claims(t) { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) { return {}; } }
-
 async function enter() {
-  const c = claims(token);
   catalog = await api('catalog'); if (!catalog.ok) return;
-  $('#gate').hidden = true; $('#app').hidden = false; $('#out').hidden = false; $('#who').textContent = c.email || '';
+  $('#gate').hidden = true; $('#app').hidden = false; $('#out').hidden = false; $('#who').textContent = who;
   fillItems(); find('');
 }
 function signOut(msg) {
@@ -169,15 +168,20 @@ function drawButton() {
   const draw = async () => {
     const cfg = await fetch(SERVER + '/v1/link/google-config').then(r => r.json()).catch(() => null);
     if (!cfg || !cfg.clientId) { $('#gateMsg').textContent = '구글 로그인이 설정되지 않았습니다'; return; }
-    google.accounts.id.initialize({ client_id: cfg.clientId, ux_mode: 'popup', auto_select: false, callback: r => {
-      token = r && r.credential; if (!token) return;
-      try { sessionStorage.setItem('cueAdmin', JSON.stringify({ t: token, exp: claims(token).exp || 0 })); } catch (e) {}
-      enter();
+    const client = google.accounts.oauth2.initTokenClient({ client_id: cfg.clientId, scope: 'openid email', prompt: 'select_account', callback: async r => {
+      if (!r || !r.access_token) return;
+      token = r.access_token;
+      // (whose it is, to show at the top: Google's own answer for this token; the server checks it again on every request)
+      const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(token)).then(x => x.json()).catch(() => ({}));
+      who = info.email || '';
+      try { sessionStorage.setItem('cueAdmin', JSON.stringify({ t: token, email: who, exp: Date.now() / 1000 + (+r.expires_in || 3600) })); } catch (e) {}
+      $('#gateMsg').textContent = ''; enter();
     } });
     $('#gbtn').textContent = '';
-    google.accounts.id.renderButton($('#gbtn'), { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'signin_with', locale: 'ko' });
+    const b = document.createElement('button'); b.className = 'go'; b.textContent = 'Google 계정 선택'; b.style.cssText = 'padding:10px 22px;border-radius:99px';
+    b.onclick = () => client.requestAccessToken(); $('#gbtn').appendChild(b);
   };
-  if (window.google && google.accounts && google.accounts.id) return draw();
+  if (window.google && google.accounts && google.accounts.oauth2) return draw();
   const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = draw;
   s.onerror = () => { $('#gateMsg').textContent = '구글에 연결할 수 없습니다'; }; document.head.appendChild(s);
 }

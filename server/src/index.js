@@ -27,7 +27,7 @@
    GET  /v1/room/<id>?watch=<watch key>               (WebSocket) watching one
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
-import { googleWho } from './google.js';
+import { googleWhoAny as googleWho } from './google.js';
 import * as E from './gen/engine.js';
 import { PHYS_V } from './version.js';
 // (a device on other physics - version.js - is told to update rather than matched: queue and invites)
@@ -50,8 +50,8 @@ const json = (body, status) => new Response(JSON.stringify(body), { status: stat
 const hex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))));
 
-/* The admin console (web/admin.html, on the site at /admin): each request carries a Google sign-in (X-Admin: the ID token, as
-   the account sheet gets one), checked as a sign-up's is (google.js), and the address it names must be one of
+/* The admin console (web/admin.html, on the site at /admin): each request carries a Google sign-in (X-Admin: an access
+   token from Google's account chooser, or an ID token), checked as a sign-up's is (google.js), and the address it names must be one of
    ADMIN_EMAILS_SHA256 (wrangler.toml: SHA-256 of each address, lower case - the address itself is not in the code).
    POST /v1/admin/find  { q }                          accounts by name or id (the directory lobby: vault.js listed)
    POST /v1/admin/view  { acct }                       one account: balances, rating, items, ledger, recent games
