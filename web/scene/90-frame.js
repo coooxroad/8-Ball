@@ -10,6 +10,10 @@
     const shown = [], culled = [], mask = camera.layers.mask;
     for (const S of [sScene, scene]) S.traverse(o => { if (!o.visible) { shown.push(o); o.visible = true; } if (o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
     renderer.getViewport(warmVp); const pr = renderer.getPixelRatio();
+    // The lamps' shadows are drawn once and kept (autoUpdate off), by whichever render comes first after they are asked
+    // for. That must not be this one: with everything forced visible, the hidden table (8-ball's pockets under a 4-ball
+    // table) and every hidden piece would be baked into the shadows for good. They wait for the next real frame.
+    const shadowDue = renderer.shadowMap.needsUpdate; renderer.shadowMap.needsUpdate = false;
     camera.layers.enableAll(); unmask();
     try {
       if (rt) { renderer.setRenderTarget(rt); renderer.setViewport(0, 0, 1.5 / pr, 1.5 / pr); renderer.render(sScene, camera); }
@@ -21,6 +25,7 @@
       renderer.render(scene, camera);
     } finally {
       for (const o of shown) o.visible = false; for (const o of culled) o.frustumCulled = true;
+      renderer.shadowMap.needsUpdate = shadowDue;
       camera.layers.mask = mask; renderer.setRenderTarget(null); renderer.setViewport(warmVp.x, warmVp.y, warmVp.z, warmVp.w);
     }
     staticDirty = true; dirty = 3;
