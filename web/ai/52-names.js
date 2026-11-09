@@ -23,3 +23,18 @@
     } else if (kind === 3 && random() < 0.2) name = 'x' + name + 'x';
     return name.slice(0, 16);
   }
+
+  function rankedName(random) {
+    const pick = a => a[Math.floor(random() * a.length)];
+    const family = random();
+    if (family < 0.05) return pick(['아씨또키스', '개똥두께', '젠장짧다', '아놔', 'ㅅㅂ한점만', '또졌네진짜']);
+    if (family < 0.24) return pick(['정면만봄', '중대단골', '얇게한번', '백점언저리', '키스전문', '오늘도쫑', '초크주세요', '큐찾는중', '대대연습중', '한큐만더', '장쿠션옆자리', '당구치는삼촌', '빈쿠션빌런', '노랑먼저', '좀만길게', '후루꾸']);
+    if (family < 0.43) return pick(['동네오리', '찬물', '미지근', '연두부', '회색고양이', '대충감자', '낮잠중', '춘식', '먼지', '바삭한빵', '오후반차', '비오는수요일', '퇴근십분전', '저녁먹고옴', '삼분카레', '물많이']);
+    const account = family < 0.69;
+    const stem = account
+      ? pick(['juno', 'hyunw', 'mink', 'oneroom', 'doodoo', 'slowcue', 'dskim', 'west9', 'rimshot', 'yoons', 'turnleft', 'softbreak', 'mintcho', 'sundayb'])
+      : pick(['박대리', '창수', '지훈이', '강프로', '호야', '권형', '한부장', '민재', '김씨', '유진', '동팔이', '정우', '남코치', '이선생', '해원이', '최사장']);
+    if (random() >= (account ? 0.68 : 0.47)) return stem;
+    const suffix = random() < 0.4 ? pick(['07', '12', '23', '86', '92', '03', '77', '88', '1004']) : Math.floor(random() * 1000);
+    return stem + (account && random() < 0.2 ? '_' : '') + suffix;
+  }
