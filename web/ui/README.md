@@ -43,10 +43,7 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | mode-three … mode-nine | H1 mode icons 128 | beside each game's name on the rail keys | – |
 | toggle-off, toggle-on | S1 200×96 | the settings' on/off switch (knob 45,45 → 155,45) | – |
 | divider | S3 600×12 | the brass line between settings rows | slice 6 l r |
-| rank-1 … rank-3 | R1 128 | the first three in the records (number in 30,28–98,96) | – |
-| res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
 | streak | R3 220×80 | the "N연승" badge | slice 28 l r |
-| plaque | R4 900×140 | the records' title plate | slice 80 l r |
 
 ## Table materials (`web/tex/`)
 
