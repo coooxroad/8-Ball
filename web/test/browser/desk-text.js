@@ -15,7 +15,8 @@ const { open } = require('./harness.js');
       // Compare the table opening with the native-density layout, including the ranked-search strip.
       // (the cards open: the three ways come out of the middle and settle before one is tapped)
       await tap(page.locator('[data-b="friend"]')); await page.waitForTimeout(1300);
-      if (await page.locator('[data-b="way-local"]').count()) { await tap(page.locator('[data-b="way-local"]')); await page.waitForTimeout(800); }
+      // (headless frames are slow: the cards' coming out is finished by hand, else the tap lands on whichever card is passing)
+      if (await page.locator('[data-b="way-local"]').count()) { await page.evaluate(() => document.getAnimations().forEach(a => { if (/unfoldIn|flyAway/.test(a.animationName || '')) a.finish(); })); await tap(page.locator('[data-b="way-local"]')); await page.waitForTimeout(800); }
       if (await page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }).count()) await tap(page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }));
       await tap(page.locator('#dkRail .dk-rb', { hasText: '8볼' }));
       const measure = () => page.evaluate(() => {
