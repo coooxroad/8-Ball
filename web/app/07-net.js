@@ -127,11 +127,13 @@ const net = (() => {
     leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
     // a ranked game's room, by WebSocket: its address for the seat's token
     roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,
+    watchUrl: (room, key) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?watch=${key}`,
     // a game with a friend on another device (server/src/ranked.js InviteCore): a code to give them, asked after until they
     // come; or a friend's code, to join
     // (o: { listed, pw } - a room shown in the list of open rooms, with a password if given: 방 생성하기)
     async inviteOpen(mode, rules, o) { if (!(await ensure())) return null; return call('/v1/invite/open', Object.assign({ mode, rules, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }, o || {})); },
     async inviteList() { if (!(await ensure())) return null; return call('/v1/invite/list', {}); },
+    async inviteWatch(id, pw) { if (!(await ensure())) return null; return call('/v1/invite/watch', { id, pw: pw || '', phys: PHYS_V }); },
     async inviteJoinId(id, pw) { if (!(await ensure())) return null; return call('/v1/invite/join', { id, pw: pw || '', phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
     inviteAsk: code => call('/v1/invite/ask', { code }),
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },

@@ -64,7 +64,10 @@ for (const mode of ['eight', 'nine', 'four', 'three']) {
     g.P.strike = (...a) => { if (a[5] > 0) raised[style] = (raised[style] || 0) + 1; return strike0(...a); };
     try { const shot = measured(g); samples.push({ style, ...shot }); } finally { g.P.strike = strike0; }
   }
-  assert(samples.some(p => p.style === 'power' && Math.abs(g.powerOf(p.V) - 1) < 1e-9), 'power style never releases at 100%');
+  // (the power style hits harder than the careful one: on the livelier cloth of PHYS_V 8 a soft shot reaches far enough
+  // in this position that a full-power release is no longer its best answer, so the check is the average, not a blast)
+  const meanPower = s => { const q = samples.filter(p => p.style === s); return q.reduce((a, p) => a + g.powerOf(p.V), 0) / q.length; };
+  assert(meanPower('power') > meanPower('defensive'), `power style no harder than the defensive one (${meanPower('power').toFixed(2)} / ${meanPower('defensive').toFixed(2)})`);
   // (a masse from the opening of 4구 almost never scores - a few in two thousand - so whether one of these thirty plays
   // it is luck, and a small change to the physics turns it either way; what the style must do is look for them: it plays
   // raised cues out, the others hardly)

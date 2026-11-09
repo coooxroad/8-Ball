@@ -98,16 +98,28 @@ function deskPlay(d) {
     app.classList.add('hall');
     const R = invite.rooms; if (!R) invite.listRooms();
     const list = R && R.list, n = list ? list.length : 0;
-    dkPut(wrap, head('방 참가', list && n ? `열린 방 ${n}개` : '',
+    dkPut(wrap, head('방 참가', list && n ? (list.some(r => r.playing) ? `방 ${n}개` : `열린 방 ${n}개`) : '',
       () => { invite.stopRooms(); playStep = 'friend'; playFx = 'fan'; paintHome(); },
       [el('button', { class: 'dk-chip', text: '코드로 참가', onclick: onTap(invite.sheetJoin) })]));
-    if (list && n) dkPut(fit, list.map((r, i) => {
-      const kind = r.mode === 'three' || r.mode === 'four' ? 'carom' : 'pool', rule = RULE_KO(r.mode, r.rules);
-      return el('button', { class: 'tb unf ' + kind + (r.lock ? ' lock' : ''), style: `--d:${i * 40}ms`, 'aria-label': `${r.host.name}의 방, ${MODE_KO[r.mode]}${r.lock ? ', 비밀번호' : ''}`,
-        onclick: onTap(() => r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
-        el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null]),
-        el('span', { class: 'tb-plate' }, [el('b', { text: r.title || `${r.host.name}의 방` }), el('small', { text: `${r.host.name} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''} · 레이팅 ${r.host.dama}` }), r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
-    }));
+    // (the rooms waiting for someone, then - divided off as the shop divides its rarities - the games being played, to
+    // watch: owner 11-09)
+    const table = (r, i) => {
+      const kind = r.mode === 'three' || r.mode === 'four' ? 'carom' : 'pool', rule = RULE_KO(r.mode, r.rules), who = r.playing ? `${r.host.name} vs ${r.guest.name}` : r.host.name;
+      return el('button', { class: 'tb unf ' + kind + (r.lock ? ' lock' : '') + (r.playing ? ' live' : ''), style: `--d:${i * 40}ms`,
+        'aria-label': `${r.title || `${r.host.name}의 방`}, ${MODE_KO[r.mode]}${r.playing ? ', 경기 중, 관전' : ''}${r.lock ? ', 비밀번호' : ''}`,
+        onclick: onTap(() => r.playing ? (r.lock ? invite.sheetPw(r, false, true) : invite.watch(r)) : r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
+        el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null, r.playing ? el('em', { class: 'tb-live', text: '관전' }) : null]),
+        el('span', { class: 'tb-plate' }, [el('b', { text: r.title || `${r.host.name}의 방` }),
+          el('small', { text: r.playing ? `${who} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''}` : `${who} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''} · 레이팅 ${r.host.dama}` }),
+          r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
+    };
+    if (list && n) {
+      const wait = list.filter(r => !r.playing), live = list.filter(r => r.playing), kids = [];
+      const tier = (t, k) => el('div', { class: 'dk-tier tb-tier' + (k ? ' ' + k : '') }, [el('span', { text: t })]);
+      if (wait.length) { if (live.length) kids.push(tier(`대기 중 ${wait.length}`)); wait.forEach((r, i) => kids.push(table(r, i))); }
+      if (live.length) { kids.push(tier(`경기 중 ${live.length}`, 'live')); live.forEach((r, i) => kids.push(table(r, wait.length + i))); }
+      dkPut(fit, kids);
+    }
     // (copy audit 02-04, 02-05: reading, failing and empty each say so once, differently)
     else if (!list && R && R.err) dkPut(fit, el('div', { class: 'tb-none' }, [el('b', { text: '방 목록을 불러오지 못했습니다' }), el('button', { class: 'dk-chip', text: '다시 시도', onclick: onTap(() => invite.listRooms()) })]));
     else if (!list) dkPut(fit, el('div', { class: 'tb-none wait' }, [el('i', { class: 'sp', 'aria-hidden': 'true' }), el('b', { text: '방 찾는 중…' })]));

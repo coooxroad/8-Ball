@@ -171,7 +171,7 @@
       }
     }
     cands.sort((a, b) => a.score - b.score);
-    const speed = k => Math.min(6.4, Math.max(1.3, (1.0 + 1.5 * Math.sqrt(k.dTP)) / Math.max(0.4, k.cosc) + 0.9 * Math.sqrt(k.dCG)));
+    const speed = k => PACE.pool * Math.min(6.4, Math.max(1.3, (1.0 + 1.5 * Math.sqrt(k.dTP)) / Math.max(0.4, k.cosc) + 0.9 * Math.sqrt(k.dCG)));
     if (lvl >= 3) { const show = aiShow(cands, targets, speed, good, ctx); if (show) return show; }
     if (cands.length) {
       let pick = null;
@@ -206,7 +206,7 @@
     }
     if (firstSafe) return { pos: firstSafe.pos, angle: firstSafe.angle + gauss() * noise * 0.5, V: firstSafe.V };
     const pos = g.placing ? P.findFree(w, -HL / 2, 0, 0) : null;
-    for (let i = 0; i < 120; i++) { const a = i * Math.PI / 60; if (safe(verdict(a, 3, pos))) return { pos, angle: a, V: 3 }; }
+    for (let i = 0; i < 120; i++) { const a = i * Math.PI / 60; if (safe(verdict(a, 3 * PACE.pool, pos))) return { pos, angle: a, V: 3 * PACE.pool }; }
     const T = order[0], fx = pos ? pos[0] : c.x, fy = pos ? pos[1] : c.y;
-    return { pos, angle: Math.atan2(T.y - fy, T.x - fx), V: 2.6 };
+    return { pos, angle: Math.atan2(T.y - fy, T.x - fx), V: 2.6 * PACE.pool };
   }

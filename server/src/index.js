@@ -13,13 +13,15 @@
    POST /v1/invite/peek { code }                      what a code is: { mode, rules, host }
    POST /v1/invite/join { code, name, icon, gear }    the friend takes the other seat: the room
    POST /v1/invite/leave { code }                     the host gives up waiting
-   POST /v1/invite/list  {}                           the open rooms ({ rooms: [{ id, mode, rules, lock, host }] })
+   POST /v1/invite/list  {}                           the listed rooms ({ rooms: [{ id, mode, rules, lock, host, playing?, guest? }] })
+   POST /v1/invite/watch { id, pw }                   a listed game being played, to watch: { room, watch }
    (open takes listed and pw too: the room shown in that list, with a password; join takes { id, pw } from the list)
    POST /v1/lessons { req, vol, proofs }              a volume of lessons all done: its prize
    POST /v1/nick    { nick }                          a member's name (2-10 characters)
    POST /v1/tutorial { req }                          the tutorial done: its prize, once
    POST /v1/save    { data }                          the app's progress, for the account's other devices
    GET  /v1/room/<id>?token=<seat's token>            (WebSocket) playing a ranked game: room.js
+   GET  /v1/room/<id>?watch=<watch key>               (WebSocket) watching one
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
 import { googleWho } from './google.js';
@@ -108,11 +110,11 @@ async function frontDoor(request, env) {
     if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
     const vault = env.VAULT.get(env.VAULT.idFromName(m[1]));
-    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave|list)$/.exec(url.pathname);
+    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave|list|watch)$/.exec(url.pathname);
     if (inv) {
       const body = await request.json().catch(() => ({})), code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       if (inv[1] === 'open' && !MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
-      if ((inv[1] === 'open' || inv[1] === 'join') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
+      if ((inv[1] === 'open' || inv[1] === 'join' || inv[1] === 'watch') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       // (a member plays under their own nickname, kept in their vault; a guest under the name the app gives)

@@ -291,7 +291,7 @@ function createGame(PH, makeAI) {
      0.35 m/s, which already rolls a ball most of half a metre - so below LOW it bends down, smoothly (same value and slope
      where they join), to a touch that moves the ball millimetres.
      The realistic physics (puzzles) keeps the curve the game has always had. The game's physics has a calmer one: half
-     power is about two and a half table lengths on a carom table, full power still six; the same curve on every table. */
+     power runs about two and a half lengths of the match table, full power five (PHYS_V 8); the same curve on every table. */
   const curve = (B, E) => {
     const LOW = 0.15, V_LOW = 0.35 + B * Math.pow(LOW, E), S_LOW = B * E * Math.pow(LOW, E - 1), V_MIN = 0.03,
           C_LOW = (S_LOW - (V_LOW - V_MIN) / LOW) / LOW, B_LOW = (V_LOW - V_MIN) / LOW - C_LOW * LOW;

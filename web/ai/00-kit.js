@@ -15,6 +15,9 @@
   // rand(): the chance a person-like player uses. From g.aiRnd when the game is given one (a seeded match, so the same table
   // and the same seed give the same plan), else Math.random
   const rand = () => (g.aiRnd || Math.random)();
+  // the stroke speeds written below were found on the old, slower cloth; on PHYS_V 8's a ball runs as far at about these
+  // fractions of them (pool 0.7, carom 0.55 - measured: the speed that runs as far as the old one did)
+  const PACE = { pool: 0.7, carom: 0.55 };
   function gauss() { let u = 0; for (let i = 0; i < 6; i++) u += Math.random(); return (u - 3) / Math.sqrt(0.5); }
   // a copy of the table with the stroke played out: what happened (world.ev)
   function simShot(angle, V, pos) {

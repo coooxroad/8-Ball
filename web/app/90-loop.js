@@ -224,5 +224,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, net, invite, paintHome, leagueIntro, tutorial, practice, emote, EMOTES, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, net, invite, paintHome, leagueIntro, tutorial, practice, emote, EMOTES, highlights, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();

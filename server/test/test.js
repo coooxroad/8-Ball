@@ -221,7 +221,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     return { msgs, winner: g.over ? g.over.winner : null };
   }
   const roomOf = (mode, seed, first, standIn) => {
-    const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => sent[s].push(m), tx);
+    const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
     R.init({ room: 'f'.repeat(32), mode, seed, first, standIn: standIn || null, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: standIn ? null : 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
     return { R, sent };
   };
@@ -412,7 +412,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const rb = ls.find(r => r.host.name === 'B'), ra = ls.find(r => r.host.name === 'A');
     ok(!L.byId(rb.id, '0000').ok && L.byId(rb.id, '0000').why === 'wrong password' && L.byId(rb.id, '1234').code === b.code && L.byId(ra.id).code === a.code, 'invite: a password guards a room taken from the list');
     for (let i = 0; i < 12; i++) L.byId(rb.id, 'x'); ok(L.byId(rb.id, '1234').why === 'locked', 'invite: too many wrong passwords close it to the list');
-    L.join({ acct: 'g'.repeat(32), dama: 500, name: 'G' }, a.code); ok(L.list().rooms.length === 1 && L.byId(ra.id).why === 'taken', 'invite: a taken room leaves the list');
+    const jr = L.join({ acct: 'g'.repeat(32), dama: 500, name: 'G' }, a.code), l2 = L.list().rooms, pa = l2.find(r => r.id === ra.id);
+    ok(l2.length === 2 && pa.playing && pa.guest.name === 'G' && l2[l2.length - 1] === pa && L.byId(ra.id).why === 'playing', 'invite: a game being played stays in the list, last, as playing, not to be joined');
+    // watching it: the room and the watchers' key, with the password where there is one; never while waiting
+    const wa = L.watch(ra.id); ok(wa.ok && wa.room === jr.room && /^[0-9a-f]{32}$/.test(wa.watch) && L.watch(rb.id, '1234').why === 'not playing', 'invite: a game being played can be watched, a waiting room not');
+    ok(L.ended(jr.room).ok && !L.list().rooms.some(r => r.id === ra.id) && L.watch(ra.id).why === 'no such room', 'invite: a game ended leaves the list');
     ok(ls.find(r => r.host.name === 'A').title === 'A의 방', 'invite: a room is named after its host unless named'); }
   // a host away (a hidden page cannot ask): off the list and not to be joined, but back within ten minutes, the same code
   { let t = 0; const L = new InviteCore(() => t), h = { acct: 'h'.repeat(32), dama: 500, name: 'H', mode: 'four', listed: true, title: '  한판 붙자 ' };
@@ -420,6 +424,22 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     t = 31000; ok(!L.list().rooms.length && L.join({ acct: 'g'.repeat(32), name: 'G' }, o.code).why === 'away', 'invite: a host away is off the list and cannot be joined');
     t = 5 * 60000; ok(L.ask(h.acct, o.code).waiting && L.list().rooms.length === 1 && L.open(h).code === o.code, 'invite: back within ten minutes, the same code');
     t = 20 * 60000; ok(!L.peek(o.code).ok, 'invite: away too long, the code is gone'); }
+  // a locked game being watched asks its password; a player starting another game takes the old one off the list; a room
+  // that never says it ended leaves the list in WATCH_KEEP
+  { let t = 0; const L = new InviteCore(() => t), h = { acct: 'h'.repeat(32), dama: 500, name: 'H', mode: 'eight', listed: true, pw: '77' };
+    const o = L.open(h), id = L.list().rooms[0].id; L.join({ acct: 'g'.repeat(32), dama: 400, name: 'G' }, o.code);
+    ok(L.watch(id, '1').why === 'wrong password' && L.watch(id, '77').ok, 'invite: watching a locked game takes its password');
+    L.open(Object.assign({}, h, { pw: '' })); ok(L.list().rooms.length === 1 && !L.list().rooms[0].playing, 'invite: the host opening again takes the old game off the list');
+    const o2 = L.list().rooms[0]; L.join({ acct: 'k'.repeat(32), dama: 400, name: 'K' }, L.byId(o2.id).code);
+    t = 44 * 60000; ok(L.list().rooms.length === 1, 'invite: a game being played stays a while'); t = 46 * 60000; ok(!L.list().rooms.length, 'invite: and not for ever'); }
+  // the room: a watcher's key lets in to watch (not to play); watchers hear the shots, aims, emotes and the result
+  { const { sql, tx } = sqlOf(), sent = { 0: [], 1: [], w: [] }, R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
+    R.init({ room: 'e'.repeat(32), watch: 'w'.repeat(32), mode: 'four', seed: 5, first: 0, kind: 'invite', rules: { target: 3 }, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
+    ok(R.watches('w'.repeat(32)) && !R.watches('t0') && !R.watches('') && R.seatOf('w'.repeat(32)) < 0, 'room: the watch key watches and is no seat');
+    R.message(0, { t: 'aim', aim: 1, power: 0.5 }); R.message(1, { t: 'emote', id: 'fire' }); R.message(0, { t: 'timeout', n: 0 });
+    const ws = R.watchState(); ok(ws.watch && ws.seat === 2 && ws.seats.length === 2 && ws.seats[1].name === 'B' && !('token' in ws.seats[0]) && !('acct' in ws.seats[0]) && ws.shots.length === 1, 'room: a watcher hears both players and every shot');
+    ok(['aim', 'emote', 'timeout'].every(t => sent.w.some(m => m.t === t)), 'room: watchers hear the aims, emotes and shots');
+    R.message(0, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5); ok(sent.w.some(m => m.t === 'result' && m.seat === 2), 'room: watchers hear the result'); }
   console.log('invites: checked');
 }
 // online games (Codex B04-B07): the room's table; a room heard of only once open, and a failed one undone; a new search

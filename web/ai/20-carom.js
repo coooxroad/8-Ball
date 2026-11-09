@@ -1,7 +1,7 @@
   function aiCarom() {
     const w = g.world, c = w.balls[w.cue], lvl = levelOf(g.turn), ctx = g.mode.ctx(g);
     const need = g.modeId === 'three' ? g.cushions || 0 : 0;       // going round the cushions takes a harder hit
-    const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl], noise = [0.02, 0.009, 0.003, 0][lvl];
+    const nA = [72, 96, 144, 360][lvl], Vs = (need >= 3 ? [[4.6], [4.2, 5.6], [4.2, 5.2, 6.2], [4.0, 5.0, 6.2]] : need ? [[3.4], [2.8, 4.2], [2.8, 4.4], [2.6, 3.6, 4.8]] : [[3], [2.4, 3.8], [2.6, 4.0], [2.2, 3.0, 4.0]])[lvl].map(V => V * PACE.carom), noise = [0.02, 0.009, 0.003, 0][lvl];
     const phase = Math.random() * Math.PI * 2, hit = Vs.map(() => new Array(nA).fill(false)), okay = [];
     const flair = [];                                         // top level: scoring shots it saw, and whether the cue ball went round the cushions to do it
     if (lvl >= 3) {
@@ -19,11 +19,11 @@
       if (g.masse && flair.length && Math.random() < 0.6) {
         const trick = (angle, V, a, el) => { const w2 = g.P.clone(w); g.P.strike(w2, angle, V, a, 0, el); const r = g.mode.evaluate(g.P.run(w2, 20), ctx, g); if (r.pts > 0 && !w2.ev.off.length) { flair.push({ angle, V, a, b: 0, el, s: 9 + Math.random() }); return true; } return false; };
         search: for (const id of g.mode.legal(g, g.turn)) { const T = w.balls[id], base = Math.atan2(T.y - c.y, T.x - c.x), far = Math.hypot(T.x - c.x, T.y - c.y);
-          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [5.6, 6.6]) if (trick(base + da, V, 0, 0.7)) break search;
+          if (far > 0.7) for (const da of [0, 0.012, -0.012, 0.024, -0.024]) for (const V of [5.6, 6.6]) if (trick(base + da, V * PACE.carom, 0, 0.7)) break search;
           for (let i = 0; i < 12; i++) { const side = i % 2 ? 0.42 : -0.42; if (trick(base - Math.sign(side) * (0.05 + 0.05 * (i >> 1)), 3.6, side, 1.15 + 0.1 * (i % 3))) break search; } }
       }
       // nothing yet: look again between the angles already tried, at other speeds
-      if (!flair.length) again: for (const V of need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]) for (let i = 0; i < 720; i++) {
+      if (!flair.length) again: for (const V of (need >= 3 ? [4.5, 5.6, 6.6] : [2.6, 3.5, 4.6]).map(v => v * PACE.carom)) for (let i = 0; i < 720; i++) {
         const a = phase + (i + 0.5) * Math.PI / 360;
         if (g.mode.evaluate(simShot(a, V), ctx, g).pts > 0) { flair.push({ angle: a, V, s: 0 }); break again; }
       }
@@ -44,10 +44,10 @@
       const reds = g.mode.legal(g, g.turn).map(i => w.balls[i]).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y));
       for (const T of reds) {
         const a = Math.atan2(T.y - c.y, T.x - c.x), h = g.P.cast(w, c.x, c.y, Math.cos(a), Math.sin(a), w.cue);
-        if (h.type === 'ball' && h.ball === T.id) { best = { angle: a, V: 2.2 }; break; }
+        if (h.type === 'ball' && h.ball === T.id) { best = { angle: a, V: 2.2 * PACE.carom }; break; }
       }
     }
     if (!best && okay.length) best = okay[Math.floor(Math.random() * okay.length)];
-    if (!best) { const T = w.balls[2]; best = { angle: Math.atan2(T.y - c.y, T.x - c.x), V: 2.8 }; }
+    if (!best) { const T = w.balls[2]; best = { angle: Math.atan2(T.y - c.y, T.x - c.x), V: 2.8 * PACE.carom }; }
     return { pos: null, angle: best.angle + gauss() * noise, V: best.V };
   }

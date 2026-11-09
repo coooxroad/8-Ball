@@ -136,3 +136,15 @@
 #dkBoards .tb-pk{inset:calc(2.8% - var(--u)*.2);
   background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/7% 13.5% no-repeat,
     radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 100%/7% 13.5% no-repeat}
+
+/* (owner 11-09) the hall in two: rooms waiting, then games being played - divided as the shop divides its rarities; a
+   game being played wears a red 관전 tag on its table */
+#dkBoards .tb-tier{margin:2px 2px -10px}
+#dkBoards .tb-tier.live{--tc:#ff8a80}
+#dkBoards .tb-tier.live span{color:#ffb3ab}
+#dkBoards .tb-tier.live::before,#dkBoards .tb-tier.live::after{background:linear-gradient(90deg,#ff8a80,rgba(255,138,128,.25))}
+#dkBoards .tb-live{position:absolute;left:50%;top:-9px;transform:translateX(-50%);z-index:2;padding:3px 9px 3px 20px;border-radius:999px;background:#e53935;color:#fff;font:800 12px/1.2 var(--ui-font);font-style:normal;letter-spacing:.03em;
+  box-shadow:0 2px 0 #8e1b18,-2px 4px 6px rgba(0,0,0,.4)}
+#dkBoards .tb-live::before{content:"";position:absolute;left:8px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:#fff;animation:liveDot 1.4s ease-in-out infinite}
+@keyframes liveDot{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){#dkBoards .tb-live::before{animation:none}}

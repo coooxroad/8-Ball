@@ -39,3 +39,5 @@
 #app.desk .inv-slot .ok{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;z-index:2;background:#2f9e5b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/70% no-repeat;box-shadow:0 2px 4px rgba(0,0,0,.35)}
 #app.desk .inv-slot small:empty{display:none}
 #app.desk .inv-slot.come .well::after{content:"";position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;background:#2f9e5b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/70% no-repeat}
+/* watching a friend's game (54-ranked.js watch): the stroke's controls are nobody's here */
+#app.watching #power,#app.watching #fine,#app.watching #spinBtn{display:none}

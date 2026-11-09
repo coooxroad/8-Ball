@@ -1,13 +1,14 @@
 /* A ranked game's Durable Object: one for each game being played. The rules are RoomCore (ranked.js). */
 import { DurableObject } from 'cloudflare:workers';
-import { RoomCore, RETURN_WITHIN, JOIN_WITHIN } from './ranked.js';
+import { RoomCore, RETURN_WITHIN, JOIN_WITHIN, WATCH_MAX } from './ranked.js';
 
 const SLICE = 150;
 
 export class Room extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    const send = (seat, msg) => { for (const ws of ctx.getWebSockets('s' + seat)) try { ws.send(JSON.stringify(msg)); } catch (e) {} };
+    // (seat 'w': everyone watching)
+    const send = (seat, msg) => { for (const ws of ctx.getWebSockets(seat === 'w' ? 'w' : 's' + seat)) try { ws.send(JSON.stringify(msg)); } catch (e) {} };
     this.core = new RoomCore(ctx.storage.sql, send, fn => ctx.storage.transactionSync(fn));
   }
   async soon(ms) { const a = await this.ctx.storage.getAlarm(); if (!a || a > Date.now() + ms) await this.ctx.storage.setAlarm(Date.now() + ms); }
@@ -18,6 +19,16 @@ export class Room extends DurableObject {
     // /v1/room/<id>?token=...: a seat's device, by WebSocket
     if (request.headers.get('Upgrade') !== 'websocket') return Response.json({ ok: false, why: 'websocket only' }, { status: 426 });
     if (!this.core.get('room')) return Response.json({ ok: false, why: 'no such room' }, { status: 404 });
+    // ?watch=<key>: someone watching a friend's game from the list (InviteCore.watch) - hears everything, says nothing
+    const wkey = url.searchParams.get('watch');
+    if (wkey) {
+      if (!this.core.watches(wkey)) return Response.json({ ok: false, why: 'who are you' }, { status: 401 });
+      if (this.ctx.getWebSockets('w').length >= WATCH_MAX) return Response.json({ ok: false, why: 'full' }, { status: 429 });
+      const [client, server] = Object.values(new WebSocketPair());
+      this.ctx.acceptWebSocket(server, ['w']);
+      server.send(JSON.stringify(this.core.watchState()));
+      return new Response(null, { status: 101, webSocket: client });
+    }
     const seat = this.core.seatOf(url.searchParams.get('token') || '');
     if (seat < 0) return Response.json({ ok: false, why: 'who are you' }, { status: 401 });
     for (const old of this.ctx.getWebSockets('s' + seat)) try { old.close(4000, 'replaced'); } catch (e) {}
@@ -53,6 +64,12 @@ export class Room extends DurableObject {
     for (const p of this.core.payouts()) {
       const r = await this.env.VAULT.get(this.env.VAULT.idFromName(p.acct)).fetch('https://vault/room/result', { method: 'POST', body: JSON.stringify(p.body) }).catch(() => null);
       if (r && r.ok) this.core.paid(p.seat); else left = true;
+    }
+    // a friend's game ended: it leaves the list of games to watch (once; again later if the lobby did not answer)
+    const room = this.core.get('room');
+    if (this.core.get('result') && room && room.watch && !this.core.get('unlisted')) {
+      const r = await this.env.LOBBY.get(this.env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/ended', { method: 'POST', body: JSON.stringify({ room: room.room }) }).catch(() => null);
+      if (r && r.ok) this.core.set('unlisted', true); else left = true;
     }
     if (left) return this.soon(30000);
   }

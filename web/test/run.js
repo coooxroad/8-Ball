@@ -364,7 +364,8 @@ for (const name of ['bar', 'pro', 'pub']) {
 {
   const P = createPhysics({ R: 0.03275, pockets: false }), W = P.walls([{ x: 0.3, y: 0, len: 0.4, thick: 0.03, ang: Math.PI / 2, h: 0.04 }]);
   const roll = (y, V) => { const w = P.makeWorld(1); w.walls = W; P.place(w, 0, -0.3, y); P.strike(w, 0, V, 0, 0); const ev = P.run(w, 30); return { w, ev, b: w.balls[0] }; };
-  const a = roll(0, 1.5), b = roll(0, 1.5), c = roll(0.4, 1.5);
+  // (soft enough not to reach the cushion behind on the way back: on the livelier cloth of PHYS_V 8 a firmer one did)
+  const a = roll(0, 0.8), b = roll(0, 0.8), c = roll(0.4, 1.5);
   if (!(a.ev.walls >= 1 && a.ev.cushions === 0 && a.b.x < 0.3)) fail(`barricades: a ball rolled into one should come back (walls ${a.ev.walls}, x ${a.b.x.toFixed(3)})`);
   if (a.b.x !== b.b.x || a.b.y !== b.b.y) fail('barricades: the same shot ends differently');
   if (c.ev.walls !== 0) fail('barricades: a ball rolled past the end met it');

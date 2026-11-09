@@ -66,10 +66,40 @@ const ranked = {
     if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
+  /* Watching a friend's game from the list (55-invite.js watch): seat 2, neither player's - every shot is the room's, played
+     here as it comes; what was played before coming in is played at once (catchUp), so the table is where it is now.
+     Nothing is sent; leaving gives nothing up. The game starts once the room's state has come (seats, seed, rules). */
+  watch(r) {
+    ranked.leave();
+    ranked.on = { watch: true, seat: 2, room: r.room, key: r.watch, mode: r.mode, title: r.title || '', inbox: [], n: 0, sent: [], ws: null, done: false, tries: 0, res: {}, mine: {},
+      opp: { name: '' }, kind: 'invite', table: 'bar', standIn: null, started: false };
+    ranked.connect();
+  },
+  watchStart(m) {
+    const o = ranked.on; o.started = true; app.classList.add('watching'); o.seed = m.seed >>> 0; o.first = m.first; o.seats = m.seats; o.rules = m.rules;
+    o.look = ranked.lookOf(o); useBalls(o.look.ball);
+    const rules = m.rules || RANKED_RULES[o.mode];
+    match.start(o.first, { names: m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
+    toast(`관전 중 · ${m.seats[0].name} vs ${m.seats[1].name}`, '', 2400);
+  },
+  /* the shots played before a watcher came in, played at once - the table, the score and whose turn it is as they are now -
+     all but the last, which is played as it comes (so the watcher sees a shot, not a jump) */
+  catchUp() {
+    const o = ranked.on; if (!o || !o.watch) return;
+    let moved = false;
+    while (o.inbox.length > 1 && !game.over) {
+      const m = o.inbox.shift(); moved = true;
+      if (m.timeout) { game.timeout(); o.n++; continue; }
+      const sh = m.shot; highlights.restore(game.world, sh.s); game.placing = null; game.beginShot();
+      game.P.strike(game.world, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); game.P.run(game.world, 40); for (const b of game.world.balls) b.wz = 0;
+      game.resolve(); o.n++;
+    }
+    if (moved) { st.rev++; scene.invalidate(); match.cue(); flow.hud(); beginTurn(false); }
+  },
   // the room, kept open: a dropped connection is opened again, and what it missed is sent again
   connect() {
     const o = ranked.on; if (!o || o.done) return;
-    let ws; try { ws = new WebSocket(net.roomUrl(o.room, o.token)); } catch (e) { return ranked.retry(); }
+    let ws; try { ws = new WebSocket(o.watch ? net.watchUrl(o.room, o.key) : net.roomUrl(o.room, o.token)); } catch (e) { return ranked.retry(); }
     o.ws = ws;
     ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } if (ranked.on === o) ranked.hear(m); };
     ws.onclose = () => { if (ranked.on === o && o.ws === ws) { o.ws = null; ranked.retry(); } };
@@ -77,14 +107,19 @@ const ranked = {
   retry() { const o = ranked.on; if (!o || o.done) return; o.tries++; setTimeout(ranked.connect, Math.min(8000, 600 * o.tries)); },
   // (shots and timeouts are kept to send again after a reconnect; so is the game's end - 'end' or 'resign' - until the
   // room's result comes: sent while the connection was down, it used to be lost, and the room waited on it)
-  send(m) { const o = ranked.on; if (!o) return; if (m.t === 'shot' || m.t === 'timeout') o.sent.push(m); if (m.t === 'end' || m.t === 'resign') o.closing = m; if (o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify(m)); },
+  send(m) { const o = ranked.on; if (!o || o.watch) return; if (m.t === 'shot' || m.t === 'timeout') o.sent.push(m); if (m.t === 'end' || m.t === 'resign') o.closing = m; if (o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify(m)); },
   hear(m) {
     const o = ranked.on;
     if (m.t === 'state') {
       o.tries = 0;
+      if (o.watch && !o.started) {
+        if (m.result || m.status !== 'playing') { ranked.on = null; o.done = true; if (o.ws) o.ws.close(); return toast('경기가 끝났습니다.', 'foul', 2200); }
+        ranked.watchStart(m);
+      }
       // everything the room has: the other seat's shots not played here yet go in line; ours it missed go again
       const have = m.shots.length;
       for (let i = o.n + o.inbox.length; i < have; i++) if (m.shots[i].seat !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
+      if (o.watch) return ranked.catchUp();
       for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
       if (m.result) ranked.result(m.result); else if (o.closing) o.ws.send(JSON.stringify(o.closing));
       return;
@@ -135,7 +170,7 @@ const ranked = {
      each player's own cue and trail, and the ball set and table of whichever player has the rarer (seat 0's if equal). An ice
      table is not a look - it plays differently - so it is never chosen here. */
   lookOf(o) {
-    const g = []; g[o.seat] = ranked.gear(); g[1 - o.seat] = o.opp.gear || {};
+    const g = []; if (o.watch) { g[0] = o.seats[0].gear || {}; g[1] = o.seats[1].gear || {}; } else { g[o.seat] = ranked.gear(); g[1 - o.seat] = o.opp.gear || {}; }
     const rar = (L, id) => { const q = L.find(x => x.id === id); return q ? q.rarity || 0 : -1; };
     const rarer = (L, k, usual) => { const a = g[0][k], b = g[1][k], w = rar(L, b) > rar(L, a) ? b : a; return L.some(x => x.id === w) ? w : usual; };
     const tbl = rarer(CLOTHS.filter(c => !c.ice), 'table', CLOTHS[0].id), usualCue = Math.max(0, CUES.findIndex(c => !(c.rarity > 0)));
@@ -210,6 +245,11 @@ const ranked = {
      No winner (the room found nobody to blame - neither came, or the game stopped): it ends as 무효, nobody's win or loss. */
   result(m) {
     const o = ranked.on; if (!o || o.done) return;
+    if (o.watch) {
+      o.done = true; if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
+      if (flow === match && st.screen === 'play' && !game.over && m.winner != null) game.over = { winner: m.winner, why: '', plain: true };
+      return ranked.watchEnd(m);
+    }
     o.done = true; o.result = m; o.closing = null;
     const mine = m.winner === o.seat;
     const why = m.why === 'left' ? (mine ? `${o.opp.name}이(가) 나갔습니다.` : '연결이 끊겨 돌아오지 못했습니다.') : m.why === 'resigned' ? '기권했습니다.'
@@ -225,6 +265,14 @@ const ranked = {
     } else if (st.screen === 'result') ranked.paint();
     if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
     net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after)
+  },
+  // a watched game over: who won, and back to the hall
+  watchEnd(m) {
+    const o = ranked.on; if (!o || flow !== match) return;
+    st.phase = 'idle'; st.auto = null;
+    const w = m && m.winner != null ? m.winner : game.over ? game.over.winner : null, names = o.seats ? o.seats.map(s => s.name) : game.players.map(p => p.name);
+    openSheet('관전 종료', [note(w == null ? '경기가 무효가 되었습니다.' : `${names[w]} 승리`),
+      el('button', { class: 'btn cta', text: '방 목록으로', onclick: () => { SND.tap(); closeSheet(); ranked.leave(); goHome(); playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); } })]);
   },
   // a game the room could not give to anyone: said so, and back home (no win, no loss on the records)
   voided(m) {
@@ -244,6 +292,6 @@ const ranked = {
     if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
   },
   // leaving the game (home, or the app goes away): it is given up
-  leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
+  leave() { app.classList.remove('watching'); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
 };
 press('#rkCancel', () => ranked.cancel());

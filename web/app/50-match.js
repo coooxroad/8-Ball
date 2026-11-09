@@ -15,7 +15,8 @@ const match = {
     const o = c.online, standIn = o && o.standIn;
     game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice,
       rnd: o ? seededRandom(o.seed) : undefined, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
-    if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
+    if (o && o.watch) game.players.forEach(p => { p.ai = true; });
+    else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
     game.aiRnd = standIn ? seededRandom((o.seed ^ 0x2545f491) >>> 0) : null;
     game.humanStates = [null, null]; game.humanCanResign = !!standIn;
@@ -25,7 +26,9 @@ const match = {
     match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
-    if (c.mode === 'four' && (!ctx || o)) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
+    // (watching: at once, as the room's replay does it - the shots after it are played in a moment, catchUp)
+    if (c.mode === 'four' && o && o.watch) { game.rollOut(seededRandom((o.seed ^ 0x5bd1e995) >>> 0)); game.P.run(game.world, 40); game.world.ev = game.P.newEv(); st.rev++; beginTurn(true); }
+    else if (c.mode === 'four' && (!ctx || o)) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
     { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
@@ -64,6 +67,7 @@ const match = {
   // first plate (the computer, and a friend at the same device, have none)
   rating(i) {
     const o = match.ctx && match.ctx.online;
+    if (o && o.watch) { const r = o.seats && o.seats[i] && o.seats[i].dama; return typeof r === 'number' ? r : null; }
     if (o) { const r = i === o.seat ? o.dama : o.opp && o.opp.dama; return typeof r === 'number' ? r : null; }
     return i === 0 && !game.players[0].ai ? (net.me && typeof net.me.dama === 'number' ? net.me.dama : ECONOMY.DAMA_START) : null;
   },
@@ -78,6 +82,7 @@ const match = {
     paintBadge(m.name, m.badge(game)); setBusy();
   },
   finish() {
+    if (match.ctx.online && match.ctx.online.watch) return ranked.watchEnd(null);   // (watching: nobody's records)
     const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
     // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
     // records back as they were before and finishes again with the room's winner, so it is never counted twice)

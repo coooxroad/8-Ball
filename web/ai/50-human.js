@@ -70,7 +70,7 @@
         for (const pos of spots) {
           const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, l = Math.hypot(gx - x, gy - y), cos = ((gx - x) * dx + (gy - y) * dy) / Math.max(l, 1e-9);
           if (cos < 0.25) continue;
-          const V = speed((1 + 1.5 * Math.sqrt(dTP)) / Math.max(0.4, cos) + 0.9 * Math.sqrt(l)), angle = Math.atan2(gy - y, gx - x), clear = P.pathClear(w, x, y, gx, gy, [w.cue, T.id]);
+          const V = speed(PACE.pool * ((1 + 1.5 * Math.sqrt(dTP)) / Math.max(0.4, cos) + 0.9 * Math.sqrt(l))), angle = Math.atan2(gy - y, gx - x), clear = P.pathClear(w, x, y, gx, gy, [w.cue, T.id]);
           const rank = (l * 0.6 + 0.3) * (dTP + 0.25) / (cos * cos);
           if (clear) add(angle, V, T.id, { pos, cut: Math.acos(cos), difficulty: l * 0.35 + (1 - cos) * 1.5, rank, kind: 'pot' });
           if (!clear && exploreMasse && l > 0.4) add(angle - 0.12, g.vOf(0.65), T.id, { pos, a: 0.55, el: 1.15, rank: rank + 0.5, kind: 'masse', difficulty: 1.7 });
@@ -96,7 +96,7 @@
         const ux = (bx - T.x) / d, uy = (by - T.y) / d, gx = T.x - ux * 2 * P.R, gy = T.y - uy * 2 * P.R, l = Math.hypot(gx - c.x, gy - c.y);
         const cos = ((gx - c.x) * ux + (gy - c.y) * uy) / Math.max(l, 1e-9);
         if (cos < 0.35 || !P.pathClear(w, c.x, c.y, gx, gy, [w.cue, T.id]) || !P.pathClear(w, T.x, T.y, bx, by, [w.cue, T.id]) || !P.pathClear(w, bx, by, pocket.ax, pocket.ay, [w.cue, T.id])) continue;
-        add(Math.atan2(gy - c.y, gx - c.x), (1.3 + 1.5 * Math.sqrt(d + Math.hypot(pocket.ax - bx, pocket.ay - by))) / cos + 0.9 * Math.sqrt(l), T.id,
+        add(Math.atan2(gy - c.y, gx - c.x), PACE.pool * ((1.3 + 1.5 * Math.sqrt(d + Math.hypot(pocket.ax - bx, pocket.ay - by))) / cos + 0.9 * Math.sqrt(l)), T.id,
           { rank: 0.7 + l * 0.5 + (1 - cos), kind: 'bank', route: 'object-bank', difficulty: 1.5 + (1 - cos) });
       }
     } else {
@@ -109,14 +109,14 @@
           const h = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); if (h.type !== 'ball' || h.ball !== T.id) continue;
           // Geometric tangent ranking finds plausible caroms before any costly simulation.
           const other = ordered.find(b => b.id !== T.id), rank = humanCaromRank(h, angle, other, need);
-          add(angle, need ? 4.4 : 2.5, T.id, { rank, cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom' });
+          add(angle, (need ? 4.4 : 2.5) * PACE.carom, T.id, { rank, cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom' });
         }
         if (skill > 0.25 || style.bank > 0.7) for (let ix = -2; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) {
           const n = Math.abs(ix) + Math.abs(iy); if (!n || n > Math.max(1, need)) continue;
           const x = 2 * L * ix + (ix % 2 ? -T.x : T.x), y = 2 * W * iy + (iy % 2 ? -T.y : T.y);
-          add(Math.atan2(y - c.y, x - c.x), need >= 3 ? 5 : 3.8, T.id, { rank: 0.7 + n * 0.1 - (need ? 0.5 : 0), kind: 'bank', difficulty: 0.8 + n * 0.3 });
+          add(Math.atan2(y - c.y, x - c.x), (need >= 3 ? 5 : 3.8) * PACE.carom, T.id, { rank: 0.7 + n * 0.1 - (need ? 0.5 : 0), kind: 'bank', difficulty: 0.8 + n * 0.3 });
         }
-        if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
+        if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2 * PACE.carom, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
       }
     }
     candidates.sort((a, b) => (a.rank - (a.kind === 'bank' ? style.bank * 0.8 : a.kind === 'masse' ? style.masse * 0.9 : 0)) - (b.rank - (b.kind === 'bank' ? style.bank * 0.8 : b.kind === 'masse' ? style.masse * 0.9 : 0)));

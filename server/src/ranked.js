@@ -112,6 +112,10 @@ export class LobbyCore {
    opens as for a ranked game (kind 'invite': the host's rules, no DAMA). Held in memory in one Durable Object
    (the lobby named 'invites'); a code whose host has not asked for INVITE_IDLE is gone. */
 export const INVITE_IDLE = 30000;
+// a listed room's game being played stays in the list (경기 중, to watch) this long at most - the room says when it ends
+export const WATCH_KEEP = 45 * 60000;
+// at most this many watching one game
+export const WATCH_MAX = 30;
 // a host away longer than INVITE_IDLE (the app in the background - a phone freezes a hidden page, so it cannot ask) is
 // off the list and cannot be joined, but the code is kept this long for them: back, it is the same code (owner 11-09:
 // "다른 창에 갔다 오면 초대 코드가 바뀜")
@@ -119,7 +123,7 @@ export const INVITE_KEEP = 10 * 60000;
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class InviteCore {
   constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); this.deferReady = false; }
-  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_KEEP)) this.codes.delete(c); }
+  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? (v.listed && v.made.ready ? WATCH_KEEP : 120000) : INVITE_KEEP)) this.codes.delete(c); }
   away(v) { return !v.made && this.now() - v.seen > INVITE_IDLE; }
   /* p: { acct, dama, name, icon, gear, mode, rules, listed, pw, title } - a host's code. A host keeps one code: opened
      again (other rules, a password, back from away) it is the same code with the new rules.
@@ -130,6 +134,7 @@ export class InviteCore {
     this.sweep();
     if (!E.RANKED_RULES[p.mode]) return { ok: false, why: 'no such game' };
     let had = null; for (const v of this.codes.values()) if (v.host.acct === p.acct && !v.made) had = v;
+    this.played(p.acct);
     let code = had && had.code; if (!code) do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
     const pw = typeof p.pw === 'string' && p.pw ? p.pw.slice(0, 12) : null;
     const title = String(p.title || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 16) || `${p.name || '플레이어'}의 방`;
@@ -138,19 +143,42 @@ export class InviteCore {
       host: { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null } });
     return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw, title };
   }
-  // the open rooms anyone may take from the list, newest first: the game, its rules, the host, whether it has a password
+  /* the rooms in the list, newest first: the game, its rules, the host, whether it has a password - those waiting for
+     someone, and those being played (playing: the guest too), which may be watched */
   list() {
     this.sweep(); const out = [];
-    for (const v of this.codes.values()) if (v.listed && !v.made && !this.away(v)) out.push({ id: v.id, title: v.title, mode: v.mode, rules: v.rules, at: v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } });
-    out.sort((a, b) => b.at - a.at); return { ok: true, rooms: out.slice(0, 40).map(r => { delete r.at; return r; }) };
+    for (const v of this.codes.values()) {
+      if (!v.listed || (!v.made && this.away(v)) || (v.made && !v.made.ready)) continue;
+      const r = { id: v.id, title: v.title, mode: v.mode, rules: v.rules, at: v.made ? v.made.at : v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } };
+      if (v.made) { r.playing = true; r.guest = { name: v.made.g.name, dama: v.made.g.dama, icon: v.made.g.icon }; }
+      out.push(r);
+    }
+    out.sort((a, b) => (a.playing ? 1 : 0) - (b.playing ? 1 : 0) || b.at - a.at); return { ok: true, rooms: out.slice(0, 60).map(r => { delete r.at; return r; }) };
   }
+  // watching a listed game being played: its room and the watchers' key - with the password if the room has one
+  watch(id, pw) {
+    this.sweep();
+    for (const v of this.codes.values()) {
+      if (!v.listed || v.id !== id) continue;
+      if (!v.made || !v.made.ready) return { ok: false, why: 'not playing' };
+      if (v.pw) {
+        if (v.tries >= 12) return { ok: false, why: 'locked' };
+        if (pw !== v.pw) { v.tries++; return { ok: false, why: 'wrong password' }; }
+      }
+      return { ok: true, room: v.made.room, watch: v.made.watch, mode: v.mode };
+    }
+    return { ok: false, why: 'no such room' };
+  }
+  // a game ended (its room says so) or a player of it starting another: it leaves the list
+  ended(room) { for (const [c, v] of this.codes) if (v.made && v.made.room === room) this.codes.delete(c); return { ok: true }; }
+  played(acct) { for (const [c, v] of this.codes) if (v.made && (v.host.acct === acct || v.made.guest === acct)) this.codes.delete(c); }
   // the code of a listed room, for taking it from the list: with its password if it has one (a room tried wrong too often
   // closes to the list - the host's code still lets a friend in)
   byId(id, pw) {
     this.sweep();
     for (const v of this.codes.values()) {
       if (!v.listed || v.id !== id) continue;
-      if (v.made) return { ok: false, why: 'taken' };
+      if (v.made) return { ok: false, why: v.made.ready ? 'playing' : 'taken' };
       if (this.away(v)) return { ok: false, why: 'away' };
       if (v.pw) {
         if (v.tries >= 12) return { ok: false, why: 'locked' };
@@ -176,12 +204,13 @@ export class InviteCore {
     if (v.host.acct === p.acct) return { ok: false, why: 'your own code' };
     if (this.away(v)) return { ok: false, why: 'away' };
     if (v.made) return v.made.guest !== p.acct ? { ok: false, why: 'taken' } : v.made.ready ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'opening' };
-    const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
+    this.played(p.acct);
+    const room = hex(16), watch = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
-    const init = { room, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
+    const init = { room, watch, mode: v.mode, seed, first, standIn: null, kind: 'invite', rules: v.rules,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
     const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: v.mode, table: ROOM_TABLE, kind: 'invite', rules: v.rules, opp: pub(seats[1 - i]) });
-    v.made = { guest: p.acct, you: [you(0), you(1)], ready: !this.deferReady }; v.seen = this.now();
+    v.made = { guest: p.acct, g: seats[1], room, watch, at: this.now(), you: [you(0), you(1)], ready: !this.deferReady }; v.seen = this.now();
     return Object.assign({ ok: true, init }, you(1));
   }
   ready(code) { const v = this.codes.get(code); if (v && v.made) v.made.ready = true; }
@@ -240,13 +269,21 @@ export class RoomCore {
   init(x) {
     if (this.get('room')) return false;
     const kind = x.kind === 'invite' ? 'invite' : 'ranked';
-    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind,
+    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
       rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode] });
     this.set('seats', x.seats); this.set('status', 'playing'); this.set('ended', [false, false]); this.set('gone', [null, null]);
     this.set('joined', [false, !!x.standIn]); this.set('joinBy', Date.now() + JOIN_WITHIN);
     return true;
   }
   seatOf(token) { const s = this.get('seats', []); return s.findIndex(q => q.token === token); }
+  // a watcher's key (a listed friend's game: InviteCore.watch) - never a seat's
+  watches(key) { const r = this.get('room'); return !!(r && r.watch && key && key === r.watch); }
+  // what a watcher needs: the game, both players, every shot so far (seat 2: neither)
+  watchState() {
+    const r = this.get('room'), s = this.get('seats'), pub = o => ({ name: o.name, icon: o.icon, dama: o.dama, gear: o.gear || null });
+    return { t: 'state', watch: true, seat: 2, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked',
+      seats: s.map(pub), shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
+  }
   // what a device needs to play: the game, the other player, every shot so far
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[1 - seat];
@@ -270,12 +307,12 @@ export class RoomCore {
     // a quick emote (web/app/59-emote.js): one of the known ones, passed on as it is, at most one a second and a half
     if (m.t === 'emote') {
       const id = typeof m.id === 'string' ? m.id : '', now = Date.now(), at = this.emoteAt || (this.emoteAt = [0, 0]);
-      if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.send(other, { t: 'emote', id, seat }); }
+      if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.send(other, { t: 'emote', id, seat }); this.send('w', { t: 'emote', id, seat }); }
       return null;
     }
-    if (m.t === 'aim') { this.send(other, { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null }); return null; }
+    if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null }; this.send(other, a); this.send('w', a); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
-    if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.send(other, { t: 'res', n: m.n, st: m.st }); return null; }
+    if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') { this.send(other, { t: 'res', n: m.n, st: m.st }); this.send('w', { t: 'res', n: m.n, st: m.st }); } return null; }
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
       // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
@@ -293,6 +330,7 @@ export class RoomCore {
       this.set('turnAt', Date.now());
       this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, m.n, JSON.stringify(body));
       if (!(r.standIn && as === 1)) this.send(other, { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined });
+      this.send('w', { t: m.t, n: m.n, shot: m.t === 'shot' ? body : undefined });
       return null;
     }
     if (m.t === 'end') {
@@ -363,6 +401,7 @@ export class RoomCore {
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
     this.sql.exec(`DELETE FROM shots`);
     for (let s = 0; s < 2; s++) this.send(s, Object.assign({ t: 'result' }, res, { seat: s }));
+    this.send('w', Object.assign({ t: 'result' }, res, { seat: 2 }));
     return res;
   }
   // what each player's vault is told (the Durable Object sends it, again until the vault has it): coins, and DAMA as a change

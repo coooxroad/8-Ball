@@ -135,7 +135,8 @@ function sheetPause() {
     el('div', { class: 'row' }, [flatBtn('조준선', sheetGuide), flatBtn('설정', sheetSettings)]),
     fullCan() ? el('div', { class: 'row' }, [flatBtn(fullOn() ? '창 모드' : '전체 화면', () => { fullToggle(); closeSheet(); })]) : null,
     // (a ranked game cannot be started again: leaving it gives it up)
-    flow === match && match.ctx && match.ctx.online ? el('div', { class: 'row' }, [flatBtn('기권', () => { closeSheet(); ranked.resign(); })])
+    flow === match && match.ctx && match.ctx.online && match.ctx.online.watch ? el('div', { class: 'row' }, [flatBtn('관전 그만', () => { closeSheet(); goHome(true); })])
+      : flow === match && match.ctx && match.ctx.online ? el('div', { class: 'row' }, [flatBtn('기권', () => { closeSheet(); ranked.resign(); })])
       : el('div', { class: 'row' }, [flatBtn('다시 시작', () => { closeSheet(); flow.restart(); }), flatBtn('처음으로', () => goHome(true))]),
   ]);
 }

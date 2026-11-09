@@ -105,7 +105,7 @@ const emote = {
   // the key: there only in an online game being played
   sync() {
     const b = $('#emoteBtn'); if (!b) return;
-    const on = !!(ranked.on && !ranked.on.done && flow === match && st.screen === 'play');
+    const on = !!(ranked.on && !ranked.on.done && !ranked.on.watch && flow === match && st.screen === 'play');
     b.hidden = !on; if (!on) emote.close();
   },
   open() {
@@ -127,7 +127,7 @@ const emote = {
     SND.tap(); ranked.send({ t: 'emote', id }); emote.show(ranked.on ? ranked.on.seat : 0, id);
   },
   // from the other device
-  got(m) { if (EMOTES[m.id] && ranked.on) emote.show(1 - ranked.on.seat, m.id); },
+  got(m) { if (EMOTES[m.id] && ranked.on) emote.show(ranked.on.watch ? (m.seat ? 1 : 0) : 1 - ranked.on.seat, m.id); },
   // the emoji under that seat's plate, a few seconds (on the page, not in the plate: a plate clips what is in it)
   show(seat, id) {
     const pill = $('#p' + seat); if (!pill) return;

@@ -25,6 +25,8 @@ export class Lobby extends DurableObject {
       if (what === 'ask') return Response.json(I.ask(body.acct, body.code));
       if (what === 'peek') return Response.json(I.peek(body.code));
       if (what === 'list') return Response.json(I.list());
+      if (what === 'watch') return Response.json(I.watch(body.id, body.pw));
+      if (what === 'ended') return Response.json(I.ended(body.room));
       // (taken from the list: its id, and the password if it has one, stand for the code)
       if (what === 'join' && body.id) { const c = I.byId(body.id, body.pw); if (!c.ok) return Response.json(c); body.code = c.code; }
       if (what === 'leave') return Response.json(I.leave(body.acct, body.code));

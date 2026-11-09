@@ -57,7 +57,7 @@ const invite = {
     if (r && r.ok && r.room) { invite.leave(); closeSheet(); return ranked.found(r); }
     toast(invite.why(r, '그런 코드의 방이 없습니다.'), 'foul', 2400);
   },
-  why: (r, none) => !r ? '서버 응답 없음' : r.why === 'update' ? '업데이트 후 참가할 수 있습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.'
+  why: (r, none) => !r ? '서버 응답 없음' : r.why === 'update' ? '업데이트 후 참가할 수 있습니다.' : r.why === 'taken' || r.why === 'playing' ? '이미 시작한 방입니다.' : r.why === 'not playing' ? '아직 시작하지 않은 방입니다.' : r.why === 'full' ? '관전 자리가 다 찼습니다.'
     : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요' : none,
   /* 방 참가하기 (33-desk-play.js, the hall): the open rooms, asked again every four seconds while the hall is shown - each
      drawn as a table; one is taken by its id, with the password if it has one */
@@ -80,6 +80,15 @@ const invite = {
     if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true);
     toast(invite.why(r, '방이 닫혔습니다.'), 'foul', 2400); if (invite.rooms) invite.listRooms();
   },
+  // a game being played, from the list: watched (with the password if the room has one)
+  async watch(room, pw) {
+    if (invite.host) invite.leave();
+    toast('관전 입장 중…', '', 1400);
+    const r = await net.inviteWatch(room.id, pw);
+    if (r && r.ok && r.watch) { invite.stopRooms(); closeSheet(); return ranked.watch(Object.assign({}, room, r)); }
+    if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true, true);
+    toast(invite.why(r, '경기가 끝났습니다.'), 'foul', 2400); if (invite.rooms) invite.listRooms();
+  },
   // the room's name: the host's own words, or '' for the server's '닉네임의 방'
   sheetTitle() {
     const input = el('input', { class: 'txt', maxlength: '16', placeholder: `${prefs.names[0]}의 방`, 'aria-label': '방 이름', autocomplete: 'off', spellcheck: 'false' }); input.value = invite.title;
@@ -89,13 +98,13 @@ const invite = {
     setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
   },
   // a room with a password: asked before taking it; and the host's own, to set one
-  sheetPw(room, wrong) {
+  sheetPw(room, wrong, watching) {
     const input = el('input', { class: 'txt code', maxlength: '8', inputmode: 'numeric', placeholder: '····', 'aria-label': '비밀번호', autocomplete: 'off', spellcheck: 'false' });
-    const go = () => { const v = input.value.replace(/\D/g, ''); if (v.length < 4) return toast('비밀번호는 숫자 네 자리 이상입니다.', 'foul', 1800); if (room) invite.take(room, v); else { invite.pw = v; closeSheet(); repaint(); } };
+    const go = () => { const v = input.value.replace(/\D/g, ''); if (v.length < 4) return toast('비밀번호는 숫자 네 자리 이상입니다.', 'foul', 1800); if (room) (watching ? invite.watch : invite.take)(room, v); else { invite.pw = v; closeSheet(); repaint(); } };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     // (copy audit 02-11: the one who sets it - what it is for, short; the one who enters it - only the error)
     openSheet('방 비밀번호', [input, room ? (wrong ? note('비밀번호가 맞지 않습니다') : null) : note('숫자 4~8자리 · 방 목록으로 입장할 때 필요 · 초대 코드는 비밀번호 없이 입장'),
-      el('button', { class: 'btn cta', text: room ? '들어가기' : '정하기', onclick: () => { SND.tap(); go(); } })]);
+      el('button', { class: 'btn cta', text: room ? (watching ? '관전하기' : '들어가기') : '정하기', onclick: () => { SND.tap(); go(); } })]);
     setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
   },
   copy(text, what) {
