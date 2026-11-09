@@ -68,7 +68,7 @@ const account = {
   sheetNick(first) {
     const input = el('input', { class: 'txt', maxlength: '10', 'aria-label': '닉네임', autocomplete: 'off', spellcheck: 'false' });
     input.value = (net.me && net.me.nick) || (prefs.names[0] === '플레이어1' ? '' : prefs.names[0]);
-    const msg = note('2~10자 · 다른 사람과 같아도 됩니다');
+    const msg = note('2~10자');
     const go = async () => {
       const v = input.value.replace(/\s+/g, ' ').trim();
       if ([...v].length < 2) { msg.textContent = '2자 이상 넣어 주세요'; return; }

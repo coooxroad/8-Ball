@@ -28,7 +28,7 @@ const match = {
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     // (watching: at once, as the room's replay does it - the shots after it are played in a moment, catchUp)
     if (c.mode === 'four' && o && o.watch) { game.rollOut(seededRandom((o.seed ^ 0x5bd1e995) >>> 0)); game.P.run(game.world, 40); game.world.ev = game.P.newEv(); st.rev++; beginTurn(true); }
-    else if (c.mode === 'four' && (!ctx || o)) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
+    else if (c.mode === 'four' && (!ctx || o)) { st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
     { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },

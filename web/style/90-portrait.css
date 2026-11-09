@@ -35,3 +35,50 @@
 #app.desk.compact.portrait{--bar:86px}
 #app.desk.compact.portrait .dk-tab{height:36px}
 #app.desk.compact.portrait .dk-me{height:34px}
+
+/* ---------- 2026-11-10 pass: a phone held upright, everything reachable and readable (owner 11-10) ----------
+   The slate scrolls when its options do not fit (they were cut off under its lower edge - the invite room's rows and
+   keys with them), its keys staying at the bottom; the shelves' cards are short enough that the next row shows below
+   (the list looked as if it ended after one row) and the list fades out where it goes on; the play boards' small lines
+   never smaller than can be read; the names on the plates and the scorebug given the room. */
+#app.desk.compact.portrait .dk-slate{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+#app.desk.compact.portrait .dk-slate::-webkit-scrollbar{display:none}
+#app.desk.compact.portrait .dk-slate>*{flex-shrink:0}
+#app.desk.compact.portrait .dk-slate>.dk-acts{position:sticky;bottom:calc(-14px - var(--lip));margin-top:auto;z-index:3;
+  padding:10px 0 calc(14px + var(--lip));margin-bottom:calc(-14px - var(--lip));background:linear-gradient(rgba(27,32,33,0),rgb(27,32,33) 12px)}
+#app.desk.compact.portrait .dk-card{height:136px}
+#app.desk.compact.portrait .dk-cards{padding-bottom:30px;-webkit-mask-image:linear-gradient(#000 calc(100% - 30px),transparent);mask-image:linear-gradient(#000 calc(100% - 30px),transparent)}
+#app.desk.compact.portrait .dk-cards.books,#app.desk.compact.portrait .dk-cards.vols{-webkit-mask-image:none;mask-image:none}
+#app.desk.compact #dkBoards .bd-tt small,#app.desk.compact #dkBoards .bd-foot small,#app.desk.compact #dkBoards .bd-bar small{font-size:max(11px,calc(var(--u)*3.6))}
+#app.desk.compact #dkBoards .bd-tt em{font-size:max(9px,calc(var(--u)*2.9))}
+#app.desk.compact.portrait .dk-foot{gap:8px}
+#app.desk.compact.portrait .dk-plate{gap:5px;padding:8px 7px;min-height:60px}
+#app.desk.compact.portrait .dk-plate .av{width:24px;height:24px;font-size:12px}
+#app.desk.compact.portrait .dk-plate b{font-size:14px;letter-spacing:-.02em}
+#app.desk.compact.portrait .dk-plate small{font-size:12px}
+#app.desk.compact.portrait .dk-vs{font-size:13px;letter-spacing:.04em}
+#app.desk.compact.portrait .dk-sec small{white-space:normal;line-height:1.2}
+/* play: the view key always in the last column, and in practice (one plate) the plate has the middle to itself */
+#hud #viewBtn{grid-column:-2}
+#hud:has(#p1[hidden]) #p0{grid-column:2 / -2}
+@media (max-width:400px){
+  #app.desk.compact #menuBtn,#app.desk.compact #viewBtn{width:42px;height:42px}
+  #hud{gap:4px}
+  #app.bcast.portrait #hud .pill{gap:3px}
+  #app.bcast.portrait #hud .pill .who{padding:0 2px}
+  #app.bcast.portrait #hud .pill .av{margin-left:6px}
+  #app.bcast.portrait #hud .pill.r .av{margin-left:0;margin-right:6px}
+  #app.bcast.portrait #hud .pill .nm{font-size:12.5px;letter-spacing:-.03em}
+  #app.bcast.portrait #hud .pts,#app.bcast.portrait #hud .pill.on .pts{min-width:30px;font-size:22px;padding:0 3px}
+}
+/* practice, a lesson, a puzzle: one plate, its name only (the small line under it was cut off by the plate) */
+#app.portrait #hud:has(#p1[hidden]) .pill .sub{display:none}
+/* the result card upright: each side's name and record kept in its own half, the record on one line under '나' */
+#app.desk.portrait .r-p{flex:1 1 0;min-width:0;overflow:hidden}
+#app.desk.portrait .r-p .nm{max-width:100%;font-size:15px}
+#app.desk.portrait .r-p .rc{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;font-size:12px}
+#app.desk.portrait .r-p .rc .me{margin-right:0}
+#app.desk.portrait .r-score{font-size:36px}
+/* a long item name on a narrow card: two lines rather than cut short */
+#app.desk.compact.portrait .dk-card .nm{white-space:normal;word-break:keep-all;text-align:center;line-height:1.15;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+#app.desk .dk-card .price{white-space:nowrap}

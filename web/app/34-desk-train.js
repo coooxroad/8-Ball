@@ -32,6 +32,8 @@ function deskPuzzle(d) {
     return el('button', { class: 'dk-pill' + (open ? '' : ' lock'), 'aria-pressed': String(si === cur.stage), onclick: onTap(enter) },
       [document.createTextNode(`${si + 1}단계`), open ? el('small', { text: `${solved(qs)}/${qs.length}` }) : el('img', { class: 'lock', src: 'ui/lock.webp', alt: '잠김' })]);
   }));
+  // (the stage being played in view in the row of stages, which scrolls sideways on a narrow screen)
+  requestAnimationFrame(() => { const on = foot.querySelector('.dk-pill[aria-pressed="true"]'); if (on && foot.scrollWidth > foot.clientWidth) foot.scrollLeft = Math.max(0, on.offsetLeft - (foot.clientWidth - on.offsetWidth) / 2); });
   const stars = z.stars[cur.id] || 0;
   const starRow = el('div', { class: 'dk-stars', role: 'img', 'aria-label': `별 3개 중 ${stars}개` },
     [0, 1, 2].map(k => el('img', { src: k < stars ? 'ui/star.webp' : 'ui/star-off.webp', alt: '' })));
@@ -63,7 +65,7 @@ function deskLesson({ head, stage, slate }) {
       return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
         el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name })])),
         // (copy audit 03-02: the progress once - books brought to the top level, which is all that is known)
-        el('span', { class: 'nm', text: ids.length ? `최고 단계 ${doneOf(ids)}/${ids.length}` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
+        el('span', { class: 'nm', text: ids.length ? `${doneOf(ids)}/${ids.length}` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
     dkPut(slate, dkH1('교본'));
     const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
     dkPut(slate, dkActs(cur ? dkMain('이어서 하기', drills.byId(cur).name, () => practice.start(cur)) : null,

@@ -34,7 +34,7 @@ const practice = {
     flow = practice; scene.setMarks(null); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar();
     if (p.drill.make) p.fresh();
     else { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++; beginTurn(true); }
-    toast(p.drill.tip || '규칙 없이 자유롭게 칩니다. "옮기기"를 켜면 공을 끌어 옮길 수 있습니다.', '', 5200);
+    if (p.drill.tip) toast(p.drill.tip, '', 5200);
   },
   restart() { practice.start(); },
   fresh() {                                                                                          // a new layout
@@ -95,7 +95,7 @@ const practice = {
     const levels = []; for (let k = 1; k <= drills.LEVELS; k++) levels.push([k, k + '단계']);
     openSheet(p.drill.name, [
       segRow('단계', levels, p.level, v => { p.level = v; p.streak = 0; prefs.drillLv[p.drill.id] = v; savePrefs(); closeSheet(); p.bar(); if (flow === practice && st.phase === 'aim') p.fresh(); }),
-      note('세 번 잇따라 성공하면 다음 단계로 올라갑니다. 단계가 오르면 거리가 멀어지고 각도가 커지고 원이 작아집니다. 배치는 성공할 때마다 바뀝니다.'),
+      note('세 번 잇따라 성공하면 다음 단계'),
       flatBtn(`다음 훈련: ${next.name}`, () => practice.start(next.id)),
     ]);
   },
@@ -110,7 +110,6 @@ const practice = {
         const [x, y] = P.findFree(w, P.HL * 0.3, 0, b.id); P.place(w, b.id, x, y, Math.random); done();
       }),
       flatBtn('큐볼만 남기고 치우기', () => { clear(); done(); }),
-      note('놓은 뒤 "옮기기"를 켜고 원하는 자리로 끌어 옮기세요.'),
     ]);
   },
 };

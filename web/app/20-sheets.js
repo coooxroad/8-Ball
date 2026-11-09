@@ -35,7 +35,6 @@ function sheetSettings() {
     segRow('빠른 진행', [[true, '켬'], [false, '끔']], prefs.fast, v => { prefs.fast = v; savePrefs(); sheetSettings(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
-    note('빠른 진행: 큐볼이 맞힐 공을 다 맞히고 나면 나머지를 두 배 빠르게 보여 줍니다(화면 테두리에 번개). 화질을 낮추면 움직임이 더 부드러워집니다.'),
     net.on ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '계정' }), el('div', { class: 'acct-id', text: acctLine() })]) : null,
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
@@ -53,7 +52,6 @@ function sheetCredits() {
     item('3D · three.js', 'three.js authors', 'MIT License', 'https://threejs.org'),
     item('글꼴 · Gothic A1, Jua, Black Han Sans', 'HanYang I&C, Woowahan Brothers, Zess Type', 'SIL Open Font License 1.1', 'https://fonts.google.com'),
     item('글꼴 · Outfit', 'Outfit Project Authors', 'SIL Open Font License 1.1', 'https://fonts.google.com/specimen/Outfit'),
-    note('MIT License: 저작권 표시와 허가 표시를 포함하는 조건으로 누구나 무상으로 사용·복제·수정·배포할 수 있습니다. 소프트웨어는 "있는 그대로" 제공되며 어떠한 보증도 하지 않습니다.'),
     flatBtn('뒤로', sheetSettings),
   ]);
 }
@@ -108,7 +106,6 @@ function sheetSong(busy) {
   openSheet('하이라이트', [
     el('div', { class: 'lab', text: '편집' }),
     el('div', { class: 'pickrow' }, [['random', '랜덤']].concat(reel.STYLES).map(([id, name]) => el('button', { text: name, 'aria-pressed': String(prefs.edit === id), onclick: () => { SND.tap(); prefs.edit = id; savePrefs(); again(); } }))),
-    note(`랜덤은 ${reel.STYLES.length}가지 편집이 한 번씩 돌아가며 나옵니다. 워스트 샷은 노래 없이 ${reel.WORST.length}가지 편집이 돌아가며 나옵니다.`),
     el('div', { class: 'lab', text: `노래 ${songs.length}/${SND.song.MAX}` }),
     songs.length ? el('div', null, songs.map(m => el('div', { class: 'song' + (m.on ? ' on' : ''), onclick: async () => { SND.tap(); await SND.song.toggle(m.id); again(); } }, [
       el('span', { class: 'chk', text: '✓' }),
@@ -139,14 +136,15 @@ function sheetName(i, keep) {
   };
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
   const sj = four ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '수지 (몇 쳐?)' }), el('div', { class: 'seg' }, SUJI.map(v => el('button', { 'aria-pressed': String(v === suji), text: String(v * 10), onclick: e => { SND.tap(); suji = v; for (const b of e.target.parentNode.children) b.setAttribute('aria-pressed', String(b === e.target)); } }))),
-    note('한 번 득점이 10점, 자기 수지만큼 먼저 치면 이깁니다. 50이면 다섯 번. 실력이 달라도 각자 수지대로 치면 승부가 됩니다.')]) : null;
-  openSheet(ai ? '컴퓨터 수지' : `${i + 1}번 선수`, [input, input ? note('전적은 이름별로 따로 쌓입니다. 열 글자까지.') : null, sj, el('button', { class: 'btn cta', text: '저장', onclick: save })]);
+    note('한 번 득점이 10점, 자기 수지만큼 먼저 치면 이깁니다.')]) : null;
+  openSheet(ai ? '컴퓨터 수지' : `${i + 1}번 선수`, [input, input ? note('열 글자까지') : null, sj, el('button', { class: 'btn cta', text: '저장', onclick: save })]);
   if (input && !four) setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
 }
 function sheetPause() {
   openSheet('잠깐 멈춤', [
     el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
-    el('div', { class: 'row' }, [flatBtn('조준선', sheetGuide), flatBtn('설정', sheetSettings)]),
+    // (the aim line's sheet only with the debug name: for everyone it was only an explanation - owner 11-10)
+    el('div', { class: 'row' }, [debugOn() ? flatBtn('조준선', sheetGuide) : null, flatBtn('설정', sheetSettings)]),
     fullCan() ? el('div', { class: 'row' }, [flatBtn(fullOn() ? '창 모드' : '전체 화면', () => { fullToggle(); closeSheet(); })]) : null,
     // (a ranked game cannot be started again: leaving it gives it up)
     flow === match && match.ctx && match.ctx.online && match.ctx.online.watch ? el('div', { class: 'row' }, [flatBtn('관전 그만', () => { closeSheet(); goHome(true); })])

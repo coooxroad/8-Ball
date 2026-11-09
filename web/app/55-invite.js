@@ -121,7 +121,7 @@ const invite = {
   },
   sheetSeats() {
     const S = invite.seated; if (!S) return;
-    openSheet('2:2 · 대기', [note('A팀과 B팀이 번갈아 칩니다 · 방장이 시작하면 바로 경기'), el('div', { class: 'seats' }, invite.seatRows(S.seats, S.seat, false)),
+    openSheet('2:2 · 대기', [el('div', { class: 'seats' }, invite.seatRows(S.seats, S.seat, false)),
       flatBtn('나가기', () => { invite.stand(); closeSheet(); })]);
   },
   // a game being played, from the list: watched (with the password if the room has one)
@@ -147,7 +147,7 @@ const invite = {
     const go = () => { const v = input.value.replace(/\D/g, ''); if (v.length < 4) return toast('비밀번호는 숫자 네 자리 이상입니다.', 'foul', 1800); if (room) (watching ? invite.watch : invite.take)(room, v); else { invite.pw = v; closeSheet(); repaint(); } };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
     // (copy audit 02-11: the one who sets it - what it is for, short; the one who enters it - only the error)
-    openSheet('방 비밀번호', [input, room ? (wrong ? note('비밀번호가 맞지 않습니다') : null) : note('숫자 4~8자리 · 방 목록으로 입장할 때 필요 · 초대 코드는 비밀번호 없이 입장'),
+    openSheet('방 비밀번호', [input, room ? (wrong ? note('비밀번호가 맞지 않습니다') : null) : note('숫자 4~8자리'),
       el('button', { class: 'btn cta', text: room ? (watching ? '관전하기' : '들어가기') : '정하기', onclick: () => { SND.tap(); go(); } })]);
     setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
   },
