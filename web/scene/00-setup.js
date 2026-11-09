@@ -9,9 +9,26 @@
   if (!window.THREE) return null;
   let renderer;
   let railKey = '', railW = null, railP = null, railPv = null;   // the rail's own played-out way (90-frame.js)
-  // the rail's table: the same cloth and balls with its cushions far away, so the cue ball's curve runs on through them
-  const openTables = new Map();
-  const openTable = P => { let o = openTables.get(P); if (!o) { o = createPhysics({ R: P.R, HL: 40, HW: 40, pockets: P.POCKETS.length > 0 }); openTables.set(P, o); } return o; };
+  /* the rail's way (90-frame.js): the shot played with only the cue ball and the ball it is aimed at; at the first contact
+     that ball is taken away too, and the cue ball goes on alone - cushions and all - for `after` seconds or until it stops.
+     Flat [x, y, 0, ...] from the contact. */
+  function railWay(P, w, hit, ang, V, a, bb, el, after) {
+    const w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue && b.id !== hit) b.on = false;
+    P.strike(w2, ang, V, a, bb, el);
+    const c = w2.balls[w2.cue], way = [];
+    let t = 0, tc = -1;
+    while (t < 9 + after && c.on) {
+      P.step(w2, 1 / 120); t += 1 / 120;
+      if (tc < 0) {
+        if (!w2.ev.at) { if (!c.vx && !c.vy && !c.vz && !c.z) break; continue; }
+        if (w2.ev.at[3] !== hit) return null;                       // (it met something else first: no rail)
+        tc = t; w2.balls[hit].on = false; way.push(w2.ev.at[0], w2.ev.at[1], 0);
+      }
+      way.push(c.x, c.y, 0);
+      if (t - tc > after || (!c.vx && !c.vy && !c.vz && !c.z)) break;
+    }
+    return way.length >= 6 ? way : null;
+  }
   let pvKey = '', pvW = null, pvP = null, pvNow = null;   // the aim line's played-out shot and the inputs it was played with (90-frame.js)
   let coveredNow = false;   // the table was out of sight last frame (90-frame.js)
   const sProf = { guide: 0 };   // ms spent this frame playing out the aim line (the FPS display reads it: 90-loop.js perfTick)

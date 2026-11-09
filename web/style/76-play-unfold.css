@@ -117,3 +117,22 @@
 #dkBoards .seek-card .front.bd-g-eight{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
 #dkBoards .seek-card .front.bd-g-nine{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#3d8a88,#155252)}
 #dkBoards .seek-card .front::after{content:"";position:absolute;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);pointer-events:none}
+
+/* (owner 11-09, again) the hall's tables: a thinner wooden rail, the cushion its own band of rubber between it and the cloth,
+   the cloth sunk a step below both - shaded along the cushions the lamp is behind - and the balls standing on it, each with
+   its own shadow thrown off to the lower left, a little apart from it, as a ball's is */
+#dkBoards .tb-table{padding:2.8%;border-radius:8px;
+  background:linear-gradient(160deg,#a8603a 0%,#7c401f 45%,#52260f 100%);
+  box-shadow:inset -1px 1px 0 rgba(255,225,190,.55),inset 1px -1px 0 rgba(0,0,0,.4),inset 0 0 0 3px rgba(0,0,0,.06),
+    0 1px 0 #5c2c14,0 5px 0 #3a180a,0 6px 0 #241006,-10px 16px 18px rgba(0,0,0,.55)}
+#dkBoards .tb-cloth{--cush:color-mix(in srgb,#1a8fa6 62%,#000);box-sizing:border-box;border-radius:1px;border:calc(var(--u)*2.4) solid var(--cush);
+  border-top-color:color-mix(in srgb,var(--cush) 82%,#000);border-right-color:color-mix(in srgb,var(--cush) 82%,#000);
+  border-bottom-color:color-mix(in srgb,var(--cush) 88%,#fff);border-left-color:color-mix(in srgb,var(--cush) 92%,#fff);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),inset -5px 6px 9px -2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.35),inset 2px -2px 0 rgba(255,255,255,.06)}
+#dkBoards .tb.carom .tb-cloth{--cush:color-mix(in srgb,#1f5fc0 62%,#000)}
+#dkBoards .tb-pk{inset:calc(2.8% - var(--u)*.6)}
+#dkBoards .tb .rack{filter:none}
+#dkBoards .tb .rack img{filter:drop-shadow(calc(var(--u)*-1.1) calc(var(--u)*1.9) calc(var(--u)*.9) rgba(0,0,0,.5))}
+#dkBoards .tb-pk{inset:calc(2.8% - var(--u)*.2);
+  background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/7% 13.5% no-repeat,
+    radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 100%/7% 13.5% no-repeat}
