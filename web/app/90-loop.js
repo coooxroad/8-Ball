@@ -214,8 +214,10 @@ function perfTick(raw, drew) {
 /* ================= saving ================= */
 function snapshot() {
   if (st.screen !== 'play' || !flow || !flow.save || (flow === match && match.ctx && match.ctx.online)) return;   // (a ranked game is not picked up later)
+  const t0 = performance.now();
   const d = { v: 2, game: game.serialize(), aim: st.aim, series, tbl: prefs.table, hl: { shots: match.shots, best: match.best, worst: match.worst, count: match.count }, log: match.log, inn: match.innings, el: match.t0 ? Date.now() - match.t0 : 0 };   // el: ms played (Codex B20)
   store.set('save', d);
+  prof.add('ui', performance.now() - t0);   // a long match's synchronous save belongs in the frame-stall diagnosis too
 }
 function start() {
   SND.song.load(); $('#fps').hidden = !prefs.fps;

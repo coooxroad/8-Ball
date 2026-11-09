@@ -288,14 +288,32 @@
   }
   // the shadows' markers into the two drawings: each one on show, in the order the balls are
   const blobM = new THREE.Matrix4();
+  function blobWrite(im, state, i, o) {
+    const p = o.position, q = o.quaternion, s = o.scale, j = i * 10;
+    // A cue or camera animation does not move the balls. Keep the exact transforms already sent to the GPU;
+    // compare in double precision so rounding into the instance buffer cannot make a still shadow dirty forever.
+    if (state[j] === p.x && state[j + 1] === p.y && state[j + 2] === p.z &&
+        state[j + 3] === q.x && state[j + 4] === q.y && state[j + 5] === q.z && state[j + 6] === q.w &&
+        state[j + 7] === s.x && state[j + 8] === s.y && state[j + 9] === s.z) return false;
+    blobM.compose(p, q, s); im.setMatrixAt(i, blobM);
+    state[j] = p.x; state[j + 1] = p.y; state[j + 2] = p.z;
+    state[j + 3] = q.x; state[j + 4] = q.y; state[j + 5] = q.z; state[j + 6] = q.w;
+    state[j + 7] = s.x; state[j + 8] = s.y; state[j + 9] = s.z;
+    return true;
+  }
   function blobSync(set, on) {
-    const [ci, li] = set.ims; let nc = 0, nl = 0;
+    const [ci, li] = set.ims; let nc = 0, nl = 0, dc = false, dl = false;
     if (on) for (const s of set.blob) {
       if (!s.visible) continue;
-      s.children.forEach((o, k) => { blobM.compose(o.position, o.quaternion, o.scale); if (k) li.setMatrixAt(nl++, blobM); else ci.setMatrixAt(nc++, blobM); });
+      for (let k = 0; k < s.children.length; k++) {
+        const o = s.children[k];
+        if (k) dl = blobWrite(li, set.shadowState[1], nl++, o) || dl;
+        else dc = blobWrite(ci, set.shadowState[0], nc++, o) || dc;
+      }
     }
     ci.count = nc; li.count = nl; ci.visible = nc > 0; li.visible = nl > 0;
-    ci.instanceMatrix.needsUpdate = li.instanceMatrix.needsUpdate = true;
+    if (dc) ci.instanceMatrix.needsUpdate = true;
+    if (dl) li.instanceMatrix.needsUpdate = true;
   }
   function ballSet(kind, n, R) {
     const mesh = [], blob = [];
@@ -310,7 +328,8 @@
     // every ball's contact shadow in one draw, and every lamp shadow in another (rather than four draws a ball: 64 for 8볼)
     const ims = [new THREE.InstancedMesh(unitPlane, blobMat, n), new THREE.InstancedMesh(unitPlane, lampShadowMat, n * LAMPS.length)];
     for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
-    return { mesh, blob, R, ims, kind, skin: null, lod: 0, small: false };
+    const shadowState = ims.map(im => new Float64Array(im.instanceMatrix.count * 10).fill(NaN));
+    return { mesh, blob, R, ims, shadowState, kind, skin: null, lod: 0, small: false };
   }
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
   // another ball set: each ball's picture drawn again (the meshes stay)

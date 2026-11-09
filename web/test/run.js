@@ -2,6 +2,7 @@
    1. every practice drill, at every level, on every table size: the layout is valid and its reference shot passes
    2. computer-vs-computer games of every rule set finish, on every table size */
 const path = require('path'), W = path.join(__dirname, '..');
+require('./render-work.js');
 // there is one physics, the one the game is played on
 const createPhysicsRaw = require(path.join(W, 'physics.js')), createPhysics = cfg => createPhysicsRaw(cfg), createGameRaw = require(path.join(W, 'game.js')), createDrills = require(path.join(W, 'drills.js'));
 // the computer player (ai/) is the body of one function, as web/build.sh makes it

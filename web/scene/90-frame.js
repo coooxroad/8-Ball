@@ -153,8 +153,10 @@
             if (pv.hit != null) {
               const rk = pk + '|' + pv.hit;
               if (rk !== railKey || w !== railW || P !== railP) {
+                const pt0 = performance.now();
                 const w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue && b.id !== pv.hit) b.on = false;
                 railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 2.5));
+                sProf.guide += performance.now() - pt0;   // count this second simulation as aim work, not GPU drawing
                 railKey = rk; railW = w; railP = P;
               }
               const rp = railPv, way = [];

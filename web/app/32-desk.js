@@ -38,7 +38,7 @@ const dkSec = (t, fn, sub) => el('button', { class: 'dk-sec', onclick: onTap(fn)
 const dkActs = (...btns) => el('div', { class: 'dk-acts' }, btns);
 // the things laid on it: a cue as its photograph, the little cream tab on what is in use
 /* Pictures the 3D takes for the cards - a ball in its case, a cue whole and close - are made one at a time, the ones on
-   screen first, never all at once as a list opens (each is a render, a read back from the GPU and an encoding). Each is
+   screen first, in idle time on the desk (each is a render, a read back from the GPU and an encoding). Each is
    kept on the device (IndexedDB 'cue-pics', under this build's BUILD_ID: an update that changes how a thing looks takes
    them again), so from the second time a list opens they are simply there. lazyPic(img, key, make): img shows the picture
    as soon as it is had; make() returns { c: canvas, done } (done: false while the thing's surface pictures were still
@@ -69,31 +69,39 @@ function lazyPic(img, key, make) {
 }
 const onScreen = n => { if (!n.isConnected) return false; const r = n.getBoundingClientRect(); return r.width > 0 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth; };
 function picsPump() {
-  if (PICS.busy || PICS.loading || !PICS.wait.length) return;
+  if (PICS.busy || PICS.loading || !PICS.wait.length || st.screen !== 'home' || document.hidden) return;
   PICS.busy = true;
+  // Let the list paint before a synchronous GPU readback. A queued job must check the screen again: the desk's
+  // images remain connected when a match starts. No background thumbnail should stall that match.
   requestAnimationFrame(() => {
-    PICS.busy = false;
-    PICS.wait = PICS.wait.filter(j => j.img.isConnected);
-    // (one a frame: what shows on screen first, then the rest of the list; an image no longer on the page is dropped)
-    const i = PICS.wait.findIndex(j => onScreen(j.img)), j = PICS.wait.splice(i >= 0 ? i : 0, 1)[0];
-    if (j) {
-      const had = PICS.mem.get(j.key);
-      if (had) j.img.src = had;
-      else {
-        const t0 = performance.now(), r = j.make(); prof.add('ui', performance.now() - t0);
-        const put = url => { for (const o of [j, ...PICS.wait.filter(o => o.key === j.key)]) o.img.src = url; PICS.wait = PICS.wait.filter(o => o.key !== j.key); };
-        r.c.toBlob(b => {
-          if (!b) return put(r.c.toDataURL('image/png'));
-          const url = URL.createObjectURL(b); put(url);
-          if (!r.done) return;
-          PICS.mem.set(j.key, url);
-          try { if (PICS.db) PICS.db.transaction('p', 'readwrite').objectStore('p').put(b, BUILD_ID + '|' + j.key); } catch (e) {}
-        }, 'image/png');
-      }
-    }
-    picsPump();
+    if (window.requestIdleCallback) window.requestIdleCallback(picsTake);
+    else setTimeout(picsTake, 0);
   });
 }
+function picsTake() {
+  const next = () => { PICS.busy = false; picsPump(); };
+  if (st.screen !== 'home' || document.hidden) { PICS.busy = false; return; }
+  try {
+    PICS.wait = PICS.wait.filter(j => j.img.isConnected);
+    // Keep the job in flight until encoding finishes, so another card with the same key reuses its result.
+    const i = PICS.wait.findIndex(j => onScreen(j.img)), j = PICS.wait.splice(i >= 0 ? i : 0, 1)[0];
+    if (!j) return next();
+    const had = PICS.mem.get(j.key);
+    if (had) { j.img.src = had; return next(); }
+    const t0 = performance.now(), r = j.make(); prof.add('ui', performance.now() - t0);
+    const put = url => { for (const o of [j, ...PICS.wait.filter(o => o.key === j.key)]) o.img.src = url; PICS.wait = PICS.wait.filter(o => o.key !== j.key); };
+    r.c.toBlob(b => {
+      try {
+        if (!b) return put(r.c.toDataURL('image/png'));
+        const url = URL.createObjectURL(b); put(url);
+        if (!r.done) return;
+        PICS.mem.set(j.key, url);
+        try { if (PICS.db) PICS.db.transaction('p', 'readwrite').objectStore('p').put(b, BUILD_ID + '|' + j.key); } catch (e) {}
+      } finally { next(); }
+    }, 'image/png');
+  } catch (e) { next(); throw e; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) picsPump(); });
 const ballPic = (id, kind, n, attrs) => lazyPic(el('img', Object.assign({ alt: '' }, attrs)), `b/${id}/${kind}/${n}`, () => scene.ballShot(id, kind, n));
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);

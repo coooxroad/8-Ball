@@ -55,6 +55,7 @@ function show(screen) {
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
   applyBackdrop(); layout(); MUSIC.screen(screen);
+  if (home) picsPump();
 }
 let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0;
 function layout() {
