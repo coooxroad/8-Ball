@@ -111,3 +111,9 @@
 #rkBar .sp i:nth-child(2){animation-delay:.2s}
 #rkBar .sp i:nth-child(3){animation-delay:.4s}
 #rkBar button{height:32px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.92);color:#173e78;font:800 14px var(--ui-font);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+/* the card turned over to search: its face printed as the game cards are (style/75-play-panels.css, owner 11-09) */
+#dkBoards .seek-card .front{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#4174bf,#194685)}
+#dkBoards .seek-card .front.bd-g-three{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#5862b4,#272f74)}
+#dkBoards .seek-card .front.bd-g-eight{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
+#dkBoards .seek-card .front.bd-g-nine{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#3d8a88,#155252)}
+#dkBoards .seek-card .front::after{content:"";position:absolute;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);pointer-events:none}

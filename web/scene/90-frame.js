@@ -157,8 +157,20 @@
                 railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 2.5));
                 railKey = rk; railW = w; railP = P;
               }
+              // (only the bend the spin gives it: the way ends before the cue ball meets anything else - a cushion turns it
+              // sharply, and the rail stops a ball's width short of that turn; owner 11-09: "회전 어디로 먹는지만 가볍게")
               const rp = railPv, way = [];
-              if (rp.at && rp.hit === pv.hit) { way.push(rp.at[0], rp.at[1], 0); for (let i = 3; i < rp.post.length; i += 3) way.push(rp.post[i], rp.post[i + 1], 0); }
+              if (rp.at && rp.hit === pv.hit) {
+                way.push(rp.at[0], rp.at[1], 0);
+                let px = rp.at[0], py = rp.at[1], dx = 0, dy = 0;
+                for (let i = 3; i < rp.post.length; i += 3) {
+                  const x = rp.post[i], y = rp.post[i + 1], sx = x - px, sy = y - py, sl = Math.hypot(sx, sy);
+                  if (sl < 1e-5) continue;
+                  const ex = sx / sl, ey = sy / sl;
+                  if ((dx || dy) && ex * dx + ey * dy < 0.94) { way.splice(-3, 3); const n = way.length; if (n >= 6) { const cut = Math.max(0, pathLen(way) - R); way.splice(0, n, ...cutPath(way, cut)); } break; }
+                  way.push(x, y, 0); px = x; py = y; dx = ex; dy = ey;
+                }
+              }
               // the same reach as the cue ball's line after a hit at its longest (a thin one): grow() below "길게", the real
               // way's first stretch (2.4 s) to all of it above
               const L = way.length < 6 ? 0 : gl < SIM ? grow(gl) * 0.16 : reach(gl, 0.16, pathLen(way.slice(0, 288 * 3 + 3)), pathLen(way));

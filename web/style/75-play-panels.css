@@ -188,3 +188,16 @@
 #dkBoards .bd.card .bd-bar small{display:block;margin-top:calc(var(--u)*1.2);font:700 calc(var(--u)*3)/1.3 var(--ui-font);color:rgba(255,255,255,.75)}
 /* (the cards' ambient occlusion, as the desk's pieces have: style/60-desk.css - here, after the side's own shadow) */
 #dkBoards .bd .ly.foot{box-shadow:0 0 4px 2px rgba(0,0,0,.7),0 0 22px 7px rgba(0,0,0,.42),-2px 3px 3px rgba(0,0,0,.55),-6px 9px 12px rgba(0,0,0,.32),-14px 20px 26px rgba(0,0,0,.28)}
+
+/* (owner, 11-09) 랭킹전's four games as the menu's cards: the same printed card, gradient, grain and white line, its name
+   at the top as theirs is, and its balls on it - each game a billiard colour of its own, toned as the menu's are */
+#dkBoards .bd.card.bd-four{--c1:#4174bf;--c2:#194685;--sl:#6387bd;--sd:#062046}
+#dkBoards .bd.card.bd-three{--c1:#5862b4;--c2:#272f74;--sl:#7a82bd;--sd:#0d1240}
+#dkBoards .bd.card.bd-eight{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911}
+#dkBoards .bd.card.bd-nine{--c1:#3d8a88;--c2:#155252;--sl:#62a09c;--sd:#042a2a}
+#dkBoards .bd.card.game .in{justify-content:flex-start}
+#dkBoards .bd.card.game{--u:min(1.6cqw,1cqh)}
+#dkBoards .bd.card.game .in{padding:calc(var(--u)*6) calc(var(--u)*5.5)}
+#dkBoards .bd.card.game .bd-tt b{font-size:calc(var(--u)*8.5)}
+#dkBoards .bd.card.game .bd-tt small{font-size:max(11px,calc(var(--u)*3.4))}
+#dkBoards .bd.card.game .rack{top:auto;bottom:calc(var(--u)*10);right:50%;transform:translateX(50%)}

@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 6;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll
+const PHYS_V = 7;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;

@@ -90,7 +90,8 @@ function deskPlay(d) {
     } else {
       dkPut(wrap, head('랭킹전', `레이팅 ${dama}`, toBoards));
       const go = id => b => playLeave(b, () => { ranked.find(id); playFx = 'flip'; paintHome(); });
-      dkPut(fit, ['four', 'three', 'eight', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'game unf')));
+      // (printed cards, as the menu's four are: owner 11-09 - they were cloth)
+      dkPut(fit, ['four', 'three', 'eight', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'card game unf')));
     }
   } else if (playStep === 'friend') {
     dkPut(wrap, head('친구와 플레이', '', toBoards));

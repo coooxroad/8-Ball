@@ -255,11 +255,19 @@ function createGame(PH, makeAI) {
       P.place(w, ids[2 * k], sx * (HL - NEAR), sy * (HW - FAR), rnd);
       P.place(w, ids[2 * k + 1], sx * (HL - FAR), sy * (HW - NEAR), rnd);
     });
-    for (const id of ids) {
-      const b = w.balls[id], n = Math.sqrt(b.x * b.x + b.y * b.y), ux = -b.x / n, uy = -b.y / n;
-      const off = (rnd() * 2 - 1) * 0.32, c = M.cos(off), s = M.sin(off), v = 1.05 + rnd() * 0.75;
+    // (the two reds paired in one corner would roll out side by side and too often stay together - an easy first shot,
+    // 12% of red pairs ended within 30 cm: so one red of a red pair is rolled straight into the other, which is knocked
+    // away as on a break - 1% end that close, as few as any other pairing; owner 11-09)
+    const redPair = k => ids[2 * k] > 1 && ids[2 * k + 1] > 1;
+    ids.forEach((id, i) => {
+      const b = w.balls[id], k = i >> 1;
+      let ux, uy;
+      if (redPair(k) && !(i & 1)) { const o = w.balls[ids[i ^ 1]], dx = o.x - b.x, dy = o.y - b.y, n = Math.sqrt(dx * dx + dy * dy); ux = dx / n; uy = dy / n; }
+      else if (redPair(k)) { ux = 0; uy = 0; }
+      else { const n = Math.sqrt(b.x * b.x + b.y * b.y); ux = -b.x / n; uy = -b.y / n; }
+      const off = (rnd() * 2 - 1) * (redPair(k) ? 0.12 : 0.32), c = M.cos(off), s = M.sin(off), v = (redPair(k) ? 1.3 : 1.05) + rnd() * 0.75;
       b.vx = (ux * c - uy * s) * v; b.vy = (ux * s + uy * c) * v;
-    }
+    });
   };
   g.legal = () => g.mode.legal(g, g.turn);
   /* How far behind a player is, 0 (not, or too early to say) .. 1 (hopeless): what lets a person-like stand-in give up
