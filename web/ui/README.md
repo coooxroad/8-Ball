@@ -31,7 +31,6 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | plate | D1 | the players' name plates (lip 14) | 40 40 68 40 / 16 t r, 30 b |
 | towel, chalk, plant | E2, E3, E4 | on the desk; scaled down and blurred a little here (out of focus) | – |
 | dot | 13-glossy-red-dot-128 | the chosen rail key's red ball | – |
-| swframe | 14-cream-swatch-frame-480x260 | frame over the chosen swatch | body from 16 |
 | ring | 19-brass-avatar-ring-160 | ring round a player's avatar; opening centre 80,80, radius 54 | – |
 | tag | 21-cream-equipped-tag-160x64 | the "장착" tab on what is in use | slice 24, body from 8 |
 | lock | 22-closed-brass-padlock-96 | a locked puzzle stage | – |
@@ -48,7 +47,6 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | res-win, res-loss | R2 64 | a won (ivory) and a lost (red) match in a player's form | – |
 | streak | R3 220×80 | the "N연승" badge | slice 28 l r |
 | plaque | R4 900×140 | the records' title plate | slice 80 l r |
-| pp-shop, pp-tour, pp-friend, pp-rank | P1–P4 (CUE-prompts-v11) 720×1920, 1920×1080, 1920×1080, 1000×1600 | the 플레이 panels' key art, `background-size:cover` under the type (style/75-play-panels.css `--art`); calm text areas and, on 랭킹전, an empty circle for the tier badge | – |
 
 ## Table materials (`web/tex/`)
 
@@ -70,15 +68,10 @@ T2 (cloth detail) is not used: at table scale it only showed as blocks; the draw
 
 | file | from | use | 9-slice |
 |---|---|---|---|
-| power-rail, power-rail-h | K1, K1h | the power control's walnut trough (cue lies in the groove) | 120 ends |
-| power-scale | K2 | brass scale beside it | – |
-| wheel-box, wheel-box-h | K3, K3h | the fine-aim wheel's slot (window transparent) | 140 45 / 45 140 |
-| wheel-ridges, wheel-ridges-h | K3s (and turned) | the wheel's rubber, rolled by moving its background | tiles |
-| spin-ball, spin-bezel, chalk-mark | K4, K4c, K4b | the spin control and its pad | – |
+| spin-ball, chalk-mark | K4, K4b | the spin control and its pad | – |
 | knob, knob-press | K5 | pause, 3D, the shelves' X | – |
 | angle-arc | K6 | (not used yet: the cue-angle pad) | – |
 | glove-black … glove-camo | G1–G6 | gloves (look.js GLOVES) | – |
-| tour-logo | L2 | the score bar's tab | – |
 
 `web/tex/ball-marble` (512×256 grey) is a ball set's surface (the bowling ball), worked over the painted colours
 in scene.js; build.sh also copies them to the app's `tex/` for the shelf cards.

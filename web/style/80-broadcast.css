@@ -87,7 +87,7 @@
 #app.bcast.compact:not(.portrait) #toast{font-size:13.5px;padding:7px 14px 7px 18px;bottom:calc(var(--bb) + 6px + var(--bh) + 22px)}
 #app.bcast.compact:not(.portrait) #hud::before{font-size:9px;padding:2px 9px 1px}
 #app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
-#app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy) url(ui/tour-logo.webp) center/80% auto no-repeat}
+#app.bcast:not(.portrait) #hud::before{content:"";width:96px;height:26px;padding:0;background:var(--navy)}
 #app.bcast.compact:not(.portrait) #hud::before{width:78px;height:21px;padding:0}
 /* ---- in play on the desk, second pass: roomier controls ----
    score bar along the TOP middle (its clock bar under it, the tour tab hanging below its left end), messages under it in

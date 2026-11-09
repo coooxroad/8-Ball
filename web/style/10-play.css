@@ -121,16 +121,16 @@
    fine aim: a rubber thumb wheel turning in a walnut slot (its ridges move as it is rolled, 80-input.js);
    spin: a real cue ball in a brass bezel, a blue chalk mark where the tip will meet it; pause and 3D: walnut knobs. */
 #app.desk #power{background:none;border:0 solid transparent;border-radius:0;box-shadow:none;overflow:visible;
-  border-image:url(ui/power-rail.webp) 120 0 fill/29px 0 stretch;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
+  box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
 #app.desk #power::before{inset:30px 13px;border-radius:3px}
-#app.desk #power::after{content:"";position:absolute;right:-12px;top:30px;bottom:30px;width:9px;background:url(ui/power-scale.webp) center/100% 100% no-repeat;pointer-events:none}
+#app.desk #power::after{content:"";position:absolute;right:-12px;top:30px;bottom:30px;width:9px;background:none;pointer-events:none}
 #app.desk #powerLab{display:none}
 #app.desk #powerNum{left:9px;right:9px;bottom:5px;padding:2px 0;background:none;box-shadow:none;color:#3b2a0e;font-size:15px;text-shadow:0 1px 0 rgba(255,235,180,.6)}
-#app.desk #fine{background:#151515 url(ui/wheel-ridges.webp) 0 0/100% auto repeat-y;border:0;border-radius:4px;box-shadow:-4px 6px 10px rgba(0,0,0,.45);overflow:visible}
-#app.desk #fine::before{content:"";position:absolute;inset:0;border:0 solid transparent;border-image:url(ui/wheel-box.webp) 140 45 fill/34px 11px stretch;pointer-events:none}
+#app.desk #fine{background:#151515;border:0;border-radius:4px;box-shadow:-4px 6px 10px rgba(0,0,0,.45);overflow:visible}
+#app.desk #fine::before{content:"";position:absolute;inset:0;border:0 solid transparent;border-image:none;pointer-events:none}
 #app.desk #fine::after{left:6px;right:6px;height:2px;margin-top:-1px;background:#e9c46a;box-shadow:0 0 4px rgba(233,196,106,.8);z-index:1}
 #app.desk #fineLab{display:none}
-#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-bezel.webp) center/100% 100% no-repeat,url(ui/spin-ball.webp) center/79% no-repeat;border-radius:50%;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
+#app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-ball.webp) center/79% no-repeat;border-radius:50%;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
 #app.desk #spinBtn{width:66px;height:66px}
 #app.desk #spinDot,#app.desk .sdot{width:16px;height:16px;margin:-8px;background:url(ui/chalk-mark.webp) center/100% 100% no-repeat;box-shadow:none}
 #app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
@@ -141,7 +141,7 @@
 #app.desk #viewBtn svg{width:24px;height:24px}
 #app.desk.compact #menuBtn,#app.desk.compact #viewBtn{width:48px;height:48px}
 /* power: wide, a real gauge */
-#app.desk #power{width:84px;left:12px;border-image:url(ui/power-rail.webp) 120 0 fill/50px 0 stretch}
+#app.desk #power{width:84px;left:12px}
 #app.desk #power::before{inset:52px 22px;border-radius:4px;background:repeating-linear-gradient(to top,rgba(60,70,60,.55) 0 6px,rgba(0,0,0,.6) 6px 8px);box-shadow:inset 0 2px 6px rgba(0,0,0,.7)}
 #app.desk #power::after{content:"";position:absolute;left:22px;right:22px;top:52px;bottom:52px;width:auto;border-radius:4px;transform:none;pointer-events:none;
   background:repeating-linear-gradient(to top,transparent 0 6px,rgba(0,0,0,.65) 6px 8px),linear-gradient(to top,#22d36b 0%,#9be33a 35%,#ffd21f 62%,#ff7a1a 82%,#ff2d2d 100%);
@@ -151,7 +151,7 @@
 #app.desk #powerNum{bottom:12px;font-size:19px;z-index:1}
 /* fine aim: the drum */
 #app.desk #fine{right:12px;top:50%;bottom:auto;height:300px;margin-top:-150px;width:66px;background:none}
-#app.desk #fine::before{z-index:1;border-image:url(ui/wheel-box.webp) 140 45 fill/42px 15px stretch}
+#app.desk #fine::before{z-index:1;border-image:none}
 #app.desk #fine::after{z-index:2;left:-6px;right:auto;width:12px;height:12px;margin-top:-6px;border-radius:0;background:#e9c46a;clip-path:polygon(0 0,100% 50%,0 100%);box-shadow:none}
 #app.desk #fine canvas.dial{position:absolute;left:15px;right:15px;top:42px;bottom:42px;width:calc(100% - 30px);height:calc(100% - 84px)}
 #app.desk.compact:not(.portrait) #fine{height:220px;margin-top:-110px}
@@ -185,13 +185,12 @@
   background:repeating-linear-gradient(to top,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) top/100% calc(100% - var(--pw,0%)) no-repeat,
   linear-gradient(to top,#22d36b 0%,#9be33a 25.8%,#ffd21f 44.8%,#ff7a1a 58.6%,#ff2d2d 70.6%,#e8218a 79.3%,#a64dff 86.2%,#3d7bff 93%,#3ff2c8 100%) bottom/100% var(--gh,100%) no-repeat}
 #app.desk #power::after{inset:0;left:0;right:0;top:0;bottom:0;width:auto;height:auto;z-index:2;-webkit-mask:none;mask:none;box-shadow:none;border-radius:0;
-  background:url(ui/gauge-glass.webp) 13px 45px/38px calc(100% - 90px) no-repeat;border:0 solid transparent;border-image:url(ui/gauge.webp) 170 0 fill/45px 0 stretch}
+  background:none;border:0;border-image:none}
 #app.desk #powerCue{left:75%;z-index:1}
 #app.desk #powerNum{z-index:3;bottom:13px;left:0;right:0;color:#3b2a0e;font-size:18px}
 /* the power gauge, one channel: the lit meter fills the whole window and the cue lies in it, its chalked tip showing at
-   the top (the housing's two windows made one, ui/gauge*.webp) */
+   the top (the housing's two windows made one; its pictures are gone, 82-ingame.css draws it) */
 #app.desk #power::before{inset:45px auto 45px 13px;width:70px}
-#app.desk #power::after{background:url(ui/gauge-glass.webp) 13px 45px/70px calc(100% - 90px) no-repeat}
 #app.desk #powerCue{left:50%;width:19px}
 /* the fine-aim drum, taller */
 #app.desk #fine{height:380px;margin-top:-190px}
@@ -208,7 +207,7 @@
    view keys in a row beside the 3D knob, the same size */
 #app.desk #power{width:72px;left:12px}
 #app.desk #power::before{inset:34px auto 34px 10px;width:52px}
-#app.desk #power::after{border-image:url(ui/gauge.webp) 170 0 fill/34px 0 stretch;background:none}
+#app.desk #power::after{border-image:none;background:none}
 #app.desk #powerCue{width:17px}
 #app.desk #powerNum{bottom:9px;font-size:15px}
 #app.desk:not(.portrait) #views{top:12px;right:80px;flex-direction:row;gap:12px}
@@ -225,14 +224,14 @@
 #app.desk.portrait #spinBtn{left:auto;right:6px;top:auto;bottom:calc(30px + var(--colP) + var(--colD));width:60px;height:60px}
 #app.desk.portrait #spinPop{left:auto;right:74px;bottom:calc(18px + var(--colP))}
 #app.desk.portrait #fine{left:auto;right:8px;top:auto;bottom:calc(20px + var(--colP));width:56px;height:var(--colD);margin:0;background:none}
-#app.desk.portrait #fine::before{border-image:url(ui/wheel-box.webp) 140 45 fill/28px 12px stretch}
+#app.desk.portrait #fine::before{border-image:none}
 #app.desk.portrait #fine::after{left:-6px;right:auto;top:50%;width:12px;height:12px;margin:-6px 0 0;clip-path:polygon(0 0,100% 50%,0 100%)}
 #app.desk.portrait #fine canvas.dial{left:12px;right:12px;top:28px;bottom:28px;width:calc(100% - 24px);height:calc(100% - 56px)}
 #app.desk.portrait #power{left:auto;right:8px;top:auto;bottom:10px;width:56px;height:var(--colP)}
 #app.desk.portrait #power::before{inset:30px auto 30px 7px;width:42px;height:auto;
   background:repeating-linear-gradient(to top,transparent 0 7px,rgba(0,0,0,.7) 7px 9px),linear-gradient(#141a16,#141a16) top/100% calc(100% - var(--pw,0%)) no-repeat,
   linear-gradient(to top,#22d36b 0%,#9be33a 25.8%,#ffd21f 44.8%,#ff7a1a 58.6%,#ff2d2d 70.6%,#e8218a 79.3%,#a64dff 86.2%,#3d7bff 93%,#3ff2c8 100%) bottom/100% var(--gh,100%) no-repeat}
-#app.desk.portrait #power::after{border-image:url(ui/gauge.webp) 170 0 fill/30px 0 stretch;background:none}
+#app.desk.portrait #power::after{border-image:none;background:none}
 #app.desk.portrait #powerCue{left:50%;top:0;width:14px;height:100%;transform:translate(-50%,10px)}
 #app.desk.portrait #powerNum{left:0;right:0;top:auto;bottom:7px;width:auto;height:auto;transform:none;padding:0;font-size:13px}
 

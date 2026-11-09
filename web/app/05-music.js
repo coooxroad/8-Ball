@@ -1,6 +1,6 @@
 /* ================= music: the lobby's tune, and a song when a match ends =================
-   Three tracks bundled with the app (music/*.mp3, see web/music): the lobby's, on a loop while on the home screens and the
-   records; the winner's when a match ends with the player winning - and always between friends, whoever won; the
+   Three tracks bundled with the app (music/*.mp3, see web/music): the lobby's, on a loop while on the home screens; the
+   winner's when a match ends with the player winning - and always between friends, whoever won; the
    loser's when the computer wins. They are plain audio elements (streamed from the file, not decoded into memory), faded
    in and out, kept quiet under the game's own sounds, and only played with 음악 on in the settings. */
 const MUSIC = (() => {
@@ -29,9 +29,9 @@ const MUSIC = (() => {
     if (k && on() && !document.hidden) start(k, k !== 'lobby');
   }
   function stop() { play(null); }
-  // what each screen sounds like: the home screens and the records have the lobby's tune; the game and the highlight reel
+  // what each screen sounds like: the home screens have the lobby's tune; the game and the highlight reel
   // have none; the result keeps whatever the end of the match started
-  function screen(s) { if (s === 'home' || s === 'records') play('lobby'); else if (s !== 'result') stop(); }
+  function screen(s) { if (s === 'home') play('lobby'); else if (s !== 'result') stop(); }
   // the switch in the settings
   function setOn(v) { if (!v) { for (const a of Object.values(els)) fade(a, 0, 400, () => a.pause()); } else if (cur) { const k = cur; cur = null; play(k); } }
   // the app in the background is silent; back in front, the music picks up where it was

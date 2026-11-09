@@ -45,10 +45,10 @@ const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), s
 const CONTROLS = ['#power', '#fine', '#spinBtn'];
 function show(screen) {
   st.screen = screen;
-  const home = screen === 'home', away = home || screen === 'records';
-  $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result'; $('#records').hidden = screen !== 'records';
+  const home = screen === 'home', away = home;
+  $('#hud').hidden = screen !== 'play'; $('#result').hidden = screen !== 'result';
   for (const id of CONTROLS) $(id).hidden = screen !== 'play';
-  // the desk's bar along the top (kept over the records), and on the home screen its leaning plane
+  // the desk's bar along the top, and on the home screen its leaning plane
   $('#deskBar').hidden = !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !home;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'play') setView3D(false);

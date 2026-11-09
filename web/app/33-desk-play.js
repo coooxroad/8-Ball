@@ -19,14 +19,6 @@ function rackOf(id) {
   for (const [n, x, y] of at) box.appendChild(ballPic(prefs.ballSkin, kind, n, { style: `left:calc(${(x - mx).toFixed(3)} * var(--d));top:calc(${(y - my).toFixed(3)} * var(--d))` }));
   return box;
 }
-// the cue named on the shop's board: one of the shop's cues at random, kept a minute (the desk paints again often: a wallet
-// update, a tap) so it does not change under the eye. A stand-in for what the board will show later.
-let shopShown = null;
-function shopPick() {
-  if (shopShown && Date.now() - shopShown.t < 60000 && CUES.includes(shopShown.c)) return shopShown.c;
-  const pool = CUES.filter(c => !c.reward), c = pool[Math.floor(Math.random() * pool.length)] || CUES[0];
-  shopShown = { c, t: Date.now() }; return c;
-}
 /* Opening a card (owner, 11-08): the card tapped comes forward to the middle of the desk and its choices fan out of it -
    랭킹전 its four games, 친구와 플레이 its three ways (한 기기에서, 방 생성하기, 방 참가하기). A game picked for 랭킹전:
    the others fly off, it comes to the middle and turns over - on its back, the search for an opponent. 방 참가하기 turns

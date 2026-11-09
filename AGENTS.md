@@ -107,7 +107,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 
 ### 화면 고치기
 - 스타일은 꾸미는 대상의 파일에 넣는다: `00-base` 공통, `10-play` 게임 중 조작·점수판, `20-sheets` 시트, `30-reel` 하이라이트,
-  `40-records` 전적, `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
+  `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
   `72-lessons` 교본·연습, `75-play-panels` 플레이 패널, `80-broadcast` 대결 중계 화면. 파일 끝에 덧붙이지 말고 관련 규칙 옆에.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
 - 새 버튼은 `onTap(fn)`(소리 깨우기·딸깍·실행)으로 단다.

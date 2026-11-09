@@ -256,7 +256,7 @@ window.__back = function () {
   if (!$('#sheet').hidden) { closeSheet(); return true; }
   if (!$('#spinPop').hidden) { $('#spinPop').hidden = true; return true; }
   if (st.screen === 'reel') { reel.skip(); return true; }
-  if (st.screen === 'result' || st.screen === 'records') { goHome(st.screen === 'records'); return true; }
+  if (st.screen === 'result') { goHome(false); return true; }
   if (st.screen === 'play') { sheetPause(); return true; }
   return false;
 };

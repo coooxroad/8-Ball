@@ -10,7 +10,8 @@
    10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
    20-sheets   every sheet that slides up             52-puzzle      puzzles
    30-home     what the desk and the flows share      53-demo        one given shot, played by the app
-   32-desk     the desk's parts, moving between places 60-records    wins and losses, and the burning cards
+   32-desk     the desk's parts, moving between places 56-league     the CUELEAGUE opening; 57-account, 58-tutorial
+                                                      59-emote       quick emotes in an online game
    33-desk-play     플레이: the panels, the games    62-bolts       the lightning border while play runs fast
    34-desk-train    훈련: lessons, puzzles, practice  70-buttons     what each button does
    35-desk-shelves  내 장비 and 상점                    80-input       aiming, power, spin, cue angle
@@ -101,7 +102,7 @@ const SUJI = [3, 5, 8, 10, 15, 20];
 const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;
 
 /* What is on screen and where the current shot is.
-   screen: home | play | result | records | reel
+   screen: home | play | result | reel
    phase:  idle (nothing to do) | aim (a person is aiming) | auto (computer or demo is lining up) | strike | sim | hold */
 const st = { screen: 'home', phase: 'idle', aim: 0, power: 0, spin: { x: 0, y: 0 }, el: 0, cueAnim: null, auto: null, rev: 0, lastLoser: null, settle: 0, holdT: 0, afterHold: null, clock: 0 };
 let flow = null;
