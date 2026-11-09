@@ -12,6 +12,9 @@ compatibility_flags = ["nodejs_compat"]
 CHECK_MATCHES = "slices"
 # Google sign-in (src/google.js): the web OAuth client's ID - not a secret, the page shows it to Google
 GOOGLE_CLIENT_ID = "373306860735-no2ekv8kbqv0up164gaoifq2r2v7gnli.apps.googleusercontent.com"
+# who may use the admin console (src/index.js adminRoute; web/admin.html): the SHA-256 of each Google address, lower
+# case, comma between - the addresses themselves are kept out of the code. (python3 -c "import hashlib; print(hashlib.sha256(b'me@example.com').hexdigest())")
+ADMIN_EMAILS_SHA256 = "3421a945bfead2af360e445d96f99114e1713106475e60b4a7873eafa3152bd1"
 
 [[durable_objects.bindings]]
 name = "VAULT"

@@ -28,6 +28,7 @@
    Every request but the first carries  Authorization: Bearer <id>.<key>. `req` is the app's own number for the request:
    sending the same one again changes nothing. */
 import { googleWho } from './google.js';
+import * as E from './gen/engine.js';
 import { PHYS_V } from './version.js';
 // (a device on other physics - version.js - is told to update rather than matched: queue and invites)
 const samePhysics = body => (body && Number.isInteger(body.phys) ? body.phys : 1) === PHYS_V;
@@ -44,10 +45,38 @@ const nearOf = request => {
   return c === 'AS' ? 'apac' : c === 'OC' ? 'oc' : c === 'EU' ? 'weur' : c === 'SA' ? 'sam' : c === 'AF' ? 'afr' : c === 'NA' ? (+cf.longitude < -100 ? 'wnam' : 'enam') : null;
 };
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin', 'Access-Control-Max-Age': '86400' };
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
 const hex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))));
+
+/* The admin console (web/admin.html, on the site at /admin): each request carries a Google sign-in (X-Admin: the ID token, as
+   the account sheet gets one), checked as a sign-up's is (google.js), and the address it names must be one of
+   ADMIN_EMAILS_SHA256 (wrangler.toml: SHA-256 of each address, lower case - the address itself is not in the code).
+   POST /v1/admin/find  { q }                          accounts by name or id (the directory lobby: vault.js listed)
+   POST /v1/admin/view  { acct }                       one account: balances, rating, items, ledger, recent games
+   POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, why }   give or take; set the rating (core.js adminGrant)
+   GET  /v1/admin/catalog                              every item there is, to give */
+export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
+async function adminRoute(what, request, env) {
+  const allowed = String(env.ADMIN_EMAILS_SHA256 || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!allowed.length || !env.GOOGLE_CLIENT_ID) return json({ ok: false, why: 'no admin' }, 403);
+  const who = await googleWho(request.headers.get('X-Admin') || '', env.GOOGLE_CLIENT_ID).catch(() => null);
+  if (!who || !who.email || !(await isAdmin(who.email, allowed))) return json({ ok: false, why: 'not an admin' }, 403);
+  // (who did it, as the ledger keeps it: not the address - a player may see their own ledger - but the start of its hash)
+  const by = 'admin ' + (await hashOf(who.email.trim().toLowerCase())).slice(0, 8);
+  const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+  if (what === 'catalog') { const it = L => L.map(q => ({ id: q.id, name: q.name, rarity: q.rarity || 0 }));
+    return json({ ok: true, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
+  if (what === 'find') {
+    const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
+    return json(await r.json());
+  }
+  const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
+  const vault = env.VAULT.get(env.VAULT.idFromName(acct));
+  const r = await vault.fetch('https://vault/admin/' + what, { method: 'POST', headers: { 'X-Acct': acct }, body: JSON.stringify(Object.assign({}, body, { by })) });
+  return json(await r.json());
+}
 
 /* POST /v1/link/make                  (this device's key) a code to give another device: { code, until }
    POST /v1/link/use { code }          a code from another device: this device gets a key of its own for that account
@@ -109,6 +138,8 @@ async function frontDoor(request, env) {
     if (!url.pathname.startsWith('/v1/')) return json({ ok: false, why: 'no such thing' }, 404);
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
+    const adm = /^\/v1\/admin\/(find|view|grant|catalog)$/.exec(url.pathname);
+    if (adm) return adminRoute(adm[1], request, env);
     const link = /^\/v1\/link\/(make|use|google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
@@ -139,7 +170,7 @@ async function frontDoor(request, env) {
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     const r = await vault.fetch('https://vault' + url.pathname, {
-      method: request.method, headers: { 'X-Key': m[2], 'Content-Type': 'application/json' }, body: request.method === 'POST' ? await request.text() : undefined });
+      method: request.method, headers: { 'X-Key': m[2], 'X-Acct': m[1], 'Content-Type': 'application/json' }, body: request.method === 'POST' ? await request.text() : undefined });
     return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
   }
 }

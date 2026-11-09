@@ -25,6 +25,6 @@ export async function googleWho(token, clientId, get, now) {
   if (!ok) return { why: 'bad signature' };
   const aud = Array.isArray(body.aud) ? body.aud : [body.aud];
   if (!ISS.includes(body.iss) || !aud.includes(clientId) || !(body.exp * 1000 > t) || !body.sub) return { why: 'not for this app' };
-  return { sub: String(body.sub), email: body.email || null };
+  return { sub: String(body.sub), email: body.email && body.email_verified !== false ? body.email : null };   // (an address Google has not checked is no address)
 }
 export const forgetGoogleKeys = () => { keys = null; keysAt = 0; };   // (tests)

@@ -2,6 +2,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { LobbyCore, InviteCore } from './ranked.js';
 import { LinkCore } from './link.js';
+import { Directory } from './directory.js';
 // a new room is made near the player whose ask made the pair (index.js nearOf); a hint Cloudflare does not know is left out
 const NEAR = ['wnam', 'enam', 'sam', 'weur', 'eeur', 'apac', 'oc', 'afr', 'me'];
 const roomNear = body => (body && NEAR.includes(body.near) ? { locationHint: body.near } : undefined);
@@ -16,6 +17,13 @@ export class Lobby extends DurableObject {
       if (what === 'make') return Response.json(Object.assign({ ok: true }, K.make(body.acct)));
       if (what === 'use') { const r = K.use(body.code); return Response.json(r.acct ? { ok: true, acct: r.acct } : { ok: false, why: r.why }); }
       if (what === 'google') { const r = K.google(body.sub, body.acct || null); return Response.json(r.acct ? Object.assign({ ok: true }, r) : { ok: false, why: r.why }); }
+      return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
+    }
+    // the lobby named 'directory': every account's name and rating, for the admin console (vault.js listed; its SQLite)
+    if (path.startsWith('/dir/')) {
+      const D = this.dir || (this.dir = new Directory(this.ctx.storage.sql)), what = path.slice(5);
+      if (what === 'put') return Response.json(D.put(body));
+      if (what === 'find') return Response.json(D.find(body.q));
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)

@@ -14,17 +14,29 @@ export class Vault extends DurableObject {
   // checking queued matches, a slice per alarm, until none is left
   async wake() { if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + 20); }
   async alarm() { if (this.core.work(+(this.env.SLICE_STEPS || SLICE))) await this.ctx.storage.setAlarm(Date.now() + 20); }
+  /* the account in the directory the admin console searches (lobby 'directory'): its name and rating, now and then (every
+     six hours at most, or at once when they change) - not waited for */
+  listed(now) {
+    const t = Date.now(); if (!now && t - (this.dirAt || 0) < 6 * 3600000) return; this.dirAt = t;
+    const acct = this.acct; if (!acct) return;
+    const me = this.core.me(), body = { acct, nick: me.nick || null, joined: !!me.joined, dama: me.dama, coin: me.coin, dia: me.dia };
+    this.ctx.waitUntil(this.env.LOBBY.get(this.env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/put', { method: 'POST', body: JSON.stringify(body) }).catch(() => null));
+  }
   async fetch(request) {
     const path = new URL(request.url).pathname, body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+    if (!this.acct && /^[0-9a-f]{32}$/.test(request.headers.get('X-Acct') || '')) this.acct = request.headers.get('X-Acct');   // (the front door says which)
     if (path === '/init') return this.core.init(await hashOf(body.key)) ? json({ ok: true }) : json({ ok: false }, 409);
     // from a ranked game's room (never from outside: the front door passes on only /v1/ paths)
     if (path === '/room/result') return json(this.core.ranked(body));
     // from the front door only (it passes on only /v1/ paths): a device linked to this account (link.js)
     if (path === '/link/add') return json(this.core.addDevice(body.hash));
     if (path === '/link/joined') return json(this.core.joinPrize());
+    // from the front door's admin console only (index.js checks who the admin is first)
+    if (path === '/admin/view') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json(this.core.adminView()); }
+    if (path === '/admin/grant') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.adminGrant(body); if (r.ok) this.listed(true); return json(r); }
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
-    if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); return json({ ok: true, me }); }
+    if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); this.listed(); return json({ ok: true, me }); }
     if (path === '/v1/buy') return json(this.core.buy(body));
     // waiting for a ranked game: the front door asks who this is, then goes to the lobby
     if (path === '/v1/ticket') {
@@ -37,7 +49,7 @@ export class Vault extends DurableObject {
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));
-    if (path === '/v1/nick') return json(this.core.nick(body));
+    if (path === '/v1/nick') { const r = this.core.nick(body); if (r.ok) this.listed(true); return json(r); }
     if (path === '/v1/tutorial') return json(this.core.tutorial(body));
     if (path === '/v1/save') return json(this.core.save(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }

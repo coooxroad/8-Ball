@@ -557,5 +557,30 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok((await googleWho('a.b', 'app.apps.googleusercontent.com', get, now)).why === 'bad token', 'google: not a token');
   console.log('google sign-in: checked');
 }
+// the admin console: giving, taking, setting the rating, each in the ledger and the log; and finding an account
+{
+  const v = vault(), rare = E.CUES.find(q => q.rarity > 0), common = E.CUES.find(q => !q.rarity);
+  let r = v.adminGrant({ by: 'admin', why: '보상', coin: 5000, dia: 30 });
+  ok(r.ok && r.me.coin === 5000 && r.me.dia === 30, 'admin: coins and diamonds given');
+  ok(!v.adminGrant({ by: 'admin', coin: -6000 }).ok && v.me().coin === 5000, 'admin: never below nothing');
+  ok(v.adminGrant({ by: 'admin', coin: -1000 }).ok && v.me().coin === 4000, 'admin: coins taken');
+  ok(v.adminGrant({ by: 'admin', kind: 'cue', id: rare.id }).ok && v.owns('cue', rare.id), 'admin: an item given');
+  ok(v.adminGrant({ by: 'admin', kind: 'cue', id: rare.id, take: true }).ok && !v.owns('cue', rare.id), 'admin: an item taken back');
+  ok(!v.adminGrant({ by: 'admin', kind: 'cue', id: 'nope' }).ok, 'admin: no made-up items');
+  ok(!v.adminGrant({ by: 'admin', kind: 'cue', id: common.id }).ok, 'admin: an item everyone has is nothing to give');
+  ok(v.adminGrant({ by: 'admin', dama: 1500 }).ok && v.me().dama === 1500, 'admin: the rating set');
+  ok(!v.adminGrant({ by: 'admin', dama: 99999 }).ok && v.me().dama === 1500, 'admin: a rating out of bounds refused');
+  ok(!v.adminGrant({ by: 'admin', coin: 50, dama: 99999 }).ok && v.me().coin === 4000, 'admin: one bad part, none of it done');
+  const w = v.adminView();
+  ok(w.ok && w.admin.length === 5 && w.admin[0].did.startsWith('dama') && w.ledger.some(l => /^admin · 보상/.test(l.what)) && w.me.save === undefined, 'admin: the view has the log and the ledger');
+  const { Directory } = await import('../src/directory.js');
+  const D = new Directory(sqlOf().sql), A = 'ab'.repeat(16), B = 'cd'.repeat(16);
+  D.put({ acct: A, nick: '큐대장', joined: true, dama: 1200, coin: 10, dia: 1 }); D.put({ acct: B, nick: '초보', dama: 1000 });
+  D.put({ acct: A, nick: '큐대장2', joined: true, dama: 1300, coin: 10, dia: 1 }); D.put({ acct: 'nope', nick: 'x' });
+  ok(D.find('큐대').people.length === 1 && D.find('큐대').people[0].dama === 1300, 'directory: found by name, the latest');
+  ok(D.find('CDCD·CDCD').people[0].acct === B && D.find('').people.length === 2, 'directory: found by the id as the settings show it; all of them');
+  ok(D.find('%').people.length === 0, 'directory: no wildcards from outside');
+  console.log('admin: checked');
+}
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);
