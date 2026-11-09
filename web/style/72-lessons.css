@@ -88,3 +88,4 @@
 #app.desk .dk-prize small{font:600 12.5px var(--ui-font);color:var(--slate-sub)}
 #app.desk .dk-prize.got{opacity:.7}
 #app.desk .dk-card.vol .prize-tag{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:999px;background:#e7b54a;color:#2a1c05;font:800 11px var(--ui-font);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+#app.desk .dk-prize .got-tag{margin-left:auto;font:800 12px var(--ui-font);font-style:normal;color:#1b2a12;background:#9fe08a;border-radius:999px;padding:3px 10px}

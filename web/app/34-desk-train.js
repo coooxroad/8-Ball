@@ -15,31 +15,29 @@ function deskPuzzle(d) {
   const { head, foot, slate } = d;
   // (the puzzles are being made again on the game's physics: until then the place is kept, empty)
   if (!puzzles.list.length) {
-    dkPut(head, dkTitle('퍼즐', '새로 만드는 중'));
-    dkPut(slate, dkH1('퍼즐', '새로 만드는 중'));
-    dkPut(slate, [dkHr(), dkTxt('지금 물리에 맞춰 퍼즐을 새로 만들고 있습니다. 단계는 그대로 ' + puzzles.STAGES.length + '단계입니다.')]);
-    dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true)));
+    dkPut(head, dkTitle('퍼즐'));
+    dkPut(slate, [dkH1('퍼즐'), dkHr(), dkTxt('등록된 퍼즐이 없습니다')]);   // (copy audit 03-09: said once)
     return;
   }
   const z = prefs.pz, L = puzzles.list.filter(q => pzOpen(q.stage)), cur = puzzles.byId(z.cur) || puzzles.list[0], S = puzzles.STAGES[cur.stage];
   const go = dir => () => { const i = Math.max(0, L.indexOf(cur)), q = L[(i + dir + L.length) % L.length]; z.cur = q.id; z.open = q.stage; repaintLive(); };
   const solved = qs => qs.filter(q => z.stars[q.id]).length, here = puzzles.of(cur.stage);
-  dkNavHead(head, '문제', `${cur.stage + 1}-${cur.n}  ${S.name}`, `${solved(here)} / ${here.length} 풀이`, go);
+  dkNavHead(head, '문제', `${cur.stage + 1}-${cur.n}  ${S.name}`, '', go);   // (copy audit 03-07: its number and name here, once)
   dkPut(foot, puzzles.STAGES.map((s, si) => {
     const qs = puzzles.of(si), open = pzOpen(si);
     const enter = () => {
-      if (!open) return toast(`앞 스테이지에서 ${PZ_NEED}문제를 풀면 열립니다.`, '', 2200);
+      if (!open) return toast(`앞 단계에서 ${PZ_NEED}문제 풀기`, '', 2200);
       const q = qs.find(x => !z.stars[x.id]) || qs[0]; z.cur = q.id; z.open = si; repaintLive();
     };
     return el('button', { class: 'dk-pill' + (open ? '' : ' lock'), 'aria-pressed': String(si === cur.stage), onclick: onTap(enter) },
       [document.createTextNode(`${si + 1}단계`), open ? el('small', { text: `${solved(qs)}/${qs.length}` }) : el('img', { class: 'lock', src: 'ui/lock.webp', alt: '잠김' })]);
   }));
-  const stars = z.stars[cur.id] || 0, said = stars ? '받음' : '아직 안 풂';
-  const starRow = el('div', { class: 'dk-stars', 'aria-label': stars ? `별 ${stars}개 받음` : said },
-    [0, 1, 2].map(k => el('img', { src: k < stars ? 'ui/star.webp' : 'ui/star-off.webp', alt: '' })).concat(el('span', { text: said })));
-  dkPut(slate, dkH1(S.name, `${cur.stage + 1}-${cur.n}번 문제`));
-  dkPut(slate, [dkHr(), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + '. 노란 공은 건드리면 안 됩니다.'), dkHr(), dkLab('이 문제'), starRow, dkHr(), guideRow()]);
-  dkPut(slate, dkActs(dkMain('퍼즐 풀기', `${cur.stage + 1}-${cur.n} ${S.name}`, () => puzzle.start())));
+  const stars = z.stars[cur.id] || 0;
+  const starRow = el('div', { class: 'dk-stars', role: 'img', 'aria-label': `별 3개 중 ${stars}개` },
+    [0, 1, 2].map(k => el('img', { src: k < stars ? 'ui/star.webp' : 'ui/star-off.webp', alt: '' })));
+  // (copy audit 03-07, 03-08: the goal, the stars, how far this stage is; the key just 시작)
+  dkPut(slate, [dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지'), dkHr(), starRow, dkTxt(`${cur.stage + 1}단계 ${solved(here)} / ${here.length}`), guideRow()]);
+  dkPut(slate, dkActs(dkMain('시작', null, () => puzzle.start())));
 }
 // The lessons as volumes and books: four game volumes on the shelf (3구, 4구, 8볼, 9볼); opening one shows its textbooks,
 // one a lesson, coloured by its course, with an X back to the volumes; tapping a book starts that lesson.
@@ -52,53 +50,52 @@ const volLessons = v => drills.list.filter(d => d.make && d.vol === v).map(d => 
 function prizeLine(v) {
   const p = ECONOMY.LESSON_PRIZE[v]; if (!p) return null;
   const ids = volLessons(v), got = net.me && (net.me.prizes || []).includes(v), n = ids.filter(id => prefs.lessonProof[id]).length, what = itemName({ kind: p.kind, id: p.id });
-  return el('div', { class: 'dk-prize' + (got ? ' got' : '') }, [el('i', { class: 'pz' }), el('span', null, [el('b', { text: got ? '보상을 받았습니다' : '모두 끝내면 보상' }),
-    el('small', { text: `${p.coin.toLocaleString('ko-KR')} 코인 + ${what}${got ? '' : ids.length ? ` · ${n} / ${ids.length}` : ''}` })])]);
+  // (copy audit 03-06: 완료 보상, what it is, how far along; 받음 once it is had)
+  return el('div', { class: 'dk-prize' + (got ? ' got' : '') }, [el('i', { class: 'pz' }), el('span', null, [el('b', { text: '완료 보상' }),
+    el('small', { text: `${p.coin.toLocaleString('ko-KR')} 코인 + ${what}${ids.length ? ` · ${n} / ${ids.length}` : ''}` })]), got ? el('em', { class: 'got-tag', text: '받음' }) : null]);
 }
 function deskLesson({ head, stage, slate }) {
   const top = drills.LEVELS; stage.dataset.win = '0';
   const doneOf = ids => ids.filter(id => levelOf(id) >= top).length;
   if (lessonVol == null) {
-    dkPut(head, dkTitle('교본', '종목을 고르세요'));
+    dkPut(head, dkTitle('교본'));
     dkPut(stage, el('div', { class: 'dk-cards vols' }, VOLUMES.map(([v, name], i) => { const ids = volLessons(v);
       return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
-        el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name }), el('small', { text: '교본' })])),
-        el('span', { class: 'nm', text: ids.length ? `${ids.length}권 · 다 뗀 ${doneOf(ids)}권` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
-    dkPut(slate, dkH1('교본', '레슨'));
-    dkPut(slate, [dkHr(), dkTxt('종목을 고른 뒤 배우고 싶은 레슨을 누르세요.'), dkHr()]);
-    for (const [v, name] of VOLUMES) { const ids = volLessons(v); dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: name }), el('b', { text: ids.length ? `${doneOf(ids)} / ${ids.length}권` : '준비 중' })])); }
+        el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name })])),
+        // (copy audit 03-02: the progress once - books brought to the top level, which is all that is known)
+        el('span', { class: 'nm', text: ids.length ? `최고 단계 ${doneOf(ids)}/${ids.length}` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
+    dkPut(slate, dkH1('교본'));
     const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
-    dkPut(slate, dkActs(cur ? dkMain('이어서 하기', `${drills.byId(cur).name} · ${levelOf(cur)}단계`, () => practice.start(cur)) : dkMain('준비 중', '레슨을 새로 만들고 있습니다', () => {}, true)));
+    dkPut(slate, dkActs(cur ? dkMain('이어서 하기', drills.byId(cur).name, () => practice.start(cur)) : null));
     return;
   }
   const vol = VOLUMES.find(x => x[0] === lessonVol), ids = volLessons(lessonVol), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0];
   head.className = 'dk-head open';
   dkPut(head, [el('button', { class: 'dk-x', 'aria-label': '종목 교본으로', onclick: () => { SND.tap(); lessonVol = null; paintHome(); } }, el('i')), dkTitle(`${vol[1]} 교본`, ids.length ? `${ids.length}권 · 다 뗀 교본 ${doneOf(ids)}권` : '준비 중')]);
   if (!ids.length) {
-    dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: `${vol[1]} 교본 준비 중` }), el('span', { text: '이 종목의 레슨을 만들고 있습니다.' })]));
-    dkPut(slate, dkH1(`${vol[1]} 교본`, '준비 중')); dkPut(slate, [dkHr(), dkTxt('이 종목의 레슨을 만들고 있습니다.'), prizeLine(lessonVol)]);
-    dkPut(slate, dkActs(dkMain('준비 중', null, () => {}, true), dkSec('종목 교본으로', () => { lessonVol = null; paintHome(); })));
+    // (copy audit 03-04: one line, and the way back)
+    dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '아직 등록된 레슨이 없습니다' })]));
+    dkPut(slate, dkH1(`${vol[1]}`)); dkPut(slate, [dkHr(), prizeLine(lessonVol)]);
+    dkPut(slate, dkActs(dkSec('교본으로', () => { lessonVol = null; paintHome(); })));
     return;
   }
   const books = drills.COURSES.flatMap((course, ci) => ids.filter(id => drills.byId(id).course === course).map(id => [course, ci, id]));
   dkPut(stage, el('div', { class: 'dk-cards books' }, books.map(([course, ci, id], i) => {
     const dr = drills.byId(id), lv = levelOf(id);
     return el('button', { class: 'dk-card book' + (id === cur ? ' last' : '') + (lv >= top ? ' done' : ''), 'aria-label': dr.name, onclick: onTap(() => { prefs.lastTrain = 'practice'; prefs.mode = 'practice'; practice.start(id); }) }, [
-      el('i', { class: 'cover', style: `background-image:${lv >= top ? 'url(ui/book-gilt.webp),' : ''}url(ui/book-${BOOK_LEATHER[ci] || 'brown'}.webp)` }, el('span', { class: 'tt' }, [el('small', { text: course }), el('b', { text: dr.name }), el('em', { text: String(i + 1) })])),
+      // (copy audit 03-05: the course named once, on the first book of it; no running number)
+      el('i', { class: 'cover', style: `background-image:${lv >= top ? 'url(ui/book-gilt.webp),' : ''}url(ui/book-${BOOK_LEATHER[ci] || 'brown'}.webp)` }, el('span', { class: 'tt' }, [i && books[i - 1][0] === course ? null : el('small', { text: course }), el('b', { text: dr.name })])),
       el('span', { class: 'lvl' }, Array.from({ length: top }, (_, k) => el('i', { class: k < lv ? 'on' : '' })))]);
   })));
   const dr = drills.byId(cur);
-  dkPut(slate, dkH1(`${vol[1]} 교본`, '레슨'));
-  dkPut(slate, [dkHr(), dkTxt('교본을 누르면 그 레슨이 바로 시작됩니다. 단계를 다 떼면 표지에 금박이 들어갑니다.'), prizeLine(lessonVol), dkHr()]);
-  for (const course of drills.COURSES) { const l = ids.filter(id => drills.byId(id).course === course); if (!l.length) continue;
-    dkPut(slate, el('div', { class: 'dk-spec' }, [el('span', { text: course }), el('b', { text: `${doneOf(l)} / ${l.length}권` })])); }
-  dkPut(slate, [dkHr(), guideRow()]);
-  dkPut(slate, dkActs(dkMain('이어서 하기', `${dr.name} · ${levelOf(cur)}단계`, () => practice.start(cur))));
+  // (copy audit 03-03, 03-05: the covers and the gilt say how to use them and what is done)
+  dkPut(slate, dkH1(vol[1]));
+  dkPut(slate, [dkHr(), prizeLine(lessonVol), guideRow()]);
+  dkPut(slate, dkActs(dkMain('이어서 하기', dr.name, () => practice.start(cur))));
 }
 function deskFree({ head, slate }) {
-  const dr = drills.byId('free');
-  dkPut(head, dkTitle('자유 연습', '혼자서 마음대로'));
-  dkPut(slate, dkH1('자유 연습', '규칙 없음'));
-  dkPut(slate, [dkHr(), dkTxt(dr.d), dkHr(), guideRow()]);
+  // (copy audit 03-11: moving balls and undoing are told when they are used)
+  dkPut(head, dkTitle('자유 연습'));
+  dkPut(slate, [dkH1('자유 연습'), guideRow()]);
   dkPut(slate, dkActs(dkMain('연습 시작', null, () => practice.start('free'))));
 }

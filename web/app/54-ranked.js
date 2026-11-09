@@ -34,7 +34,7 @@ const ranked = {
       const r = await net.queue(mode, f.seek);
       if (ranked.finding !== f) return;
       if (r && r.ok && r.room) { clearInterval(f.tick); ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
-      if (r && r.why === 'update') { ranked.cancel(true); toast('물리가 바뀌었습니다. 새 버전으로 업데이트해야 랭킹전을 할 수 있습니다.', 'foul', 4000); return; }   // (server/src/version.js)
+      if (r && r.why === 'update') { ranked.cancel(true); toast('랭킹전은 업데이트 후 이용할 수 있습니다.', 'foul', 3200); return; }   // (server/src/version.js)
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
       const why = r && r.ok ? null : net.troubleText() || '서버 응답 없음';
@@ -63,7 +63,7 @@ const ranked = {
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
-    toast(o.kind === 'invite' ? `${o.opp.name}와(과) 한 판` : `${o.opp.name} · 레이팅 ${o.opp.dama}`, '', 2600);
+    // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
   // the room, kept open: a dropped connection is opened again, and what it missed is sent again
   connect() {

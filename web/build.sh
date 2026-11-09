@@ -84,5 +84,7 @@ rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp "$A/tex/"
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 # the web version installed as an app (site/): its name, icon and full-screen display
 cp manifest.webmanifest icon-192.png icon-512.png "$A/"
+# the privacy policy and the terms (Google sign-in and a store listing want them on the site: /privacy, /terms)
+cp legal/privacy.html legal/terms.html "$A/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c "$A/index.html"

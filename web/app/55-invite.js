@@ -27,7 +27,7 @@ const invite = {
       if (invite.opening !== key) { if (r && r.ok) net.inviteLeave(r.code); return; }
       invite.opening = null;
       // (the slate says why, and offers to try again - it used to stay on '만드는 중' for good)
-      if (!r || !r.ok) { invite.err = net.troubleText() || '서버 응답 없음'; invite.errKey = key; toast('초대 코드를 만들 수 없습니다.', 'foul', 2200); if (st.screen === 'home') paintHome(); return; }
+      if (!r || !r.ok) { invite.err = net.troubleText() || '서버 응답 없음'; invite.errKey = key; toast('방을 열지 못했습니다.', 'foul', 2200); if (st.screen === 'home') paintHome(); return; }
       invite.err = null;
       invite.host = { code: r.code, mode, key, timer: 0, guest: null, title: r.title || '' };
       invite.poll(); if (st.screen === 'home') paintHome();
@@ -52,13 +52,13 @@ const invite = {
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== 6) return toast('코드는 여섯 글자입니다.', 'foul', 1800);
     if (invite.host && invite.host.code === code) return toast('내가 만든 코드입니다. 친구에게 보내 주세요.', '', 2200);
-    toast('친구의 방을 찾는 중…', '', 1400);
+    toast('입장 중…', '', 1400);
     const r = await net.inviteJoin(code);
     if (r && r.ok && r.room) { invite.leave(); closeSheet(); return ranked.found(r); }
     toast(invite.why(r, '그런 코드의 방이 없습니다.'), 'foul', 2400);
   },
-  why: (r, none) => !r ? '서버에 연결할 수 없습니다.' : r.why === 'update' ? '새 버전으로 업데이트해야 친구와 플레이할 수 있습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.'
-    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다. 코드로 참가하세요.' : none,
+  why: (r, none) => !r ? '서버 응답 없음' : r.why === 'update' ? '업데이트 후 참가할 수 있습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.'
+    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요' : none,
   /* 방 참가하기 (33-desk-play.js, the hall): the open rooms, asked again every four seconds while the hall is shown - each
      drawn as a table; one is taken by its id, with the password if it has one */
   listRooms() {
@@ -74,7 +74,7 @@ const invite = {
   stopRooms() { if (invite.rooms) clearTimeout(invite.rooms.timer); invite.rooms = null; },
   async take(room, pw) {
     if (invite.host) invite.leave();
-    toast('방에 들어가는 중…', '', 1400);
+    toast('입장 중…', '', 1400);
     const r = await net.inviteJoinId(room.id, pw);
     if (r && r.ok && r.room) { invite.stopRooms(); closeSheet(); return ranked.found(r); }
     if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true);
@@ -93,12 +93,13 @@ const invite = {
     const input = el('input', { class: 'txt code', maxlength: '8', inputmode: 'numeric', placeholder: '····', 'aria-label': '비밀번호', autocomplete: 'off', spellcheck: 'false' });
     const go = () => { const v = input.value.replace(/\D/g, ''); if (v.length < 4) return toast('비밀번호는 숫자 네 자리 이상입니다.', 'foul', 1800); if (room) invite.take(room, v); else { invite.pw = v; closeSheet(); repaint(); } };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-    openSheet(room ? '비밀번호' : '방 비밀번호', [input, note(room ? (wrong ? '비밀번호가 맞지 않습니다. 다시 넣어 주세요.' : `${room.host.name}의 방은 비밀번호가 있습니다.`) : '숫자 네 자리에서 여덟 자리. 방 목록에서 들어오는 사람에게만 묻습니다 - 코드를 받은 친구는 바로 들어옵니다.'),
+    // (copy audit 02-11: the one who sets it - what it is for, short; the one who enters it - only the error)
+    openSheet('방 비밀번호', [input, room ? (wrong ? note('비밀번호가 맞지 않습니다') : null) : note('숫자 4~8자리 · 방 목록으로 입장할 때 필요 · 초대 코드는 비밀번호 없이 입장'),
       el('button', { class: 'btn cta', text: room ? '들어가기' : '정하기', onclick: () => { SND.tap(); go(); } })]);
     setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
   },
   copy(text, what) {
-    const done = () => toast(`${what}를 복사했습니다.`, 'good', 1600);
+    const done = () => toast('복사 완료', 'good', 1400);
     try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(done, () => invite.copyOld(text, done)); } catch (e) {}
     invite.copyOld(text, done);
   },
@@ -114,10 +115,10 @@ const invite = {
     invite.copy(url, '초대 링크');
   },
   sheetJoin() {
-    const input = el('input', { class: 'txt code', maxlength: '6', placeholder: 'K7M2Q9', 'aria-label': '참가 코드', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
+    const input = el('input', { class: 'txt code', maxlength: '6', placeholder: '참가 코드 6자리', 'aria-label': '참가 코드', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
     const go = () => invite.join(input.value);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-    openSheet('코드로 참가', [input, note('친구가 보낸 여섯 글자 코드를 넣으면 친구의 방으로 들어가 바로 시작합니다.'), el('button', { class: 'btn cta', text: '참가', onclick: () => { SND.tap(); go(); } })]);
+    openSheet('코드로 참가', [input, note('영문·숫자 6자리'), el('button', { class: 'btn cta', text: '참가', onclick: () => { SND.tap(); go(); } })]);
     setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
   },
   // the tray while inviting: me ready with my cue, the friend's place waiting (or them, come), the code to give
@@ -127,10 +128,11 @@ const invite = {
     const slot = (who, sub, kids, cls) => el('div', { class: 'inv-slot' + (cls ? ' ' + cls : '') }, [el('div', { class: 'well' }, kids), el('b', { text: who }), el('small', { text: sub })]);
     dkPut(stage, el('div', { class: 'inv' }, [
       el('div', { class: 'inv-slots' }, [
-        slot(prefs.names[0], '준비 완료', [el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), ballPic(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0, { class: 'ball' })]),
-        slot(g ? g.name : '친구', g ? '입장! 곧 시작합니다' : '기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
-      el('div', { class: 'inv-code' }, [el('span', { text: '참가 코드' }), el('b', { text: h ? h.code : '······' }),
-        el('button', { disabled: h ? null : '', text: '복사', onclick: onTap(() => h && invite.copy(h.code, '참가 코드')) })])]));
+        slot(prefs.names[0], '', [el('i', { class: 'ok', role: 'img', 'aria-label': '준비 완료' }), el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), ballPic(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0, { class: 'ball' })]),
+        slot(g ? g.name : '친구', g ? '입장 완료' : '친구 기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
+      // (copy audit 02-06, 02-08: the code once, with a badge saying the room is in the list and a copy icon)
+      el('div', { class: 'inv-code' }, [el('span', { text: '참가 코드' }), el('b', { text: h ? h.code : '······' }), h ? el('em', { class: 'pub', text: invite.pw ? '공개 · 비밀번호' : '공개' }) : null,
+        (() => { const b = el('button', { class: 'cp', disabled: h ? null : '', 'aria-label': '참가 코드 복사', onclick: onTap(() => h && invite.copy(h.code, '참가 코드')) }); b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'; return b; })()])]));
   },
 };
 // opened by an invite link (?join=CODE): into that game, and the link taken off the address

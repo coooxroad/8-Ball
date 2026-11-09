@@ -56,12 +56,12 @@ const { open } = require('./harness.js');
       await page.evaluate(() => document.fonts.ready);
       const name = await page.locator('.dk-card .nm').first().innerText();
       await tap(page.locator('.dk-card').first());
-      await page.waitForFunction(n => document.querySelector('#dkSlate h1').textContent === n, name);
-      const back = page.locator('#dkSlate .dk-sec', { hasText: '카드 목록으로' });
-      await tap(back);
+      // (opened, the name is in the tray's head - copy audit 04-05 - and the X there goes back)
+      await page.waitForFunction(n => (document.querySelector('#dkHead h2') || {}).textContent === n, name);
+      await tap(page.locator('#dkHead .dk-x'));
       await page.locator('.dk-cards').evaluate(n => { n.scrollTop = n.scrollHeight; }); await settle();
       await tap(page.locator('.dk-card').last());
-      await page.waitForFunction(() => !!document.querySelector('#dkSlate h1'));
+      await page.waitForFunction(() => !!document.querySelector('#dkHead .dk-x'));
       // Resizing across the compact breakpoint must release the extra raster density.
       if (dpr === 1) {
         await page.setViewportSize({ width: 412, height: 860 });

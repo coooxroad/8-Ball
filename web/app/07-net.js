@@ -150,7 +150,7 @@ const net = (() => {
       const r = await call('/v1/buy', { req: hex(12), kind, id });
       if (!r) return { ok: false, why: '서버에 연결할 수 없습니다.' };
       if (r.me) setMe(r.me);
-      return r.ok ? { ok: true } : { ok: false, why: r.why === 'not enough' ? '코인이 모자랍니다.' : r.why === 'already owned' ? '이미 가지고 있습니다.' : '살 수 없습니다.' };
+      return r.ok ? { ok: true } : { ok: false, why: r.why === 'not enough' ? '코인 부족' : r.why === 'already owned' ? '이미 보유' : '살 수 없습니다' };
     },
   };
 })();

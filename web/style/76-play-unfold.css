@@ -96,3 +96,5 @@
 #dkBoards .tb-none b{font:800 20px var(--ui-font)}
 #dkBoards .tb-none small{font:600 14px var(--ui-font);color:#b9c4d2}
 #dkBoards .tb-none .dk-chip{margin-top:8px}
+#dkBoards .tb-none.wait{flex-direction:row;gap:12px}
+#dkBoards .tb-none .sp{width:22px;height:22px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:rkSpin 1s linear infinite}

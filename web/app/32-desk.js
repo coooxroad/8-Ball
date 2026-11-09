@@ -6,7 +6,8 @@
    Here: the parts every place is built from, and moving between places. */
 app.classList.add('desk');
 const GAME4 = ['three', 'four', 'eight', 'nine'];
-const GAME_SUB = { three: '쓰리쿠션', four: '사구 · 수지 대결', eight: '에잇볼', nine: '나인볼' };
+// (copy audit 01-08: only what this game is played to - 랭킹전's rules - 8볼 and 9볼 by name alone)
+const GAME_SUB = { three: '쓰리쿠션 · 5점', four: '5점', eight: null, nine: null };
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';
 const LESSONS = () => drills.list.filter(d => d.make).map(d => d.id);       // (drills.js: every lesson names its game volume and course)
 const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.lessons ? 'lesson' : 'free') : prefs.trainCpu && GAME4.includes(prefs.mode) ? 'cpu' : null;
@@ -96,9 +97,11 @@ function picsPump() {
 const ballPic = (id, kind, n, attrs) => lazyPic(el('img', Object.assign({ alt: '' }, attrs)), `b/${id}/${kind}/${n}`, () => scene.ballShot(id, kind, n));
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);
-function guideRow() { return dkRow('조준선', guideWhole() ? '끝까지 · 물리 테스트' : '보통 · 큐에 따라', sheetGuide); }
+// (copy audit 03-12: there is nothing to set in play - the guide's length is the cue's - so the row is shown only with
+// the debug name, for its physics-test choice)
+function guideRow() { return typeof debugOn === 'function' && debugOn() ? dkRow('조준선', guideWhole() ? '끝까지 · 물리 테스트' : '보통 · 큐에 따라', sheetGuide) : null; }
 // the tray's head: a title over a small line, with arrows either side when there is a list to step through
-const dkTitle = (t, sub) => el('div', { class: 'tt' }, [el('h2', { text: t }), el('small', { text: sub })]);
+const dkTitle = (t, sub) => el('div', { class: 'tt' }, [el('h2', { text: t }), sub ? el('small', { text: sub }) : null]);
 function dkNavHead(head, what, t, sub, go) {
   head.className = 'dk-head nav';
   const arrow = dir => el('button', { class: 'dk-arrow', 'aria-label': `${dir < 0 ? '이전' : '다음'} ${what}`, onclick: () => { SND.tap(); go(dir)(); } }, svgArrow(dir > 0 ? 1 : 0));
