@@ -63,6 +63,7 @@ const ranked = {
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: false, ice: false, online: o });
+    if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
   // the room, kept open: a dropped connection is opened again, and what it missed is sent again

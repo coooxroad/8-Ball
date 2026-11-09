@@ -1,0 +1,22 @@
+/* ---------- CUELEAGUE: a ranked opponent found (app/56-league.js) ---------- */
+#league{position:fixed;inset:0;z-index:9000;overflow:hidden;background:#f2f4f7;pointer-events:auto;transition:opacity .4s ease-in;--k:.25}
+#league.out{opacity:0}
+#league .wall{position:absolute;inset:0;transform-origin:50% 46%;will-change:transform,opacity;transition:transform .5s cubic-bezier(.55,0,.35,1),opacity .35s ease-in .2s}
+#league.in .wall{transform:scale(var(--k));opacity:0}
+#league .col{position:absolute;top:0;bottom:0;overflow:hidden;will-change:transform;animation:lgIn .42s cubic-bezier(.2,.8,.25,1) var(--d) both}
+@keyframes lgIn{from{transform:translateY(var(--from))}}
+#league .col.blue{background:#0042a0}
+#league .col.pale{background:#dfe4ea}
+/* the marks, a column of them three screens tall, run down (blue) or up (pale); 'space' keeps a gap between them */
+#league .strip{position:absolute;left:0;right:0;top:-100%;height:300%;will-change:transform;background-position:center 0;background-size:var(--w) auto;background-repeat:no-repeat space;animation:lgRun 2.2s linear both}
+#league .col.blue .strip{background-image:url(ui/league-mark-w.webp)}
+#league .col.pale .strip{background-image:url(ui/league-mark-b.webp);animation-direction:reverse}
+@keyframes lgRun{from{transform:translateY(0)}to{transform:translateY(33.333%)}}
+/* the one mark, and the league's name under it */
+#league .crest{position:absolute;left:50%;top:46%;display:flex;flex-direction:column;align-items:center;gap:14px;transform:translate(-50%,-50%) scale(1.25);opacity:0;
+  will-change:transform,opacity;transition:transform .45s cubic-bezier(.2,.9,.3,1.15) .25s,opacity .25s ease-out .25s}
+#league.in .crest{transform:translate(-50%,-50%) scale(1);opacity:1}
+#league .crest .box{display:block;width:min(42vw,40vh,380px);aspect-ratio:1028/818;background:#0042a0;position:relative}
+#league .crest .mk{position:absolute;inset:0;background:url(ui/league-mark-w.webp) center/100% 100% no-repeat}
+#league .crest b{font:800 clamp(30px,6vmin,56px)/1 'Outfit',sans-serif;letter-spacing:-.015em;color:#111}
+#league .crest small{font:700 clamp(13px,2.2vmin,18px)/1.2 var(--ui-font);color:#3b4149}
