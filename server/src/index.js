@@ -62,12 +62,13 @@ async function adminRoute(what, request, env) {
   const allowed = String(env.ADMIN_EMAILS_SHA256 || '').split(',').map(s => s.trim()).filter(Boolean);
   if (!allowed.length || !env.GOOGLE_CLIENT_ID) return json({ ok: false, why: 'no admin' }, 403);
   const who = await googleWho(request.headers.get('X-Admin') || '', env.GOOGLE_CLIENT_ID).catch(() => null);
-  if (!who || !who.email || !(await isAdmin(who.email, allowed))) return json({ ok: false, why: 'not an admin' }, 403);
+  // (the address Google gave is said back - it is the person's own, just signed in with - so a wrong account is seen at once)
+  if (!who || !who.email || !(await isAdmin(who.email, allowed))) return json({ ok: false, why: 'not an admin', seen: who && who.email || null, google: who && who.why || null }, 403);
   // (who did it, as the ledger keeps it: not the address - a player may see their own ledger - but the start of its hash)
   const by = 'admin ' + (await hashOf(who.email.trim().toLowerCase())).slice(0, 8);
   const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
   if (what === 'catalog') { const it = L => L.map(q => ({ id: q.id, name: q.name, rarity: q.rarity || 0 }));
-    return json({ ok: true, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
+    return json({ ok: true, me: who.email, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
   if (what === 'find') {
     const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
     return json(await r.json());

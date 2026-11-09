@@ -567,6 +567,9 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   forgetGoogleKeys();
   ok((await googleWhoAccess(at, CID, info({ ...mine, email_verified: 'false' }), now)).email === null, 'google: an unchecked address is no address');
   forgetGoogleKeys();
+  { const both = async (u, o) => ({ ok: true, json: async () => u.includes('userinfo') ? { sub: '77', email: 'u@x.y', email_verified: true } : { ...mine, email: undefined } });
+    ok((await googleWhoAccess(at, CID, both, now)).email === 'u@x.y', 'google: no address in tokeninfo - userinfo gives it'); }
+  forgetGoogleKeys();
   ok((await googleWhoAccess(at, CID, async () => ({ ok: false }), now)).why === 'bad token', 'google: a token Google does not know is refused');
   forgetGoogleKeys();
   ok((await googleWhoAny(await tok(good), CID, get, now)).sub === '1234' && (await googleWhoAny(at, CID, info(mine), now)).sub === '77', 'google: either kind of token');

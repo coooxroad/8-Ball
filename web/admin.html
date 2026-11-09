@@ -150,12 +150,13 @@ async function api(what, body) {
   const r = await fetch(SERVER + '/v1/admin/' + what, { method: body ? 'POST' : 'GET', headers: { 'X-Admin': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
   if (!r) return { ok: false, why: '서버에 연결할 수 없습니다' };
   const j = await r.json().catch(() => ({ ok: false, why: 'bad reply' }));
-  if (r.status === 403) { signOut(j.why === 'not an admin' ? `${who || '이 계정'}은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : '관리자 기능이 꺼져 있습니다'); }
+  if (r.status === 403) { signOut(j.why !== 'not an admin' ? '관리자 기능이 꺼져 있습니다' : j.seen ? `${j.seen} 은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : `구글이 이 계정의 이메일을 알려주지 않았습니다${j.google ? ` (${j.google})` : ''}`); }
   return j;
 }
 
 async function enter() {
   catalog = await api('catalog'); if (!catalog.ok) return;
+  who = catalog.me || who; try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s) { s.email = who; sessionStorage.setItem('cueAdmin', JSON.stringify(s)); } } catch (e) {}
   $('#gate').hidden = true; $('#app').hidden = false; $('#out').hidden = false; $('#who').textContent = who;
   fillItems(); find('');
 }
@@ -168,12 +169,12 @@ function drawButton() {
   const draw = async () => {
     const cfg = await fetch(SERVER + '/v1/link/google-config').then(r => r.json()).catch(() => null);
     if (!cfg || !cfg.clientId) { $('#gateMsg').textContent = '구글 로그인이 설정되지 않았습니다'; return; }
-    const client = google.accounts.oauth2.initTokenClient({ client_id: cfg.clientId, scope: 'openid email', prompt: 'select_account', callback: async r => {
-      if (!r || !r.access_token) return;
+    const client = google.accounts.oauth2.initTokenClient({ client_id: cfg.clientId, scope: 'openid email https://www.googleapis.com/auth/userinfo.email', prompt: 'select_account',
+      error_callback: e => { $('#gateMsg').textContent = e && e.type === 'popup_failed_to_open' ? '팝업이 막혔습니다. 팝업을 허용해 주세요' : e && e.type === 'popup_closed' ? '' : '구글 창을 열 수 없습니다'; },
+      callback: async r => {
+      if (!r || !r.access_token) { $('#gateMsg').textContent = r && r.error ? '구글: ' + r.error : ''; return; }
       token = r.access_token;
-      // (whose it is, to show at the top: Google's own answer for this token; the server checks it again on every request)
-      const info = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(token)).then(x => x.json()).catch(() => ({}));
-      who = info.email || '';
+      who = '';   // (whose it is: the server says, with the catalog - it is the one that checks)
       try { sessionStorage.setItem('cueAdmin', JSON.stringify({ t: token, email: who, exp: Date.now() / 1000 + (+r.expires_in || 3600) })); } catch (e) {}
       $('#gateMsg').textContent = ''; enter();
     } });

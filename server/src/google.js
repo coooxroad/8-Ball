@@ -44,7 +44,14 @@ export async function googleWhoAccess(token, clientId, get, now) {
   const b = await r.json().catch(() => ({}));
   if (b.aud !== clientId && b.azp !== clientId) return { why: 'not for this app' };
   if (!(+b.exp * 1000 > t) || !b.sub) return { why: 'not for this app' };
-  const who = { sub: String(b.sub), email: b.email && String(b.email_verified) === 'true' ? b.email : null };
+  let email = b.email && String(b.email_verified) === 'true' ? b.email : null;
+  // (tokeninfo leaves the address out for some tokens; the userinfo endpoint, asked with the token itself, gives it)
+  if (!email) {
+    const u = await (get || fetch)('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + tok } }).catch(() => null);
+    const v = u && u.ok ? await u.json().catch(() => ({})) : {};
+    if (v.sub === String(b.sub) && v.email && String(v.email_verified) === 'true') email = v.email;
+  }
+  const who = { sub: String(b.sub), email };
   if (seen.size > 500) seen.clear(); seen.set(tok, { who, until: Math.min(+b.exp * 1000, t + 300000) });
   return who;
 }
