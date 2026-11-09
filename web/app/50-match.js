@@ -117,9 +117,10 @@ const match = {
       box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
         el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
     }
-    // what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - in the sheet, where it is seen upright too
-    // (copy audit 07-02, 07-03, 07-05: the side panel no longer repeats the result, the innings, the time or the best run)
-    $('#rSide').textContent = ''; const gain = $('#rGain'); gain.textContent = '';
+    // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
+    // the innings, the time or the best run (copy audit 07-02, 07-03)
+    const side = $('#rSide'); side.textContent = '';
+    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: k }), el('b', { text: v })]));
     // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
     // Exactly one is the best shot and one the worst.
     const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
@@ -141,7 +142,7 @@ const match = {
     // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
-      if (coins > 0) gain.appendChild(el('span', { class: 'g coin', text: `+${coins.toLocaleString('ko-KR')}` }));
+      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
       net.claim('match', { kind, log }); match.log = null;
     }
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes

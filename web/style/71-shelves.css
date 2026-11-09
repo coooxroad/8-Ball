@@ -159,8 +159,3 @@
 .fxbs.sm .fxb{padding:3px 6px 3px 5px;gap:3px}
 .fxbs.sm .fxb i{width:11px;height:11px}
 .fxbs.sm .fxb b{font-size:9px;letter-spacing:.06em}
-/* (copy audit 04-06, 04-07) the rarity's badge with the effect marks beside it, opened; on a card the marks without words */
-#app.desk .dk-badges{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:2px 0}
-#app.desk .dk-badges .fxbs{display:flex;gap:6px}
-.fxbs.sm .fxb b{display:none}
-.fxb b{letter-spacing:.02em}

@@ -224,13 +224,14 @@ const ranked = {
   },
   // the result screen's lines for a ranked game: checking, then what it paid
   paint() {
-    // (copy audit 07-05: in the sheet's line - seen upright too - not only the side panel)
-    const o = ranked.on, box = $('#rGain'); if (!o || !box) return;
-    for (const x of box.querySelectorAll('.rk')) x.remove();
-    if (!o.result) { box.appendChild(el('span', { class: 'g rk wait', text: '결과 확인 중…' })); return; }
+    // (on the charcoal slate beside the result - owner 11-09, after trying them in the sheet)
+    const o = ranked.on, side = $('#rSide'); if (!o || !side) return;
+    for (const x of side.querySelectorAll('.rk')) x.remove();
+    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec rk' }, [el('span', { text: k }), el('b', { text: v })]));
+    if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : '랭킹전', '결과 확인 중…');
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
-    box.appendChild(el('span', { class: 'g rk coin', text: `+${(r.coins[me] || 0).toLocaleString('ko-KR')}` }));
-    if (o.kind !== 'invite') box.appendChild(el('span', { class: 'g rk', text: `레이팅 ${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})` }));
+    line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
+    if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },

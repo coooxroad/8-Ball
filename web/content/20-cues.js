@@ -9,18 +9,18 @@
    guitar: [...], color, rough?, metal? }] - what is not turned on a lathe (scene/40-cue.js cuePart says each one's numbers).
    Card picture: ui/cue-<id>.webp (2400x110, tip on the left). */
 const CUES = [
-  { id: 'maple', name: '메이플 클래식', rarity: 1, note: '정석 클래식 큐', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710, stat: { power: 2, spin: 2, guide: 0 },
+  { id: 'maple', name: '메이플 클래식', rarity: 1, note: '단풍나무 상대에 흑단 하대, 네 갈래 포인트', shaft: 0xe2c592, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xd9ab52, fore: 0x2a1710, points: 0xf1e7cf, wrap: 0x14110f, sleeve: 0x2a1710, stat: { power: 2, spin: 2, guide: 0 },
     spec: [['무게', '19.5oz · 553g'], ['팁', '12mm 레이어드 가죽'], ['상대', '북미산 하드 메이플'], ['하대', '흑단, 네 갈래 포인트'], ['조인트', '스테인리스 3/8×10']] },
-  { id: 'carbon', name: '블랙 카본', rarity: 2, note: '검은 카본 큐', shaft: 0x1c1e22, ferrule: 0x1c1e22, tip: 0x3c6fd0, joint: 0xe2392b, fore: 0x121316, points: null, wrap: 0x2b2e34, sleeve: 0x121316, stat: { power: 1, spin: 7, guide: 0 },
+  { id: 'carbon', name: '블랙 카본', rarity: 2, note: '검은 카본 상대, 무광 하대에 붉은 링', shaft: 0x1c1e22, ferrule: 0x1c1e22, tip: 0x3c6fd0, joint: 0xe2392b, fore: 0x121316, points: null, wrap: 0x2b2e34, sleeve: 0x121316, stat: { power: 1, spin: 7, guide: 0 },
     spec: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '카본 파이버'], ['하대', '무광 블랙, 붉은 링'], ['조인트', '퀵 릴리스']] },
-  { id: 'rose', name: '로즈우드 인레이', rarity: 4, note: '금빛 인레이 장식 큐', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c, stat: { power: 6, spin: 5, guide: 5 }, traits: ['reach'],
+  { id: 'rose', name: '로즈우드 인레이', rarity: 4, note: '붉은 장미목 하대, 금색 포인트와 흰 리넨 그립', shaft: 0xe6cfa0, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xf1e7cf, fore: 0x7a2c1c, points: 0xd9ab52, wrap: 0xece4d2, sleeve: 0x7a2c1c, stat: { power: 6, spin: 5, guide: 5 }, traits: ['reach'],
     spec: [['무게', '19.5oz · 553g'], ['팁', '12mm 레이어드 가죽'], ['상대', '메이플'], ['하대', '로즈우드, 금색 인레이'], ['그립', '아이리시 리넨']] },
-  { id: 'house', name: '하우스 큐', rarity: 0, note: '당구장 벽걸이 큐', shaft: 0xdcb87c, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xc79556, fore: 0xc79556, points: null, wrap: 0xb5793f, sleeve: 0x8a5a2c, stat: { power: -3, spin: 0, guide: 3 },
-    spec: [['무게', '18oz · 510g'], ['팁', '13mm 단일 가죽'], ['몸통', '통짜 메이플 원피스'], ['조인트', '없음']] },
-  { id: 'sport', name: '스포츠 그립', rarity: 1, note: '노란 그립 스포츠 큐', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d, stat: { power: 6, spin: -4, guide: 2 },
+  { id: 'house', name: '하우스 큐', rarity: 0, note: '당구장 벽에 걸린 통짜 나무 큐', shaft: 0xdcb87c, ferrule: 0xf4efe2, tip: 0x4aa3c7, joint: 0xc79556, fore: 0xc79556, points: null, wrap: 0xb5793f, sleeve: 0x8a5a2c, stat: { power: -3, spin: 0, guide: 3 },
+    spec: [['무게', '18oz · 510g'], ['팁', '13mm 단일 가죽'], ['몸통', '통짜 메이플 원피스'], ['쓰임', '당구장 벽걸이 큐'], ['조인트', '없음']] },
+  { id: 'sport', name: '스포츠 그립', rarity: 1, note: '흰 상대, 남색 하대에 노란 고무 그립', shaft: 0xf2f2ee, ferrule: 0xf2f2ee, tip: 0x2037c9, joint: 0xff5a3c, fore: 0x1a1f4d, points: null, wrap: 0xffd21f, sleeve: 0x1a1f4d, stat: { power: 6, spin: -4, guide: 2 },
     spec: [['무게', '19oz · 539g'], ['팁', '12.5mm 레이어드 가죽'], ['상대', '화이트 코팅 메이플'], ['하대', '네이비'], ['그립', '노란 고무']] },
   // of its own make (profile, glow: top of this file): a metal hilt and a lit blade, its own strike (GPT, PR #8)
-  { id: 'saber', name: '광선검', rarity: 5, vfx: true, note: '전자 타격음', stat: { power: 8, spin: 6, guide: 6 },
+  { id: 'saber', name: '광선검', rarity: 5, vfx: true, note: '은빛 손잡이와 푸른 광선, 짧은 전자 타격음', stat: { power: 8, spin: 6, guide: 6 },
     profile: [
       [0, 1, 0.0057, 0.006, 0xeaf8ff, { rough: 0.2 }],
       [1, 1.025, 0.018, 0.018, 0x292e35, { rough: 0.3, metal: 0.9 }],
@@ -54,7 +54,7 @@ const CUES = [
     ], glow: { from: 0.004, to: 1, color: 0x38bfff, core: 0xf2fcff, r: 0.006 }, sound: { file: 'saber-strike' },
     spec: [['길이', '147cm'], ['날', '푸른 광선 · 밝은 중심부'], ['손잡이', '브러시드 실버 · 건메탈'], ['그립', '차콜 링 그립'], ['타격음', '짧은 전자 스윕']] },
   // an acoustic guitar swung by its neck: the body's bottom is the tip, the neck runs back to the head at the butt
-  { id: 'guitar', name: '통기타', rarity: 3, note: '몸통으로 치는 통기타', stat: { power: -2, spin: 8, guide: 6 },
+  { id: 'guitar', name: '통기타', rarity: 3, note: '몸통으로 치는 통기타: 스프루스 상판, 로즈우드 지판, 끝엔 헤드와 줄감개', stat: { power: -2, spin: 8, guide: 6 },
     // a dreadnought's proportions on a cue's 147 cm (x1.41): body 72 cm long and 56 wide, 15 deep; neck 50 cm to the nut;
     // the head 25. Laid face up with the cue's line through the middle of the body; the neck's top flush with the body's top
     profile: [
@@ -73,7 +73,7 @@ const CUES = [
     ],
     spec: [['길이', '147cm'], ['몸통', '드레드넛 비율: 길이 72cm, 폭 56cm'], ['상판·옆판', '스프루스, 마호가니'], ['넥', '로즈우드 지판, 프렛 20'], ['헤드', '크롬 줄감개 여섯'], ['치는 곳', '몸통 바닥']] },
   // a flute as long as a cue: bright silver, the crown at the tip, three joints, a lip plate, open-hole keys on their rods
-  { id: 'flute', name: '플루트', rarity: 2, note: '맑은 휘슬 소리', stat: { power: -3, spin: 6, guide: 5 },
+  { id: 'flute', name: '플루트', rarity: 2, note: '은빛 세 마디 관, 입술판, 구멍 뚫린 키와 키를 잇는 막대', stat: { power: -3, spin: 6, guide: 5 },
     profile: [
       [0, 0.012, 0.0085, 0.0095, 0xd2d6dc, { rough: 0.1, metal: 1, env: 1.5 }],
       [0.012, 1.32, 0.0095, 0.0095, 0xbfc4cb, { rough: 0.11, metal: 1, env: 1.5 }]
@@ -82,7 +82,7 @@ const CUES = [
     spec: [['길이', '132cm'], ['관', '은, 머리·몸통·발 세 마디'], ['키', '열세 개, 구멍 뚫린 프렌치 키'], ['머리', '입술판과 크라운'], ['소리', '맑은 휘슬']] },
   // the break cue: given for every 8볼 lesson done (never sold). All in the stroke - a hard phenolic tip, a stiff shaft -
   // and nothing for control; black-and-white chequers like a finish flag on the forearm and the sleeve
-  { id: 'breaker', name: '브레이크 큐', rarity: 2, reward: 'eight', note: '힘에 모든 걸 건 브레이크 큐', stat: { power: 30, spin: -12, guide: -10 },
+  { id: 'breaker', name: '브레이크 큐', rarity: 2, reward: 'eight', note: '8볼 레슨을 모두 끝내면 받는 큐: 힘에 모든 걸 건 체크무늬 브레이크 큐', stat: { power: 30, spin: -12, guide: -10 },
     profile: [
       [0, 0.008, 0.0062, 0.0063, 0x2b2622, { rough: 0.5 }],
       [0.008, 0.03, 0.0063, 0.0064, 0xf4f2ea, { rough: 0.3 }],
@@ -102,8 +102,7 @@ const CUES = [
    centre (spin 1 on the pad), this one up to SPIN_REACH times that - three quarters of the radius, the most the
    computer ever strikes (web/ai/50-human.js); its pad's ring is drawn further out (app/10-ui.js padRing). The server holds
    every seat to that same three quarters (server/src/check.js). */
-// (say: the one line shown; more: the exact limit, for whoever looks closer - copy audit 04-09)
-const TRAITS = { reach: { name: '정밀한 조준', say: '공 가장자리 가까이 당점을 줄 수 있음', more: '보통 큐 당점 한계의 1.5배' } };
+const TRAITS = { reach: { name: '정밀한 조준', say: '당점 제한이 없습니다. 보통 큐의 1.5배 바깥, 공 가장자리 가까이까지 칠 수 있습니다.' } };
 const SPIN_REACH = 1.5;
 const spinMaxOf = c => (c && c.traits && c.traits.includes('reach') ? SPIN_REACH : 1);
 if (typeof module !== 'undefined') module.exports = { CUES, TRAITS, SPIN_REACH, spinMaxOf };

@@ -117,15 +117,15 @@ const SHELVES = {
     show: k => useBalls(k.id), about: k => [k.note, ['소재', '페놀 수지'], ['지름', isCarom() ? (prefs.mode === 'three' ? '61.5mm' : '65.5mm') : '57.2mm']],
     wear: k => { prefs.ballSkin = k.id; return `${k.name} 공을 꺼냈습니다.`; }, undo: () => useBalls(prefs.ballSkin) },
   table: { name: '테이블', list: () => CLOTHS, worn: () => prefs.cloth, pic: clothPic, show: (c, stage, i) => scene.setCloth(i),
-    about: c => [c.ice ? '공이 오래 미끄러지고 회전 효과가 약함 · 대결 전용' : null, ['천', c.ice ? '얼음' : '워스티드 울'], ['나무', c.grain === 'walnut' ? '월넛' : c.grain === 'mahogany' ? '마호가니' : '도장 마감']],
+    about: c => [c.ice ? '빙판: 공이 미끄러져 오래 구르고 회전이 잘 먹지 않습니다. 대결에만 적용됩니다.' : '천 색은 보기만 다르고 공은 똑같이 구릅니다.', ['천', c.ice ? '얼음' : '워스티드 울'], ['나무', c.grain === 'walnut' ? '월넛' : c.grain === 'mahogany' ? '마호가니' : '도장 마감']],
     wear: (c, i) => { prefs.cloth = i; homePreview(); return `${c.name} 테이블로 바꿨습니다.`; }, undo: () => dress(iceOn()) },
   trail: { name: '트레일', list: () => TRAILS, worn: () => Math.max(0, TRAILS.findIndex(t => t.id === prefs.trail)), pic: q => streak(q),
     show: (q, stage) => { scene.setTrail(q.id); stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, streak(q, true))); },
-    about: q => [q.note],
+    about: q => [q.note, '큐볼이 지나간 길에 남고, 다음 샷을 치면 지워집니다. 보기만 다를 뿐 경기에는 영향이 없습니다.'],
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
   glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
     show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
-    about: () => GLOVE_SPEC,
+    about: () => ['브리지 손에 끼는 세 손가락 장갑. 큐가 손가락 사이로 매끄럽게 미끄러집니다. 장갑에 따라 샷 세기와 미세 조준을 더 작은 단위로 조절할 수 있습니다.', ...GLOVE_SPEC],
     // (the finest a glove may go, for the bars: a quarter of a power step, three hundredths of a degree)
     stats: g => gloveStats(g, GLOVES.find(x => x.id === prefs.glove)),
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
@@ -141,7 +141,6 @@ function shelfPage(d, shop) {
   if (shelfOpen == null || !list[shelfOpen]) {
     // the cards
     shelfOpen = null; d.stage.dataset.win = '0';
-    // (copy audit 04-01: the kind and how many, once - the worn one has its tag on its card)
     dkPut(d.head, dkTitle(K.name, `${shop ? list.length : list.filter((x, i) => has(i)).length}개`));
     // the cards from the commonest to the rarest, an ivory rule where the rarity changes saying what it is and how many
     // of it are owned; 내 장비 shows only what is owned, the shop everything with its price
@@ -155,43 +154,44 @@ function shelfPage(d, shop) {
     }
     const box = el('div', { class: 'dk-cards k-' + kind }, cards); listBounce(box);
     dkPut(d.stage, box);
-    // (copy audit 04-03, 04-04: what buying does and how the kinds differ are seen on the cards and in their numbers; only
-    // why nothing can be bought, when it cannot)
-    if (shop && !net.on) dkPut(d.slate, dkTxt('서버 연결 후 구매 가능'));
+    dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
+    // (fewer words, owner 11-08: what is worn is in the head already)
+    dkPut(d.slate, [dkHr(), dkTxt(shop ? (net.on ? '산 것은 내 장비에 들어갑니다.' : '서버가 열리면 살 수 있습니다.') : '카드를 눌러 크게 봅니다.'),
+      dkHr(), dkTxt(kind === 'cue' ? '큐마다 최대 파워·회전·조준선이 조금씩 다릅니다(±12% 안).' : kind === 'glove' ? '장갑마다 세기와 다이얼이 움직이는 단위가 다릅니다.' : '플레이 성능은 모두 같습니다.')]);
     dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
     return;
   }
   // one card, opened
   const i = shelfOpen, q = list[i], own = i === worn;
   d.head.className = 'dk-head open';
-  dkPut(d.head, [el('button', { class: 'dk-x', 'aria-label': '카드 목록으로', onclick: close }, el('i')), dkTitle(q.name)]);   // (copy audit 04-05: the name once)
+  dkPut(d.head, [el('button', { class: 'dk-x', 'aria-label': '카드 목록으로', onclick: close }, el('i')), dkTitle(q.name)]);
   K.show(q, d.stage, i);
   // opened: a flash of its rarity's colour from the middle of the tray (once, as it opens - not on a repaint)
   if (shelfFlash === i) { shelfFlash = null; dkPut(d.stage, el('i', { class: 'dk-flash r' + (q.rarity || 0), 'aria-hidden': 'true' })); if ((q.rarity || 0) >= 3) SND.burst(); }
+  dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
-  // (copy audit 04-06, 04-07: the rarity a badge with its name; the effect marks beside it, named once)
-  dkPut(d.slate, [el('div', { class: 'dk-badges' }, [el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] }), fxBadges(q)]), dkHr()]);
+  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), fxMarks(q).length ? el('div', { class: 'dk-spec fx' }, [el('span', { text: '효과' }), fxBadges(q)]) : null, dkHr()]);
   // how it plays, first (it is what is looked for): OVR, then each number as a bar set against what is worn now
   if (K.stats) {
     const S = K.stats(q);
-    // (copy audit 04-08: OVR and the difference from what is worn; that it is a comparison, said to a screen reader)
-    dkPut(d.slate, [el('div', { class: 'dk-ovr', 'aria-label': `OVR ${S.ovr}${S.ovrD ? ', 장착 대비 ' + S.ovrD : ''}` }, [el('span', { text: 'OVR' }), el('b', { text: S.ovr }), el('em', { class: S.ovrD ? (S.ovrD[0] === '+' ? 'up' : 'down') : '', text: S.ovrD })])]);
+    dkPut(d.slate, [el('div', { class: 'dk-ovr' }, [el('span', { text: 'OVR' }), el('b', { text: S.ovr }), el('em', { class: S.ovrD ? (S.ovrD[0] === '+' ? 'up' : 'down') : '', text: S.ovrD }),
+      el('small', { text: i === worn ? '장착 중' : '장착한 것과 비교' })])]);
     dkPut(d.slate, traitMarks(q));
     for (const r of S.rows) dkPut(d.slate, statRow(r));
     dkPut(d.slate, dkHr());
   }
-  for (const a of about.filter(Boolean)) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
+  for (const a of about) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
-    const buy = async () => {   // (copy audit 04-17, 04-18: 구매 완료; 코인 부족 / 다이아 부족)
+    const buy = async () => {
       // (not enough in the wallet: said here at once - the key shakes, the wallet's chip flashes red - not asked of the server)
       const p = priceOf(q), w = prefs.wallet || {}, short = p.dia ? (w.dia || 0) < p.dia ? 'dia' : null : p.coin && (w.coin || 0) < p.coin ? 'coin' : null;
       if (short) { const k = document.querySelector('#dkSlate .dk-main'); if (k) { k.classList.remove('fx-no'); void k.offsetWidth; k.classList.add('fx-no'); setTimeout(() => k.classList.remove('fx-no'), 400); }
         SND.nope(); walletShort(short); return toast(short === 'dia' ? '다이아 부족' : '코인 부족', 'foul', 1800); }
       const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? '구매 완료' : r.why, r.ok ? 'good' : 'foul', 1800); paintHome(); };
-    dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain(`${MODE_KO[q.reward]} 레슨 완료 보상`, null, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버 연결 후', () => {}, true)));
+    dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain('레슨 보상', `${MODE_KO[q.reward]} 레슨을 모두 끝내면`, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
   }
-  else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast('장착 완료', 'good', 1200); }, own)));   // (copy audit 04-16, 04-17: the X goes back; one short word)
+  else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast('장착 완료', 'good', 1200); }, own), dkSec('카드 목록으로', close)));
 }
 // a card just opened, for its flash (shelfPage)
 let shelfFlash = null;
@@ -205,11 +205,10 @@ function listBounce(box) {
   box.addEventListener('touchmove', e => { if (y0 == null) return; const dy = e.touches[0].clientY - y0; if (dy < -24 && atEnd()) { bump(-1); y0 = null; } else if (dy > 24 && atTop()) { bump(1); y0 = null; } }, { passive: true });
 }
 // SFX (its own sound) and VFX (effects of light beyond its look) under the rarity (content/00-rarity.js)
-// (copy audit 04-07: named for what they are - on a card the mark alone, its name to a screen reader)
-const fxMarks = q => [q.sound ? ['sfx', '전용 효과음'] : null, q.vfx ? ['vfx', '시각 효과'] : null].filter(Boolean);
+const fxMarks = q => [q.sound ? ['sfx', 'SFX'] : null, q.vfx ? ['vfx', 'VFX'] : null].filter(Boolean);
 // (the shimmer runs only while a badge is on screen: each moving frame repaints it, and a long list has many - fxSeen)
 const fxSeen = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) { e.target.classList.toggle('live', e.isIntersecting); if (!e.target.isConnected) fxSeen.unobserve(e.target); } }) : null;
-const fxBadge = (k, t) => { const b = el('span', { class: 'fxb ' + k + (fxSeen ? '' : ' live'), role: 'img', 'aria-label': t, title: t }, [el('i'), el('b', { text: t })]); if (fxSeen) fxSeen.observe(b); return b; };
+const fxBadge = (k, t) => { const b = el('span', { class: 'fxb ' + k + (fxSeen ? '' : ' live') }, [el('i'), el('b', { text: t })]); if (fxSeen) fxSeen.observe(b); return b; };
 const fxBadges = (q, small) => { const m = fxMarks(q); return m.length ? el('span', { class: 'fxbs' + (small ? ' sm' : '') }, m.map(([k, t]) => fxBadge(k, t))) : null; };
 // a cue's traits (content/20-cues.js TRAITS) under its OVR: on the card the mark alone, opened the mark, its name and
 // what it does
@@ -219,7 +218,7 @@ const traitMarks = (q, small) => {
   // (its rim's light runs only while it is on screen, like the SFX and VFX marks: fxSeen)
   const mark = (t, title) => { const m = el('i', { class: 'trt t-' + t + (fxSeen ? '' : ' live'), title }); if (fxSeen) fxSeen.observe(m); return m; };
   if (small) return el('span', { class: 'trts' }, ts.map(t => mark(t, TRAITS[t].name)));
-  return el('div', { class: 'dk-traits' }, ts.map(t => el('div', { class: 'dk-trait', title: TRAITS[t].more || '' }, [mark(t), el('b', { text: TRAITS[t].name }), el('small', { text: TRAITS[t].say })])));
+  return el('div', { class: 'dk-traits' }, ts.map(t => el('div', { class: 'dk-trait' }, [mark(t), el('b', { text: TRAITS[t].name }), el('small', { text: TRAITS[t].say })])));
 };
 // what a thing costs (economy.js: by its rarity)
 const priceText = q => { if (q.reward) return '레슨 보상'; const p = priceOf(q); return p.dia ? `${p.dia.toLocaleString('ko-KR')} 다이아` : p.coin ? `${p.coin.toLocaleString('ko-KR')} 코인` : '기본'; };
