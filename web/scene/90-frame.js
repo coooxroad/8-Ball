@@ -1,10 +1,41 @@
+  /* Every material and picture drawn once, one pixel big, before it is first needed (desktop stutter, owner 11-09): a
+     shader is compiled, and a texture sent to the GPU, the first time something is drawn - and the first shot drew the
+     cue's follow-through parts and a guide piece for the first time, a frame of 50-150 ms on a PC (a second in a software
+     renderer). So right after the table, cloth, balls, cue or trail change, and at the start, while nothing is moving,
+     everything there is - hidden or not, out of view or not, the static layer as it is baked and as the 3D view and a
+     falling ball draw it - goes through the renderer once into a single pixel, and is then drawn as usual. */
+  let warmDue = true;
+  const warmVp = new THREE.Vector4();
+  function prewarm() {
+    const shown = [], culled = [], mask = camera.layers.mask;
+    for (const S of [sScene, scene]) S.traverse(o => { if (!o.visible) { shown.push(o); o.visible = true; } if (o.frustumCulled) { culled.push(o); o.frustumCulled = false; } });
+    renderer.getViewport(warmVp); const pr = renderer.getPixelRatio();
+    camera.layers.enableAll(); unmask();
+    try {
+      if (rt) { renderer.setRenderTarget(rt); renderer.setViewport(0, 0, 1.5 / pr, 1.5 / pr); renderer.render(sScene, camera); }
+      renderer.setRenderTarget(null); renderer.setViewport(0, 0, 1.5 / pr, 1.5 / pr);
+      const bg = sScene.background; sScene.background = null;
+      renderer.render(sScene, camera);
+      sScene.overrideMaterial = depthMat; renderer.render(sScene, camera); sScene.overrideMaterial = null;
+      sScene.background = bg;
+      renderer.render(scene, camera);
+    } finally {
+      for (const o of shown) o.visible = false; for (const o of culled) o.frustumCulled = true;
+      camera.layers.mask = mask; renderer.setRenderTarget(null); renderer.setViewport(warmVp.x, warmVp.y, warmVp.z, warmVp.w);
+    }
+    staticDirty = true; dirty = 3;
+  }
+
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
     // (the table out of sight - the desk covers it: nothing is drawn, not even the water; drawn afresh once it shows again)
     if (v.covered) { coveredNow = true; return false; }
     if (coveredNow) { coveredNow = false; dirty = 3; }
-    takeScale();
+    // (a new resolution only between shots: changed while the balls run, the redrawn table and the resized canvas were a
+    // hitch in the middle of the motion it was meant to smooth)
+    const still = !v.animating && !falls.length;
+    if (still) takeScale();
     let moved = false;
     for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }
@@ -14,13 +45,14 @@
     if (waterTick(v.game && v.game.world, dt)) dirty = Math.max(dirty, 1);
     if (dirty <= 0) return false; dirty--; renderer.info.reset();
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    if (warmDue && still && rt) { warmDue = false; const t0 = performance.now(); prewarm(); sProf.warm = performance.now() - t0; }
     // A shaped ball (a potato, a bowling ball) is made of many triangles; small on the screen half of them look the same.
     // '자동': half while the table is seen whole from above and a ball is under 70 screen pixels across; close up, in 3D and
     // the player's view, all of them. '낮음': always half. '높음': always all. (The plain sphere is never changed.)
     dressSet(set, quality === 'high' ? 0 : quality === 'low' ? 1 : !orbit.on && 2 * R * ppm * renderer.getPixelRatio() < 70 ? 1 : 0);
     // carom: ball 1 is drawn yellow unless the game says player 0 has the yellow (4구 draws the colours by lot)
     if (set === sets.carom) { const y = g.yellow == null ? 1 : g.yellow; if (y !== caromY) { const m0 = set.mesh[0].material, m1 = set.mesh[1].material, t = m0.map; m0.map = m1.map; m1.map = t; m0.needsUpdate = m1.needsUpdate = true; caromY = y; } }
-    if (P !== cur || !tables.has(P)) setTable(P);
+    if (P !== cur || !tables.has(P)) { setTable(P); warmDue = true; }
     for (let i = 0; i < set.mesh.length; i++) {
       const b = w.balls[i], m = set.mesh[i], s = set.blob[i];
       const on = !!b && b.on; s.visible = on;
@@ -233,7 +265,7 @@
 
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable, setWalls, setCloth, setCue, setBalls, setTrail, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable(P) { setTable(P); warmDue = true; }, setWalls, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     fxSounds, hit, invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); }, get softwareRendering() { return softwareGL; }, get rendererName() { return rendererName; }, prof: sProf,
   };

@@ -92,10 +92,11 @@
       sizeSig = sig;
       // setPixelRatio calls setSize at the old dimensions. Commit the new size and density together.
       renderer.setDrawingBufferSize(W, H, ratio);
-      const width = canvas.width, height = canvas.height;
-      if (rt) rt.setSize(width, height);
+      const width = canvas.width, height = canvas.height, ss = superOK(width, height) ? 2 : 1;
+      if (rt && rt.ss !== ss) { rt.dispose(); rt = null; }
+      if (rt) rt.setSize(width * ss, height * ss);
       else {
-        rt = renderer.capabilities.isWebGL2 ? new THREE.WebGLMultisampleRenderTarget(width, height) : new THREE.WebGLRenderTarget(width, height);
+        rt = ss > 1 || !renderer.capabilities.isWebGL2 ? new THREE.WebGLRenderTarget(width * ss, height * ss) : new THREE.WebGLMultisampleRenderTarget(width, height); rt.ss = ss;
         rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
         quadMat.map = rt.texture; quadMat.needsUpdate = true;
       }
@@ -103,6 +104,15 @@
       return;
     }
     applyCamera();
+  }
+  /* The still picture of the table (the static layer: everything but the balls, cue and lines) drawn at twice the
+     resolution each way and shown at the screen's - every pixel the average of four, edges and the rails' and pockets'
+     highlights smooth where 4x MSAA only smoothed the outlines (graphics, owner 11-09). It is drawn once per view, not per
+     frame, so the cost is memory: four times the pixels, kept within 9.5 million (a 1080p screen at its own density), and
+     only on a PC (a mouse, no touch) or when '높음' is chosen - a tablet's memory is kept for the game. */
+  const desk = (() => { try { return matchMedia('(hover: hover) and (pointer: fine)').matches && !(navigator.maxTouchPoints > 0); } catch (e) { return false; } })();
+  function superOK(w, h) {
+    return !softwareGL && quality !== 'low' && renderer.capabilities.isWebGL2 && (desk || quality === 'high') && w * h * 4 <= 9.5e6 && 2 * w <= maxSide && 2 * h <= maxSide;
   }
   // where the table will sit for these insets once they have eased in: its outer edge (rails included), in pixels
   function tableRect(t) {
