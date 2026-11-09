@@ -86,5 +86,7 @@ rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 cp manifest.webmanifest icon-192.png icon-512.png "$A/"
 # the privacy policy and the terms (Google sign-in and a store listing want them on the site: /privacy, /terms)
 cp legal/privacy.html legal/terms.html "$A/"
+# Google Search Console's proof that the site is the owner's (asked for by the Google sign-in consent screen)
+cp legal/google*.html "$A/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c "$A/index.html"

@@ -113,7 +113,8 @@ function paintPill(i, s) {
   const box = $('#p' + i), tray = box.querySelector('.tray');
   box.classList.toggle('on', !!s.on);
   box.querySelector('.nm').textContent = s.name;
-  box.querySelector('.sub').textContent = s.think ? '생각 중' : s.sub; box.classList.toggle('think', !!s.think);
+  // (copy audit 05-13: thinking - the moving dots alone, said to a screen reader)
+  const sub = box.querySelector('.sub'); sub.textContent = s.think ? '' : s.sub; sub.setAttribute('aria-label', s.think ? '생각 중' : ''); box.classList.toggle('think', !!s.think);
   const pts = box.querySelector('.pts'); pts.textContent = s.pts == null ? '' : s.pts; pts.dataset.goal = s.goal == null ? '' : s.goal;
   tray.textContent = '';
   for (const t of s.tray || []) { const c = tray.appendChild(t === 'slot' ? el('i', { class: 'mb slot' }) : t === 'eight' ? el('i', { class: 'mb e8' }) : ballChip(t)); if (s.pop && s.pop.includes(t)) c.classList.add('pop'); }

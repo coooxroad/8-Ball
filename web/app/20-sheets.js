@@ -76,9 +76,10 @@ function sheetLinkUse() {
 function sheetHow() {
   prefs.how = true; savePrefs();
   openSheet('치는 법', [
-    optText('조준', '테이블 위를 끌면 큐가 돌아갑니다. 오른쪽 띠는 미세 조준.'),
-    optText('치기', '왼쪽 큐 막대를 아래로 당겼다 놓으면 나갑니다. 많이 당길수록 세게.'),
-    optText('회전', '오른쪽 아래 흰 공을 누르면 칠 곳을 정합니다. 맛세이와 점프도 여기.'),
+    // (copy audit 05-02: what to do, not where it is - that differs upright and sideways)
+    optText('조준', '테이블을 끌어 조준'),
+    optText('치기', '세기 막대를 당겼다 놓아 치기'),
+    optText('당점', '흰 공을 눌러 당점 조절'),
     el('button', { class: 'btn cta', text: '시작', onclick: () => { SND.tap(); closeSheet(); } }),
   ].map(k => k.tagName === 'BUTTON' ? k : el('div', { class: 'opt' }, k)));
 }

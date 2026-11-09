@@ -11,7 +11,8 @@ function setView(m) {
   if (m === viewMode && m !== 'eye') return;
   drag = null; orbitPts.clear(); viewMode = m;
   if (m === 'top') scene.setOrbit(false);
-  else if (m === 'free') { scene.setOrbit(true); toast('큐를 잡고 끌면 조준, 빈 곳을 끌면 시점 회전, 두 손가락으로 확대·축소.', '', 3600); }
+  // (copy audit 05-10: told the first time only)
+  else if (m === 'free') { scene.setOrbit(true); if (!prefs.orbitTold) { prefs.orbitTold = true; savePrefs(); toast('큐 끌기 · 조준 / 빈 곳 끌기 · 회전 / 두 손가락 · 확대', '', 3600); } }
   else { if (!scene.orbiting) scene.setOrbit(true); scene.setCam(eyeCam()); eyeKey = ''; }
   paintViews();
 }

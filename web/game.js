@@ -28,7 +28,7 @@ function createGame(PH, makeAI) {
         P.place(w, 0, -HL / 2, 0, rnd);
         g.placing = 'kitchen'; g.isBreak = true;
       },
-      intro: g => `${g.players[g.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`,
+      intro: () => '브레이크',
       // what the scoreboard shows for one player: a line of text and the balls still to pot
       status(g, pi) {
         const p = g.players[pi], rem = this.remaining(g, pi);
@@ -37,11 +37,11 @@ function createGame(PH, makeAI) {
           const mine = !p.group ? [] : (p.group === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => !g.world.balls[i].on), tray = mine.slice();
           while (tray.length < 7) tray.push('slot');
           if (rem && !rem.length) tray.push('eight');
-          return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray, pts: null };
+          return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '', tray, pts: null };
         }
-        return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '공 미정', tray: !rem ? ['slot', 'slot', 'slot', 'slot', 'slot', 'slot', 'slot'] : rem.length ? rem : ['eight'], pts: null };
+        return { sub: p.group ? GROUP_KO[p.group] + ' 공' : '', tray: !rem ? ['slot', 'slot', 'slot', 'slot', 'slot', 'slot', 'slot'] : rem.length ? rem : ['eight'], pts: null };
       },
-      badge: g => { const open = g.players.every(p => !p.group); return { text: g.isBreak ? '브레이크' : open ? '아직 공 미정' : '8번은 마지막에', balls: g.potTray && open ? g.world.balls.filter(b => !b.on && b.id > 0 && b.id !== 8).map(b => b.id) : [], plain: true }; },
+      badge: g => { const open = g.players.every(p => !p.group); return { text: g.isBreak ? '브레이크' : open ? '그룹 미정' : '8번은 마지막에', balls: g.potTray && open ? g.world.balls.filter(b => !b.on && b.id > 0 && b.id !== 8).map(b => b.id) : [], plain: true }; },
       remaining(g, pi) {
         const grp = g.players[pi].group; if (!grp) return null;
         return (grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]).filter(i => g.world.balls[i].on);
@@ -94,8 +94,8 @@ function createGame(PH, makeAI) {
         P.place(w, 0, -HL / 2, 0, rnd);
         g.placing = 'kitchen'; g.isBreak = true;
       },
-      intro: g => `${g.players[g.turn].name}의 브레이크. 테이블을 끌어 조준하고 큐 막대를 당겼다 놓으세요.`,
-      status(g, pi) { return { sub: g.turn === pi ? `다음 ${this.lowest(g)}번 공` : `성공 ${g.players[pi].made}`, tray: [], pts: null }; },
+      intro: () => '브레이크',
+      status(g, pi) { return { sub: g.turn === pi ? `다음 ${this.lowest(g)}번 공` : '', tray: [], pts: null }; },
       badge(g) { return { text: '다음', balls: g.world.balls.filter(b => b.on && b.id > 0).map(b => b.id), mark: this.lowest(g) }; },
       lowest(g) { for (let i = 1; i <= 9; i++) if (g.world.balls[i].on) return i; return 9; },
       legal(g) { return [this.lowest(g)]; },
@@ -130,7 +130,7 @@ function createGame(PH, makeAI) {
         }
         g.placing = null; g.isBreak = false;
       },
-      intro: g => `${g.players[g.turn].name} 선수, 흰 공으로 먼저 칩니다. 빨간 공 두 개를 모두 맞히세요.`,
+      intro: g => g.finish ? '쿠션 마무리' : '',
       // (goal: the points to reach, written faint behind the score; the line under the name is the player's rating - app)
       status: (g, pi) => ({ sub: '', goal: g.targets[pi] * (g.tens ? 10 : 1), tray: [], pts: g.players[pi].score * (g.tens ? 10 : 1) }),
       badge: g => ({ text: g.finish && g.players[g.turn].score === g.targets[g.turn] - 1 ? '마지막 점수 · 쿠션을 거쳐야 인정' : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
@@ -160,7 +160,7 @@ function createGame(PH, makeAI) {
       P.place(w, 2, HL / 2, 0, rnd); P.place(w, 1 - g.turn, -HL / 2, 0, rnd); P.place(w, g.turn, -HL / 2, -0.18, rnd);
       g.placing = null; g.isBreak = false;
     },
-    intro: g => `${g.players[g.turn].name}부터. ${g.cushions ? `쿠션을 ${g.cushions}번 이상 거쳐 ` : ''}두 공을 모두 맞히세요.`,
+    intro: g => g.cushions ? `쿠션 ${g.cushions}회 이상` : '',
     status: (g, pi) => ({ sub: '', goal: g.targets[pi], tray: [], pts: g.players[pi].score }),
     badge: g => ({ text: g.cushions ? `쿠션 ${g.cushions}번 + 두 공 = 1점` : '두 공을 다 맞히면 1점', balls: [] }),
     legal(g, me) { return [0, 1, 2].filter(i => i !== me); },
@@ -304,8 +304,8 @@ function createGame(PH, makeAI) {
   g.timeout = function () {
     const m = g.mode, me = g.turn, p = g.players[me], nx = 1 - me, name = g.players[nx].name;
     p.run = 0; g.turn = nx;
-    let msg = `시간 초과 · ${name} 차례`;
-    if (m.ballInHand && !g.isBreak) { p.fouls++; g.placing = 'any'; msg = `시간 초과 · ${name} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
+    let msg = '시간 초과';
+    if (m.ballInHand && !g.isBreak) { p.fouls++; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기'; }
     if (m.table === 'carom') g.world.cue = g.turn;
     return { msg, kind: 'foul', dur: 2600 };
   };
@@ -341,13 +341,16 @@ function createGame(PH, makeAI) {
     }
     if (r.foul) {
       g.turn = 1 - me; const nx = g.players[g.turn].name;
-      if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul}. ${nx} 차례, 큐볼을 원하는 곳에 놓습니다.`; }
-      else out.msg = `파울 · ${r.foul}. ${g.tens ? 10 : 1}점 감점, ${nx} 차례.`;
+      // (copy audit 05-07: the reason, then 큐볼 놓기 or the points really lost; whose turn the score bar shows)
+      if (m.ballInHand) { g.placing = 'any'; out.msg = `파울 · ${r.foul} · 큐볼 놓기`; }
+      else out.msg = `파울 · ${r.foul}` + (r.pts < 0 ? ` · −${-r.pts * (g.tens ? 10 : 1)}점` : '');
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
-      g.turn = 1 - me; if (!out.msg) out.msg = (r.note ? r.note + '. ' : '') + `${g.players[g.turn].name} 차례`; if (r.note) out.dur = 2600;
+      // (copy audit 05-06: the turn going over and a point scored are seen on the score bar - only a note that changes what
+      // is to be done is said)
+      g.turn = 1 - me; if (!out.msg && r.note) { out.msg = r.note; out.dur = 2600; }
     } else if (r.pts > 0) {
-      out.msg = `${p.name} ${g.tens ? 10 : 1}점!`; out.kind = 'good';
+      out.kind = 'good';
     } else if (m.id === 'eight' && !r.assign) {
       const rem = m.remaining(g, me);
       if (rem && !rem.length) { out.msg = '이제 8번 공을 넣으면 이깁니다.'; out.kind = 'good'; out.dur = 2400; }

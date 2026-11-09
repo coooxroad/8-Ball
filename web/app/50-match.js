@@ -25,13 +25,13 @@ const match = {
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     if (c.mode === 'four' && (!ctx || o)) { toast('공을 굴려 배치합니다.', '', 1600); st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
-    toast(game.mode.intro(game), '', 3600);
+    { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
   cue() { const L = lookNow(); useCue(L ? L.cues[game.turn] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
-  rolled() { game.world.ev = game.P.newEv(); toast(game.mode.intro(game), '', 3600); beginTurn(true); },
+  rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,
@@ -57,7 +57,7 @@ const match = {
     if (match.ctx.online && shot) ranked.settled(shot.turn);
     if (game.over) return match.finish();
     if (game.turn !== shot.turn && match.innings) match.innings[game.turn]++;   // (a new visit to the table)
-    toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
+    if (out.msg) toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
   },
   // a player's rating for the score bar: online, the room's for both seats; otherwise the device owner's own on the
   // first plate (the computer, and a friend at the same device, have none)

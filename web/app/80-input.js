@@ -172,7 +172,7 @@ function drawDial() {
   const pop = $('#spinPop'), pad = $('#spinPad');
   $('#spinBtn').addEventListener('click', () => {
     if (!humanAiming()) return; SND.tap(); pop.hidden = !pop.hidden; ctl.t = performance.now();
-    $('#spinHint').textContent = '위는 밀어치기, 아래는 끌어치기, 좌우는 쿠션에서 꺾임. ' + (flow.guide() >= 0.63 ? '조준선이 큐볼이 갈 길입니다.' : '조준선을 길게로 하면 회전이 반영된 길이 보입니다.');
+    $('#spinHint').textContent = '위 밀어치기 · 아래 끌어치기 · 좌우 옆회전';   // (copy audit 05-11)
     fitSpinPop(); setSpinUI(); setKindUI();                          // (fitted with its hint in: the hint is most of its height)
   });
   const set = e => {
@@ -243,7 +243,8 @@ function setKindUI() {
   if (cue.naturalWidth) { g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 6; g.shadowOffsetX = -3; g.shadowOffsetY = 4; g.drawImage(cue, -Lc, -hc / 2, Lc, hc); }
   else { g.fillStyle = hex(c.shaft != null ? c.shaft : c.glow ? c.glow.color : 0xd8c49a); g.fillRect(-Lc, -2.5, Lc, 5); }
   g.restore();
-  if (!a) { g.fillStyle = '#f1e4c4'; g.font = '700 12px Gothic A1, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText('위로 끌어 큐를 세웁니다', bx + 40, by - 46); }
+  // (copy audit 05-12: an arrow up instead of the words)
+  if (!a) { g.strokeStyle = g.fillStyle = '#f1e4c4'; g.lineWidth = 2.5; g.lineCap = 'round'; const x = bx + 48, y = by - 34; g.beginPath(); g.moveTo(x, y + 12); g.lineTo(x, y - 12); g.stroke(); g.beginPath(); g.moveTo(x - 6, y - 5); g.lineTo(x, y - 13); g.lineTo(x + 6, y - 5); g.stroke(); }
 }
 const EL_BX = 26, EL_BY = 24, elImgs = {};
 const elImg = n => elImgs[n] || (elImgs[n] = Object.assign(new Image(), { onload: () => setKindUI(), src: `ui/${n}.webp` }));
