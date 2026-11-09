@@ -9,6 +9,9 @@
   if (!window.THREE) return null;
   let renderer;
   let railKey = '', railW = null, railP = null, railPv = null;   // the rail's own played-out way (90-frame.js)
+  // the rail's table: the same cloth and balls with its cushions far away, so the cue ball's curve runs on through them
+  const openTables = new Map();
+  const openTable = P => { let o = openTables.get(P); if (!o) { o = createPhysics({ R: P.R, HL: 40, HW: 40, pockets: P.POCKETS.length > 0 }); openTables.set(P, o); } return o; };
   let pvKey = '', pvW = null, pvP = null, pvNow = null;   // the aim line's played-out shot and the inputs it was played with (90-frame.js)
   let coveredNow = false;   // the table was out of sight last frame (90-frame.js)
   const sProf = { guide: 0 };   // ms spent this frame playing out the aim line (the FPS display reads it: 90-loop.js perfTick)

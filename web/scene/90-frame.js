@@ -145,32 +145,22 @@
             let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
             let tl = 0, nx = 0, ny = 0;
             if (pv.hit != null) { const b0 = w.balls[pv.hit]; nx = b0.x - at[0]; ny = b0.y - at[1]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; tl = Math.sqrt(Math.max(0, 1 - Math.pow(ux * nx + uy * ny, 2))); }
-            /* Past the ghost ball, under the line, the rail: the cue ball's own width on the way it really takes after the
-               first contact - the same stroke, spin and all, played on a copy with only the cue ball and the ball it hits,
-               so it bends as the spin bends it, off the cushions, and a ball further on never changes it (owner, 11-09:
-               "흰공이 첫 충돌 후에 어떻게 휠지 정확하게"). As long as the cue ball's line after a hit can be at this guide
-               length - the cue's stat. */
+            /* Past the ghost ball, under the line, the rail: the cue ball's own width on the way the spin bends it after the
+               first contact - the same stroke, spin and all, played on a table with no cushions and only the cue ball and
+               the ball it hits, so it shows the curve alone and runs straight on through where a cushion would be (owner,
+               11-09: "부딪혀도 안부딪힌다고 생각하고 길 그리는거, 오버롤대로" - which way the spin takes it, nothing more).
+               As long as the cue ball's line after a hit can be at this guide length - the cue's stat. */
             if (pv.hit != null) {
               const rk = pk + '|' + pv.hit;
               if (rk !== railKey || w !== railW || P !== railP) {
-                const w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue && b.id !== pv.hit) b.on = false;
-                railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 2.5));
+                const pt0 = performance.now();
+                const OP = openTable(P), w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue && b.id !== pv.hit) b.on = false;
+                railPv = OP.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 2.5));
+                sProf.guide += performance.now() - pt0;
                 railKey = rk; railW = w; railP = P;
               }
-              // (only the bend the spin gives it: the way ends before the cue ball meets anything else - a cushion turns it
-              // sharply, and the rail stops a ball's width short of that turn; owner 11-09: "회전 어디로 먹는지만 가볍게")
               const rp = railPv, way = [];
-              if (rp.at && rp.hit === pv.hit) {
-                way.push(rp.at[0], rp.at[1], 0);
-                let px = rp.at[0], py = rp.at[1], dx = 0, dy = 0;
-                for (let i = 3; i < rp.post.length; i += 3) {
-                  const x = rp.post[i], y = rp.post[i + 1], sx = x - px, sy = y - py, sl = Math.hypot(sx, sy);
-                  if (sl < 1e-5) continue;
-                  const ex = sx / sl, ey = sy / sl;
-                  if ((dx || dy) && ex * dx + ey * dy < 0.94) { way.splice(-3, 3); const n = way.length; if (n >= 6) { const cut = Math.max(0, pathLen(way) - R); way.splice(0, n, ...cutPath(way, cut)); } break; }
-                  way.push(x, y, 0); px = x; py = y; dx = ex; dy = ey;
-                }
-              }
+              if (rp.at && rp.hit === pv.hit) { way.push(rp.at[0], rp.at[1], 0); for (let i = 3; i < rp.post.length; i += 3) way.push(rp.post[i], rp.post[i + 1], 0); }
               // the same reach as the cue ball's line after a hit at its longest (a thin one): grow() below "길게", the real
               // way's first stretch (2.4 s) to all of it above
               const L = way.length < 6 ? 0 : gl < SIM ? grow(gl) * 0.16 : reach(gl, 0.16, pathLen(way.slice(0, 288 * 3 + 3)), pathLen(way));
