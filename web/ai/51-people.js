@@ -66,9 +66,29 @@
       style: persona.style || { ...humanStyles[(hash >>> 8) % humanStyles.length] } };
     return { ...person, practice: humanPractice(person) };
   }
+  /* How much this shot matters (0..1), as a player feels it: the shot that can win (the 8 or the 9 on, the last point or
+     4구's finish) or the one that must not miss (the other player one shot from winning). Read from the table alone - no
+     random numbers - so the plan is the same wherever it is made. */
+  function humanPressure() {
+    const me = g.players[g.turn], opp = g.players[1 - g.turn]; if (!me || !opp || g.isBreak) return 0;
+    if (g.mode.table === 'carom') {
+      const t = g.targets || [g.target, g.target], ctx = g.mode.ctx(g);
+      return Math.max(ctx.last || me.score >= t[g.turn] - 1 ? 1 : 0, opp.score >= t[1 - g.turn] - 1 ? 0.7 : 0);
+    }
+    if (g.modeId === 'eight') {
+      const mine = g.mode.legal(g, g.turn).includes(8), rem = opp.group ? g.mode.remaining(g, 1 - g.turn) : null;
+      return mine ? 1 : rem && rem.length === 0 ? 0.7 : 0;
+    }
+    if (g.modeId === 'nine') return g.mode.lowest(g) === 9 ? 1 : 0;
+    return 0;
+  }
+  plan.pressure = humanPressure;
+  // (think: a person takes longer over a hard shot and a shot that matters, the more so the more hesitant; on a run they
+  // find a rhythm and go quicker, the more so the brisker they are - context.pressure, context.run)
   function humanPresentation(shot, person, difficulty, context = {}) {
-    const p = person.personality, jitter = () => rand() * 2 - 1;
-    const think = Math.max(1.5, Math.min(12, 1.5 + (1 - p.tempo) * 3 + difficulty * (1.5 + p.hesitation * 3) + rand() * 1.2));
+    const p = person.personality, jitter = () => rand() * 2 - 1, pressure = context.pressure || 0, run = Math.min(4, context.run || 0);
+    const pace = (1 + pressure * (0.2 + p.hesitation * 0.6)) * (1 - run * 0.06 * (0.5 + p.tempo));
+    const think = Math.max(1.5, Math.min(12, (1.5 + (1 - p.tempo) * 3 + difficulty * (1.5 + p.hesitation * 3) + rand() * 1.2) * pace));
     const ranked = person.version === 3, skill = person.skill;
     const event = rand(), mistap = 0.008 + (1 - person.practice.dexterity) * (ranked ? 0.08 : 0.035) + (p.id === 'fidgety' ? 0.015 : 0);
     const cancel = p.hesitation * 0.16 + (difficulty > 1.3 ? 0.035 : 0) + (ranked ? (1 - skill) * difficulty * 0.035 : 0), taunt = p.taunt * 0.18;

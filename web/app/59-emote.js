@@ -53,6 +53,24 @@ const emote = {
     emote.close();
     const now = Date.now(); if (now - emote.at < 1600) return; emote.at = now;
     SND.tap(); ranked.send({ t: 'emote', id }); emote.show(ranked.on ? Math.max(0, ranked.on.seat) % 2 : 0, id);
+    emote.answer(id);
+  },
+  /* A stand-in (a ranked game's computer player in a person's name) has a face too: now and then it sends one of its own
+     after a shot - its good one, its miss, the other player's - and sometimes answers one sent to it, a moment later, as
+     a person would. How often by its personality (51-people.js taunt: the playful and the brash more, the calm rarely).
+     Only looks: Math.random, never the room's numbers that its shots are drawn from; nothing goes to the server. */
+  standIn() { const o = ranked.on; return o && o.standIn && !o.watch && !o.team && !o.done ? o.standIn : null; },
+  react(pool, chance) {
+    const s = emote.standIn(); if (!s || Math.random() > chance || Date.now() - (emote.botAt || 0) < 7000) return;
+    emote.botAt = Date.now(); const id = pool[Math.floor(Math.random() * pool.length)], side = 1 - ranked.on.seat;
+    setTimeout(() => { if (emote.standIn()) emote.show(side, id); }, 700 + Math.random() * 1600);
+  },
+  chatty() { const s = emote.standIn(), p = s && s.personality || {}; return 0.05 + (p.taunt || 0) * 0.22 + (p.id === 'impatient' || p.id === 'fidgety' ? 0.04 : 0); },
+  answer(id) {
+    const p = (emote.standIn() || {}).personality || {}, brash = (p.taunt || 0) > 0.3;
+    const back = { angry: brash ? ['joy', 'cool', 'wink'] : ['sweat', 'sad'], poop: brash ? ['poop', 'joy'] : ['sweat', 'think'], skull: brash ? ['joy', 'skull'] : ['sweat'],
+      thumbs: ['thumbs', 'heart', 'cool'], heart: ['heart', 'love'], love: ['heart', 'wink'], joy: brash ? ['joy', 'poop'] : ['sweat', 'grin'] }[id] || ['grin', 'wink', 'thumbs'];
+    emote.react(back, 0.25 + emote.chatty());
   },
   // from the other device
   got(m) { if (EMOTES[m.id] && ranked.on) emote.show(ranked.on.watch || ranked.on.team ? (m.seat | 0) % 2 : 1 - ranked.on.seat, m.id); },
@@ -68,7 +86,14 @@ const emote = {
     setTimeout(() => b.classList.add('out'), 2600); setTimeout(() => b.remove(), 3000);
   },
   // (from the match: how the shot just played came out, for the next six)
-  shot(by, r) { emote.last = { by, good: !!(r && !r.foul && (r.keep || r.pts > 0)), foul: !!(r && r.foul) }; },
+  shot(by, r) {
+    emote.last = { by, good: !!(r && !r.foul && (r.keep || r.pts > 0)), foul: !!(r && r.foul) };
+    const o = ranked.on; if (!emote.standIn()) return;
+    if (game.over) return;                                    // (the result is on screen by then)
+    const bot = by !== o.seat, l = emote.last, p = emote.standIn().personality || {}, brash = (p.taunt || 0) > 0.3;
+    if (bot) emote.react(l.good ? (brash ? ['cool', 'fire', 'wink', 'party'] : ['grin', 'cool']) : l.foul ? ['sweat', 'skull', 'angry'] : ['sweat', 'sad', 'think'], emote.chatty() * (l.good ? 0.8 : 1.1));
+    else emote.react(l.good ? (brash ? ['wow', 'sweat', 'skull'] : ['thumbs', 'wow']) : l.foul ? (brash ? ['joy', 'wink'] : ['think']) : ['think', 'grin'], emote.chatty() * 0.7);
+  },
   reset() { emote.last = null; emote.close(); },
 };
 // a carom player's points to reach (the scoreboard's goal), or nothing for pool

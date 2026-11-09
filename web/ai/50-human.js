@@ -187,7 +187,9 @@
     const diff = clamp(chosen.difficulty + Math.hypot(chosen.a, chosen.b) * 0.65 + g.powerOf(chosen.V) * 0.25 + chosen.el * 0.4, 0, 2.5);
     const lapse = rand() < 0.012 + character.nerves * (1 - skill) * 0.05;
     // Carom's scoring window is much narrower than a pocket; motor scatter is scaled separately from shot reading.
-    const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25);
+    // (nerves: the shot that matters shakes a nervous player's hand a little, less so one with grit)
+    const pressure = humanPressure(), shake = 1 + pressure * (character.nerves * 0.9 + (1 - practice.grit) * 0.3) * (1 - skill * 0.5);
+    const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake;
     const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
     const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)), 0, 1);
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
@@ -200,5 +202,5 @@
     if (chosen.kind === 'blast') shot.V = g.vOf(1);
     const otherPosition = shot.pos && candidates.find(k => k.pos && Math.hypot(k.pos[0] - shot.pos[0], k.pos[1] - shot.pos[1]) > 0.1);
     const otherLine = ranked && visible.find(k => Math.abs(Math.atan2(Math.sin(k.angle - shot.angle), Math.cos(k.angle - shot.angle))) > 0.06);
-    return { ...shot, ...humanPresentation(shot, person, diff, { guide, alternative: otherPosition || otherLine || alternative && alternative.shot }), decision: chosen.kind, stroke: chosen.stroke || 'plain', route: chosen.route || chosen.kind, difficulty: diff, simulations: sims, humanState: turn.state, action: turn.action };
+    return { ...shot, ...humanPresentation(shot, person, diff, { guide, alternative: otherPosition || otherLine || alternative && alternative.shot, pressure, run: g.players[me].run || 0 }), decision: chosen.kind, stroke: chosen.stroke || 'plain', route: chosen.route || chosen.kind, difficulty: diff, simulations: sims, humanState: turn.state, action: turn.action };
   }
