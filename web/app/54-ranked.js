@@ -24,13 +24,16 @@ const ranked = {
     ranked.cancel(true);
     const f = ranked.finding = { mode, t0: Date.now(), timer: 0, seek: Math.random().toString(36).slice(2, 12) }, bar = $('#rkBar');
     bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
+    // the clock goes on every second (owner 11-09: it went by two, with the asking), on the strip and on the turned-over
+    // card (33-desk-play.js)
+    const tick = () => { if (ranked.finding !== f) return clearInterval(f.tick); const s = Math.floor((Date.now() - f.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      bar.querySelector('.tm').textContent = tm; for (const t of document.querySelectorAll('.rk-tm')) t.textContent = tm; };
+    tick(); f.tick = setInterval(tick, 1000);
     const ask = async () => {
       if (ranked.finding !== f) return;
-      const s = Math.floor((Date.now() - f.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; bar.querySelector('.tm').textContent = tm;
-      for (const t of document.querySelectorAll('.rk-tm')) t.textContent = tm;   // (the turned-over card's clock: 33-desk-play.js)
       const r = await net.queue(mode, f.seek);
       if (ranked.finding !== f) return;
-      if (r && r.ok && r.room) { ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
+      if (r && r.ok && r.room) { clearInterval(f.tick); ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
       if (r && r.why === 'update') { ranked.cancel(true); toast('물리가 바뀌었습니다. 새 버전으로 업데이트해야 랭킹전을 할 수 있습니다.', 'foul', 4000); return; }   // (server/src/version.js)
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
@@ -49,7 +52,7 @@ const ranked = {
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)
-  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); if (!quiet && st.screen === 'home' && deskTab === 'play' && playStep === 'rank') paintHome(); },
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); clearInterval(f.tick); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); if (!quiet && st.screen === 'home' && deskTab === 'play' && playStep === 'rank') paintHome(); },
 
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)

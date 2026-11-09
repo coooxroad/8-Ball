@@ -110,29 +110,36 @@ export class LobbyCore {
    opens as for a ranked game (kind 'invite': the host's rules, no DAMA). Held in memory in one Durable Object
    (the lobby named 'invites'); a code whose host has not asked for INVITE_IDLE is gone. */
 export const INVITE_IDLE = 30000;
+// a host away longer than INVITE_IDLE (the app in the background - a phone freezes a hidden page, so it cannot ask) is
+// off the list and cannot be joined, but the code is kept this long for them: back, it is the same code (owner 11-09:
+// "다른 창에 갔다 오면 초대 코드가 바뀜")
+export const INVITE_KEEP = 10 * 60000;
 const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class InviteCore {
   constructor(now) { this.now = now || (() => Date.now()); this.codes = new Map(); this.deferReady = false; }
-  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_IDLE)) this.codes.delete(c); }
-  /* p: { acct, dama, name, icon, gear, mode, rules, listed, pw } - a host's new code (an older one of theirs closes).
+  sweep() { const t = this.now(); for (const [c, v] of this.codes) if (t - v.seen > (v.made ? 120000 : INVITE_KEEP)) this.codes.delete(c); }
+  away(v) { return !v.made && this.now() - v.seen > INVITE_IDLE; }
+  /* p: { acct, dama, name, icon, gear, mode, rules, listed, pw, title } - a host's code. A host keeps one code: opened
+     again (other rules, a password, back from away) it is the same code with the new rules.
      listed: the room shows in the list of open rooms (방 참가하기) under an id of its own - never its code, so a room with a
      password (pw) can only be taken from the list with it; the code, given by the host, is the invitation and lets in
      without one. */
   open(p) {
     this.sweep();
     if (!E.RANKED_RULES[p.mode]) return { ok: false, why: 'no such game' };
-    for (const [c, v] of this.codes) if (v.host.acct === p.acct && !v.made) this.codes.delete(c);
-    let code; do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
+    let had = null; for (const v of this.codes.values()) if (v.host.acct === p.acct && !v.made) had = v;
+    let code = had && had.code; if (!code) do { code = [...crypto.getRandomValues(new Uint8Array(6))].map(b => CODE_ABC[b % CODE_ABC.length]).join(''); } while (this.codes.has(code));
     const pw = typeof p.pw === 'string' && p.pw ? p.pw.slice(0, 12) : null;
-    this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null, at: this.now(),
-      listed: !!p.listed, id: p.listed ? hex(6) : null, pw, tries: 0,
+    const title = String(p.title || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 16) || `${p.name || '플레이어'}의 방`;
+    this.codes.set(code, { code, mode: p.mode, rules: E.inviteRules(p.mode, p.rules), seen: this.now(), made: null, at: had ? had.at : this.now(),
+      listed: !!p.listed, id: p.listed ? (had && had.id) || hex(6) : null, pw, tries: had && had.pw === pw ? had.tries : 0, title,
       host: { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null } });
-    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw };
+    return { ok: true, code, mode: p.mode, rules: this.codes.get(code).rules, listed: !!p.listed, lock: !!pw, title };
   }
   // the open rooms anyone may take from the list, newest first: the game, its rules, the host, whether it has a password
   list() {
     this.sweep(); const out = [];
-    for (const v of this.codes.values()) if (v.listed && !v.made) out.push({ id: v.id, mode: v.mode, rules: v.rules, at: v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } });
+    for (const v of this.codes.values()) if (v.listed && !v.made && !this.away(v)) out.push({ id: v.id, title: v.title, mode: v.mode, rules: v.rules, at: v.at, lock: !!v.pw, host: { name: v.host.name, dama: v.host.dama, icon: v.host.icon } });
     out.sort((a, b) => b.at - a.at); return { ok: true, rooms: out.slice(0, 40).map(r => { delete r.at; return r; }) };
   }
   // the code of a listed room, for taking it from the list: with its password if it has one (a room tried wrong too often
@@ -142,6 +149,7 @@ export class InviteCore {
     for (const v of this.codes.values()) {
       if (!v.listed || v.id !== id) continue;
       if (v.made) return { ok: false, why: 'taken' };
+      if (this.away(v)) return { ok: false, why: 'away' };
       if (v.pw) {
         if (v.tries >= 12) return { ok: false, why: 'locked' };
         if (pw !== v.pw) { v.tries++; return { ok: false, why: 'wrong password' }; }
@@ -164,6 +172,7 @@ export class InviteCore {
     this.sweep(); const v = this.codes.get(code);
     if (!v) return { ok: false, why: 'no such code' };
     if (v.host.acct === p.acct) return { ok: false, why: 'your own code' };
+    if (this.away(v)) return { ok: false, why: 'away' };
     if (v.made) return v.made.guest !== p.acct ? { ok: false, why: 'taken' } : v.made.ready ? Object.assign({ ok: true }, v.made.you[1]) : { ok: false, why: 'opening' };
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [v.host, { acct: p.acct, dama: p.dama, name: p.name, icon: p.icon, gear: p.gear || null }];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });

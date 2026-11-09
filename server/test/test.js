@@ -391,7 +391,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   R.message(1, { t: 'resign' }); let k = 0; while (R.work(500) && k < 1000) k++;
   const res = R.get('result'), pay = R.payouts();
   ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
-  const o2 = I.open(host), o3 = I.open(host); ok(!I.peek(o2.code).ok && I.peek(o3.code).ok, 'invite: a new code closes the host\'s older one');
+  const o2 = I.open(host), o3 = I.open(Object.assign({}, host, { mode: 'eight' })); ok(o2.code === o3.code && I.peek(o3.code).mode === 'eight', 'invite: a host keeps one code, opened again with new rules');
   // the list of open rooms: only listed ones, never their codes; a password guards taking one from the list
   { const L = new InviteCore(), a = L.open({ acct: 'a'.repeat(32), dama: 500, name: 'A', mode: 'eight', listed: true }), b = L.open({ acct: 'b'.repeat(32), dama: 600, name: 'B', mode: 'four', listed: true, pw: '1234' });
     L.open({ acct: 'c'.repeat(32), dama: 700, name: 'C', mode: 'nine' });
@@ -399,7 +399,14 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const rb = ls.find(r => r.host.name === 'B'), ra = ls.find(r => r.host.name === 'A');
     ok(!L.byId(rb.id, '0000').ok && L.byId(rb.id, '0000').why === 'wrong password' && L.byId(rb.id, '1234').code === b.code && L.byId(ra.id).code === a.code, 'invite: a password guards a room taken from the list');
     for (let i = 0; i < 12; i++) L.byId(rb.id, 'x'); ok(L.byId(rb.id, '1234').why === 'locked', 'invite: too many wrong passwords close it to the list');
-    L.join({ acct: 'g'.repeat(32), dama: 500, name: 'G' }, a.code); ok(L.list().rooms.length === 1 && L.byId(ra.id).why === 'taken', 'invite: a taken room leaves the list'); }
+    L.join({ acct: 'g'.repeat(32), dama: 500, name: 'G' }, a.code); ok(L.list().rooms.length === 1 && L.byId(ra.id).why === 'taken', 'invite: a taken room leaves the list');
+    ok(ls.find(r => r.host.name === 'A').title === 'A의 방', 'invite: a room is named after its host unless named'); }
+  // a host away (a hidden page cannot ask): off the list and not to be joined, but back within ten minutes, the same code
+  { let t = 0; const L = new InviteCore(() => t), h = { acct: 'h'.repeat(32), dama: 500, name: 'H', mode: 'four', listed: true, title: '  한판 붙자 ' };
+    const o = L.open(h); ok(L.list().rooms[0].title === '한판 붙자', 'invite: a room keeps the name given');
+    t = 31000; ok(!L.list().rooms.length && L.join({ acct: 'g'.repeat(32), name: 'G' }, o.code).why === 'away', 'invite: a host away is off the list and cannot be joined');
+    t = 5 * 60000; ok(L.ask(h.acct, o.code).waiting && L.list().rooms.length === 1 && L.open(h).code === o.code, 'invite: back within ten minutes, the same code');
+    t = 20 * 60000; ok(!L.peek(o.code).ok, 'invite: away too long, the code is gone'); }
   console.log('invites: checked');
 }
 // online games (Codex B04-B07): the room's table; a room heard of only once open, and a failed one undone; a new search

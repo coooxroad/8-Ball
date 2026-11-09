@@ -8,6 +8,16 @@
   const chalkCube = new THREE.Mesh(new THREE.BoxGeometry(0.027, 0.027, 0.022), cubeMat); chalkCube.visible = false; scene.add(chalkCube);
   const chalkTop = new THREE.Mesh(new THREE.PlaneGeometry(0.015, 0.015), new THREE.MeshBasicMaterial({ color: col(0x1d4fa8), transparent: true, opacity: 1 }));
   chalkTop.position.z = 0.0111; chalkCube.add(chalkTop);
+  // (turning it end-on to the cue, and twisting it about the cue's own line: kept, not made every frame)
+  const chalkQ = { z: new THREE.Vector3(0, 0, 1), ax: new THREE.Vector3(), base: new THREE.Quaternion(), tw: new THREE.Quaternion() };
+  /* the blue dust the twisting shakes off the tip: a few specks, each set off at its own moment in a direction of its own
+     (a fixed table - the same every time), falling to the cloth and fading */
+  const chalkDust = [];
+  { const geo = new THREE.CircleGeometry(0.0024, 6); let s = 7;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col(i % 3 ? 0x3d7fe0 : 0x9cc2ff), transparent: true, opacity: 0, depthWrite: false }));
+      m.visible = false; m.renderOrder = 8; scene.add(m);
+      chalkDust.push({ m, t0: 0.26 + 0.7 * i / 26, a: rnd() * Math.PI * 2, v: 0.02 + rnd() * 0.05, up: 0.02 + rnd() * 0.05, life: 0.45 + rnd() * 0.35, s: 0.6 + rnd() * 0.9 }); } }
   /* A cue's other parts (content/20-cues.js parts): things that are not turned on a lathe, x along the cue from the tip,
      z up. box [from, to, width, height] (a crossguard, a headstock: z, color); ball [at, radius] (a pommel; facets: [round,
      up] cut like a gem); frets [from, to, count, width, z] (closer together towards the body; dots: the inlays); pegs [from, to,

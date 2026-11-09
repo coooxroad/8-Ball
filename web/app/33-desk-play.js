@@ -81,10 +81,10 @@ function deskPlay(d) {
       // the game picked, turned over: the search for an opponent on its back
       wrap.classList.add('seek'); app.classList.add('rkcard');
       const s = Math.floor((Date.now() - f.t0) / 1000);
-      dkPut(wrap, head('랭킹전', `레이팅 ${dama}`, () => { playStep = 'boards'; paintHome(); }));
+      dkPut(wrap, head('랭킹전', '', () => { playStep = 'boards'; paintHome(); }));
       dkPut(fit, el('div', { class: 'seek-card unf' + (playFx === 'flip' ? '' : ' flat') }, el('div', { class: 'fc' }, [
         el('div', { class: 'face front bd-g-' + f.mode }, [rackOf(f.mode), el('b', { text: MODE_KO[f.mode] })]),
-        el('div', { class: 'face back' }, [el('i', { class: 'sp' }), el('b', { text: '상대 찾는 중' }), el('small', { text: `랭킹전 · ${MODE_KO[f.mode]}` }),
+        el('div', { class: 'face back' }, [el('em', { text: MODE_KO[f.mode] }), el('b', { text: '상대 찾는 중' }), el('span', { class: 'rk-dots', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]),
           el('span', { class: 'rk-tm', text: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }),
           el('button', { class: 'seek-x', text: '취소', onclick: onTap(() => { ranked.cancel(); playFx = 'fan'; paintHome(); }) })])])));
     } else {
@@ -113,7 +113,7 @@ function deskPlay(d) {
       return el('button', { class: 'tb unf ' + kind + (r.lock ? ' lock' : ''), style: `--d:${i * 40}ms`, 'aria-label': `${r.host.name}의 방, ${MODE_KO[r.mode]}${r.lock ? ', 비밀번호' : ''}`,
         onclick: onTap(() => r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
         el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null]),
-        el('span', { class: 'tb-plate' }, [el('b', { text: r.host.name }), el('small', { text: `${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''} · 레이팅 ${r.host.dama}` }), r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
+        el('span', { class: 'tb-plate' }, [el('b', { text: r.title || `${r.host.name}의 방` }), el('small', { text: `${r.host.name} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''} · 레이팅 ${r.host.dama}` }), r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
     }));
     else if (list) dkPut(fit, el('div', { class: 'tb-none' }, [el('b', { text: '아직 열린 방이 없습니다' }), el('small', { text: '방을 만들면 이곳에 테이블로 놓입니다.' }),
       el('button', { class: 'dk-chip', text: '방 생성하기', onclick: onTap(() => { invite.stopRooms(); prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }) })]));
@@ -147,6 +147,7 @@ function deskInvite(slate, _, m) {
   if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); })]); }
   dkPut(slate, [dkHr(), dkTxt(h ? '방 목록에도 올라 있습니다. 친구가 코드를 넣거나 링크를 열면 바로 시작합니다.' : invite.err && !invite.opening ? `초대 코드를 만들 수 없습니다 (${invite.err}).` : '방을 여는 중…'),
     // (the password is asked only of those who take the room from the list: the code is the invitation - 55-invite.js)
+    dkRow(`방 이름 · ${invite.title || (h && h.title) || prefs.names[0] + '의 방'}`, '바꾸기', invite.sheetTitle),
     dkRow(invite.pw ? `비밀번호 ${'•'.repeat(invite.pw.length)}` : '비밀번호 없음', invite.pw ? '없애기' : '정하기', () => { if (invite.pw) { invite.pw = ''; repaint(); } else invite.sheetPw(null); }),
     dkRow('친구 코드가 있으면', '코드로 참가', invite.sheetJoin)]);
   dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', '초대 코드 만들기', () => { invite.err = null; repaint(); }) : dkMain('초대 링크 보내기', h ? h.code : '잠시만요', () => h && invite.share(h.code), !h),

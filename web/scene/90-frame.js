@@ -65,7 +65,7 @@
     if (ringsTick(dt)) dirty = Math.max(dirty, 2);
     if (popsTick(dt)) dirty = Math.max(dirty, 2);
     discoTick(w, R);
-    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on; if (!cue.visible) chalkCube.visible = false;
+    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on; if (!cue.visible) { chalkCube.visible = false; for (const d of chalkDust) d.m.visible = false; }
     // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
     const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }
     if (cue.visible) {
@@ -84,16 +84,24 @@
       if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? 0.085 : 0) + e), v.aim + Math.PI); }
       else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
       const half = 0.735 * kl * ce, sx = px - dx * half + 0.012 + 0.025 * se, sy = py - dy * half - 0.014 - 0.025 * se;
-      /* chalking (v.chalk: its time, 0 .. CHALK s): the cube comes down over the tip, is twisted back and forth on it, and
-         lifted off and away. Drawn from above, so the twist is shown as the cube turning on the spot. */
-      const ct = v.chalk == null ? -1 : v.chalk;
+      /* chalking (v.chalk: its time, 0 .. 1.3 s), as it is done (owner 11-09: not from above): the cube held end-on to the
+         cue, its hollow face to the tip, slid back along the cue's line onto the tip, twisted to and fro about that line
+         with the blue dust falling off it, and taken off to the side and away */
+      const ct = v.chalk == null ? -1 : v.chalk, tz = R + lift + 0.002;
       chalkCube.visible = ct >= 0 && ct < 1.3 && !fo;
       if (chalkCube.visible) {
-        const inn = Math.min(1, ct / 0.22), out = Math.max(0, (ct - 1.0) / 0.3), e1 = 1 - (1 - inn) * (1 - inn), tw = ct > 0.22 && ct < 1.0 ? Math.sin((ct - 0.22) * 22) : 0;
-        const tz = R + lift + 0.002, rise = (1 - e1) * 0.07 + out * out * 0.09;
-        chalkCube.position.set(px + dx * 0.004 - dy * tw * 0.0015, py + dy * 0.004 + dx * tw * 0.0015, tz + 0.005 + rise);
-        chalkCube.rotation.set(0, 0, v.aim + tw * 0.55);
-        chalkCube.material.opacity = chalkCube.children[0].material.opacity = Math.min(e1, 1 - out);
+        const inn = Math.min(1, ct / 0.24), out = Math.max(0, (ct - 1.0) / 0.3), e1 = 1 - Math.pow(1 - inn, 3), tw = ct > 0.24 && ct < 1.0 ? Math.sin((ct - 0.24) * 24) : 0;
+        const along = 0.0085 + (1 - e1) * 0.06 + out * 0.012, side = out * out * 0.05;   // (its middle from the tip along the cue's line; off to the side as it is taken away)
+        chalkCube.position.set(px + dx * along + dy * side, py + dy * along - dx * side, tz + out * out * 0.05);
+        chalkQ.base.setFromUnitVectors(chalkQ.z, chalkQ.ax.set(-dx, -dy, 0)); chalkQ.tw.setFromAxisAngle(chalkQ.ax, tw * 0.75 + ct * 1.4);
+        chalkCube.quaternion.copy(chalkQ.tw).multiply(chalkQ.base);
+        chalkCube.material.opacity = chalkCube.children[0].material.opacity = Math.min(e1 * 1.5, 1 - out, 1);
+      }
+      for (const d of chalkDust) {
+        const age = ct - d.t0, on = chalkCube.visible && age >= 0 && age < d.life; d.m.visible = on; if (!on) continue;
+        const k = age / d.life, ca = Math.cos(d.a), sa = Math.sin(d.a);
+        d.m.position.set(px + dx * 0.004 + ca * d.v * age, py + dy * 0.004 + sa * d.v * age, Math.max(0.0006, tz + d.up * age - 0.5 * 0.9 * age * age));
+        d.m.scale.setScalar(d.s * (1 - 0.4 * k)); d.m.material.opacity = 0.85 * (1 - k * k);
       }
       cueShadow.position.set(sx, sy, 0.0012); cueShadow.rotation.z = v.aim; cueShadow.scale.set(1.47 * kl * Math.max(0.12, ce), 0.022 * (1 + 0.5 * se), 1); cueShadow.material.opacity = 0.22 * (1 - 0.55 * se);   // (a raised cue's shadow is fainter)
     }
@@ -137,25 +145,24 @@
             let ux = ex - pre[Math.max(0, pre.length - 9)], uy = ey - pre[Math.max(0, pre.length - 9) + 1]; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul;
             let tl = 0, nx = 0, ny = 0;
             if (pv.hit != null) { const b0 = w.balls[pv.hit]; nx = b0.x - at[0]; ny = b0.y - at[1]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; tl = Math.sqrt(Math.max(0, 1 - Math.pow(ux * nx + uy * ny, 2))); }
-            /* Past the ghost ball, under the line, the rail: the cue ball's own width on its own way as if no other ball
-               were on the table - played out (the same stroke, spin and all, on a copy with only the cue ball) off the
-               cushions and nothing else, so a ball further on never bends it (owner, 11-08). It is as long as the cue ball's
-               line after the hit can be at this guide length - the cue's stat - so a longer guide shows more of it. The line
-               says what will happen; the rail is where it is aimed, so the two together show how thick the hit is. */
+            /* Past the ghost ball, under the line, the rail: the cue ball's own width on the way it really takes after the
+               first contact - the same stroke, spin and all, played on a copy with only the cue ball and the ball it hits,
+               so it bends as the spin bends it, off the cushions, and a ball further on never changes it (owner, 11-09:
+               "흰공이 첫 충돌 후에 어떻게 휠지 정확하게"). As long as the cue ball's line after a hit can be at this guide
+               length - the cue's stat. */
             if (pv.hit != null) {
               const rk = pk + '|' + pv.hit;
               if (rk !== railKey || w !== railW || P !== railP) {
-                const w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue) b.on = false;
-                railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 1.2));
+                const w2 = P.clone(w); for (const b of w2.balls) if (b.id !== w.cue && b.id !== pv.hit) b.on = false;
+                railPv = P.preview(w2, v.aim, g.vOf(chosen ? v.power : 0.45) * k.power, v.spin.x * 0.5 * k.spin, v.spin.y * 0.5 * k.spin, v.el || 0, Math.max(after, 2.5));
                 railKey = rk; railW = w; railP = P;
               }
-              const rp = railPv, from = Math.max(0, pv.pre.length - 3), way = [at[0], at[1], 0];
-              for (let i = from + 3; i < rp.pre.length; i += 3) way.push(rp.pre[i], rp.pre[i + 1], 0);
-              if (rp.at) { way.push(rp.at[0], rp.at[1], 0); for (let i = 3; i < rp.post.length; i += 3) way.push(rp.post[i], rp.post[i + 1], 0); }
+              const rp = railPv, way = [];
+              if (rp.at && rp.hit === pv.hit) { way.push(rp.at[0], rp.at[1], 0); for (let i = 3; i < rp.post.length; i += 3) way.push(rp.post[i], rp.post[i + 1], 0); }
               // the same reach as the cue ball's line after a hit at its longest (a thin one): grow() below "길게", the real
               // way's first stretch (2.4 s) to all of it above
-              const L = gl < SIM ? grow(gl) * 0.16 : reach(gl, 0.16, pathLen(way.slice(0, 288 * 3 + 3)), pathLen(way));
-              if (L > R) ribbon(rRail, cutPath(way, L), { m: 2 * R, mode: 3, ch: 0, color: cCol, op: 0.32 * dim, alpha: t => 1 - 0.7 * t }, R);
+              const L = way.length < 6 ? 0 : gl < SIM ? grow(gl) * 0.16 : reach(gl, 0.16, pathLen(way.slice(0, 288 * 3 + 3)), pathLen(way));
+              if (L > R * 0.5) ribbon(rRail, cutPath(way, L), { m: 2 * R, mode: 3, ch: 0, color: cCol, op: 0.32 * dim, alpha: t => 1 - 0.7 * t }, R);
             }
             if (gl < SIM) {
               const k = grow(gl);

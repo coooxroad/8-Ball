@@ -10,28 +10,31 @@ const invite = {
   shown: false,               // whether the setup screen showed it this paint (else it is closed: 36-desk-paint.js)
   opening: null,
   pw: '',                     // the room's password (방 생성하기: '' none) - asked of whoever takes it from the list
+  title: '',                  // the room's name ('' - the server's '닉네임의 방')
   rooms: null,                // the list of open rooms (방 참가하기): { at, list, err, timer }
   rulesOf(mode) { return mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? { target: prefs.fourTarget } : {}; },
   // the code for this game and these rules: kept, or (another game, other rules) a new one
   want(mode) {
-    const key = mode + JSON.stringify(invite.rulesOf(mode)) + '|' + invite.pw, h = invite.host;
+    const key = mode + JSON.stringify(invite.rulesOf(mode)) + '|' + invite.pw + '|' + invite.title, h = invite.host;
     if (h && h.key === key) return h;
     if (invite.opening === key) return null;
     if (invite.err && invite.errKey === key) return null;           // (it failed: not again on its own - the slate has 다시 시도)
-    if (h) invite.leave();
+    // (not left first: opened again, the server keeps the host's code and changes its rules - the code a friend was
+    // given still works)
+    if (h) { clearTimeout(h.timer); invite.host = null; }
     invite.opening = key;
-    net.inviteOpen(mode, invite.rulesOf(mode), { listed: true, pw: invite.pw }).then(r => {
+    net.inviteOpen(mode, invite.rulesOf(mode), { listed: true, pw: invite.pw, title: invite.title }).then(r => {
       if (invite.opening !== key) { if (r && r.ok) net.inviteLeave(r.code); return; }
       invite.opening = null;
       // (the slate says why, and offers to try again - it used to stay on '만드는 중' for good)
       if (!r || !r.ok) { invite.err = net.troubleText() || '서버 응답 없음'; invite.errKey = key; toast('초대 코드를 만들 수 없습니다.', 'foul', 2200); if (st.screen === 'home') paintHome(); return; }
       invite.err = null;
-      invite.host = { code: r.code, mode, key, timer: 0, guest: null };
+      invite.host = { code: r.code, mode, key, timer: 0, guest: null, title: r.title || '' };
       invite.poll(); if (st.screen === 'home') paintHome();
     });
     return null;
   },
-  poll() {
+  poll(soon) {
     const h = invite.host; if (!h) return;
     clearTimeout(h.timer);
     h.timer = setTimeout(async () => {
@@ -41,7 +44,7 @@ const invite = {
       if (r && r.ok && r.room) { h.guest = r.opp; if (st.screen === 'home') paintHome(); SND.good(); invite.host = null; setTimeout(() => ranked.found(r), 900); return; }
       if (r && !r.ok && r.why === 'gone') { invite.host = null; if (st.screen === 'home') paintHome(); return; }
       invite.poll();
-    }, 2000);
+    }, soon ? 0 : 2000);
   },
   leave() { const h = invite.host; invite.opening = null; if (!h) return; clearTimeout(h.timer); invite.host = null; net.inviteLeave(h.code); },
   // a friend's code: into their game
@@ -55,7 +58,7 @@ const invite = {
     toast(invite.why(r, '그런 코드의 방이 없습니다.'), 'foul', 2400);
   },
   why: (r, none) => !r ? '서버에 연결할 수 없습니다.' : r.why === 'update' ? '새 버전으로 업데이트해야 친구와 플레이할 수 있습니다.' : r.why === 'taken' ? '이미 시작한 방입니다.'
-    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다. 코드로 참가하세요.' : none,
+    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다. 코드로 참가하세요.' : none,
   /* 방 참가하기 (33-desk-play.js, the hall): the open rooms, asked again every four seconds while the hall is shown - each
      drawn as a table; one is taken by its id, with the password if it has one */
   listRooms() {
@@ -76,6 +79,14 @@ const invite = {
     if (r && r.ok && r.room) { invite.stopRooms(); closeSheet(); return ranked.found(r); }
     if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true);
     toast(invite.why(r, '방이 닫혔습니다.'), 'foul', 2400); if (invite.rooms) invite.listRooms();
+  },
+  // the room's name: the host's own words, or '' for the server's '닉네임의 방'
+  sheetTitle() {
+    const input = el('input', { class: 'txt', maxlength: '16', placeholder: `${prefs.names[0]}의 방`, 'aria-label': '방 이름', autocomplete: 'off', spellcheck: 'false' }); input.value = invite.title;
+    const go = () => { invite.title = input.value.replace(/\s+/g, ' ').trim().slice(0, 16); closeSheet(); repaint(); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    openSheet('방 이름', [input, el('button', { class: 'btn cta', text: '정하기', onclick: () => { SND.tap(); go(); } })]);
+    setTimeout(() => { try { input.focus(); input.select(); } catch (e) {} }, 60);
   },
   // a room with a password: asked before taking it; and the host's own, to set one
   sheetPw(room, wrong) {
@@ -129,3 +140,6 @@ const invite = {
   try { history.replaceState(null, '', location.pathname); } catch (e) {}
   setTimeout(() => invite.join(code), 1200);
 })();
+// back to the page (another tab, the app in the background): ask after the open code at once - a hidden page cannot ask,
+// and the server keeps the code only while the host is seen (server/src/ranked.js INVITE_IDLE, INVITE_KEEP)
+document.addEventListener('visibilitychange', () => { if (!document.hidden && invite.host) invite.poll(true); if (!document.hidden && invite.rooms) invite.listRooms(); });

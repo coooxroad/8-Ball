@@ -111,7 +111,7 @@ async function frontDoor(request, env) {
       const name = String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const r = await env.LOBBY.get(env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/' + inv[1], { method: 'POST',
         body: JSON.stringify({ acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, rules: body.rules || null, code, near: nearOf(request),
-          listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
+          listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', title: typeof body.title === 'string' ? body.title.slice(0, 32) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {

@@ -33,6 +33,9 @@
 /* the shot clock's bar under the bar, clear of its lip */
 #app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 9px)}
 #app.bcast #clock i{height:4px;background:rgba(18,20,24,.9)}
+/* the shot clock's bar white in every game, whoever's turn and however little is left (owner 11-09); the seconds still
+   turn red at the end */
+#app.bcast #clock,#app.bcast #clock.two,#app.bcast #clock[data-lv]{--c:#ffffff}
 /* 4구 plates keep their ball: white or yellow */
 #app.bcast.carom #hud .pill .av{box-shadow:0 1px 2px rgba(0,0,0,.45)}
 /* messages: a slate tag under the bar */

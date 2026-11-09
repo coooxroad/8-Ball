@@ -2,7 +2,7 @@
    All by opacity and transform, each on a layer of its own, so the leaning desk under them is not drawn again. */
 
 /* 신화 and above: a slow glow breathing round the card in its rarity's colour */
-#app.desk .dk-card .rglow{position:absolute;inset:3px;z-index:0;border-radius:12px;pointer-events:none;will-change:opacity;
+#app.desk .dk-card .rglow{position:absolute;inset:5px;z-index:0;border-radius:10px;pointer-events:none;will-change:opacity;
   box-shadow:0 0 0 1.5px color-mix(in srgb,var(--rs) 80%,transparent),0 0 16px 3px color-mix(in srgb,var(--rs) 55%,transparent);animation:rGlow 2.8s ease-in-out infinite}
 #app.desk .dk-card.r5 .rglow{box-shadow:0 0 0 1.5px rgba(255,255,255,.8),0 0 18px 4px rgba(255,170,220,.45),0 0 26px 6px rgba(120,200,255,.3)}
 @keyframes rGlow{0%,100%{opacity:.35}50%{opacity:1}}
