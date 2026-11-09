@@ -113,6 +113,35 @@
   };
 
   const LEVELER = new THREE.CylinderGeometry(0.035, 0.045, 0.05, 20).rotateX(Math.PI / 2);   // a pool table's chrome levelling foot
+  /* The table's pieces that share a material (and shadows, layers, draw order) become one mesh, their places baked into
+     the vertices: one draw call instead of one each. The 3D view draws the whole table every frame while it turns, and
+     with the depth pass for what can hide a ball, every frame while anything moves - 18 sights alone were 36 calls, the
+     pockets' pits, plates, lips and liners 36 more. The table never moves, so nothing is lost. (Transparent pieces are
+     left alone: their order is decided per mesh.) */
+  function mergeStatic(grp) {
+    const same = new Map();
+    for (const m of grp.children) {
+      if (!m.isMesh || m.material.transparent || Array.isArray(m.material)) continue;
+      const g = m.geometry, attrs = Object.keys(g.attributes).sort().join();
+      const key = [m.material.uuid, m.castShadow, m.receiveShadow, m.layers.mask, m.renderOrder, m.visible, attrs].join('|');
+      if (!same.has(key)) same.set(key, []); same.get(key).push(m);
+    }
+    for (const list of same.values()) {
+      if (list.length < 2) continue;
+      const parts = list.map(m => { m.updateMatrix(); const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone(); return g.applyMatrix4(m.matrix); });
+      const out = new THREE.BufferGeometry();
+      for (const name of Object.keys(parts[0].attributes)) {
+        const arr = new Float32Array(parts.reduce((n, g) => n + g.attributes[name].array.length, 0));
+        let at = 0; for (const g of parts) { arr.set(g.attributes[name].array, at); at += g.attributes[name].array.length; }
+        out.setAttribute(name, new THREE.BufferAttribute(arr, parts[0].attributes[name].itemSize));
+      }
+      out.computeBoundingSphere();
+      const m0 = list[0], m = new THREE.Mesh(out, m0.material);
+      m.castShadow = m0.castShadow; m.receiveShadow = m0.receiveShadow; m.layers.mask = m0.layers.mask; m.renderOrder = m0.renderOrder;
+      for (const q of list) grp.remove(q);
+      grp.add(m);
+    }
+  }
   function buildTable(P) {
     const grp = new THREE.Group(), { POCKETS, CUSHIONS, HL, HW } = P, Xb = HL + CW, Yb = HW + CW, ox = Xb + RW, oy = Yb + RW, rr = 0.1, bev = 0.011;
     // cloth bed
@@ -245,6 +274,7 @@
       g2.computeVertexNormals();
       const m = new THREE.Mesh(g2, cushMat); m.castShadow = true; m.layers.enable(OCCL); grp.add(m);   // no shadows on it: at these slopes they only band
     }
+    mergeStatic(grp);
     grp.visible = false; sScene.add(grp);
     return grp;
   }
