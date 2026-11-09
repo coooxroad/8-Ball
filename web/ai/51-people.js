@@ -74,30 +74,40 @@
     const cancel = p.hesitation * 0.16 + (difficulty > 1.3 ? 0.035 : 0) + (ranked ? (1 - skill) * difficulty * 0.035 : 0), taunt = p.taunt * 0.18;
     const kind = event < mistap ? 'mistap' : event < mistap + cancel ? 'cancel' : event < mistap + cancel + taunt ? 'taunt' : rand() < p.hesitation * 0.3 ? 'reconsider' : 'settle';
     const frames = [], power = Math.max(0, Math.min(1, g.powerOf(shot.V)));
-    const setTip = ranked ? (0.68 - skill * 0.24) : 0.5;
+    const guide = context.guide || [], opening = guide[0] ?? shot.angle;
+    const setTip = ranked ? 0.57 - skill * 0.22 + person.practice.earlyTip * 0.22 + jitter() * 0.13 : 0.5;
     const frame = (t, angle, pull = 0, aimPower = 0, pos = shot.pos || null) => {
       const ready = t >= think * setTip;
       return { t, angle, a: ready ? shot.a : 0, b: ready ? shot.b : 0, el: ready || !ranked ? shot.el : 0, power: aimPower, pull, pos };
     };
-    frames.push(frame(0, shot.angle + jitter() * (ranked ? 0.08 + (1 - skill) * 0.22 : 0.18)));
+    frames.push(frame(0, guide.length ? opening : shot.angle + jitter() * (ranked ? 0.08 + (1 - skill) * 0.22 : 0.18)));
     if (kind === 'mistap') {
       const c = g.world.balls[g.world.cue], x = (rand() * 2 - 1) * g.P.HL, y = (rand() * 2 - 1) * g.P.HW;
       const wrong = Math.atan2(y - c.y, x - c.x);
-      frames.push(frame(think * 0.16, wrong), frame(think * 0.27, wrong), frame(think * 0.42, shot.angle));
+      frames.push(frame(think * 0.16, wrong), frame(think * 0.27, wrong), frame(think * 0.42, opening));
     } else if (kind === 'cancel') {
       const other = context.alternative, angle = other ? other.angle : shot.angle + jitter() * 0.35, pos = other && other.pos || shot.pos || null;
       frames[0] = frame(0, angle, 0, 0, pos);
-      frames.push(frame(think * 0.23, angle, 0.6, power * 0.65, pos), frame(think * 0.32, angle, 0, 0, pos), frame(think * 0.55, shot.angle));
+      frames.push(frame(think * 0.23, angle, 0.6, power * 0.65, pos), frame(think * 0.32, angle, 0, 0, pos), frame(think * 0.55, opening));
     } else if (kind === 'taunt') {
       const n = 6 + Math.floor(rand() * 7), amplitude = 0.22 + rand() * 0.65;
       for (let i = 1; i <= n; i++) frames.push(frame(think * 0.67 * i / n, shot.angle + (i % 2 ? -1 : 1) * amplitude * (0.7 + rand() * 0.3), i % 2 ? 0.25 : 0));
     } else if (kind === 'reconsider') {
-      frames.push(frame(think * 0.28, shot.angle + jitter() * 0.12), frame(think * 0.5, shot.angle + jitter() * 0.04), frame(think * 0.65, shot.angle + jitter() * 0.09));
-    } else if (ranked) {
+      frames.push(frame(think * 0.28, opening + jitter() * 0.12), frame(think * 0.5, opening + jitter() * 0.04), frame(think * 0.65, opening + jitter() * 0.09));
+    } else if (ranked && !guide.length) {
       const overshoot = jitter() * (1 - skill) * (0.04 + difficulty * 0.025);
       frames.push(frame(think * 0.33, shot.angle + overshoot), frame(think * 0.55, shot.angle - overshoot * 0.3));
-    } else frames.push(frame(think * 0.55, shot.angle + jitter() * 0.015));
-    frames.push(frame(think * 0.76, shot.angle), frame(think * 0.88, shot.angle, 0.25, power * 0.25), frame(think, shot.angle, 1, power));
+    } else if (!ranked) frames.push(frame(think * 0.55, shot.angle + jitter() * 0.015));
+    const settle = ranked ? 0.75 + rand() * 0.09 : 0.76;
+    if (guide.length) {
+      const last = frames[frames.length - 1].t / think;
+      const start = Math.max(last + 0.035, 0.15 + rand() * 0.12);
+      const steps = kind === 'settle' ? guide.slice(1) : guide;
+      steps.forEach((angle, i) => frames.push(frame(think * (start + (settle - start) * (i + 0.35 + rand() * 0.3) / steps.length), angle)));
+    }
+    const pullAt = ranked ? settle + (1 - settle) * (0.38 + rand() * 0.34) : 0.88;
+    const pull = ranked ? 0.15 + rand() * 0.25 : 0.25;
+    frames.push(frame(think * settle, shot.angle), frame(think * pullAt, shot.angle, pull, power * pull), frame(think, shot.angle, 1, power));
     return { think, preShot: { version: ranked ? 3 : 2, kind, duration: think, keyframes: frames } };
   }
   function humanCueAt(shot, seconds) {

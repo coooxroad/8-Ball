@@ -9,6 +9,7 @@
     const result = { aim: ability(), touch: ability(), spin: ability(), bank: ability(), position: ability(),
       thicknessBias: (unit() - 0.5) * 2, paceBias: (unit() - 0.5) * 2, bankBias: (unit() - 0.5) * 2,
       grit: 0.45 + unit() * 0.55, dexterity: limit(s * 0.6 + 0.3 + unit() * 0.1) };
+    if (person.version === 3) Object.assign(result, { sideBias: unit() * 2 - 1, checking: unit(), earlyTip: unit() });
     return { ...result, ...person.practice };
   }
   function humanTurn(person) {

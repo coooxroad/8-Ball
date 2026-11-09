@@ -36,7 +36,7 @@ function fixture(kind) {
       r.play({ seat: 0, room: 'offline-human-test', token: 'test', seed: 35, first: 1, mode: 'four', opp: { name: person.name, dama: person.dama }, standIn: person });
       d.game.start('four', ['A', person.name], true, { first: 1, target: 5, rnd: seededRandom(35), personas: [null, person] });
       [[0, 0.22], [0, 0.5], [0, -0.05], [0.01, -0.32]].forEach((xy, id) => d.game.P.place(d.game.world, id, ...xy));
-      d.game.aiRnd = seededRandom(178 * 917); d.game.humanStates = [null, null]; d.game.humanCanResign = true;
+      d.game.aiRnd = seededRandom(25 * 917); d.game.humanStates = [null, null]; d.game.humanCanResign = true;
       d.match.enter();
     });
     await page.waitForFunction(() => __dp8.st.auto && __dp8.st.auto.plan && __dp8.game.humanStates[1], { timeout: 30000 });

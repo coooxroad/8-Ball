@@ -8,7 +8,9 @@
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
     const budget = Math.round(36 + 64 * skill * skill); let sims = 0;
     const exploreMasse = g.masse && !ordinaryFour && rand() < style.masse * (ranked ? 0.04 + 0.22 * skill : 0.45 + 0.5 * skill);
-    const seeBank = (!pool || style.bank > 0.3) && (ranked ? practice.bank + style.bank * 0.24 > 0.46 : style.bank > 0.3);
+    const bankChance = ordinaryFour ? 0.025 + 0.82 * practice.bank ** 1.7 + style.bank * 0.18 :
+      0.07 + practice.bank * 0.83 + style.bank * 0.16;
+    const seeBank = ranked ? rand() < Math.min(0.98, bankChance) : style.bank > 0.3;
     const speed = (x) => clamp(x, g.vOf(0), g.vOf(1));
     const add = (angle, V, id, extra = {}) => {
       const T = w.balls[id], origin = extra.pos ? { x: extra.pos[0], y: extra.pos[1] } : c;
@@ -63,8 +65,8 @@
       const shot = { pos, angle: angle + noise() * (0.001 + (1 - skill) * 0.008), V: g.vOf(clamp(0.72 + skill * 0.18 + style.power * 0.12 + rand() * 0.06, 0, 1)), a: 0, b: 0, el: 0 };
       return { ...shot, ...humanPresentation(shot, person, 0.25), decision: 'break', simulations: 0, humanState: turn.state, action: 'play' };
     }
-    const spinPractice = ordinaryFour ? skill * skill : g.modeId === 'three' ? 0.25 + skill : skill;
-    const trySpin = !ranked || rand() < Math.min(1, spinPractice * (0.65 + style.spin * 0.9)) || (pool && skill >= 0.83);
+    const spinPractice = ordinaryFour ? skill * skill : g.modeId === 'three' ? 0.25 + skill : 0.10 + skill;
+    const trySpin = !ranked || rand() < Math.min(0.97, spinPractice * (0.65 + style.spin * 0.9));
     const ordered = targets.map(id => w.balls[id]).sort((a, b) => distance(c, a) - distance(c, b));
     if (pool) {
       const rails = [['x', P.HL - P.R], ['x', -P.HL + P.R], ['y', P.HW - P.R], ['y', -P.HW + P.R]];
@@ -132,17 +134,23 @@
         if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2 * PACE.carom, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
       }
     }
-    candidates.sort((a, b) => (a.rank - (a.kind === 'bank' ? style.bank * 0.8 : a.kind === 'masse' ? style.masse * 0.9 : 0)) - (b.rank - (b.kind === 'bank' ? style.bank * 0.8 : b.kind === 'masse' ? style.masse * 0.9 : 0)));
+    const salience = k => k.rank - (k.kind === 'bank' ? style.bank * 0.8 : k.kind === 'masse' ? style.masse * 0.9 : 0);
+    // A nearby, obvious route is easy to notice, but two similar lines don't always stand out in the same order.
+    if (ranked) for (const k of candidates) {
+      k.notice = salience(k) + (rand() - 0.5) * (0.025 + (1 - skill) * 0.16);
+    }
+    candidates.sort((a, b) => ranked ? a.notice - b.notice : salience(a) - salience(b));
     let best = null, alternative = null;
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
+      if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
     };
-    const visible = ranked ? candidates.slice(0, 3 + Math.round(8 * skill)) : (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : 8);
-    if (ordinaryFour && skill < 0.45) {
-      // Leave room for the nearby thick contact even when a thin cut ranks better.
+    const visible = ranked ? candidates.slice(0, 2 + Math.round(8 * skill + 2 * rand())) : (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : 8);
+    if (ordinaryFour && rand() < 1 - skill ** 1.4) {
+      // A beginner often looks at the nearby thick hit even when a thin cut looks promising.
       const straight = candidates.find(k => k.target === ordered[0].id && k.route === 'straight');
       if (straight && !visible.includes(straight)) visible[visible.length - 1] = straight;
     }
@@ -169,6 +177,9 @@
     }
     let chosen = best.shot;
     if (ordinaryFour && g.masse && !best.made && !turn.throwing) chosen = humanFourEscape(c, ordered, person) || chosen;
+    if (ordinaryFour && !chosen.a && !chosen.b && !chosen.el && !turn.throwing) {
+      chosen = { ...chosen, ...humanHabitTip(person, chosen, best.made) };
+    }
     if (turn.throwing) {
       const T = ordered[0], base = Math.atan2(T.y - c.y, T.x - c.x);
       chosen = { ...chosen, angle: base + (rand() - 0.5) * 0.35, V: g.vOf(rand() < 0.7 ? 1 : 0.18), a: trySpin ? (rand() - 0.5) * 0.8 : 0, b: trySpin ? (rand() - 0.5) * 0.6 : 0, el: 0, kind: 'throw', route: 'throw' };
@@ -182,10 +193,12 @@
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
     const thicknessError = practice.thicknessBias * (1 - practice.aim) * (pool ? 0.003 : 0.0005);
     const spinError = (1 - practice.spin) * 0.045, a = chosen.a * (1 + noise() * spinError), b = chosen.b * (1 + noise() * spinError), spinScale = Math.min(1, 0.79 / Math.max(0.001, Math.hypot(a, b)));
-    const shot = { pos: chosen.pos, angle: chosen.angle + noise() * angleError + bankError + thicknessError, V: g.vOf(clamp(power * (1 + practice.paceBias * (1 - practice.touch) * 0.035), 0, 1)), a: a * spinScale, b: b * spinScale, el: chosen.el };
+    const guide = ranked && !chosen.el && !turn.throwing ? humanGuideAim(chosen, person, turn.tilt) : [];
+    const linedUp = guide.length ? guide[guide.length - 1] : chosen.angle;
+    const shot = { pos: chosen.pos, angle: linedUp + noise() * angleError + bankError + thicknessError, V: g.vOf(clamp(power * (1 + practice.paceBias * (1 - practice.touch) * 0.035), 0, 1)), a: a * spinScale, b: b * spinScale, el: chosen.el };
     // A deliberate full-power release remains full power, including for the lower-DAMA strong hitter.
     if (chosen.kind === 'blast') shot.V = g.vOf(1);
     const otherPosition = shot.pos && candidates.find(k => k.pos && Math.hypot(k.pos[0] - shot.pos[0], k.pos[1] - shot.pos[1]) > 0.1);
     const otherLine = ranked && visible.find(k => Math.abs(Math.atan2(Math.sin(k.angle - shot.angle), Math.cos(k.angle - shot.angle))) > 0.06);
-    return { ...shot, ...humanPresentation(shot, person, diff, { alternative: otherPosition || otherLine || alternative && alternative.shot }), decision: chosen.kind, stroke: chosen.stroke || 'plain', route: chosen.route || chosen.kind, difficulty: diff, simulations: sims, humanState: turn.state, action: turn.action };
+    return { ...shot, ...humanPresentation(shot, person, diff, { guide, alternative: otherPosition || otherLine || alternative && alternative.shot }), decision: chosen.kind, stroke: chosen.stroke || 'plain', route: chosen.route || chosen.kind, difficulty: diff, simulations: sims, humanState: turn.state, action: turn.action };
   }

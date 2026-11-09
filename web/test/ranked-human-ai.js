@@ -72,12 +72,38 @@ console.log(`PHYS_V ${createPhysics.PHYS_V}`);
 console.table(output);
 if (v3) {
   const [low, midLow, , , , high] = output;
-  assert(low.spin <= low.n * 0.10 && midLow.spin <= midLow.n * 0.20);
+  assert(low.spin >= low.n * 0.05 && low.spin <= low.n * 0.25 && midLow.spin <= midLow.n * 0.35);
   assert(low.raised <= low.n * 0.03 && low.direct > low.n * 0.5 && low.visible > low.n * 0.5);
   assert(high.spin > low.spin && high.made > low.made && high.sims > low.sims);
 }
 
 if (v3) {
+  // Vary only the shot seed and the habit on one layout. Use the same preview as the on-screen guide.
+  const habits = {};
+  for (const style of ['natural', 'follow', 'draw', 'spinner']) {
+    const profile = person(500, 170, { style, personality: 'calm' });
+    const g = game('four', 817, profile);
+    const hitRed = angle => [2, 3].includes(g.P.preview(g.world, angle, g.vOf(0.45), 0, 0, 0, 0.05).hit);
+    const stats = habits[style] = { spin: 0, follow: 0, draw: 0, side: 0, checks: new Set(), first: 0, final: 0 };
+    for (let i = 1; i <= 72; i++) {
+      g.aiRnd = seeded(i * 917);
+      const p = g.aiPlan(), keys = p.preShot.keyframes;
+      stats.spin += Number(Math.hypot(p.a, p.b) > 0.1);
+      stats.follow += Number(p.stroke === 'follow');
+      stats.draw += Number(p.stroke === 'draw');
+      stats.side += Number(Math.abs(p.a) > 0.1);
+      assert(keys.every((k, j) => j === 0 || k.t > keys[j - 1].t));
+      if (p.preShot.kind !== 'settle') continue;
+      stats.first += Number(hitRed(keys[0].angle));
+      stats.final += Number(hitRed(keys.at(-1).angle));
+      stats.checks.add(keys.length);
+    }
+    assert(stats.final > stats.first && stats.checks.size >= 2);
+    console.log(`${style}: ${stats.spin}/72 with spin (follow ${stats.follow}, draw ${stats.draw}, side ${stats.side}); red on guide ${stats.first} → ${stats.final} on ordinary approaches`);
+  }
+  const { natural, follow, draw, spinner } = habits;
+  assert(natural.spin < spinner.spin && follow.follow > follow.draw && draw.draw > draw.follow && spinner.side > follow.side);
+
   const names = new Set(), rng = seeded(987);
   let plain = 0, account = 0, coarse = 0;
   for (let i = 0; i < 10000; i++) {
@@ -93,8 +119,8 @@ if (v3) {
 
   // Deliberately difficult four-ball positions. These seeds exercise rare outcomes without monkey-patching the physics.
   for (const f of [
-    { style: 'masse', seed: 23 * 917, first: 0, pts: [[0, 0.18], [0, 0], [0, -0.35], [0, -0.55]], decision: 'masse' },
-    { style: 'power', seed: 178 * 917, first: 1, pts: [[0, 0.22], [0, 0.5], [0, -0.05], [0.01, -0.32]], decision: 'overhit-kick' },
+    { style: 'masse', seed: 16 * 917, first: 0, pts: [[0, 0.18], [0, 0], [0, -0.35], [0, -0.55]], decision: 'masse' },
+    { style: 'power', seed: 25 * 917, first: 1, pts: [[0, 0.22], [0, 0.5], [0, -0.05], [0.01, -0.32]], decision: 'overhit-kick' },
   ]) {
     const profile = person(500, 170, { style: f.style, personality: 'calm' });
     const g = game('four', 817, profile);
