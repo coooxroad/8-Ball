@@ -76,8 +76,9 @@ function autoTick(dt) {
     a.t0 = a.t; a.pw = Math.min(1, game.powerOf(a.plan.V)); a.p0 = st.power;
     if (a.plan.pos) { const pos = a.plan.preShot && a.plan.preShot.keyframes[0].pos || a.plan.pos; const c = game.cueBall(); c.x = c.px = pos[0]; c.y = c.py = pos[1]; game.placing = null; }
     let d = a.plan.angle - a.from; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; a.delta = d;
-    if (a.src.showSpin) { st.spin = { x: a.plan.a / 0.5, y: a.plan.b / 0.5 }; setSpinUI(); }
-    st.el = a.plan.el || game.P.restEl(); setKindUI(); flow.hud();
+    const pose = a.plan.preShot && a.plan.preShot.version === 3 ? a.plan.preShot.keyframes[0] : a.plan;
+    if (a.src.showSpin) { st.spin = { x: pose.a / 0.5, y: pose.b / 0.5 }; setSpinUI(); }
+    st.el = pose.el || game.P.restEl(); setKindUI(); flow.hud();
     return;
   }
   const t = a.t - a.t0, e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);

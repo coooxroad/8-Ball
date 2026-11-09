@@ -1,7 +1,7 @@
-  /* Follow, draw, stun and sidespin are deliberate alternatives even for beginners. Style changes their order;
-     simulated outcome and position still decide whether the extra spin is worth using. */
-  function humanStrokes(shot, person) {
+  /* Style orders the strokes the player considers once they decide to adjust the tip. */
+  function humanStrokes(shot, person, trySpin) {
     if (shot.kind === 'masse') return [shot];
+    if (!trySpin) return [shot];
     const s = person.style, side = shot.kind === 'bank' ? 0.32 : 0.24;
     const strokes = [
       { a: 0, b: 0, stroke: 'stun', preference: 0.12 + (s.natural || 0) * 0.6 },
@@ -12,6 +12,32 @@
     ];
     if (s.spin > 0.55) strokes.push({ a: 0.4, b: -0.25, stroke: 'draw-right', preference: s.spin * 0.25 }, { a: -0.4, b: 0.3, stroke: 'follow-left', preference: s.spin * 0.25 });
     return strokes.sort((a, b) => b.preference - a.preference).map(x => ({ ...shot, ...x }));
+  }
+
+  function humanFourEscape(cue, targets, person) {
+    const P = g.P, w = g.world, s = person.style, skill = person.skill;
+    // A rushed, overhit kick near a cushion can hop the rail under the same rules as a player's stroke.
+    const nearRail = Math.min(P.HL - Math.abs(cue.x), P.HW - Math.abs(cue.y)) < 0.23;
+    if (nearRail && rand() < 0.025 * s.desperation * (1 - skill)) {
+      const T = targets[0], useX = P.HL - Math.abs(cue.x) < P.HW - Math.abs(cue.y);
+      const x = useX ? 2 * Math.sign(cue.x) * (P.HL - P.R) - T.x : T.x;
+      const y = useX ? T.y : 2 * Math.sign(cue.y) * (P.HW - P.R) - T.y;
+      const angle = Math.atan2(y - cue.y, x - cue.x);
+      const hit = P.cast(w, cue.x, cue.y, Math.cos(angle), Math.sin(angle), w.cue);
+      if (hit.type === 'rail') return { pos: null, angle, V: g.vOf(0.85 + rand() * 0.15), a: 0, b: 0, el: 0.5 + rand() * 0.24, kind: 'overhit-kick', difficulty: 1.5 };
+    }
+    if (rand() >= s.masse * (0.04 + skill * 0.12)) return null;
+    for (const T of targets) {
+      const dx = T.x - cue.x, dy = T.y - cue.y, base = Math.atan2(dy, dx);
+      const hit = P.cast(w, cue.x, cue.y, Math.cos(base), Math.sin(base), w.cue);
+      if (hit.type !== 'ball' || hit.ball !== 1 - g.turn) continue;
+      const blocker = w.balls[hit.ball], gap = Math.hypot(blocker.x - cue.x, blocker.y - cue.y);
+      if (gap < 3 * P.R || gap > 0.5 || Math.hypot(dx, dy) - gap < 0.18) continue;
+      const side = rand() < 0.5 ? -1 : 1;
+      const angle = Math.atan2(blocker.y - cue.y, blocker.x - cue.x) + side * (Math.asin(2 * P.R / gap) + 0.10);
+      return { pos: null, angle, V: Math.min(g.vOf(1), 1.05 + skill * 0.22), a: side * 0.58, b: 0, el: 0.85 + skill * 0.25, kind: 'masse', difficulty: 1.6 };
+    }
+    return null;
   }
   function humanCaromPosition(world, who) {
     const cue = world.balls[who], ids = g.mode.legal({ ...g, world }, who), P = g.P;
