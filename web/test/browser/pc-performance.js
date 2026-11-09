@@ -50,7 +50,27 @@ const { open } = require('./harness.js');
         app.style.width = w + 'px'; app.style.height = h + 'px';
         for (const q of ['auto', 'low']) { d.scene.setQuality(q); sizes.push({ w, h, q, width: cv.width, height: cv.height, pixels: cv.width * cv.height }); }
       }
-      return { out, lobby, covered, sizes };
+      // Fullscreen events queue the resize before the very next draw, even when both event names fire.
+      d.prefs.quality = 'auto'; d.scene.setQuality('auto'); d.st.screen = 'play';
+      let drawnWidth = 0;
+      d.scene.frame = () => { drawnWidth = cv.width; return true; };
+      const watch = new MutationObserver(() => {});
+      watch.observe(cv, { attributes: true, attributeFilter: ['width', 'height'] });
+      const fullscreen = [];
+      for (const [w, h] of [[1200, 900], [900, 650]]) {
+        const before = cv.width;
+        app.style.width = w + 'px'; app.style.height = h + 'px';
+        document.dispatchEvent(new Event('fullscreenchange'));
+        document.dispatchEvent(new Event('webkitfullscreenchange'));
+        const queued = cv.width;
+        stepMonitor(now += 1000 / 60);
+        fullscreen.push({ w, before, queued, drawnWidth, writes: watch.takeRecords().map(r => r.attributeName) });
+      }
+      document.dispatchEvent(new Event('fullscreenchange'));
+      stepMonitor(now += 1000 / 60);
+      const sameSizeWrites = watch.takeRecords().length;
+      watch.disconnect();
+      return { out, lobby, covered, sizes, fullscreen, sameSizeWrites };
     });
     for (const r of result.out) {
       // ('자동' keeps the screen's own rate - the owner's choice; '낮음' stops at 60, a software renderer at 30)
@@ -62,12 +82,18 @@ const { open } = require('./harness.js');
     assert(result.lobby.some(k => k < 1), 'very slow lobby frames must trigger the guard');
     assert.deepEqual(result.covered, [], 'covered card list must not lower 3D quality');
     for (const s of result.sizes) assert(s.pixels > 0 && s.pixels <= (s.q === 'low' ? 1.6e6 : 4.2e6), `buffer budget: ${JSON.stringify(s)}`);
+    for (const s of result.fullscreen) {
+      assert.equal(s.queued, s.before, 'fullscreen must keep the old buffer until the draw');
+      assert.equal(s.drawnWidth, s.w, 'fullscreen must draw at the new size on the first frame');
+      assert.deepEqual(s.writes, ['width', 'height'], 'fullscreen must resize the buffer once');
+    }
+    assert.equal(result.sameSizeWrites, 0, 'a duplicate fullscreen notification must keep the buffer');
     assert.deepEqual(errors, []);
     console.log(JSON.stringify(result));
     console.log('PC rendering policy passed: 자동 at 60/75/120/144/240Hz, 낮음 at 60, software fallback cadence, lobby guard, 4K/low buffers');
   } finally { await browser.close(); }
   // Use the real reported renderer as well. Selecting low must not enlarge an automatic software-rendered buffer.
-  const actual = await open(1920, 1080, 1);
+  const actual = await open(1920, 1080, 1, { init: () => localStorage.setItem('dp8.prefs', JSON.stringify({ v: 2, how: true })) });
   try {
     const measured = await actual.page.evaluate(() => {
       const d = __dp8, cv = document.querySelector('#gl'), pixels = () => cv.width * cv.height;
@@ -77,6 +103,14 @@ const { open } = require('./harness.js');
     });
     assert(measured.auto > 0 && measured.auto <= (measured.software ? 0.9e6 : 4.2e6));
     assert(measured.low > 0 && measured.low <= measured.auto);
+    const { page } = actual;
+    const close = page.locator('#sheetX'), fullscreenButton = page.locator('#dkFull');
+    if (await close.isVisible()) await close.click();
+    await fullscreenButton.click();
+    await page.waitForFunction(() => document.fullscreenElement && document.querySelector('#dkFull span').textContent === '창 모드');
+    assert(await fullscreenButton.isVisible(), 'the exit button must stay available in browser fullscreen');
+    await fullscreenButton.click();
+    await page.waitForFunction(() => !document.fullscreenElement && document.querySelector('#dkFull span').textContent === '전체 화면');
     assert.deepEqual(actual.errors, []);
     console.log('Reported renderer policy passed', JSON.stringify(measured));
   } finally { await actual.browser.close(); }

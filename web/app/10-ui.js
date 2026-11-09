@@ -56,10 +56,11 @@ function show(screen) {
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
-let wide = true, layoutN = 0;
+let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0;
 function layout() {
   layoutN++;
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
+  layoutW = W; layoutH = H; layoutDpr = window.devicePixelRatio || 1;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (36-desk-paint.js)
@@ -86,19 +87,26 @@ function playInsets(H, portrait) {
   return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
-let layoutT = 0;
+let layoutT = 0, layoutPending = false;
 function layoutSoon() {
   clearTimeout(layoutT);
-  layoutT = setTimeout(() => { const a = document.activeElement; if (a && a.tagName === 'INPUT') return; layout(); }, 120);
+  layoutT = setTimeout(() => {
+    const a = document.activeElement;
+    if (!a || a.tagName !== 'INPUT') layoutPending = true;
+  }, 120);
 }
 window.addEventListener('resize', layoutSoon);
 if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
-// Some browsers change DPR without delivering resize or resolution-media events. The existing frame loop checks one
-// number; a full layout only happens when that number changes, including the first frame after a backgrounded tab wakes.
-let layoutDpr = window.devicePixelRatio || 1;
-function checkPixelRatio() {
-  const current = window.devicePixelRatio || 1;
-  if (current !== layoutDpr) { layoutDpr = current; layout(); }
+// Resizing clears the canvas. Apply it only in a frame that can draw, and skip duplicate browser resize notifications.
+function checkLayout() {
+  const dprChanged = (window.devicePixelRatio || 1) !== layoutDpr;
+  if (!layoutPending && !dprChanged) return;
+  layoutPending = false;
+  if (dprChanged || app.clientWidth !== layoutW || app.clientHeight !== layoutH) {
+    const start = performance.now();
+    layout();
+    prof.add('ui', performance.now() - start);
+  }
 }
 
 const powerUI = { p: -1, k: 0, th: -1, num: '', h: null, lay: -1 };
@@ -155,14 +163,24 @@ function setSpinUI() {
 
 /* Full screen, on the web (the app is full screen already, and a web page installed to the home screen opens that way
    by its manifest): a button on the desk's top and in the pause sheet. A browser allows it only from a tap. */
-const fullCan = () => location.protocol !== 'file:' && !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
 const fullOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+// A regular tab can match fullscreen display mode after entering through the API, so keep its exit button available.
+function fullCan() {
+  const root = document.documentElement, supported = !!(root.requestFullscreen || root.webkitRequestFullscreen);
+  return location.protocol !== 'file:' && (fullOn() || (supported && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches));
+}
 function fullToggle() {
   const d = document.documentElement;
   if (fullOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   else { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => toast('이 브라우저에서는 전체 화면을 쓸 수 없습니다.', '', 2200)); }
 }
 function paintFull() { const b = $('#dkFull'); if (!b) return; b.hidden = !fullCan(); b.querySelector('span').textContent = fullOn() ? '창 모드' : '전체 화면'; }
-document.addEventListener('fullscreenchange', () => { paintFull(); layoutSoon(); });
-document.addEventListener('webkitfullscreenchange', () => { paintFull(); layoutSoon(); });
+function fullChanged() {
+  paintFull();
+  clearTimeout(layoutT);
+  layoutPending = true;
+  scene.invalidate();
+}
+document.addEventListener('fullscreenchange', fullChanged);
+document.addEventListener('webkitfullscreenchange', fullChanged);
 

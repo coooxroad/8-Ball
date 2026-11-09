@@ -78,8 +78,8 @@ rm -f "$A"/fonts/*
 cp fonts/*.woff2 "$A/fonts/"
 # the desk's materials and controls (images made to order, see ui/README.md)
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
-# the ball surfaces also as files, for the shelf cards (the 3D balls read them from the page)
-rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp "$A/tex/"
+# the shelf cards and the invite screen also use these textures as files
+rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp tex/carpet-geo.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 # the web version installed as an app (site/): its name, icon and full-screen display

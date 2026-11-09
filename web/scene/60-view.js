@@ -74,9 +74,10 @@
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
-  let sizeSig = '';
+  let sizeSig = '', maxSide = 0;
   function resize(force) {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H || gl.isContextLost()) return;
+    if (pendScale != null) { dynScale = pendScale; pendScale = null; }
     portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     // Auto uses the same budget on the desk and in play. Upsampling a DPR-1 desktop to 2x cost four times the pixels
     // without sharpening its HTML text. Only explicit high quality keeps that extra detail on the tilted desk.
@@ -84,20 +85,22 @@
     const want = quality === 'high' ? (lean ? Math.max(2, dpr) : dpr) : Math.min(dpr, 2);
     const cap = quality === 'high' ? (lean ? 14e6 : 9e6) : softwareGL ? 0.9e6 : quality === 'low' ? 1.6e6 : 4.2e6;
     // A real pixel cap must also work at DPR 1 on a 4K monitor. The reduction belongs only to WebGL, never DOM text.
-    const maxSide = Math.min(renderer.capabilities.maxTextureSize, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    if (!maxSide) maxSide = Math.min(renderer.capabilities.maxTextureSize, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
     const ratio = Math.min(want, Math.sqrt(cap / (W * H)), maxSide / W, maxSide / H) * (quality === 'high' ? 1 : dynScale);
-    // (nothing changed - the same size, density and way up: the picture and its caches are kept as they are)
-    const sig = W + 'x' + H + '@' + ratio.toFixed(4) + (portrait ? 'p' : 'l');
-    if (!force && rt && sig === sizeSig) return;
-    sizeSig = sig;
-    renderer.setPixelRatio(ratio);
-    renderer.setSize(W, H, false);
-    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-    if (!rt || rt.width !== size.x || rt.height !== size.y) {
-      if (rt) rt.dispose();
-      rt = renderer.capabilities.isWebGL2 ? new THREE.WebGLMultisampleRenderTarget(size.x, size.y) : new THREE.WebGLRenderTarget(size.x, size.y);
-      rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
-      quadMat.map = rt.texture; quadMat.needsUpdate = true; staticDirty = true;
+    const sig = W + 'x' + H + '@' + ratio.toFixed(4);
+    if (!rt || sig !== sizeSig) {
+      sizeSig = sig;
+      // setPixelRatio calls setSize at the old dimensions. Commit the new size and density together.
+      renderer.setDrawingBufferSize(W, H, ratio);
+      const width = canvas.width, height = canvas.height;
+      if (rt) rt.setSize(width, height);
+      else {
+        rt = renderer.capabilities.isWebGL2 ? new THREE.WebGLMultisampleRenderTarget(width, height) : new THREE.WebGLRenderTarget(width, height);
+        rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
+        quadMat.map = rt.texture; quadMat.needsUpdate = true;
+      }
+    } else if (!force) {
+      return;
     }
     applyCamera();
   }
@@ -137,12 +140,12 @@
      after a frame was drawn it showed black until the next - a flash on the web) */
   let pendScale = null;
   function setScale(k) { k = Math.max(0.5, Math.min(1, k)); if (Math.abs(k - dynScale) < 0.01) return; pendScale = k; dirty = 3; }
-  function takeScale() { if (pendScale == null) return; dynScale = pendScale; pendScale = null; resize(); }
+  function takeScale() { if (pendScale != null) resize(); }
 
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());
   canvas.addEventListener('webglcontextrestored', () => {
-    staticDirty = true; stale = false; dirty = 3; guideKey = ''; pvKey = ''; railKey = '';
+    maxSide = 0; staticDirty = true; stale = false; dirty = 3; guideKey = ''; pvKey = ''; railKey = '';
     renderer.shadowMap.needsUpdate = true; resize(true);
   });
 
