@@ -1,13 +1,20 @@
   /* shared table materials */
+  /* Smooth value noise on an N x N lattice of random heights that wraps round, so a picture made from it in whole
+     periods tiles without a seam. (The lattice takes its N*N random numbers when it is made.) */
+  function latticeNoise(N) {
+    const lat = new Float32Array(N * N); for (let i = 0; i < N * N; i++) lat[i] = Math.random();
+    const sm = t => t * t * (3 - 2 * t);
+    return (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), a = ((xi % N) + N) % N, b = ((yi % N) + N) % N, a1 = (a + 1) % N, b1 = (b + 1) % N;
+      return (lat[b * N + a] * (1 - fx) + lat[b * N + a1] * fx) * (1 - fy) + (lat[b1 * N + a] * (1 - fx) + lat[b1 * N + a1] * fx) * fy;
+    };
+  }
   // Cloth: worsted wool - fine fibre speckle, a slight brushed streak along the nap (the table's length), and a faint
   // uneven mottle, all on a light grey the cloth colour multiplies; repeating, so the 9 repeats over the bed do not show.
   const fc = mkCanvas(512, 512), fg = fc.getContext('2d');
   const fid = fg.createImageData(512, 512);
   (function cloth() {
-    const N = 32, lat = new Float32Array(N * N); for (let i = 0; i < N * N; i++) lat[i] = Math.random();
-    const sm = t => t * t * (3 - 2 * t);
-    const noise = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), a = ((xi % N) + N) % N, b = ((yi % N) + N) % N, a1 = (a + 1) % N, b1 = (b + 1) % N;
-      return (lat[b * N + a] * (1 - fx) + lat[b * N + a1] * fx) * (1 - fy) + (lat[b1 * N + a] * (1 - fx) + lat[b1 * N + a1] * fx) * fy; };
+    const N = 32, noise = latticeNoise(N);
     const streak = new Float32Array(512); for (let y = 0; y < 512; y++) streak[y] = noise(3.7, y / 512 * N * 2) - 0.5;
     for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
       const u = x / 512 * N, v = y / 512 * N, mott = noise(u * 0.25, v * 0.25) + 0.5 * noise(u * 0.5, v * 0.5) - 0.75;
@@ -32,19 +39,13 @@
   const wc = mkCanvas(1024, 512), wg = wc.getContext('2d');
   (function wood() {
     const W = 1024, H = 512, id = wg.createImageData(W, H), d = id.data;
-    // smooth repeatable noise (value noise on a lattice that wraps, so the texture tiles)
-    const N = 64, lat = new Float32Array(N * N); for (let i = 0; i < N * N; i++) lat[i] = Math.random();
-    const sm = t => t * t * (3 - 2 * t);
-    const noise = (x, y) => {
-      const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), a = ((xi % N) + N) % N, b = ((yi % N) + N) % N, a1 = (a + 1) % N, b1 = (b + 1) % N;
-      return (lat[b * N + a] * (1 - fx) + lat[b * N + a1] * fx) * (1 - fy) + (lat[b1 * N + a] * (1 - fx) + lat[b1 * N + a1] * fx) * fy;
-    };
+    const N = 64, noise = latticeNoise(N);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const u = x / W * N, v = y / H * N;                                    // lattice coordinates; whole periods keep it seamless
-      const warp = noise(u * 0.125, v * 0.25) * 1.5 + noise(u * 0.375, v * 0.75) * 0.35;        // the rings wander slowly along the plank
+      const band = noise(u * 0.125, v * 0.25);                                       // broad lighter and darker planks
+      const warp = band * 1.5 + noise(u * 0.375, v * 0.75) * 0.35;                   // the rings wander slowly along the plank (with the bands)
       const ring = v * 0.42 + warp, f = ring - Math.floor(ring);
       const late = Math.pow(f, 5);                                                   // each ring ends in a thin dark line
-      const band = noise(u * 0.125, v * 0.25);                                       // broad lighter and darker planks
       const pore = noise(u * 2, v * 16) * noise(u * 4, v * 24);                      // short dark flecks along the grain
       const fibre = noise(u * 1.5, v * 32);
       let t = 0.82 - 0.26 * late - 0.18 * band - 0.34 * pore * pore + 0.06 * (fibre - 0.5);
