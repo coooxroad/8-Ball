@@ -111,7 +111,7 @@ function frame(now) {
     framePace.due = !framePace.due || now - framePace.due > step ? now + step : framePace.due + step;
   } else { framePace.hz = 0; framePace.due = 0; }
   const f0 = performance.now(); prof.frame();
-  checkPixelRatio();
+  checkLayout();
   const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   // (a ranked game goes on under a sheet: the other player is still playing)
