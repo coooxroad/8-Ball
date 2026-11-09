@@ -91,8 +91,8 @@ const ranked = {
     }
     // (a shot already in line - heard again after a reconnect - is not played twice)
     if ((m.t === 'shot' || m.t === 'timeout') && m.n < o.n + o.inbox.length) return;
-    if (m.t === 'shot') o.inbox.push({ n: m.n, shot: m.shot });
-    else if (m.t === 'timeout') o.inbox.push({ n: m.n, timeout: true });
+    if (m.t === 'shot') { o.inbox.push({ n: m.n, shot: m.shot }); o.aimBuf = null; }   // (their next turn starts from their next aim, not this one)
+    else if (m.t === 'timeout') { o.inbox.push({ n: m.n, timeout: true }); o.aimBuf = null; }
     else if (m.t === 'aim') ranked.aimFrom(m);
     else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
     else if (m.t === 'away') toast(`${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
@@ -107,9 +107,12 @@ const ranked = {
     const o = ranked.on; if (!o || game.turn === o.seat) return;
     const now = performance.now(), b = o.aimBuf || (o.aimBuf = []), last = b[b.length - 1];
     if (last && now - last.t > 220) b.push(Object.assign({}, last, { t: now - AIM_GAP }));
-    b.push({ t: now, aim: +m.aim || 0, power: Math.max(0, Math.min(1, +m.power || 0)), sx: m.spin ? +m.spin.x || 0 : 0, sy: m.spin ? +m.spin.y || 0 : 0, el: +m.el || 0 });
+    b.push({ t: now, aim: +m.aim || 0, power: Math.max(0, Math.min(1, +m.power || 0)), sx: m.spin ? +m.spin.x || 0 : 0, sy: m.spin ? +m.spin.y || 0 : 0, el: +m.el || 0,
+      pos: Array.isArray(m.pos) && m.pos.length === 2 && m.pos.every(Number.isFinite) ? m.pos : null });
     while (b.length > 2 && b[1].t < now - AIM_LAG - 400) b.shift();
   },
+  // the other player online is lining up a shot, and something of it has been heard here
+  aiming() { const o = ranked.on; return !!(o && o.aimBuf && o.aimBuf.length && game.turn !== o.seat && st.phase === 'auto' && st.auto && !st.auto.plan && (!game.placing || !!o.aimBuf[o.aimBuf.length - 1].pos)); },
   // each frame, the other player's turn: where their cue is now, between the two places heard either side of a moment ago
   aimShow() {
     const o = ranked.on, a = st.auto, b = o && o.aimBuf;
@@ -118,6 +121,9 @@ const ranked = {
     const p = b[i], q = b[Math.min(b.length - 1, i + 1)], u = q === p || q.t <= p.t ? 1 : Math.max(0, Math.min(1, (at - p.t) / (q.t - p.t)));
     let d = q.aim - p.aim; d -= Math.round(d / (2 * Math.PI)) * 2 * Math.PI;                 // (the short way round)
     const aim = p.aim + d * u, power = p.power + (q.power - p.power) * u, sx = p.sx + (q.sx - p.sx) * u, sy = p.sy + (q.sy - p.sy) * u, el = p.el + (q.el - p.el) * u;
+    // the cue ball in their hand: shown where they are putting it (only a picture - their shot brings the place it was put)
+    if (game.placing && q.pos) { const c = game.cueBall(), x = p.pos ? p.pos[0] + (q.pos[0] - p.pos[0]) * u : q.pos[0], y = p.pos ? p.pos[1] + (q.pos[1] - p.pos[1]) * u : q.pos[1];
+      if (c.x !== x || c.y !== y) { c.x = c.px = x; c.y = c.py = y; st.rev++; scene.invalidate(); } }
     // (all of it compared: a strike point or a raised cue moved alone shows too - Codex B18)
     if (aim === st.aim && power === st.power && sx === st.spin.x && sy === st.spin.y && el === st.el) return;
     st.aim = a.from = aim; st.power = power; setPowerUI(power);
@@ -186,9 +192,11 @@ const ranked = {
     ranked.aimShow();
     if (st.phase !== 'aim' || game.turn !== o.seat) return;
     const now = Date.now(); if (now - o.aimAt < 66) return;
-    const k = [st.aim, st.power, st.spin.x, st.spin.y, st.el].map(v => Math.round(v * 1e4)).join();
+    // (the cue ball too while it is in hand: where it is being put)
+    const c = game.placing ? game.cueBall() : null, pos = c ? [c.x, c.y] : null;
+    const k = [st.aim, st.power, st.spin.x, st.spin.y, st.el].concat(pos || []).map(v => Math.round(v * 1e4)).join();
     if (k === o.aimKey) return; o.aimKey = k; o.aimAt = now;
-    ranked.send({ t: 'aim', aim: st.aim, power: st.power, spin: st.spin, el: st.el });
+    ranked.send({ t: 'aim', aim: st.aim, power: st.power, spin: st.spin, el: st.el, pos });
   },
   // the game ended here: the room plays it again and says how it ended
   ended() { const o = ranked.on; if (!o) return; ranked.send({ t: 'end' }); },

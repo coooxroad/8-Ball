@@ -146,7 +146,8 @@ function frame(now) {
   }
   if (st.phase === 'aim') syncEl();
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
-  const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && !!st.auto.plan);
+  // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
+  const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming()));
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.el : st.el, rev: st.rev, animating,
