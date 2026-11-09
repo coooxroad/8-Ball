@@ -70,7 +70,7 @@ function createGame(PH, makeAI) {
           if (c.isBreak) r.respot.push(8);
           else if (foul) { r.win = 1 - me; r.why = '8번 공을 넣으면서 파울이 났습니다.'; }
           else if (open || c.rem[me] > 0) { r.win = 1 - me; r.why = '자기 공이 남았는데 8번 공이 들어갔습니다.'; }
-          else { r.win = me; r.why = '자기 공을 모두 넣고 8번 공까지 넣었습니다.'; }
+          else { r.win = me; r.why = '자기 공을 모두 넣고 8번 공까지 넣었습니다.'; r.plain = true; }
         }
         if (r.win != null) return r;
         if (open && !c.isBreak && !foul && obj.length) r.assign = typeOf(obj[0]);
@@ -109,7 +109,7 @@ function createGame(PH, makeAI) {
         if (scratch) foul = '큐볼이 포켓에 빠졌습니다';
         if (!foul && potted.length === 0 && !ev.rail) foul = '맞힌 뒤 쿠션에 닿은 공이 없습니다';
         const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
-        if (nine) { if (foul) r.respot.push(9); else { r.win = me; r.why = '9번 공을 넣었습니다.'; return r; } }
+        if (nine) { if (foul) r.respot.push(9); else { r.win = me; r.why = '9번 공을 넣었습니다.'; r.plain = true; return r; } }
         r.keep = !foul && obj.length > 0;
         return r;
       },
@@ -333,8 +333,8 @@ function createGame(PH, makeAI) {
     if (r.foul) p.fouls++;
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
-    if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; }
-    if (r.win != null) { g.over = { winner: r.win, why: r.why }; return out; }
+    if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
+    if (r.win != null) { g.over = { winner: r.win, why: r.why, plain: !!r.plain }; return out; }   // (plain: an ordinary end the score says already)
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
       out.msg = `${p.name}: ${GROUP_KO[r.assign]} 공`; out.kind = 'good'; out.dur = 2400;

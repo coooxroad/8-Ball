@@ -21,7 +21,7 @@ STYLES.var = {
       app.classList.toggle('rew', u >= 0.3 && u < 0.62); cam.az += dt * 0.15; cam.zoom *= 1 - dt * 0.05;
       return true;
     }
-    if (r.li !== 3) { r.li = 3; app.classList.remove('rew', 'colour'); app.classList.add('frozen'); go(tp.tKey, dt); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡'], 28); tag('판독 결과: 유죄'); }
+    if (r.li !== 3) { r.li = 3; app.classList.remove('rew', 'colour'); app.classList.add('frozen'); go(tp.tKey, dt); kick('hit'); SND.fart(3); showBig('🤡', 'skull'); rain(['💩', '🤡'], 28); tag(`VAR · ${HEAD[r.best.kind] || '판독'}`); }
     go(tp.tKey, dt, true); cam.zoom *= 1 - dt * 0.04;
     return fadeOut(rel - 3 * r.L, 2.2);
   },

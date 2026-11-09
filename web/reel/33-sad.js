@@ -15,7 +15,7 @@ STYLES.sad = {
       if (r.t > r.tear) { r.tear = r.t + 0.8; emoji(['😭', '💔', '😢'][Math.floor(Math.random() * 3)], app.clientWidth * (0.15 + 0.7 * Math.random()), app.clientHeight * 0.72); }
       return true;
     }
-    if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); kick('hit'); SND.fart(2); showBig('🥀', 'skull'); rain(['🫡', '😭', '🕯️'], 18); card('obit', [el('b', { text: r.best.who }), el('span', { text: '의 샷 · 방금 우리 곁을 떠났습니다' })]); }
+    if (!r.dropped) { r.dropped = true; go(tp.tKey, dt); kick('hit'); SND.fart(2); showBig('🥀', 'skull'); rain(['🫡', '😭', '🕯️'], 18); card('obit', [el('b', { text: `${r.best.who}의 샷, 여기 잠들다` })]); }
     go(tp.tKey, dt, true);
     if (rel > 2.6 && !r.squeak) { r.squeak = true; SND.fart(1); kick('beat'); }
     return fadeOut(rel, 4.3);

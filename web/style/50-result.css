@@ -156,3 +156,10 @@
 #app.desk.portrait #rStats .k{font-size:11.5px}
 #app.desk.portrait .r-title{font-size:22px}
 #app.desk.portrait .r-meta{font-size:11.5px}
+/* what the match paid, in the sheet (seen upright too: copy audit 07-05) - a coin with its number, a ranked game's rating */
+#app.desk .r-gain{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:6px 0 2px}
+#app.desk .r-gain:empty{display:none}
+#app.desk .r-gain .g{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(0,0,0,.28);color:#f4ecd8;font:800 15px var(--ui-font)}
+#app.desk .r-gain .g.coin::before{content:"";width:20px;height:20px;background:url(ui/coin.webp) center/contain no-repeat}
+#app.desk .r-gain .g.wait{font-weight:600;opacity:.8}
+#app.desk .r-top small{font-size:17px;opacity:.9}

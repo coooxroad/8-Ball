@@ -369,12 +369,12 @@ function crash(dt, rel, zoom) {
 function encore(dt, y, finale, S) {
   const RW = 0.9; S = S || 3;
   if (y < RW) {
-    if (!r.rw) { r.rw = 1; big.className = 'gone'; hideCard(); app.classList.remove('frozen', 'glitch'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀ 다시 봅시다'); }
+    if (!r.rw) { r.rw = 1; big.className = 'gone'; hideCard(); app.classList.remove('frozen', 'glitch'); app.classList.add('rew'); SND.rewind(RW); tag('◀◀'); }
     go(lerp(tp.tKey, r.Tb, ease(y / RW)), dt, true); cam.zoom += (0.42 - cam.zoom) * Math.min(1, dt * 4); return true;
   }
   const z = y - RW;
   if (z < S) {
-    if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('▶ 느린 화면'); }
+    if (r.rw !== 2) { r.rw = 2; app.classList.remove('rew'); app.classList.add('colour'); tag('슬로모션'); }
     go(lerp(r.Tb, tp.tKey, z / S), dt); const b = game.world.balls[r.key], f = Math.min(1, dt * 5);
     cam.tx += ((b.on ? b.x : tp.kx) - cam.tx) * f; cam.ty += ((b.on ? b.y : tp.ky) - cam.ty) * f; cam.az += dt * 0.25; cam.zoom += (0.34 - cam.zoom) * Math.min(1, dt * 2);
     return true;

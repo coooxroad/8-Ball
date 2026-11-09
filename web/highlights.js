@@ -20,7 +20,7 @@ function createHighlights() {
       if (!(res.pts > 0)) return { score: 0 };
       const viaRail = ev.railed.includes(shot.snap.cue), obj = caromTargets(shot.snap.balls.length, shot.snap.cue), reds = dist(shot.snap.balls[obj[0]], shot.snap.balls[obj[1]]), cush = ev.cushions || 0;
       const trick = ev.air > P.R * 1.2 ? '점프 샷' : shot.el > 0.3 && shot.a ? '맛세이' : null;
-      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5 + (trick ? 18 : 0), tag: trick ? trick + ' 득점' : cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '멀리 떨어진 두 공' : '깔끔한 득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
+      return { score: 12 + (viaRail ? 10 : 0) + reds * 8 + cush * 5 + (trick ? 18 : 0), tag: trick ? trick + ' 득점' : cush >= 3 ? `${cush}쿠션 득점` : viaRail ? '쿠션을 돌려 득점' : reds > 1 ? '장거리 득점' : '득점', key: -1, kinds: { rail: viaRail, long: reds > 1 } };
     }
     const potted = ev.pocketed.filter(p => p.id !== shot.snap.cue);
     if (!potted.length || (!res.keep && res.win !== shot.turn)) return { score: 0 };
@@ -36,7 +36,7 @@ function createHighlights() {
     if (shot.isBreak) score *= 0.35;                                   // a break is mostly luck
     const jumped = ev.air > P.R * 1.2, masse = !jumped && shot.el > 0.3 && !!shot.a;
     if (jumped || masse) score += 18;
-    const tag = jumped ? '점프 샷' : masse ? '맛세이' : bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '승부를 끝낸 샷' : '깔끔한 한 방';
+    const tag = jumped ? '점프 샷' : masse ? '맛세이' : bank ? '뱅크 샷' : combo ? '콤비네이션' : many >= 2 ? `한 번에 ${many}개` : cut > 42 ? '얇은 컷' : d1 + d2 > 1.5 ? '장거리 샷' : res.win === shot.turn ? '결승 샷' : '득점';
     return { score, tag, key: main.id, kinds: { bank, combo, long: d1 + d2 > 1.5, multi: many >= 2, thin: cut > 42 } };
   }
 
@@ -48,13 +48,13 @@ function createHighlights() {
     const cueId = shot.snap.cue, cue = shot.snap.balls[cueId], first = ev.firstHit, scratch = ev.pocketed.some(p => p.id === cueId);
     if (mode.table !== 'carom' && res.win != null && res.win !== shot.turn) {
       const last = ev.pocketed.filter(p => p.id !== cueId).pop();
-      return { score: 90, tag: '경기를 헌납한 샷', kind: 'lost', ball: last ? last.id : cueId };
+      return { score: 90, tag: '패배를 부른 파울', kind: 'lost', ball: last ? last.id : cueId };
     }
     if (ev.off && ev.off.length) return { score: 70, tag: '장외 홈런', kind: 'air', ball: ev.off[0], near: -1 };
     if (scratch) return { score: 55 + (first == null ? 10 : 0), tag: '흰 공이 쏙', kind: 'scratch', ball: cueId };
     if (first == null) return { score: 50, tag: '헛스윙', kind: 'air', ball: cueId, near: -1 };
     // a foul with a ball hit: the wrong ball first is worth showing; a technical one (nothing reached a cushion) much less
-    if (res.foul) { const wrong = /먼저|상대 공/.test(res.foul); return { score: wrong ? 30 : 14, tag: wrong ? '엉뚱한 공부터' : '맞히고도 파울', kind: 'wrong', ball: first }; }
+    if (res.foul) { const wrong = /먼저|상대 공/.test(res.foul); return { score: wrong ? 30 : 14, tag: wrong ? '첫 공 파울' : '맞히고도 파울', kind: 'wrong', ball: first }; }
     if (mode.table === 'carom') {
       if (res.pts > 0) return { score: 0 };
       // which ball it failed to reach: the moment to show is the cue ball going past it
@@ -65,7 +65,7 @@ function createHighlights() {
     // a miss is funnier the easier the pot was: short, and close to a pocket
     const b = shot.snap.balls[first]; let dp = 9; for (const p of P.POCKETS) dp = Math.min(dp, dist(b, [p.x, p.y]));
     const ease = 1 / (0.25 + dist(cue, b) + dp);
-    return { score: 10 + 14 * ease, tag: ease > 1.1 ? '이걸 놓침' : '빗나간 샷', kind: 'miss', ball: first };
+    return { score: 10 + 14 * ease, tag: '빗나간 샷', kind: 'miss', ball: first };
   }
 
   /* ---- the tape: the whole shot written down once, so that a replay can be run at any speed, backwards, or cut ---- */

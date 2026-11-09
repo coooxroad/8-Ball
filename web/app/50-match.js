@@ -105,8 +105,9 @@ const match = {
     const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
     const innings = Math.max(inn[0], inn[1]);
     const onKo = on && (on.kind === 'invite' ? '친구 초대' : '랭킹전');
-    $('#rMeta').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와'}  |  ${innings}이닝 · ${dur}`;
-    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이'}`;
+    // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
+    $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
+    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와 플레이'}`;
     const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
     const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
     const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
@@ -116,11 +117,9 @@ const match = {
       box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
         el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
     }
-    // the slate: this match in a few lines
-    const side = $('#rSide'); side.textContent = '';
-    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: k }), el('b', { text: v })]));
-    line('결과', `${pw.name} 승리`); line('이닝', `${innings}이닝`); line('경기 시간', dur);
-    const lead = game.players[w].best >= 2 ? `${pw.name}, 최고 ${game.players[w].best}연속 득점` : null; if (lead) line('흐름', lead);
+    // what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - in the sheet, where it is seen upright too
+    // (copy audit 07-02, 07-03, 07-05: the side panel no longer repeats the result, the innings, the time or the best run)
+    $('#rSide').textContent = ''; const gain = $('#rGain'); gain.textContent = '';
     // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
     // Exactly one is the best shot and one the worst.
     const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
@@ -135,18 +134,21 @@ const match = {
       const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
       const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
       hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: onTap(() => playShot(q, best || worst ? undefined : 'plain')) }, [
-        el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'when', text: q.inn ? q.inn + '이닝' : q.n ? q.n + '번째 샷' : '' }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
-        cv, best ? el('span', { class: 'rib', text: 'BEST' }) : worst ? el('span', { class: 'rib', text: 'WORST' }) : null, el('span', { class: 'go', text: '▶' })]));
+        // (copy audit 07-06: what the shot was and who played it; 베스트 / 워스트 as a badge with its word)
+        el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
+        cv, best ? el('span', { class: 'rib', text: '베스트' }) : worst ? el('span', { class: 'rib', text: '워스트' }) : null, el('span', { class: 'go', 'aria-hidden': 'true', text: '▶' })]));
     }
     // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
-      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
+      if (coins > 0) gain.appendChild(el('span', { class: 'g coin', text: `+${coins.toLocaleString('ko-KR')}` }));
       net.claim('match', { kind, log }); match.log = null;
     }
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
     if (on) { ranked.ended(); ranked.paint(); }
-    $('#rWhy').textContent = game.over.why;
+    // (copy audit 07-07: online, the key looks for a new opponent)
+    $('#againBtn').textContent = on ? '다시 매칭' : '한 판 더';
+    $('#rWhy').textContent = game.over.plain ? '' : game.over.why;   // (copy audit 07-08: only an end the score does not explain)
     show('result'); SND.win();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);

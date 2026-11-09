@@ -209,9 +209,9 @@ const ranked = {
     if (flow === match && m.winner == null && (st.screen === 'play' || st.screen === 'result')) {
       undo(); ranked.voided(m);
     } else if (flow === match && st.screen === 'play' && !game.over) {
-      game.over = { winner: m.winner, why }; match.finish();
+      game.over = { winner: m.winner, why, plain: !['left', 'resigned', 'idle', 'a shot that does not fit'].includes(m.why) }; match.finish();
     } else if (flow === match && st.screen === 'result' && game.over && game.over.winner !== m.winner) {
-      undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('서버가 다시 친 결과로 바뀌었습니다.', 'foul', 3200);
+      undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('서버 확인으로 결과가 정정됐습니다.', 'foul', 3200);
     } else if (st.screen === 'result') ranked.paint();
     if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
     net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after)
@@ -224,13 +224,13 @@ const ranked = {
   },
   // the result screen's lines for a ranked game: checking, then what it paid
   paint() {
-    const o = ranked.on, side = $('#rSide'); if (!o || !side) return;
-    for (const x of side.querySelectorAll('.rk')) x.remove();
-    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec rk' }, [el('span', { text: k }), el('b', { text: v })]));
-    if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : '랭킹전', '결과 확인 중…');
+    // (copy audit 07-05: in the sheet's line - seen upright too - not only the side panel)
+    const o = ranked.on, box = $('#rGain'); if (!o || !box) return;
+    for (const x of box.querySelectorAll('.rk')) x.remove();
+    if (!o.result) { box.appendChild(el('span', { class: 'g rk wait', text: '결과 확인 중…' })); return; }
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
-    line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
-    if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+    box.appendChild(el('span', { class: 'g rk coin', text: `+${(r.coins[me] || 0).toLocaleString('ko-KR')}` }));
+    if (o.kind !== 'invite') box.appendChild(el('span', { class: 'g rk', text: `레이팅 ${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})` }));
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { const o = ranked.on; if (!o) return; if (!o.done) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
