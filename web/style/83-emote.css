@@ -1,20 +1,17 @@
-/* ---------- quick emotes (app/59-emote.js): the six to pick from, and the bubble under a player's plate ---------- */
-#emoteBox{position:fixed;z-index:30;display:grid;grid-template-columns:repeat(3,auto);gap:6px;padding:8px;border-radius:14px;
+/* ---------- quick emotes (app/59-emote.js): the six to pick from, and the emoji under a player's plate ---------- */
+#emoteBox{position:fixed;z-index:30;display:grid;grid-template-columns:repeat(3,auto);gap:6px;padding:8px;border-radius:16px;
   background:linear-gradient(#353b42,#24282e);box-shadow:inset 0 0 0 1px rgba(214,221,230,.78),0 3px 0 #121418,0 12px 26px rgba(0,0,0,.45);
   animation:emoIn .16s cubic-bezier(.2,.9,.3,1.2) both;will-change:transform,opacity}
-#emoteBox .emo{display:flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px 6px 8px;border:0;border-radius:999px;cursor:pointer;
-  background:rgba(255,255,255,.08);color:#f3eee3;font:700 14px/1.1 var(--ui-font);white-space:nowrap;transition:transform 80ms}
-#emoteBox .emo i{font-style:normal;font-size:22px;line-height:1}
-#emoteBox .emo:active{transform:scale(.94);background:linear-gradient(#4a86e0,#1f57b8)}
+#emoteBox .emo{display:grid;place-items:center;width:62px;height:62px;padding:0;border:0;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.07);transition:transform 80ms}
+#emoteBox .emo svg{width:46px;height:46px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+#emoteBox .emo:active{transform:scale(.9);background:linear-gradient(#4a86e0,#1f57b8)}
 @keyframes emoIn{from{opacity:0;transform:translateY(-6px) scale(.92)}}
-.emo-bub{position:fixed;z-index:25;display:flex;align-items:center;gap:7px;padding:7px 14px 7px 9px;border-radius:16px 16px 16px 4px;pointer-events:none;
-  background:#fff;color:#1d2a3a;font:800 15px/1.1 var(--ui-font);white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.18),0 10px 22px rgba(0,0,0,.35);
-  transform-origin:12px 0;animation:bubIn .34s cubic-bezier(.2,1.4,.4,1) both;will-change:transform,opacity}
-.emo-bub.r{border-radius:16px 16px 4px 16px;transform-origin:calc(100% - 12px) 0}
-.emo-bub i{font-style:normal;font-size:24px;line-height:1}
+.emo-bub{position:fixed;z-index:25;width:64px;height:64px;pointer-events:none;transform-origin:50% 0;
+  animation:bubIn .42s cubic-bezier(.2,1.5,.4,1) both;will-change:transform,opacity}
+.emo-bub svg{width:100%;height:100%;filter:drop-shadow(-2px 5px 4px rgba(0,0,0,.45))}
 .emo-bub.out{animation:bubOut .35s ease-in both}
-@keyframes bubIn{from{opacity:0;transform:translateY(-8px) scale(.6)}}
-@keyframes bubOut{to{opacity:0;transform:translateY(-6px) scale(.9)}}
+@keyframes bubIn{0%{opacity:0;transform:translateY(-10px) scale(.3)}60%{opacity:1;transform:translateY(2px) scale(1.12)}100%{transform:none}}
+@keyframes bubOut{to{opacity:0;transform:translateY(-8px) scale(.8)}}
 @media (prefers-reduced-motion:reduce){#emoteBox,.emo-bub,.emo-bub.out{animation-duration:.01s}}
 /* the key: on a wide screen under the 3D key at the top right (in the row of view keys it ran into the score bar); on an
    upright screen first in the column of view keys */
