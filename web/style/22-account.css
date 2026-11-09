@@ -12,3 +12,8 @@
 #sheet .g-btn .btn.google{background:#fff;color:#1f1f1f;border-radius:999px;padding:0 22px;height:44px;font:800 15px var(--ui-font)}
 #sheet .note.legal{font-size:12px;opacity:.85}
 #sheet .note.legal a{color:inherit;text-decoration:underline}
+/* 설정 · 크레딧 (20-sheets.js sheetCredits) */
+.credit{display:flex;flex-direction:column;gap:2px;padding:9px 12px;margin:0 0 6px;border-radius:10px;background:rgba(255,255,255,.06)}
+.credit b{font-size:14px}
+.credit small{font-size:12px;opacity:.75}
+.credit a{font-size:12px;color:#8fb8ff;text-decoration:none;word-break:break-all}

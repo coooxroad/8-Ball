@@ -111,10 +111,11 @@ if (v3) {
     assert(name.length && name.length <= 16 && !/[<>\s\x00-\x1f]/.test(name));
     names.add(name);
     plain += Number(!/\d$/.test(name));
-    account += Number(/^[a-z0-9_]+$/.test(name));
-    coarse += Number(/아씨|개똥|젠장|아놔|ㅅㅂ|또졌네진짜/.test(name));
+    account += Number(/^[a-zA-Z0-9_.]+$/.test(name));
+    coarse += Number(/^(아씨|아오|아놔|젠장|에이|헐|하|으악)(또키스|두께뭐냐|짧다|빈쿠션|쫑|한점만|또졌네|왜안맞아|큐미스|길다)$/.test(name));
   }
-  assert(names.size > 1700 && plain > 6000 && account > 2000 && coarse > 350 && coarse < 650);
+  // (owner 11-09: too many alike - names from parts, tens of thousands; the lobby also skips the recent ones)
+  assert(names.size > 6000 && plain > 5500 && account > 1500 && coarse > 100 && coarse < 350);
   console.log(`names: ${names.size} distinct, ${plain / 100}% without numeric suffix, ${account / 100}% Latin accounts, ${coarse / 100}% coarse`);
 
   // Deliberately difficult four-ball positions. These seeds exercise rare outcomes without monkey-patching the physics.

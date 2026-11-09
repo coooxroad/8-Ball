@@ -25,9 +25,15 @@ const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
 // The packed AI uses the same rating displayed by the lobby and used for settlement.
+// (the names given lately, so the next ones are not the same: owner 11-09 - there were too many alike)
+const RECENT_NAMES = [], recentNames = new Set();
 export function standIn(dama, rnd) {
-  const rating = Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 32));
-  return { ...E.createAI(null).rankedPersonaFor(rating, rnd), rd: 150 };
+  const rating = Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(dama + (rnd() - 0.5) * 32)), ai = E.createAI(null);
+  let p = ai.rankedPersonaFor(rating, rnd);
+  for (let k = 0; k < 12 && recentNames.has(p.name); k++) p = ai.rankedPersonaFor(rating, rnd);
+  RECENT_NAMES.push(p.name); recentNames.add(p.name);
+  while (RECENT_NAMES.length > 600) recentNames.delete(RECENT_NAMES.shift());
+  return { ...p, rd: 150 };
 }
 
 /* What a player has on (their cue, ball set, table, trail - ids, each checked by the vault to be theirs; null: the usual),

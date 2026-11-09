@@ -40,7 +40,21 @@ function sheetSettings() {
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
     net.on ? el('div', { class: 'row' }, [flatBtn('다른 기기 연결', sheetLinkMake), flatBtn('코드로 연결', sheetLinkUse)]) : null,
+    el('div', { class: 'row' }, [flatBtn('크레딧', sheetCredits), flatBtn('약관 · 개인정보', () => window.open('https://cue.oxcorp.workers.dev/privacy', '_blank', 'noopener'))]),
     note('CUE 4.0'),
+  ]);
+}
+/* 크레딧: what the game uses that others made, with their licenses (owner 11-09) */
+function sheetCredits() {
+  const item = (what, who, lic, href) => el('div', { class: 'credit' }, [el('b', { text: what }), el('small', { text: `${who} · ${lic}` }),
+    href ? el('a', { href, target: '_blank', rel: 'noopener', text: href.replace(/^https:\/\//, '') }) : null]);
+  openSheet('크레딧', [
+    item('이모티콘 · Fluent Emoji', 'Microsoft Corporation', 'MIT License', 'https://github.com/microsoft/fluentui-emoji'),
+    item('3D · three.js', 'three.js authors', 'MIT License', 'https://threejs.org'),
+    item('글꼴 · Gothic A1, Jua, Black Han Sans', 'HanYang I&C, Woowahan Brothers, Zess Type', 'SIL Open Font License 1.1', 'https://fonts.google.com'),
+    item('글꼴 · Outfit', 'Outfit Project Authors', 'SIL Open Font License 1.1', 'https://fonts.google.com/specimen/Outfit'),
+    note('MIT License: 저작권 표시와 허가 표시를 포함하는 조건으로 누구나 무상으로 사용·복제·수정·배포할 수 있습니다. 소프트웨어는 "있는 그대로" 제공되며 어떠한 보증도 하지 않습니다.'),
+    flatBtn('뒤로', sheetSettings),
   ]);
 }
 /* The account (07-net.js): which it is, in short, and on how many devices; a code to link another device to it, or another

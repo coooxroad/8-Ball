@@ -24,17 +24,59 @@
     return name.slice(0, 16);
   }
 
+  /* A ranked stand-in's name (owner 11-09: too many alike). The habits Korean players name themselves by, each built from
+     parts so the same name comes round rarely - tens of thousands of them - and a few in each habit kept plain, as most
+     names are: a given name with an ending (민준이, 준호형), two words (졸린고양이), a billiard boast or confession
+     (빈쿠션장인), a romanized handle with a year or a number (minjun_92), a place (부산당구), a line someone typed in a
+     hurry (퇴근하고한판), and rarely something rough. The lobby keeps the recent ones and asks again on a repeat
+     (server/src/ranked.js standIn). */
   function rankedName(random) {
-    const pick = a => a[Math.floor(random() * a.length)];
-    const family = random();
-    if (family < 0.05) return pick(['아씨또키스', '개똥두께', '젠장짧다', '아놔', 'ㅅㅂ한점만', '또졌네진짜']);
-    if (family < 0.24) return pick(['정면만봄', '중대단골', '얇게한번', '백점언저리', '키스전문', '오늘도쫑', '초크주세요', '큐찾는중', '대대연습중', '한큐만더', '장쿠션옆자리', '당구치는삼촌', '빈쿠션빌런', '노랑먼저', '좀만길게', '후루꾸']);
-    if (family < 0.43) return pick(['동네오리', '찬물', '미지근', '연두부', '회색고양이', '대충감자', '낮잠중', '춘식', '먼지', '바삭한빵', '오후반차', '비오는수요일', '퇴근십분전', '저녁먹고옴', '삼분카레', '물많이']);
-    const account = family < 0.69;
-    const stem = account
-      ? pick(['juno', 'hyunw', 'mink', 'oneroom', 'doodoo', 'slowcue', 'dskim', 'west9', 'rimshot', 'yoons', 'turnleft', 'softbreak', 'mintcho', 'sundayb'])
-      : pick(['박대리', '창수', '지훈이', '강프로', '호야', '권형', '한부장', '민재', '김씨', '유진', '동팔이', '정우', '남코치', '이선생', '해원이', '최사장']);
-    if (random() >= (account ? 0.68 : 0.47)) return stem;
-    const suffix = random() < 0.4 ? pick(['07', '12', '23', '86', '92', '03', '77', '88', '1004']) : Math.floor(random() * 1000);
-    return stem + (account && random() < 0.2 ? '_' : '') + suffix;
+    const pick = a => a[Math.min(a.length - 1, Math.floor(random() * a.length))];
+    const GIVEN = ['민준', '서준', '도윤', '예준', '시우', '하준', '주원', '지호', '지후', '준서', '준우', '현우', '도현', '지훈', '건우', '우진', '선우', '서진', '민재', '현준',
+      '연우', '유준', '정우', '승우', '승현', '시윤', '준혁', '은우', '지환', '승민', '지우', '유찬', '민성', '준영', '시후', '진우', '지원', '수호', '재윤', '태윤',
+      '성민', '동현', '상우', '영훈', '재민', '태현', '병철', '상훈', '경수', '용준', '창민', '대호', '준기', '동욱', '석진', '형준', '철수', '영철', '광수', '성호'];
+    const GIVEN_F = ['서연', '지민', '수아', '하은', '지유', '민서', '윤서', '채원', '다은', '예린', '소율', '지아', '수빈', '은서', '혜진', '유나', '미진', '은영', '현정', '보람'];
+    const ADJ = ['졸린', '배고픈', '느린', '말랑한', '바쁜', '심심한', '조용한', '수상한', '귀찮은', '행복한', '착한', '엉뚱한', '용감한', '부지런한', '게으른', '차가운',
+      '따뜻한', '작은', '커다란', '동그란', '반짝이는', '시끄러운', '어설픈', '진지한', '멍한', '촉촉한', '바삭한', '매운', '달달한', '짭짤한', '고요한', '외로운',
+      '신난', '취한', '깐깐한', '푸른', '빨간', '노란', '하얀', '까만'];
+    const NOUN = ['고양이', '판다', '거북이', '두부', '감자', '고등어', '오리', '펭귄', '너구리', '다람쥐', '햄스터', '수달', '곰돌이', '토끼', '여우', '부엉이', '참새',
+      '붕어빵', '호떡', '만두', '떡볶이', '김밥', '라면', '식빵', '찐빵', '군고구마', '옥수수', '호빵', '수박', '귤', '복숭아', '자두', '냉면', '칼국수', '순대',
+      '양말', '우산', '선풍기', '자전거', '구름', '바람', '소나기', '월요일', '금요일', '새벽', '저녁', '산책', '커피', '보리차', '사이다', '콜라', '아저씨', '삼촌',
+      '막내', '사장님', '대리', '과장', '선배', '후배', '형님'];
+    const SHOT = ['빈쿠션', '쓰리쿠션', '끌어치기', '밀어치기', '옆돌리기', '뒤돌리기', '앞돌리기', '대회전', '가락', '빗겨치기', '세워치기', '맛세이', '원뱅크', '투뱅크',
+      '더블쿠션', '제각돌리기', '횡단샷', '키스샷', '얇게치기', '두껍게', '하이런', '대대', '중대', '사구', '포켓볼', '나인볼', '에이트볼', '큐대', '초크', '당점'];
+    const ROLE = ['장인', '왕', '러', '중독', '초보', '고수', '연습생', '빌런', '마스터', '매니아', '꿈나무', '지망생', '전문', '귀신', '바보', '요정', '맨', '킹', '천재', '수집가'];
+    const ROMAN = ['minjun', 'seojun', 'doyun', 'jiho', 'junseo', 'hyunwoo', 'jihoon', 'gunwoo', 'woojin', 'minjae', 'jungwoo', 'seungmin', 'jinwoo', 'sungmin', 'donghyun',
+      'jaemin', 'taehyun', 'sangwoo', 'seoyeon', 'jimin', 'suah', 'haeun', 'minseo', 'yuna', 'hyejin', 'kim', 'park', 'lee', 'choi', 'jung', 'kang', 'cho', 'yoon',
+      'jang', 'lim', 'han', 'shin', 'seo', 'kwon', 'hwang', 'ahn', 'song', 'ryu', 'hong'];
+    const ENG = ['lazy', 'blue', 'red', 'slow', 'happy', 'sleepy', 'lucky', 'silent', 'crazy', 'tiny', 'big', 'cool', 'hungry', 'night', 'sunday', 'monday', 'rainy', 'mint',
+      'soft', 'wild'];
+    const ENGN = ['cat', 'cue', 'shot', 'ball', 'panda', 'tiger', 'fox', 'bear', 'owl', 'duck', 'rabbit', 'bank', 'break', 'spin', 'chalk', 'cushion', 'rail', 'pocket',
+      'player', 'hunter', 'walker', 'runner', 'dream', 'moon', 'star', 'coffee', 'toast', 'noodle'];
+    const PLACE = ['부산', '대구', '인천', '광주', '대전', '울산', '수원', '성남', '고양', '용인', '부천', '안산', '전주', '청주', '천안', '창원', '포항', '제주', '강릉', '춘천',
+      '신림', '강남', '홍대', '건대', '노원', '잠실', '목동', '일산', '분당', '마포', '종로', '동탄', '영등포', '서면', '해운대', '동성로'];
+    const PLACE_END = ['당구', '사나이', '큐대', '당구장', '고수', '불주먹', '빈쿠션', '토박이', '총각', '아재', '왕', '파', '짱'];
+    const WHEN = ['퇴근하고', '점심먹고', '자기전에', '출근전', '주말에', '월급날', '비오는날', '야근끝', '새벽에', '오늘도', '심심해서', '오랜만에', '몰래', '딱', '마지막'];
+    const ACT = ['한판', '한큐', '당구', '두판', '연습중', '치는중', '한게임', '한점만', '복수전', '접속', '쓰리쿠션', '한잔'];
+    const ROUGH_A = ['아씨', '아오', '아놔', '젠장', '에이', '헐', '하', '으악'], ROUGH_B = ['또키스', '두께뭐냐', '짧다', '빈쿠션', '쫑', '한점만', '또졌네', '왜안맞아', '큐미스', '길다'];
+    const num = () => { const r = random(); return r < 0.3 ? String(80 + Math.floor(random() * 26)).slice(-2).padStart(2, '0') : r < 0.5 ? pick(['7', '77', '88', '99', '123', '1004', '486', '1', '2', '3']) : String(Math.floor(random() * (r < 0.8 ? 100 : 10000))); };
+    const f = random();
+    let name;
+    if (f < 0.02) name = pick(ROUGH_A) + pick(ROUGH_B);
+    else if (f < 0.20) {
+      const fem = random() < 0.25, g = pick(fem ? GIVEN_F : GIVEN);
+      // ('이' only after a closed syllable: 민준이, not 준우이)
+      const end = pick(fem ? ['', '이', '짱', '언니', '누나', '님', '맘', '쓰'] : ['', '이', '형', '쓰', '짱', '님', '아빠', '삼촌', '오빠', '킹', '군']), last = g.charCodeAt(g.length - 1) - 0xac00;
+      name = g + (end === '이' && last % 28 === 0 ? '' : end);
+      if (random() < 0.45) name += num();
+    }
+    else if (f < 0.40) { name = pick(ADJ) + pick(NOUN); if (random() < 0.15) name += num(); }
+    else if (f < 0.54) { name = pick(SHOT) + pick(ROLE); if (random() < 0.2) name += num(); }
+    else if (f < 0.74) {
+      const a = random() < 0.55 ? pick(ROMAN) : pick(ENG) + (random() < 0.4 ? '_' : '') + pick(ENGN), sep = random() < 0.25 ? '_' : random() < 0.1 ? '.' : '';
+      name = random() < 0.85 ? a + sep + num() : a; if (random() < 0.12) name = name[0].toUpperCase() + name.slice(1);
+    }
+    else if (f < 0.86) { name = pick(PLACE) + pick(PLACE_END); if (random() < 0.25) name += num(); }
+    else { name = pick(WHEN) + pick(ACT); if (random() < 0.1) name += num(); }
+    return name.slice(0, 16);
   }

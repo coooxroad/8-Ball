@@ -78,6 +78,8 @@ rm -f "$A"/fonts/*
 cp fonts/*.woff2 "$A/fonts/"
 # the desk's materials and controls (images made to order, see ui/README.md)
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
+# (the emoji of the quick emotes: Microsoft Fluent Emoji, MIT - its license goes with them)
+mkdir -p "$A/ui/emoji"; cp ui/emoji/*.webp ui/emoji/LICENSE-fluentui-emoji.txt "$A/ui/emoji/"
 # the shelf cards and the invite screen also use these textures as files
 rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp tex/carpet-geo.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
