@@ -61,6 +61,10 @@ jobs:
           A=$(grep -o "const INVITE_LINK = '[^']*'" ../web/app/55-invite.js | cut -d"'" -f2 | sed 's#/?join=##')
           test "$A" = "$U" || { echo "FAIL invite links open $A, the web is at $U - change INVITE_LINK in web/app/55-invite.js"; exit 1; }
           echo "$U (APK build $APK_BUILD, commit $SOURCE_SHA)"
+          # (danguuu.com, 11-10: the page at its own domain too - said, not yet required, until the app's links point there)
+          for D in $(grep -oE '[a-z0-9.-]+ \(custom domain\)' deploy.log | cut -d' ' -f1); do
+            if curl -sf "https://$D/" | grep -q '<title>CUE</title>'; then echo "ok   https://$D answers"; else echo "note https://$D does not answer yet"; fi
+          done
           # (a new address can take a minute or two to answer)
           for i in $(seq 1 18); do
             if curl -sf "$U/" | grep -q '<title>CUE</title>' &&

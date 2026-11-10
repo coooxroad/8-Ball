@@ -51,3 +51,6 @@ jobs:
           test "$A" = "$U" || { echo "FAIL the app asks $A, the server is at $U - change SERVER in web/app/07-net.js"; exit 1; }
           echo "ok   the app asks this address"
           node tools/live.mjs "$U"
+          # (danguuu.com, 11-10: the same server at its own domain - checked the same way before the app is pointed at it)
+          D=$(grep -oE '[a-z0-9.-]+ \(custom domain\)' deploy.log | head -1 | cut -d' ' -f1)
+          if [ -n "$D" ]; then echo "https://$D"; node tools/live.mjs "https://$D"; fi
