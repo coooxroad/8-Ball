@@ -88,16 +88,11 @@ const match = {
   finish() {
     if (match.ctx.online && match.ctx.online.watch) return ranked.watchEnd(null);   // (watching: nobody's records)
     // (a draw - 4구's 후구 caught up, game.js: w is null; nobody's win or loss on the records)
-    const w = game.over.winner, draw = w == null, l = draw ? null : 1 - w, pw = game.players[w], pl = game.players[l];
+    const w = game.over.winner, draw = w == null, l = draw ? null : 1 - w, pw = game.players[w];
     // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
     // records back as they were before and finishes again with the room's winner, so it is never counted twice)
     if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
-    if (!draw) {
-      const rw = recOf(pw.name), rl = recOf(pl.name);
-      rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
-      rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
-      series.s[w]++; st.lastLoser = l;
-    }
+    if (!draw) countResult(w, l);
     store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
@@ -106,14 +101,7 @@ const match = {
     const mine = !solo || draw || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
     $('#rTitle').textContent = draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
     $('#rTitle').parentNode.classList.toggle('lost', !mine);
-    for (let i = 0; i < 2; i++) {
-      const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
-      box.className = 'r-p' + (i ? ' two' : '') + (won ? ' won' : '') + (carom ? (i === (game.yellow == null ? 1 : game.yellow) ? ' yel' : '') : ' pool');
-      box.querySelector('.nm').textContent = p.name;
-      const rc = box.querySelector('.rc'); rc.textContent = '';
-      if (solo && i === me) rc.appendChild(el('span', { class: 'me', text: '나' }));
-      rc.appendChild(document.createTextNode(`${r.w}승 ${r.l}패` + (won && r.streak >= 2 ? ` · ${r.streak}연승` : '')));
-    }
+    resultPlayers(w, me, solo, carom);
     // the score: points on carom (as the hall counts them), games won in the series on pool
     const pts = i => carom ? game.players[i].score * (game.tens ? 10 : 1) : series.s[i];
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
@@ -123,37 +111,12 @@ const match = {
     // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
     $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
     $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와 플레이'}`;
-    const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
-    const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
-    const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
-    const box = $('#rStats'); box.textContent = '';
-    for (const [k, a, b] of rows) {
-      const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
-      box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
-        el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
-    }
+    resultStats(carom, inn);
     // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
     // the innings, the time or the best run (copy audit 07-02, 07-03)
     const side = $('#rSide'); side.textContent = '';
     const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: k }), el('b', { text: v })]));
-    // Highlights: the shots of the match worth watching again, in the order they were played, each a card with its name.
-    // Exactly one is the best shot and one the worst.
-    const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
-    const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
-    if (match.best && !has(match.best)) list.push(match.best);
-    if (match.worst && !has(match.worst)) list.push(match.worst);
-    // at most three (the tray holds three): the best and the worst always, then the strongest of the rest
-    const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(3, list.length);
-    list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
-    const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
-    for (const q of list) {
-      const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
-      const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
-      hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: onTap(() => playShot(q, best || worst ? undefined : 'plain')) }, [
-        // (copy audit 07-06: what the shot was and who played it; 베스트 / 워스트 as a badge with its word)
-        el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
-        cv, best ? el('span', { class: 'rib', text: '베스트' }) : worst ? el('span', { class: 'rib', text: '워스트' }) : null, el('span', { class: 'go', 'aria-hidden': 'true', text: '▶' })]));
-    }
+    const pics = resultHighlights();
     // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
@@ -170,6 +133,62 @@ const match = {
     for (const [cv, q] of pics) drawShot(cv, q);
   },
 };
+
+// finish(), a decided game: both players' records (wins, losses, streak, form) and the series
+function countResult(w, l) {
+  const rw = recOf(game.players[w].name), rl = recOf(game.players[l].name);
+  rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
+  rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
+  series.s[w]++; st.lastLoser = l;
+}
+
+// finish(): each player's box on the result - name, record, the side's colour
+function resultPlayers(w, me, solo, carom) {
+  for (let i = 0; i < 2; i++) {
+    const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;
+    box.className = 'r-p' + (i ? ' two' : '') + (won ? ' won' : '') + (carom ? (i === (game.yellow == null ? 1 : game.yellow) ? ' yel' : '') : ' pool');
+    box.querySelector('.nm').textContent = p.name;
+    const rc = box.querySelector('.rc'); rc.textContent = '';
+    if (solo && i === me) rc.appendChild(el('span', { class: 'me', text: '나' }));
+    rc.appendChild(document.createTextNode(`${r.w}승 ${r.l}패` + (won && r.streak >= 2 ? ` · ${r.streak}연승` : '')));
+  }
+}
+
+// finish(): the stats, each a row of two bars
+function resultStats(carom, inn) {
+  const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
+  const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
+  const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
+  const box = $('#rStats'); box.textContent = '';
+  for (const [k, a, b] of rows) {
+    const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;
+    box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
+      el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
+  }
+}
+
+// finish(): the highlights - the shots of the match worth watching again, in the order they were played, each a card with
+// its name; exactly one is the best shot and one the worst. Returns the cards' canvases with their shots, drawn once the
+// result is showing.
+function resultHighlights() {
+  const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
+  const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
+  if (match.best && !has(match.best)) list.push(match.best);
+  if (match.worst && !has(match.worst)) list.push(match.worst);
+  // at most three (the tray holds three): the best and the worst always, then the strongest of the rest
+  const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(3, list.length);
+  list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
+  const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
+  for (const q of list) {
+    const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
+    const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
+    hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: onTap(() => playShot(q, best || worst ? undefined : 'plain')) }, [
+      // (copy audit 07-06: what the shot was and who played it; 베스트 / 워스트 as a badge with its word)
+      el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
+      cv, best ? el('span', { class: 'rib', text: '베스트' }) : worst ? el('span', { class: 'rib', text: '워스트' }) : null, el('span', { class: 'go', 'aria-hidden': 'true', text: '▶' })]));
+  }
+  return pics;
+}
 
 /* ---- the shot clock (prefs.shotClock seconds, 0 for none): in a match only, for a player at the table (not the computer),
    while aiming or placing the cue ball, stopped while a sheet or the pause menu is up. It runs down under the scoreboard,
