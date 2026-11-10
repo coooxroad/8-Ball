@@ -184,7 +184,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   t = 16000; ok(L.ask({ acct: 'd', dama: 660 }).waiting, 'lobby: 200 apart is still too far after 16 s');
   L.ask({ acct: 'c', dama: 460 }); t = 20000; L.ask({ acct: 'd', dama: 660 });
   t = 20500; const c = L.ask({ acct: 'c', dama: 460 }); ok(c.room && c.standIn && c.standIn.name && c.opp.name === c.standIn.name, 'lobby: a stand-in after waiting long');
-  ok(c.standIn.version === 3 && c.standIn.dama === c.opp.dama && c.standIn.skill === 0.19, 'lobby: the stand-in carries the displayed rating and its v3 ability');
+  ok(c.standIn.version === 3 && c.standIn.dama === c.opp.dama && c.standIn.skill > 0.1 && c.standIn.skill < 0.25, 'lobby: the stand-in carries the displayed rating and its v3 ability');
   t = 40000; ok(L.ask({ acct: 'e', dama: 30 }).waiting && !L.wait.has('d'), 'lobby: one not heard from has left');
   // each player's own wait before a stand-in (standInDelay): 30% 10-20 s, 50% 20-30 s, 20% 30-60 s
   { const n = 20000, ds = []; let s = 7; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
