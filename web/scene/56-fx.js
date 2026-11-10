@@ -1,10 +1,9 @@
   /* The trails drawn in code (content/40-trails.js, kind): sparks and puffs that live a moment (particles: points the
      graphics card shapes itself - a soft dot, a four-point star, a cloud, a flame, a drop), rings that spread flat on the
-     cloth, and marks left on the cloth until the next shot (the chalk trail's picture, scene/55-chalk.js). Every kind
+     cloth, and clothMarks left on the cloth until the next shot (scene/55-clothMarks.js). Every kind
      reads the physics' trace of the cue ball, so it follows the ball's real way and knows each cushion and ball it met.
        stars   sparkles along the way and a star at every turn; when the ball stops the stars are joined, a constellation
        puff    a comic puff of wind as it sets off, and little clouds behind it
-       ink     a brush stroke: thick and wet where the ball went slowly, dry and split where it flew; a blot at each turn
        fire    flames behind it and a scorch on the cloth; sparks off the cushions
        splash  drops thrown up either side, rings spreading on the cloth, a burst at every cushion
        grass   the grass laid flat behind it in a paler stripe, earth and blades thrown up, a clod at every cushion
@@ -125,20 +124,13 @@
     for (const q of fxRings) q.m.visible = false;
     for (const q of ghosts) q.m.visible = false;
   }
-  // the marks on the cloth go on the chalk trail's picture
-  function fxMark(draw) { draw(chalkG, chS()); chalk.dirty = true; chalkMesh.visible = true; }
+  function fxMark(draw) { draw(clothG, clS()); clothMarks.dirty = true; clothMesh.visible = true; }
   const fxPal = { stars: [0xffffff, 0xbfe3ff, 0xffe7a3, 0xd9c7ff], puff: [0xd9d39c, 0xc9d79a, 0xe6dcb9, 0xbccf8c] };
   function fxTurn(k, R) {
     const sp = Math.hypot(k.dout[0], k.dout[1]) * fx.spd, x = k.x, y = k.y, z = 0.004;
     const fromRail = !!k.n;
     if (fx.kind === 'stars') {
       fx.nodes.push(fxSpawn(fxAdd, { shape: 'star', hex: 0xffffff, x, y, z: z + 0.01, s0: 0.11, life: Infinity, tw: 5, a0: 1, fadeIn: 0.15 }));
-    } else if (fx.kind === 'ink') {
-      fxMark((g, s) => {                                                // a blot, its splashes thrown the way the ball went on
-        g.fillStyle = 'rgba(12,12,16,.9)'; const cx = chX(x), cy = chY(y);
-        g.beginPath(); for (let i = 0; i <= 14; i++) { const a = i / 14 * Math.PI * 2, rr = (0.016 + fxRand() * 0.01) * s; g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); } g.fill();
-        for (let i = 0; i < 9; i++) { const a = Math.atan2(-k.dout[1], k.dout[0]) + (fxRand() - 0.5) * 1.6, d = (0.02 + fxRand() * 0.07) * s; g.beginPath(); g.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, (0.0015 + fxRand() * 0.004) * s, 0, 7); g.fill(); }
-      });
     } else if (fx.kind === 'fire' && fromRail) {
       for (let i = 0; i < 14; i++) { const a = fxRand() * Math.PI * 2, v = 0.4 + fxRand() * 1.2; fxSpawn(fxAdd, { shape: 'dot', hex: 0xffc35a, x, y, z, vx: Math.cos(a) * v + k.n[0] * 0.5, vy: Math.sin(a) * v + k.n[1] * 0.5, vz: 0.3 + fxRand() * 0.8, g: -3, s0: 0.012, s1: 0.004, life: 0.35 + fxRand() * 0.3 }); }
     } else if (fx.kind === 'splash') {
@@ -156,23 +148,6 @@
   function fxAlong(a, b, v, R, dt) {
     const d = Math.hypot(b.x - a.x, b.y - a.y), z = 0.004; if (d < 1e-6) return;
     const ux = (b.x - a.x) / d, uy = (b.y - a.y) / d;
-    if (fx.kind === 'ink') {
-      // slow: a full wet stroke; fast: thinner, and the brush runs dry - the edges split into hairs with gaps between
-      const wid = Math.max(0.011, Math.min(0.034, 0.034 - v * 0.004)), dry = Math.min(1, Math.max(0, (v - 1.5) / 3));
-      freshTo(a, b); fx.inkW = wid * (1 - dry * 0.45);
-      fxMark((g, s) => {
-        const px = -uy, py = ux; g.lineCap = 'round';
-        g.strokeStyle = 'rgba(14,14,18,.9)'; g.lineWidth = wid * (1 - dry * 0.45) * s;
-        g.beginPath(); g.moveTo(chX(a.x), chY(a.y)); g.lineTo(chX(b.x), chY(b.y)); g.stroke();
-        for (let h = 0; h < 4; h++) {
-          if (fxRand() < 0.35 + dry * 0.3) continue;
-          const o = (h < 2 ? -1 : 1) * wid * (0.42 + 0.12 * (h % 2)) * (1 - dry * 0.2);
-          g.strokeStyle = `rgba(14,14,18,${(0.35 + fxRand() * 0.4).toFixed(2)})`; g.lineWidth = Math.max(1, wid * 0.12 * s);
-          g.beginPath(); g.moveTo(chX(a.x + px * o), chY(a.y + py * o)); g.lineTo(chX(b.x + px * o), chY(b.y + py * o)); g.stroke();
-        }
-      });
-      return;
-    }
     fx.gap += d;
     const step = { stars: 0.016, puff: 0.06, fire: 0.012, splash: 0.02, grass: 0.012 }[fx.kind] || 0.02;
     while (fx.gap >= step) {
@@ -187,10 +162,10 @@
         const side = (fxRand() - 0.5) * R * 1.1;
         fxSpawn(fxAdd, { shape: 'flame', hex: 0xffa040, burn: true, x: x - uy * side - ux * 0.01, y: y + ux * side - uy * 0.01, z: z + 0.012, vz: 0.12 + fxRand() * 0.1, s0: 0.05 + Math.min(0.03, v * 0.008), s1: 0.018, life: 0.32 + fxRand() * 0.25, a0: 0.6 });
         if (fxRand() < 0.18) fxSpawn(fxAdd, { shape: 'dot', hex: 0xffd27a, x, y, z: z + 0.01, vx: (fxRand() - 0.5) * 0.5, vy: (fxRand() - 0.5) * 0.5, vz: 0.3 + fxRand() * 0.4, g: -1.5, s0: 0.009, s1: 0.003, life: 0.5 });
-        fxMark((g, s) => { g.strokeStyle = 'rgba(34,18,8,.055)'; g.lineWidth = R * 1.1 * s; g.lineCap = 'round'; g.beginPath(); g.moveTo(chX(x - ux * step), chY(y - uy * step)); g.lineTo(chX(x), chY(y)); g.stroke(); });
+        fxMark((g, s) => { g.strokeStyle = 'rgba(34,18,8,.055)'; g.lineWidth = R * 1.1 * s; g.lineCap = 'round'; g.beginPath(); g.moveTo(clX(x - ux * step), clY(y - uy * step)); g.lineTo(clX(x), clY(y)); g.stroke(); });
       } else if (fx.kind === 'grass') {
         // the blades laid flat where it rolled (a paler stripe, the way a mower leaves one), and a little earth and grass thrown up
-        fxMark((g, s) => { const w = R * 1.5 * s, x0 = chX(x - ux * step), y0 = chY(y - uy * step), x1 = chX(x), y1 = chY(y);
+        fxMark((g, s) => { const w = R * 1.5 * s, x0 = clX(x - ux * step), y0 = clY(y - uy * step), x1 = clX(x), y1 = clY(y);
           g.lineCap = 'round'; g.strokeStyle = 'rgba(150,215,120,.16)'; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
           g.strokeStyle = 'rgba(40,90,30,.22)'; g.lineWidth = 1.2; for (const o of [-0.5, 0.5]) { const ox = -uy * o * w, oy = -ux * o * w; g.beginPath(); g.moveTo(x0 + ox, y0 + oy); g.lineTo(x1 + ox, y1 + oy); g.stroke(); } });
         if (v > 0.4 && fxRand() < 0.55) { const sd = fxRand() < 0.5 ? -1 : 1, q = 0.2 + fxRand() * 0.4;
@@ -203,13 +178,13 @@
     }
   }
   function fxTick(w, c, R, dt) {
-    if (!chalk.P || chalk.P !== cur) chalkFit(cur, R);
+    clothFit(cur);
     fx.t += dt;
     const T = traceFor(w), moving = !!c && c.on && (c.vx !== 0 || c.vy !== 0);
     fx.spd = c ? Math.hypot(c.vx, c.vy) : 0;
-    // a new shot: last shot's marks go, and the way it sets off
+    // a new shot: last shot's clothMarks go, and the way it sets off
     if (moving && !fx.moving) {
-      chalkClear(); chalkMat.opacity = 1; fx.nodes.length = 0; fx.gap = 0; fx.seed = 3; fx.fade = 0;
+      clothClear(); clothMat.opacity = 1; fx.nodes.length = 0; fx.gap = 0; fx.seed = 3; fx.fade = 0;
       for (const s of [fxAdd, fxMix]) s.list = s.list.filter(o => o.life !== Infinity);
       const from = fx.last || { x: c.x, y: c.y }, ux = c.vx / (fx.spd || 1), uy = c.vy / (fx.spd || 1), v = Math.min(1, fx.spd / 6), z = 0.004;
       if (fx.kind === 'stars') fx.nodes.push(fxSpawn(fxAdd, { shape: 'star', hex: 0xffffff, x: from.x, y: from.y, z: z + 0.01, s0: 0.11, life: Infinity, tw: 5 }));
@@ -228,13 +203,13 @@
         g.save(); g.lineCap = 'round';
         for (const [wd, col] of [[0.006, 'rgba(150,200,255,.22)'], [0.0018, 'rgba(235,245,255,.85)']]) {
           g.strokeStyle = col; g.lineWidth = wd * s; g.beginPath();
-          fx.nodes.forEach((o, i) => (i ? g.lineTo : g.moveTo).call(g, chX(o.x), chY(o.y))); g.stroke();
+          fx.nodes.forEach((o, i) => (i ? g.lineTo : g.moveTo).call(g, clX(o.x), clY(o.y))); g.stroke();
         }
         g.restore();
       });
-      chalkMat.opacity = 0; fx.fade = 0.001;
+      clothMat.opacity = 0; fx.fade = 0.001;
     }
-    if (fx.fade > 0 && fx.fade < 1) { fx.fade = Math.min(1, fx.fade + dt / 0.8); chalkMat.opacity = fx.fade; }
+    if (fx.fade > 0 && fx.fade < 1) { fx.fade = Math.min(1, fx.fade + dt / 0.8); clothMat.opacity = fx.fade; }
     fx.moving = moving;
     // the way since last frame, step by step as the physics took it
     let prev = fx.last;
@@ -252,7 +227,7 @@
     let live = fxStep(fxAdd, dt, R) | fxStep(fxMix, dt, R) | ghostTick(c, R, dt, moving);
     renderer.getDrawingBufferSize(fxScaleV); const sc = camera.projectionMatrix.elements[5] * fxScaleV.y / 2;
     fxAdd.mat.uniforms.uScale.value = fxMix.mat.uniforms.uScale.value = sc;
-    markFlush(!moving, R, fx.kind === 'ink' ? 0x0e0e12 : null, fx.inkW || 0.02);
+    clothFlush(!moving);
     return moving || !!live || (fx.fade > 0 && fx.fade < 1);
   }
   function fxOff() { setFx(null); }

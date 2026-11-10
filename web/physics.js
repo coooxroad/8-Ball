@@ -481,7 +481,7 @@ function createPhysics(cfg) {
       for (const [k, p] of push) { bs[k].x += p[0]; bs[k].y += p[1]; }
     }
   }
-  /* The trace (only when something has asked for one, as the chalk trail does: w.trace = { p: [], k: [] }): the cue ball's
+  /* The trace (only when something has asked for one, as the trails drawn in code do: w.trace = { p: [], k: [] }): the cue ball's
      way at every step, p as x, y pairs, and k the turns it took - where, its way in and out, and the face's outward line
      when that was a cushion (n), none when it was a ball. It only watches: nothing here changes how a shot runs. */
   let TR_N = null;

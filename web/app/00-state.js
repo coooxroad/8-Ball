@@ -61,7 +61,13 @@ const prefs = (() => {
   const cueAt = id => Math.max(0, CUES.findIndex(c => c.id === id));
   if (!Array.isArray(p.cueIds)) { p.cueIds = (Array.isArray(p.cues) ? p.cues : [p.cue, p.cue]).map(i => OLD_CUE_ORDER[i] || null); p.cueId = OLD_CUE_ORDER[p.cue] || null; }
   p.cues = p.cueIds.length === 2 ? p.cueIds.map(cueAt) : null; p.cue = cueAt(p.cueId);
+  /* Tables likewise by id (clothId) since 11-10, when 학교 책상 was taken out; a save from before kept the place in this order. */
+  const OLD_CLOTH_ORDER = ['teal', 'green', 'blue', 'wine', 'charcoal', 'pool', 'desk', 'soccer', 'court', 'night', 'ice'];
+  { const id = typeof p.clothId === 'string' ? p.clothId : OLD_CLOTH_ORDER[p.cloth]; p.cloth = Math.max(0, CLOTHS.findIndex(c => c.id === id)); }
   if (!CLOTHS[p.cloth]) p.cloth = 0; if (!CUES[p.cue]) p.cue = 0;      // a look that has since been taken out
+  if (!TRAILS.some(t => t.id === p.trail)) p.trail = 'none';           // (먹, 분필: taken out 11-10)
+  // add-ons start switched off (owner 11-10) - once, for saves that had kept one on
+  if (p.adv !== 1) { p.addons = Object.assign({}, p.addons, { real: false }); p.adv = 1; }
   if (!p.drillLv || typeof p.drillLv !== 'object') p.drillLv = {};
   p.aim = 'line';                                                            // (the rail look is folded into the line: scene/90-frame.js - owner, 11-08)
   if (p.gv !== 2) { p.guides = p.guides.map(k => [0, 0.25, 0.5, 0.75][k] ?? 0.5); p.gv = 2; }   // guide lengths were four steps, now a slider
@@ -74,7 +80,7 @@ const prefs = (() => {
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
-const savePrefs = () => { prefs.cueIds = (prefs.cues || []).map(i => (CUES[i] || CUES[0]).id); prefs.cueId = (CUES[prefs.cue] || CUES[0]).id; store.set('prefs', prefs); };   // (cues by id: above)
+const savePrefs = () => { prefs.clothId = (CLOTHS[prefs.cloth] || CLOTHS[0]).id; prefs.cueIds = (prefs.cues || []).map(i => (CUES[i] || CUES[0]).id); prefs.cueId = (CUES[prefs.cue] || CUES[0]).id; store.set('prefs', prefs); };   // (cues by id: above)
 
 /* Everything plays on the one physics (physics.js: what you picture is what happens). usePhysics() puts the tables of the
    chosen size where the game looks for them; it is called before a game is started. */

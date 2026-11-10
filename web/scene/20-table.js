@@ -470,10 +470,10 @@
     setGoals(c.look === 'soccer' || (c.look === 'court' && 'court'));
     if (c.look) {
       feltMat.map = lookFloor(c.look); feltMat.bumpMap = null; feltMat.normalMap = null; feltMat.color.setScalar(1);
-      feltMat.roughness = c.look === 'desk' ? 0.55 : c.look === 'court' ? 0.6 : 1; feltMat.envMapIntensity = c.look === 'desk' ? 0.3 : c.look === 'court' ? 0.3 : 0.08;
-      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)); cushMat.roughness = c.look === 'desk' ? 0.5 : 0.9;
-      woodMat.map = woodTex; woodMat.color.copy(col(c.wood)).multiplyScalar(c.look === 'desk' ? 1.4 : 1.1); woodU.uWs.value.set(0.62, 2.3);
-      if (c.look !== 'desk') { woodMat.clearcoat = 0.6; woodMat.roughness = 0.45; }
+      feltMat.roughness = c.look === 'court' ? 0.6 : 1; feltMat.envMapIntensity = c.look === 'court' ? 0.3 : 0.08;
+      cushMat.map = cushMat.bumpMap = null; cushMat.color.copy(col(c.felt)); cushMat.roughness = 0.9;
+      woodMat.map = woodTex; woodMat.color.copy(col(c.wood)).multiplyScalar(1.1); woodU.uWs.value.set(0.62, 2.3);
+      woodMat.clearcoat = 0.6; woodMat.roughness = 0.45;
       bodyMat.map = woodTex; bodyMat.color.copy(woodMat.color).multiplyScalar(0.6); pedMat.map = woodTex; pedMat.color.copy(woodMat.color).multiplyScalar(0.5);
       waterMesh.visible = c.look === 'sky'; if (waterMesh.visible) waterMesh.scale.set(2 * cur.HL, 2 * cur.HW, 1);
       feltMat.needsUpdate = cushMat.needsUpdate = woodMat.needsUpdate = true;

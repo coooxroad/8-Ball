@@ -7,6 +7,7 @@
 #app.desk.compact.portrait .dk-tabs{order:0;flex:1 0 100%;gap:5px}
 #app.desk.compact.portrait .dk-tab{flex:1 1 0;min-width:0;height:40px;padding:0 4px;font-size:14px}
 #app.desk.compact.portrait .dk-me{display:flex;order:1;flex:0 1 auto;min-width:0;height:38px;padding:0 4px 0 2px;gap:7px}
+#app.desk.compact.portrait .dk-me>span{display:block}
 #app.desk.compact.portrait .dk-me .av{width:28px;height:28px;font-size:12px}
 #app.desk.compact.portrait .dk-me b{max-width:84px;font-size:13px}
 #app.desk.compact.portrait .dk-me small{display:none}

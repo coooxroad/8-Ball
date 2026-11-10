@@ -11,34 +11,25 @@ function ballCase(k) {
   return el('i', { class: 'bcase' }, [el('img', { class: 'box', src: 'ui/ball-case.webp', alt: '' }),
     ...ids.map((n, j) => ballPic(k.id, kind, n, { class: 'b', style: `top:${[23.6, 50, 76.4][j]}%` }))]);
 }
-/* A trail's card: the way a ball went up the card, drawn as that trail draws it (a trail with a kind; scene/55-chalk.js,
-   56-fx.js) - or, for a plain one, a streak of its colour. Each drawn once. */
+/* A trail's card: the way a ball went up the card, drawn as that trail draws it (a trail with a kind; scene/56-fx.js) - or, for a plain one, a streak of its colour. Each drawn once. */
 const trailPics = {};
 function trailPic(kind, wide) {
   const key = kind + (wide ? ':w' : ''); if (trailPics[key]) return trailPics[key];
   // drawn upright, the ball coming down to the bottom; wide: the same turned so it comes in from the left to the right
   const W = 160, H = 260, c = document.createElement('canvas'); c.width = wide ? H : W; c.height = wide ? W : H; const g = c.getContext('2d');
   if (wide) g.setTransform(0, -1, 1, 0, 0, W);
-  const text = (t, x, y) => { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#f6f8f0'; g.font = '20px Jua, sans-serif'; g.textAlign = 'center'; g.fillText(t, wide ? y : x, wide ? W - x : y); g.restore(); };
   let sd = 5; const r = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
   const P = [[60, 4], [128, 96], [34, 186], [80, 256]];                         // down the card, off a cushion and back
   const along = (f, step) => { for (let i = 0; i < P.length - 1; i++) { const [x0, y0] = P[i], [x1, y1] = P[i + 1], L = Math.hypot(x1 - x0, y1 - y0); for (let d = 0; d < L; d += step) f(x0 + (x1 - x0) * d / L, y0 + (y1 - y0) * d / L, d / L, i); } };
   const path = () => { g.beginPath(); P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); };
   g.lineCap = g.lineJoin = 'round';
-  if (kind === 'chalk') {
-    for (let k = 0; k < 3; k++) { g.strokeStyle = `rgba(246,248,240,${0.5 + r() * 0.3})`; g.lineWidth = 2 + r() * 1.5; g.save(); g.translate(r() * 2 - 1, r() * 2 - 1); path(); g.stroke(); g.restore(); }
-    g.strokeStyle = 'rgba(246,248,240,.8)'; g.lineWidth = 1.6; g.beginPath(); g.arc(34, 186, 18, -0.95, 0.95); g.stroke();
-    text('44°', 74, 192);
-  } else if (kind === 'stars') {
+  if (kind === 'stars') {
     g.strokeStyle = 'rgba(200,225,255,.7)'; g.lineWidth = 1.2; path(); g.stroke();
     along((x, y) => { if (r() < 0.5) return; g.fillStyle = ['#fff', '#bfe3ff', '#ffe7a3'][(r() * 3) | 0]; g.globalAlpha = 0.5 + r() * 0.5; g.beginPath(); g.arc(x + r() * 10 - 5, y + r() * 10 - 5, 1 + r() * 1.6, 0, 7); g.fill(); g.globalAlpha = 1; }, 6);
     for (const [x, y] of P) { const s = 13; g.fillStyle = '#fff'; g.beginPath(); g.moveTo(x, y - s); g.quadraticCurveTo(x, y, x + s, y); g.quadraticCurveTo(x, y, x, y + s); g.quadraticCurveTo(x, y, x - s, y); g.quadraticCurveTo(x, y, x, y - s); g.fill(); }
   } else if (kind === 'puff') {
     along((x, y, t, i) => { const k = 9 + ((i + t) / 3) * 14; g.fillStyle = ['#d9d39c', '#c9d79a', '#e6dcb9'][(r() * 3) | 0]; g.strokeStyle = 'rgba(90,100,50,.45)'; g.lineWidth = 2;
       for (let j = 0; j < 3; j++) { g.beginPath(); g.arc(x + (r() - 0.5) * k, y + (r() - 0.5) * k * 0.6, k * (0.5 + r() * 0.3), 0, 7); g.fill(); g.stroke(); } }, 34);
-  } else if (kind === 'ink') {
-    along((x, y, t, i) => { const w = 4 + (i + t) * 3.5; g.fillStyle = 'rgba(14,14,18,.92)'; g.beginPath(); g.arc(x, y, Math.max(2, w / 2), 0, 7); g.fill(); if (i === 2 && r() < 0.4) { g.fillStyle = 'rgba(14,14,18,.5)'; g.fillRect(x + 6, y, 2, 2); } }, 1.5);
-    for (let k = 0; k < 10; k++) { g.fillStyle = 'rgba(14,14,18,.85)'; g.beginPath(); g.arc(34 + (r() - 0.3) * 24, 186 + (r() - 0.5) * 28, 1 + r() * 3, 0, 7); g.fill(); }
   } else if (kind === 'fire') {
     along((x, y, t, i) => { const k = 10 + r() * 8; const gr = g.createRadialGradient(x, y, 0, x, y - k * 0.4, k);
       gr.addColorStop(0, 'rgba(255,245,200,.95)'); gr.addColorStop(0.35, 'rgba(255,170,40,.8)'); gr.addColorStop(1, 'rgba(220,40,10,0)');

@@ -29,11 +29,10 @@
   // The cue ball's trail (내 장비 · 트레일): where it has been in the last moment, as a ribbon fading behind it.
   const rTrail = makeRibbon(); scene.add(rTrail); rTrail.renderOrder = 2; rTrail.material.depthTest = true;
   let trail = null, trailT = 0; const trailPts = [];
-  // (a trail of another kind draws itself: kind 'chalk' scene/55-chalk.js, the others scene/56-fx.js)
-  function setTrail(id) { const t = TRAILS.find(x => x.id === id); trail = t && (t.color || t.kind) ? t : null; trailPts.length = 0; rTrail.visible = false; chalkOff(); fxOff(); if (trail && trail.kind && trail.kind !== 'chalk') setFx(trail); if (trail && trail.sound) fxSounds.push({ file: trail.sound, v: 0, x: 0, y: 0 }); }
+  // (a trail of another kind draws itself: scene/56-fx.js)
+  function setTrail(id) { const t = TRAILS.find(x => x.id === id); trail = t && (t.color || t.kind) ? t : null; trailPts.length = 0; rTrail.visible = false; clothOff(); fxOff(); if (trail && trail.kind) setFx(trail); if (trail && trail.sound) fxSounds.push({ file: trail.sound, v: 0, x: 0, y: 0 }); }
   function trailTick(w, c, R, dt) {
     trailT += dt;
-    if (trail && trail.kind === 'chalk') return chalkTick(w, c, R, dt);
     if (trail && trail.kind) return fxTick(w, c, R, dt);
     if (trail && c && c.on && !c.z) {
       const l = trailPts.length;
@@ -105,7 +104,8 @@
   const line = (x, y, z, dx, dy, len) => [x, y, z, x + dx * len, y + dy * len, z];
   // the colour a ball's path is drawn in: the ball's own, lifted a little towards white so that a dark ball still shows
   const lift = (h, k) => { const r = h >> 16 & 255, g = h >> 8 & 255, b = h & 255; return Math.round(r + (255 - r) * k) << 16 | Math.round(g + (255 - g) * k) << 8 | Math.round(b + (255 - b) * k); };
-  const pathCol = (table, id) => lift(table === 'carom' ? [0xf4efe2, 0xf4c20d, 0xd3241c, 0xd3241c][id] : id === 0 ? 0xf4efe2 : ballHex(id), 0.22);
+  // (on the carom table the white and the yellow change balls with the frame - 30-balls.js caromY - so the colour follows the yellow)
+  const pathCol = (table, id) => lift(table === 'carom' ? (id < 2 ? (id === caromY ? 0xf4c20d : 0xf4efe2) : 0xd3241c) : id === 0 ? 0xf4efe2 : ballHex(id), 0.22);
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
   zone.add(new THREE.Mesh(new THREE.CircleGeometry(1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false })));

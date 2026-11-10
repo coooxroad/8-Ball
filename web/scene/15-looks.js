@@ -52,7 +52,7 @@
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
   };
 
-  /* Tables that are something else (look: 'sky' | 'soccer' | 'desk'): their cloth a picture drawn here for the table shown,
+  /* Tables that are something else (look: 'sky' | 'soccer' | 'court'): their cloth a picture drawn here for the table shown,
      their rails a plain colour; the sky also moves (skyMat in 20-table.js, drawn like the pool's water), and on a pool
      table the soccer pitch has a goal over every pocket, the basketball court ('court') a hoop (setGoals, 20-table.js). Looks only: they play as cloth. */
   const lookTex = {};
@@ -111,20 +111,6 @@
         for (let k = 0; k <= 40; k++) { const t = -A + 2 * A * k / 40; arc.push([cx - sx * r3 * Math.cos(t), r3 * Math.sin(t)]); }
         line([[sx * L, -yc], arc[0]]); line(arc); line([arc[arc.length - 1], [sx * L, yc]]);
       }
-    } else if (kind === 'desk') {
-      g.fillStyle = '#c9a274'; g.fillRect(0, 0, W2, H2);                          // birch ply, its grain along the length
-      for (let k = 0; k < 520; k++) { const y = rnd() * H2, a = 0.04 + rnd() * 0.08; g.strokeStyle = rnd() < 0.6 ? `rgba(120,78,40,${a})` : `rgba(255,236,200,${a})`; g.lineWidth = 1 + rnd() * 3;
-        g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= W2; x += 64) g.lineTo(x, y + Math.sin(x * 0.004 + k) * 6 + (rnd() - 0.5) * 2); g.stroke(); }
-      for (let k = 0; k < 3; k++) { const x = 200 + rnd() * (W2 - 400), y = 120 + rnd() * (H2 - 240), r = 50 + rnd() * 30; g.strokeStyle = 'rgba(110,70,40,.12)'; g.lineWidth = 7; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke(); }  // cup rings
-      // pencil: doodles, a sum, a heart - grey graphite, faint
-      g.strokeStyle = 'rgba(52,52,60,.62)'; g.fillStyle = 'rgba(52,52,60,.62)'; g.lineWidth = 4; g.lineJoin = g.lineCap = 'round';
-      g.font = `${Math.round(0.075 * kx)}px "Gaegu", "Jua", sans-serif`; g.textAlign = 'center';
-      const doodles = [['x² + y² = r²', 0.22, 0.25], ['시험 화이팅!', 0.72, 0.78], ['3 × 7 = 21', 0.8, 0.22], ['♡', 0.36, 0.72]];
-      for (const [t, u, v] of doodles) { g.save(); g.translate(u * W2, v * H2); g.rotate((rnd() - 0.5) * 0.3); g.fillText(t, 0, 0); g.restore(); }
-      g.save(); g.translate(0.58 * W2, 0.4 * H2); g.rotate(0.2); for (let k = 0; k < 2; k++) { g.beginPath(); g.moveTo(-60, -20 + k * 40); g.lineTo(60, -20 + k * 40); g.moveTo(-20 + k * 40, -60); g.lineTo(-20 + k * 40, 60); g.stroke(); }
-      g.beginPath(); g.arc(-40, -40, 12, 0, 7); g.stroke(); g.beginPath(); g.moveTo(-10, -10); g.lineTo(10, 10); g.moveTo(10, -10); g.lineTo(-10, 10); g.stroke(); g.restore();   // tic-tac-toe
-      g.save(); g.translate(0.12 * W2, 0.66 * H2); for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * 4 * Math.PI / 5; (k ? g.lineTo : g.moveTo).call(g, Math.cos(a) * 34, Math.sin(a) * 34); } g.closePath(); g.stroke(); g.restore();   // a star
-      for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(${200 + rnd() * 30},${190 + rnd() * 20},${190 + rnd() * 20},.9)`; g.beginPath(); g.ellipse(rnd() * W2, rnd() * H2, 3 + rnd() * 6, 2 + rnd() * 2, rnd() * 3, 0, 7); g.fill(); }   // eraser crumbs
     }
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.repeat.set(1 / (2 * P.HL), 1 / (2 * P.HW)); t.offset.set(0.5, 0.5); return (lookTex[key] = t);
   }
