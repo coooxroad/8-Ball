@@ -541,6 +541,12 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
   (요청 내용·순서 같음). ② `app/90-loop.js` `frame()`에서 프레임 상한(`paceDue`)과 큐 팔로스루(`followTick`)를 분리(같은 로직).
   측정: 시작 프로파일(헤드리스) JS는 천·나무 생성 합쳐 약 120ms뿐, 나머지 약 3.9초는 2.3MB 페이지 파싱·셰이더 컴파일(소프트웨어 GL) — JS 쪽 시작 최적화 여지는 작다.
   취향 결정이 필요한 제안: 없음.
+- **11-11 새벽 (5회, 05:40대, 정리 모드 — 메인 세션이 방금 푸시 중이라 KEEP OUT·CSS는 안 건드림)**: ① `scene/40-cue.js` `setCue`(71줄)를
+  `madeCue`(직접 만든 큐: profile·parts)·`cueGlow`·`latheCue`(기본 큐)로 나누고 공통 `cueSection`·`cueStd`·`cueGlass`를 밖으로. 큐 9개 사진(두 크기)이
+  전후 md5 완전히 같음. ② `scene/15-looks.js` `lookFloor`(57줄) → `skyFloor`·`soccerFloor`·`courtFloor`, 선 긋기 `line()`과 3.5cm 안쪽 여백을 한 번만.
+  밤하늘·축구장·농구장 테이블(위·3D) 전후 md5 같음. 화질 쪽은 살펴봤으나 이미 다 되어 있음(정지 층 MSAA/2배 슈퍼샘플, 텍스처 비등방 8, 그림자 2048²).
+  참고: `tex/ball-marble.webp`(14KB, 페이지에 base64로 들어감)는 지금 어느 공도 안 씀 — `tasks/gpt-skins.md`가 쓸 수 있는 재질로 적어 둬서 남김.
+  취향 결정이 필요한 제안: 없음.
 
 ## 7. 남은 일
 
