@@ -6,7 +6,8 @@
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
-    const budget = Math.round(36 + 64 * skill * skill); let sims = 0;
+    // (ranked: room for weighing how sure each scoring line is - see sure() below)
+    const budget = ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill); let sims = 0;   // (a pool simulation costs more)
     const exploreMasse = g.masse && !ordinaryFour && rand() < style.masse * (ranked ? 0.04 + 0.22 * skill : 0.45 + 0.5 * skill);
     const bankChance = ordinaryFour ? 0.025 + 0.82 * practice.bank ** 1.7 + style.bank * 0.18 :
       0.07 + practice.bank * 0.83 + style.bank * 0.16;
@@ -122,7 +123,9 @@
           const other = ordered.find(b => b.id !== T.id) || w.balls.find(b => b.on && b.id !== w.cue && b.id !== T.id); // In a 3-cushion opening only the red can be hit first.
           let rank = humanCaromRank(h, angle, other, need);
           if (ordinaryFour) rank += (1 - skill) * (d * 0.14 + f * f * 0.16);
-          const V = ordinaryFour ? 1.2 + 0.46 * Math.sqrt(d + distance(T, other)) + style.power * 0.25 : (need ? 4.4 : 2.5) * PACE.carom;
+          // (4구: firm enough that the cue ball carries on to the second red when the first is not quite as meant - a soft
+          // stroke that died after one red was the stand-in's most foolish-looking miss)
+          const V = ordinaryFour ? 1.55 + 0.5 * Math.sqrt(d + distance(T, other)) + style.power * 0.25 : (need ? 4.4 : 2.5) * PACE.carom;
           const route = ordinaryFour ? (Math.abs(f) < 0.2 ? 'straight' : 'cut') : 'carom';
           add(angle, V, T.id, { rank, cut: Math.abs(f), difficulty: d * 0.4 + Math.abs(f) * 0.7, kind: 'carom', route });
         }
@@ -134,6 +137,24 @@
         if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2 * PACE.carom, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
       }
     }
+    /* How sure a scoring line is, for this person (owner 11-10: the stand-in played lines it could not make - one red,
+       the pace dying - and missed easy cuts the aim line shows anyone). Their own ordinary miss - the aim and pace error
+       they shoot with (below) - is tried both ways; the share that still scores is how sure the line is. A thin cut or a
+       long one is a gamble for an unsure hand and nothing to a sure one, so a weak player takes the thick, plain shot and
+       a strong one the line that leaves the next. Deterministic: no random numbers. */
+    const aimSigma = shot => {
+      const diff = clamp(shot.difficulty + Math.hypot(shot.a, shot.b) * 0.65 + g.powerOf(shot.V) * 0.25 + shot.el * 0.4, 0, 2.5);
+      return (pool ? 1 : 0.20) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7);
+    };
+    const paceSigma = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
+    const sure = shot => {
+      const sa = aimSigma(shot) * 1.4, sp = paceSigma * 1.2; let n = 0, k = 0;
+      for (const [da, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (sims >= budget) break;
+        const s = simulate({ ...shot, angle: shot.angle + da * sa, V: speed(shot.V * (1 + dv * sp)) }); n++; k += s.made ? 1 : 0;
+      }
+      return n ? k / n : 0.5;
+    };
     const salience = k => k.rank - (k.kind === 'bank' ? style.bank * 0.8 : k.kind === 'masse' ? style.masse * 0.9 : 0);
     // A nearby, obvious route is easy to notice, but two similar lines don't always stand out in the same order.
     if (ranked) for (const k of candidates) {
@@ -144,11 +165,13 @@
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
+      if (ranked && r.made && r.value < 100) { r.sure = sure(shot); r.value -= (1 - r.sure) * 11; }
       if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
     };
-    const visible = ranked ? candidates.slice(0, 2 + Math.round(8 * skill + 2 * rand())) : (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : 8);
+    // (everyone sees the plain lines the aim line shows; a better player also sees further ones)
+    const visible = ranked ? candidates.slice(0, 7 + Math.round(9 * skill + 2 * rand())) : (skill < 0.3 ? candidates.filter(k => k.target === ordered[0].id && (k.kind !== 'bank' || style.bank > 0.7)) : candidates).slice(0, skill < 0.3 ? 4 : 8);
     if (ordinaryFour && rand() < 1 - skill ** 1.4) {
       // A beginner often looks at the nearby thick hit even when a thin cut looks promising.
       const straight = candidates.find(k => k.target === ordered[0].id && k.route === 'straight');
@@ -166,7 +189,9 @@
       }
     }
     // A difficult position has recognizable responses: a deliberate safety, or a thick hit with a full-power release.
-    if (!best || !best.made) {
+    // (an ordinary 4구 player with a fair attempt at the points goes for them; the soft touch-and-stay is a good player's
+    // choice, not a weak one's - it was the stand-in's 'one red, the pace dying' shot)
+    if (!best || !best.made && !(ordinaryFour && best.safe && skill < 0.6)) {
       const T = ordered.find(t => { const angle = Math.atan2(t.y - c.y, t.x - c.x), hit = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); return hit.type === 'ball' && hit.ball === t.id; }) || ordered[0], pos = g.placing ? P.findFree(w, Math.min(T.x - 0.3, g.placing === 'kitchen' ? -P.HL / 2 : P.HL - P.R), T.y, w.cue) : null;
       const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, base = Math.atan2(T.y - y, T.x - x), desperate = rand() < style.desperation * (0.35 + (1 - skill) * 0.65);
       for (const power of desperate ? [1, 0.35, 0.22] : [0.22, 0.35, 0.52]) for (const da of [0, 0.02, -0.02]) {
@@ -178,7 +203,11 @@
     let chosen = best.shot;
     if (ordinaryFour && g.masse && !best.made && !turn.throwing) chosen = humanFourEscape(c, ordered, person) || chosen;
     if (ordinaryFour && !chosen.a && !chosen.b && !chosen.el && !turn.throwing) {
-      chosen = { ...chosen, ...humanHabitTip(person, chosen, best.made) };
+      // (the habit stays only when the line still scores with it, or by a weak player's lapse - set on after the line was
+      // found, it had been turning made lines into misses)
+      const tipped = { ...chosen, ...humanHabitTip(person, chosen, best.made) };
+      if (tipped.stroke && best.made && sims < budget + 4) { sims++; const keep = simulate(tipped).made || rand() < (1 - skill) * 0.25; if (keep) chosen = tipped; }
+      else chosen = tipped;
     }
     if (turn.throwing) {
       const T = ordered[0], base = Math.atan2(T.y - c.y, T.x - c.x);

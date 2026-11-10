@@ -5,7 +5,8 @@
     for (const ch of `${person.name}|${person.icon}|${person.dama}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const unit = () => ((h = (Math.imul(h, 1664525) + 1013904223) >>> 0) / 4294967296);
     const limit = x => Math.max(0.03, Math.min(0.98, x)), s = person.skill;
-    const ability = () => limit(s + (unit() - 0.5) * 0.25);
+    // (each skill a little either side of the whole; less so at the top, where a sure player is sure all round)
+    const ability = () => limit(s + (unit() - 0.5) * 0.25 * (person.version === 3 ? 1 - s * 0.6 : 1));
     const result = { aim: ability(), touch: ability(), spin: ability(), bank: ability(), position: ability(),
       thicknessBias: (unit() - 0.5) * 2, paceBias: (unit() - 0.5) * 2, bankBias: (unit() - 0.5) * 2,
       grit: 0.45 + unit() * 0.55, dexterity: limit(s * 0.6 + 0.3 + unit() * 0.1) };

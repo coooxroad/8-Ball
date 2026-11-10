@@ -50,8 +50,10 @@
       const hit = line(angle);
       const correction = target && hit.hit === mark.hit ?
         (thickness(wanted, mark) - thickness(angle, hit)) * width : wanted - angle;
-      const read = (rand() * 2 - 1) * width * (0.002 + loose ** 2 * 0.027);
-      angle += correction * (0.87 + aim * 0.13 + rand() * (0.025 + loose * 0.18)) + read;
+      // (the line on the table is plain to anyone: lining up to it is close even for a beginner - owner 11-10, the stand-in
+      // missed easy cuts the guide showed; what a beginner lacks is a sure stroke, the shot's own error in humanPlan)
+      const read = (rand() * 2 - 1) * width * (0.002 + loose ** 2 * 0.012);
+      angle += correction * (1 + (rand() * 2 - 1) * (0.004 + loose * 0.06)) + read;
       sweep.push(angle);
     }
     return sweep;

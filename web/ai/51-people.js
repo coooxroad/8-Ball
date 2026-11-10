@@ -32,7 +32,9 @@
     }
     return 0.95;
   }
-  const rankedSkills = [[500, 0.19], [800, 0.36], [1100, 0.52], [1400, 0.68], [1700, 0.83], [2000, 0.95]];
+  // (owner 11-10: the step from one rating band to the next was too small - a 2000 stand-in lost to a 300 player; the
+  // middle bands are now well apart and the top nearly sure)
+  const rankedSkills = [[300, 0.10], [500, 0.20], [800, 0.38], [1100, 0.56], [1400, 0.70], [1700, 0.85], [2000, 0.97]];
   function rankedSkill(rating) {
     if (!Number.isFinite(rating)) rating = rankedSkills[0][0];
     let [lo, lowSkill] = rankedSkills[0];
