@@ -103,16 +103,31 @@ function chalkTick(dt) {
   c.t += dt; if (c.t >= CHALK) { st.chalk = null; return true; }
   return true;
 }
+// The frame-rate cap ('낮음' 60, a software renderer 30, otherwise the screen's own rate): false when this animation frame
+// comes before the next one is due. The due time steps on by whole frames, so the rate holds even when frames arrive unevenly.
+function paceDue(now) {
+  const hz = prefs.quality === 'high' ? 0 : scene.softwareRendering ? 30 : prefs.quality === 'low' ? 60 : 0;
+  if (!hz) { framePace.hz = 0; framePace.due = 0; return true; }
+  const step = 1000 / hz;
+  if (framePace.hz !== hz) { framePace.hz = hz; framePace.due = 0; }
+  if (framePace.due && now < framePace.due - 0.25) return false;
+  framePace.due = !framePace.due || now - framePace.due > step ? now + step : framePace.due + step;
+  return true;
+}
+// follow-through (frame): the cue's place this frame for the moment after the hit, or null once it is over
+function followTick(dt) {
+  const f = st.follow; f.t += Math.max(0, dt);
+  if (f.t > 0.42) { st.follow = null; return null; }
+  const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el);
+  let reach = Math.min(0.11, 0.025 + f.V * 0.014);
+  if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
+  const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
+  return { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
+}
 let wallsShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
-  const hz = prefs.quality === 'high' ? 0 : scene.softwareRendering ? 30 : prefs.quality === 'low' ? 60 : 0;
-  if (hz) {
-    const step = 1000 / hz;
-    if (framePace.hz !== hz) { framePace.hz = hz; framePace.due = 0; }
-    if (framePace.due && now < framePace.due - 0.25) return;
-    framePace.due = !framePace.due || now - framePace.due > step ? now + step : framePace.due + step;
-  } else { framePace.hz = 0; framePace.due = 0; }
+  if (!paceDue(now)) return;
   const f0 = performance.now(); prof.frame();
   checkLayout();
   const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
@@ -131,17 +146,7 @@ function frame(now) {
       if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.show ?? ca.el ?? 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
     }
     // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
-    if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) {
-      const f = st.follow; f.t += Math.max(0, dt);
-      if (f.t > 0.42) st.follow = null;
-      else {
-        const R = game.P.R, se = Math.sin(f.el), lift = f.spin.y * 0.5 * R * Math.cos(f.el);
-        let reach = Math.min(0.11, 0.025 + f.V * 0.014);
-        if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
-        const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
-        follow = { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
-      }
-    }
+    if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) follow = followTick(dt);
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'gather') { gatherTick(dt); animating = true; st.rev++; }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }

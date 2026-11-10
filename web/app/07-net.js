@@ -35,6 +35,10 @@ const net = (() => {
       trouble = { path, status: 0, why: ctl && ctl.signal.aborted ? 'slow' : 'offline' }; console.warn('[net]', path, String(e && e.message || e)); return null;
     } finally { clearTimeout(timer); }
   }
+  // an account this device lets go of is kept in 'acctOld' with what it last showed - never deleted, so it can be found again
+  function putAside(who) {
+    const old = store.get('acctOld', []); if (!old.some(a => a.id === who.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, who)); store.set('acctOld', old);
+  }
   // a 401 about the account in use: asked once more, plainly; only a second 401 for the same account lets it go (put aside)
   let doubting = null, lostAccount = false;
   function doubt(who) {
@@ -43,7 +47,7 @@ const net = (() => {
       const m = await call('/v1/me');
       if (m && m.status === 401 && account === who) {
         console.warn('[net] the server does not know this account - it is kept aside and a new one opened');
-        const old = store.get('acctOld', []); if (!old.some(a => a.id === who.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, who)); store.set('acctOld', old);
+        putAside(who);
         account = null; store.set('acct', null); lostAccount = true;
       }
     })().finally(() => { doubting = null; });
@@ -109,6 +113,8 @@ const net = (() => {
   function later() { clearTimeout(laterT); laterT = setTimeout(() => { laterN++; flush(); }, Math.min(60000, 4000 * Math.pow(1.6, laterN))); }
   // the 일반 things are everyone's; the rest are owned once bought (all of them, while there is no server)
   const owns = (kind, id) => { const it = (KIND_OF[kind] ? KIND_OF[kind].list() : []).find(q => q.id === id); return !!it && (!SERVER || !(it.rarity > 0) || !!(me && me.owned[kind] && me.owned[kind].includes(id))); };
+  // who sits down in a game with others: the physics this app plays by, the name and what is worn (read at the time of asking)
+  const seatOf = () => ({ phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() });
   window.addEventListener('online', () => flush());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   return {
@@ -119,7 +125,7 @@ const net = (() => {
     claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
     // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)
     // (seek: this one search's id - the lobby answers a room found only to it, so a new search never lands in an old room)
-    async queue(mode, seek) { if (!(await ensure())) return null; return call('/v1/queue', { mode, seek, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }, 10000); },
+    async queue(mode, seek) { if (!(await ensure())) return null; return call('/v1/queue', Object.assign({ mode, seek }, seatOf()), 10000); },
     leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
     // a ranked game's room, by WebSocket: its address for the seat's token
     roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,
@@ -127,13 +133,13 @@ const net = (() => {
     // a game with a friend on another device (server/src/ranked.js InviteCore): a code to give them, asked after until they
     // come; or a friend's code, to join
     // (o: { listed, pw } - a room shown in the list of open rooms, with a password if given: 방 생성하기)
-    async inviteOpen(mode, rules, o) { if (!(await ensure())) return null; return call('/v1/invite/open', Object.assign({ mode, rules, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }, o || {})); },
+    async inviteOpen(mode, rules, o) { if (!(await ensure())) return null; return call('/v1/invite/open', Object.assign({ mode, rules }, seatOf(), o || {})); },
     async inviteList() { if (!(await ensure())) return null; return call('/v1/invite/list', {}); },
     async inviteWatch(id, pw) { if (!(await ensure())) return null; return call('/v1/invite/watch', { id, pw: pw || '', phys: PHYS_V }); },
-    async inviteJoinId(id, pw) { if (!(await ensure())) return null; return call('/v1/invite/join', { id, pw: pw || '', phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    async inviteJoinId(id, pw) { if (!(await ensure())) return null; return call('/v1/invite/join', Object.assign({ id, pw: pw || '' }, seatOf())); },
     inviteAsk: code => call('/v1/invite/ask', { code }),
     async invitePeek(code) { if (!(await ensure())) return null; return call('/v1/invite/peek', { code }); },
-    async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', { code, phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() }); },
+    async inviteJoin(code) { if (!(await ensure())) return null; return call('/v1/invite/join', Object.assign({ code }, seatOf())); },
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
     inviteBot: (code, seat, level) => call('/v1/invite/bot', { code, seat, level }),
     inviteStart: code => call('/v1/invite/start', { code }),
@@ -146,7 +152,7 @@ const net = (() => {
     async linkMake() { if (!(await ensure())) return null; return call('/v1/link/make', {}); },
     async linkUse(code) {
       const r = await call('/v1/link/use', { code }); if (!r || !r.ok || !r.id || !r.key) return r;
-      if (account && account.id !== r.id) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+      if (account && account.id !== r.id) putAside(account);
       account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null); flush();
       return r;
     },
@@ -157,7 +163,7 @@ const net = (() => {
     // signing out (owner 11-10): this device lets go of the account - it stays on the server, tied to its Google account,
     // to sign in to again - and goes on as a new guest (the old one is kept aside on the device, as when one is lost)
     signOut() {
-      if (account) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+      if (account) putAside(account);
       account = null; store.set('acct', null); me = null; store.set('me', null);
       return ensure().then(() => flush());
     },
@@ -166,7 +172,7 @@ const net = (() => {
       await ensure();
       const r = await call('/v1/link/google', { token }, 20000); if (!r || !r.ok) return r;
       if (r.key && r.id) {
-        if (account && account.id !== r.id) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+        if (account && account.id !== r.id) putAside(account);
         account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null);
       }
       await flush(); return r;
