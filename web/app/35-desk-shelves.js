@@ -141,9 +141,9 @@ function shelfPage(d, shop) {
       if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
         cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
       cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
-        [r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+        [shop ? el('i', { class: 'foil', 'aria-hidden': 'true' }) : null, r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
     }
-    const box = el('div', { class: 'dk-cards k-' + kind }, cards); listBounce(box);
+    const box = el('div', { class: 'dk-cards k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (the shop's are foil cards: 74-shop-foil.css)
     dkPut(d.stage, box);
     dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
     // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
