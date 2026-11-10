@@ -56,61 +56,69 @@
      their rails a plain colour; the sky also moves (skyMat in 20-table.js, drawn like the pool's water), and on a pool
      table the soccer pitch has a goal over every pocket, the basketball court ('court') a hoop (setGoals, 20-table.js). Looks only: they play as cloth. */
   const lookTex = {};
+  /* A cloth that is a picture of another floor (content/10-cloths.js look): drawn once per look and table size, 2048 x 1024
+     over the playing area. Each look gets the canvas, its pen, the table, the table-to-picture mappings X and Y, the scale
+     kx, ky (pixels per metre), its own random numbers (the same every time), and line(): a polyline in table metres. The
+     markings sit 3.5 cm in from the cushions (L x Wd: the half length and half width they span). */
   function lookFloor(kind) {
     const key = kind + ':' + cur.HL + 'x' + cur.HW; if (lookTex[key]) return lookTex[key];
     const W2 = 2048, H2 = 1024, c = mkCanvas(W2, H2), g = c.getContext('2d'), P = cur, kx = W2 / (2 * P.HL), ky = H2 / (2 * P.HW);
-    const rnd = lcg(23);
-    const X = x => (x + P.HL) * kx, Y = y => (P.HW - y) * ky;
-    if (kind === 'sky') {
-      const bg = g.createLinearGradient(0, 0, W2, H2); bg.addColorStop(0, '#0a0f2c'); bg.addColorStop(0.55, '#14123a'); bg.addColorStop(1, '#251645');
-      g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
-      for (let k = 0; k < 14; k++) {                                              // nebulae: soft clouds of colour
-        const x = rnd() * W2, y = rnd() * H2, r = 120 + rnd() * 320, hue = [220, 265, 290, 195][k % 4], gr = g.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, `hsla(${hue},70%,45%,.16)`); gr.addColorStop(1, `hsla(${hue},70%,40%,0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
-      }
-      for (let k = 0; k < 2600; k++) { const a = rnd(); g.fillStyle = `rgba(${220 + a * 35},${225 + a * 30},255,${0.15 + a * 0.5})`; g.fillRect(rnd() * W2, rnd() * H2, a > 0.93 ? 2.2 : 1.2, a > 0.93 ? 2.2 : 1.2); }
-    } else if (kind === 'soccer') {
-      const bands = 12;                                                             // mown stripes across the pitch
-      for (let b = 0; b < bands; b++) { g.fillStyle = b % 2 ? '#2f8a3a' : '#3a9a45'; g.fillRect(b * W2 / bands, 0, W2 / bands + 1, H2); }
-      for (let k = 0; k < 26000; k++) { const x = rnd() * W2, y = rnd() * H2, l = 3 + rnd() * 5; g.strokeStyle = rnd() < 0.5 ? 'rgba(20,70,25,.35)' : 'rgba(120,200,110,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 2, y - l); g.stroke(); }
-      g.strokeStyle = 'rgba(250,252,248,.92)'; g.lineWidth = 0.008 * kx; g.lineCap = 'butt';
-      const m = 0.035, L = P.HL - m, Wd = P.HW - m, line = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, X(x), Y(y))); g.stroke(); };
-      line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
-      const cr = Wd * 0.32; g.beginPath(); g.ellipse(X(0), Y(0), cr * kx, cr * ky, 0, 0, 7); g.stroke();
-      g.fillStyle = 'rgba(250,252,248,.92)'; const spot = (x, y) => { g.beginPath(); g.arc(X(x), Y(y), 0.008 * kx, 0, 7); g.fill(); }; spot(0, 0);
-      for (const sx of [-1, 1]) {
-        const pd = L * 0.3, pw = Wd * 0.62, gd = L * 0.11, gw = Wd * 0.3;
-        line([[sx * L, -pw], [sx * (L - pd), -pw], [sx * (L - pd), pw], [sx * L, pw]]); line([[sx * L, -gw], [sx * (L - gd), -gw], [sx * (L - gd), gw], [sx * L, gw]]);
-        spot(sx * (L - pd * 0.72), 0);
-        g.beginPath(); const a = Math.acos(Math.min(1, (pd - pd * 0.72) / (cr * 0.85))); g.ellipse(X(sx * (L - pd * 0.72)), Y(0), cr * 0.85 * kx, cr * 0.85 * ky, 0, sx > 0 ? Math.PI - a : -a, sx > 0 ? Math.PI + a : a); g.stroke();
-        for (const sy of [-1, 1]) { g.beginPath(); g.ellipse(X(sx * L), Y(sy * Wd), 0.04 * kx, 0.04 * ky, 0, 0, 7); g.stroke(); }
-      }
-    } else if (kind === 'court') {
-      // maple boards along the length, their joints staggered, then the court's lines and the painted keys
-      const bw = 0.04 * ky;
-      for (let y = 0, row = 0; y < H2; y += bw, row++) {
-        let x = -((row * 137) % 300);
-        while (x < W2) { const len = 260 + rnd() * 420, l = 58 + rnd() * 9; g.fillStyle = `hsl(${30 + rnd() * 6},${52 + rnd() * 10}%,${l}%)`; g.fillRect(x, y, len, bw); g.fillStyle = 'rgba(90,55,25,.35)'; g.fillRect(x, y, 1.5, bw); x += len; }
-        g.fillStyle = 'rgba(90,55,25,.25)'; g.fillRect(0, y, W2, 1.2);
-      }
-      for (let k = 0; k < 9000; k++) { g.fillStyle = `rgba(120,75,35,${0.03 + rnd() * 0.05})`; g.fillRect(rnd() * W2, rnd() * H2, 6 + rnd() * 30, 1); }
-      const m = 0.035, L = P.HL - m, Wd = P.HW - m;
-      const key = (sx, fill) => { g.fillStyle = fill; g.fillRect(Math.min(X(sx * L), X(sx * (L - L * 0.27))), Y(Wd * 0.28), Math.abs(X(sx * L) - X(sx * (L - L * 0.27))), Y(-Wd * 0.28) - Y(Wd * 0.28)); };
-      key(-1, 'rgba(30,70,170,.55)'); key(1, 'rgba(30,70,170,.55)');
-      g.fillStyle = 'rgba(30,70,170,.3)'; g.beginPath(); g.ellipse(X(0), Y(0), Wd * 0.26 * kx, Wd * 0.26 * ky, 0, 0, 7); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,.92)'; g.lineWidth = 0.007 * kx;
-      const line = pts => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, X(x), Y(y))); g.stroke(); };
-      line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
-      for (const r of [Wd * 0.26, Wd * 0.1]) { g.beginPath(); g.ellipse(X(0), Y(0), r * kx, r * ky, 0, 0, 7); g.stroke(); }
-      for (const sx of [-1, 1]) {
-        const kx2 = sx * (L - L * 0.27);
-        line([[sx * L, -Wd * 0.28], [kx2, -Wd * 0.28], [kx2, Wd * 0.28], [sx * L, Wd * 0.28]]);
-        g.beginPath(); g.ellipse(X(kx2), Y(0), Wd * 0.28 * kx, Wd * 0.28 * ky, 0, 0, 7); g.stroke();
-        // the three-point line: straight from the baseline, then the arc round the basket
-        const r3 = Wd * 0.94, yc = Wd * 0.86, cx = sx * (L - L * 0.06), A = Math.asin(yc / r3), arc = [];
-        for (let k = 0; k <= 40; k++) { const t = -A + 2 * A * k / 40; arc.push([cx - sx * r3 * Math.cos(t), r3 * Math.sin(t)]); }
-        line([[sx * L, -yc], arc[0]]); line(arc); line([arc[arc.length - 1], [sx * L, yc]]);
-      }
-    }
+    const X = x => (x + P.HL) * kx, Y = y => (P.HW - y) * ky, m = 0.035;
+    const line = pts => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, X(x), Y(y))); g.stroke(); };
+    const f = { g, W2, H2, P, kx, ky, X, Y, rnd: lcg(23), line, L: P.HL - m, Wd: P.HW - m };
+    if (kind === 'sky') skyFloor(f); else if (kind === 'soccer') soccerFloor(f); else if (kind === 'court') courtFloor(f);
     const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.repeat.set(1 / (2 * P.HL), 1 / (2 * P.HW)); t.offset.set(0.5, 0.5); return (lookTex[key] = t);
+  }
+  // 밤하늘: a night sky - a deep gradient, soft clouds of colour, a scatter of stars
+  function skyFloor({ g, W2, H2, rnd }) {
+    const bg = g.createLinearGradient(0, 0, W2, H2); bg.addColorStop(0, '#0a0f2c'); bg.addColorStop(0.55, '#14123a'); bg.addColorStop(1, '#251645');
+    g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
+    for (let k = 0; k < 14; k++) {                                              // nebulae: soft clouds of colour
+      const x = rnd() * W2, y = rnd() * H2, r = 120 + rnd() * 320, hue = [220, 265, 290, 195][k % 4], gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `hsla(${hue},70%,45%,.16)`); gr.addColorStop(1, `hsla(${hue},70%,40%,0)`); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+    for (let k = 0; k < 2600; k++) { const a = rnd(); g.fillStyle = `rgba(${220 + a * 35},${225 + a * 30},255,${0.15 + a * 0.5})`; g.fillRect(rnd() * W2, rnd() * H2, a > 0.93 ? 2.2 : 1.2, a > 0.93 ? 2.2 : 1.2); }
+  }
+  // 축구장: a pitch - mown stripes, blades of grass, the touchlines, halfway line, centre circle, boxes and corner arcs
+  function soccerFloor({ g, W2, H2, kx, ky, X, Y, rnd, line, L, Wd }) {
+    const bands = 12;                                                             // mown stripes across the pitch
+    for (let b = 0; b < bands; b++) { g.fillStyle = b % 2 ? '#2f8a3a' : '#3a9a45'; g.fillRect(b * W2 / bands, 0, W2 / bands + 1, H2); }
+    for (let k = 0; k < 26000; k++) { const x = rnd() * W2, y = rnd() * H2, l = 3 + rnd() * 5; g.strokeStyle = rnd() < 0.5 ? 'rgba(20,70,25,.35)' : 'rgba(120,200,110,.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 2, y - l); g.stroke(); }
+    g.strokeStyle = 'rgba(250,252,248,.92)'; g.lineWidth = 0.008 * kx; g.lineCap = 'butt';
+    line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
+    const cr = Wd * 0.32; g.beginPath(); g.ellipse(X(0), Y(0), cr * kx, cr * ky, 0, 0, 7); g.stroke();
+    g.fillStyle = 'rgba(250,252,248,.92)'; const spot = (x, y) => { g.beginPath(); g.arc(X(x), Y(y), 0.008 * kx, 0, 7); g.fill(); }; spot(0, 0);
+    for (const sx of [-1, 1]) {
+      const pd = L * 0.3, pw = Wd * 0.62, gd = L * 0.11, gw = Wd * 0.3;
+      line([[sx * L, -pw], [sx * (L - pd), -pw], [sx * (L - pd), pw], [sx * L, pw]]); line([[sx * L, -gw], [sx * (L - gd), -gw], [sx * (L - gd), gw], [sx * L, gw]]);
+      spot(sx * (L - pd * 0.72), 0);
+      g.beginPath(); const a = Math.acos(Math.min(1, (pd - pd * 0.72) / (cr * 0.85))); g.ellipse(X(sx * (L - pd * 0.72)), Y(0), cr * 0.85 * kx, cr * 0.85 * ky, 0, sx > 0 ? Math.PI - a : -a, sx > 0 ? Math.PI + a : a); g.stroke();
+      for (const sy of [-1, 1]) { g.beginPath(); g.ellipse(X(sx * L), Y(sy * Wd), 0.04 * kx, 0.04 * ky, 0, 0, 7); g.stroke(); }
+    }
+  }
+  // 농구장: a basketball court
+  function courtFloor({ g, W2, H2, kx, ky, X, Y, rnd, line, L, Wd }) {
+    // maple boards along the length, their joints staggered, then the court's lines and the painted keys
+    const bw = 0.04 * ky;
+    for (let y = 0, row = 0; y < H2; y += bw, row++) {
+      let x = -((row * 137) % 300);
+      while (x < W2) { const len = 260 + rnd() * 420, l = 58 + rnd() * 9; g.fillStyle = `hsl(${30 + rnd() * 6},${52 + rnd() * 10}%,${l}%)`; g.fillRect(x, y, len, bw); g.fillStyle = 'rgba(90,55,25,.35)'; g.fillRect(x, y, 1.5, bw); x += len; }
+      g.fillStyle = 'rgba(90,55,25,.25)'; g.fillRect(0, y, W2, 1.2);
+    }
+    for (let k = 0; k < 9000; k++) { g.fillStyle = `rgba(120,75,35,${0.03 + rnd() * 0.05})`; g.fillRect(rnd() * W2, rnd() * H2, 6 + rnd() * 30, 1); }
+    const key = (sx, fill) => { g.fillStyle = fill; g.fillRect(Math.min(X(sx * L), X(sx * (L - L * 0.27))), Y(Wd * 0.28), Math.abs(X(sx * L) - X(sx * (L - L * 0.27))), Y(-Wd * 0.28) - Y(Wd * 0.28)); };
+    key(-1, 'rgba(30,70,170,.55)'); key(1, 'rgba(30,70,170,.55)');
+    g.fillStyle = 'rgba(30,70,170,.3)'; g.beginPath(); g.ellipse(X(0), Y(0), Wd * 0.26 * kx, Wd * 0.26 * ky, 0, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.92)'; g.lineWidth = 0.007 * kx;
+    line([[-L, -Wd], [L, -Wd], [L, Wd], [-L, Wd], [-L, -Wd]]); line([[0, -Wd], [0, Wd]]);
+    for (const r of [Wd * 0.26, Wd * 0.1]) { g.beginPath(); g.ellipse(X(0), Y(0), r * kx, r * ky, 0, 0, 7); g.stroke(); }
+    for (const sx of [-1, 1]) {
+      const kx2 = sx * (L - L * 0.27);
+      line([[sx * L, -Wd * 0.28], [kx2, -Wd * 0.28], [kx2, Wd * 0.28], [sx * L, Wd * 0.28]]);
+      g.beginPath(); g.ellipse(X(kx2), Y(0), Wd * 0.28 * kx, Wd * 0.28 * ky, 0, 0, 7); g.stroke();
+      // the three-point line: straight from the baseline, then the arc round the basket
+      const r3 = Wd * 0.94, yc = Wd * 0.86, cx = sx * (L - L * 0.06), A = Math.asin(yc / r3), arc = [];
+      for (let k = 0; k <= 40; k++) { const t = -A + 2 * A * k / 40; arc.push([cx - sx * r3 * Math.cos(t), r3 * Math.sin(t)]); }
+      line([[sx * L, -yc], arc[0]]); line(arc); line([arc[arc.length - 1], [sx * L, yc]]);
+    }
   }
