@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 11;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage
+const PHYS_V = 12;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise)
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -98,7 +98,7 @@ function createPhysics(cfg) {
   function makeWorld(n) {
     const balls = [];
     for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false, walls: NO_WALLS };   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades (puzzles), made with walls()
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false, real: null, walls: NO_WALLS };   // real: the 현실 당구 add-on's parts (below)   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades (puzzles), made with walls()
   }
   /* Barricades (puzzles): blocks standing on the cloth that force a way round. Each { x, y, len, thick, ang, h }: its middle,
      length and thickness (m), its turn (radians, 0 along the table's length) and height (m). A ball rolling into one comes
@@ -115,7 +115,7 @@ function createPhysics(cfg) {
   }
 
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice, walls: w.walls || NO_WALLS };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice, real: w.real || null, walls: w.walls || NO_WALLS };
   }
 
   function place(w, id, x, y, rnd) {
@@ -134,13 +134,19 @@ function createPhysics(cfg) {
        side on a raised cue sets the ball spinning about the line it travels along, and the cloth pushes back sideways, so it
        curves (masse) - once it is on the cloth: in the air nothing turns it. */
   function strike(w, ang, V, a, bb, el) {
-    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
-    const ce = DMath.cos(el), se = DMath.sin(el);
+    const real = w.real;
+    // 현실 당구 · 스쿼트: side sends the cue ball off a little the other way from the side struck (a > 0, the side that spins it
+    // anticlockwise from above, turns its way anticlockwise) - 1.7 degrees at the most side a stroke gives (a = 0.5)
+    if (real && real.squirt && a) ang += SQUIRT * a;
+    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
+    let ce = DMath.cos(el), se = DMath.sin(el);
+    // 현실 당구 · 큐 각도: a cue cannot go through a ball or the rail behind the cue ball - it is raised over them, as far as it must
+    if (real && real.cue) { const t = cueRiseTan(w, ang, bb); if (t > se / ce) { const k = 1 / Math.sqrt(1 + t * t); ce = k; se = t * k; } }
     c.vx = V * ce * dx; c.vy = V * ce * dy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
-    const up = lift(V, el); c.z = 0; c.vz = up > 0 ? up : 0;
+    const up = lift(V, se); c.z = 0; c.vz = up > 0 ? up : 0;
     if (se > 0) {
       // driven down into the slate, the ball is gripped by the cloth for that instant, and gives up some of its spin to it
       const ux = c.vx - R * c.wy, uy = c.vy + R * c.wx, us = DMath.hypot(ux, uy);
@@ -161,7 +167,34 @@ function createPhysics(cfg) {
      The pinch of a raised stroke (the ball driven into the cloth for an instant, giving it some of its spin) is a third
      of a full one: a masse goes out along the cue first and bends after, as it does in slow motion. */
   const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35, RAIL_ROLL = 0.2;
-  const lift = (V, el) => { const u = Math.max(0, ANG_K * V * DMath.sin(el) - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
+  const lift = (V, se) => { const u = Math.max(0, ANG_K * V * se - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
+  /* 현실 당구 (an add-on for games with a friend; w.real = { throw, squirt, cue }, each part on or off - owner 11-10).
+     SQUIRT: radians of squirt per unit of side (a is the tip's offset as a share of the radius).
+     cueRiseTan: how steep (the tangent) the cue must be to pass over every ball on its line behind the cue ball (the cue a
+     shaft SHAFT thick, aimed at the struck point; a ball within CUE_BACK behind counts) and over the rail - the cushion's top RAIL_H (radii)
+     above the cloth. 0: level is free. The cue line, in the plane of the shot,
+     rises z = c + t s from the struck point (c above the ball's centre); a ball at s0 behind and l to the side is cleared when
+     the line passes (R + SHAFT) from its centre: (c + t s0)^2 >= ((R + SHAFT)^2 - l^2) (1 + t^2), the least t solving it. */
+  const SQUIRT = 0.06, SHAFT = 0.008, CUE_BACK = 1.2, RAIL_H = 1.27;
+  function cueRiseTan(w, ang, bb) {
+    const c = w.balls[w.cue], bx = -DMath.cos(ang), by = -DMath.sin(ang), z0 = (bb || 0) * R;   // (bb: the tip above centre, a share of R)
+    let need = 0;
+    for (const o of w.balls) {
+      if (!o.on || o.id === w.cue) continue;
+      const rx = o.x - c.x, ry = o.y - c.y, s0 = rx * bx + ry * by; if (s0 <= 0 || s0 > CUE_BACK) continue;
+      const l = Math.abs(rx * by - ry * bx), K = (R + SHAFT) * (R + SHAFT) - l * l; if (K <= 0) continue;
+      let t;
+      if (s0 * s0 <= K + 1e-12) t = 6;                          // (touching it from behind: nearly straight down)
+      else t = (-z0 * s0 + Math.sqrt(K * (s0 * s0 + z0 * z0 - K))) / (s0 * s0 - K);
+      if (t > need) need = t;
+    }
+    // the rail: the nearest cushion behind along the cue's line, then its wood
+    let sr = Infinity;
+    if (bx > 1e-9) sr = Math.min(sr, (HL - c.x) / bx); else if (bx < -1e-9) sr = Math.min(sr, (-HL - c.x) / bx);
+    if (by > 1e-9) sr = Math.min(sr, (HW - c.y) / by); else if (by < -1e-9) sr = Math.min(sr, (-HW - c.y) / by);
+    if (sr < CUE_BACK) { const t = (RAIL_H * R - R + SHAFT - z0) / Math.max(sr, 0.004); if (t > need) need = t; }
+    return Math.min(need, 6);
+  }
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
         CLEAR = 0.034, MU_LAND = 0.25,                    // CLEAR: a ball this far off the cloth passes over a cushion
@@ -401,6 +434,24 @@ function createPhysics(cfg) {
         for (const [k, v] of dv) { bs[k].vx += v[0]; bs[k].vy += v[1]; }
         if (moved < 1e-10) break;
       }
+      // 현실 당구 · 스로우: the balls rub where they touch - a cut, or side on the cue ball, drags the struck ball a little off
+      // the line of centres and turns it (and the striker). The rub stops at the friction of the blow, or sooner when the
+      // surfaces stop slipping (for two equal balls each unit of rub takes 7 off the slip: 2 x (1 + 5/2)). The balls' own
+      // friction falls with how fast they slip: 0.01 + 0.108 e^(-1.088 slip) (Alciatore's measurements, TP A.14).
+      if (w.real && w.real.throw) for (const c of group) {
+        if (!(c.lam > 0)) continue;
+        const a = bs[c.i], b = bs[c.j], nx = c.nx, ny = c.ny;
+        // each ball's surface where they touch: a's at +R n, b's at -R n (w x r)
+        const ux = (a.vx - a.wz * R * ny) - (b.vx + b.wz * R * ny), uy = (a.vy + a.wz * R * nx) - (b.vy - b.wz * R * nx);
+        const uz = R * (a.wx * ny - a.wy * nx) + R * (b.wx * ny - b.wy * nx);
+        const un = ux * nx + uy * ny, tx = ux - un * nx, ty = uy - un * ny, slip = Math.sqrt(tx * tx + ty * ty + uz * uz);
+        if (slip < 1e-6) continue;
+        const mu = 0.00995 + 0.108 * DMath.exp(-1.088 * slip), f = Math.min(mu * c.lam, slip / 7), ex = tx / slip, ey = ty / slip, ez = uz / slip;
+        a.vx -= f * ex; a.vy -= f * ey; b.vx += f * ex; b.vy += f * ey;
+        // (both balls' spin changes alike: 5/(2R) n x (-f e))
+        const k = 2.5 / R * f, sx = ny * -ez, sy = -nx * -ez, sz = nx * -ey - ny * -ex;
+        a.wx += k * sx; a.wy += k * sy; a.wz += k * sz; b.wx += k * sx; b.wy += k * sy; b.wz += k * sz;
+      }
       // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
       const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
       if (met.length) {
@@ -609,7 +660,8 @@ function createPhysics(cfg) {
      ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1); objPath: the struck ball's whole way,
      for as long as the preview runs. */
   function preview(w, ang, V, a, bb, el, after) {
-    const w2 = clone(w); strike(w2, ang, V, a, bb, el);
+    // (the guide is the cue's line: squirt and throw are what a player learns to allow for, not what the line shows - 현실 당구)
+    const w2 = clone(w); if (w2.real) w2.real = w2.real.cue ? { cue: true } : null; strike(w2, ang, V, a, bb, el);
     const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null, objPath: [] };
     let t = 0, tc = 0, o = null, oGo = false, ldx = 0, ldy = 0, cdx = 0, cdy = 0;
     while (t < 9 + (after || 0) && c.on) {
@@ -676,6 +728,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  return { hop, restEl, cueRiseTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }

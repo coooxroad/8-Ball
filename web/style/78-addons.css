@@ -1,0 +1,54 @@
+/* ---------- 애드온 (app/33-desk-play.js ADDONS): long printed cards, one under another ----------
+   Each the lobby's printed card laid on its side - the friend cards' green, the white line inside - its name and a switch
+   along the top, its parts as chips below. The cards come out of the middle as the friend cards do (playEnter). */
+#dkBoards.addons .bd-fit{display:flex;flex-direction:column;align-items:center;gap:16px;overflow-y:auto;overscroll-behavior:contain;padding:4px 0 12px;scrollbar-width:none}
+#dkBoards.addons .bd-fit::-webkit-scrollbar{display:none}
+#dkBoards .bd.card.addon{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911;flex:none;width:min(100%,760px);height:auto;min-height:150px;cursor:default;container-type:inline-size;--u:1cqw}   /* (sized by what is in it: a size container would fold to nothing) */
+#dkBoards .bd.card.addon:not(.on){--c1:#56605a;--c2:#2c3430;--sl:#6d7570;--sd:#141a17}
+#dkBoards .bd.card.addon .sk{position:absolute;inset:0;border-radius:13px}
+#dkBoards .bd.card.addon .in{position:relative;inset:auto;padding:22px 26px 22px;gap:16px;pointer-events:auto}
+#dkBoards .addon .ad-top{display:flex;align-items:center;gap:14px;width:100%;padding:0;border:0;background:none;color:#fff;cursor:pointer;text-align:left}
+#dkBoards .addon .ad-top b{flex:1;font:800 26px/1.15 var(--ui-font);letter-spacing:-.02em;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+#dkBoards .addon .ad-ico,.dk-addon .ad-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;color:rgba(255,255,255,.95)}
+#dkBoards .addon .ad-ico svg,.dk-addon .ad-ico svg{width:100%;height:100%}
+/* the switch: a white track, its knob over to the right when on */
+#dkBoards .addon .ad-sw{flex:none;position:relative;width:62px;height:34px;border-radius:99px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(255,255,255,.7);transition:background .2s}
+#dkBoards .addon .ad-sw i{position:absolute;left:4px;top:4px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.35);transition:transform .2s cubic-bezier(.3,.7,.3,1.2)}
+#dkBoards .addon.on .ad-sw{background:#f4ecd8;box-shadow:inset 0 0 0 2px #fff}
+#dkBoards .addon.on .ad-sw i{transform:translateX(28px);background:#1b552c}
+#dkBoards .addon .ad-parts{display:flex;flex-wrap:wrap;gap:10px;padding-left:58px}
+#dkBoards .addon .ad-part{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 12px;border:0;border-radius:99px;background:rgba(0,0,0,.28);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);color:#fff;font:700 15px var(--ui-font);cursor:pointer}
+#dkBoards .addon .ad-part i{width:18px;height:18px;border-radius:5px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85)}
+#dkBoards .addon .ad-part[aria-pressed="true"]{background:#f4ecd8;color:#1d2a20;box-shadow:none}
+#dkBoards .addon .ad-part i{display:grid;place-items:center;font:900 13px/1 var(--ui-font);font-style:normal}
+#dkBoards .addon .ad-part[aria-pressed="true"] i{background:#1b552c;box-shadow:none;color:#fff}
+#dkBoards .addon .ad-part[aria-pressed="true"] i::after{content:"✓"}
+#dkBoards .addon .ad-part:disabled{opacity:.45;cursor:default}
+#app.desk.compact #dkBoards .bd.card.addon{min-height:0}
+#app.desk.compact #dkBoards .bd.card.addon .in{padding:16px 18px;gap:12px}
+#app.desk.compact #dkBoards .addon .ad-top b{font-size:20px}
+#app.desk.compact #dkBoards .addon .ad-ico{width:36px;height:36px}
+#app.desk.compact #dkBoards .addon .ad-parts{padding-left:0;gap:8px}
+#app.desk.compact #dkBoards .addon .ad-part{height:36px;font-size:13.5px;padding:0 12px 0 10px}
+
+/* on the slate: the same card in small - the add-ons' way in, and what is on */
+.dk-addon{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:58px;padding:10px 16px 10px 12px;border:0;border-radius:11px;cursor:pointer;color:#fff;text-align:left;
+  --c1:#56605a;--c2:#2c3430;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));
+  box-shadow:-2px 4px 0 rgba(0,0,0,.35),-3px 7px 10px rgba(0,0,0,.3)}
+.dk-addon.on{--c1:#458554;--c2:#1b552c}
+.dk-addon .sk{position:absolute;inset:5px;border-radius:7px;border:2px solid rgba(255,255,255,.9);pointer-events:none}
+.dk-addon .ad-ico{width:30px;height:30px}
+.dk-addon b{font:800 17px var(--ui-font);letter-spacing:-.01em}
+.dk-addon small{margin-left:auto;font:700 13px var(--ui-font);color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-addon:active{transform:translateY(2px)}
+
+/* a room on the hall's floor: its rules and add-ons as capsules (the shop's '보유' pill) over a dark fade at the table's top
+   left - the title had carried them all and was cut short (owner 11-10) */
+#dkBoards .tb-caps{position:absolute;left:0;top:0;right:0;z-index:2;display:flex;flex-wrap:wrap;gap:4px;padding:8px 30% 18px 8px;border-radius:9px 9px 0 0;pointer-events:none;
+  background:linear-gradient(160deg,rgba(0,0,0,.72),rgba(0,0,0,.45) 35%,rgba(0,0,0,0) 70%)}
+#dkBoards .tb-caps em{font:700 11.5px/1.2 var(--ui-font);font-style:normal;color:#2b241c;background:#e9dcb8;border-radius:99px;padding:3px 9px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.35)}
+#dkBoards .tb.live .tb-caps{padding-top:16px}
+#dkBoards .tb-caps em.ad{background:#cfe5d2;color:#123b1e}
+#app.desk.compact #dkBoards .tb-caps{padding:6px 24% 14px 6px;gap:3px}
+#app.desk.compact #dkBoards .tb-caps em{font-size:10.5px;padding:2px 7px}

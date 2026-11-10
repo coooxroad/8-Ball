@@ -2,7 +2,7 @@
    them one trapezoid as it does those: 랭킹전 with the player's tier, 아케이드 and 챌린지 over 친구와 플레이 - blocks of
    the shop's ivory and charcoal, and a pale sky for 아케이드 (owner, 5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
    with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
-let playStep = 'boards';                                              // 'boards' | 'rank' | 'friend' | 'halls' | 'setup'
+let playStep = 'boards';                                              // 'boards' | 'rank' | 'friend' | 'halls' | 'setup' | 'addons'
 let rankBarShown = null;                                              // the rating the 랭킹전 card's bar last filled to
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
 const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['pro', '프로']];   // (owner, 11-08: 마스터 and 레전드 are one, 프로; economy.js TIER_AT)
@@ -55,7 +55,28 @@ const WAY_ICO = {
   local: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="5" width="30" height="38" rx="5"/><path d="M20 37h8"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="20" r="4"/></svg>',
   make: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M24 18v12M18 24h12"/></svg>',
   join: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M17 24h14M25 18l6 6-6 6"/></svg>' };
-const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} ${(r && r.target) || 5}점` : '';
+/* Add-ons for a game with a friend (owner 11-10): each a long card on its own, on or off, with its parts below it.
+   The first: 현실 당구 - throw, squirt, and the cue only at angles it could take (physics.js). Kept in prefs.addons;
+   a room carries them in its rules (55-invite.js rulesOf), a game on one device in its own (50-match.js). */
+const ADDONS = [{ id: 'real', name: '현실 당구', parts: [['throw', '스로우'], ['squirt', '스쿼트'], ['cue', '가능한 큐 각도만']],
+  ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="27" r="9"/><circle cx="33" cy="17" r="7"/><path d="M4 41l9-9M24 22l3-2"/></svg>' }];
+const addonPrefs = () => (prefs.addons = Object.assign({ real: false, throw: true, squirt: true, cue: true }, prefs.addons));
+function addonPanel(A, i) {
+  const P = addonPrefs(), on = !!P[A.id];
+  const flip = () => { P[A.id] = !P[A.id]; savePrefs(); repaintLive(); };
+  const ico = el('span', { class: 'ad-ico' }); ico.innerHTML = A.ico;
+  return el('div', { class: 'bd card addon unf' + (on ? ' on' : ''), style: `--d:${i * 60}ms` }, [el('i', { class: 'sk' }), el('div', { class: 'in' }, [
+    el('button', { class: 'ad-top', 'aria-pressed': String(on), onclick: onTap(flip) }, [ico, el('b', { text: A.name }), el('span', { class: 'ad-sw', 'aria-hidden': 'true' }, el('i'))]),
+    el('div', { class: 'ad-parts' }, A.parts.map(([k, t]) => el('button', { class: 'ad-part', 'aria-pressed': String(!!P[k]), disabled: on ? null : '',
+      onclick: onTap(() => { P[k] = !P[k]; if (!P.throw && !P.squirt && !P.cue) P[A.id] = false; savePrefs(); repaintLive(); }) }, [el('i'), el('span', { text: t })])))])]);
+}
+// on the slate: the add-ons' card - the lobby's card in small - and what is on
+function addonCard() {
+  const on = addonNames(realPref()), ico = el('span', { class: 'ad-ico' }); ico.innerHTML = ADDONS[0].ico;
+  return el('button', { class: 'dk-addon' + (on.length ? ' on' : ''), onclick: onTap(() => { playStep = 'addons'; playFx = 'fan'; repaintLive(); }) },
+    [el('i', { class: 'sk' }), ico, el('b', { text: '애드온' }), el('small', { text: on.length ? on.join(' · ') : '없음' })]);
+}
+const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} · ${(r && r.target) || 5}점` : '';
 function deskPlay(d) {
   if (playStep === 'games') playStep = 'rank';
   if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'friend'; playFx = 'fan'; paintHome(); });   // (its X: back to the three ways)
@@ -93,6 +114,10 @@ function deskPlay(d) {
       way('local', '한 기기에서', null, b => playLeave(b, () => { prefs.friendWay = 'local'; invite.leave(); playStep = 'setup'; repaintLive(); })),
       way('make', '방 만들기', null, b => playLeave(b, () => { prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }), !net.on),
       way('join', '방 참가', null, b => playLeave(b, () => { playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); }), !net.on)]);
+  } else if (playStep === 'addons') {
+    // the add-ons: long cards, one under another, out of the middle as the others' are (owner 11-10: more will come)
+    dkPut(wrap, head('애드온', '', () => { playStep = 'setup'; repaintLive(); }));
+    dkPut(fit, ADDONS.map(addonPanel));
   } else if (playStep === 'halls') {
     // the hall: the desk's wood gone to the hall's floor, each open room a table on it
     app.classList.add('hall');
@@ -109,9 +134,11 @@ function deskPlay(d) {
       return el('button', { class: 'tb unf ' + kind + (r.lock ? ' lock' : '') + (r.playing ? ' live' : ''), style: `--d:${i * 40}ms`,
         'aria-label': `${r.title || `${r.host.name}의 방`}, ${MODE_KO[r.mode]}${r.playing ? ', 경기 중, 관전' : ''}${r.lock ? ', 비밀번호' : ''}`,
         onclick: onTap(() => r.playing ? (r.lock ? invite.sheetPw(r, false, true) : invite.watch(r)) : r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
-        el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null, r.playing ? el('em', { class: 'tb-live', text: '관전' }) : null]),
+        el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null, r.playing ? el('em', { class: 'tb-live', text: '관전' }) : null,
+          // (the room's game, rules and add-ons as capsules at the table's top left - 78-addons.css; the plate keeps the people)
+          el('span', { class: 'tb-caps' }, [MODE_KO[r.mode], ...rule.split(' · ').filter(Boolean)].map(t => el('em', { text: t })).concat(addonNames(r.rules && r.rules.real).map(t => el('em', { class: 'ad', text: t }))))]),
         el('span', { class: 'tb-plate' }, [el('b', { text: r.title || `${r.host.name}의 방` }),
-          el('small', { text: r.playing ? `${who} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''}` : `${who} · ${MODE_KO[r.mode]}${rule ? ' · ' + rule : ''} · 레이팅 ${r.host.dama}` }),
+          el('small', { text: r.playing ? who : `${who} · 레이팅 ${r.host.dama}` }),
           r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
     };
     if (list && n) {
@@ -165,7 +192,7 @@ function deskInvite(slate, _, m) {
     // (the password is asked only of those who take the room from the list: the code is the invitation - 55-invite.js)
     dkRow(`방 이름 · ${invite.title || (h && h.title) || prefs.names[0] + '의 방'}`, '바꾸기', invite.sheetTitle),
     dkRow(invite.pw ? `비밀번호 ${'•'.repeat(invite.pw.length)}` : '비밀번호 없음', invite.pw ? '없애기' : '정하기', () => { if (invite.pw) { invite.pw = ''; repaint(); } else invite.sheetPw(null); }),
-    el('div', { class: 'dk-row' }, el('button', { class: 'dk-chip', text: '코드로 참가', onclick: onTap(invite.sheetJoin) }))]);
+    addonCard()]);
   dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', null, () => { invite.err = null; repaint(); }) : four && full ? dkMain('경기 시작', null, () => invite.start()) : dkMain('초대 링크 보내기', null, () => h && invite.share(h.code), !h),
     dkSec('방 나가기', () => { invite.leave(); prefs.friendWay = 'local'; repaint(); })));
 }
@@ -201,6 +228,7 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]);
   }
+  if (!cpu) dkPut(slate, [dkHr(), addonCard()]);
   const d = store.get('save', null), gm = d && d.v === 2 && d.game && MODE_KO[d.game.modeId] ? d.game : null;
   dkPut(slate, dkActs(dkMain('시작', null, () => match.start(m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0)),   // (4구: the yellow ball, and so who breaks, drawn by lot)
     gm ? dkSec('이어서 하기', () => resume(d), `${MODE_KO[gm.modeId]} · ${gm.players[0].name} vs ${gm.players[1].name}`) : null));

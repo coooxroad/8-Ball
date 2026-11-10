@@ -14,6 +14,8 @@ function createGame(PH, makeAI) {
 
   // 4구's finish (MODES.four): none, a cushion, or three; true (saves and logs from before 11-10) was the one-cushion rule
   const FINISH = { cushion: '쿠션', three: '쓰리쿠션' };
+  // 현실 당구 (add-on): which of its parts are on - throw, squirt, the cue's angle - or null; physics.js reads it from the world
+  const realOf = r => r && (r.throw || r.squirt || r.cue) ? { throw: !!r.throw, squirt: !!r.squirt, cue: !!r.cue } : null;
   const finishOf = f => f === 'three' ? 'three' : f === 'cushion' || f === true ? 'cushion' : false;
   const MODES = {
     eight: {
@@ -253,7 +255,7 @@ function createGame(PH, makeAI) {
     g.team = !!opts.team; g.member = [0, 0]; g.target = opts.target || 10; g.level = opts.level == null ? 1 : opts.level; g.cushions = opts.cushions || 0;
     // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = finishOf(opts.finish); g.potTray = !!opts.potTray;
-    g.ice = !!opts.ice; g.masse = opts.masse !== false; g.levels = opts.levels || null;
+    g.ice = !!opts.ice; g.real = realOf(opts.real); g.masse = opts.masse !== false; g.levels = opts.levels || null;
     // personas: a person-like computer opponent for a player (ai/), in place of a level; null for the rest
     g.personas = opts.personas || null;
     // carom: in 4구 the first to play has the white ball and the other the yellow (owner, 11-08: it was the other way).
@@ -261,7 +263,7 @@ function createGame(PH, makeAI) {
     g.yellow = g.mode.table === 'carom' && modeId === 'four' ? 1 - g.turn : 1;
     g.rnd = opts.rnd || Math.random;             // (the rack's chances - again for a new rack after a break that did not stand)
     g.mode.setup(g, g.rnd);
-    g.world.ice = g.ice;
+    g.world.ice = g.ice; g.world.real = g.real;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
   g.cueBall = () => g.world.balls[g.world.cue];
@@ -416,7 +418,7 @@ function createGame(PH, makeAI) {
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
-    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, masse: g.masse, yellow: g.yellow,
+    targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
     team: g.team, member: g.member.slice(),
   });
   g.restore = function (d) {
@@ -427,7 +429,7 @@ function createGame(PH, makeAI) {
     g.world.cue = d.cue || 0; g.turn = d.turn; g.players = d.players; g.isBreak = d.isBreak; g.placing = d.placing;
     g.target = d.target || 10; g.level = d.level == null ? 1 : d.level; g.cushions = d.cushions || 0; g.over = null; g.levels = null;
     g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = finishOf(d.finish); g.potTray = !!d.potTray;
-    g.ice = !!d.ice; g.world.ice = g.ice; g.masse = d.masse !== false;
+    g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     return true;
   };

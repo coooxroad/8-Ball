@@ -64,7 +64,7 @@ const ranked = {
     const names = []; if (o.team) { names[0] = `${o.team[0].name}·${o.team[2].name}`; names[1] = `${o.team[1].name}·${o.team[3].name}`; } else { names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name; }
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
-    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, online: o, team: !!o.team });
+    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, online: o, team: !!o.team });
     if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
@@ -82,7 +82,7 @@ const ranked = {
     if (m.team) o.team = m.seats;
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     const rules = m.rules || RANKED_RULES[o.mode];
-    match.start(o.first, { team: !!m.team, names: m.team ? [`${m.seats[0].name}·${m.seats[2].name}`, `${m.seats[1].name}·${m.seats[3].name}`] : m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, online: o });
+    match.start(o.first, { team: !!m.team, names: m.team ? [`${m.seats[0].name}·${m.seats[2].name}`, `${m.seats[1].name}·${m.seats[3].name}`] : m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, online: o });
     toast(`관전 중 · ${game.players[0].name} vs ${game.players[1].name}`, '', 2400);
   },
   /* the shots played before a watcher came in, played at once - the table, the score and whose turn it is as they are now -

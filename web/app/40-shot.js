@@ -17,9 +17,10 @@ function beginTurn(first) {
 function shoot(V, a, b, el) {
   el = el || 0;
   { const L = lookNow(); if (L) scene.setTrail(L.trails[game.shooter()]); }      // (a ranked game: the trail of the player shooting)
+  const seen = Math.max(el, shownEl());   // (the cue drawn as high as 현실 당구 raises it: the shot is struck with el, raised in physics.js)
   flow.beforeShot(V, a, b, el); game.beginShot();
   st.phase = 'strike'; $('#spinPop').hidden = true;
-  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el };
+  st.cueAnim = { t: 0, from: 0.03 + st.power * 0.2, V, a, b, el, show: seen };
   flow.hud();
 }
 function endShot() { st.rev++; flow.afterShot(); }

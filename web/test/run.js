@@ -439,5 +439,22 @@ for (const name of ['bar', 'pro', 'pub']) {
   }
   console.log(`ai worker: ${n} plans the same as the game's own`);
 }
+// 현실 당구 (w.real): side spin pushes the cue ball off its line, a cut throws the object ball, and the cue rises
+// over a ball behind or a rail - and none of it happens without the add-on
+{
+  const P = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = r => r * 180 / Math.PI;
+  const w0 = real => { const w = P.makeWorld(16); w.balls.forEach(b => { b.on = false; }); w.cue = 0; P.place(w, 0, -0.5, 0); w.real = real; return w; };
+  const sq = real => { const w = w0(real); P.strike(w, 0, 2, 0.5, 0, 0); const c = w.balls[0]; return deg(Math.atan2(c.vy, c.vx)); };
+  if (Math.abs(sq(null)) > 1e-9 || Math.abs(sq({ squirt: true }) - 1.72) > 0.05) fail(`squirt: ${sq(null)} without, ${sq({ squirt: true })} with`);
+  const cut = real => { const w = w0(real); P.place(w, 1, 0, 0); const R = P.R, c = 30 * Math.PI / 180;
+    P.strike(w, Math.atan2(2 * R * Math.sin(c), 0.5 - 2 * R * Math.cos(c)), 1.5, 0, 0, 0);
+    for (let i = 0; i < 400 && !w.ev.at; i++) P.step(w, 1 / 120); P.step(w, 1 / 120); const o = w.balls[1]; return deg(Math.atan2(o.vy, o.vx)); };
+  const thr = cut({ throw: true }) - cut(null);
+  if (!(Math.abs(thr) > 0.8 && Math.abs(thr) < 2.5)) fail(`throw on a 30-degree stun cut: ${thr.toFixed(2)} degrees`);
+  const rise = (x, y) => { const w = w0({ cue: true }); if (x != null) P.place(w, 1, x, y); return deg(Math.atan(P.cueRiseTan(w, 0, 0))); };
+  const near = rise(-0.58, 0.01), open = rise(null);
+  if (!(near > 15 && open < 5)) fail(`cue rise: ${near.toFixed(1)} over a ball 8 cm behind, ${open.toFixed(1)} on an open table`);
+  console.log(`현실 당구: squirt ${sq({ squirt: true }).toFixed(2)}°, throw ${thr.toFixed(2)}°, cue ${near.toFixed(1)}° over a ball behind`);
+}
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

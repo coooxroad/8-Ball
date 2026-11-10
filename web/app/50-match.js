@@ -7,13 +7,13 @@ const match = {
     emote.reset();
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
-      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn() };
+      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn(), real: prefs.vsAI ? null : realPref() };   // (add-ons: with a friend only)
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
     // the other seat plays at its level
     const o = c.online, standIn = o && o.standIn;
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice,
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null,
       rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
     if (o && (o.watch || o.team)) game.players.forEach(p => { p.ai = true; });   // (2:2: set shot by shot - ranked.auto)
     else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
@@ -23,7 +23,7 @@ const match = {
     match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null;
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
-    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice }, shots: [], points: [0, 0] };
+    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}) }, shots: [], points: [0, 0] };
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     // (watching: at once, as the room's replay does it - the shots after it are played in a moment, catchUp)

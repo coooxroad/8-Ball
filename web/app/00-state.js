@@ -44,6 +44,8 @@ const prefs = (() => {
     shotClock: 60,
     ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
     friendWay: 'local', fourTarget: 10, lessonProof: {},
+    // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
+    addons: { real: false, throw: true, squirt: true, cue: true },
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
@@ -119,6 +121,15 @@ useBalls(prefs.ballSkin); scene.setTrail(prefs.trail);
 // The ice table is a cloth like the others to choose, but it plays differently (everything slides), so lessons and puzzles -
 // whose shots were worked out on cloth - are always shown and played on the ordinary one.
 const ICE = CLOTHS.findIndex(c => c.ice), iceOn = () => !!CLOTHS[prefs.cloth].ice;
+// 현실 당구 as a game's rules take it (game.js realOf): null when off, or none of its parts are on
+const realPref = () => { const A = prefs.addons || {}; return A.real && (A.throw || A.squirt || A.cue) ? { throw: !!A.throw, squirt: !!A.squirt, cue: !!A.cue } : null; };
+// the cue as drawn: with 현실 당구's cue angle on, raised over what is behind the cue ball as the shot will be (physics.js)
+const shownEl = () => {
+  const w = game.world; if (!w || !w.real || !w.real.cue || st.phase !== 'aim' || !game.P.cueRiseTan) return st.el;
+  return Math.max(st.el, Math.atan(game.P.cueRiseTan(w, st.aim, st.spin.y * 0.5)));
+};
+// the add-ons as words, for a room's capsules and the slate's card
+const addonNames = r => r && (r.throw || r.squirt || r.cue) ? ['현실 당구'] : [];
 // (a ranked game wears the look the two players' gear makes: 54-ranked.js lookOf)
 const lookNow = () => typeof flow !== 'undefined' && flow === match && match.ctx && match.ctx.online && match.ctx.online.look;
 function dress(ice) { const L = lookNow(); scene.setCloth(ice ? ICE : iceOn() ? 0 : L ? L.cloth : prefs.cloth); }

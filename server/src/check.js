@@ -60,12 +60,12 @@ export class Replay {
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
     // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
     const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
-    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, team: !!o.team });
+    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, team: !!o.team });
     if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
     if (cp && cp.i === log.shots.length && !cp.over) cp = null;
-    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.over = cp.over || null; this.fresh = !!cp.fresh; if (cp.rnd != null && this.g.rnd.seek) this.g.rnd.seek(cp.rnd); } }
+    if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.world.real = this.g.real; this.g.over = cp.over || null; this.fresh = !!cp.fresh; if (cp.rnd != null && this.g.rnd.seek) this.g.rnd.seek(cp.rnd); } }
   }
   // (rnd: where the rack's chances have got to - a break that does not stand is racked again from them, game.js)
   checkpoint() { return this.running || this.out ? null : { i: this.i, points: this.points.slice(), game: JSON.parse(JSON.stringify(this.g.serialize())), over: this.g.over && { ...this.g.over }, fresh: !!this.fresh, rnd: this.g.rnd && this.g.rnd.state ? this.g.rnd.state() : null }; }
@@ -106,6 +106,7 @@ export class Replay {
     // TRAITS) or the computer does (a stand-in's plan: web/ai/50-human.js, 0.79 of the radius)
     if (this.open && Math.hypot(sh.a || 0, sh.b || 0) > STRIKE_MAX) return this.out = { ok: false, why: `shot ${i}: struck further out than a cue can`, at: i };
     H.restore(w, sh.s); if (!!sh.s.ice !== !!o.ice) return this.out = { ok: false, why: 'ice changed', at: i };
+    w.real = g.real;                                                           // (the add-on is the game's rules', not the shot's to say)
     this.me = g.turn; g.beginShot(); g.P.strike(w, sh.aim, sh.V, sh.a, sh.b, sh.el || 0); this.t = 0; this.running = true;
     return null;
   }
