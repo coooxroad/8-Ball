@@ -3,24 +3,13 @@
    its edge (the button), the skin inside it (.sk), and what is written on it (.in), sized by the panel (--u). Online
    panels are arcade: clean colour, a field of dots fading away from the light at the upper right. */
 #app.desk #desk.boards>.dk-rail,#app.desk #desk.boards>.dk-tray,#app.desk #desk.boards>.dk-slate{visibility:hidden}
-#app.desk #desk>#dkBoards{position:absolute;grid-column:1/-1;grid-row:1/-1;inset:0;z-index:2;display:flex;flex-direction:column;gap:12px}
 #app.desk #dkBoards .bd-head{flex:none;display:flex;align-items:center;gap:14px}
 #app.desk #dkBoards .bd-head .tt h2{margin:0;font:800 26px/1.1 var(--ui-font);color:#f6ead0;text-shadow:0 2px 3px rgba(0,0,0,.55)}
 #app.desk #dkBoards .bd-head .tt small{display:block;margin-top:2px;font-size:13.5px;color:rgba(246,234,208,.85);text-shadow:0 1px 2px rgba(0,0,0,.6)}
-#dkBoards .bd-fit{flex:1;min-height:0;display:grid;gap:20px;grid-template-columns:minmax(0,.6fr) minmax(0,1.45fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);
-  grid-template-areas:"shop tour rank" "shop friend rank"}
 #dkBoards.games .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"four eight" "three nine"}
 #app.desk.portrait #dkBoards.games .bd-fit{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(4,minmax(0,1fr));grid-template-areas:"four" "eight" "three" "nine"}
-#app.desk.portrait #dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr);grid-template-areas:"tour tour" "friend friend" "shop rank"}
-#app.desk.compact #dkBoards .bd-fit{gap:12px}
-#dkBoards .bd-shop{grid-area:shop}
-#dkBoards .bd-tour{grid-area:tour}
-#dkBoards .bd-friend{grid-area:friend}
-#dkBoards .bd-rank{grid-area:rank}
 #dkBoards .bd-four{grid-area:four}
-#dkBoards .bd-eight{grid-area:eight}
 #dkBoards .bd-three{grid-area:three}
-#dkBoards .bd-nine{grid-area:nine}
 /* A panel is a block standing on the desk: its face is the picture, its sides (.ly, app/36-desk-paint.js boardSides) its
    own colour, drawn as from the eye above the desk - each upright edge runs towards the point below the eye, so the boards
    left of the middle show their right side, those right of it their left, all their near side. Each step of the side is
@@ -28,12 +17,9 @@
    darkens down to the desk, lit a little more on the faces towards the light (upper right). --sl / --sd: the side's light
    and dark, set per panel. Pressed, the face goes part of the way down. */
 #app.desk{--game-font:'Black Han Sans',var(--ui-font)}
-#dkBoards .bd{position:relative;container-type:size;--u:min(1cqw,1.5cqh);--sl:#e9d3a2;--sd:#8a6a3a;--fx:50%;--fy:200%;--kp:.995;border:0;padding:0;margin:0;border-radius:13px;cursor:pointer;color:#fff;text-align:left;
-  background:none;box-shadow:none}
 #dkBoards .bd .ly{position:absolute;inset:0;border-radius:13px;pointer-events:none;transform-origin:var(--fx) var(--fy);transform:scale(var(--k,1));
   --c:color-mix(in srgb,var(--sd) var(--m),var(--sl));background:linear-gradient(215deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 38%,color-mix(in srgb,var(--c) 80%,#000))}
 #dkBoards .bd .ly.rim{--c:color-mix(in srgb,var(--sl) 60%,#fff)}
-#dkBoards .bd .ly.foot{--c:color-mix(in srgb,var(--sd) 70%,#000);box-shadow:-3px 4px 5px rgba(0,0,0,.38)}
 #dkBoards .bd .sk,#dkBoards .bd .in{transform-origin:var(--fx) var(--fy);transition:transform .08s}
 #dkBoards .bd:active .sk,#dkBoards .bd:active .in{transform:scale(var(--kp))}
 /* (the face's own edge: a bright line where the light meets it, upper right; a dark one where it turns to the side) */
@@ -41,7 +27,7 @@
 #dkBoards .in{position:absolute;inset:3px;display:flex;flex-direction:column;pointer-events:none;padding:calc(var(--u)*5);box-sizing:border-box}
 /* The words, as a game prints them: a heavy display face (Black Han Sans, fonts/), white with a dark outline and a hard
    shadow straight down - drawn as solid offsets, never blurred (a blurred shadow fills the narrow gaps of 'ㄹ' and the like) */
-#dkBoards .bd{--ink:#1c0f04;--ol:calc(var(--u)*.55)}
+#dkBoards .bd{position:relative;container-type:size;--u:min(1cqw,1.5cqh);--sl:#e9d3a2;--sd:#8a6a3a;--fx:50%;--fy:200%;--kp:.995;border:0;padding:0;margin:0;border-radius:13px;cursor:pointer;color:#fff;text-align:left;background:none;box-shadow:none;--ink:#1c0f04;--ol:calc(var(--u)*.55)}
 #dkBoards .bd-tt em{align-self:flex-start;display:inline-block;margin-bottom:calc(var(--u)*1.4);padding:calc(var(--u)*.55) calc(var(--u)*2.2);border-radius:calc(var(--u)*.9);transform:skewX(-10deg);
   font:900 italic calc(var(--u)*3.1)/1.15 'Outfit',sans-serif;letter-spacing:.08em;color:var(--ink);background:linear-gradient(#ffe27a,#f2b72e);box-shadow:-2px 2px 0 var(--ink)}
 #dkBoards .bd-tt b{display:block;font:400 calc(var(--u)*12.5)/1 var(--game-font);letter-spacing:-.01em;color:#fff;
@@ -73,18 +59,16 @@
 /* (the shop's picture always fills its height: a wider panel - a phone held upright - would otherwise cut its top and foot
    and push the cue rack under the words; the sides go on in the picture's own honey) */
 #dkBoards .bd-shop .sk{background:var(--art) var(--ap)/auto 100% no-repeat,linear-gradient(90deg,#f9c374,#fbd08c 50%,#f9c374)}
-#dkBoards .bd-tour{--g0:#4f86ff;--g1:#1f4fc4;--g2:#0b1f63;--dot:rgba(160,200,255,.3);--sl:#2f6ae8;--sd:#0a2580;--art:none;--ap:64% 50%}
-#dkBoards .bd-rank{--g0:#ff5a6a;--g1:#b81d33;--g2:#4d0712;--dot:rgba(255,170,170,.28);--sl:#c22036;--sd:#4a0610;--art:none;--ap:50% 52%}
+#dkBoards .bd-tour{grid-area:tour;--g0:#4f86ff;--g1:#1f4fc4;--g2:#0b1f63;--dot:rgba(160,200,255,.3);--sl:#2f6ae8;--sd:#0a2580;--art:none;--ap:64% 50%}
 #dkBoards .bd-rank .bd-tt{text-align:center}
 #dkBoards .bd-rank .bd-tt em{align-self:center}
 #dkBoards .bd-rank .bd-tier{position:absolute;left:50%;top:52%;width:calc(max(100cqw,62.5cqh)*.58);transform:translate(-50%,-50%);filter:drop-shadow(-4px 7px 6px rgba(0,0,0,.5))}
 #dkBoards .bd-rank .bd-foot b{color:#ffd65c;font-size:calc(var(--u)*8)}
 /* 친구와 플레이: billiard cloth */
-#dkBoards .bd-friend{--g0:#5fd36f;--g1:#25913f;--g2:#0b4a20;--dot:rgba(190,255,190,.22);--sl:#1fa636;--sd:#044d12;--art:none;--ap:65% 50%}
+#dkBoards .bd-friend{grid-area:friend;--g0:#5fd36f;--g1:#25913f;--g2:#0b4a20;--dot:rgba(190,255,190,.22);--sl:#1fa636;--sd:#044d12;--art:none;--ap:65% 50%}
 #dkBoards .bd-modes{margin-top:auto;gap:calc(var(--u)*2)}
 #dkBoards .bd-modes i{width:calc(var(--u)*9);height:calc(var(--u)*9);background:center/contain no-repeat;filter:drop-shadow(-2px 3px 2px rgba(0,0,0,.45))}
 /* the shop's window: cream under a spot of light, the rarest cue in it */
-#dkBoards .bd-shop{--g0:#fffaf0;--g1:#f1dcae;--g2:#c99a58;--dot:rgba(150,90,30,.16);--sl:#ffd28a;--sd:#b5762c;--art:none;--ap:50% 55%}
 #dkBoards .bd-shop .sk::before{-webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000,transparent 70%);mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000,transparent 70%)}
 #dkBoards .bd-shop .bd-tt{text-align:center}
 #dkBoards .bd-shop .bd-tt em{align-self:center;color:#fbf0d6;background:linear-gradient(#7a4a22,#4e2c10)}
@@ -99,16 +83,16 @@
 #dkBoards .game .sk::before{display:none}
 #dkBoards .game{--sl:color-mix(in srgb,var(--cl) 80%,#fff);--sd:color-mix(in srgb,var(--cl) 45%,#000)}
 #dkBoards .bd-four,#dkBoards .bd-three{--cl:#1f5fc0}
-#dkBoards .bd-eight{--cl:#2a7a50}
-#dkBoards .bd-nine{--cl:#167378}
+#dkBoards .bd-eight{grid-area:eight;--cl:#2a7a50}
+#dkBoards .bd-nine{grid-area:nine;--cl:#167378}
 #dkBoards .game .in{justify-content:flex-end}
 #dkBoards .game .bd-tt b{font-size:calc(var(--u)*12)}
 #dkBoards .rack{position:absolute;--d:calc(var(--u)*8);right:calc(var(--u)*7);top:50%;width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d));transform:translateY(-62%);filter:drop-shadow(-3px 5px 3px rgba(0,0,0,.45))}
 #dkBoards .rack.pool{--d:calc(var(--u)*6.2)}
 #dkBoards .rack img{position:absolute;width:var(--d);height:var(--d)}
 #app.desk.compact #dkBoards .bd-head .tt h2{font-size:20px}
-#dkBoards .bd-shop{--u:min(1.5cqw,1cqh)}
-#dkBoards .bd-rank{--u:min(1.25cqw,1cqh)}
+#dkBoards .bd-shop{grid-area:shop;--g0:#fffaf0;--g1:#f1dcae;--g2:#c99a58;--dot:rgba(150,90,30,.16);--sl:#ffd28a;--sd:#b5762c;--art:none;--ap:50% 55%;--u:min(1.5cqw,1cqh)}
+#dkBoards .bd-rank{grid-area:rank;--g0:#ff5a6a;--g1:#b81d33;--g2:#4d0712;--dot:rgba(255,170,170,.28);--sl:#c22036;--sd:#4a0610;--art:none;--ap:50% 52%;--u:min(1.25cqw,1cqh)}
 #dkBoards .bd-shop .rar{color:#fff;text-shadow:0 1px 0 #2a1608,1px 0 0 #2a1608,-1px 0 0 #2a1608,0 -1px 0 #2a1608,0 2px 0 #2a1608}
 /* 랭킹전, looking for an opponent (54-ranked.js): a strip at the top, just under the desk's bar (whose tabs stay free),
    over whatever is open, with the time and a way out */
@@ -155,7 +139,6 @@
 #dkBoards .bd.card.bd-arcade{--c1:#8265a3;--c2:#533a6e;--sl:#907ca8;--sd:#281938}
 #dkBoards .bd.card .sk{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25)}
 #dkBoards .bd.card .sk::before{display:none}
-#dkBoards .bd.card .sk::after{display:block;content:"";position:absolute;inset:9px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);background:none;opacity:1;transform:none}
 #dkBoards .bd.card .bd-tt{text-align:left}
 #dkBoards .bd.card .bd-tt b{font:800 calc(var(--u)*9.5)/1.12 var(--ui-font);letter-spacing:-.02em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}
 #dkBoards .bd.card .bd-tt small,#dkBoards .bd.card .bd-foot small{font:700 calc(var(--u)*3.6)/1.35 var(--ui-font);color:rgba(255,255,255,.8);text-shadow:none;box-shadow:none;background:none;margin:calc(var(--u)*1.6) 0 0;padding:0}
@@ -164,14 +147,12 @@
 #dkBoards .bd.card .bd-foot b{font:800 calc(var(--u)*7)/1.15 var(--ui-font);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}
 /* (owner, 11-08) a comic outline round each card, as the 만화 ball has: a white line just inside its edge (thinner, no ink -
    owner) */
-#dkBoards .bd.card .sk::after{inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);box-shadow:none}
-
+#dkBoards .bd.card .sk::after{display:block;content:"";position:absolute;background:none;opacity:1;transform:none;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);box-shadow:none}
 /* (owner, 11-08) the cards' sides as the shop's pieces have them - one flat colour, no shading from top to foot - and
    the cards a little smaller (95%) with the same gap every way, clear of the desk's front edge */
 #dkBoards .bd .ly,#dkBoards .bd .ly.rim{background:color-mix(in srgb,var(--sd) 58%,var(--sl))}
-#dkBoards .bd .ly.foot{background:color-mix(in srgb,var(--sd) 70%,var(--sl))}
-#app.desk #desk>#dkBoards{inset:2.5% 3% calc(80px*var(--es) + 2.5%) 3%}
-#dkBoards .bd-fit{gap:22px}
+#app.desk #desk>#dkBoards{position:absolute;grid-column:1/-1;grid-row:1/-1;z-index:2;display:flex;flex-direction:column;gap:12px;inset:2.5% 3% calc(80px*var(--es) + 2.5%) 3%}
+#dkBoards .bd-fit{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1.45fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"shop tour rank" "shop friend rank";gap:22px}
 #app.desk.compact #dkBoards .bd-fit{gap:14px}
 /* the 랭킹전 card's way to the next tier: a bar that fills like a level bar, water in a glass - it rises with a little
    slosh past its mark and back, and a light ripples along its top */
@@ -187,17 +168,15 @@
 @keyframes barGlint{from{transform:translateX(-110%)}to{transform:translateX(240%)}}
 #dkBoards .bd.card .bd-bar small{display:block;margin-top:calc(var(--u)*1.2);font:700 calc(var(--u)*3)/1.3 var(--ui-font);color:rgba(255,255,255,.75)}
 /* (the cards' ambient occlusion, as the desk's pieces have: style/60-desk.css - here, after the side's own shadow) */
-#dkBoards .bd .ly.foot{box-shadow:0 0 4px 2px rgba(0,0,0,.7),0 0 22px 7px rgba(0,0,0,.42),-2px 3px 3px rgba(0,0,0,.55),-6px 9px 12px rgba(0,0,0,.32),-14px 20px 26px rgba(0,0,0,.28)}
-
+#dkBoards .bd .ly.foot{--c:color-mix(in srgb,var(--sd) 70%,#000);background:color-mix(in srgb,var(--sd) 70%,var(--sl));box-shadow:0 0 4px 2px rgba(0,0,0,.7),0 0 22px 7px rgba(0,0,0,.42),-2px 3px 3px rgba(0,0,0,.55),-6px 9px 12px rgba(0,0,0,.32),-14px 20px 26px rgba(0,0,0,.28)}
 /* (owner, 11-09) 랭킹전's four games as the menu's cards: the same printed card, gradient, grain and white line, its name
    at the top as theirs is, and its balls on it - each game a billiard colour of its own, toned as the menu's are */
 #dkBoards .bd.card.bd-four{--c1:#4174bf;--c2:#194685;--sl:#6387bd;--sd:#062046}
 #dkBoards .bd.card.bd-three{--c1:#5862b4;--c2:#272f74;--sl:#7a82bd;--sd:#0d1240}
 #dkBoards .bd.card.bd-eight{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911}
 #dkBoards .bd.card.bd-nine{--c1:#3d8a88;--c2:#155252;--sl:#62a09c;--sd:#042a2a}
-#dkBoards .bd.card.game .in{justify-content:flex-start}
 #dkBoards .bd.card.game{--u:min(1.6cqw,1cqh)}
-#dkBoards .bd.card.game .in{padding:calc(var(--u)*6) calc(var(--u)*5.5)}
+#dkBoards .bd.card.game .in{justify-content:flex-start;padding:calc(var(--u)*6) calc(var(--u)*5.5)}
 #dkBoards .bd.card.game .bd-tt b{font-size:calc(var(--u)*8.5)}
 #dkBoards .bd.card.game .bd-tt small{font-size:max(11px,calc(var(--u)*3.4))}
 #dkBoards .bd.card.game .rack{top:auto;bottom:calc(var(--u)*12);left:50%;right:auto;transform:translateX(-50%)}
