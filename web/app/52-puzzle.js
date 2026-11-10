@@ -1,6 +1,6 @@
 /* ================= flow: puzzle (one position, one shot to score with; solve it and the next one comes) ================= */
 const puzzle = {
-  quiet: false, save: false, cur: null, helped: false, tries: 0,
+  quiet: false, save: false, cur: null, helped: 0, tries: 0,     // helped: 1 a hint seen, 2 the answer
   stage: z => puzzles.STAGES[z.stage],
   // the balls of a puzzle, onto the table
   put(z) {
@@ -13,7 +13,7 @@ const puzzle = {
   start(id) {
     if (!puzzles.list.length) return toast('새 퍼즐을 만드는 중입니다.', '', 2200);
     const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
-    if (!p.cur || p.cur.id !== z.id) { p.helped = false; p.tries = 0; }
+    if (!p.cur || p.cur.id !== z.id) { p.helped = 0; p.tries = 0; }
     p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
     usePhysics(); game.start('puzzle4', [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
@@ -30,12 +30,29 @@ const puzzle = {
   },
   guide: () => GUIDE_STD,
   auto: () => null,
-  beforeShot(V, a, b, el) { scene.setMarks(null); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
+  beforeShot(V, a, b, el) { scene.setMarks(null); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; puzzle.pre = game.P.clone(game.world); },
+  /* How cleanly a shot solves it (owner 11-10: stars by the shot's accuracy, not by the tries before it): the same shot
+     played again from the same table a quarter and a half of a degree either side, and 3% and 6% softer and harder - how
+     many of those eight still solve it. A shot in the middle of what works keeps working; one that only just got there
+     does not. (Null: the shot itself does not solve it.) */
+  sureOf(s, goal) {
+    const p = puzzle, P = game.P, M = game.MODES.puzzle4, d = Math.PI / 720, play = (da, k) => { const w = P.clone(p.pre); P.strike(w, s.aim + da, s.V * k, s.a, s.b, s.el); return M.judge(goal, P.run(w, 30), w).ok; };
+    if (!play(0, 1)) return null;
+    let ok = 0;
+    for (const [da, k] of [[d, 1], [-d, 1], [2 * d, 1], [-2 * d, 1], [0, 0.97], [0, 1.03], [0, 0.94], [0, 1.06]]) if (play(da, k)) ok++;
+    return ok;
+  },
+  // the stars: five of the eight for three, two for two - or fewer, where even the stored answer has no more room than that
+  starsOf(goal) {
+    const p = puzzle, z = p.cur, sure = p.sureOf(p.shot, goal), ref = p.sureOf({ aim: z.sol[0], V: z.sol[1], a: z.sol[2], b: z.sol[3], el: z.sol[4] }, goal);
+    const s3 = ref == null ? 5 : Math.min(5, ref), s2 = ref == null ? 2 : Math.min(2, ref);
+    return sure == null ? 1 : sure >= s3 ? 3 : sure >= s2 ? 2 : 1;
+  },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
     if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
-    // three stars for the first try, two within three, one after that or with help
-    const stars = p.helped ? 1 : p.tries === 0 ? 3 : p.tries <= 2 ? 2 : 1, was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
+    // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
+    const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
     if (!was) net.claim('puzzle', { id: z.id, shot: puzzle.shot });     // (paid once, by the server, after it plays the shot again)
     const now = pzList().filter(q => pzOpen(q.stage)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
@@ -44,7 +61,7 @@ const puzzle = {
   },
   hud() {
     const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
-    paintPill(0, { name: `${z.stage + 1}-${z.n} ${p.stage(z).name}`, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '첫 시도에 풀면 ★★★', tray: [], pts: null });
+    paintPill(0, { name: `${z.stage + 1}-${z.n} ${p.stage(z).name}`, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
     paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
   },
   // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
@@ -62,8 +79,8 @@ const puzzle = {
     const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); };
     // a hint marks every place the cue ball touches on the way, numbered; the answer is played out in full
-    btn('힌트', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(p.marks(z)); const k = z.sol[4] ? ` 큐를 ${Math.round(z.sol[4] * 180 / Math.PI)}° 세워 칩니다.` : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); }));
-    btn('정답', aiming(() => { const z = p.cur; p.helped = true; scene.setMarks(null); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4] }, { quiet: false, after: p.again }); }));
+    btn('힌트', aiming(() => { const z = p.cur; p.helped = Math.max(+p.helped, 1); scene.setMarks(p.marks(z)); const k = z.sol[4] ? ` 큐를 ${Math.round(z.sol[4] * 180 / Math.PI)}° 세워 칩니다.` : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); }));
+    btn('정답', aiming(() => { const z = p.cur; p.helped = 2; scene.setMarks(null); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4] }, { quiet: false, after: p.again }); }));
     btn('이전', aiming(() => p.step(-1)));
     btn('다음', aiming(() => p.step(1)));
   },
