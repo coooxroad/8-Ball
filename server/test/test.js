@@ -572,6 +572,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   forgetGoogleKeys();
   ok((await googleWhoAccess(at, CID, async () => ({ ok: false }), now)).why === 'bad token', 'google: a token Google does not know is refused');
   forgetGoogleKeys();
+  { const dotted = 'ya29.c.' + 'b'.repeat(30) + '.x9'; forgetGoogleKeys(); ok((await googleWhoAny(dotted, CID, info(mine), now)).sub === '77', 'google: an access token with two dots is still an access token'); }
+  forgetGoogleKeys();
   ok((await googleWhoAny(await tok(good), CID, get, now)).sub === '1234' && (await googleWhoAny(at, CID, info(mine), now)).sub === '77', 'google: either kind of token');
   console.log('google sign-in: checked');
 }

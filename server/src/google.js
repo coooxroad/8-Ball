@@ -55,5 +55,7 @@ export async function googleWhoAccess(token, clientId, get, now) {
   if (seen.size > 500) seen.clear(); seen.set(tok, { who, until: Math.min(+b.exp * 1000, t + 300000) });
   return who;
 }
-// either kind: an ID token is three dotted parts (a JWT), anything else is taken as an access token
-export const googleWhoAny = (token, clientId, get, now) => String(token || '').split('.').length === 3 ? googleWho(token, clientId, get, now) : googleWhoAccess(token, clientId, get, now);
+// either kind: an ID token is a JWT - its header, base64 of '{"', starts "eyJ"; anything else is taken as an access token.
+// (Counting dots was wrong: an access token can have two dots too - 'ya29.c.…' - and was then refused as a bad JWT, the
+// owner's 'bad token' on 11-10.)
+export const googleWhoAny = (token, clientId, get, now) => /^eyJ[\w-]*\.[\w-]+\.[\w-]*$/.test(String(token || '')) ? googleWho(token, clientId, get, now) : googleWhoAccess(token, clientId, get, now);

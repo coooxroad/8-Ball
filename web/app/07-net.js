@@ -151,6 +151,13 @@ const net = (() => {
        not set up), and a Google ID token given to the server. Tied to this device's account the first time (signed up:
        its prize, r.joined); or, when that Google account is already another CUE account, this device goes over to it -
        the one it had is put aside in acctOld, as with a device code. */
+    // signing out (owner 11-10): this device lets go of the account - it stays on the server, tied to its Google account,
+    // to sign in to again - and goes on as a new guest (the old one is kept aside on the device, as when one is lost)
+    signOut() {
+      if (account) { const old = store.get('acctOld', []); if (!old.some(a => a.id === account.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, account)); store.set('acctOld', old); }
+      account = null; store.set('acct', null); me = null; store.set('me', null);
+      return ensure().then(() => flush());
+    },
     async googleConfig() { if (googleCfg !== undefined) return googleCfg; const r = await call('/v1/link/google-config'); if (r && r.ok) googleCfg = r.clientId || null; return r && r.ok ? googleCfg : undefined; },
     async google(token) {
       await ensure();

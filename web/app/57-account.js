@@ -90,15 +90,23 @@ const account = {
       member ? flatBtn('닉네임 바꾸기', () => account.sheetNick(false)) : flatBtn('이름 바꾸기', () => sheetName(0)),
     ];
     if (!member) kids.push(el('div', { class: 'acct-join' }, [el('b', { text: '구글로 가입하기' }), el('small', { text: `가입 보상 · 코인 ${P.coin.toLocaleString('ko-KR')} · 다이아 ${P.dia}` }), host]));
-    else kids.push(el('div', { class: 'acct-join' }, [el('small', { text: '다른 기기에서 같은 구글 계정으로 로그인하면 이 계정을 씁니다' }), host]));
-    kids.push(el('p', { class: 'note legal' }, [document.createTextNode('가입하면 '), el('a', { href: 'https://cue.oxcorp.workers.dev/terms', target: '_blank', rel: 'noopener', text: '서비스 약관' }),
+    // (signed in: the key is to sign out - owner 11-10; signing in again is with the Google key once out)
+    else kids.push(el('div', { class: 'acct-join' }, [el('button', { class: 'btn flat', text: '로그아웃', onclick: () => { SND.tap(); account.sheetOut(); } })]));
+    if (!member) kids.push(el('p', { class: 'note legal' }, [document.createTextNode('가입하면 '), el('a', { href: 'https://cue.oxcorp.workers.dev/terms', target: '_blank', rel: 'noopener', text: '서비스 약관' }),
       document.createTextNode('과 '), el('a', { href: 'https://cue.oxcorp.workers.dev/privacy', target: '_blank', rel: 'noopener', text: '개인정보처리방침' }), document.createTextNode('에 동의합니다.')]));
     openSheet(member ? '계정' : '계정 · 게스트', kids);
+    if (member) return;
     const id = await net.googleConfig();
     if (!id) { host.textContent = id === null ? '구글 로그인 준비 중' : '서버에 연결할 수 없습니다'; host.classList.add('off'); return; }
     if (window.CueAndroid && window.CueAndroid.googleSignIn) {
       // (the app: our own key - the system's picker comes up)
-      host.appendChild(el('button', { class: 'btn cta google', text: member ? '구글로 로그인' : '구글로 계속하기', onclick: async () => { SND.tap(); account.signIn(await account.googleToken(id)); } }));
-    } else account.googleButton(id, host, member ? '구글로 로그인' : '구글로 계속하기');
+      host.appendChild(el('button', { class: 'btn cta google', text: '구글로 계속하기', onclick: async () => { SND.tap(); account.signIn(await account.googleToken(id)); } }));
+    } else account.googleButton(id, host, '구글로 계속하기');
+  },
+  sheetOut() {
+    openSheet('로그아웃', [
+      el('div', { class: 'row' }, [flatBtn('취소', () => account.sheet()),
+        el('button', { class: 'btn cta', text: '로그아웃', onclick: async () => { SND.tap(); closeSheet(); await net.signOut(); toast('로그아웃했습니다', 'good', 1800); if (st.screen === 'home') paintHome(); } })]),
+    ]);
   },
 };
