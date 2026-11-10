@@ -24,6 +24,7 @@ export class Lobby extends DurableObject {
       const D = this.dir || (this.dir = new Directory(this.ctx.storage.sql)), what = path.slice(5);
       if (what === 'put') return Response.json(D.put(body));
       if (what === 'find') return Response.json(D.find(body.q));
+      if (what === 'fails') return Response.json(D.fails(!!body.add));
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)

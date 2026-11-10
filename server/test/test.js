@@ -598,6 +598,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(D.find('큐대').people.length === 1 && D.find('큐대').people[0].dama === 1300, 'directory: found by name, the latest');
   ok(D.find('CDCD·CDCD').people[0].acct === B && D.find('').people.length === 2, 'directory: found by the id as the settings show it; all of them');
   ok(D.find('%').people.length === 0, 'directory: no wildcards from outside');
+  ok(D.fails(false, 1000).n === 0 && D.fails(true, 1000).n === 1 && D.fails(true, 2000).n === 2 && D.fails(false, 1000 + 15 * 60000 + 1).n === 1, 'directory: wrong admin passwords counted for 15 minutes');
   console.log('admin: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');

@@ -45,7 +45,7 @@ const nearOf = request => {
   return c === 'AS' ? 'apac' : c === 'OC' ? 'oc' : c === 'EU' ? 'weur' : c === 'SA' ? 'sam' : c === 'AF' ? 'afr' : c === 'NA' ? (+cf.longitude < -100 ? 'wnam' : 'enam') : null;
 };
 
-const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin', 'Access-Control-Max-Age': '86400' };
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin, X-Admin-Pass', 'Access-Control-Max-Age': '86400' };
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
 const hex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key))));
@@ -58,17 +58,40 @@ const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-2
    POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, why }   give or take; set the rating (core.js adminGrant)
    GET  /v1/admin/catalog                              every item there is, to give */
 export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
+/* Or a password (owner 11-10: on a phone or tablet the Google window would not let another account be chosen without
+   adding it to the device, 2-step check and all): X-Admin-Pass, compared with the ADMIN_PASSWORD secret, set in the
+   Cloudflare dashboard (cue-server · Settings · Variables and Secrets) - never in the code. At least 10 characters; after
+   8 wrong ones in 15 minutes it is refused for everyone until they have passed (the directory lobby counts them). */
+async function adminPass(pass, env) {
+  const want = String(env.ADMIN_PASSWORD || '');
+  if (want.length < 10 || !pass) return { why: want.length < 10 ? 'no password set' : 'no password' };
+  const D = env.LOBBY.get(env.LOBBY.idFromName('directory'));
+  const lock = await (await D.fetch('https://lobby/dir/fails', { method: 'POST', body: '{}' })).json();
+  if (lock.n >= 8) return { why: 'locked' };
+  const [a, b] = await Promise.all([hashOf('cue-admin:' + pass), hashOf('cue-admin:' + want)]);
+  let same = 0; for (let i = 0; i < a.length; i++) same |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  if (same) { await D.fetch('https://lobby/dir/fails', { method: 'POST', body: '{"add":1}' }); return { why: 'wrong password' }; }
+  return { email: 'password' };
+}
 async function adminRoute(what, request, env) {
   const allowed = String(env.ADMIN_EMAILS_SHA256 || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (!allowed.length || !env.GOOGLE_CLIENT_ID) return json({ ok: false, why: 'no admin' }, 403);
-  const who = await googleWho(request.headers.get('X-Admin') || '', env.GOOGLE_CLIENT_ID).catch(() => null);
-  // (the address Google gave is said back - it is the person's own, just signed in with - so a wrong account is seen at once)
-  if (!who || !who.email || !(await isAdmin(who.email, allowed))) return json({ ok: false, why: 'not an admin', seen: who && who.email || null, google: who && who.why || null }, 403);
-  // (who did it, as the ledger keeps it: not the address - a player may see their own ledger - but the start of its hash)
-  const by = 'admin ' + (await hashOf(who.email.trim().toLowerCase())).slice(0, 8);
+  const pass = request.headers.get('X-Admin-Pass');
+  let who, by;
+  if (pass != null) {
+    who = await adminPass(pass, env).catch(() => ({ why: 'no password' }));
+    if (!who.email) return json({ ok: false, why: who.why }, 403);
+    by = 'admin pw';
+  } else {
+    if (!allowed.length || !env.GOOGLE_CLIENT_ID) return json({ ok: false, why: 'no admin' }, 403);
+    who = await googleWho(request.headers.get('X-Admin') || '', env.GOOGLE_CLIENT_ID).catch(() => null);
+    // (the address Google gave is said back - it is the person's own, just signed in with - so a wrong account is seen at once)
+    if (!who || !who.email || !(await isAdmin(who.email, allowed))) return json({ ok: false, why: 'not an admin', seen: who && who.email || null, google: who && who.why || null }, 403);
+    // (who did it, as the ledger keeps it: not the address - a player may see their own ledger - but the start of its hash)
+    by = 'admin ' + (await hashOf(who.email.trim().toLowerCase())).slice(0, 8);
+  }
   const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
   if (what === 'catalog') { const it = L => L.map(q => ({ id: q.id, name: q.name, rarity: q.rarity || 0 }));
-    return json({ ok: true, me: who.email, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
+    return json({ ok: true, me: who.email === 'password' ? '비밀번호' : who.email, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
   if (what === 'find') {
     const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
     return json(await r.json());

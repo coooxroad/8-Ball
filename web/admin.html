@@ -60,7 +60,12 @@
 
 <section id="gate" class="card">
   <h2 style="font-size:18px;color:var(--ink)">관리자 로그인</h2>
-  <p>허용된 구글 계정으로만 들어올 수 있습니다. 누를 때마다 계정을 고르는 창이 뜹니다.</p>
+  <p>관리자 비밀번호, 또는 허용된 구글 계정</p>
+  <form id="passForm" class="row" style="justify-content:center;margin-top:6px">
+    <input id="pass" type="password" placeholder="관리자 비밀번호" autocomplete="current-password" style="flex:1;max-width:240px">
+    <button class="go">들어가기</button>
+  </form>
+  <p class="muted" style="font-size:13px;margin:14px 0 4px">또는</p>
   <div id="gbtn"></div>
   <p id="gateMsg"></p>
 </section>
@@ -137,7 +142,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const num = n => (n | 0).toLocaleString('ko-KR');
 const when = t => t ? new Date(t).toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-let token = null, who = '', catalog = null, cur = null, toastT;
+let token = null, pass = null, who = '', catalog = null, cur = null, toastT;
 
 function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 2600); }
 
@@ -147,10 +152,11 @@ function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.classN
 try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s && s.exp > Date.now() / 1000 + 60) { token = s.t; who = s.email || ''; } } catch (e) {}
 
 async function api(what, body) {
-  const r = await fetch(SERVER + '/v1/admin/' + what, { method: body ? 'POST' : 'GET', headers: { 'X-Admin': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+  const r = await fetch(SERVER + '/v1/admin/' + what, { method: body ? 'POST' : 'GET', headers: Object.assign(pass ? { 'X-Admin-Pass': pass } : { 'X-Admin': token }, { 'Content-Type': 'application/json' }), body: body ? JSON.stringify(body) : undefined }).catch(() => null);
   if (!r) return { ok: false, why: '서버에 연결할 수 없습니다' };
   const j = await r.json().catch(() => ({ ok: false, why: 'bad reply' }));
-  if (r.status === 403) { signOut(j.why !== 'not an admin' ? '관리자 기능이 꺼져 있습니다' : j.seen ? `${j.seen} 은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : `구글이 이 계정의 이메일을 알려주지 않았습니다${j.google ? ` (${j.google})` : ''}`); }
+  const PW = { 'wrong password': '비밀번호가 틀렸습니다', 'locked': '틀린 비밀번호가 많아 15분 동안 막혔습니다', 'no password set': '서버에 관리자 비밀번호가 아직 없습니다 (Cloudflare의 ADMIN_PASSWORD)' };
+  if (r.status === 403) { signOut(PW[j.why] || (j.why !== 'not an admin' ? '관리자 기능이 꺼져 있습니다' : j.seen ? `${j.seen} 은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : `구글이 이 계정의 이메일을 알려주지 않았습니다${j.google ? ` (${j.google})` : ''}`)); }
   return j;
 }
 
@@ -161,7 +167,7 @@ async function enter() {
   fillItems(); find('');
 }
 function signOut(msg) {
-  token = null; try { sessionStorage.removeItem('cueAdmin'); } catch (e) {}
+  token = null; pass = null; try { sessionStorage.removeItem('cueAdmin'); } catch (e) {}
   $('#app').hidden = true; $('#out').hidden = true; $('#who').textContent = ''; $('#gate').hidden = false; $('#gateMsg').textContent = msg || '';
   drawButton();
 }
@@ -187,6 +193,8 @@ function drawButton() {
   s.onerror = () => { $('#gateMsg').textContent = '구글에 연결할 수 없습니다'; }; document.head.appendChild(s);
 }
 $('#out').onclick = () => signOut('로그아웃했습니다');
+// (the password is kept in this page only, not stored: a reload asks again)
+$('#passForm').onsubmit = e => { e.preventDefault(); const v = $('#pass').value; if (!v) return; pass = v; token = null; $('#pass').value = ''; $('#gateMsg').textContent = ''; enter(); };
 
 async function find(q) {
   const r = await api('find', { q }); const ul = $('#people'); ul.textContent = '';

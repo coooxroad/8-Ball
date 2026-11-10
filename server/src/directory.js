@@ -5,6 +5,13 @@ export class Directory {
     this.sql = sql;
     sql.exec(`CREATE TABLE IF NOT EXISTS people (acct TEXT PRIMARY KEY, nick TEXT, joined INTEGER, dama INTEGER, coin INTEGER, dia INTEGER, seen INTEGER)`);
     sql.exec(`CREATE INDEX IF NOT EXISTS people_nick ON people (nick)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS admin_fails (at INTEGER)`);
+  }
+  // wrong admin passwords in the last 15 minutes (index.js adminPass), one more when add
+  fails(add, now = Date.now()) {
+    this.sql.exec(`DELETE FROM admin_fails WHERE at < ?`, now - 15 * 60000);
+    if (add) this.sql.exec(`INSERT INTO admin_fails (at) VALUES (?)`, now);
+    return { n: this.sql.exec(`SELECT COUNT(*) AS n FROM admin_fails`).toArray()[0].n };
   }
   put({ acct, nick, joined, dama, coin, dia }) {
     if (typeof acct !== 'string' || !/^[0-9a-f]{32}$/.test(acct)) return { ok: false };
