@@ -48,9 +48,23 @@ const puzzle = {
     const s3 = ref == null ? 5 : Math.min(5, ref), s2 = ref == null ? 2 : Math.min(2, ref);
     return sure == null ? 1 : sure >= s3 ? 3 : sure >= s2 ? 2 : 1;
   },
+  /* after a miss, once a session while it is off: a small capsule in the middle - 빠른 진행을 켤까요? and a tick. Its edge fills
+     blue as the moments pass; full, it drops away and fades (owner 11-10). The tick turns it on for puzzles. */
+  askFast() {
+    const p = puzzle; if (p.askedFast || prefs.pzFast || flow !== puzzle) return; p.askedFast = true;
+    const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), edge = document.createElementNS(ns, 'rect');
+    svg.setAttribute('class', 'fa-edge'); svg.setAttribute('aria-hidden', 'true'); edge.setAttribute('pathLength', '1'); svg.appendChild(edge);
+    const go = () => { cap.classList.add('away'); setTimeout(() => cap.remove(), 450); };
+    const tick = el('button', { class: 'fa-ok', 'aria-label': '빠른 진행 켜기', onclick: () => { SND.tap(); prefs.pzFast = true; savePrefs(); cap.classList.add('on'); setTimeout(go, 380); } });
+    const cap = el('div', { class: 'fast-ask', role: 'status' }, [svg, el('span', { text: '빠른 진행을 켤까요?' }), tick]);
+    edge.addEventListener('animationend', go, { once: true });
+    $('#app').appendChild(cap);
+    const fit = () => { const r = cap.getBoundingClientRect(); svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`); edge.setAttribute('x', 1.5); edge.setAttribute('y', 1.5); edge.setAttribute('width', r.width - 3); edge.setAttribute('height', r.height - 3); edge.setAttribute('rx', (r.height - 3) / 2); };
+    requestAnimationFrame(fit);
+  },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
-    if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); return hold(1.6, p.again); }
+    if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
     // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
     const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();

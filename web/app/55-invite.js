@@ -16,6 +16,7 @@ const invite = {
   rooms: null,                // the list of open rooms (방 참가하기): { at, list, err, timer }
   rulesOf(mode) {
     const r = mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? Object.assign({ target: prefs.fourTarget, hugu: true }, prefs.finish ? { finish: finishPref() } : {}, prefs.fourMinus === false ? { minus: false } : {}) : {};
+    if (prefs.fast) r.fast = true;                                   // (빠른 진행: the room's, so both play at the host's pace)
     return realPref() ? Object.assign(r, { real: realPref() }) : r;   // (add-ons: 33-desk-play.js)
   },
   // the code for this game and these rules: kept, or (another game, other rules) a new one

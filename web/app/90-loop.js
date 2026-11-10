@@ -34,8 +34,11 @@ function drainFx() {
    played out on a copy alongside the real one (the physics gives the same answer every time) - a slice of it each frame, so
    that working it out never costs a frame. Until the copy has finished, play stays at its own pace. Not before 0.3 seconds
    in either, so a shot that hits nothing still starts at its own pace. */
+/* Where it is on (owner 11-10: not a setting any more, and never in ranked play): a game against the computer or a friend
+   set so before it began (match.ctx.fast - a friend's room by the host's rules), and puzzles once asked after a miss. */
+function fastNow() { return flow === puzzle ? !!prefs.pzFast : flow === match ? !!(match.ctx && match.ctx.fast) : false; }
 function aheadStart(ca) {
-  if (!prefs.fast || (flow && flow.quiet)) { st.ahead = null; return; }
+  if (!fastNow() || (flow && flow.quiet)) { st.ahead = null; return; }
   const P = game.P, w = P.clone(game.world); w.snd = []; P.strike(w, st.aim, ca.V, ca.a, ca.b, ca.el);
   st.ahead = { w, t: 0, last: 36, done: false };
 }

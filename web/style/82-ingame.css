@@ -66,3 +66,17 @@
 /* spin: the cue ball in a slate ring, a silver line round the ball */
 #app.desk #spinBtn,#app.desk #spinPad{background:radial-gradient(circle closest-side,transparent calc(79% - 1px),var(--silver) 79%,transparent calc(79% + 1.6px)),
   url(ui/spin-ball.webp) center/79% no-repeat,var(--slate);box-shadow:var(--slEdge),var(--slDrop)}
+/* 퍼즐 · after a miss: 빠른 진행을 켤까요? (52-puzzle.js askFast) - a capsule in the middle, its edge filling blue, then dropping away */
+.fast-ask{position:fixed;left:50%;top:50%;z-index:40;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 20px;border-radius:999px;transform:translate(-50%,-50%);
+  background:rgba(18,24,30,.9);color:#eef2f6;font:700 15px var(--ui-font);white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.4);pointer-events:none;animation:faIn .25s ease-out both}
+.fast-ask .fa-edge{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.fast-ask .fa-edge rect{fill:none;stroke:#3d8bff;stroke-width:3;stroke-dasharray:1;stroke-dashoffset:1;animation:faFill 4.5s linear .25s forwards}
+.fast-ask .fa-ok{position:relative;flex:none;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);cursor:pointer;pointer-events:auto}
+.fast-ask .fa-ok::after{content:"";position:absolute;left:12px;top:9px;width:8px;height:14px;border:solid rgba(255,255,255,.75);border-width:0 3px 3px 0;transform:rotate(45deg)}
+.fast-ask.on .fa-ok{background:#3d8bff;box-shadow:none}
+.fast-ask.on .fa-ok::after{border-color:#fff}
+.fast-ask.on .fa-edge rect{animation:none;stroke-dashoffset:0}
+.fast-ask.away{animation:faOut .42s ease-in forwards}
+@keyframes faIn{from{opacity:0;transform:translate(-50%,-40%) scale(.92)}}
+@keyframes faFill{to{stroke-dashoffset:0}}
+@keyframes faOut{to{opacity:0;transform:translate(-50%,40%)}}

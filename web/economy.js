@@ -50,6 +50,7 @@ const inviteRules = (mode, r) => {
   if (mode === 'four' && ['cushion', 'three'].includes(r.finish)) o.finish = r.finish;   // (the finish - game.js MODES.four)
   if (mode === 'four' && r.minus === false) o.minus = false;                               // (마이너스 점수 없음)
   if (mode === 'four' && r.hugu === true) o.hugu = true;                                   // (후구)
+  if (r.fast === true) o.fast = true;                                                       // (빠른 진행: how it is shown, not played)
   // add-ons (friend rooms only): 현실 당구's parts
   const q = r.real; if (q && typeof q === 'object' && (q.throw === true || q.squirt === true || q.cue === true)) o.real = { throw: q.throw === true, squirt: q.squirt === true, cue: q.cue === true };
   return o;

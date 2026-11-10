@@ -46,7 +46,7 @@ function resume(d) {
   if (!game.restore(d.game)) { store.set('save', null); return paintHome(); }
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
   match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
-    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, real: game.real, minus: game.minus, hugu: game.hugu };
+    targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, real: game.real, minus: game.minus, hugu: game.hugu, fast: !!(match.ctx && match.ctx.fast) };
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   match.log = d.log || null; match.innings = d.inn || [1, 1];
   match.t0 = Date.now() - (+d.el > 0 ? +d.el : 0);                        // (the time played before, not the time it lay saved)

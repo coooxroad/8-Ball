@@ -141,7 +141,7 @@ function deskPlay(d) {
         onclick: onTap(() => r.playing ? (r.lock ? invite.sheetPw(r, false, true) : invite.watch(r)) : r.lock ? invite.sheetPw(r) : invite.take(r)) }, [
         el('span', { class: 'tb-table' }, [el('span', { class: 'tb-cloth' }, rackOf(r.mode)), kind === 'pool' ? el('span', { class: 'tb-pk' }) : null, r.playing ? el('em', { class: 'tb-live', text: '관전' }) : null,
           // (the room's game, rules and add-ons as capsules at the table's top left - 78-addons.css; the plate keeps the people)
-          el('span', { class: 'tb-caps' }, [MODE_KO[r.mode], ...rule.split(' · ').filter(Boolean)].map(t => el('em', { text: t })).concat(addonNames(r.rules && r.rules.real).map(t => el('em', { class: 'ad', text: t }))))]),
+          el('span', { class: 'tb-caps' }, [MODE_KO[r.mode], ...rule.split(' · ').filter(Boolean), r.rules && r.rules.fast ? '빠른 진행' : null].filter(Boolean).map(t => el('em', { text: t })).concat(addonNames(r.rules && r.rules.real).map(t => el('em', { class: 'ad', text: t }))))]),
         el('span', { class: 'tb-plate' }, [el('b', { text: r.title || `${r.host.name}의 방` }),
           el('small', { text: r.playing ? who : `${who} · 레이팅 ${r.host.dama}` }),
           r.lock ? el('i', { class: 'tb-lock', 'aria-hidden': 'true' }) : null])]);
@@ -181,6 +181,8 @@ function deskPlay(d) {
 // 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
 const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
 const finishSeg = () => dkSeg([[false, '없음'], ['cushion', '쿠션'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
+// 빠른 진행, chosen with the game against the computer or a friend (owner 11-10: no longer a setting)
+const fastSeg = () => [dkLab('빠른 진행'), dkSeg([[true, '켬'], [false, '끔']], !!prefs.fast, v => { prefs.fast = v; repaint(); })];
 // 4구 with a friend: whether a foul costs a point (owner 11-10)
 const minusSeg = () => [dkLab('마이너스 점수'), dkSeg([[true, '있음'], [false, '없음']], prefs.fourMinus !== false, v => { prefs.fourMinus = v; repaint(); })];
 function deskInvite(slate, _, m) {
@@ -191,7 +193,7 @@ function deskInvite(slate, _, m) {
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]); }
   if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); }), dkLab('마무리'), finishSeg(), ...minusSeg()]); }
   // 1:1 or 2:2 (owner 11-09: four, the empty seats the computer's if the host likes)
-  dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); })]);
+  dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); }), ...fastSeg()]);
   const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean));
   if (four && h && h.seats) dkPut(slate, el('div', { class: 'seats' }, invite.seatRows(h.seats, 0, true)));
   // (copy audit 02-06, 02-07: one line for the state - open (the badge on the code says it is listed), opening, or why not)
@@ -235,6 +237,7 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]);
   }
+  dkPut(slate, fastSeg());
   if (!cpu) dkPut(slate, [dkHr(), addonCard()]);
   const d = store.get('save', null), gm = d && d.v === 2 && d.game && MODE_KO[d.game.modeId] ? d.game : null;
   dkPut(slate, dkActs(dkMain('시작', null, () => match.start(m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0)),   // (4구: the yellow ball, and so who breaks, drawn by lot)
