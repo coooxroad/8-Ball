@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 13;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise); 13: 4구 - no point lost while finishing, 마이너스 점수 off, 후구
+const PHYS_V = 14;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise); 13: 4구 - no point lost while finishing, 마이너스 점수 off, 후구; 14: 현실 당구 measured - squirt by end mass, the cue's rise by its shape
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -136,13 +136,14 @@ function createPhysics(cfg) {
   function strike(w, ang, V, a, bb, el) {
     if (el == null) el = restEl(w, ang, bb);           // not said: the ordinary stroke (level, or on a real table a few degrees up)
     const real = w.real;
-    // 현실 당구 · 스쿼트: side sends the cue ball off a little the other way from the side struck (a > 0, the side that spins it
-    // anticlockwise from above, turns its way anticlockwise) - 1.7 degrees at the most side a stroke gives (a = 0.5)
-    if (real && real.squirt && a) ang += SQUIRT * a;
-    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
+    // 현실 당구 · 큐 각도: a cue cannot go through a ball, the cushion or the rail behind the cue ball - it is raised over them,
+    // as far as it must (cueRiseTan: the house cue's own shape, from its tip to its butt)
     let ce = DMath.cos(el), se = DMath.sin(el);
-    // 현실 당구 · 큐 각도: a cue cannot go through a ball or the rail behind the cue ball - it is raised over them, as far as it must
-    if (real && real.cue) { const t = cueRiseTan(w, ang, bb); if (t > se / ce) { const k = 1 / Math.sqrt(1 + t * t); ce = k; se = t * k; } }
+    if (real && real.cue) { const t = cueRiseTan(w, ang, a, bb); if (t > se / ce) { const k = 1 / Math.sqrt(1 + t * t); ce = k; se = t * k; } }
+    // 현실 당구 · 스쿼트: side sends the cue ball off the cue's line, away from the side struck (a > 0, the side that spins it
+    // anticlockwise from above, turns its way anticlockwise) - by squirtTan, the cue's end mass against the ball's
+    if (real && real.squirt && a) { const q = squirtTan(a); ang += q - q * q * q / 3 + q * q * q * q * q / 5; }   // (atan's series: exact to 1e-9 here)
+    const c = w.balls[w.cue], dx = DMath.cos(ang), dy = DMath.sin(ang);
     c.vx = V * ce * dx; c.vy = V * ce * dy;
     const k = 2.5 * V * bb / R, ka = 2.5 * V * a / R;
     c.wx = -dy * k + dx * ka * se; c.wy = dx * k + dy * ka * se; c.wz = ka * ce;
@@ -169,31 +170,60 @@ function createPhysics(cfg) {
   const ANG_K = 0.55, ANG_C = 0.45, ANG_Z = 1.7, PINCH = 0.35, RAIL_ROLL = 0.2;
   const lift = (V, se) => { const u = Math.max(0, ANG_K * V * se - ANG_C); return ANG_Z * DMath.tanh(u / ANG_Z); };
   /* 현실 당구 (an add-on for games with a friend; w.real = { throw, squirt, cue }, each part on or off - owner 11-10).
-     SQUIRT: radians of squirt per unit of side (a is the tip's offset as a share of the radius).
-     cueRiseTan: how steep (the tangent) the cue must be to pass over every ball on its line behind the cue ball (the cue a
-     shaft SHAFT thick, aimed at the struck point; a ball within CUE_BACK behind counts) and over the rail - the cushion's top RAIL_H (radii)
-     above the cloth. 0: level is free. The cue line, in the plane of the shot,
-     rises z = c + t s from the struck point (c above the ball's centre); a ball at s0 behind and l to the side is cleared when
-     the line passes (R + SHAFT) from its centre: (c + t s0)^2 >= ((R + SHAFT)^2 - l^2) (1 + t^2), the least t solving it. */
-  const SQUIRT = 0.06, SHAFT = 0.008, CUE_BACK = 1.2, RAIL_H = 1.27;
-  function cueRiseTan(w, ang, bb) {
-    const c = w.balls[w.cue], bx = -DMath.cos(ang), by = -DMath.sin(ang), z0 = (bb || 0) * R;   // (bb: the tip above centre, a share of R)
-    let need = 0;
+
+     Squirt (Alciatore, TP A.31): struck off centre by b (a = b/R), the cue ball leaves at an angle to the cue's line of
+       tan = (5/2) a sqrt(1 - a^2) / (1 + m/me + (5/2)(1 - a^2)),
+     m the ball's mass and me the cue's end mass - the part of the shaft near the tip that moves with the ball in the
+     instant of the hit. The house cue's: CUE_ME, 9.5 g (a thick ferrule and a full shaft) - 3.0 degrees on a pool ball at
+     half a radius, 2.5 on the heavier carom ball; a little side, a little squirt (1.6 and 1.3 degrees at a quarter).
+     Swerve, the curve back, is the raised cue's masse and comes of itself (strike, below; motion).
+
+     The cue's rise: the house cue as it is drawn (scene/40-cue.js: tip 12 mm across, the shaft out to 21 mm at the joint,
+     the butt 29 mm), CUE_R its radius along it from the tip; its line through the point struck (a to the side, bb up, as
+     shares of R) and back along the shot. Over everything behind - each ball, the cushion's nose (CUSH_Z high), the rail's
+     wood beyond it (RAIL_Z, RAIL_W wide; past that the floor) - the least slope (a tangent) that clears it all (the same
+     steps on every device). Nothing clears it (a ball frozen to the cushion struck at its middle - the nose is higher than
+     the point struck): 6, as steep as a cue goes. */
+  const CUE_ME = 0.0095, BALL_M = POCKETED ? 0.17 : 0.21;
+  const squirtTan = a => { const A = Math.min(0.95, Math.abs(a)), k = 1 - A * A; return Math.sign(a) * 2.5 * A * Math.sqrt(k) / (1 + BALL_M / CUE_ME + 2.5 * k); };
+  const CUE_L = 1.47, CUE_R = [[0, 0.006], [0.04, 0.0064], [0.74, 0.0104], [0.756, 0.0108], [1.03, 0.0122], [1.3, 0.0136], [1.45, 0.0146], [1.47, 0.0142]];
+  const cueR = s => { if (s <= 0) return CUE_R[0][1]; for (let i = 1; i < CUE_R.length; i++) { const [s1, r1] = CUE_R[i]; if (s <= s1) { const [s0, r0] = CUE_R[i - 1]; return r0 + (r1 - r0) * (s - s0) / (s1 - s0); } } return CUE_R[CUE_R.length - 1][1]; };
+  const CUSH_Z = 0.0355, CUSH_BACK_Z = 0.038, RAIL_Z = 0.04, RAIL_W = 0.095;
+  function cueRiseTan(w, ang, a, bb) {
+    const c = w.balls[w.cue], bx = -DMath.cos(ang), by = -DMath.sin(ang);
+    a = Math.max(-0.95, Math.min(0.95, a || 0)); bb = Math.max(-0.95, Math.min(0.95, bb || 0));
+    // the struck point: off the centre to the side (px, py) and up (z0, from the cloth), on the back of the ball (s0 behind)
+    const px = c.x + by * a * R, py = c.y - bx * a * R, z0 = R + bb * R, s0 = R * Math.sqrt(Math.max(0, 1 - a * a - bb * bb));
+    // what is behind, as [s along the line behind the struck point, its distance across, height] for the balls...
+    const balls = [];
     for (const o of w.balls) {
       if (!o.on || o.id === w.cue) continue;
-      const rx = o.x - c.x, ry = o.y - c.y, s0 = rx * bx + ry * by; if (s0 <= 0 || s0 > CUE_BACK) continue;
-      const l = Math.abs(rx * by - ry * bx), K = (R + SHAFT) * (R + SHAFT) - l * l; if (K <= 0) continue;
-      let t;
-      if (s0 * s0 <= K + 1e-12) t = 6;                          // (touching it from behind: nearly straight down)
-      else t = (-z0 * s0 + Math.sqrt(K * (s0 * s0 + z0 * z0 - K))) / (s0 * s0 - K);
-      if (t > need) need = t;
+      const rx = o.x - px, ry = o.y - py, s = rx * bx + ry * by - s0, l = rx * by - ry * bx;
+      if (s > -R && s < CUE_L + R && Math.abs(l) < R + 0.015) balls.push([s, l]);
     }
-    // the rail: the nearest cushion behind along the cue's line, then its wood
-    let sr = Infinity;
-    if (bx > 1e-9) sr = Math.min(sr, (HL - c.x) / bx); else if (bx < -1e-9) sr = Math.min(sr, (-HL - c.x) / bx);
-    if (by > 1e-9) sr = Math.min(sr, (HW - c.y) / by); else if (by < -1e-9) sr = Math.min(sr, (-HW - c.y) / by);
-    if (sr < CUE_BACK) { const t = (RAIL_H * R - R + SHAFT - z0) / Math.max(sr, 0.004); if (t > need) need = t; }
-    return Math.min(need, 6);
+    // ...and where the line crosses the cushion's nose and the rail's wood (going back from the struck point)
+    let sn = Infinity, cosI = 1;
+    if (bx > 1e-9 && (HL - px) / bx < sn) { sn = (HL - px) / bx; cosI = bx; } else if (bx < -1e-9 && (-HL - px) / bx < sn) { sn = (-HL - px) / bx; cosI = -bx; }
+    if (by > 1e-9 && (HW - py) / by < sn) { sn = (HW - py) / by; cosI = by; } else if (by < -1e-9 && (-HW - py) / by < sn) { sn = (-HW - py) / by; cosI = -by; }
+    sn -= s0; const sb = sn + CW / cosI, se = sn + (CW + RAIL_W) / cosI;
+    const clear = t => {
+      const k = Math.sqrt(1 + t * t);
+      // a ball: its centre at height R, the cue's axis rising t per metre - the gap between them, square to the axis, minus the cue's own radius there
+      for (const [s, l] of balls) { const dz = R - z0 - t * s, along = (s + t * (R - z0)) / k, d2 = l * l + (dz * dz) / (k * k); if (along > -R && d2 < (R + cueR(along)) * (R + cueR(along))) return false; }
+      // the cushion and the rail: the cue's underside above each edge it passes over, while it is still over the table
+      for (const [s, h] of [[sn, CUSH_Z], [sb, CUSH_BACK_Z], [sb, RAIL_Z], [se, RAIL_Z]]) if (s > 0 && s < CUE_L && z0 + t * s - cueR(s) * k < h) return false;
+      return true;
+    };
+    if (clear(0)) return 0;
+    // (steeper is not always clearer: near the cushion's nose a cue stood up comes down on it - so the first slope that
+    // clears is looked for upward, finely at first, and then closed in on by halving)
+    let lo = 0;
+    for (let i = 1; i <= 160; i++) {
+      const t = 6 * (i / 160) * (i / 160); if (!clear(t)) { lo = t; continue; }
+      let hi = t; for (let j = 0; j < 30; j++) { const m = (lo + hi) / 2; if (clear(m)) hi = m; else lo = m; }
+      return hi;
+    }
+    return 6;
   }
   const SIDE_RUN = 2.4;                                          // metres of run over which side falls to a third (play)
   const CREEP = 0.18, JUMP = POCKETED ? 0.36 : 0.3,              // a carom ball is heavier and leaves the cloth less readily
@@ -728,6 +758,6 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, cueRiseTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  return { hop, restEl, cueRiseTan, squirtTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }

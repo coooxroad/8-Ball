@@ -148,12 +148,14 @@ function frame(now) {
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
   }
   if (st.phase === 'aim') syncEl();
+  // (현실 당구 · 큐 각도: the angle shown follows the cue as it is turned past something it must stand up over)
+  if (st.phase === 'aim' && game.world.real && game.world.real.cue) { const e = shownEl(); if (Math.abs(e - (st.elShown || 0)) > 1e-4) { st.elShown = e; setKindUI(); } }
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming()));
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
-    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
+    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, honest: !!(game.world && game.world.real && game.world.real.cue), el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
     follow, chalk: st.chalk ? st.chalk.t : null, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),

@@ -470,15 +470,27 @@ for (const name of ['bar', 'pro', 'pub']) {
   const P = createPhysics(Object.assign({ pockets: true }, TABLES.bar)), deg = r => r * 180 / Math.PI;
   const w0 = real => { const w = P.makeWorld(16); w.balls.forEach(b => { b.on = false; }); w.cue = 0; P.place(w, 0, -0.5, 0); w.real = real; return w; };
   const sq = real => { const w = w0(real); P.strike(w, 0, 2, 0.5, 0, 0); const c = w.balls[0]; return deg(Math.atan2(c.vy, c.vx)); };
-  if (Math.abs(sq(null)) > 1e-9 || Math.abs(sq({ squirt: true }) - 1.72) > 0.05) fail(`squirt: ${sq(null)} without, ${sq({ squirt: true })} with`);
+  // squirt, TP A.31 with the house cue's end mass: 3.0 degrees at half a radius of side on a pool ball
+  if (Math.abs(sq(null)) > 1e-9 || Math.abs(sq({ squirt: true }) - 2.98) > 0.03) fail(`squirt: ${sq(null)} without, ${sq({ squirt: true })} with`);
   const cut = real => { const w = w0(real); P.place(w, 1, 0, 0); const R = P.R, c = 30 * Math.PI / 180;
     P.strike(w, Math.atan2(2 * R * Math.sin(c), 0.5 - 2 * R * Math.cos(c)), 1.5, 0, 0, 0);
     for (let i = 0; i < 400 && !w.ev.at; i++) P.step(w, 1 / 120); P.step(w, 1 / 120); const o = w.balls[1]; return deg(Math.atan2(o.vy, o.vx)); };
   const thr = cut({ throw: true }) - cut(null);
   if (!(Math.abs(thr) > 0.8 && Math.abs(thr) < 2.5)) fail(`throw on a 30-degree stun cut: ${thr.toFixed(2)} degrees`);
-  const rise = (x, y) => { const w = w0({ cue: true }); if (x != null) P.place(w, 1, x, y); return deg(Math.atan(P.cueRiseTan(w, 0, 0))); };
-  const near = rise(-0.58, 0.01), open = rise(null);
-  if (!(near > 15 && open < 5)) fail(`cue rise: ${near.toFixed(1)} over a ball 8 cm behind, ${open.toFixed(1)} on an open table`);
+  // throw against Alciatore's model (TP A.14): a stunned cue ball at the hit, the object ball's way off the line of centres
+  { const mu = v => 0.00995 + 0.108 * Math.exp(-1.088 * v), R = P.R;
+    for (const [v, cd] of [[0.45, 30], [1.34, 30], [1.34, 60], [3.13, 45]]) {
+      const w = P.makeWorld(16); w.balls.forEach(b => { b.on = false; }); w.cue = 0; w.real = { throw: true }; const c = cd * Math.PI / 180;
+      P.place(w, 1, 0, 0); P.place(w, 0, -2 * R * Math.cos(c) - 0.0004, -2 * R * Math.sin(c)); w.balls[0].vx = v;
+      for (let i = 0; i < 20 && !w.ev.hits.length; i++) P.step(w, 1 / 240);
+      const got = cd - deg(Math.atan2(w.balls[1].vy, w.balls[1].vx)), vr = v * Math.sin(c), want = deg(Math.atan(Math.min(mu(vr), vr / (7 * 0.98 * v * Math.cos(c)))));
+      if (Math.abs(got - want) > 0.05) fail(`throw at ${v} m/s, ${cd} degrees cut: ${got.toFixed(2)}, Alciatore's model ${want.toFixed(2)}`);
+    } }
+  // the cue's rise, the house cue as drawn: an open table (over the rail), a ball 8 cm behind, a ball frozen to the cushion struck at its middle
+  const rise = (x, y, bb) => { const w = w0({ cue: true }); if (x != null) P.place(w, 1, x, y); return deg(Math.atan(P.cueRiseTan(w, 0, 0, bb || 0))); };
+  const near = rise(-0.58, 0), open = rise(null);
+  const frozen = (bb) => { const w = w0({ cue: true }); P.place(w, 0, -P.HL + P.R, 0); return deg(Math.atan(P.cueRiseTan(w, 0, 0, bb))); };
+  if (!(near > 35 && near < 50 && open > 0.5 && open < 3 && frozen(0) > 60 && frozen(0.5) < 10)) fail(`cue rise: ${near.toFixed(1)} over a ball 8 cm behind, ${open.toFixed(1)} on an open table, frozen to the cushion ${frozen(0).toFixed(1)} at its middle and ${frozen(0.5).toFixed(1)} struck high`);
   // the guide follows the add-on (owner 11-10): with squirt on, the line drawn for side bends as the ball will
   const guideEnd = real => { const w = w0(real), p = P.preview(w, 0, 2, 0.5, 0, 0, 0); return deg(Math.atan2(p.pre[31], p.pre[30] + 0.5)); };   // (a point a tenth of a metre on)
   if (!(Math.abs(guideEnd({ squirt: true }) - sq({ squirt: true })) < 0.3 && Math.abs(guideEnd(null)) < 0.3)) fail(`guide with squirt: ${guideEnd({ squirt: true }).toFixed(2)}° (the shot ${sq({ squirt: true }).toFixed(2)}°), without ${guideEnd(null).toFixed(2)}°`);

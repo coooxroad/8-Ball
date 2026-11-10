@@ -133,7 +133,7 @@ const realPref = () => { const A = prefs.addons || {}; return A.real && (A.throw
 // the cue as drawn: with 현실 당구's cue angle on, raised over what is behind the cue ball as the shot will be (physics.js)
 const shownEl = () => {
   const w = game.world; if (!w || !w.real || !w.real.cue || st.phase !== 'aim' || !game.P.cueRiseTan) return st.el;
-  return Math.max(st.el, Math.atan(game.P.cueRiseTan(w, st.aim, st.spin.y * 0.5)));
+  return Math.max(st.el, Math.atan(game.P.cueRiseTan(w, st.aim, st.spin.x * 0.5, st.spin.y * 0.5)));
 };
 // the add-ons as words, for a room's capsules and the slate's card
 const addonNames = r => r && (r.throw || r.squirt || r.cue) ? ['현실 당구'] : [];

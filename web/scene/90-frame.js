@@ -135,8 +135,10 @@
     // From above, a raised cue is raised too, in true perspective (the butt nearer the eye, so wider), only shortened so its
     // butt stays within a third of a metre of the cloth; its shadow lies on the cloth below and falls away from it.
     const kl = orbit.on || e < 0.03 ? 1 : Math.min(1, 0.32 / (1.47 * se));
-    if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? 0.085 : 0) + e), v.aim + Math.PI); }
-    else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -0.085, v.aim + Math.PI); }
+    // (현실 당구 · 큐 각도 - v.honest: the cue at its true angle, no lean for looks, so that what it cannot clear is seen - owner 11-10)
+    const lean = v.honest ? 0 : 0.085;
+    if (orbit.on || e >= 0.03) { cue.scale.set(kl, 1, 1); cue.position.set(px, py, R + lift + 0.002 + se * (R + pullV)); cue.rotation.set(0, -Math.min(Math.PI / 2, (e < 0.03 ? lean : 0) + e), v.aim + Math.PI); }
+    else { cue.scale.set(1, 1, 1); cue.position.set(px, py, R + lift + 0.002); cue.rotation.set(0, -(v.honest ? e : lean), v.aim + Math.PI); }
     const half = 0.735 * kl * ce, sx = px - dx * half + 0.012 + 0.025 * se, sy = py - dy * half - 0.014 - 0.025 * se;
     /* chalking (v.chalk: its time, 0 .. 1.3 s), as it is done (owner 11-09: not from above): the cube held end-on to the
        cue, its hollow face to the tip, slid back along the cue's line onto the tip, twisted to and fro about that line

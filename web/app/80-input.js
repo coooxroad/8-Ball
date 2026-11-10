@@ -215,25 +215,26 @@ function syncEl() {
 // what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
 // (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
 function elSay() {
-  const P = game.P; if (st.el < 0.009) return '';
-  const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, st.el), side = Math.abs(st.spin.x) > 0.15, steep = st.el > 58 * Math.PI / 180;
+  const P = game.P, el = shownEl(); if (el < 0.009) return '';
+  const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, el), side = Math.abs(st.spin.x) > 0.15, steep = el > 58 * Math.PI / 180;
   if (h > P.R * 2) return '공을 넘는 점프';
-  if (h > 0.012) return P.hop(game.vOf(1) * kp, st.el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
-  if (P.hop(game.vOf(1) * kp, st.el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
+  if (h > 0.012) return P.hop(game.vOf(1) * kp, el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
+  if (P.hop(game.vOf(1) * kp, el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
   return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
 }
 function setKindUI() {
-  const d10 = Math.round(st.el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
+  // (현실 당구: the angle the cue must stand at here, if more than the one set - it cannot be laid lower: 00-state.js shownEl)
+  const el = shownEl(), d10 = Math.round(el * 1800 / Math.PI) / 10, deg = d10 < 10 && d10 % 1 ? d10.toFixed(1) : Math.round(d10), ok = trickOK(), say = elSay();
   $('#kindBox').hidden = !ok; $('#elVal').textContent = deg + '°'; $('#elSay').textContent = say;
   // the ordinary stroke says nothing; a cue set any other way is shown on the spin button
-  const plain = st.el < 0.009;
+  const plain = el < 0.009;
   const tag = $('#spinTag'); tag.hidden = plain; tag.textContent = '큐 ' + deg + '°' + (say ? ' · ' + say : '');
   // The side view: the cloth, the cue ball at the pivot of a brass protractor, and the player's own cue leaning at its angle
   // with its tip on the ball (on the desk the made pictures, elsewhere drawn).
   const cv = $('#elPad'), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch || $('#spinPop').hidden) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1); cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const bx = EL_BX, by = ch - EL_BY, R = 15, a = st.el, c = CUES[cueNow] || CUES[0];
+  const bx = EL_BX, by = ch - EL_BY, R = 15, a = el, c = CUES[cueNow] || CUES[0];
   const arc = elImg('angle-arc'); if (arc.naturalWidth) { const sc = Math.min(cw - bx - 4, by - 4) / 480; g.drawImage(arc, bx - 16 * sc, by - 496 * sc, 512 * sc, 512 * sc); }
   g.fillStyle = hex(CLOTHS[iceOn() && flow === match ? ICE : iceOn() ? 0 : prefs.cloth].felt); g.fillRect(0, by + R, cw, ch - by - R);
   g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, by + R, cw, 2);
