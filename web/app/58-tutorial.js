@@ -4,8 +4,8 @@
    aim (drag the table until the line runs to the 1 ball), the strike point (open it from the cue ball key), and the
    shot (pull the power bar and let go). The shot is played as a lesson is (51-practice.js) - missed, the same balls
    come back. Potted: done, the prize asked for, and back to the lobby.
-   Offered once to a new player (prefs.how not yet set - the how-to sheet would have come next), and always there from
-   훈련 · 레슨. */
+   Offered to every new guest: a new player (prefs.how not yet set), and a guest again after signing out (tutorial.fresh);
+   always there from 훈련 · 레슨. */
 const TUT_DRILL = {
   id: 'tutorial', name: '튜토리얼', d: '1번 공을 포켓에 넣으세요', tip: '테이블을 끌어 조준 · 세기 막대를 당겼다 놓아 치기', vol: null, course: '',
   // the cue ball, the 1 ball and the bottom right corner pocket in a line, near and easy
@@ -16,13 +16,16 @@ const TUT_DRILL = {
 const tutorial = {
   on: false, step: 0, timer: 0, aim0: 0,
   STEPS: [['조준', '테이블을 끌어 조준선을 1번 공에 맞추세요'], ['당점', '흰 공 버튼을 눌러 당점을 보세요'], ['치기', '세기 막대를 당겼다 놓아 치세요']],
+  // Every new guest is asked - a first start, and a guest again after signing out of Google (owner 11-10; tutFresh)
   offer() {
-    if (tutorial.asked || prefs.how || prefs.tutDone || prefs.tutAsked) return; tutorial.asked = true; prefs.tutAsked = true; savePrefs();
+    if (tutorial.asked || (!prefs.tutFresh && (prefs.how || prefs.tutDone || prefs.tutAsked))) return;
+    tutorial.asked = true; prefs.tutAsked = true; prefs.tutFresh = false; savePrefs();
     const P = ECONOMY.TUTORIAL_PRIZE;
-    openSheet('처음이신가요?', [note(`튜토리얼 · 완료 보상 코인 ${P.coin} + ${itemName({ kind: P.kind, id: P.id })}`),
+    openSheet('튜토리얼 할까요?', [note(`튜토리얼 · 완료 보상 코인 ${P.coin} + ${itemName({ kind: P.kind, id: P.id })}`),
       el('button', { class: 'btn cta', text: '튜토리얼 시작', onclick: () => { SND.tap(); closeSheet(); tutorial.start(); } }),
       flatBtn('건너뛰기', () => { closeSheet(); prefs.how = true; savePrefs(); })]);
   },
+  fresh() { tutorial.asked = false; prefs.tutFresh = true; prefs.tutDone = false; savePrefs(); },
   start() {
     const p = practice; usePhysics(); prefs.how = true; savePrefs();
     p.drill = TUT_DRILL; p.level = 1; p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;

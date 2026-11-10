@@ -107,7 +107,7 @@ const account = {
   sheetOut() {
     openSheet('로그아웃', [
       el('div', { class: 'row' }, [flatBtn('취소', () => account.sheet()),
-        el('button', { class: 'btn cta', text: '로그아웃', onclick: async () => { SND.tap(); closeSheet(); await net.signOut(); toast('로그아웃했습니다', 'good', 1800); if (st.screen === 'home') paintHome(); } })]),
+        el('button', { class: 'btn cta', text: '로그아웃', onclick: async () => { SND.tap(); closeSheet(); await net.signOut(); tutorial.fresh(); toast('로그아웃했습니다', 'good', 1800); if (st.screen === 'home') paintHome(); } })]),
     ]);
   },
 };

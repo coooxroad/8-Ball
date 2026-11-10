@@ -30,7 +30,10 @@
 #app.desk.portrait:not(.bcast) #badge{display:none}
 #app.desk.portrait #pracBar{position:absolute;top:62px;left:60px;right:56px;justify-content:center;margin:0}
 #app.desk.portrait #toast,#app.bcast.portrait #toast{max-width:calc(100% - 120px);font-size:15px}
-#app.desk.portrait:has(#pracBar:not([hidden])) #toast{top:112px}
+/* ...but a lesson's line is what it asks: under its keys, clear of the view knobs on the right */
+#app.desk.portrait:not(.bcast) #hud:has(#p1[hidden]) #badge{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;position:absolute;top:110px;left:10px;right:62px;
+  max-width:none;white-space:normal;text-align:center;font-size:12.5px;line-height:1.3;padding:0 10px;border:6px solid transparent;border-width:6px 0}
+#app.desk.portrait:has(#pracBar:not([hidden])) #toast{top:160px}
 #app.desk.portrait:has(#spinPop:not([hidden])) #clock{visibility:hidden}
 /* 5.0: the slimmer bar upright too, its two rows closer */
 #app.desk.compact.portrait{--bar:86px}
@@ -55,9 +58,10 @@
 #app.desk.compact.portrait .dk-plate small{font-size:12px}
 #app.desk.compact.portrait .dk-vs{font-size:13px;letter-spacing:.04em}
 #app.desk.compact.portrait .dk-sec small{white-space:normal;line-height:1.2}
-/* play: the view key always in the last column, and in practice (one plate) the plate has the middle to itself */
-#hud #viewBtn{grid-column:-2}
-#hud:has(#p1[hidden]) #p0{grid-column:2 / -2}
+/* play upright: the view key always in the last column, and in practice (one plate) the plate has the middle to itself
+   (upright only - lying down, the lesson's line and keys have the middle and the right: 72-lessons.css) */
+#app.portrait #hud #viewBtn{grid-column:-2}
+#app.portrait #hud:has(#p1[hidden]) #p0{grid-column:2 / -2}
 @media (max-width:400px){
   #app.desk.compact #menuBtn,#app.desk.compact #viewBtn{width:42px;height:42px}
   #hud{gap:4px}

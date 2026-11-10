@@ -117,8 +117,11 @@
 #app.bcast:not(.portrait) #hud .pill{max-width:calc((100vw - 380px) / 2)}
 /* lessons, free practice and puzzles in play on the desk: the player's ivory name plate at the top left, what the drill
    asks on a small slate tag beside it, and the drill's keys as the desk's square ivory keys */
-#app.desk:not(.bcast) #hud .pill{--s:.42;border:0 solid transparent;border-radius:0;background:none;box-shadow:-6px 9px 10px rgba(0,0,0,.4);color:#6b5f4e;
+#app.desk:not(.bcast) #hud .pill{--s:.42;border:0 solid transparent;border-radius:0;background:none;box-shadow:none;filter:drop-shadow(-5px 8px 7px rgba(0,0,0,.4));color:#6b5f4e;
   border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s)) stretch;padding:4px 18px 12px 10px}
+/* (the plate's shadow follows the plate - a box-shadow drew a grey box round it - and on a small screen its words sit lower, on
+   the plate's face, not over its top edge) */
+#app.desk.compact:not(.bcast) #hud .pill{padding-top:9px}
 #app.desk:not(.bcast) #hud .pill .nm,#app.desk:not(.bcast) #hud .pill.on .nm{color:#2b241c;font-weight:800}
 #app.desk:not(.bcast) #hud .pill.on{color:#6b5f4e}
 #app.desk:not(.bcast) #hud .pill .av{background:#2b241c;color:#f4ecd8;border:0}
