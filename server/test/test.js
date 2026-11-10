@@ -115,7 +115,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const v = vault({ CHECK_MATCHES: 'slices' }); v.init('h');
   const good = record('eight', {}), bad = JSON.parse(JSON.stringify(good));
   if (good.winner != null && good.shots.length > 1) {
-    bad.shots[0].V *= 1.05;
+    // (every shot made 5% harder - one alone sometimes ends the same, and the check passed it: a flaky test, 11-11)
+    for (const s of bad.shots) if (s.V) s.V *= 1.05;
     const r1 = v.match({ req: req(), kind: 'cpu', log: good }), r2 = v.match({ req: req(), kind: 'cpu', log: bad });
     ok(r1.pending && r2.pending && v.me().coin === 0 && v.me().checking === 2, 'queued, nothing paid yet');
     let n = 0; while (v.work(150) && n < 100000) { n++; if (n % 40 === 0) v.job = null; }      // (now and then forgetting the replay in hand, as a restart would)

@@ -12,6 +12,9 @@
    onto what it stands on. Each image is drawn round the element at a scale --s, the transparent margin drawn outside the
    box (outset), so the element's box is the piece's top face plus its lip; --lip is padded at the foot so the content
    sits in the middle of the top face, and pressed pieces move it down as far as their top face went. */
+#app.desk{--es:.42;--bar:62px;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px}
+#app.desk.compact{--es:.3;--bar:56px;--tilt:13deg;--ovh:60px;--ovw:34px}
+#app.desk.compact:not(.portrait){--bar:48px}
 /* ---------- the desk as a plane seen from above and a little behind ----------
    The whole desk - wood, rail, tray, slate, the things on it - is laid out flat in #desk, and #deskPlane, a little bigger
    all round so its far corners still reach the edges, leans away from the eye about its bottom edge (CSS 3D). The canvas
@@ -36,6 +39,7 @@
 /* (while 랭킹전 looks for an opponent its strip sits at the top: the desk's contents move down out from under it) */
 #app.rk #desk{top:calc(46px/var(--desk-density));height:calc(100%*var(--desk-density) - 46px)}
 #app.desk.compact.portrait #desk{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(220px,1fr) auto;padding:14px 16px 18px;gap:14px}
+#app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);padding:8px 10px 10px;gap:10px}
 /* the room's light, warm from the upper right and falling away to the lower left; under the pieces on the desk, and
    (much fainter) over everything, as light is */
 #app.desk #desk::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
@@ -49,6 +53,7 @@
 #app.desk #desk>.dk-prop{position:absolute;z-index:3;pointer-events:none;background-position:center;background-size:contain;background-repeat:no-repeat}
 #app.desk #desk>.dk-prop.plant{right:-44px;top:-58px;width:190px;height:190px;background-image:url(ui/plant.webp)}
 #app.desk #desk>.dk-prop.towel{left:0;bottom:0;width:270px;height:193px;background-image:url(ui/towel.webp)}
+#app.desk #desk>.dk-prop.chalk{left:258px;bottom:calc(130px*var(--es) - 22px);width:92px;height:80px;background-image:url(ui/chalk.webp)}
 #app.desk.compact #desk>.dk-prop{z-index:0}
 #app.desk.compact #desk>.dk-prop.plant{width:140px;height:140px;right:-20px;top:-30px}
 #app.desk.compact #desk>.dk-prop.towel{width:180px;height:128px}
@@ -69,7 +74,7 @@
 .dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
 #app.desk.compact .dk-logo{display:none}
 .dk-tabs{display:flex;gap:6px;min-width:0;flex-shrink:0}
-#app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;font:700 16px var(--ui-font)}
+#app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px var(--ui-font);--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0}
 #app.desk .dk-tab[aria-selected="true"]{color:#fff;border-image-source:url(ui/tab-on.webp)}
 /* Desktop windows between tablet and full monitor widths still use the desk, but cannot fit its full-size bar. */
 @media (min-width:900px) and (max-width:1200px){
@@ -83,6 +88,7 @@
 #app.desk.compact .dk-tab{--s:.42;min-width:0;height:40px;padding:0 11px;font-size:14px}
 /* the player: an ivory counter in a brass ring (the plates in the tray wear the same ring) */
 .dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
+#app.desk .dk-me .av{position:relative;overflow:visible;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
 #app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
 .dk-me b{display:block;font:800 14.5px var(--ui-font);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dk-me small{display:block;font:600 12px var(--ui-font);color:#b9b2a5}
@@ -92,14 +98,18 @@
 .dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px var(--ui-font);white-space:nowrap;flex-shrink:0}
 #app.desk.compact .dk-top{height:40px;padding:0 11px}
 #app.desk.compact .dk-top span{display:none}
+#app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:36px}
 /* ---------- the rail: a slot cut into it for each choice, and the key sitting down in the slot ---------- */
 #app.desk .dk-rail{display:flex;flex-direction:column;overflow:auto;min-height:0;--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/rail.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));gap:14px;padding:22px 16px calc(20px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk.compact .dk-rail{--s:.34;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-radius:14px;scrollbar-width:none;gap:8px;padding:10px 10px calc(10px + var(--lip))}
+#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:10px 8px calc(8px + var(--lip))}
+#app.desk .dk-slot{--s:.56;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;height:clamp(84px,13.5vh,124px);padding:calc(24px*var(--s) + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
 #app.desk.compact .dk-slot{--s:.36;flex:1 0 auto;min-width:80px;height:58px}
 #app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
 #app.desk .dk-rb{position:relative;font:800 28px var(--ui-font);--s:.33;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
 #app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);--pt:calc(12px*var(--s));--pb:calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
 #app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);--pt:calc(6px*var(--s));--pb:calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
+#app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
 .dk-rb.soon{opacity:.55}
 .dk-rb small{display:block;font:600 13px var(--ui-font);opacity:.7;margin-top:4px}
 #app.desk.compact .dk-rb{--s:.24;font-size:17px}
@@ -146,6 +156,7 @@
 #app.desk .dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk.compact .dk-slate{--s:.36;max-height:48vh;gap:10px;padding:16px 16px calc(14px + var(--lip))}
 #app.desk.compact.portrait .dk-slate{max-height:36vh}
+#app.desk.compact:not(.portrait) .dk-slate{padding:12px 14px calc(10px + var(--lip))}
 .dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
 .dk-body>*{flex-shrink:0}
 /* (what does not fit scrolls, rather than being squeezed) */
@@ -201,32 +212,35 @@
 #app.desk .dk-arrow:active,#app.desk .dk-step button:active,#app.desk .dk-top:active,#app.desk .dk-chip:active,#app.desk .dk-top[aria-pressed="true"]{transform:none;border-image-source:url(ui/sq-press.webp);--pt:calc(7px*var(--s));--pb:calc(5px*var(--s));box-shadow:-2px 3px 5px rgba(0,0,0,.35)}
 #app.desk .dk-top[aria-pressed="true"]{color:#9cc3f5}
 /* a slot is cut with a softened edge, and its walls darken it inside (under the key) */
+#app.desk .dk-slot{position:relative}
 #app.desk .dk-slot::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset -2px 5px 7px rgba(60,40,15,.32),0 1px 0 rgba(255,255,255,.55)}
 /* the slabs' sides that face the middle of the view: the rail's right side (lit, the light is on that side) and the
    slate's left side (in its own shadow), each a few pixels of solid edge stepped out from the outline, under the drop shadow */
 #app.desk:not(.compact) .dk-rail{box-shadow:1px 0 0 rgb(208,195,168),2px 0 0 rgb(202,189,162),3px 0 0 rgb(197,183,156),4px 0 0 rgb(191,178,150),5px 0 0 rgb(185,172,144),6px 0 0 rgb(180,166,138),7px 0 0 rgb(174,160,132),8px 0 0 rgb(168,154,126),-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk:not(.compact) .dk-slate{box-shadow:-1px 0 0 rgb(18,25,25),-2px 0 0 rgb(17,23,23),-3px 0 0 rgb(15,21,21),-4px 0 0 rgb(14,18,18),-5px 0 0 rgb(12,16,16),-6px 0 0 rgb(10,14,14),-7px 0 0 rgb(9,12,12),-8px 0 0 rgb(7,10,10),-14px 20px 28px rgba(0,0,0,.5)}
-#app.desk.compact:not(.portrait) .dk-rail{flex-direction:column;overflow-x:hidden;overflow-y:auto;padding:10px 8px calc(8px + var(--lip));box-shadow:1px 0 0 rgb(205,192,164),2px 0 0 rgb(196,182,155),3px 0 0 rgb(186,173,145),4px 0 0 rgb(177,163,136),5px 0 0 rgb(168,154,126),-10px 14px 20px rgba(0,0,0,.5)}
-#app.desk.compact:not(.portrait) .dk-slate{max-height:none;padding:12px 14px calc(10px + var(--lip));box-shadow:-1px 0 0 rgb(17,24,24),-2px 0 0 rgb(15,20,20),-3px 0 0 rgb(12,17,17),-4px 0 0 rgb(10,13,13),-5px 0 0 rgb(7,10,10),-10px 14px 20px rgba(0,0,0,.5)}
+#app.desk.compact:not(.portrait) .dk-rail{box-shadow:1px 0 0 rgb(205,192,164),2px 0 0 rgb(196,182,155),3px 0 0 rgb(186,173,145),4px 0 0 rgb(177,163,136),5px 0 0 rgb(168,154,126),-10px 14px 20px rgba(0,0,0,.5)}
+#app.desk.compact:not(.portrait) .dk-slate{max-height:none;box-shadow:-1px 0 0 rgb(17,24,24),-2px 0 0 rgb(15,20,20),-3px 0 0 rgb(12,17,17),-4px 0 0 rgb(10,13,13),-5px 0 0 rgb(7,10,10),-10px 14px 20px rgba(0,0,0,.5)}
 /* the desk keeps a margin of wood at its outer sides all the way down (the plane is widest at the bottom, where it is nearest) */
 #app.desk #desk{padding-left:44px;padding-right:44px}
 #app.desk.compact #desk{padding-left:18px;padding-right:18px}
-#app.desk.compact:not(.portrait) #desk{grid-template-columns:minmax(92px,13%) minmax(0,1fr) minmax(220px,33%);grid-template-rows:minmax(0,1fr);padding:8px 10px 10px;gap:10px;padding-left:24px;padding-right:24px}
+#app.desk.compact:not(.portrait) #desk{grid-template-rows:minmax(0,1fr);padding-left:24px;padding-right:24px}
 /* a slot's walls look the same width all round: its far wall (the art's top slice) is drawn flatter, so the top border is no
    wider than the others */
-#app.desk .dk-slot{--s:.56;border:0 solid transparent;background:none;border-radius:calc(24px*var(--s));border-image:url(ui/slot.webp) 54 48 48 48 fill/calc(54px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(0px*var(--s));flex:none;display:flex;box-sizing:border-box;height:clamp(84px,13.5vh,124px);position:relative;border-image-width:calc(54px*var(--s)*.55) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s));padding:calc(24px*var(--s)*.55 + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
+#app.desk .dk-slot{box-sizing:border-box;border-image-width:calc(54px*var(--s)*.55) calc(48px*var(--s)) calc(48px*var(--s)) calc(48px*var(--s));padding:calc(24px*var(--s)*.55 + 2px) calc(14px*var(--s) + 3px) calc(6px*var(--s) + 3px)}
 /* the swatches share the tray's width (all of them in view), and a cue's swatch shows its butt piece whole, end to joint */
 /* the wallet, between the player and the record: coins and the rare diamonds, each in a little well of slate */
 .dk-wallet{display:flex;gap:8px;margin-right:4px}
+.dk-cur{position:relative;display:flex;align-items:center;gap:7px;height:40px;padding:0 16px 0 8px;border:0 solid transparent;border-image:url(ui/chip.webp) 44 fill/calc(44px*var(--s))/calc(4px*var(--s)) stretch;color:#f3ecdc;font:700 15px Outfit,sans-serif;font-variant-numeric:tabular-nums}
 .dk-cur i{flex:none;width:26px;height:26px;background:center/contain no-repeat;filter:drop-shadow(-1px 2px 1px rgba(0,0,0,.45))}
 .dk-cur.coin i{background-image:url(ui/coin.webp)}
 .dk-cur.dia i{background-image:url(ui/dia.webp);width:30px;height:30px;margin:0 -2px}
 #app.desk.compact .dk-wallet{display:none}
 #app.desk.compact:not(.portrait) .dk-wallet{display:flex}
 /* (a phone on its side has the room) */
+#app.desk.compact .dk-cur{height:34px;font-size:13px;padding:0 12px 0 6px;gap:5px}
 #app.desk.compact .dk-cur i{width:21px;height:21px}
 /* the chosen rail key is told by its felt inlay alone */
-#app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;top:calc(50% - 10px - 4px*var(--s));margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none;display:none}
+#app.desk .dk-rb[aria-pressed="true"]::before{top:calc(50% - 10px - 4px*var(--s));display:none}
 /* ---------- sheets on the desk (settings, names, guide, songs): a slate board laid over the dimmed desk ---------- */
 #app.desk .scrim{background:radial-gradient(ellipse 90% 80% at 75% 5%,rgba(60,38,14,.30),rgba(8,5,2,.74))}
 /* until the chosen home screen is laid out, nothing shows but the dark of the room (no glimpse of another screen) */
@@ -251,17 +265,17 @@
 #app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px var(--ui-font);color:#a9b6c6}
 #app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
 /* 5.0: a slimmer bar (owner) - the keys lower, the words as they were */
-#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--es:.42;--tilt:15deg;--pp:2300px;--ovh:90px;--ovw:70px;--desk-density:1;--bar:52px}
-#app.desk.compact{--es:.3;--tilt:13deg;--pp:1500px;--ovh:60px;--ovw:34px;--bar:48px}
+#app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--desk-density:1;--bar:52px}
+#app.desk.compact{--pp:1500px;--bar:48px}
 #app.desk.compact:not(.portrait){--es:.22;--tilt:11deg;--ovh:40px;--ovw:50px;--bar:42px}
 #app.desk .dk-tab,#app.desk .dk-top,.dk-me{height:38px}
-#app.desk .dk-me .av{position:relative;overflow:visible;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94);width:30px;height:30px}
-.dk-cur{--s:.42;position:relative;display:flex;align-items:center;gap:7px;box-sizing:border-box;padding:0 16px 0 8px;border:0 solid transparent;border-image:url(ui/chip.webp) 44 fill/calc(44px*var(--s))/calc(4px*var(--s)) stretch;color:#f3ecdc;font:700 15px Outfit,sans-serif;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.5);height:34px}
+#app.desk .dk-me .av{width:30px;height:30px}
+.dk-cur{--s:.42;box-sizing:border-box;text-shadow:0 1px 1px rgba(0,0,0,.5);height:34px}
 #app.desk.compact .dk-tab,#app.desk.compact .dk-top{height:34px}
-#app.desk.compact .dk-cur{font-size:13px;padding:0 12px 0 6px;gap:5px;height:30px}
+#app.desk.compact .dk-cur{height:30px}
 #app.desk.compact:not(.portrait) .dk-tab,#app.desk.compact:not(.portrait) .dk-top{height:32px}
 /* (owner, 11-08) the places with their icons, so they read at a glance; settings a bare icon, no key round it */
-#app.desk .dk-tab{color:#e9e4da;--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+#app.desk .dk-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 #app.desk .dk-tab .ti{flex:none;width:20px;height:20px;opacity:.9}
 #app.desk .dk-tab[aria-selected="true"] .ti{opacity:1}
 #app.desk .dk-top.dk-ico{border-image:none;background:none;box-shadow:none;padding:0 8px;color:#d9d3c6;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
@@ -272,4 +286,4 @@
 /* ambient occlusion (owner, 11-08): where a thing meets the desk it is darkest - a tight dark contact under every piece,
    inside the wide soft shadow the light throws */
 #app.desk .dk-rail,#app.desk .dk-tray,#app.desk .dk-slate{box-shadow:0 0 2px 1px rgba(0,0,0,.4),0 0 10px 2px rgba(0,0,0,.25),-2px 3px 3px rgba(0,0,0,.5),-6px 9px 10px rgba(0,0,0,.3),-14px 20px 28px rgba(0,0,0,.42)}
-#app.desk #desk>.dk-prop.chalk{left:258px;bottom:calc(130px*var(--es) - 22px);width:92px;height:80px;background-image:url(ui/chalk.webp);filter:drop-shadow(-1px 2px 1px rgba(0,0,0,.6)) drop-shadow(-4px 6px 6px rgba(0,0,0,.3))}
+#app.desk #desk>.dk-prop.chalk{filter:drop-shadow(-1px 2px 1px rgba(0,0,0,.6)) drop-shadow(-4px 6px 6px rgba(0,0,0,.3))}

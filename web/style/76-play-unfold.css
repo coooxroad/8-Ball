@@ -40,6 +40,8 @@
 #dkBoards .seek-card .face{position:absolute;inset:0;border-radius:14px;-webkit-backface-visibility:hidden;backface-visibility:hidden;overflow:hidden;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;padding:22px 16px;color:#fff;container-type:size;--u:min(1cqw,1.5cqh);
   box-shadow:inset 0 0 0 calc(var(--u)*.45 + 2px) rgba(255,255,255,.95),0 4px 0 rgba(0,0,0,.35),-8px 14px 22px rgba(0,0,0,.45)}
+#dkBoards .seek-card .front{--cl:#1f5fc0;background:url(ui/felt.webp) 0 0/300px,var(--cl);background-blend-mode:luminosity}
+#dkBoards .seek-card .front.bd-g-eight{--cl:#2a7a50}
 #dkBoards .seek-card .front .rack{--d:calc(var(--u)*10);position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d))}
 #dkBoards .seek-card .front b{font:800 calc(var(--u)*14)/1 var(--ui-font)}
 /* its back in the 랭킹전 card's own language (owner 11-09): the printed blue, the dots, the light at the upper right, the
@@ -69,6 +71,12 @@
 #dkBoards .tb{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:8px;border:0;padding:0;background:none;cursor:pointer;color:#f3eee3;text-align:left}
 /* (owner 11-09: more depth, thinner rails) a thin rail with a lit bevel and a shaded inner edge, the cloth sunk under it,
    the table's apron below it as its thickness */
+#dkBoards .tb-table{position:relative;display:block;border-radius:9px;padding:4.6%;background:linear-gradient(160deg,#a35b33 0%,#7a3e1f 45%,#4f2410 100%);box-shadow:inset -1.5px 1.5px 0 rgba(255,220,180,.45),inset 1.5px -1.5px 0 rgba(0,0,0,.35),0 1px 0 #5c2c14,0 6px 0 #3a180a,0 7px 0 #241006,-10px 16px 18px rgba(0,0,0,.55)}
+#dkBoards .tb-cloth{position:relative;display:block;width:100%;height:100%;border-radius:2px;background:radial-gradient(ellipse at 60% 35%,rgba(255,255,255,.14),transparent 65%),url(ui/felt.webp) 0 0/240px,#1a8fa6;background-blend-mode:normal,luminosity;box-shadow:inset 2px -2px 0 rgba(255,255,255,.08),inset -3px 4px 6px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.3)}
+#dkBoards .tb.carom .tb-cloth{background-color:#1f5fc0}
+#dkBoards .tb .rack{position:absolute;top:50%;right:auto;transform:translate(-50%,-50%);width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d))}
+#dkBoards .tb-pk{position:absolute;inset:3.3%;pointer-events:none;background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/9% 17% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/9% 17% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/9% 17% no-repeat,
+    radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 100%/9% 17% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 100%/9% 17% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 100%/9% 17% no-repeat}
 #dkBoards .tb-plate{position:relative;display:flex;flex-direction:column;gap:2px;padding:8px 40px 9px 12px;border-radius:9px;background:linear-gradient(#3b4149,#262a30);box-shadow:inset 0 0 0 1px rgba(214,221,230,.6),0 3px 0 #121418,-4px 8px 10px rgba(0,0,0,.4)}
 #dkBoards .tb-plate b{font:800 16px/1.2 var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dkBoards .tb-plate small{font:600 12.5px/1.3 var(--ui-font);color:#b9c4d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -96,21 +104,21 @@
 #rkBar .sp i:nth-child(3){animation-delay:.4s}
 #rkBar button{height:32px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.92);color:#173e78;font:800 14px var(--ui-font);box-shadow:0 2px 0 rgba(0,0,0,.25)}
 /* the card turned over to search: its face printed as the game cards are (style/75-play-panels.css, owner 11-09) */
-#dkBoards .seek-card .front{--cl:#1f5fc0;background-blend-mode:luminosity;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#4174bf,#194685)}
+#dkBoards .seek-card .front{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#4174bf,#194685)}
 #dkBoards .seek-card .front.bd-g-three{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#5862b4,#272f74)}
-#dkBoards .seek-card .front.bd-g-eight{--cl:#2a7a50;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
+#dkBoards .seek-card .front.bd-g-eight{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
 #dkBoards .seek-card .front.bd-g-nine{--cl:#167378;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#3d8a88,#155252)}
 #dkBoards .seek-card .front::after{content:"";position:absolute;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);pointer-events:none}
 /* (owner 11-09, again) the hall's tables: a thinner wooden rail, the cushion its own band of rubber between it and the cloth,
    the cloth sunk a step below both - shaded along the cushions the lamp is behind - and the balls standing on it, each with
    its own shadow thrown off to the lower left, a little apart from it, as a ball's is */
-#dkBoards .tb-table{position:relative;display:block;aspect-ratio:2/1.06;container-type:size;--u:min(1cqw,1.8cqh);padding:2.8%;border-radius:8px;background:linear-gradient(160deg,#a8603a 0%,#7c401f 45%,#52260f 100%);box-shadow:inset -1px 1px 0 rgba(255,225,190,.55),inset 1px -1px 0 rgba(0,0,0,.4),inset 0 0 0 3px rgba(0,0,0,.06),
+#dkBoards .tb-table{aspect-ratio:2/1.06;container-type:size;--u:min(1cqw,1.8cqh);padding:2.8%;border-radius:8px;background:linear-gradient(160deg,#a8603a 0%,#7c401f 45%,#52260f 100%);box-shadow:inset -1px 1px 0 rgba(255,225,190,.55),inset 1px -1px 0 rgba(0,0,0,.4),inset 0 0 0 3px rgba(0,0,0,.06),
     0 1px 0 #5c2c14,0 5px 0 #3a180a,0 6px 0 #241006,-10px 16px 18px rgba(0,0,0,.55)}
-#dkBoards .tb-cloth{position:relative;display:block;width:100%;height:100%;background:radial-gradient(ellipse at 60% 35%,rgba(255,255,255,.14),transparent 65%),url(ui/felt.webp) 0 0/240px,#1a8fa6;background-blend-mode:normal,luminosity;--cush:color-mix(in srgb,#1a8fa6 62%,#000);box-sizing:border-box;border-radius:1px;border:calc(var(--u)*2.4) solid var(--cush);border-top-color:color-mix(in srgb,var(--cush) 82%,#000);border-right-color:color-mix(in srgb,var(--cush) 82%,#000);border-bottom-color:color-mix(in srgb,var(--cush) 88%,#fff);border-left-color:color-mix(in srgb,var(--cush) 92%,#fff);box-shadow:0 0 0 1px rgba(0,0,0,.55),inset -5px 6px 9px -2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.35),inset 2px -2px 0 rgba(255,255,255,.06)}
-#dkBoards .tb.carom .tb-cloth{background-color:#1f5fc0;--cush:color-mix(in srgb,#1f5fc0 62%,#000)}
-#dkBoards .tb .rack{--d:calc(var(--u)*8.5);position:absolute;left:50%;top:50%;right:auto;transform:translate(-50%,-50%);width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d));filter:none}
+#dkBoards .tb-cloth{--cush:color-mix(in srgb,#1a8fa6 62%,#000);box-sizing:border-box;border-radius:1px;border:calc(var(--u)*2.4) solid var(--cush);border-top-color:color-mix(in srgb,var(--cush) 82%,#000);border-right-color:color-mix(in srgb,var(--cush) 82%,#000);border-bottom-color:color-mix(in srgb,var(--cush) 88%,#fff);border-left-color:color-mix(in srgb,var(--cush) 92%,#fff);box-shadow:0 0 0 1px rgba(0,0,0,.55),inset -5px 6px 9px -2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.35),inset 2px -2px 0 rgba(255,255,255,.06)}
+#dkBoards .tb.carom .tb-cloth{--cush:color-mix(in srgb,#1f5fc0 62%,#000)}
+#dkBoards .tb .rack{--d:calc(var(--u)*8.5);left:50%;filter:none}
 #dkBoards .tb .rack img{filter:drop-shadow(calc(var(--u)*-1.1) calc(var(--u)*1.9) calc(var(--u)*.9) rgba(0,0,0,.5))}
-#dkBoards .tb-pk{position:absolute;pointer-events:none;inset:calc(2.8% - var(--u)*.2);background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/7% 13.5% no-repeat,
+#dkBoards .tb-pk{inset:calc(2.8% - var(--u)*.2);background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/7% 13.5% no-repeat,
     radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 100%/7% 13.5% no-repeat}
 /* (owner 11-09) the hall in two: rooms waiting, then games being played - divided as the shop divides its rarities; a
    game being played wears a red 관전 tag on its table */
