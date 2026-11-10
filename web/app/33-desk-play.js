@@ -181,6 +181,16 @@ function deskPlay(d) {
 // 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
 const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
 const finishSeg = () => dkSeg([[false, '없음'], ['cushion', '쿠션'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
+// on one device: the friend's cue and glove, from what this player owns (owner 11-10) - prefs.cues[1], prefs.glove2
+function friendGear() {
+  const cues = CUES.map((c, i) => i).filter(i => net.owns('cue', CUES[i].id)), gl = [null].concat(GLOVES.filter(g => net.owns('glove', g.id)).map(g => g.id));
+  const ci = cues.includes(prefs.cues[1]) ? prefs.cues[1] : prefs.cues[0], gi = gl.includes(prefs.glove2) ? prefs.glove2 : null;
+  // (a row each: what it is now, and a key that hands over the next one owned)
+  const pick = (name, vals, cur, fmt, set) => dkRow(`${name} · ${fmt(cur)}`, '바꾸기', () => { set(vals[(vals.indexOf(cur) + 1) % vals.length]); savePrefs(); repaint(); });
+  return [dkLab(`${oppName()}의 장비`),
+    pick('큐', cues, ci, i => CUES[i].name, v => { prefs.cues[1] = v; }),
+    pick('장갑', gl, gi, id => id ? GLOVES.find(g => g.id === id).name : '맨손', v => { prefs.glove2 = v; })];
+}
 // 빠른 진행, chosen with the game against the computer or a friend (owner 11-10: no longer a setting)
 const fastSeg = () => [dkLab('빠른 진행'), dkSeg([[true, '켬'], [false, '끔']], !!prefs.fast, v => { prefs.fast = v; repaint(); })];
 // 4구 with a friend: whether a foul costs a point (owner 11-10)
@@ -238,6 +248,7 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]);
   }
   dkPut(slate, fastSeg());
+  if (!cpu) dkPut(slate, friendGear());
   if (!cpu) dkPut(slate, [dkHr(), addonCard()]);
   const d = store.get('save', null), gm = d && d.v === 2 && d.game && MODE_KO[d.game.modeId] ? d.game : null;
   dkPut(slate, dkActs(dkMain('시작', null, () => match.start(m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0)),   // (4구: the yellow ball, and so who breaks, drawn by lot)

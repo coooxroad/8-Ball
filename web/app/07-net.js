@@ -78,6 +78,7 @@ const net = (() => {
     if (!owns('ball', prefs.ballSkin)) { prefs.ballSkin = BALLSKINS[0].id; useBalls(prefs.ballSkin); }
     if (!owns('trail', prefs.trail)) prefs.trail = TRAILS[0].id;
     if (prefs.glove && !owns('glove', prefs.glove)) prefs.glove = null;
+    if (prefs.glove2 && !owns('glove', prefs.glove2)) prefs.glove2 = null;
     if (!owns('table', (CLOTHS[prefs.cloth] || {}).id)) prefs.cloth = 0;
     prefs.cues = prefs.cues.map(i => owns('cue', (CUES[i] || {}).id) ? i : k.cue.firstOwned());
     savePrefs(); if (st.screen === 'home') paintHome();

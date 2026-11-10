@@ -202,7 +202,8 @@ function useCue(i) { if (!CUES[i]) i = 0; if (i === cueNow) return; cueNow = i; 
 // what the gear in hand does (content/00-rarity.js): the cue now in hand - its hardest stroke, how much the strike point
 // turns the ball, how long the guide - and the glove's steps for the power and the fine-aim dial
 const cueK = () => { const s = (CUES[cueNow] || {}).stat || {}; return { power: 1 + (s.power || 0) / 100, spin: 1 + (s.spin || 0) / 100, guide: 1 + (s.guide || 0) / 100 }; };
-const gloveStep = () => (GLOVES.find(g => g.id === prefs.glove) || {}).stat || BARE_HAND;
+// (on one device with a friend, the glove of whoever is shooting: theirs is prefs.glove2 - 33-desk-play.js friendGear)
+const gloveStep = () => (GLOVES.find(g => g.id === (flow === match && match.ctx && !match.ctx.online && !match.ctx.ai && game.turn === 1 ? prefs.glove2 : prefs.glove)) || {}).stat || BARE_HAND;
 /* The cue in the power gauge, upright. As thick as a cue of its length (1.47 m to about 35 mm drawn, a little fuller than
    the real 29 mm) and never thicker than the look gives it - a gauge made short by a small or zoomed screen used to keep
    its full width and look fat. A whole, even count of device pixels wide, so that the canvas is never resampled and,
