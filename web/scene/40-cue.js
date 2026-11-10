@@ -134,64 +134,72 @@
     }
   }
   let cueNow3d = 0;
+  /* setCue builds the cue in play from its CUES entry: either a cue of its own make (profile: its sections as given, tip
+     first, with parts and a glow) or the classic eight colours turned on one lathe. The pieces below are shared by both. */
+  // one turned section from x0 to x1 (radius r0 at x0, r1 at x1); sides: facets, flat: squashed up-down, turn: about its own line
+  function cueSection(x0, x1, r0, r1, mat, sides, flat, turn) {
+    const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, sides || 20); g.rotateZ(-Math.PI / 2); if (turn) g.rotateX(turn); if (flat) g.scale(1, 1, flat); g.translate((x0 + x1) / 2, 0, 0);
+    cue.add(new THREE.Mesh(g, mat));
+  }
+  const cueStd = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
+  // (cut crystal: clear, faceted, catching the room's lamps; opacity k)
+  const cueGlass = (h, k) => crystallize(new THREE.MeshPhysicalMaterial({ color: col(h), roughness: 0.05, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 0.8, flatShading: true }), { rim: 1.1, sparkle: 0.14 * (k || 1), cut: 16, deep: 0.62, inner: 2.2, pos: 1.6, fire: 1.1 });
   function setCue(i) {
     if (i === cueNow3d && cue.children.length) return;                    // (the same cue: nothing to build)
     cueNow3d = i; const d = CUES[i] || CUES[0];
     while (cue.children.length) { const m = cue.children.pop(); m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
-    const part = (x0, x1, r0, r1, mat, sides, flat, turn) => {
-      const g = new THREE.CylinderGeometry(r1, r0, x1 - x0, sides || 20); g.rotateZ(-Math.PI / 2); if (turn) g.rotateX(turn); if (flat) g.scale(1, 1, flat); g.translate((x0 + x1) / 2, 0, 0);
-      cue.add(new THREE.Mesh(g, mat));
-    };
-    const std = (h, ro, me) => new THREE.MeshStandardMaterial({ color: col(h), roughness: ro, metalness: me || 0, envMapIntensity: 0.5 });
-    // (cut crystal: clear, faceted, catching the room's lamps; opacity k)
-    const glass = (h, k) => crystallize(new THREE.MeshPhysicalMaterial({ color: col(h), roughness: 0.05, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 0.8, flatShading: true }), { rim: 1.1, sparkle: 0.14 * (k || 1), cut: 16, deep: 0.62, inner: 2.2, pos: 1.6, fire: 1.1 });
-    /* A cue with its own make (content/20-cues.js: profile, glow): its sections as given, tip first - and a lit blade, a
-       bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
-    if (d.profile) {
-      /* a section's own options: rough, metal; sides (6: a pencil's flats); pic (a picture from web/tex wrapped round it,
-         its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour); hide (not drawn: the
-         line only carries on under raised parts, as a guitar's neck) */
-      for (const [x0, x1, r0, r1, h, o] of d.profile) {
-        if (o && o.hide) continue;
-        // (glass: cut crystal - clear, faceted, catching the room's lights)
-        const q = o || {}, m = q.glass ? glass(h, q.glass) : std(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
-        if (q.env) m.envMapIntensity = q.env;
-        if (q.lit != null) { m.emissive = col(q.lit); m.emissiveIntensity = 1.6; }
-        // (check: [dark, light, round, along] - chequers wrapped round the section, as a finish flag)
-        if (q.check) {
-          const [c0, c1, nr, na] = q.check, cv = mkCanvas(nr * 16, na * 16), cg = cv.getContext('2d');
-          for (let y = 0; y < na; y++) for (let x = 0; x < nr; x++) { cg.fillStyle = '#' + ((x + y) % 2 ? c1 : c0).toString(16).padStart(6, '0'); cg.fillRect(x * 16, y * 16, 16, 16); }
-          const t = tex(cv); t.magFilter = THREE.NearestFilter; m.map = t; m.color.set(0xffffff);
-        }
-        if (q.pic) {
-          const at = cue.children.length, rep = q.rep || [1, Math.max(1, Math.round((x1 - x0) / 0.12))];
-          loadTex(q.pic, 0, t => {
-            const k = t.clone(); k.needsUpdate = true; k.wrapS = k.wrapT = THREE.RepeatWrapping; k.center.set(0.5, 0.5); k.rotation = Math.PI / 2; k.repeat.set(rep[1], rep[0]);
-            const me = cue.children[at]; if (me && me.material === m) { m.map = k; m.needsUpdate = true; dirty = 3; }
-          });
-        }
-        // (cut: the section in that many short lengths, each turned half a facet from the last - a cut-glass twist)
-        if (q.cut) { for (let j = 0; j < q.cut; j++) { const t0 = j / q.cut, t1 = (j + 1) / q.cut; part(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1, r0 + (r1 - r0) * t0, r0 + (r1 - r0) * t1, m, q.sides || 8, q.flat, j % 2 ? Math.PI / (q.sides || 8) : 0); } }
-        else part(x0, x1, r0, r1, m, q.sides, q.flat);
+    if (d.profile) madeCue(d); else latheCue(d);
+    dirty = 3;
+  }
+  /* A cue with its own make (content/20-cues.js: profile, glow): its sections as given, tip first - and a lit blade, a
+     bright core with its colour round it (two soft sheaths drawn added to the light, the way a glow looks) */
+  function madeCue(d) {
+    /* a section's own options: rough, metal; sides (6: a pencil's flats); pic (a picture from web/tex wrapped round it,
+       its width along the cue, rep: [round, along]); lit (it gives off its own light, that colour); hide (not drawn: the
+       line only carries on under raised parts, as a guitar's neck) */
+    for (const [x0, x1, r0, r1, h, o] of d.profile) {
+      if (o && o.hide) continue;
+      // (glass: cut crystal - clear, faceted, catching the room's lights)
+      const q = o || {}, m = q.glass ? cueGlass(h, q.glass) : cueStd(h, q.rough != null ? q.rough : 0.4, q.metal || 0);
+      if (q.env) m.envMapIntensity = q.env;
+      if (q.lit != null) { m.emissive = col(q.lit); m.emissiveIntensity = 1.6; }
+      // (check: [dark, light, round, along] - chequers wrapped round the section, as a finish flag)
+      if (q.check) {
+        const [c0, c1, nr, na] = q.check, cv = mkCanvas(nr * 16, na * 16), cg = cv.getContext('2d');
+        for (let y = 0; y < na; y++) for (let x = 0; x < nr; x++) { cg.fillStyle = '#' + ((x + y) % 2 ? c1 : c0).toString(16).padStart(6, '0'); cg.fillRect(x * 16, y * 16, 16, 16); }
+        const t = tex(cv); t.magFilter = THREE.NearestFilter; m.map = t; m.color.set(0xffffff);
       }
-      for (const q of d.parts || []) { const pm = q.glass ? glass(q.color, q.glass) : std(q.color != null ? q.color : 0xffffff, q.rough != null ? q.rough : 0.4, q.metal || 0); if (q.env) pm.envMapIntensity = q.env; if (q.facets && q.glass) pm.flatShading = true; cuePart(q, pm); }
-      if (d.glow) {
-        const G = d.glow, core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
-        // (each layer ends round at the tip, not cut square: a cap of its own radius)
-        const r = G.r || 0.0062, cap = (rad, mat) => { const m = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 10), mat); m.position.set(G.from, 0, 0); cue.add(m); return m; };
-        part(G.from, G.to, r, r, core); cap(r, core);
-        for (const [k, op] of [[1.7, 0.55], [3.2, 0.2]]) {
-          const m = new THREE.MeshBasicMaterial({ color: col(G.color), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
-          part(G.from, G.to + 0.004, r * k, r * k, m); cue.children[cue.children.length - 1].renderOrder = 3; cap(r * k, m).renderOrder = 3;
-        }
+      if (q.pic) {
+        const at = cue.children.length, rep = q.rep || [1, Math.max(1, Math.round((x1 - x0) / 0.12))];
+        loadTex(q.pic, 0, t => {
+          const k = t.clone(); k.needsUpdate = true; k.wrapS = k.wrapT = THREE.RepeatWrapping; k.center.set(0.5, 0.5); k.rotation = Math.PI / 2; k.repeat.set(rep[1], rep[0]);
+          const me = cue.children[at]; if (me && me.material === m) { m.map = k; m.needsUpdate = true; dirty = 3; }
+        });
       }
-      dirty = 3; return;
+      // (cut: the section in that many short lengths, each turned half a facet from the last - a cut-glass twist)
+      if (q.cut) { for (let j = 0; j < q.cut; j++) { const t0 = j / q.cut, t1 = (j + 1) / q.cut; cueSection(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1, r0 + (r1 - r0) * t0, r0 + (r1 - r0) * t1, m, q.sides || 8, q.flat, j % 2 ? Math.PI / (q.sides || 8) : 0); } }
+      else cueSection(x0, x1, r0, r1, m, q.sides, q.flat);
     }
-    part(0, 0.012, 0.006, 0.0062, std(d.tip, 0.9));
-    part(0.012, 0.04, 0.0062, 0.0064, std(d.ferrule, 0.4));
-    part(0.04, 0.74, 0.0064, 0.0104, std(d.shaft, 0.42));
-    part(0.74, 0.756, 0.0107, 0.0108, std(d.joint, 0.3, 0.6));
-    let fore = std(d.fore, 0.36);
+    for (const q of d.parts || []) { const pm = q.glass ? cueGlass(q.color, q.glass) : cueStd(q.color != null ? q.color : 0xffffff, q.rough != null ? q.rough : 0.4, q.metal || 0); if (q.env) pm.envMapIntensity = q.env; if (q.facets && q.glass) pm.flatShading = true; cuePart(q, pm); }
+    if (d.glow) cueGlow(d.glow);
+  }
+  function cueGlow(G) {
+    const core = new THREE.MeshBasicMaterial({ color: col(G.core != null ? G.core : 0xffffff), toneMapped: false });
+    // (each layer ends round at the tip, not cut square: a cap of its own radius)
+    const r = G.r || 0.0062, cap = (rad, mat) => { const m = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 10), mat); m.position.set(G.from, 0, 0); cue.add(m); return m; };
+    cueSection(G.from, G.to, r, r, core); cap(r, core);
+    for (const [k, op] of [[1.7, 0.55], [3.2, 0.2]]) {
+      const m = new THREE.MeshBasicMaterial({ color: col(G.color), transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+      cueSection(G.from, G.to + 0.004, r * k, r * k, m); cue.children[cue.children.length - 1].renderOrder = 3; cap(r * k, m).renderOrder = 3;
+    }
+  }
+  // the classic cue: tip, ferrule, shaft, joint, forearm (with its points, if any), wrap, sleeve and butt cap in its colours
+  function latheCue(d) {
+    cueSection(0, 0.012, 0.006, 0.0062, cueStd(d.tip, 0.9));
+    cueSection(0.012, 0.04, 0.0062, 0.0064, cueStd(d.ferrule, 0.4));
+    cueSection(0.04, 0.74, 0.0064, 0.0104, cueStd(d.shaft, 0.42));
+    cueSection(0.74, 0.756, 0.0107, 0.0108, cueStd(d.joint, 0.3, 0.6));
+    let fore = cueStd(d.fore, 0.36);
     if (d.points != null) {
       const c = mkCanvas(128, 256), g = c.getContext('2d');
       g.fillStyle = '#' + d.fore.toString(16).padStart(6, '0'); g.fillRect(0, 0, 128, 256);
@@ -200,11 +208,10 @@
       for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(k * 32 + 4, 0); g.lineTo(k * 32 + 28, 0); g.lineTo(k * 32 + 16, 220); g.fill(); }
       fore = new THREE.MeshStandardMaterial({ map: tex(c), roughness: 0.36, metalness: 0, envMapIntensity: 0.5 });
     }
-    part(0.756, 1.03, 0.0106, 0.0122, fore);
-    part(1.03, 1.3, 0.0122, 0.0136, std(d.wrap, 0.85));
-    part(1.3, 1.45, 0.0136, 0.0146, std(d.sleeve, 0.36));
-    part(1.45, 1.47, 0.0146, 0.0142, std(0x0d0d0d, 0.9));
-    dirty = 3;
+    cueSection(0.756, 1.03, 0.0106, 0.0122, fore);
+    cueSection(1.03, 1.3, 0.0122, 0.0136, cueStd(d.wrap, 0.85));
+    cueSection(1.3, 1.45, 0.0136, 0.0146, cueStd(d.sleeve, 0.36));
+    cueSection(1.45, 1.47, 0.0146, 0.0142, cueStd(0x0d0d0d, 0.9));
   }
 
   /* A picture of a cue from above, tip on the left, on a clear ground (for making its card: W x H pixels showing the cue's
