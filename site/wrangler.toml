@@ -4,6 +4,12 @@
 # (server/) for the wallet. /version.json identifies the deployed source commit and APK build.
 name = "cue"
 compatibility_date = "2026-10-01"
+# danguuu.com (bought on Cloudflare, 11-10): the page at the domain and at www; the workers.dev address kept for old links
+workers_dev = true
+routes = [
+  { pattern = "danguuu.com", custom_domain = true },
+  { pattern = "www.danguuu.com", custom_domain = true },
+]
 
 [assets]
 directory = "../app/src/main/assets"

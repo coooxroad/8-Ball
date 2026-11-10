@@ -5,6 +5,9 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 # Match identities use the runtime's SHA-256 rather than a home-grown hash.
 compatibility_flags = ["nodejs_compat"]
+# api.danguuu.com (11-10), the workers.dev address kept: apps already out there ask it
+workers_dev = true
+routes = [{ pattern = "api.danguuu.com", custom_domain = true }]
 
 [vars]
 # how a match played on the device is checked before it pays (src/core.js): "slices" played again a slice at a time
