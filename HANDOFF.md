@@ -548,6 +548,13 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
   참고: `tex/ball-marble.webp`(14KB, 페이지에 base64로 들어감)는 지금 어느 공도 안 씀 — `tasks/gpt-skins.md`가 쓸 수 있는 재질로 적어 둬서 남김.
   취향 결정이 필요한 제안: 없음.
 
+- **11-11 아침 (6회, 07:40대, 이어받기 모드 — 6-16에 남은 칸이 '그 뒤: 정리' 하나뿐이고 마지막 커밋이 98분 전이라. 그 칸은 계속 하는 일이라
+  체크하지 않고 둠)**: ① `scene/90-frame.js` `drawGuide`(91줄) → `guidePreview`·`guideAfter`·`guideRail`·`guideShort`·`guideLong`, 늘 거짓이던
+  `rail` 분기 삭제. 조준선 길이 0.5·0.7·1 × 조준 7가지(랙·랙 옆·쿠션) + 샷 중 + 3D, 33장 전후 md5 완전히 같음, 그리기 호출 그대로.
+  ② `app/50-match.js` `finish()`(83줄)에서 전적 기록(`countResult`)·선수 칸(`resultPlayers`)·기록 막대(`resultStats`)·하이라이트 카드(`resultHighlights`) 분리.
+  ③ 아무도 안 읽던 `KIND_KO`(07-net.js) 삭제. 참고: 이 환경에서 npm 레지스트리 접속이 안 돼 `npm install`은 실패했지만 서버 검사는 의존성 없이 통과.
+  취향 결정이 필요한 제안: 없음.
+
 ## 7. 남은 일
 
 - **레슨 채우기**: GPT에 `tasks/gpt-lessons.md`. 8볼 본보기 `e-straight` 하나. 3구·4구는 캐롬 판정 형식부터 정해야 한다.
