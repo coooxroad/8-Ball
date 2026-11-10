@@ -194,6 +194,5 @@ const KIND_OF = {
   cue: { list: () => CUES, firstOwned: () => Math.max(0, CUES.findIndex(c => !(c.rarity > 0))) },
   ball: { list: () => BALLSKINS }, table: { list: () => CLOTHS }, trail: { list: () => TRAILS }, glove: { list: () => GLOVES },
 };
-const KIND_KO = { cue: '큐', ball: '공', table: '테이블', trail: '트레일', glove: '장갑' };
 const itemOf = it => (KIND_OF[it.kind] ? KIND_OF[it.kind].list() : []).find(x => x.id === it.id) || null;
 const itemName = it => { const q = itemOf(it); return q ? q.name : it.id; };
