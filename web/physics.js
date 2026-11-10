@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 12;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise)
+const PHYS_V = 13;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise); 13: 4구 - no point lost while finishing, 마이너스 점수 off, 후구
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;
@@ -660,8 +660,8 @@ function createPhysics(cfg) {
      ball's line - from (x0, y0) along (dx, dy), running straight as far as (x1, y1); objPath: the struck ball's whole way,
      for as long as the preview runs. */
   function preview(w, ang, V, a, bb, el, after) {
-    // (the guide is the cue's line: squirt and throw are what a player learns to allow for, not what the line shows - 현실 당구)
-    const w2 = clone(w); if (w2.real) w2.real = w2.real.cue ? { cue: true } : null; strike(w2, ang, V, a, bb, el);
+    // (현실 당구: the guide follows the shot - squirt and throw bend it as they will bend the balls, owner 11-10)
+    const w2 = clone(w); strike(w2, ang, V, a, bb, el);
     const c = w2.balls[w2.cue], out = { pre: [c.x, c.y, 0], at: null, hit: null, post: [], turn: -1, obj: null, objPath: [] };
     let t = 0, tc = 0, o = null, oGo = false, ldx = 0, ldy = 0, cdx = 0, cdy = 0;
     while (t < 9 + (after || 0) && c.on) {

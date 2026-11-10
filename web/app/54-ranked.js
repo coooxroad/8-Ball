@@ -64,7 +64,7 @@ const ranked = {
     const names = []; if (o.team) { names[0] = `${o.team[0].name}·${o.team[2].name}`; names[1] = `${o.team[1].name}·${o.team[3].name}`; } else { names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name; }
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
-    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, online: o, team: !!o.team });
+    match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, minus: rules.minus !== false, hugu: !!rules.hugu, online: o, team: !!o.team });
     if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
@@ -82,7 +82,7 @@ const ranked = {
     if (m.team) o.team = m.seats;
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     const rules = m.rules || RANKED_RULES[o.mode];
-    match.start(o.first, { team: !!m.team, names: m.team ? [`${m.seats[0].name}·${m.seats[2].name}`, `${m.seats[1].name}·${m.seats[3].name}`] : m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, online: o });
+    match.start(o.first, { team: !!m.team, names: m.team ? [`${m.seats[0].name}·${m.seats[2].name}`, `${m.seats[1].name}·${m.seats[3].name}`] : m.seats.map(s => s.name), mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, minus: rules.minus !== false, hugu: !!rules.hugu, online: o });
     toast(`관전 중 · ${game.players[0].name} vs ${game.players[1].name}`, '', 2400);
   },
   /* the shots played before a watcher came in, played at once - the table, the score and whose turn it is as they are now -
@@ -272,10 +272,12 @@ const ranked = {
       : m.why === 'idle' ? (mine ? `${o.opp.name}이(가) 너무 오래 치지 않았습니다.` : '너무 오래 치지 않아 경기가 끝났습니다.')
       : m.why === 'a shot that does not fit' ? '맞지 않는 샷이 있었습니다.' : '경기가 끝났습니다.';
     const undo = () => { const b = match.before; if (!b) return; [0, 1].forEach(i => { rec[game.players[i].name] = b.rec[i]; }); series.s = b.series.slice(); store.set('rec', rec); match.before = null; };
-    if (flow === match && m.winner == null && (st.screen === 'play' || st.screen === 'result')) {
+    // (a draw the room's replay ended in - 4구's 후구, game.js - is a result, not 무효)
+    const draw = m.winner == null && m.why === 'draw';
+    if (flow === match && m.winner == null && !draw && (st.screen === 'play' || st.screen === 'result')) {
       undo(); ranked.voided(m);
     } else if (flow === match && st.screen === 'play' && !game.over) {
-      game.over = { winner: m.winner, why, plain: !['left', 'resigned', 'idle', 'a shot that does not fit'].includes(m.why) }; match.finish();
+      game.over = draw ? { winner: null, draw: true, why: '후구 · 무승부', plain: false } : { winner: m.winner, why, plain: !['left', 'resigned', 'idle', 'a shot that does not fit'].includes(m.why) }; match.finish();
     } else if (flow === match && st.screen === 'result' && game.over && game.over.winner !== m.winner) {
       undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('서버 확인으로 결과가 정정됐습니다.', 'foul', 3200);
     } else if (st.screen === 'result') ranked.paint();
@@ -287,7 +289,8 @@ const ranked = {
     const o = ranked.on; if (!o || flow !== match) return;
     st.phase = 'idle'; st.auto = null;
     const w = m && m.winner != null ? m.winner : game.over ? game.over.winner : null, names = o.seats ? o.seats.map(s => s.name) : game.players.map(p => p.name);
-    openSheet('관전 종료', [note(w == null ? '경기가 무효가 되었습니다.' : `${names[w]} 승리`),
+    const draw = m ? m.why === 'draw' : !!(game.over && game.over.draw);
+    openSheet('관전 종료', [note(draw ? '무승부' : w == null ? '경기가 무효가 되었습니다.' : `${names[w]} 승리`),
       el('button', { class: 'btn cta', text: '방 목록으로', onclick: () => { SND.tap(); closeSheet(); ranked.leave(); goHome(); playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); } })]);
   },
   // a game the room could not give to anyone: said so, and back home (no win, no loss on the records)

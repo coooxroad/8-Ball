@@ -15,7 +15,7 @@ const invite = {
   seated: null,               // 2:2, a friend's room this player sits in, waiting for its host to start: { code, seat, seats, timer }
   rooms: null,                // the list of open rooms (방 참가하기): { at, list, err, timer }
   rulesOf(mode) {
-    const r = mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? Object.assign({ target: prefs.fourTarget }, prefs.finish ? { finish: finishPref() } : {}) : {};
+    const r = mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? Object.assign({ target: prefs.fourTarget, hugu: true }, prefs.finish ? { finish: finishPref() } : {}, prefs.fourMinus === false ? { minus: false } : {}) : {};
     return realPref() ? Object.assign(r, { real: realPref() }) : r;   // (add-ons: 33-desk-play.js)
   },
   // the code for this game and these rules: kept, or (another game, other rules) a new one

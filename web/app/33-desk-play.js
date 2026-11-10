@@ -61,22 +61,26 @@ const WAY_ICO = {
 const ADDONS = [{ id: 'real', name: '현실 당구', parts: [['throw', '스로우'], ['squirt', '스쿼트'], ['cue', '가능한 큐 각도만']],
   ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="27" r="9"/><circle cx="33" cy="17" r="7"/><path d="M4 41l9-9M24 22l3-2"/></svg>' }];
 const addonPrefs = () => (prefs.addons = Object.assign({ real: false, throw: true, squirt: true, cue: true }, prefs.addons));
+/* The add-ons are changed on a copy and kept with 저장 (the X leaves them as they were): with changes taking hold at once
+   and only an X, it was not clear whether they had been kept (owner 11-10). */
+let addonDraft = null;
+const addonEdit = () => addonDraft || (addonDraft = Object.assign({}, addonPrefs()));
 function addonPanel(A, i) {
-  const P = addonPrefs(), on = !!P[A.id];
-  const flip = () => { P[A.id] = !P[A.id]; savePrefs(); repaintLive(); };
+  const P = addonEdit(), on = !!P[A.id];
+  const flip = () => { P[A.id] = !P[A.id]; repaintLive(); };
   const ico = el('span', { class: 'ad-ico' }); ico.innerHTML = A.ico;
   return el('div', { class: 'bd card addon unf' + (on ? ' on' : ''), style: `--d:${i * 60}ms` }, [el('i', { class: 'sk' }), el('div', { class: 'in' }, [
     el('button', { class: 'ad-top', 'aria-pressed': String(on), onclick: onTap(flip) }, [ico, el('b', { text: A.name }), el('span', { class: 'ad-sw', 'aria-hidden': 'true' }, el('i'))]),
     el('div', { class: 'ad-parts' }, A.parts.map(([k, t]) => el('button', { class: 'ad-part', 'aria-pressed': String(!!P[k]), disabled: on ? null : '',
-      onclick: onTap(() => { P[k] = !P[k]; if (!P.throw && !P.squirt && !P.cue) P[A.id] = false; savePrefs(); repaintLive(); }) }, [el('i'), el('span', { text: t })])))])]);
+      onclick: onTap(() => { P[k] = !P[k]; if (!P.throw && !P.squirt && !P.cue) P[A.id] = false; repaintLive(); }) }, [el('i'), el('span', { text: t })])))])]);
 }
 // on the slate: the add-ons' card - the lobby's card in small - and what is on
 function addonCard() {
   const on = addonNames(realPref()), ico = el('span', { class: 'ad-ico' }); ico.innerHTML = ADDONS[0].ico;
-  return el('button', { class: 'dk-addon' + (on.length ? ' on' : ''), onclick: onTap(() => { playStep = 'addons'; playFx = 'fan'; repaintLive(); }) },
+  return el('button', { class: 'dk-addon' + (on.length ? ' on' : ''), onclick: onTap(() => { addonDraft = null; playStep = 'addons'; playFx = 'fan'; repaintLive(); }) },
     [el('i', { class: 'sk' }), ico, el('b', { text: '애드온' }), el('small', { text: on.length ? on.join(' · ') : '없음' })]);
 }
-const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} · ${(r && r.target) || 5}점` : '';
+const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}${r && r.minus === false ? ' · 마이너스 없음' : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} · ${(r && r.target) || 5}점` : '';
 function deskPlay(d) {
   if (playStep === 'games') playStep = 'rank';
   if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'friend'; playFx = 'fan'; paintHome(); });   // (its X: back to the three ways)
@@ -116,7 +120,8 @@ function deskPlay(d) {
       way('join', '방 참가', null, b => playLeave(b, () => { playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); }), !net.on)]);
   } else if (playStep === 'addons') {
     // the add-ons: long cards, one under another, out of the middle as the others' are (owner 11-10: more will come)
-    dkPut(wrap, head('애드온', '', () => { playStep = 'setup'; repaintLive(); }));
+    const done = keep => { if (keep && addonDraft) { prefs.addons = addonDraft; savePrefs(); } addonDraft = null; playStep = 'setup'; repaintLive(); };
+    dkPut(wrap, head('애드온', '', () => done(false), [el('button', { class: 'dk-chip', text: '저장', onclick: onTap(() => done(true)) })]));
     dkPut(fit, ADDONS.map(addonPanel));
   } else if (playStep === 'halls') {
     // the hall: the desk's wood gone to the hall's floor, each open room a table on it
@@ -176,13 +181,15 @@ function deskPlay(d) {
 // 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
 const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
 const finishSeg = () => dkSeg([[false, '없음'], ['cushion', '쿠션'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
+// 4구 with a friend: whether a foul costs a point (owner 11-10)
+const minusSeg = () => [dkLab('마이너스 점수'), dkSeg([[true, '있음'], [false, '없음']], prefs.fourMinus !== false, v => { prefs.fourMinus = v; repaint(); })];
 function deskInvite(slate, _, m) {
   const h = invite.want(m); invite.shown = true;
   invite.tray($('#dkStage'), m);
   if (m === 'three') { const T = [3, 5, 10];
     dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.target) ? prefs.target : 5, String, v => { prefs.target = v; repaint(); }),
       dkSeg([[0, '쿠션 자유'], [1, '원쿠션'], [3, '쓰리쿠션']], prefs.rule3, v => { prefs.rule3 = v; repaint(); })]); }
-  if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); }), dkLab('마무리'), finishSeg()]); }
+  if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); }), dkLab('마무리'), finishSeg(), ...minusSeg()]); }
   // 1:1 or 2:2 (owner 11-09: four, the empty seats the computer's if the host likes)
   dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); })]);
   const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean));
@@ -221,7 +228,7 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     dkPut(slate, [dkLab('수지'),
       suji(prefs.names[0], 0, v => { prefs.suji[prefs.names[0]] = v; }),
       suji(oppName(), 1, v => { if (prefs.vsAI) prefs.sujiAI = v; else prefs.suji[prefs.names[1]] = v; }),
-      dkLab('마무리'), finishSeg()]);
+      dkLab('마무리'), finishSeg(), ...(cpu ? [] : minusSeg())]);
   }
   if (m === 'three') {
     const T = [3, 5, 10];

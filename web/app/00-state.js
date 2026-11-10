@@ -44,6 +44,7 @@ const prefs = (() => {
     shotClock: 60,
     ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
     friendWay: 'local', fourTarget: 10, lessonProof: {},
+    fourMinus: true,                   // 4구 with a friend: a foul costs a point (마이너스 점수 있음) or nothing
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
     wallet: { coin: 0, dia: 0 } }, saved);

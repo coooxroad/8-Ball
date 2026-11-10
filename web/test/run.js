@@ -225,7 +225,7 @@ for (const name of ['bar', 'pro', 'pub']) {
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   { const c = g.cueBall(); c.x = c.px = 1.1; c.y = c.py = 0.4; g.beginShot(); g.P.strike(g.world, 0, 7, 0, 0, deg(45)); g.P.run(g.world, 20); const out = g.resolve(); if (!out.r.foul || !g.world.balls[0].on || g.turn !== 1) fail('four-ball: cue ball off the table should be a foul, back on the cloth, turn over'); }
   // handicaps: each player goes out at their own number; with a finish (owner 11-10) the points stop at the number and the
-  // game is won by the finish after them - a cushion, or three, before the second red; a miss costs nothing, a foul a point
+  // game is won by the finish after them - a cushion, or three, before the second red; a miss or a foul there costs nothing
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd }); g.players[0].score = 2;
   { const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; if (M.ctx(g).last || M.evaluate(ev, M.ctx(g), g).pts !== 1) fail('finish: the points before it should count as ever');
     g._ctx = M.ctx(g); g.world.ev = ev; g.resolve(); if (g.over || g.players[0].score !== 3 || g.turn !== 0) fail('finish: making all the points ended the game or passed the turn');
@@ -236,7 +236,32 @@ for (const name of ['bar', 'pro', 'pub']) {
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: 'three', rnd }); g.players[0].score = 3;
   { const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; ev.cushions = 2; if (M.ctx(g).need !== 3 || M.evaluate(ev, M.ctx(g), g).win != null) fail('three-cushion finish: two cushions finished');
     ev.cushions = 3; if (M.evaluate(ev, M.ctx(g), g).win !== 0) fail('three-cushion finish: three cushions did not finish');
-    const foul = P.newEv(); foul.firstHit = 1; foul.hits = [1, 2, 3]; foul.cushions = 3; g._ctx = M.ctx(g); g.world.ev = foul; g.resolve(); if (g.over || g.players[0].score !== 2) fail('three-cushion finish: a foul did not cost the point and the finish'); }
+    const foul = P.newEv(); foul.firstHit = 1; foul.hits = [1, 2, 3]; foul.cushions = 3; g._ctx = M.ctx(g); g.world.ev = foul; g.resolve();
+    if (g.over || g.players[0].score !== 3 || g.turn !== 1 || !g.MODES.four.ctx(Object.assign({}, g, { turn: 0 })).last) fail('three-cushion finish: a foul while finishing cost a point, or did not pass the turn (owner 11-10: nothing lost)');
+    // (a ball off the table while finishing: nothing lost either)
+    g.turn = 0; g.world.cue = 0; const off = P.newEv(); off.firstHit = 2; off.hits = [2]; off.off = [0]; g._ctx = M.ctx(g); g.world.ev = off; g.resolve(); if (g.players[0].score !== 3) fail('finish: a ball off the table while finishing cost a point'); }
+  // 마이너스 점수 없음 (a game with a friend): a foul, or a ball off the table, passes the turn and costs nothing
+  g.start('four', ['A', 'B'], false, { target: 5, minus: false, rnd });
+  { const M = g.MODES.four; g.players[0].score = 2; const ev = P.newEv(); ev.firstHit = 1; ev.hits = [1]; g._ctx = M.ctx(g); g.world.ev = ev; g.resolve(); if (g.players[0].score !== 2 || g.turn !== 1) fail('minus off: a foul cost a point or kept the turn');
+    g.players[1].score = 2; const off = P.newEv(); off.firstHit = 2; off.hits = [2]; off.off = [1]; g._ctx = M.ctx(g); g.world.ev = off; g.resolve(); if (g.players[1].score !== 2) fail('minus off: a ball off the table cost a point');
+    const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, { rnd }); if (!g.restore(d) || g.minus !== false) fail('minus off: a saved game came back with minus'); }
+  // 후구: the one who began, done first, does not win yet - the other has their visit; done in it too, a draw
+  { const pt = () => { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; g._ctx = g.MODES.four.ctx(g); g.world.ev = ev; return g.resolve(); };
+    const miss = () => { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2]; g._ctx = g.MODES.four.ctx(g); g.world.ev = ev; return g.resolve(); };
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, first: 0, rnd }); g.players[0].score = 2;
+    const o = pt(); if (g.over || g.turn !== 1 || g.chance !== 0 || !/후구/.test(o.msg)) fail('후구: the first player going out ended the game, or the other had no visit');
+    g.players[1].score = 1; pt(); if (g.over || g.turn !== 1) fail('후구: a point in the last visit ended it or passed the turn');
+    miss(); if (!g.over || g.over.winner !== 0) fail('후구: the visit ended without going out, and the first player did not win');
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, first: 0, rnd }); g.players[0].score = 2; pt(); g.players[1].score = 2; pt();
+    if (!g.over || g.over.winner !== null || !g.over.draw) fail('후구: going out in the last visit was not a draw');
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, first: 0, rnd }); g.players[0].score = 2; pt(); g.timeout(); if (!g.over || g.over.winner !== 0) fail('후구: the last visit ran out of time and the first player did not win');
+    // the second player going out first wins at once; without 후구 the first player does too
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, first: 0, rnd }); miss(); g.players[1].score = 2; pt(); if (!g.over || g.over.winner !== 1) fail('후구: the second player going out did not win at once');
+    g.start('four', ['A', 'B'], false, { target: 3, first: 0, rnd }); g.players[0].score = 2; pt(); if (!g.over || g.over.winner !== 0) fail('no 후구: the first player going out did not win');
+    // with a finish: the finish is what goes out
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, finish: 'cushion', first: 0, rnd }); g.players[0].score = 3;
+    { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; ev.cushions = 1; g._ctx = g.MODES.four.ctx(g); g.world.ev = ev; g.resolve(); } if (g.over || g.chance !== 0 || g.turn !== 1) fail('후구: a finish by the first player gave no last visit');
+    const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, { rnd }); if (!g.restore(d) || !g.hugu || g.chance !== 0 || g.first !== 0) fail('후구: a saved game lost the last visit'); }
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   // the other ball is a foul (-1) even with both reds; one red and the other ball too
   { g.players[0].score = 1; const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3, 1]; ev.cushions = 1; const r = M.evaluate(ev, M.ctx(g), g); if (!r.foul || r.pts !== -1 || r.keep) fail('four-ball: both reds and the other ball should cost a point');
@@ -454,6 +479,9 @@ for (const name of ['bar', 'pro', 'pub']) {
   const rise = (x, y) => { const w = w0({ cue: true }); if (x != null) P.place(w, 1, x, y); return deg(Math.atan(P.cueRiseTan(w, 0, 0))); };
   const near = rise(-0.58, 0.01), open = rise(null);
   if (!(near > 15 && open < 5)) fail(`cue rise: ${near.toFixed(1)} over a ball 8 cm behind, ${open.toFixed(1)} on an open table`);
+  // the guide follows the add-on (owner 11-10): with squirt on, the line drawn for side bends as the ball will
+  const guideEnd = real => { const w = w0(real), p = P.preview(w, 0, 2, 0.5, 0, 0, 0); return deg(Math.atan2(p.pre[31], p.pre[30] + 0.5)); };   // (a point a tenth of a metre on)
+  if (!(Math.abs(guideEnd({ squirt: true }) - sq({ squirt: true })) < 0.3 && Math.abs(guideEnd(null)) < 0.3)) fail(`guide with squirt: ${guideEnd({ squirt: true }).toFixed(2)}° (the shot ${sq({ squirt: true }).toFixed(2)}°), without ${guideEnd(null).toFixed(2)}°`);
   console.log(`현실 당구: squirt ${sq({ squirt: true }).toFixed(2)}°, throw ${thr.toFixed(2)}°, cue ${near.toFixed(1)}° over a ball behind`);
 }
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');

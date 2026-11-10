@@ -7,13 +7,14 @@ const match = {
     emote.reset();
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
-      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn(), real: prefs.vsAI ? null : realPref() };   // (add-ons: with a friend only)
+      targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn(), real: prefs.vsAI ? null : realPref(),   // (add-ons: with a friend only)
+      minus: prefs.vsAI || prefs.fourMinus !== false, hugu: prefs.mode === 'four' };   // (4구: 마이너스 점수 with a friend, 후구 - game.js)
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
     // the other seat plays at its level
     const o = c.online, standIn = o && o.standIn;
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null,
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null, minus: c.minus !== false, hugu: !!c.hugu,
       rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
     if (o && (o.watch || o.team)) game.players.forEach(p => { p.ai = true; });   // (2:2: set shot by shot - ranked.auto)
     else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
@@ -23,7 +24,7 @@ const match = {
     match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null;
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
-    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}) }, shots: [], points: [0, 0] };
+    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}), ...(c.minus === false ? { minus: false } : {}), ...(c.hugu ? { hugu: true } : {}) }, shots: [], points: [0, 0] };
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     // (watching: at once, as the room's replay does it - the shots after it are played in a moment, catchUp)
@@ -86,20 +87,24 @@ const match = {
   },
   finish() {
     if (match.ctx.online && match.ctx.online.watch) return ranked.watchEnd(null);   // (watching: nobody's records)
-    const w = game.over.winner, l = 1 - w, pw = game.players[w], pl = game.players[l];
+    // (a draw - 4구's 후구 caught up, game.js: w is null; nobody's win or loss on the records)
+    const w = game.over.winner, draw = w == null, l = draw ? null : 1 - w, pw = game.players[w], pl = game.players[l];
     // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
     // records back as they were before and finishes again with the room's winner, so it is never counted twice)
     if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
-    const rw = recOf(pw.name), rl = recOf(pl.name);
-    rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
-    rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
-    series.s[w]++; st.lastLoser = l; store.set('save', null); st.phase = 'idle';
+    if (!draw) {
+      const rw = recOf(pw.name), rl = recOf(pl.name);
+      rw.w++; rw.streak++; rw.best = Math.max(rw.best, rw.streak); rl.l++; rl.streak = 0;
+      rw.form = rw.form.concat('W').slice(-5); rl.form = rl.form.concat('L').slice(-5); store.set('rec', rec);
+      series.s[w]++; st.lastLoser = l;
+    }
+    store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
     // (on a ranked game, this device's seat is the room's: 0 or 1)
     const on = match.ctx.online, me = on ? (on.team ? on.seat % 2 : on.seat) : 0, solo = match.ctx.ai || !!on;
-    const mine = !solo || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
-    $('#rTitle').textContent = solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
+    const mine = !solo || draw || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
+    $('#rTitle').textContent = draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
     $('#rTitle').parentNode.classList.toggle('lost', !mine);
     for (let i = 0; i < 2; i++) {
       const p = game.players[i], r = recOf(p.name), box = $('#rP' + i), won = i === w;

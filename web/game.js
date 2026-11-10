@@ -143,8 +143,8 @@ function createGame(PH, makeAI) {
       },
       /* The finish (마무리, chosen with the game - owner 11-10: the points and the cushion are two things): with one, a
          player who has made all their points is not done - they must then finish, the two reds again, the cue ball
-         round at least one cushion ('cushion') or three ('three') before the second red. A miss passes the turn and
-         costs nothing; a foul costs a point, and with it the finish (the point is to be made again). */
+         round at least one cushion ('cushion') or three ('three') before the second red. A miss or a foul there passes
+         the turn and costs nothing (owner 11-10: no points lost while finishing). */
       FINISH,
       intro: g => g.finish ? FINISH[g.finish] + ' 마무리' : '',
       // (goal: the points to reach, written faint behind the score; the line under the name is the player's rating - app)
@@ -152,18 +152,20 @@ function createGame(PH, makeAI) {
       badge: g => ({ text: g.finish && g.players[g.turn].score >= g.targets[g.turn] ? `마무리 · ${FINISH[g.finish]}` : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
       // last: this player has all their points and the game is played with a finish; need: the cushions it asks for
-      ctx(g) { const last = !!g.finish && g.players[g.turn].score >= g.targets[g.turn]; return { turn: g.turn, last, need: last ? (g.finish === 'three' ? 3 : 1) : 0 }; },
+      // minus: a foul costs a point (a game with a friend may play without - owner 11-10)
+      ctx(g) { const last = !!g.finish && g.players[g.turn].score >= g.targets[g.turn]; return { turn: g.turn, last, need: last ? (g.finish === 'three' ? 3 : 1) : 0, minus: g.minus }; },
       evaluate(ev, c) {
         const me = c.turn, hitOpp = ev.hits.includes(1 - me);
         const reds = (ev.hits.includes(2) ? 1 : 0) + (ev.hits.includes(3) ? 1 : 0);
         // the other player's ball is a foul (-1) even when both reds were hit too (owner, 2026-11-06)
         const foul = hitOpp ? '상대 공을 맞혔습니다' : reds === 0 ? '빨간 공을 맞히지 못했습니다' : null;
-        if (c.last && !foul) {
+        if (c.last && foul) return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: false, pts: 0 };
+        if (c.last) {
           const done = reds === 2 && ev.cushions >= c.need;
           return { foul: null, scratch: false, respot: [], win: done ? me : null, why: done ? `${c.need >= 3 ? '쓰리쿠션' : '쿠션'} 마무리` : '', assign: null, keep: done, pts: done ? 1 : 0,
             note: !done && reds === 2 ? `쿠션 ${ev.cushions}번 · 마무리는 ${c.need}번 이상` : null };
         }
-        const pts = foul ? -1 : reds === 2 ? 1 : 0;
+        const pts = foul ? (c.minus === false ? 0 : -1) : reds === 2 ? 1 : 0;
         return { foul, scratch: false, respot: [], win: null, why: '', assign: null, keep: pts > 0, pts };
       },
     },
@@ -256,6 +258,8 @@ function createGame(PH, makeAI) {
     // targets: each player's own number of points to reach (four-ball handicaps); tens: scores are shown the way a hall counts them
     g.targets = opts.targets ? opts.targets.slice() : [g.target, g.target]; g.tens = !!opts.tens; g.finish = finishOf(opts.finish); g.potTray = !!opts.potTray;
     g.ice = !!opts.ice; g.real = realOf(opts.real); g.masse = opts.masse !== false; g.levels = opts.levels || null;
+    // 4구 with a friend or the computer: minus false - a foul costs nothing; hugu - 후구 (resolve, below)
+    g.minus = !(modeId === 'four' && opts.minus === false); g.hugu = modeId === 'four' && !!opts.hugu; g.first = g.turn; g.chance = null;
     // personas: a person-like computer opponent for a player (ai/), in place of a level; null for the rest
     g.personas = opts.personas || null;
     // carom: in 4구 the first to play has the white ball and the other the yellow (owner, 11-08: it was the other way).
@@ -344,6 +348,7 @@ function createGame(PH, makeAI) {
       if (m.id === 'nine' && p.foulRun >= 3) { g.over = { winner: nx, why: '연속 파울 3번', plain: false }; return { msg: '연속 파울 3번', kind: 'foul', dur: 2600 }; }
     }
     if (m.table === 'carom') g.world.cue = g.turn;
+    if (g.chance != null && g.turn === g.chance) g.over = { winner: g.chance, why: '', plain: true };   // (후구: the visit ran out)
     return { msg, kind: 'foul', dur: 2600 };
   };
 
@@ -361,7 +366,7 @@ function createGame(PH, makeAI) {
       // a ball over the rail is a foul; it comes back on its spot (the cue ball: wherever the other player likes, on a pool table)
       const cueOff = w.ev.off.includes(w.cue);
       r.foul = cueOff ? '큐볼이 테이블 밖으로 나갔습니다' : '공이 테이블 밖으로 나갔습니다'; r.keep = false; r.solved = false;
-      if (m.table === 'carom') { r.pts = m.solo ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
+      if (m.table === 'carom') { r.pts = m.solo || !g.minus || (g._ctx && g._ctx.last) ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
       else {
         if (cueOff) r.scratch = true;
         // (WPA) the 8 off the table, but on the break, loses the game
@@ -383,6 +388,13 @@ function createGame(PH, makeAI) {
     // (a game with a finish: the points alone do not end it - the finish does, through the mode's own win; they stop at the target)
     if (m.target && g.finish && m.FINISH) p.score = Math.min(p.score, g.targets[me]);
     else if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
+    /* 후구 (owner 11-10): the player who began, done first, has not won yet - the other gets their visit, as many shots as
+       they keep scoring. Done in it too: a draw. Their visit over without it: the one who began wins. */
+    if (g.hugu && r.win === me && g.chance == null && me === g.first) {
+      g.chance = me; g.turn = 1 - me; if (g.team) g.member[me] ^= 1; if (m.table === 'carom') w.cue = g.turn;
+      out.msg = `후구 · ${g.players[g.turn].name}`; out.kind = 'good'; out.dur = 2600; return out;
+    }
+    if (g.chance != null && r.win === me && me !== g.chance) { g.over = { winner: null, draw: true, why: '후구 · 무승부', plain: false }; return out; }
     if (r.win != null) { g.over = { winner: r.win, why: r.why, plain: !!r.plain }; return out; }   // (plain: an ordinary end the score says already)
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
@@ -407,6 +419,7 @@ function createGame(PH, makeAI) {
     }
     if (m.table === 'carom') w.cue = g.turn;
     if (g.team && g.turn !== me) g.member[me] ^= 1;          // (that side's visit over: its other player has the next)
+    if (g.chance != null && g.turn === g.chance) g.over = { winner: g.chance, why: '', plain: true };   // (후구 over, not caught up)
     return out;
   };
   // the seat whose shot it is: the side's (0, 1), or in 2:2 which of its two (0-3)
@@ -419,7 +432,7 @@ function createGame(PH, makeAI) {
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
-    team: g.team, member: g.member.slice(),
+    team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -431,6 +444,7 @@ function createGame(PH, makeAI) {
     g.targets = Array.isArray(d.targets) ? d.targets : [g.target, g.target]; g.tens = !!d.tens; g.finish = finishOf(d.finish); g.potTray = !!d.potTray;
     g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
+    g.minus = d.minus !== false; g.hugu = !!d.hugu; g.first = d.first ? 1 : 0; g.chance = d.chance === 0 || d.chance === 1 ? d.chance : null;
     return true;
   };
   return g;

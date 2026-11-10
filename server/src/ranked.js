@@ -447,12 +447,13 @@ export class RoomCore {
     // (the device that sent a shot that does not fit loses: by, or for a shot kept before by was, its seat)
     if (!out.ok) { const sh = out.at != null ? shots[out.at] : null, bad = sh ? (sh.by != null ? sh.by : sh.seat) : null; if (bad != null) { winner = 1 - sideOf(bad); why = 'a shot that does not fit'; } }
     else if (out.winner != null) { winner = out.winner; why = 'ended'; }
+    else if (out.draw) why = 'draw';                                   // (4구's 후구 caught up: game.js)
     // gone quiet (timers, IDLE_AFTER): the seat whose turn it was loses - in a stand-in's game, the one device playing it
     else if (end.why === 'idle') { winner = this.get('room').standIn ? 1 : 1 - g.turn; }
     // a stand-in may give up only on its own turn and only when it is far behind (game.js farBehind) - the same rule its
     // own play follows. A resignation sent for it otherwise came from the player it would let win: that player loses.
-    if (winner == null && end.standIn && !standInMayResign(g)) { winner = 1; why = 'a resign that does not fit'; }
-    if (winner == null && end.loser != null) winner = 1 - end.loser;
+    if (winner == null && why !== 'draw' && end.standIn && !standInMayResign(g)) { winner = 1; why = 'a resign that does not fit'; }
+    if (winner == null && why !== 'draw' && end.loser != null) winner = 1 - end.loser;
     this.result(winner, points, why);
     return false;
   }
@@ -460,7 +461,8 @@ export class RoomCore {
   result(winner, points, why) {
     const r = this.get('room'), seats = this.get('seats'), n = seats.length, res = { winner, points, why, coins: seats.map(() => 0), dama: seats.map(q => q.dama) };
     const inv = r.kind === 'invite';
-    if (winner != null) {
+    // (a draw in a friend's room pays each their points, as a loss would; a ranked game has no draws)
+    if (winner != null || (inv && why === 'draw')) {
       if (!inv) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
       for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : 'ranked', r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
     }

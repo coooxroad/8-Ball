@@ -60,7 +60,7 @@ export class Replay {
     this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
     // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
     const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
-    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, team: !!o.team });
+    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, minus: o.minus !== false, hugu: !!o.hugu, team: !!o.team });
     if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
@@ -78,7 +78,7 @@ export class Replay {
       g.timeout(); this.i++;
     }
     if (this.i >= log.shots.length || g.over) {
-      if (this.open) return this.out = { ok: true, points: this.points, winner: g.over ? g.over.winner : null };
+      if (this.open) return this.out = { ok: true, points: this.points, winner: g.over ? g.over.winner : null, draw: !!(g.over && g.over.draw) };
       if (!g.over) return this.out = { ok: false, why: 'the match does not end' };
       if (log.winner !== g.over.winner) return this.out = { ok: false, why: 'a different winner' };
       return this.out = { ok: true, points: this.points, winner: g.over.winner };

@@ -171,6 +171,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   clone.shots[0].s.balls[0][5] = [0, 0, 1, 0];
   ok(matchKey(clone) === matchKey(good), 'presentation fields and claimed outcome cannot change match identity');
   ok(logError({ ...good, mode: 'toString' }) && logError({ ...good, shots: [null] }), 'unknown mode and null shots rejected');
+  // 4구 with a friend: 마이너스 점수 off and 후구 are rules of their own; only 후구 can end in a draw (no winner)
+  const hugu = { ...good, opts: { ...good.opts, hugu: true } }, noMinus = { ...good, opts: { ...good.opts, minus: false } };
+  ok(!logError(hugu) && !logError(noMinus) && logError({ ...good, opts: { ...good.opts, hugu: 'yes' } }), '4구 rule switches checked');
+  ok(new Set([matchKey(good), matchKey(hugu), matchKey(noMinus)]).size === 3, '4구 rule switches make games of their own');
+  ok(!logError({ ...hugu, winner: null }) && logError({ ...good, winner: null }), 'a draw only with 후구');
   console.log('reward regressions: receipts, duplicate matches, corrupt queue and terminal checkpoints checked');
 }
 // ranked: the lobby pairs by DAMA (the range widening with the wait), and after a while seats a stand-in

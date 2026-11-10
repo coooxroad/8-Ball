@@ -48,6 +48,8 @@ const inviteRules = (mode, r) => {
   if (mode === 'three') { if ([3, 5, 10].includes(r.target)) o.target = r.target; if ([0, 1, 3].includes(r.cushions)) o.cushions = r.cushions; }
   if (mode === 'four' && [5, 10, 15, 20, 30].includes(r.target)) o.target = r.target;
   if (mode === 'four' && ['cushion', 'three'].includes(r.finish)) o.finish = r.finish;   // (the finish - game.js MODES.four)
+  if (mode === 'four' && r.minus === false) o.minus = false;                               // (마이너스 점수 없음)
+  if (mode === 'four' && r.hugu === true) o.hugu = true;                                   // (후구)
   // add-ons (friend rooms only): 현실 당구's parts
   const q = r.real; if (q && typeof q === 'object' && (q.throw === true || q.squirt === true || q.cue === true)) o.real = { throw: q.throw === true, squirt: q.squirt === true, cue: q.cue === true };
   return o;

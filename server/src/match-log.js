@@ -33,14 +33,16 @@ export function badShotAt(log) {
 
 // These checks also run before sampling: malformed data must never enter the account's verification queue.
 export function logError(log) {
-  if (!object(log) || !Object.hasOwn(BALLS, log.mode) || !integer(log.winner, 0, 1) ||
+  // (no winner: a draw, which only 4구 played with 후구 can end in - game.js)
+  const draw = log && log.winner === null && log.mode === 'four' && object(log.opts) && log.opts.hugu === true;
+  if (!object(log) || !Object.hasOwn(BALLS, log.mode) || !(integer(log.winner, 0, 1) || draw) ||
       !Array.isArray(log.shots) || !log.shots.length || log.shots.length > 600) return 'bad log';
   if (log.table != null && !TABLES.some(t => t.id === log.table)) return 'bad table';
   const o = log.opts ?? {};
   if (!object(o) || (o.first != null && !integer(o.first, 0, 1)) ||
       (o.target != null && !integer(o.target, 1, 60)) || (o.cushions != null && ![0, 1, 3].includes(o.cushions)) ||
       (o.targets != null && (!Array.isArray(o.targets) || o.targets.length !== 2 || !o.targets.every(v => integer(v, 1, 60))))) return 'bad rules';
-  for (const key of ['tens', 'ice']) if (o[key] != null && typeof o[key] !== 'boolean') return 'bad rules';
+  for (const key of ['tens', 'ice', 'minus', 'hugu']) if (o[key] != null && typeof o[key] !== 'boolean') return 'bad rules';
   if (o.finish != null && ![true, false, 'cushion', 'three'].includes(o.finish)) return 'bad rules';   // (4구's finish: game.js MODES.four)
   // 현실 당구 (an add-on): its three parts, each true or false
   if (o.real != null && (!object(o.real) || Object.keys(o.real).some(k => !['throw', 'squirt', 'cue'].includes(k) || typeof o.real[k] !== 'boolean'))) return 'bad rules';
@@ -53,6 +55,7 @@ export function matchKey(log) {
   const o = log.opts || {}, target = o.target || 10;
   const rules = [o.first || 0, target, o.cushions || 0, o.targets || [target, target], !!o.tens, o.finish === 'three' ? 'three' : !!o.finish, !!o.ice];   // (as before for no finish and a cushion one: an old claim keeps its key)
   if (o.real && (o.real.throw || o.real.squirt || o.real.cue)) rules.push(['real', !!o.real.throw, !!o.real.squirt, !!o.real.cue]);   // (only when on: the keys of games without it stay as they were)
+  if (o.minus === false) rules.push(['minus', false]); if (o.hugu === true) rules.push(['hugu', true]);   // (4구: likewise)
   const shots = log.shots.map(s => s.timeout === true ? ['timeout'] :
     [s.aim, s.V, s.a, s.b, s.el || 0, s.s.cue, s.s.balls.map(b => [b[0], b[1], b[2] ? 1 : 0])]);
   // Claimed points, winner, quaternions, client ids and arbitrary extra fields cannot turn one play into a new claim.
