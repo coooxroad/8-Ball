@@ -14,18 +14,6 @@ const segRow = (label, opts, cur, fn) => {
 };
 const note = text => el('p', { class: 'note', text });
 
-// one guide length per player (a handicap); a single slider when only one person is aiming
-// the knob is a matte blue that deepens as the guide gets longer
-// The aim line: its length is the same for everyone now ('보통', GUIDE_STD), longer or shorter only by the cue in hand (its
-// 조준선 stat); only its look is chosen here.
-function sheetGuide() {
-  // (one look now - the line, with the cue ball's own way on as a band past the ghost ball; the whole way only for testing)
-  if (!debugOn()) return openSheet('조준선', [note('조준선 길이는 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이, 그 뒤는 예상 방향이 선으로 보이고, 고스트볼 뒤로는 공이 맞지 않았다면 그대로 갔을 길이 레일로 보입니다.')]);
-  openSheet('조준선', [
-    segRow('길이', [[false, '보통'], [true, '끝까지 (물리 테스트)']], !!prefs.guideAll, v => { prefs.guideAll = v; savePrefs(); scene.invalidate(); sheetGuide(); }),
-    note(prefs.guideAll ? '끝까지: 큐볼과 맞는 공들이 멈출 때까지 실제로 갈 길을 모두 보여 줍니다(큐 능력치와 상관없이). 온라인 대전에서는 늘 보통입니다.'
-      : '길이는 모두 같은 \'보통\'이고, 큐마다 조준선 능력치만큼 길거나 짧아집니다. 첫 공이나 쿠션까지는 실제로 갈 길이 그대로 보이고, 그 뒤는 짧은 직선(예상 방향)입니다.')]);
-}
 function sheetSettings() {
   openSheet('설정', [
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
@@ -128,11 +116,9 @@ function sheetName(i, keep) {
   const input = ai ? null : el('input', { class: 'txt', id: 'nameInput', maxlength: '10', value: keep == null ? prefs.names[i] : keep, 'aria-label': '이름', autocomplete: 'off' });
   let suji = sujiOf(i);
   const save = () => {
-    const was = debugOn();
     if (input) { const v = input.value.trim().slice(0, 10); if (v && v !== prefs.names[1 - i]) prefs.names[i] = v; }
     if (four) { if (ai) prefs.sujiAI = suji; else prefs.suji[prefs.names[i]] = suji; }
     savePrefs(); closeSheet(); net.renamed(); paintHome();
-    if (i === 0 && debugOn() !== was) toast(debugOn() ? '디버그 모드: 모든 제한을 풀었습니다.' : '디버그 모드를 껐습니다.', 'good', 2400);
   };
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
   const sj = four ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '수지 (몇 쳐?)' }), el('div', { class: 'seg' }, SUJI.map(v => el('button', { 'aria-pressed': String(v === suji), text: String(v * 10), onclick: e => { SND.tap(); suji = v; for (const b of e.target.parentNode.children) b.setAttribute('aria-pressed', String(b === e.target)); } }))),
@@ -143,8 +129,7 @@ function sheetName(i, keep) {
 function sheetPause() {
   openSheet('잠깐 멈춤', [
     el('button', { class: 'btn cta', text: '이어서 하기', onclick: closeSheet }),
-    // (the aim line's sheet only with the debug name: for everyone it was only an explanation - owner 11-10)
-    el('div', { class: 'row' }, [debugOn() ? flatBtn('조준선', sheetGuide) : null, flatBtn('설정', sheetSettings)]),
+    el('div', { class: 'row' }, [flatBtn('설정', sheetSettings)]),
     fullCan() ? el('div', { class: 'row' }, [flatBtn(fullOn() ? '창 모드' : '전체 화면', () => { fullToggle(); closeSheet(); })]) : null,
     // (a ranked game cannot be started again: leaving it gives it up)
     flow === match && match.ctx && match.ctx.online && match.ctx.online.watch ? el('div', { class: 'row' }, [flatBtn('관전 그만', () => { closeSheet(); goHome(true); })])

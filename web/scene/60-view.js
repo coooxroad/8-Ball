@@ -75,9 +75,9 @@
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
   let sizeSig = '', maxSide = 0;
-  function resize(force) {
+  function resize(force, taking) {
     W = app.clientWidth; H = app.clientHeight; if (!W || !H || gl.isContextLost()) return;
-    if (pendScale != null) { dynScale = pendScale; pendScale = null; }
+    if (taking && pendScale != null) { dynScale = pendScale; pendScale = null; }   // (a new scale only when the frame says so: takeScale)
     portrait = H > W && !lying; if (lampsOn) applyLook();                                       // (a screen held upright stands the table on end, unless it is told to lie it down)
     // Auto uses the same budget on the desk and in play. Upsampling a DPR-1 desktop to 2x cost four times the pixels
     // without sharpening its HTML text. Only explicit high quality keeps that extra detail on the tilted desk.
@@ -150,7 +150,7 @@
      after a frame was drawn it showed black until the next - a flash on the web) */
   let pendScale = null;
   function setScale(k) { k = Math.max(0.5, Math.min(1, k)); if (Math.abs(k - dynScale) < 0.01) return; pendScale = k; dirty = 3; }
-  function takeScale() { if (pendScale != null) resize(); }
+  function takeScale() { if (pendScale != null) resize(false, true); }
 
   // Three restores GPU resources, but our cached background must also be drawn again after a lost context.
   canvas.addEventListener('webglcontextlost', e => e.preventDefault());

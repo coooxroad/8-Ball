@@ -28,8 +28,6 @@ const TICK = 1 / 120;
 const GUIDE_STD = 0.5;
 /* '끝까지' (조준선 sheet, for trying the physics out): every ball's whole way, from the stroke to rest, at any cue - but never
    in an online game (the other player sees the usual line), nor while the computer or the other player is at the table. */
-// (the whole way to rest is a tool for testing the physics: the debug name's only, never online - owner, 11-08)
-const guideWhole = () => !!prefs.guideAll && typeof debugOn === 'function' && debugOn() && !(flow === match && match.ctx && match.ctx.online);
 
 /* ================= settings and saved data ================= */
 const store = {

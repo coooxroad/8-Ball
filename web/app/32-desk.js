@@ -97,9 +97,6 @@ function picsPump() {
 const ballPic = (id, kind, n, attrs) => lazyPic(el('img', Object.assign({ alt: '' }, attrs)), `b/${id}/${kind}/${n}`, () => scene.ballShot(id, kind, n));
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);
-// (copy audit 03-12: there is nothing to set in play - the guide's length is the cue's - so the row is shown only with
-// the debug name, for its physics-test choice)
-function guideRow() { return typeof debugOn === 'function' && debugOn() ? dkRow('조준선', guideWhole() ? '끝까지 · 물리 테스트' : '보통 · 큐에 따라', sheetGuide) : null; }
 // the tray's head: a title over a small line, with arrows either side when there is a list to step through
 const dkTitle = (t, sub) => el('div', { class: 'tt' }, [el('h2', { text: t }), sub ? el('small', { text: sub }) : null]);
 function dkNavHead(head, what, t, sub, go) {

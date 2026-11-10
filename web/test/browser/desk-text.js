@@ -7,7 +7,7 @@ const { open } = require('./harness.js');
   let native;
   for (const [w, h, dpr] of [[1280, 800, 2], [1280, 800, 1], [1280, 800, 1.25], [1920, 1080, 1], [412, 860, 3]]) {
     const { browser, page, errors } = await open(w, h, dpr, {
-      init: () => localStorage.setItem('dp8.prefs', JSON.stringify({ v: 2, how: true, names: ['이환컴퍼니', '플레이어 2'] })),
+      init: () => localStorage.setItem('dp8.prefs', JSON.stringify({ v: 2, how: true, names: ['플레이어 1', '플레이어 2'] })),
     });
     try {
       const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

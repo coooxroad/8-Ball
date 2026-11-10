@@ -41,7 +41,7 @@ export class Vault extends DurableObject {
     // waiting for a ranked game: the front door asks who this is, then goes to the lobby
     if (path === '/v1/ticket') {
       /* (and what they have on - only a look: the other player sees it. Any real item is passed on, bought or not, so a
-         device that shows everything (the debug name) looks the same to the other side; a cue's stat only ever plays on
+         device showing what it does not own looks the same to the other side; a cue's stat only ever plays on
          its owner's own device.) */
       let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
       const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;

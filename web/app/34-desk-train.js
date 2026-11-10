@@ -38,7 +38,7 @@ function deskPuzzle(d) {
   const starRow = el('div', { class: 'dk-stars', role: 'img', 'aria-label': `별 3개 중 ${stars}개` },
     [0, 1, 2].map(k => el('img', { src: k < stars ? 'ui/star.webp' : 'ui/star-off.webp', alt: '' })));
   // (copy audit 03-07, 03-08: the goal, the stars, how far this stage is; the key just 시작)
-  dkPut(slate, [dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지'), dkHr(), starRow, dkTxt(`${cur.stage + 1}단계 ${solved(here)} / ${here.length}`), guideRow()]);
+  dkPut(slate, [dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지'), dkHr(), starRow, dkTxt(`${cur.stage + 1}단계 ${solved(here)} / ${here.length}`)]);
   dkPut(slate, dkActs(dkMain('시작', null, () => puzzle.start())));
 }
 // The lessons as volumes and books: four game volumes on the shelf (3구, 4구, 8볼, 9볼); opening one shows its textbooks,
@@ -94,12 +94,12 @@ function deskLesson({ head, stage, slate }) {
   const dr = drills.byId(cur);
   // (copy audit 03-03, 03-05: the covers and the gilt say how to use them and what is done)
   dkPut(slate, dkH1(vol[1]));
-  dkPut(slate, [dkHr(), prizeLine(lessonVol), guideRow()]);
+  dkPut(slate, [dkHr(), prizeLine(lessonVol)]);
   dkPut(slate, dkActs(dkMain('이어서 하기', dr.name, () => practice.start(cur))));
 }
 function deskFree({ head, slate }) {
   // (copy audit 03-11: moving balls and undoing are told when they are used)
   dkPut(head, dkTitle('자유 연습'));
-  dkPut(slate, [...dkH1('자유 연습'), guideRow()]);
+  dkPut(slate, [...dkH1('자유 연습')]);
   dkPut(slate, dkActs(dkMain('연습 시작', null, () => practice.start('free'))));
 }
