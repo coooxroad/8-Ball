@@ -59,11 +59,13 @@ jobs:
           test -n "$U" || { echo 'FAIL no deployment address'; exit 1; }
           # (the invite links the app sends must open this page - web/app/55-invite.js INVITE_LINK)
           A=$(grep -o "const INVITE_LINK = '[^']*'" ../web/app/55-invite.js | cut -d"'" -f2 | sed 's#/?join=##')
-          test "$A" = "$U" || { echo "FAIL invite links open $A, the web is at $U - change INVITE_LINK in web/app/55-invite.js"; exit 1; }
+          D=$(grep -oE '[a-z0-9.-]+ \(custom domain\)' deploy.log | grep -v '^www\.' | head -1 | cut -d' ' -f1)
+          test "$A" = "$U" || { test -n "$D" && test "$A" = "https://$D"; } || { echo "FAIL invite links open $A, the web is at $U ${D:+and https://$D} - change INVITE_LINK in web/app/55-invite.js"; exit 1; }
           echo "$U (APK build $APK_BUILD, commit $SOURCE_SHA)"
-          # (danguuu.com, 11-10: the page at its own domain too - said, not yet required, until the app's links point there)
+          # (danguuu.com, 11-10: where the invite links and the terms now point - it must answer)
           for D in $(grep -oE '[a-z0-9.-]+ \(custom domain\)' deploy.log | cut -d' ' -f1); do
-            if curl -sf "https://$D/" | grep -q '<title>CUE</title>'; then echo "ok   https://$D answers"; else echo "note https://$D does not answer yet"; fi
+            ok=0; for i in $(seq 1 12); do if curl -sf "https://$D/" | grep -q '<title>CUE</title>'; then ok=1; break; fi; sleep 10; done
+            test $ok = 1 || { echo "FAIL https://$D does not answer"; exit 1; }; echo "ok   https://$D answers"
           done
           # (a new address can take a minute or two to answer)
           for i in $(seq 1 18); do

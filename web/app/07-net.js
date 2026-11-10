@@ -4,7 +4,7 @@
    device) and sent when there is a connection, now or days later; the server checks it and pays it, once. Nothing here
    ever sets a balance. With no SERVER set the game plays offline as it always has, with everything to hand.
    All talking to the server is in this file: the screens call net.*, never fetch. */
-const SERVER = 'https://cue-server.oxcorp.workers.dev';          // ('' plays offline with everything to hand)
+const SERVER = 'https://api.danguuu.com';          // ('' plays offline with everything to hand)
 const net = (() => {
   let me = store.get('me', null), busy = false, account = store.get('acct', null), googleCfg;
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');

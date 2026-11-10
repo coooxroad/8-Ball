@@ -26,7 +26,7 @@ function sheetSettings() {
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
     net.on ? el('div', { class: 'row' }, [flatBtn('다른 기기 연결', sheetLinkMake), flatBtn('코드로 연결', sheetLinkUse)]) : null,
-    el('div', { class: 'row' }, [flatBtn('크레딧', sheetCredits), flatBtn('약관 · 개인정보', () => window.open('https://cue.oxcorp.workers.dev/privacy', '_blank', 'noopener'))]),
+    el('div', { class: 'row' }, [flatBtn('크레딧', sheetCredits), flatBtn('약관 · 개인정보', () => window.open('https://danguuu.com/privacy', '_blank', 'noopener'))]),
     note('CUE 4.0'),
   ]);
 }

@@ -12,7 +12,7 @@ exports.open = async (w, h, dpr, options = {}) => {
   page.on('console', m => { if (m.type() === 'error') { errors.push(m.text()); console.log('console.error', m.text()); } });
   page.on('pageerror', e => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack || '').split('\n').slice(1, 4).join(' <- ')); });
   // Browser checks never create accounts or submit rewards to the live server.
-  await page.route('https://cue-server.oxcorp.workers.dev/**', r => r.fulfill({ json: { ok: false, why: 'offline test' } }));
+  for (const host of ['https://api.danguuu.com/**', 'https://cue-server.oxcorp.workers.dev/**']) await page.route(host, r => r.fulfill({ json: { ok: false, why: 'offline test' } }));
   if (options.init) await page.addInitScript(options.init);
   await page.route('http://x.test/**', r => {
     let p = new URL(r.request().url()).pathname; if (p === '/') p = '/index.html';
