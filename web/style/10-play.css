@@ -228,6 +228,7 @@
 #app.desk.portrait #power::after{border-image:none;background:none}
 #app.desk.portrait #powerCue{left:50%;top:0;width:14px;height:100%;transform:translate(-50%,10px)}
 #app.desk.portrait #powerNum{left:0;right:0;top:auto;bottom:7px;width:auto;height:auto;transform:none;padding:0;font-size:13px}
+
 /* the stroke's speed under the gauge: the number, its unit small beneath */
 #powerNum small{display:block;font-size:.62em;font-weight:600;opacity:.75;line-height:1;margin-top:1px}
 /* a short screen in landscape (a phone on its side): the pop in two columns - the pad beside the cue angle - so that it

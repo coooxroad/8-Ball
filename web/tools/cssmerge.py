@@ -12,11 +12,13 @@ import sys,re
 p=sys.argv[1]; src=open(p).read()
 # tokenise top-level rules and comments, keeping @media blocks intact
 items=[]; i=0; n=len(src)
+ws=''   # the white space before each item, kept with it (blank lines between groups stay)
 while i<n:
-    if src.startswith('/*',i): j=src.index('*/',i)+2; items.append(('c',src[i:j])); i=j; continue
+    j=i
     while i<n and src[i] in ' \n\t': i+=1
+    ws=src[j:i]
     if i>=n: break
-    if src.startswith('/*',i): continue
+    if src.startswith('/*',i): j=src.index('*/',i)+2; items.append(('c',ws+src[i:j])); i=j; continue
     # a rule: up to matching brace
     k=src.index('{',i); depth=0; j=k
     while True:
@@ -25,7 +27,7 @@ while i<n:
             depth-=1
             if depth==0: break
         j+=1
-    items.append(('r',src[i:j+1])); i=j+1
+    items.append(('r',ws+src[i:j+1])); i=j+1
 def decls(body):
     out=[];buf='';d=0
     for ch in body:
@@ -42,7 +44,7 @@ def decls(body):
     return res
 sels={}
 for idx,(t,s) in enumerate(items):
-    if t=='r' and not s.startswith('@'):
+    if t=='r' and not s.lstrip().startswith('@'):
         sel=re.sub(r'\s+',' ',s[:s.index('{')]).strip(); sels.setdefault(sel,[]).append(idx)
 def selset(s): return set(re.sub(r'\s+',' ',x).strip() for x in s[:s.index('{')].split(','))
 def overlap(a,b): return a==b or a.startswith(b+'-') or b.startswith(a+'-')
@@ -58,7 +60,7 @@ def inner_rules(s):
 def props_for(idx, sel):
     t,s=items[idx]
     if t!='r': return []
-    rs=inner_rules(s) if s.startswith('@') else [s]
+    rs=inner_rules(s) if s.lstrip().startswith('@') else [s]
     out=[]
     for r in rs:
         if '{' not in r: continue
@@ -79,9 +81,6 @@ for sel,idxs in sels.items():
             items[idx]=('r', s[:s.index('{')]+'{'+';'.join(keep)+'}') if keep else ('x','')
     s=items[last][1]
     items[last]=('r', s[:s.index('{')]+'{'+';'.join(moved.values())+'}')
-out=[]
-for t,s in items:
-    if t=='x': continue
-    out.append(s)
-open(p,'w').write('\n'.join(out)+'\n')
+out=''.join(s for t,s in items if t!='x')
+open(p,'w').write(out.rstrip('\n')+'\n')
 print('merged', sum(1 for v in sels.values() if len(v)>1))

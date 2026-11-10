@@ -158,8 +158,7 @@
 #app.desk.compact.portrait .dk-slate{max-height:36vh}
 #app.desk.compact:not(.portrait) .dk-slate{padding:12px 14px calc(10px + var(--lip))}
 .dk-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
-.dk-body>*{flex-shrink:0}
-/* (what does not fit scrolls, rather than being squeezed) */
+.dk-body>*{flex-shrink:0}                                         /* (what does not fit scrolls, rather than being squeezed) */
 .dk-body::-webkit-scrollbar{display:none}
 .dk-slate h1{margin:0;font:800 40px/1.08 var(--ui-font);letter-spacing:-.01em;word-break:keep-all}
 .dk-slate .sub{font:700 18px var(--ui-font);color:#cfc8ba;margin-top:-6px}
@@ -282,6 +281,7 @@
 #app.desk .dk-top.dk-ico:active{transform:scale(.92);border-image:none}
 #app.desk.compact .dk-tab .ti{width:17px;height:17px}
 #app.desk.compact.portrait .dk-tab{gap:5px}
+
 #app.desk .dk-top.dk-ico::after,#app.desk .dk-top.dk-ico::before{display:none}
 /* ambient occlusion (owner, 11-08): where a thing meets the desk it is darkest - a tight dark contact under every piece,
    inside the wide soft shadow the light throws */

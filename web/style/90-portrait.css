@@ -2,7 +2,6 @@
    The bar along the top in two rows - the places across the whole width, then the player, the wallet and the keys - so
    nothing is cut off and the coins show; the shelves three cards across, each tall enough to see; the rail's keys sharing
    the width; in play, the practice keys under the score, and messages kept between the two columns of buttons. */
-#app.desk.compact.portrait{--bar:100px}
 #app.desk.compact.portrait #deskBar{flex-wrap:wrap;align-content:center;row-gap:6px;column-gap:6px;padding:0 8px}
 #app.desk.compact.portrait .dk-tabs{order:0;flex:1 0 100%;gap:5px}
 #app.desk.compact.portrait .dk-tab{flex:1 1 0;min-width:0;height:40px;padding:0 4px;font-size:14px}
@@ -17,7 +16,6 @@
 #app.desk.compact.portrait .dk-top{order:4;height:36px;padding:0 9px}
 
 /* the shelves: three across, rows as tall as a card needs (the rarity rules only as tall as their line) */
-#app.desk.compact.portrait .dk-cards{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;align-content:start;gap:12px 8px}
 #app.desk.compact.portrait .dk-card{height:184px}
 #app.desk.compact.portrait .dk-tier{margin:6px 2px 0}
 
@@ -47,7 +45,7 @@
 /* (the slate's options scroll in .dk-body - 36-desk-paint.js; when there is more below, it fades out at its foot) */
 .dk-body.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
 #app.desk.compact.portrait .dk-card{height:136px}
-#app.desk.compact.portrait .dk-cards{padding-bottom:30px;-webkit-mask-image:linear-gradient(#000 calc(100% - 30px),transparent);mask-image:linear-gradient(#000 calc(100% - 30px),transparent)}
+#app.desk.compact.portrait .dk-cards{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;align-content:start;gap:12px 8px;padding-bottom:30px;-webkit-mask-image:linear-gradient(#000 calc(100% - 30px),transparent);mask-image:linear-gradient(#000 calc(100% - 30px),transparent)}
 #app.desk.compact.portrait .dk-cards.books,#app.desk.compact.portrait .dk-cards.vols{-webkit-mask-image:none;mask-image:none}
 #app.desk.compact #dkBoards .bd-tt small,#app.desk.compact #dkBoards .bd-foot small,#app.desk.compact #dkBoards .bd-bar small{font-size:max(11px,calc(var(--u)*3.6))}
 #app.desk.compact #dkBoards .bd-tt em{font-size:max(9px,calc(var(--u)*2.9))}

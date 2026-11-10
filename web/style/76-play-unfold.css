@@ -13,6 +13,7 @@
 #dkBoards .bd-head .bd-tools .dk-chip{height:46px;padding:0 22px;font-size:16px;font-weight:800}
 #app.desk.compact #dkBoards .bd-head .bd-tools .dk-chip{height:40px;padding:0 16px;font-size:14.5px}
 @media (prefers-reduced-motion:reduce){#dkBoards .unf.fan,#dkBoards .unf.hall,#dkBoards .bd.away{animation-duration:.01s}#dkBoards .bd.go{transition:none}}
+
 /* 랭킹전's four games in one row, 친구와 플레이's three ways (upright: one column) */
 #dkBoards.rank .bd-fit{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:"four three eight nine"}
 #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:"local make join"}
@@ -29,6 +30,7 @@
 #dkBoards .bd.way .way-ico{position:absolute;left:50%;top:40%;width:calc(var(--u)*26);height:calc(var(--u)*26);transform:translate(-50%,-50%);color:rgba(255,255,255,.92);filter:drop-shadow(-2px 4px 3px rgba(0,0,0,.3))}
 #dkBoards .bd.way .way-ico svg{width:100%;height:100%;display:block}
 #app.desk.portrait #dkBoards .bd.way .way-ico{left:auto;right:calc(var(--u)*6);top:50%;transform:translateY(-50%);width:calc(var(--u)*20);height:calc(var(--u)*20)}
+
 /* the game turned over: the search on its back (its clock kept by 54-ranked.js) */
 #app.rkcard #rkBar{display:none}
 #app.rk.rkcard #desk{top:0;height:calc(100%*var(--desk-density))}
@@ -60,6 +62,7 @@
 #dkBoards .seek-card .back .rk-dots i:nth-child(3){animation-delay:.4s}
 @keyframes rkDot{0%,100%{opacity:.3;transform:none}40%{opacity:1;transform:translateY(-35%)}}
 #dkBoards .seek-card .seek-x{position:relative;z-index:1;align-self:stretch;margin-top:16px;height:clamp(40px,15cqw,52px);border:0;border-radius:999px;background:rgba(255,255,255,.92);color:#173e78;font:800 clamp(15px,6cqw,19px) var(--ui-font);cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+
 /* 방 참가하기: the desk's wood gone to a hall's floor (the game's own carpet), the edge and the things on the desk put away */
 #deskPlane::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .45s;
   background:#2a2620 url(tex/carpet-geo.webp) 0 0/420px repeat;box-shadow:inset 0 0 120px rgba(0,0,0,.55)}
@@ -91,6 +94,7 @@
 #dkBoards .tb-none .dk-chip{margin-top:8px}
 #dkBoards .tb-none.wait{flex-direction:row;gap:12px}
 #dkBoards .tb-none .sp{width:22px;height:22px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;animation:rkSpin 1s linear infinite}
+
 /* the strip on top while an opponent is looked for (on the other tabs) in the 랭킹전 card's own language (owner 11-09):
    the printed blue with its light and dots, the white outline inside its edge, white words, the three dots, a white key */
 #rkBar{height:auto;padding:9px 9px 9px 18px;border-radius:14px;gap:12px;color:#fff;border:0;
@@ -109,6 +113,7 @@
 #dkBoards .seek-card .front.bd-g-eight{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
 #dkBoards .seek-card .front.bd-g-nine{--cl:#167378;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#3d8a88,#155252)}
 #dkBoards .seek-card .front::after{content:"";position:absolute;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);pointer-events:none}
+
 /* (owner 11-09, again) the hall's tables: a thinner wooden rail, the cushion its own band of rubber between it and the cloth,
    the cloth sunk a step below both - shaded along the cushions the lamp is behind - and the balls standing on it, each with
    its own shadow thrown off to the lower left, a little apart from it, as a ball's is */
@@ -120,6 +125,7 @@
 #dkBoards .tb .rack img{filter:drop-shadow(calc(var(--u)*-1.1) calc(var(--u)*1.9) calc(var(--u)*.9) rgba(0,0,0,.5))}
 #dkBoards .tb-pk{inset:calc(2.8% - var(--u)*.2);background:radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 0/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 0/7% 13.5% no-repeat,
     radial-gradient(circle,#0b0b0b 55%,transparent 62%) 0 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 50% 100%/7% 13.5% no-repeat,radial-gradient(circle,#0b0b0b 55%,transparent 62%) 100% 100%/7% 13.5% no-repeat}
+
 /* (owner 11-09) the hall in two: rooms waiting, then games being played - divided as the shop divides its rarities; a
    game being played wears a red 관전 tag on its table */
 #dkBoards .tb-tier{margin:2px 2px -10px}
