@@ -1,0 +1,24 @@
+/* ---------- 상점: cards in the lobby's printed-card language (owner 11-11: the foil was too loud for the desk) ----------
+   Each card sits sunk into the felt as the shop's cards always did - shadowed inside, nothing standing out - framed in its
+   rarity's metal (일반 silver, 희귀 blue, 에픽 violet, 신화 red, 전설 gold, 시크릿 every colour: kept, owner 11-11), and its
+   face is a printed card like the lobby's panels: the rarity's colour, a fine dot, a white line inside (i.face,
+   35-desk-shelves.js). */
+#app.desk .dk-cards.shop .dk-card{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#6d7884;--c2:#3c4550;border:3px solid transparent;border-image:none;border-radius:13px;padding:10px 6px 0;gap:4px;
+  background:linear-gradient(200deg,rgba(255,255,255,.12),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2)) padding-box,
+    linear-gradient(155deg,var(--f1),var(--f2) 38%,var(--f3) 58%,var(--f2) 80%,var(--f1)) border-box;
+  box-shadow:inset 0 5px 9px rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.14)}
+#app.desk .dk-cards.shop .dk-card.r1{--f1:#cfe6ff;--f2:#2a6fe0;--f3:#7fb6ff;--c1:#4174bf;--c2:#194685}
+#app.desk .dk-cards.shop .dk-card.r2{--f1:#efdcff;--f2:#7c3be0;--f3:#c49bff;--c1:#8265a3;--c2:#533a6e}
+#app.desk .dk-cards.shop .dk-card.r3{--f1:#ffd5da;--f2:#c92f44;--f3:#ff8a97;--c1:#b05551;--c2:#772b2a}
+#app.desk .dk-cards.shop .dk-card.r4{--f1:#fff3c4;--f2:#c98a12;--f3:#ffd36b;--c1:#b08a45;--c2:#6f511c}
+#app.desk .dk-cards.shop .dk-card.r5{--c1:#6c5f9c;--c2:#353060;background:linear-gradient(200deg,rgba(255,255,255,.12),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2)) padding-box,
+  conic-gradient(from 200deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff,#ff5d6c) border-box}
+/* (the plain cards' glow from below and coloured foot are not part of this face) */
+#app.desk .dk-cards.shop .dk-card::before{z-index:0;inset:0;border-radius:10px;opacity:1;background:radial-gradient(circle,rgba(255,255,255,.1) 34%,transparent 40%) 0 0/9px 9px}
+#app.desk .dk-cards.shop .dk-card .face{position:absolute;inset:5px;z-index:0;flex:none;width:auto;height:auto;min-height:0;margin:0;border:2px solid rgba(255,255,255,.85);border-radius:8px;pointer-events:none;
+  box-shadow:inset 0 3px 6px rgba(0,0,0,.25)}
+#app.desk .dk-cards.shop .dk-card .rglow{display:none}
+#app.desk .dk-cards.shop .dk-card .nm{position:relative;z-index:2;margin-bottom:0;color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+#app.desk .dk-cards.shop .dk-card .price{margin-bottom:10px;background:#f4ecd8;color:#2b241c}
+#app.desk .dk-cards.shop .dk-card .ovr{z-index:4}
+#app.desk .dk-cards.shop .dk-card.worn::after{inset:-3px;border-radius:13px}
