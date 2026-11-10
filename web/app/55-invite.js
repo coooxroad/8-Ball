@@ -65,8 +65,16 @@ const invite = {
     if (r && r.ok && r.waiting) { invite.leave(); closeSheet(); return invite.sit(r); }
     toast(invite.why(r, '그런 코드의 방이 없습니다.'), 'foul', 2400);
   },
-  why: (r, none) => !r ? '서버 응답 없음' : r.why === 'update' ? '업데이트 후 참가할 수 있습니다.' : r.why === 'taken' || r.why === 'playing' ? '이미 시작한 방입니다.' : r.why === 'not playing' ? '아직 시작하지 않은 방입니다.' : r.why === 'full' ? '관전 자리가 다 찼습니다.'
-    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요' : r.why === 'kicked' ? '방장이 내보낸 방입니다.' : none,
+  // what the server's refusal means here (watching: 'full' is the stands, not the seats)
+  why(r, none, watching) {
+    if (!r) return '서버 응답 없음';
+    return {
+      update: '업데이트 후 참가할 수 있습니다.', taken: '이미 시작한 방입니다.', playing: '이미 시작한 방입니다.', 'not playing': '아직 시작하지 않은 방입니다.',
+      full: watching ? '관전 자리가 다 찼습니다.' : '자리가 다 찼습니다.', 'your own code': '내가 만든 방입니다.', away: '방장이 잠시 자리를 비웠습니다.',
+      'wrong password': '비밀번호가 맞지 않습니다.', locked: '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요', kicked: '방장이 내보낸 방입니다.',
+      'not full': '빈자리가 있습니다', 'not ready': '아직 준비하지 않은 친구가 있습니다',
+    }[r.why] || none;
+  },
   /* 방 참가하기 (33-desk-play.js, the hall): the open rooms, asked again every four seconds while the hall is shown - each
      drawn as a table; one is taken by its id, with the password if it has one */
   listRooms() {
@@ -100,7 +108,7 @@ const invite = {
     const h = invite.host; if (!h || h.starting) return; h.starting = true;
     const r = await net.inviteStart(h.code); h.starting = false;
     if (r && r.ok && r.room) { clearTimeout(h.timer); invite.host = null; SND.good(); return ranked.found(r); }
-    toast(r && r.why === 'not full' ? '빈자리가 있습니다' : r && r.why === 'not ready' ? '아직 준비하지 않은 친구가 있습니다' : invite.why(r, '시작하지 못했습니다.'), 'foul', 2000);
+    toast(invite.why(r, '시작하지 못했습니다.'), 'foul', 2000);
   },
   // the host sends a friend away from a seat
   async kick(seat) {
@@ -156,7 +164,7 @@ const invite = {
     const r = await net.inviteWatch(room.id, pw);
     if (r && r.ok && r.watch) { invite.stopRooms(); closeSheet(); return ranked.watch(Object.assign({}, room, r)); }
     if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true, true);
-    toast(invite.why(r, '경기가 끝났습니다.'), 'foul', 2400); if (invite.rooms) invite.listRooms();
+    toast(invite.why(r, '경기가 끝났습니다.', true), 'foul', 2400); if (invite.rooms) invite.listRooms();
   },
   // the room's name: the host's own words, or '' for the server's '닉네임의 방'
   sheetTitle() {
