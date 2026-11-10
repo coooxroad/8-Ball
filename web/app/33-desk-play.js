@@ -194,15 +194,15 @@ function deskInvite(slate, _, m) {
   if (m === 'four') { const T = [5, 10, 15, 20, 30]; dkPut(slate, [dkLab('목표 점수'), dkStep(T, T.includes(prefs.fourTarget) ? prefs.fourTarget : 10, String, v => { prefs.fourTarget = v; repaint(); }), dkLab('마무리'), finishSeg(), ...minusSeg()]); }
   // 1:1 or 2:2 (owner 11-09: four, the empty seats the computer's if the host likes)
   dkPut(slate, [dkLab('인원'), dkSeg([[2, '1:1'], [4, '2:2']], invite.size, v => { invite.size = v; repaint(); }), ...fastSeg()]);
-  const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean));
-  if (four && h && h.seats) dkPut(slate, el('div', { class: 'seats' }, invite.seatRows(h.seats, 0, true)));
+  const four = invite.size === 4, full = !!(h && h.seats && h.seats.every(Boolean)), ready = full && h.seats.every((q, i) => !i || q.bot != null || q.ready);
+  if (h && h.seats) dkPut(slate, el('div', { class: 'seats' }, invite.seatRows(h.seats, 0, true)));
   // (copy audit 02-06, 02-07: one line for the state - open (the badge on the code says it is listed), opening, or why not)
-  dkPut(slate, [dkHr(), dkTxt(h ? (four ? (full ? '모두 모였습니다 · 시작하세요' : '빈자리에 친구가 오거나 컴퓨터를 넣으세요') : '친구가 들어오면 바로 시작') : invite.err && !invite.opening ? `방을 열지 못했습니다 (${invite.err})` : '방 여는 중…'),
+  dkPut(slate, [dkHr(), dkTxt(h ? (ready ? '모두 준비했습니다' : full ? '준비를 기다리는 중' : four ? '빈자리에 친구가 오거나 컴퓨터를 넣으세요' : '친구를 기다리는 중') : invite.err && !invite.opening ? `방을 열지 못했습니다 (${invite.err})` : '방 여는 중…'),
     // (the password is asked only of those who take the room from the list: the code is the invitation - 55-invite.js)
     dkRow(`방 이름 · ${invite.title || (h && h.title) || prefs.names[0] + '의 방'}`, '바꾸기', invite.sheetTitle),
     dkRow(invite.pw ? `비밀번호 ${'•'.repeat(invite.pw.length)}` : '비밀번호 없음', invite.pw ? '없애기' : '정하기', () => { if (invite.pw) { invite.pw = ''; repaint(); } else invite.sheetPw(null); }),
     addonCard()]);
-  dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', null, () => { invite.err = null; repaint(); }) : four && full ? dkMain('경기 시작', null, () => invite.start()) : dkMain('초대 링크 보내기', null, () => h && invite.share(h.code), !h),
+  dkPut(slate, dkActs(!h && invite.err ? dkMain('다시 시도', null, () => { invite.err = null; repaint(); }) : full ? dkMain('경기 시작', null, () => invite.start(), !ready) : dkMain('초대 링크 보내기', null, () => h && invite.share(h.code), !h),
     dkSec('방 나가기', () => { invite.leave(); prefs.friendWay = 'local'; repaint(); })));
 }
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터

@@ -136,6 +136,8 @@ const net = (() => {
     inviteLeave(code) { if (account) call('/v1/invite/leave', { code }); },
     inviteBot: (code, seat, level) => call('/v1/invite/bot', { code, seat, level }),
     inviteStart: code => call('/v1/invite/start', { code }),
+    inviteReady: (code, on) => call('/v1/invite/ready', { code, on: !!on }),
+    inviteKick: (code, seat) => call('/v1/invite/kick', { code, seat }),
     /* Linking devices to one account (server/src/link.js): a code from this device for another (make: { code, until }),
        or another device's code typed in here (use). Using one, this device takes a key of its own for that account; the
        account it had is put aside in acctOld with what it showed (never deleted), and the wallet is asked for at once. */

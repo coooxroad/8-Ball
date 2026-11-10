@@ -40,6 +40,8 @@ export class Lobby extends DurableObject {
       if (what === 'join' && body.id) { const c = I.byId(body.id, body.pw); if (!c.ok) return Response.json(c); body.code = c.code; }
       if (what === 'leave') return Response.json(I.leave(body.acct, body.code));
       if (what === 'bot') return Response.json(I.bot(body.acct, body.code, body.seat, body.level));
+      if (what === 'ready') return Response.json(I.ready1(body.acct, body.code, body.on));
+      if (what === 'kick') return Response.json(I.kick(body.acct, body.code, body.seat));
       if (what === 'join' || what === 'start') {
         const r = what === 'start' ? I.start(body.acct, body.code) : I.join(body, body.code);
         if (r.ok && r.init) {

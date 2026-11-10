@@ -12,7 +12,7 @@ const invite = {
   pw: '',                     // the room's password (방 생성하기: '' none) - asked of whoever takes it from the list
   title: '',                  // the room's name ('' - the server's '닉네임의 방')
   size: 2,                    // 1:1 (2) or 2:2 (4) - the room's seats
-  seated: null,               // 2:2, a friend's room this player sits in, waiting for its host to start: { code, seat, seats, timer }
+  seated: null,               // a friend's room this player sits in, waiting for its host to start: { code, seat, seats, size, timer }
   rooms: null,                // the list of open rooms (방 참가하기): { at, list, err, timer }
   rulesOf(mode) {
     const r = mode === 'three' ? { target: prefs.target, cushions: prefs.rule3 } : mode === 'four' ? Object.assign({ target: prefs.fourTarget, hugu: true }, prefs.finish ? { finish: finishPref() } : {}, prefs.fourMinus === false ? { minus: false } : {}) : {};
@@ -62,11 +62,11 @@ const invite = {
     toast('입장 중…', '', 1400);
     const r = await net.inviteJoin(code);
     if (r && r.ok && r.room) { invite.leave(); closeSheet(); return ranked.found(r); }
-    if (r && r.ok && r.waiting && r.size === 4) { invite.leave(); return invite.sit(r); }
+    if (r && r.ok && r.waiting) { invite.leave(); closeSheet(); return invite.sit(r); }
     toast(invite.why(r, '그런 코드의 방이 없습니다.'), 'foul', 2400);
   },
   why: (r, none) => !r ? '서버 응답 없음' : r.why === 'update' ? '업데이트 후 참가할 수 있습니다.' : r.why === 'taken' || r.why === 'playing' ? '이미 시작한 방입니다.' : r.why === 'not playing' ? '아직 시작하지 않은 방입니다.' : r.why === 'full' ? '관전 자리가 다 찼습니다.'
-    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요' : none,
+    : r.why === 'your own code' ? '내가 만든 방입니다.' : r.why === 'away' ? '방장이 잠시 자리를 비웠습니다.' : r.why === 'wrong password' ? '비밀번호가 맞지 않습니다.' : r.why === 'locked' ? '비밀번호를 너무 많이 틀렸습니다 · 코드로 참가하세요' : r.why === 'kicked' ? '방장이 내보낸 방입니다.' : none,
   /* 방 참가하기 (33-desk-play.js, the hall): the open rooms, asked again every four seconds while the hall is shown - each
      drawn as a table; one is taken by its id, with the password if it has one */
   listRooms() {
@@ -85,7 +85,7 @@ const invite = {
     toast('입장 중…', '', 1400);
     const r = await net.inviteJoinId(room.id, pw);
     if (r && r.ok && r.room) { invite.stopRooms(); closeSheet(); return ranked.found(r); }
-    if (r && r.ok && r.waiting && r.size === 4) { invite.stopRooms(); return invite.sit(r); }
+    if (r && r.ok && r.waiting) { invite.stopRooms(); closeSheet(); return invite.sit(r); }
     if (r && r.why === 'wrong password' && room.lock) return invite.sheetPw(room, true);
     toast(invite.why(r, '방이 닫혔습니다.'), 'foul', 2400); if (invite.rooms) invite.listRooms();
   },
@@ -95,38 +95,59 @@ const invite = {
     const r = await net.inviteBot(h.code, seat, on ? Math.min(3, prefs.level || 2) : -1);
     if (r && r.ok) { h.seats = r.seats; repaint(); } else toast(invite.why(r, '자리를 바꾸지 못했습니다.'), 'foul', 2000);
   },
+  // the host starts (owner 11-10: a friend coming in no longer starts the game) - every seat filled and every friend ready
   async start() {
     const h = invite.host; if (!h || h.starting) return; h.starting = true;
     const r = await net.inviteStart(h.code); h.starting = false;
     if (r && r.ok && r.room) { clearTimeout(h.timer); invite.host = null; SND.good(); return ranked.found(r); }
-    toast(r && r.why === 'not full' ? '빈자리가 있습니다' : invite.why(r, '시작하지 못했습니다.'), 'foul', 2000);
+    toast(r && r.why === 'not full' ? '빈자리가 있습니다' : r && r.why === 'not ready' ? '아직 준비하지 않은 친구가 있습니다' : invite.why(r, '시작하지 못했습니다.'), 'foul', 2000);
   },
-  /* 2:2, seated in a friend's room: the four seats, until its host starts - asked every two seconds; getting up leaves */
+  // the host sends a friend away from a seat
+  async kick(seat) {
+    const h = invite.host; if (!h) return;
+    const r = await net.inviteKick(h.code, seat);
+    if (r && r.ok) { h.seats = r.seats; repaint(); } else toast(invite.why(r, '내보내지 못했습니다.'), 'foul', 2000);
+  },
+  // seated: ready, or not
+  async ready(on) {
+    const S = invite.seated; if (!S) return;
+    S.ready = on; invite.sheetSeats();
+    const r = await net.inviteReady(S.code, on);
+    if (invite.seated !== S) return;
+    if (r && r.ok) { S.seats = r.seats; invite.sheetSeats(); } else { S.ready = !on; invite.sheetSeats(); }
+  },
+  /* seated in a friend's room: the seats, until its host starts - asked every two seconds; ready said with a key; getting up
+     leaves */
   sit(r) {
-    const S = invite.seated = { code: r.code, seat: r.seat, seats: r.seats, timer: 0 };
+    const S = invite.seated = { code: r.code, seat: r.seat, seats: r.seats, size: r.size || 2, ready: false, timer: 0 };
     invite.sheetSeats();
     const ask = () => { S.timer = setTimeout(async () => {
       if (invite.seated !== S) return;
       const q = await net.inviteAsk(S.code);
       if (invite.seated !== S) return;
       if (q && q.ok && q.room) { invite.seated = null; closeSheet(); SND.good(); return ranked.found(q); }
-      if (!q || !q.ok) { invite.seated = null; closeSheet(); return toast('방이 닫혔습니다.', 'foul', 2200); }
+      if (!q || !q.ok) { invite.seated = null; closeSheet(); return toast(q && q.why === 'kicked' ? '방장이 내보냈습니다.' : '방이 닫혔습니다.', 'foul', 2200); }
       if (JSON.stringify(q.seats) !== JSON.stringify(S.seats)) { S.seats = q.seats; S.seat = q.seat; invite.sheetSeats(); }
       ask();
     }, 2000); };
     ask();
   },
   stand() { const S = invite.seated; if (!S) return; clearTimeout(S.timer); invite.seated = null; net.inviteLeave(S.code); },
-  // the seats as rows: the side, who sits there (or empty), and for the host a key to put the computer in or take it out
+  // the seats as rows: the side (2:2), who sits there (or empty) and whether they are ready, and for the host a key to put
+  // the computer in an empty seat (2:2) or take it out, and to send a friend away
   seatRows(seats, me, host) {
-    return seats.map((q, i) => el('div', { class: 'dk-row seat' + (i % 2 ? ' b' : ' a') + (i === me ? ' me' : '') }, [
-      el('span', { class: 'dk-txt' }, [el('i', { class: 'side', text: i % 2 ? 'B' : 'A' }), document.createTextNode(q ? (q.bot != null ? `컴퓨터 · ${LEVELS[q.bot] || ''}` : q.name + (i === me ? ' (나)' : '')) : '빈자리')]),
-      host && i > 0 && (!q || q.bot != null) ? el('button', { class: 'dk-chip', text: q ? '빼기' : '컴퓨터', onclick: onTap(() => invite.bot(i, !q)) }) : null]));
+    const four = seats.length === 4;
+    return seats.map((q, i) => host && !four && !i ? null : el('div', { class: 'dk-row seat' + (four ? (i % 2 ? ' b' : ' a') : '') + (i === me ? ' me' : '') + (q && q.ready ? ' ready' : '') }, [
+      el('span', { class: 'dk-txt' }, [four ? el('i', { class: 'side', text: i % 2 ? 'B' : 'A' }) : null, document.createTextNode(q ? (q.bot != null ? `컴퓨터 · ${LEVELS[q.bot] || ''}` : q.name + (i === me ? ' (나)' : '')) : '빈자리')]),
+      i > 0 && q && q.bot == null ? el('em', { class: 'rdy' + (q.ready ? ' on' : ''), text: q.ready ? '준비' : '대기' }) : null,
+      host && i > 0 && four && (!q || q.bot != null) ? el('button', { class: 'dk-chip', text: q ? '빼기' : '컴퓨터', onclick: onTap(() => invite.bot(i, !q)) }) : null,
+      host && i > 0 && q && q.bot == null ? el('button', { class: 'dk-chip', text: '내보내기', onclick: onTap(() => invite.kick(i)) }) : null]));
   },
   sheetSeats() {
     const S = invite.seated; if (!S) return;
-    openSheet('2:2 · 대기', [el('div', { class: 'seats' }, invite.seatRows(S.seats, S.seat, false)),
-      flatBtn('나가기', () => { invite.stand(); closeSheet(); })]);
+    openSheet(S.size === 4 ? '2:2 · 대기' : '대기', [el('div', { class: 'seats' }, invite.seatRows(S.seats, S.seat, false)),
+      el('div', { class: 'row' }, [flatBtn('나가기', () => { invite.stand(); closeSheet(); }),
+        el('button', { class: 'btn cta' + (S.ready ? ' on' : ''), text: S.ready ? '준비 취소' : '준비', onclick: () => { SND.tap(); invite.ready(!S.ready); } })])]);
   },
   // a game being played, from the list: watched (with the password if the room has one)
   async watch(room, pw) {
@@ -180,13 +201,13 @@ const invite = {
   },
   // the tray while inviting: me ready with my cue, the friend's place waiting (or them, come), the code to give
   tray(stage, m) {
-    const h = invite.host, cue = CUES[prefs.cues[0]] || CUES[0], g = h && h.guest;
+    const h = invite.host, cue = CUES[prefs.cues[0]] || CUES[0], g = h && (h.guest || (h.size !== 4 && h.seats && h.seats[1]));
     stage.dataset.win = '0';
     const slot = (who, sub, kids, cls) => el('div', { class: 'inv-slot' + (cls ? ' ' + cls : '') }, [el('div', { class: 'well' }, kids), el('b', { text: who }), el('small', { text: sub })]);
     dkPut(stage, el('div', { class: 'inv' }, [
       el('div', { class: 'inv-slots' }, [
         slot(prefs.names[0], '', [el('i', { class: 'ok', role: 'img', 'aria-label': '준비 완료' }), el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), ballPic(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0, { class: 'ball' })]),
-        slot(g ? g.name : '친구', g ? '입장 완료' : '친구 기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
+        slot(g ? g.name : '친구', g ? (g.ready === false ? '준비 전' : '준비 완료') : '친구 기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
       // (copy audit 02-06, 02-08: the code once, with a badge saying the room is in the list and a copy icon)
       el('div', { class: 'inv-code' }, [el('span', { text: '참가 코드' }), el('b', { text: h ? h.code : '······' }), h ? el('em', { class: 'pub', text: invite.pw ? '공개 · 비밀번호' : '공개' }) : null,
         (() => { const b = el('button', { class: 'cp', disabled: h ? null : '', 'aria-label': '참가 코드 복사', onclick: onTap(() => h && invite.copy(h.code, '참가 코드')) }); b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'; return b; })()])]));

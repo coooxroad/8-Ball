@@ -11,13 +11,15 @@
    POST /v1/invite/open { mode, rules, name, icon, gear } a game with a friend: a code ({ code }); then
    POST /v1/invite/ask  { code }                      (every 2 s) { waiting } or the room, as /v1/queue
    POST /v1/invite/peek { code }                      what a code is: { mode, rules, host }
-   POST /v1/invite/join { code, name, icon, gear }    the friend takes the other seat: the room
+   POST /v1/invite/join { code, name, icon, gear }    a friend takes a seat: { waiting, seat, seats } (then ask, ready)
    POST /v1/invite/leave { code }                     the host gives up waiting
    POST /v1/invite/list  {}                           the listed rooms ({ rooms: [{ id, mode, rules, lock, host, playing?, guest? }] })
    POST /v1/invite/watch { id, pw }                   a listed game being played, to watch: { room, watch }
    (open takes size: 4 for 2:2 - friends join into seats and ask as the host does, { waiting, seats })
    POST /v1/invite/bot  { code, seat, level }         2:2: the host puts the computer in a seat (level -1: takes it out)
-   POST /v1/invite/start { code }                     2:2: the host starts, the four seats filled: the room
+   POST /v1/invite/start { code }                     the host starts, every seat filled and every friend ready: the room
+   POST /v1/invite/ready { code, on }                 a friend seated: ready or not
+   POST /v1/invite/kick  { code, seat }               the host sends a friend away (they cannot come back to this room)
    (open takes listed and pw too: the room shown in that list, with a password; join takes { id, pw } from the list)
    POST /v1/lessons { req, vol, proofs }              a volume of lessons all done: its prize
    POST /v1/nick    { nick }                          a member's name (2-10 characters)
@@ -168,7 +170,7 @@ async function frontDoor(request, env) {
     if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
     const vault = env.VAULT.get(env.VAULT.idFromName(m[1]));
-    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave|list|watch|start|bot)$/.exec(url.pathname);
+    const inv = /^\/v1\/invite\/(open|ask|peek|join|leave|list|watch|start|bot|ready|kick)$/.exec(url.pathname);
     if (inv) {
       const body = await request.json().catch(() => ({})), code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       if (inv[1] === 'open' && !MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
@@ -179,7 +181,7 @@ async function frontDoor(request, env) {
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const r = await env.LOBBY.get(env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/' + inv[1], { method: 'POST',
         body: JSON.stringify({ acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, rules: body.rules || null, code, near: nearOf(request),
-          size: body.size === 4 ? 4 : 2, seat: body.seat | 0, level: body.level == null ? null : body.level | 0, listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', title: typeof body.title === 'string' ? body.title.slice(0, 32) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
+          size: body.size === 4 ? 4 : 2, seat: body.seat | 0, on: !!body.on, level: body.level == null ? null : body.level | 0, listed: !!body.listed, pw: typeof body.pw === 'string' ? body.pw.slice(0, 12) : '', title: typeof body.title === 'string' ? body.title.slice(0, 32) : '', id: /^[0-9a-f]{12}$/.test(body.id || '') ? body.id : '' }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {

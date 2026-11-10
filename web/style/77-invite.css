@@ -48,3 +48,8 @@
 .seats .seat .dk-txt{display:flex;align-items:center;gap:8px;margin:0}
 .seats .seat .side{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font:800 12px/1 var(--ui-font);font-style:normal;color:#fff;background:#2f6fd6;flex:none}
 .seats .seat.b .side{background:#d64545}
+/* a friend seated: ready (준비) or not yet (대기) - the host starts once all are ready (owner 11-10) */
+.seats .seat .dk-txt{flex:1;min-width:0}
+.seats .seat .rdy{flex:none;font:800 11.5px/1 var(--ui-font);font-style:normal;padding:4px 9px;border-radius:99px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
+.seats .seat .rdy.on{background:#3aa864;color:#fff}
+.seats .seat.ready{box-shadow:inset 0 0 0 1.5px rgba(80,200,120,.7)}
