@@ -81,6 +81,9 @@ function addonCard() {
     [el('i', { class: 'sk' }), ico, el('b', { text: '애드온' }), el('small', { text: on.length ? on.join(' · ') : '없음' })]);
 }
 const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}${r && r.minus === false ? ' · 마이너스 없음' : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} · ${(r && r.target) || 5}점` : '';
+/* 플레이's boards: the menu (boards), 랭킹전's games or its search (rank), 친구와 플레이's three ways (friend), the add-ons
+   (addons) and the hall of open rooms (halls) - each painted by its own function below into the same frame (k: the frame
+   and what the steps share). A game set up (setup) is the slate's (deskMatch). */
 function deskPlay(d) {
   if (playStep === 'games') playStep = 'rank';
   if (playStep === 'setup') return deskMatch(d, false, () => { playStep = 'friend'; playFx = 'fan'; paintHome(); });   // (its X: back to the three ways)
@@ -92,7 +95,13 @@ function deskPlay(d) {
   const head = (title, sub, back, kids) => el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '뒤로', onclick: () => { if (playBusy) return; SND.tap(); back(); } }, el('i')), dkTitle(title, sub), kids ? el('span', { class: 'bd-tools' }, kids) : null]);
   const toBoards = () => { playStep = 'boards'; playFx = 'fan'; invite.stopRooms(); paintHome(); };
   const dama = net.me ? net.me.dama : ECONOMY.DAMA_START;
-  if (playStep === 'rank') {
+  const k = { wrap, fit, panel, tt, head, toBoards, dama };
+  (PLAY_STEPS[playStep] || PLAY_STEPS.boards)(k);
+  wrap.appendChild(fit); $('#desk').appendChild(wrap);
+  playEnter(wrap);
+}
+const PLAY_STEPS = {
+  rank({ wrap, fit, panel, tt, head, toBoards, dama }) {
     const f = ranked.finding;
     if (f) {
       // the game picked, turned over: the search for an opponent on its back
@@ -110,7 +119,8 @@ function deskPlay(d) {
       // (printed cards, as the menu's four are: owner 11-09 - they were cloth)
       dkPut(fit, ['four', 'three', 'eight', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'card game unf')));
     }
-  } else if (playStep === 'friend') {
+  },
+  friend({ wrap, fit, panel, tt, head, toBoards, dama }) {
     dkPut(wrap, head('친구와 플레이', '', toBoards));
     const way = (id, t, sub, fn, off) => panel('way-' + id, t, off ? () => toast('서버에 연결되면 할 수 있습니다.', '', 2000) : fn,
       [(() => { const i = el('span', { class: 'way-ico' }); i.innerHTML = WAY_ICO[id]; return i; })(), tt(t, sub)], 'card way unf' + (off ? ' soon' : ''));
@@ -118,12 +128,14 @@ function deskPlay(d) {
       way('local', '한 기기에서', null, b => playLeave(b, () => { prefs.friendWay = 'local'; invite.leave(); playStep = 'setup'; repaintLive(); })),
       way('make', '방 만들기', null, b => playLeave(b, () => { prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }), !net.on),
       way('join', '방 참가', null, b => playLeave(b, () => { playStep = 'halls'; playFx = 'hall'; invite.listRooms(); paintHome(); }), !net.on)]);
-  } else if (playStep === 'addons') {
+  },
+  addons({ wrap, fit, panel, tt, head, toBoards, dama }) {
     // the add-ons: long cards, one under another, out of the middle as the others' are (owner 11-10: more will come)
     const done = keep => { if (keep && addonDraft) { prefs.addons = addonDraft; savePrefs(); } addonDraft = null; playStep = 'setup'; repaintLive(); };
     dkPut(wrap, head('애드온', '', () => done(false), [el('button', { class: 'dk-chip', text: '저장', onclick: onTap(() => done(true)) })]));
     dkPut(fit, ADDONS.map(addonPanel));
-  } else if (playStep === 'halls') {
+  },
+  halls({ wrap, fit, panel, tt, head, toBoards, dama }) {
     // the hall: the desk's wood gone to the hall's floor, each open room a table on it
     app.classList.add('hall');
     const R = invite.rooms; if (!R) invite.listRooms();
@@ -158,7 +170,8 @@ function deskPlay(d) {
     else if (!list) dkPut(fit, el('div', { class: 'tb-none wait' }, [el('i', { class: 'sp', 'aria-hidden': 'true' }), el('b', { text: '방 찾는 중…' })]));
     else dkPut(fit, el('div', { class: 'tb-none' }, [el('b', { text: '열린 방 없음' }),
       el('button', { class: 'dk-chip', text: '방 만들기', onclick: onTap(() => { invite.stopRooms(); prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }) })]));
-  } else {
+  },
+  boards({ wrap, fit, panel, tt, head, toBoards, dama }) {
     // (5.0: plain blocks of the shop's two colours - ivory and charcoal - with only words on them for now; pictures come
     // back one by one, drawn to match. 투어 and the shop's window are gone: 챌린지 and 아케이드 in their places.)
     const soon = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
@@ -173,10 +186,8 @@ function deskPlay(d) {
       panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'card soon unf'),
       panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, 'ONLINE'),
         el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
-  }
-  wrap.appendChild(fit); $('#desk').appendChild(wrap);
-  playEnter(wrap);
-}
+  },
+};
 // inviting a friend: the code open on the server while this shows; the tray shows the two places and the code
 // 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
 const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
