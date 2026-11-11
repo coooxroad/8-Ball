@@ -110,11 +110,28 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
   `72-lessons` 교본·연습, `75-play-panels` 플레이 패널, `80-broadcast` 대결 중계 화면. 파일 끝에 덧붙이지 말고 관련 규칙 옆에.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
+  아케이드는 `33-desk-arcade.js`(`ARCADE_STEPS`가 플레이의 `PLAY_STEPS`에 들어간다; 증강 카드·궁극기는 `ARCADE`의 한 줄씩, 스타일은 `76-play-arcade.css`).
 - 새 버튼은 `onTap(fn)`(소리 깨우기·딸깍·실행)으로 단다.
 
 ### 레슨 추가
 `web/drills.js`의 `list`에 항목을 더한다(형식은 파일 맨 위). `vol`(종목 교본)과 `course`(교본 색)를 정하면 훈련 · 레슨에
 나온다. `test/run.js`가 모든 단계·모든 테이블에서 시범 샷이 정말 성공하는지 확인한다.
+
+### 종목 추가 (스누커가 본보기)
+- `web/game.js`의 `MODES`에 하나: `setup`·`status`·`badge`·`legal`·`ctx`·`evaluate`, 필요하면 `after`(점수 뒤: 다음 공·끝),
+  `respotAt`(공을 돌려놓을 자리), `cueHome`·`zone`/`inZone`/`toZone`(큐볼을 놓는 구역, `g.placing` 이름으로: `g.placeOk`·`g.toPlace`를 앱과 AI가 쓴다).
+  파울 점수를 상대에게: `evaluate`가 `give`. 점수로 끝나는 종목은 `scored: true`(결과 화면·기록이 점수를 쓴다).
+- 테이블이 새것이면 `web/tables.js`에 규격(`cfg.kind`가 장면의 공 세트·표시 이름, `physics.js`의 `P.KIND`), `physicsFor`와 앱 `usePhysics`에 한 줄.
+- 장면: `scene/30-balls.js` `sets`에 공 세트, `ballTexture`에 그 공 그림, `20-table.js` `tableBed`에 표시(스누커: `snookerMarks`).
+- 앱: `30-home.js` `MODE_KO`, 어디서 고르는지(`32-desk.js` `FRIEND_GAMES` 등), 레일 아이콘 `ui/mode-<id>.webp`.
+  값이 없는 종목은 `economy.js` `PER_POINT`에 없으면 코인 0이고 서버로 보내지 않는다. 방(서버 `index.js` `MODES`)·랭킹전·컴퓨터는 따로.
+- `test/run.js`에 끝까지 가는 판 검사를 더한다(스누커 블록).
+
+### 빛 (scene/10-room.js)
+테이블 위 램프는 당구대 비율(2:1)의 직사각형 하나: 테이블은 그 아래 스포트 3개(그림자), 공·큐는 `RectAreaLight` 하나(공마다 직사각형
+반사 하나)로 비춘다. three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을 더했다(`ccRectArea`). 그 표 데이터는
+`scene/02-ltc.js`(만드는 도구 `tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외).
+게임의 빛 값은 `LIGHT0`(소유자가 디버그로 고른 값). 반사용 방(`buildEnv`)의 박스도 같은 비율·같은 면적.
 
 ### 하이라이트 편집 추가
 `web/reel/`에 `NN-이름.js`를 만들고 `STYLES.이름 = { name, init, step, ... }`을 넣는다. 다른 편집 파일은 건드리지 않는다.

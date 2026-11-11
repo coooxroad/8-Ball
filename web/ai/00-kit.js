@@ -18,12 +18,13 @@
   // the stroke speeds written below were found on the old, slower cloth; on PHYS_V 8's a ball runs as far at about these
   // fractions of them (pool 0.7, carom 0.55 - measured: the speed that runs as far as the old one did)
   const PACE = { pool: 0.7, carom: 0.55 };
-  // a cue ball in hand behind the head string (after a scratch on the break, game.js): where it may go, and a free spot there
-  const inHand = x => g.placing !== 'kitchen' || x <= -g.P.HL / 2;
+  // a cue ball in hand behind the head string (after a scratch on the break) or in a zone (game.js placeOk): where it may go,
+  // and a free spot there
+  const inHand = (x, y) => g.placeOk(x, y);
   function handSpot(x, y) {
     const P = g.P, w = g.world; if (g.placing === 'kitchen') x = Math.min(x, -P.HL / 2 - P.R);
     const q = P.isFree(w, x, y, w.cue) ? [x, y] : P.findFree(w, x, y, w.cue);
-    return inHand(q[0]) ? q : P.findFree(w, -P.HL / 2 - 0.12, 0, w.cue);
+    return inHand(q[0], q[1]) ? q : P.findFree(w, -P.HL / 2 - 0.12, 0, w.cue);
   }
   function gauss() { let u = 0; for (let i = 0; i < 6; i++) u += Math.random(); return (u - 3) / Math.sqrt(0.5); }
   // a copy of the table with the stroke played out: what happened (world.ev)

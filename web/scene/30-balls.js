@@ -300,11 +300,15 @@
   }
   // the shadows' markers into the two drawings: each one on show, in the order the balls are
   const blobM = new THREE.Matrix4();
+  // (a set not on the table, already empty, is left alone: nothing to send the GPU)
   function blobSync(set, on) {
     const [ci, li] = set.ims; let nc = 0, nl = 0;
+    if (!on && !ci.count && !li.count) return;
     if (on) for (const s of set.blob) {
       if (!s.visible) continue;
-      s.children.forEach((o, k) => { blobM.compose(o.position, o.quaternion, o.scale); if (k) li.setMatrixAt(nl++, blobM); else ci.setMatrixAt(nc++, blobM); });
+      const [c, l] = s.children;
+      blobM.compose(c.position, c.quaternion, c.scale); ci.setMatrixAt(nc++, blobM);
+      blobM.compose(l.position, l.quaternion, l.scale); li.setMatrixAt(nl++, blobM);
     }
     ci.count = nc; li.count = nl; ci.visible = nc > 0; li.visible = nl > 0;
     ci.instanceMatrix.needsUpdate = li.instanceMatrix.needsUpdate = true;

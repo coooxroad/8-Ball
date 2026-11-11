@@ -321,8 +321,8 @@
     if (!tables.has(P)) tables.set(P, buildTable(P));
     for (const [k, grp] of tables) grp.visible = k === P;
     for (const set of Object.values(sets)) { for (const m of set.mesh) m.visible = false; for (const m of set.blob) m.visible = false; }
-    const set = sets[P.KIND];
-    for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
+    // (a pool table's size changes its balls': the contact shadows are sized again; the lamp's is sized every frame - 90-frame.js)
+    for (const s of sets[P.KIND].blob) s.children[0].scale.set(P.R * 2.7, P.R * 2.7, 1);
     // the lamps hang over this table's long axis
     placeLamps(); putFloor(); hall.scale.set(2 * P.HL * 0.92, 1, 1);
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);

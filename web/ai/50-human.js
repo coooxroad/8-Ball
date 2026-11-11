@@ -77,7 +77,7 @@
         const gx = T.x - dx * 2 * P.R, gy = T.y - dy * 2 * P.R, spots = g.placing ? [] : [null];
         if (g.placing) for (const length of [0.28, 0.48]) for (const da of [0, 0.35, -0.35]) {
           const x = gx - (dx * Math.cos(da) - dy * Math.sin(da)) * length, y = gy - (dx * Math.sin(da) + dy * Math.cos(da)) * length;
-          if (P.isFree(w, x, y, w.cue) && (g.placing !== 'kitchen' || x <= -P.HL / 2)) spots.push([x, y]);
+          if (P.isFree(w, x, y, w.cue) && g.placeOk(x, y)) spots.push([x, y]);
         }
         for (const pos of spots) {
           const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, l = Math.hypot(gx - x, gy - y), cos = ((gx - x) * dx + (gy - y) * dy) / Math.max(l, 1e-9);

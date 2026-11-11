@@ -160,7 +160,7 @@
       if (g.placing) {
         for (const dist of [0.32, 0.5, 0.75]) for (const da of [0, 0.3, -0.3, 0.55, -0.55]) {
           const ca = Math.cos(da), sa = Math.sin(da), px = gx - (dx * ca - dy * sa) * dist, py = gy - (dx * sa + dy * ca) * dist;
-          if (P.isFree(w, px, py, 0) && inHand(px)) spots.push([px, py]);
+          if (P.isFree(w, px, py, 0) && inHand(px, py)) spots.push([px, py]);
         }
       } else spots.push([c.x, c.y]);
       for (const s of spots) {
@@ -191,7 +191,7 @@
     for (const T of order) {
       const spots = [];
       if (g.placing) {
-        for (const [ox, oy] of [[-0.3, 0], [0.3, 0], [0, -0.3], [0, 0.3]]) if (P.isFree(w, T.x + ox, T.y + oy, 0) && inHand(T.x + ox)) { spots.push([T.x + ox, T.y + oy]); if (spots.length === 2) break; }
+        for (const [ox, oy] of [[-0.3, 0], [0.3, 0], [0, -0.3], [0, 0.3]]) if (P.isFree(w, T.x + ox, T.y + oy, 0) && inHand(T.x + ox, T.y + oy)) { spots.push([T.x + ox, T.y + oy]); if (spots.length === 2) break; }
         if (!spots.length) spots.push(handSpot(T.x - 0.3, T.y));
       } else spots.push(null);
       for (const pos of spots) {
