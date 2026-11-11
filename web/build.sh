@@ -80,8 +80,9 @@ cp fonts/*.woff2 "$A/fonts/"
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
 # (the emoji of the quick emotes: Microsoft Fluent Emoji, MIT - its license goes with them)
 mkdir -p "$A/ui/emoji"; cp ui/emoji/*.webp ui/emoji/LICENSE-fluentui-emoji.txt "$A/ui/emoji/"
-# the shelf cards and the invite screen also use these textures as files
-rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/ball-*.webp tex/carpet-geo.webp "$A/tex/"
+# the one texture the page's CSS uses as a file (the play room's carpet); the rest live only inside the page as TEXTURES
+# (the balls' pictures were copied here too, for shelf cards that now photograph the balls instead: scene.ballPortrait)
+rm -rf "$A/tex"; mkdir -p "$A/tex"; cp tex/carpet-geo.webp "$A/tex/"
 # the music (lobby, win, lose; see music/README.md)
 rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 # the web version installed as an app (site/): its name, icon and full-screen display
