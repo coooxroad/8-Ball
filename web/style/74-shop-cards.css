@@ -25,3 +25,36 @@
 #app.desk .dk-cards.pc .dk-card .price{margin-bottom:10px;background:#f4ecd8;color:#2b241c}
 #app.desk .dk-cards.pc .dk-card .ovr{z-index:4}
 #app.desk .dk-cards.pc .dk-card.worn::after{inset:-3px;border-radius:13px}
+
+/* An aurora at the foot of every card (owner 11-11: the cards looked too still), in its rarity's colours and growing with
+   it - 일반 a faint cold light, 시크릿 every colour. It is the card's background: it lies under the white line, the picture and
+   the name (the card is a stacking context of its own, the aurora below everything in it), inside the frame (the frame is
+   the card's border; the aurora fills the padding box and is cut to it). Two curtains drift past each other by transform
+   only, so the cards move without being painted again; a card's place in the row sets it off from its neighbours. */
+#app.desk .dk-cards.pc .dk-card{isolation:isolate;--a1:#bfe9ff;--a2:#8fd3c9;--a3:#d9e4ef;--ao:.5}
+#app.desk .dk-cards.pc .dk-card.r1{--a1:#4fd8ff;--a2:#3d7bff;--a3:#8ff0e0;--ao:.62}
+#app.desk .dk-cards.pc .dk-card.r2{--a1:#d06bff;--a2:#7a5cff;--a3:#ff8fe3;--ao:.72}
+#app.desk .dk-cards.pc .dk-card.r3{--a1:#ff4d6d;--a2:#ff9a3d;--a3:#ff7ad1;--ao:.8}
+#app.desk .dk-cards.pc .dk-card.r4{--a1:#ffd34d;--a2:#ff9a1f;--a3:#fff1a8;--ao:.86}
+#app.desk .dk-cards.pc .dk-card.r5{--a1:#ff5d6c;--a2:#4f9bff;--a3:#5fe08a;--a4:#b072ff;--a5:#ffc23a;--ao:.95}
+#app.desk .dk-cards.pc .dk-card .aur{position:absolute;inset:0;z-index:-1;flex:none;width:auto;min-height:0;margin:0;border-radius:10px;overflow:hidden;pointer-events:none;
+  -webkit-mask-image:linear-gradient(0deg,#000 0%,#000 38%,transparent 86%);mask-image:linear-gradient(0deg,#000 0%,#000 38%,transparent 86%)}
+/* (an aurora's curtain: faint upright rays over its glow, drifting with it) */
+#app.desk .dk-cards.pc .dk-card .aur::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 2px,transparent 2px 7px,rgba(255,255,255,.07) 7px 8px,transparent 8px 13px);mix-blend-mode:overlay;opacity:calc(var(--ao) * .9);
+  -webkit-mask-image:linear-gradient(0deg,#000 0%,transparent 55%);mask-image:linear-gradient(0deg,#000 0%,transparent 55%)}
+#app.desk .dk-cards.pc .dk-card .aur>span{position:absolute;left:-60%;width:220%;bottom:-6%;height:72%;opacity:var(--ao);mix-blend-mode:screen;will-change:transform;
+  transform-origin:50% 100%;animation:dkAur 11s ease-in-out infinite alternate}
+#app.desk .dk-cards.pc .dk-card .aur>span:first-child{
+  background:radial-gradient(ellipse 15% 70% at 22% 100%,var(--a1),transparent 72%),radial-gradient(ellipse 12% 85% at 46% 100%,var(--a2),transparent 70%),
+    radial-gradient(ellipse 16% 62% at 70% 100%,var(--a3),transparent 72%),radial-gradient(ellipse 10% 78% at 88% 100%,var(--a1),transparent 70%)}
+#app.desk .dk-cards.pc .dk-card .aur>span:last-child{height:58%;animation-duration:15s;animation-direction:alternate-reverse;
+  background:radial-gradient(ellipse 13% 80% at 12% 100%,var(--a2),transparent 70%),radial-gradient(ellipse 15% 64% at 36% 100%,var(--a3),transparent 72%),
+    radial-gradient(ellipse 11% 88% at 60% 100%,var(--a1),transparent 70%),radial-gradient(ellipse 15% 70% at 82% 100%,var(--a2),transparent 72%)}
+#app.desk .dk-cards.pc .dk-card.r5 .aur>span:first-child{
+  background:radial-gradient(ellipse 14% 72% at 18% 100%,var(--a1),transparent 72%),radial-gradient(ellipse 12% 86% at 38% 100%,var(--a5),transparent 70%),
+    radial-gradient(ellipse 14% 66% at 58% 100%,var(--a3),transparent 72%),radial-gradient(ellipse 12% 80% at 78% 100%,var(--a2),transparent 70%),radial-gradient(ellipse 10% 70% at 94% 100%,var(--a4),transparent 70%)}
+#app.desk .dk-cards.pc .dk-card:nth-child(3n) .aur>span{animation-delay:-4s}
+#app.desk .dk-cards.pc .dk-card:nth-child(3n+1) .aur>span{animation-delay:-8.5s}
+#app.desk .dk-cards.pc .dk-card:nth-child(2n) .aur>span:last-child{animation-delay:-11s}
+@keyframes dkAur{0%{transform:translateX(-14%) scaleY(.82)}35%{transform:translateX(-3%) scaleY(1.06)}70%{transform:translateX(7%) scaleY(.9)}100%{transform:translateX(15%) scaleY(1.1)}}
+@media (prefers-reduced-motion:reduce){#app.desk .dk-cards.pc .dk-card .aur>span{animation:none}}
