@@ -57,7 +57,7 @@ const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-2
    ADMIN_EMAILS_SHA256 (wrangler.toml: SHA-256 of each address, lower case - the address itself is not in the code).
    POST /v1/admin/find  { q }                          accounts by name or id (the directory lobby: vault.js listed)
    POST /v1/admin/view  { acct }                       one account: balances, rating, items, ledger, recent games
-   POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, why }   give or take; set the rating (core.js adminGrant)
+   POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, debug, why }   give or take; set the rating; debug mode on or off (core.js adminGrant)
    GET  /v1/admin/catalog                              every item there is, to give */
 export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
 /* Or a password (owner 11-10: on a phone or tablet the Google window would not let another account be chosen without

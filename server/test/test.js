@@ -611,6 +611,10 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(!v.adminGrant({ by: 'admin', coin: 50, dama: 99999 }).ok && v.me().coin === 4000, 'admin: one bad part, none of it done');
   const w = v.adminView();
   ok(w.ok && w.admin.length === 5 && w.admin[0].did.startsWith('dama') && w.ledger.some(l => /^admin · 보상/.test(l.what)) && w.me.save === undefined, 'admin: the view has the log and the ledger');
+  ok(v.me().debug === false, 'admin: debug mode off to begin with');
+  ok(v.adminGrant({ by: 'admin', debug: true }).ok && v.me().debug === true && v.me().coin === 4000, 'admin: debug mode turned on, nothing else changed');
+  ok(!v.adminGrant({ by: 'admin', debug: true }).ok, 'admin: debug already on is nothing to do');
+  ok(v.adminGrant({ by: 'admin', debug: false }).ok && v.me().debug === false, 'admin: debug mode turned off');
   const { Directory } = await import('../src/directory.js');
   const D = new Directory(sqlOf().sql), A = 'ab'.repeat(16), B = 'cd'.repeat(16);
   D.put({ acct: A, nick: '큐대장', joined: true, dama: 1200, coin: 10, dia: 1 }); D.put({ acct: B, nick: '초보', dama: 1000 });

@@ -62,6 +62,8 @@ export class VaultCore {
       // a member (signed up with Google: link.js) and their nickname; the tutorial's prize taken; the progress kept here
       // for the account's other devices (the app's own: lessons, puzzles - save())
       joined: !!this.get('joined'), nick: this.get('nick', null), tut: !!this.get('tut'), save: this.get('save', null),
+      // debug mode, turned on for this account in the admin console (adminGrant debug): the app's 디버그 settings
+      debug: !!this.get('debug'),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
       solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
   }
@@ -131,14 +133,14 @@ export class VaultCore {
   }
   /* The admin console (index.js /v1/admin, web/admin.html, /admin on the site): everything about this account at a look, and what an admin
      gives or sets - coins and diamonds (either way, never below nothing), an item, the rating - each written in the ledger
-     with who did it and why. */
+     with who did it and why. And the account's debug mode (debug: true | false) - the app shows its debug settings. */
   adminView() {
     const me = this.me(), led = this.sql.exec(`SELECT at, what, coin, dia FROM ledger ORDER BY n DESC LIMIT 30`).toArray();
     const games = this.sql.exec(`SELECT at, kind, mode, paid, status FROM matches ORDER BY n DESC LIMIT 20`).toArray();
     const bought = this.sql.exec(`SELECT kind, id, at FROM owned ORDER BY at DESC`).toArray();
     return { ok: true, me: Object.assign({}, me, { save: undefined }), since: this.get('since', 0), ledger: led, games, bought, admin: this.get('adminLog', []) };
   }
-  adminGrant({ by, why, coin, dia, kind, id, dama, take }) {
+  adminGrant({ by, why, coin, dia, kind, id, dama, take, debug }) {
     const note = `${String(by || 'admin').slice(0, 40)}${why ? ' · ' + String(why).slice(0, 80) : ''}`, did = [];
     // (all of it checked before any of it is done: a refusal leaves the account as it was)
     const v = dama != null && dama !== '' ? Math.round(+dama) : null;
@@ -159,6 +161,7 @@ export class VaultCore {
       if (v != null) {
         did.push(`dama ${this.get('dama', E.ECONOMY.DAMA_START)} -> ${v}`); this.set('dama', v);
       }
+      if (typeof debug === 'boolean' && debug !== !!this.get('debug')) { this.set('debug', debug); did.push(`debug ${debug ? 'on' : 'off'}`); }
       if (!did.length) return { ok: false, why: 'nothing to do' };
       const log = this.get('adminLog', []); log.unshift({ at: Date.now(), by: String(by || ''), why: String(why || ''), did: did.join(', ') }); this.set('adminLog', log.slice(0, 50));
       return { ok: true, did, me: this.me() };

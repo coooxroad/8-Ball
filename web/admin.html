@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>CUE 관리자</title>
-<!-- The admin console (owner, 11-09): find an account, give or take coins, diamonds and items, set the rating.
+<!-- The admin console (owner, 11-09): find an account, give or take coins, diamonds and items, set the rating, turn its
+     debug mode on or off (owner 11-11: the app's 디버그 settings, app/20-sheets.js sheetDebug).
      Signed in with Google; the server lets only the addresses in ADMIN_EMAILS_SHA256 through (server/src/index.js
      adminRoute) and writes each change in that account's ledger and admin log (core.js adminGrant). -->
 <style>
@@ -53,6 +54,9 @@
   #gbtn { display: inline-block; min-height: 44px; margin-top: 12px; }
   label.small { font-size: 12px; color: var(--dim); display: block; margin: 8px 0 4px; }
   [hidden] { display: none !important; }
+  label.debug { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #0f141a; cursor: pointer; font-size: 14px; }
+  label.debug input { width: 18px; height: 18px; accent-color: var(--gold); align-self: center; }
+  label.debug .muted { font-size: 12px; flex-basis: 100%; }
 </style>
 </head>
 <body>
@@ -92,6 +96,7 @@
         <div class="stat"><b id="sDama">-</b><span>레이팅</span></div>
         <div class="stat"><b id="sSince">-</b><span>생성일</span></div>
       </div>
+      <label class="debug"><input type="checkbox" id="fDebug"> <b>디버그 모드</b> <span class="muted">켜면 이 계정의 게임 설정에 '디버그' 메뉴(빛 조정)가 생깁니다. 앱이 서버와 다시 이야기할 때(앱을 다시 열 때 등) 반영됩니다.</span></label>
     </div>
 
     <div class="grid2">
@@ -221,6 +226,7 @@ function show(v) {
   $('#dNick').textContent = m.nick || '(이름 없음)'; $('#dJoined').textContent = m.joined ? '구글 가입' : '게스트';
   $('#dAcct').textContent = cur; $('#sCoin').textContent = num(m.coin); $('#sDia').textContent = num(m.dia); $('#sDama').textContent = num(m.dama);
   $('#sSince').textContent = v.since ? new Date(v.since).toLocaleDateString('ko-KR') : '-'; $('#fDama').value = m.dama;
+  $('#fDebug').checked = !!m.debug;
   const rar = (k, id) => ((catalog.items[k] || []).find(q => q.id === id) || {}).rarity || 0;
   $('#owned').innerHTML = v.bought.length ? v.bought.map(b => `<span class="tag r${rar(b.kind, b.id)}" title="${when(b.at)}">${KIND_KO[b.kind] || b.kind} · ${esc(itemName(b.kind, b.id))}</span>`).join('') : '<span class="muted">없음 (기본 아이템만)</span>';
   const sign = n => n ? `<span class="${n > 0 ? 'plus' : 'minus'}">${n > 0 ? '+' : ''}${num(n)}</span>` : '';
@@ -238,7 +244,7 @@ $('#fKind').onchange = fillItems;
 const WHY = { 'too much': '한 번에 너무 많습니다', 'not enough': '잔액보다 많이 뺄 수 없습니다', 'no such item': '없는 아이템입니다', 'bad rating': '레이팅 범위를 벗어났습니다', 'nothing to do': '바뀐 것이 없습니다 (이미 가지고 있거나 없음)', 'no such account': '없는 계정입니다' };
 async function grant(body, what) {
   if (!cur) return;
-  if (!confirm(`${$('#dNick').textContent}에게: ${what}\n적용할까요?`)) return;
+  if (!confirm(`${$('#dNick').textContent}에게: ${what}\n적용할까요?`)) return open(cur);
   const r = await api('grant', Object.assign({ acct: cur }, body));
   if (!r.ok) return toast(WHY[r.why] || r.why || '실패', 'bad');
   toast('적용했습니다', 'good'); open(cur);
@@ -253,6 +259,8 @@ $('#itemForm').onsubmit = e => {
   if (!id) return;
   grant({ kind, id, take, why: $('#fWhy2').value }, `${KIND_KO[kind]} '${itemName(kind, id)}' ${take ? '회수' : '지급'}`);
 };
+// debug mode for this account (core.js adminGrant debug): the box shows what the server has; a cancelled change puts it back
+$('#fDebug').onchange = e => grant({ debug: e.target.checked, why: '디버그 모드' }, `디버그 모드 ${e.target.checked ? '켜기' : '끄기'}`);
 $('#damaForm').onsubmit = e => {
   e.preventDefault(); const dama = Math.round(+$('#fDama').value);
   if (!Number.isFinite(dama)) return;
