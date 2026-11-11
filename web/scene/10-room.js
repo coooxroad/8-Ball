@@ -22,22 +22,35 @@
     }, undefined, () => { texPending--; });
   }
 
-  /* reflections for the balls: a dim room with three lamp panels overhead */
-  (function env() {
+  /* Light that can be tuned (the app's 디버그 settings, owner 11-11: app/20-sheets.js sheetDebug; only on an account the admin
+     console has put in debug mode). Each is a multiplier on what the scene is built with (1: as built), but exposure (the
+     tone mapping's, as set), blur (how soft the reflections are: the room's blur) and gloss (the balls' lacquer roughness). */
+  const LIGHT0 = { exposure: 1, panel: 1, blur: 0.03, ballEnv: 1, gloss: 0.04, lamp: 1, fill: 1, rail: 1, metal: 1 };
+  let light = Object.assign({}, LIGHT0), envTex = null;
+  /* reflections for the balls: a dim room with the table's light overhead - one long box along the table, its underside a
+     lit panel and its sides glowing a little (as the light box over the table, hallLight; owner 11-11: one box, not three
+     panels - three gave every ball three pin-point glints in a row). Its lit area is the three panels' had, so the light the
+     room gives is as before. Built again when the panel's brightness or the blur is tuned (setLight). */
+  function buildEnv() {
     const es = new THREE.Scene(); es.background = new THREE.Color(0x0c0b0a);
+    const lit = (hex, k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) });
     const panel = (w, h, x, y, z, hex, k) => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lit(hex, k)); m.material.side = THREE.DoubleSide;
       m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m);
     };
-    panel(0.9, 0.5, -1.0, 0.25, 2.2, 0xfff4e2, 5); panel(0.9, 0.5, 0, 0.25, 2.3, 0xfff4e2, 5); panel(0.9, 0.5, 1.0, 0.25, 2.2, 0xfff4e2, 5);
+    const side = lit(0xfff4e2, 1.2 * light.panel), under = lit(0xfff4e2, 5 * light.panel);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.56, 0.14), [side, side, side, side, lit(0x16171a, 1), under]);   // (-z, the underside, faces the table)
+    box.position.set(0, 0, 2.3); es.add(box);
     panel(6, 2.5, 0, 5, 1.2, 0x6a5a4a, 0.5); panel(6, 2.5, 0, -5, 1.2, 0x4a4038, 0.4);
-    const pm = new THREE.PMREMGenerator(renderer);
-    scene.environment = sScene.environment = pm.fromScene(es, 0.03).texture; pm.dispose();
-  })();
+    const pm = new THREE.PMREMGenerator(renderer), t = pm.fromScene(es, light.blur).texture; pm.dispose();
+    es.traverse(o => { if (o.isMesh) { o.geometry.dispose(); [].concat(o.material).forEach(m => m.dispose()); } });
+    scene.environment = sScene.environment = t; if (envTex) envTex.dispose(); envTex = t;
+  }
+  buildEnv();
 
-  const lampObjs = [];
+  const lampObjs = [], fills = [];
   for (const sc of [sScene, scene]) {
-    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi);
+    const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi); fills.push(hemi);
     for (const [x, y, z] of LAMPS) {
       const lamp = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1);
       lamp.position.set(x, y, z); lamp.target.position.set(x, y, 0);
@@ -47,6 +60,19 @@
       }
       sc.add(lamp, lamp.target); lampObjs.push(lamp);
     }
+  }
+  /* the tuned light put on (o: some of LIGHT0's keys; null or {}: as built). Called by the app only, after everything is made. */
+  function setLight(o) {
+    const next = Object.assign({}, LIGHT0);
+    for (const k in LIGHT0) if (o && Number.isFinite(+o[k])) next[k] = +o[k];
+    const room = next.panel !== light.panel || next.blur !== light.blur; light = next;
+    renderer.toneMappingExposure = light.exposure;
+    for (const l of lampObjs) l.intensity = 0.58 * light.lamp;
+    for (const h of fills) h.intensity = 0.27 * light.fill;
+    woodMat.envMapIntensity = 0.7 * light.rail; metalMat.envMapIntensity = 1.3 * light.metal; chromeMat.envMapIntensity = 1.4 * light.metal;
+    for (const set of [sets.pool, sets.carom]) if (set.skin) for (const m of set.mesh) finishOf(set.skin, m.material);
+    if (room) { buildEnv(); if (shotScene) shotScene.environment = scene.environment; }
+    staticDirty = true; dirty = 3;
   }
   // the static layer and the full-screen quad that shows it
   let rt = null, staticDirty = true;

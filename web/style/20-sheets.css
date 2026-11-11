@@ -60,3 +60,9 @@
 /* the account (20-sheets.js sheetLinkMake): its short id, and a link code shown large enough to read across a table */
 .acct-id{font:600 14px var(--num);letter-spacing:.06em;color:var(--sub)}
 .linkcode{margin:8px 0 2px;text-align:center;font:700 40px/1.1 var(--num);letter-spacing:.14em;color:var(--fg);user-select:all;-webkit-user-select:all}
+/* 디버그 (20-sheets.js sheetDebug): the table shows through - no dimming, the sheet docked to the right and scrolling */
+#sheet.see,#app.desk #sheet.see{background:none;place-items:stretch end;pointer-events:none}
+#sheet.see .sheet{pointer-events:auto;width:min(100%,330px);max-height:100%;overflow:auto;gap:10px}
+.dbg .lab{display:flex;justify-content:space-between;gap:10px}
+.dbg-v{font-family:var(--num);font-weight:700}
+.dbg-r{width:100%;margin:0;accent-color:#c9a46a}

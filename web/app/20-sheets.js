@@ -1,5 +1,5 @@
 /* ================= sheets ================= */
-function openSheet(title, kids) { $('#sheetTitle').textContent = title; const b = $('#sheetBody'); b.textContent = ''; for (const k of [].concat(kids)) if (k) b.appendChild(k); $('#sheet').hidden = false; }
+function openSheet(title, kids) { $('#sheet').classList.remove('see'); $('#sheetTitle').textContent = title; const b = $('#sheetBody'); b.textContent = ''; for (const k of [].concat(kids)) if (k) b.appendChild(k); $('#sheet').hidden = false; }
 function closeSheet() { $('#sheet').hidden = true; }
 $('#sheetX').addEventListener('click', () => { SND.tap(); closeSheet(); });
 $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
@@ -26,9 +26,41 @@ function sheetSettings() {
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
     net.on ? el('div', { class: 'row' }, [flatBtn('다른 기기 연결', sheetLinkMake), flatBtn('코드로 연결', sheetLinkUse)]) : null,
+    net.debug ? flatBtn('디버그', sheetDebug) : null,
     el('div', { class: 'row' }, [flatBtn('크레딧', sheetCredits), flatBtn('약관 · 개인정보', () => window.open('https://danguuu.com/privacy', '_blank', 'noopener'))]),
     note('CUE 4.0'),
   ]);
+}
+/* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). The table's light, to
+   tune by eye: each slider is put on the table at once (scene.setLight, scene/10-room.js), kept on this device
+   (prefs.light), and used only while the account is in debug mode - out of it, the light is as built. The sheet lets the
+   table show through (no dimming, docked to one side). '값 복사' copies the numbers, to be made the game's own. */
+const LIGHT_UI = [
+  ['exposure', '노출 (전체 밝기)', 0.3, 1.6, 0.05], ['panel', '반사 조명판 밝기', 0, 2, 0.05], ['blur', '반사 흐림', 0, 0.2, 0.005],
+  ['ballEnv', '공 반사 세기', 0, 2, 0.05], ['gloss', '공 하이라이트 퍼짐', 0.01, 0.5, 0.01], ['lamp', '램프 (직사광)', 0, 2, 0.05],
+  ['fill', '주변광', 0, 2, 0.05], ['rail', '레일 광택 반사', 0, 2, 0.05], ['metal', '포켓 황동 · 크롬 반사', 0, 2, 0.05],
+];
+function lightApply() { scene.setLight(net.debug ? prefs.light : null); }
+lightApply();
+function sheetDebug() {
+  const L = Object.assign({}, scene.LIGHT0, prefs.light || {}), shown = {};
+  const put = (k, v, now) => { L[k] = v; shown[k].textContent = (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
+  const row = ([k, label, min, max, step]) => {
+    shown[k] = el('b', { class: 'dbg-v' });
+    // (the room's reflections are made again for the panel and the blur: on letting go, not at every step of the drag)
+    const later = k === 'panel' || k === 'blur', r = el('input', { type: 'range', class: 'dbg-r', min, max, step, value: L[k] });
+    r.addEventListener('input', () => put(k, r.value, !later)); r.addEventListener('change', () => put(k, r.value, true));
+    put(k, L[k], false);
+    return el('div', { class: 'field dbg' }, [el('div', { class: 'lab' }, [el('span', { text: label }), shown[k]]), r]);
+  };
+  openSheet('디버그 · 빛', [
+    note('경기 중에 열면 테이블을 보면서 조정할 수 있습니다. 바꾼 값은 이 기기에만, 디버그 모드에서만 쓰입니다.'),
+    ...LIGHT_UI.map(row),
+    el('div', { class: 'row' }, [flatBtn('기본값으로', () => { prefs.light = null; savePrefs(); lightApply(); sheetDebug(); }),
+      flatBtn('값 복사', () => { const t = JSON.stringify(scene.light); try { navigator.clipboard.writeText(t).then(() => toast('복사했습니다', 'good', 1600), () => toast(t, '', 6000)); } catch (e) { toast(t, '', 6000); } })]),
+    flatBtn('뒤로', sheetSettings),
+  ]);
+  $('#sheet').classList.add('see');
 }
 /* 크레딧: what the game uses that others made, with their licenses (owner 11-09) */
 function sheetCredits() {

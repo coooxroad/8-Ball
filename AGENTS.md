@@ -119,9 +119,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 ### 하이라이트 편집 추가
 `web/reel/`에 `NN-이름.js`를 만들고 `STYLES.이름 = { name, init, step, ... }`을 넣는다. 다른 편집 파일은 건드리지 않는다.
 
-### 디버그 이름
-이름을 `이환컴퍼니`(07-net.js `DEBUG_NAME`)로 하면 그 기기에서 모든 아이템과 퍼즐 단계가 풀린다(`debugOn()`). 서버의 코인·보유는 건드리지 않는다.
-새로 제한을 만들면 `debugOn()`일 때 풀리게 한다.
+### 디버그 모드
+관리자 페이지(`/admin`)에서 계정마다 "디버그 모드"를 켠다(서버 `core.js` `adminGrant({ debug })`, `me().debug`). 앱은 `net.debug`로 알고,
+설정에 "디버그" 메뉴(`20-sheets.js` `sheetDebug`)를 보인다. 지금은 빛 조정(`scene.setLight`, `scene/10-room.js` `LIGHT0`)만 있다 —
+값은 그 기기의 `prefs.light`에, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다. 코인·보유는 풀지 않는다.
 
 ### 저장 데이터
 `localStorage`의 `dp8.*` 모양을 바꾸면 옛 저장본을 읽는 줄도 같이 넣는다(`app/00-state.js`의 `prefs`). 전적과 진행이 날아가면 안 된다.

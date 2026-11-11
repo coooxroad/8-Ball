@@ -73,6 +73,7 @@ const net = (() => {
   // what the server says now; announce: say so when coins came in that were not answered for at once (a match checked later)
   function setMe(m, announce) {
     const was = me; me = m; store.set('me', m); prefs.wallet = { coin: m.coin, dia: m.dia };
+    if (!!(was && was.debug) !== !!m.debug) lightApply();   // (debug mode came or went in the admin console: the tuned light with it)
     // (only the coins or diamonds moved and the shop is not open: the two numbers change, the desk is not built again)
     const bare = x => JSON.stringify(Object.assign({}, x, { coin: 0, dia: 0 }));
     if (was && bare(was) === bare(m) && !(st.screen === 'home' && deskTab === 'shop')) { savePrefs(); walletPaint(); return; }
@@ -119,8 +120,10 @@ const net = (() => {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   return {
     get on() { return !!SERVER; }, get me() { return me; }, get trouble() { return trouble; }, troubleText, owns, flush,
-    // the name changed: debug may have come or gone, so what is worn is looked at again
+    // the name changed: what is worn is looked at again
     renamed() { if (me) setMe(me); },
+    // this account is in debug mode (turned on in the admin console, web/admin.html): the 디버그 settings are shown
+    get debug() { return !!(me && me.debug); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
     claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
     // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)

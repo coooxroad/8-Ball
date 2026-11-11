@@ -47,6 +47,7 @@ const prefs = (() => {
     fourMinus: true,                   // 4구 with a friend: a foul costs a point (마이너스 점수 있음) or nothing
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
+    light: null,                       // the light tuned in the 디버그 settings (20-sheets.js sheetDebug; used in debug mode only)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;

@@ -155,8 +155,8 @@
   function finishOf(k, mat) {
     const f = k.finish || {};
     if (mat.userData.env0 == null) mat.userData.env0 = mat.envMapIntensity;
-    mat.envMapIntensity = mat.userData.env0 * (f.env || 1);                        // (env: how strongly it mirrors the room - a gem, more)
-    mat.roughness = f.rough != null ? f.rough : 0.2; mat.metalness = f.metal || 0; mat.clearcoat = f.coat != null ? f.coat : 1; mat.clearcoatRoughness = f.coat != null && f.coat < 0.5 ? 0.4 : 0.04;
+    mat.envMapIntensity = mat.userData.env0 * (f.env || 1) * light.ballEnv;        // (env: how strongly it mirrors the room - a gem, more; light: tuned, 10-room.js)
+    mat.roughness = f.rough != null ? f.rough : 0.2; mat.metalness = f.metal || 0; mat.clearcoat = f.coat != null ? f.coat : 1; mat.clearcoatRoughness = f.coat != null && f.coat < 0.5 ? 0.4 : light.gloss;
     let b = null;
     if (k.holes) b = holeBump(k);
     else if (f.bump && TEXS['ball-' + f.bump]) { b = bumpTex[f.bump]; if (!b) { b = bumpTex[f.bump] = loader.load(TEXS['ball-' + f.bump], () => { dirty = 3; staticDirty = true; }); } }
