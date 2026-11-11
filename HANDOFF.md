@@ -554,6 +554,14 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
   ② `app/50-match.js` `finish()`(83줄)에서 전적 기록(`countResult`)·선수 칸(`resultPlayers`)·기록 막대(`resultStats`)·하이라이트 카드(`resultHighlights`) 분리.
   ③ 아무도 안 읽던 `KIND_KO`(07-net.js) 삭제. 참고: 이 환경에서 npm 레지스트리 접속이 안 돼 `npm install`은 실패했지만 서버 검사는 의존성 없이 통과.
   취향 결정이 필요한 제안: 없음.
+- **11-12 새벽 (7회, 03:41대, 이어받기 모드 — 6-16에 남은 칸이 '그 뒤: 정리' 하나, 마지막 커밋이 2시간 전. 계속 하는 일이라 체크 안 함)**:
+  ① 다크 테마 잔재 정리(7절 '작은 잔재'): `#app[data-theme="dark"]` 변수를 `#app`에, `.ball`·`#badge`의 다크 규칙을 본 규칙에 합치고
+  페이지의 `data-theme` 삭제. `styles.js` 55화면 계산 스타일 같음(랭킹전 화면 하나는 요소 수가 실행마다 달라지는 것 — CSS와 무관).
+  ② `35-desk-shelves.js` `shelfPage`(58줄) → `shelfCards`·`shelfCard`·`shelfBuy`, `07-net.js` 계정 바꾸기 두 벌 → `takeAccount`.
+  상점·내 장비 카드 열기·구매·장착 화면 그대로 확인. ③ 빌드가 공 그림(`tex/ball-*.webp`, 204KB)을 assets/tex에 파일로도 복사하던 것을
+  뺌 — 페이지는 `TEXTURES`(data URI)만 읽는다. APK·웹 204KB 가벼워짐.
+  측정: 헤드리스에서 한 프레임의 JS 시간은 조준 0.3ms·샷 0.0~0.3ms·3D 0.2ms(중간값) — JS 쪽 프레임 최적화 여지는 거의 없다.
+  취향 결정이 필요한 제안: 없음.
 
 ## 6-17. 2026-11-11 밤 ~ 11-12 새벽 (소유자 자는 동안, v4.0.242~)
 
@@ -587,7 +595,7 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
 - 장갑을 경기 화면에 보여 줄지(아이디어 단계).
 - 3구도 시작 배치를 굴릴지(소유자: "필요하면").
 - 친구 추가와 방 목록 잇기(계정이 생기면), 방 목록의 방 이름·인원 등은 아직 없음.
-- 작은 잔재: `#app[data-theme="dark"]` CSS 변수 블록(테마는 하나뿐이라 합칠 수 있다), `.github/pull_request_template.md`(소유자 답 없음).
+- 작은 잔재: `.github/pull_request_template.md`(소유자 답 없음).
 
 ## 8. 함정 (실제로 겪은 것)
 
