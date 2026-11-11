@@ -105,7 +105,7 @@
   // the colour a ball's path is drawn in: the ball's own, lifted a little towards white so that a dark ball still shows
   const lift = (h, k) => { const r = h >> 16 & 255, g = h >> 8 & 255, b = h & 255; return Math.round(r + (255 - r) * k) << 16 | Math.round(g + (255 - g) * k) << 8 | Math.round(b + (255 - b) * k); };
   // (on the carom table the white and the yellow change balls with the frame - 30-balls.js caromY - so the colour follows the yellow)
-  const pathCol = (table, id) => lift(table === 'carom' ? (id < 2 ? (id === caromY ? 0xf4c20d : 0xf4efe2) : 0xd3241c) : id === 0 ? 0xf4efe2 : ballHex(id), 0.22);
+  const pathCol = (table, id) => lift(table === 'carom' ? (id < 2 ? (id === caromY ? 0xf4c20d : 0xf4efe2) : 0xd3241c) : table === 'snooker' ? SNOOKER.hex[SNOOKER.kind(id)] : id === 0 ? 0xf4efe2 : ballHex(id), 0.22);
   // practice target: where the cue ball should come to rest
   const zone = new THREE.Group(); zone.visible = false; scene.add(zone);
   zone.add(new THREE.Mesh(new THREE.CircleGeometry(1, 56), new THREE.MeshBasicMaterial({ color: col(0xffd21f), transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false })));

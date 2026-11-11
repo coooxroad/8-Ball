@@ -125,6 +125,7 @@ function paintBadge(name, b) {
   const badge = $('#badge'); badge.textContent = '';
   badge.appendChild(el('b', { text: name })); badge.appendChild(document.createTextNode(b.text));
   for (const id of b.balls || []) badge.appendChild(ballChip(id, b.plain ? '' : id === b.mark ? 'box-shadow:0 0 0 2px #ffd21f' : 'opacity:.55'));
+  if (b.sub) badge.appendChild(el('small', { class: 'bsub', text: b.sub }));   // (스누커: the points still on the table)
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
@@ -134,7 +135,7 @@ function drawShot(cv, shot) {
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const g = cv.getContext('2d'), P = game.P, pad = 5 * dpr, k = Math.min((cv.width - 2 * pad) / (2 * P.HL), (cv.height - 2 * pad) / (2 * P.HW));
   const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k, carom = game.mode.table === 'carom';
-  const colOf = i => carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i < 2 && game.yellow === 0 ? 1 - i : i] : i === shot.snap.cue ? '#ffffff' : ballCss(i);
+  const colOf = i => carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i < 2 && game.yellow === 0 ? 1 - i : i] : i === shot.snap.cue ? '#ffffff' : game.mode.table === 'snooker' ? SNOOKER.css(i) : ballCss(i);
   g.fillStyle = hex(CLOTHS[prefs.cloth].felt); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * dpr;
   g.fillRect(0, 0, cv.width, cv.height);                             // (the cloth right up to the little table's frame)
   g.beginPath(); g.rect(X(-P.HL), Y(P.HW), 2 * P.HL * k, 2 * P.HW * k); g.fill(); g.stroke();

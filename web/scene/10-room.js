@@ -116,7 +116,7 @@
     placeRectLamp();
     for (const h of fills) h.intensity = 0.27 * light.fill;
     woodMat.envMapIntensity = 0.7 * light.rail; metalMat.envMapIntensity = 1.3 * light.metal; chromeMat.envMapIntensity = 1.4 * light.metal;
-    for (const set of [sets.pool, sets.carom]) if (set.skin) for (const m of set.mesh) finishOf(set.skin, m.material);
+    for (const set of Object.values(sets)) if (set.skin) for (const m of set.mesh) finishOf(set.skin, m.material);
     if (room) { buildEnv(); if (shotScene) shotScene.environment = scene.environment; }
     staticDirty = true; dirty = 3;
   }

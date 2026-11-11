@@ -15,14 +15,15 @@ function guarded(e) {
 const humanAiming = () => st.screen === 'play' && st.phase === 'aim' && $('#sheet').hidden;
 // move a ball to where the finger is, sliding it round anything in the way
 function tryPlace(p, ball) {
-  const P = game.P, { R, HL, HW } = P, w = game.world, c = ball || game.cueBall(), kitchen = !ball && game.placing === 'kitchen';
+  // (the cue ball in hand keeps to where it may go - behind the head string, in 스누커's D: game.js placeOk, toPlace)
+  const P = game.P, { R, HL, HW } = P, w = game.world, c = ball || game.cueBall(), zone = !ball && game.placing && game.placing !== 'any';
   let x = Math.max(-HL + R, Math.min(HL - R, p.x)), y = Math.max(-HW + R, Math.min(HW - R, p.y));
-  if (kitchen) x = Math.min(x, -HL / 2);
+  if (zone) [x, y] = game.toPlace(x, y);
   if (P.isFree(w, x, y, c.id)) { c.x = c.px = x; c.y = c.py = y; return; }
   for (const b of w.balls) {
     if (!b.on || b.id === c.id) continue;
     const d = Math.hypot(x - b.x, y - b.y);
-    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (!kitchen || nx <= -HL / 2)) { c.x = c.px = nx; c.y = c.py = ny; } return; }
+    if (d < 2 * R + 0.001 && d > 1e-6) { const k = (2 * R + 0.0012) / d, nx = b.x + (x - b.x) * k, ny = b.y + (y - b.y) * k; if (P.isFree(w, nx, ny, c.id) && (!zone || game.placeOk(nx, ny))) { c.x = c.px = nx; c.y = c.py = ny; } return; }
   }
 }
 // is this table position on the cue (or the cue ball it points at)?

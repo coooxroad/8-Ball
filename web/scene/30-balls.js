@@ -20,6 +20,8 @@
       g.fillRect(0, 0, W, rad); g.fillRect(0, H - rad, W, rad);
     };
     const plain = bgc => { g.fillStyle = bgc; g.fillRect(0, 0, W, H); };
+    // 스누커: the standard balls - each one plain colour, no number (tables.js SNOOKER; its set always wears these: dressSet)
+    if (kind === 'snooker') { plain(hex(SNOOKER.hex[SNOOKER.kind(n)])); return tex(c); }
     if (kind === 'carom') {
       if (n === 0) sk.dots ? dots(ivory, '#c8201b', 0.11 / Math.PI * H) : plain(ivory);
       else if (n === 1) sk.dots ? dots(hex(sk.yel), '#b3261e', 0.11 / Math.PI * H) : plain(hex(sk.yel));
@@ -322,7 +324,7 @@
     for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
     return { mesh, blob, R, ims, kind, skin: null, lod: 0, small: false };
   }
-  const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R) };
+  const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R), snooker: ballSet('snooker', 22, PH.snooker.R) };
   // another ball set: each ball's picture drawn again (the meshes stay)
   let caromY = 1;                                                     // which carom ball wears the yellow (frame)
   // (each set is dressed - its pictures drawn, its shape made - when it is next drawn: a set not on the table waits, and
@@ -336,14 +338,17 @@
     const t = ballTexture(kind, i); if (quality !== 'low') return t;
     const c = t.image, s = mkCanvas(c.width / 2, c.height / 2); s.getContext('2d').drawImage(c, 0, 0, s.width, s.height); t.dispose(); return tex(s);
   }
+  // (스누커's set is always the standard balls - a ball set is drawn for pool and carom only: the classic set's finish)
   function dressSet(set, lod) {
-    if (set.skin === skin && set.lod === lod && set.q === quality) return;
-    if (set.skin !== skin || set.q !== quality) {
-      set.mesh.forEach((m, i) => { const old = m.material.map; dressBall(m, skin, lod); m.material.map = ballMap(set.kind, i); m.material.needsUpdate = true; if (old) old.dispose(); });
-      set.skin = skin; set.q = quality; if (set === sets.carom) caromY = 1;
+    const want = set.kind === 'snooker' ? BALLSKINS[0] : skin;
+    if (set.skin === want && set.lod === lod && set.q === quality) return;
+    if (set.skin !== want || set.q !== quality) {
+      const keep = skin; skin = want;
+      set.mesh.forEach((m, i) => { const old = m.material.map; dressBall(m, want, lod); m.material.map = ballMap(set.kind, i); m.material.needsUpdate = true; if (old) old.dispose(); });
+      skin = keep; set.skin = want; set.q = quality; if (set === sets.carom) caromY = 1;
     } else for (const m of set.mesh) {
-      if ((skin.finish || {}).facets) continue;
-      m.geometry = geomOf(skin, lod); const ol = m.userData.outline; if (ol) ol.geometry = m.geometry;
+      if ((want.finish || {}).facets) continue;
+      m.geometry = geomOf(want, lod); const ol = m.userData.outline; if (ol) ol.geometry = m.geometry;
     }
     set.lod = lod; dirty = 3;
   }

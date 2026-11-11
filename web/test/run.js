@@ -496,5 +496,31 @@ for (const name of ['bar', 'pro', 'pub']) {
   if (!(Math.abs(guideEnd({ squirt: true }) - sq({ squirt: true })) < 0.3 && Math.abs(guideEnd(null)) < 0.3)) fail(`guide with squirt: ${guideEnd({ squirt: true }).toFixed(2)}° (the shot ${sq({ squirt: true }).toFixed(2)}°), without ${guideEnd(null).toFixed(2)}°`);
   console.log(`현실 당구: squirt ${sq({ squirt: true }).toFixed(2)}°, throw ${thr.toFixed(2)}°, cue ${near.toFixed(1)}° over a ball behind`);
 }
+// 스누커 (game.js MODES.snooker): frames of loosely aimed shots (any power, any spin, now and then at the wrong ball) all
+// come to an end; the colours are never down when they should be on their spots; the D is kept to; a foul gives at least 4
+{
+  const { SNOOKER } = require(path.join(W, 'tables.js'));
+  let frames = 0, shots = 0;
+  for (let s = 1; s <= 4; s++) {
+    const g = createGameRaw({ snooker: createPhysics(SNOOKER.cfg) }), r = createGameRaw.seededRandom(s);
+    g.start('snooker', ['A', 'B'], false, { rnd: r });
+    let n = 0;
+    while (!g.over && n < 3000) {
+      n++; const w = g.world, c = g.cueBall(), on = g.legal().filter(i => w.balls[i].on);
+      if (g.placing) { const [x, y] = g.toPlace(c.x + 0.5, c.y + 0.4); if (!g.placeOk(x, y)) { fail(`snooker: the cue ball brought into the ${g.placing} is not in it`); break; } }
+      const t = on.length && r() < 0.9 ? w.balls[on[Math.floor(r() * on.length)]] : w.balls[1 + Math.floor(r() * 21)];
+      g.beginShot(); g.P.strike(w, Math.atan2(t.y - c.y, t.x - c.x) + (r() - 0.5) * 0.08, 0.6 + r() * 3.2, (r() - .5) * .4, (r() - .5) * .4); g.P.run(w, 60);
+      const before = g.players.map(p => p.score), mover = g.turn, out = g.resolve(); shots++;
+      if (out.r.foul && g.players[1 - mover].score - before[1 - mover] < 4) fail(`snooker: a foul gave less than 4 (seed ${s})`);
+      if (!g.over) for (let id = 16; id <= 21; id++) if (!w.balls[id].on && (g.snk.on !== 'clear' || id >= g.snk.next)) fail(`snooker: colour ${id} down out of its turn (seed ${s})`);
+    }
+    if (!g.over) fail(`snooker: a frame did not end (seed ${s})`); else frames++;
+  }
+  // the points on the table at the start: fifteen reds with a black each, and the colours
+  const g = createGameRaw({ snooker: createPhysics(SNOOKER.cfg) }); g.start('snooker', ['A', 'B'], false, { rnd: createGameRaw.seededRandom(1) });
+  if (g.mode.left(g) !== 147) fail(`snooker: ${g.mode.left(g)} points on the table at the start, not 147`);
+  console.log(`snooker: ${frames} frames played to the end, ${shots} shots`);
+}
+
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

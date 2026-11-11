@@ -41,6 +41,7 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | dia | F2-diamond 160 | the diamond, the rare currency, in the wallet | – |
 | chip | F3, F4 currency chip 300x96 | the wallet's wells | slice 44 / 4 |
 | mode-three … mode-nine | H1 mode icons 128 | beside each game's name on the rail keys | – |
+| mode-snooker | a red and a black ball, drawn in code (Claude, 11-12) until a picture is made to match the others | beside 스누커 on the rail | – |
 | toggle-off, toggle-on | S1 200×96 | the settings' on/off switch (knob 45,45 → 155,45) | – |
 | divider | S3 600×12 | the brass line between settings rows | slice 6 l r |
 | streak | R3 220×80 | the "N연승" badge | slice 28 l r |

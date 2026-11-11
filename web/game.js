@@ -1,4 +1,4 @@
-/* Rules, turn flow and statistics for 8-ball, 9-ball, three-ball and four-ball carom. No DOM in here.
+/* Rules, turn flow and statistics for 8-ball, 9-ball, three-ball and four-ball carom, and snooker. No DOM in here.
    createGame(PH, makeAI): PH the physics of each table; makeAI (createAI, web/ai/) the computer player, left out where
    nobody plays against it (the server's replays). */
 // a chance from a seed: the same numbers on every device and on the server (a ranked game's rack and roll-out)
@@ -175,6 +175,109 @@ function createGame(PH, makeAI) {
   // ball hit both of the others - after it has met as many cushions as the chosen rule asks for (0, 1, or the full three).
   const RULE3 = { 0: '쿠션 없이도 인정', 1: '쿠션 1번 이상', 3: '쿠션 3번 이상' };
   // bed: three-ball is played on the match table - larger, with smaller balls - while four-ball keeps the medium one
+  /* 스누커 (owner 11-11; friends on one device only, for now). The balls: 0 the cue ball, 1-15 reds, 16-21 yellow .. black
+     (tables.js SNOOKER). A visit: a red, then a colour, then a red ... while reds are left (a colour potted then goes back
+     on its spot); then the colours in order, yellow to black, each staying down. Points: a red 1, the colours 2-7.
+     A foul gives the other player its value - at least 4, else the most of the ball on and the balls wrongly hit or potted -
+     and the other player plays from where the cue ball lies (from the D, if it went in). The colour to play needs no
+     nominating here: it is whichever colour the cue ball meets first (as friends play it), and potting another is a foul.
+     Not here (yet): free ball, the miss rule, putting the other back in, re-racks; a frame level after the black: the black
+     is spotted again and played from the D by the one who did not pot it, as the rules say (with no toss).
+     State: g.snk = { on: 'red' | 'colour' | 'clear', next: the colour to play in the clearance (16..21) }. */
+  const SN = () => typeof SNOOKER !== 'undefined' ? SNOOKER : require('./tables').SNOOKER;
+  const SNK_ON = { red: '빨간 공', colour: '색 공' };
+  MODES.snooker = {
+    id: 'snooker', name: '스누커', blurb: '빨간 공 다음 색 공, 점수가 더 많으면 승리', table: 'snooker', n: 22, ballInHand: false, scored: true,
+    setup(g, rnd) {
+      const S = SN(), P = g.P, { R } = P, w = g.world;
+      for (let id = 16; id <= 21; id++) { const [x, y] = S.spot(P, id); P.place(w, id, x, y, rnd); }
+      // the reds: a triangle of fifteen, its point just behind the pink, its base towards the black
+      const px = S.spot(P, 20)[0] + 2 * R + 0.002; let id = 1;
+      for (let r = 0; r < 5; r++) for (let k = 0; k <= r; k++) P.place(w, id++, px + r * SQ3 * R * 1.0006 + jit(rnd), (k - r / 2) * 2 * R * 1.0006 + jit(rnd), rnd);
+      const [bx] = S.spot(P, 18), d = S.D * P.HL / 1.7845;
+      P.place(w, 0, bx - d * 0.35, d * 0.45, rnd);
+      g.placing = 'd'; g.isBreak = true; g.snk = { on: 'red', next: 16 };
+    },
+    intro: () => '브레이크오프',
+    // in the D: behind the baulk line, inside its half circle (the cue ball in hand: setup, and after it went in)
+    zone(P) { const S = SN(), [xb] = S.spot(P, 18), d = S.D * P.HL / 1.7845; return { xb, d }; },
+    inZone(P, x, y) { const { xb, d } = this.zone(P); return x <= xb && Math.hypot(x - xb, y) <= d; },
+    toZone(P, x, y) { const { xb, d } = this.zone(P); x = Math.min(x, xb); const l = Math.hypot(x - xb, y); if (l > d - P.R * 0.2) { const k = (d - P.R * 0.2) / l; x = xb + (x - xb) * k; y *= k; } return [x, y]; },
+    redsLeft: g => g.world.balls.filter(b => b.on && b.id >= 1 && b.id <= 15).length,
+    // the points still on the table: what is left to win (the reds with a black each, then the colours)
+    left(g) { const s = g.snk || { on: 'red', next: 16 }, reds = this.redsLeft(g); let t = reds * 8 + (s.on === 'colour' ? 7 : 0); for (let id = s.on === 'clear' ? s.next : 16; id <= 21; id++) t += id - 14; return t; },
+    onIds(g) { const s = g.snk, w = g.world; return s.on === 'red' ? w.balls.filter(b => b.on && b.id >= 1 && b.id <= 15).map(b => b.id) : s.on === 'colour' ? [16, 17, 18, 19, 20, 21].filter(i => w.balls[i].on) : [s.next]; },
+    status(g, pi) { const s = g.snk; return { sub: g.turn === pi ? (s.on === 'clear' ? SN().name[s.next - 14] : SNK_ON[s.on]) : '', tray: [], pts: g.players[pi].score }; },
+    badge(g) { const s = g.snk; return { text: s.on === 'clear' ? '다음' : SNK_ON[s.on], balls: s.on === 'red' ? [1] : s.on === 'colour' ? [16, 17, 18, 19, 20, 21].filter(i => g.world.balls[i].on) : [s.next], plain: true, sub: `남은 점수 ${this.left(g)}` }; },
+    legal(g) { return this.onIds(g); },
+    ctx(g) { return { turn: g.turn, isBreak: g.isBreak, on: g.snk.on, next: g.snk.next }; },
+    evaluate(ev, c, g) {
+      const S = SN(), V = S.value, potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), fh = ev.firstHit;
+      const reds = potted.filter(i => i >= 1 && i <= 15), cols = potted.filter(i => i >= 16);
+      let foul = null, worst = 0, onV = 1, pts = 0;
+      const bad = (why, ...ids) => { if (!foul) foul = why; for (const i of ids) worst = Math.max(worst, V(i)); };
+      if (fh == null) bad('공을 하나도 맞히지 못했습니다');
+      if (c.on === 'red') {
+        if (fh != null && fh > 15) bad('빨간 공을 먼저 맞혀야 합니다', fh);
+        if (cols.length) bad('색 공이 들어갔습니다', ...cols);
+        pts = reds.length;
+      } else if (c.on === 'colour') {
+        if (fh != null && fh <= 15) bad('색 공을 먼저 맞혀야 합니다'); else if (fh != null) onV = V(fh);
+        if (reds.length) bad('빨간 공이 들어갔습니다');
+        const wrong = cols.filter(i => i !== fh); if (wrong.length) bad('맞힌 색 공이 아닌 공이 들어갔습니다', ...wrong);
+        if (fh != null && fh > 15) worst = Math.max(worst, V(fh));
+        pts = fh != null && fh > 15 && cols.includes(fh) ? V(fh) : 0;
+      } else {
+        onV = V(c.next);
+        if (fh != null && fh !== c.next) bad(`${S.name[c.next - 14]}을 먼저 맞혀야 합니다`, fh);
+        const wrong = potted.filter(i => i !== 0 && i !== c.next); if (wrong.length) bad('차례가 아닌 공이 들어갔습니다', ...wrong);
+        pts = potted.includes(c.next) ? V(c.next) : 0;
+      }
+      if (scratch) bad('큐볼이 포켓에 빠졌습니다');
+      const r = { foul, scratch, respot: [], win: null, why: '', assign: null, keep: false, pts: 0, give: 0 };
+      if (foul) r.give = Math.max(4, onV, worst); else { r.pts = pts; r.keep = pts > 0; }
+      // the colours that go back on their spots: every colour potted while reds were on the table or with a red owed its
+      // colour; in the clearance, only one potted on a foul (the one played for, potted fairly, stays down)
+      // (with only the black left, the first score or foul ends the frame: a black potted on a foul stays down)
+      r.last = c.on === 'clear' && c.next === 21;
+      r.respot = cols.filter(i => (c.on !== 'clear' || foul) && !(r.last && i === 21));
+      // what is on next, if the same player goes on (else after the turn passes: snookerNext)
+      r.snk = { on: c.on, next: c.next };
+      if (!foul && c.on === 'red' && pts) r.snk.on = 'colour';
+      else if (c.on === 'colour') r.snk.on = 'after';            // (a red if any are left, else the clearance: decided once the balls are put back)
+      else if (!foul && c.on === 'clear' && pts) r.snk.next = c.next + 1;
+      return r;
+    },
+    // after the points are counted: what is on, and whether the frame is over (resolve calls it)
+    after(g, r, me) {
+      // the break: the points of one visit (a foul or a miss ends it); the highest kept for the result
+      const p = g.players[me]; p.brk = r.keep ? (p.brk || 0) + r.pts : 0; p.topBrk = Math.max(p.topBrk || 0, p.brk);
+      const s = r.snk || g.snk, reds = this.redsLeft(g);
+      if (!r.keep && s.on === 'colour') s.on = 'after';            // (the turn passes after a red: the next player is on a red)
+      if (s.on === 'after' || (s.on === 'red' && !reds)) { s.on = reds ? 'red' : 'clear'; s.next = 16; }
+      if (s.on === 'red' && !reds) { s.on = 'clear'; s.next = 16; }
+      g.snk = s;
+      // the black down (or off the table) in the clearance: the frame is over - the higher score wins; level, the black again
+      if (s.on === 'clear' && (s.next > 21 || !g.world.balls[21].on || (r.last && (r.foul || r.pts)))) {
+        const a = g.players[0].score, b = g.players[1].score;
+        if (a !== b) { r.win = a > b ? 0 : 1; r.why = `${a} : ${b}`; r.plain = true; return; }
+        const P = g.P, w = g.world, [x, y] = this.respotAt(g, 21);
+        P.place(w, 21, x, y);
+        { const [cx, cy] = this.toZone(P, -P.HL, 0.05); const [fx, fy] = P.findFree(w, cx, cy, 0); P.place(w, 0, fx, fy); }
+        s.next = 21; r.again = true; r.keep = false; r.foul = r.foul || null;
+      }
+    },
+    // a colour back on its spot - or, taken, the highest free one; none free, as near its own as it can be towards the top cushion
+    respotAt(g, id) {
+      const S = SN(), P = g.P, w = g.world, free = ([x, y]) => P.isFree(w, x, y, id);
+      const own = S.spot(P, id); if (free(own)) return own;
+      for (let k = 21; k >= 16; k--) { const p = S.spot(P, k); if (free(p)) return p; }
+      for (let x = own[0]; x < P.HL - P.R; x += P.R * 0.5) if (free([x, own[1]])) return [x, own[1]];
+      return P.findFree(w, own[0], own[1], id);
+    },
+    cueHome(g) { const P = g.P, [x, y] = this.toZone(P, -P.HL, 0.05); return P.findFree(g.world, x, y, 0); },
+  };
+
   MODES.three = {
     id: 'three', name: '3구', blurb: '내 공으로 나머지 두 공을 다 맞히면 1점', table: 'carom', bed: 'carom3', n: 3, ballInHand: false, target: true, RULE3,
     setup(g, rnd) {
@@ -300,6 +403,10 @@ function createGame(PH, makeAI) {
     });
   };
   g.legal = () => g.mode.legal(g, g.turn);
+  /* where the cue ball in hand may go: anywhere, behind the head string (kitchen) or in the D (스누커): placeOk says
+     whether a spot is allowed, toPlace brings one into it */
+  g.placeOk = (x, y) => g.placing === 'kitchen' ? x <= -g.P.HL / 2 : g.placing === 'd' && g.mode.inZone ? g.mode.inZone(g.P, x, y) : true;
+  g.toPlace = (x, y) => g.placing === 'kitchen' ? [Math.min(x, -g.P.HL / 2), y] : g.placing === 'd' && g.mode.toZone ? g.mode.toZone(g.P, x, y) : [x, y];
   /* How far behind a player is, 0 (not, or too early to say) .. 1 (hopeless): what lets a person-like stand-in give up
      or play loosely (ai/53-temper.js), and what the server checks a stand-in's resignation against (server/src/ranked.js) -
      the one rule in one place, so the two can never disagree. Not before six shots in all and three of the player's own. */
@@ -375,8 +482,9 @@ function createGame(PH, makeAI) {
         for (const id of w.ev.off) if (id !== w.cue && !r.respot.includes(id)) r.respot.push(id);
       }
     }
-    for (const id of r.respot) { const [x, y] = P.findFree(w, P.HL / 2, 0, id); P.place(w, id, x, y); }
-    if (r.scratch) { const [x, y] = P.findFree(w, -P.HL / 2, 0, 0); P.place(w, 0, x, y); }
+    // (a mode with spots of its own puts its balls back there - 스누커's colours; the rest at the foot spot)
+    for (const id of r.respot) { const [x, y] = m.respotAt ? m.respotAt(g, id) : P.findFree(w, P.HL / 2, 0, id); P.place(w, id, x, y); }
+    if (r.scratch) { const [x, y] = m.cueHome ? m.cueHome(g) : P.findFree(w, -P.HL / 2, 0, 0); P.place(w, 0, x, y); }
     g.isBreak = false;
     p.shots++;
     if (r.foul) p.fouls++;
@@ -385,6 +493,8 @@ function createGame(PH, makeAI) {
     if (m.id === 'nine' && p.foulRun >= 3 && r.win == null) { r.win = 1 - me; r.why = '연속 파울 3번'; }
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
+    if (r.give) g.players[1 - me].score += r.give;                    // (스누커: a foul's points go to the other player)
+    if (m.after) m.after(g, r, me);                                   // (스누커: what is on next, and the frame's end)
     // (a game with a finish: the points alone do not end it - the finish does, through the mode's own win; they stop at the target)
     if (m.target && g.finish && m.FINISH) p.score = Math.min(p.score, g.targets[me]);
     else if (m.target && p.score >= g.targets[me]) { r.win = me; r.why = g.tens ? `수지 ${g.targets[me] * 10}점을 먼저 다 쳤습니다.` : `먼저 ${g.targets[me]}점을 냈습니다.`; r.plain = true; }
@@ -396,6 +506,7 @@ function createGame(PH, makeAI) {
     }
     if (g.chance != null && r.win === me && me !== g.chance) { g.over = { winner: null, draw: true, why: '후구 · 무승부', plain: false }; return out; }
     if (r.win != null) { g.over = { winner: r.win, why: r.why, plain: !!r.plain }; return out; }   // (plain: an ordinary end the score says already)
+    if (r.again) { g.turn = 1 - me; g.placing = 'd'; p.run = 0; out.msg = '동점 · 검은 공 재경기'; out.kind = 'good'; out.dur = 3000; return out; }
     if (r.assign) {
       p.group = r.assign; g.players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid';
       out.msg = `${p.name}: ${GROUP_KO[r.assign]} 공`; out.kind = 'good'; out.dur = 2400;
@@ -405,6 +516,8 @@ function createGame(PH, makeAI) {
       // (copy audit 05-07: the reason, then 큐볼 놓기 or the points really lost; whose turn the score bar shows)
       // (a scratch on the 8볼 break: behind the head string - WPA)
       if (m.ballInHand) { g.placing = wasBreak && m.id === 'eight' ? 'kitchen' : 'any'; out.msg = `파울 · ${r.foul} · 큐볼 놓기` + (m.id === 'nine' && p.foulRun === 2 ? ' · 한 번 더 파울이면 패배' : ''); }
+      // (스누커: the points to the other player; the cue ball from the D if it went in, else from where it lies)
+      else if (r.give) { g.placing = r.scratch && m.zone ? 'd' : null; out.msg = `파울 · ${r.foul} · ${g.players[g.turn].name} +${r.give}점` + (g.placing ? ' · D에 큐볼 놓기' : ''); }
       else out.msg = `파울 · ${r.foul}` + (r.pts < 0 ? ` · −${-r.pts * (g.tens ? 10 : 1)}점` : '');
       out.kind = 'foul'; out.dur = 3400;
     } else if (!r.keep) {
@@ -433,6 +546,7 @@ function createGame(PH, makeAI) {
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
     team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance,
+    snk: g.snk ? Object.assign({}, g.snk) : null,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -445,6 +559,8 @@ function createGame(PH, makeAI) {
     g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     g.minus = d.minus !== false; g.hugu = !!d.hugu; g.first = d.first ? 1 : 0; g.chance = d.chance === 0 || d.chance === 1 ? d.chance : null;
+    g.snk = d.snk && typeof d.snk === 'object' ? { on: ['red', 'colour', 'clear'].includes(d.snk.on) ? d.snk.on : 'red', next: Math.max(16, Math.min(21, +d.snk.next || 16)) } : null;
+    if (d.modeId === 'snooker' && !g.snk) g.snk = { on: 'red', next: 16 };
     return true;
   };
   return g;

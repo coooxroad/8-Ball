@@ -16,7 +16,7 @@ function play(shot, style) {
     from: Object.assign({}, cam), paths: [], parts: [], rings: [], cols: {} };
   scene.clearFalls(); HL.restore(w, shot.snap); w.snd.length = 0;
   for (let i = 0; i < tp.nb; i++) {
-    r.cols[i] = carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i] || '#fff' : i === tp.cue ? '#ffffff' : i === 8 ? '#aab1bd' : ballCss(i);
+    r.cols[i] = carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i] || '#fff' : i === tp.cue ? '#ffffff' : game.mode.table === 'snooker' ? (i === 21 ? '#aab1bd' : SNOOKER.css(i)) : i === 8 ? '#aab1bd' : ballCss(i);
     const pts = HL.path(tp, i); if (pts) r.paths.push({ id: i, pts, col: r.cols[i] });
   }
   const c = w.balls[w.cue]; r.cue0 = [c.x, c.y];

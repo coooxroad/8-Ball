@@ -229,9 +229,9 @@ function deskInvite(slate, _, m) {
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터
 // 대전, picked on the slate); back, if given, puts an X on the tray's head
 function deskMatch({ rail, head, foot, slate }, cpu, back) {
-  const m = GAME4.includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on;
+  const m = (cpu ? GAME4 : FRIEND_GAMES).includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on && m !== 'snooker';
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
-  if (!cpu) dkPut(rail, GAME4.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
+  if (!cpu) dkPut(rail, FRIEND_GAMES.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
   if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(cpu ? '컴퓨터 대전' : '친구와 플레이'));   // (copy audit 01-10: the rules are told when the game begins)
   const plate = i => {
@@ -243,7 +243,8 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
   dkPut(slate, dkH1(MODE_KO[m]));
   if (cpu) dkPut(slate, [dkHr(), dkLab('종목'), dkSeg(GAME4.map(id => [id, MODE_KO[id]]), m, v => pick(v)())]);
   // (with a friend: here on one device, taking turns - or invited to play from theirs, by a code: 55-invite.js)
-  else dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on]], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);
+  // (스누커: on one device only, for now)
+  else dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on || m === 'snooker']], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);
   if (inv) return deskInvite(slate, d => d, m);
   if (prefs.vsAI) dkPut(slate, [dkLab('난이도'), dkSeg(LEVELS.map((t, i) => [i, t]), Math.min(3, prefs.level), v => { prefs.level = v; repaint(); })]);
   if (m === 'four') {

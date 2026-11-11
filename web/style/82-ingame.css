@@ -80,3 +80,6 @@
 @keyframes faIn{from{opacity:0;transform:translate(-50%,-40%) scale(.92)}}
 @keyframes faFill{to{stroke-dashoffset:0}}
 @keyframes faOut{to{opacity:0;transform:translate(-50%,40%)}}
+
+/* 스누커: the points still on the table, after the ball on (game.js MODES.snooker badge) */
+#badge .bsub{margin-left:8px;opacity:.72;font-size:.86em;font-weight:600;white-space:nowrap}

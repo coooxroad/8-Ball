@@ -60,7 +60,7 @@
     if (P !== cur || !tables.has(P)) { setTable(P); warmDue = true; }
     placeBalls(set, w, R, a);
     fallTick(set, R, dt);
-    blobSync(sets.pool, set === sets.pool); blobSync(sets.carom, set === sets.carom);
+    for (const s of Object.values(sets)) blobSync(s, s === set);
     const c = w.balls[w.cue];
     if (trailTick(w, c, R, dt)) dirty = Math.max(dirty, 2);
     if (ringsTick(dt)) dirty = Math.max(dirty, 2);

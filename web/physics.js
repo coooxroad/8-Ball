@@ -758,6 +758,7 @@ function createPhysics(cfg) {
 
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
-  return { hop, restEl, cueRiseTan, squirtTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  // KIND: what is played on it - 'pool', 'carom', or a table of its own ('snooker'): the scene dresses it and its balls so
+  return { KIND: cfg.kind || (POCKETED ? 'pool' : 'carom'), hop, restEl, cueRiseTan, squirtTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }

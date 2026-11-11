@@ -6,8 +6,10 @@
    Here: the parts every place is built from, and moving between places. */
 app.classList.add('desk');
 const GAME4 = ['three', 'four', 'eight', 'nine'];
+// with a friend on one device, also 스누커 (owner 11-11: only there, for now - no computer player, no room, no price)
+const FRIEND_GAMES = GAME4.concat('snooker');
 // (copy audit 01-08: only what this game is played to - 랭킹전's rules - 8볼 and 9볼 by name alone)
-const GAME_SUB = { three: '쓰리쿠션 · 5점', four: '5점', eight: null, nine: null };
+const GAME_SUB = { three: '쓰리쿠션 · 5점', four: '5점', eight: null, nine: null, snooker: null };
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';
 const LESSONS = () => drills.list.filter(d => d.make).map(d => d.id);       // (drills.js: every lesson names its game volume and course)
 const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.lessons ? 'lesson' : 'free') : prefs.trainCpu && GAME4.includes(prefs.mode) ? 'cpu' : null;

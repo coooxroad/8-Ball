@@ -90,7 +90,7 @@ const tableOf = (key, cfg) => tableCache[key] || (tableCache[key] = createPhysic
 const poolOf = id => tableOf(id, Object.assign({ pockets: true }, (TABLES.find(t => t.id === id) || TABLES[0]).cfg));
 const PH = {};
 // (tbl: a table the game was given - an online game's is the room's, never this device's choice: 54-ranked.js)
-function usePhysics(tbl) { PH.pool = poolOf(tbl || prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); }
+function usePhysics(tbl) { PH.pool = poolOf(tbl || prefs.table); PH.carom = tableOf('carom', CAROM.carom); PH.carom3 = tableOf('carom3', CAROM.carom3); PH.snooker = tableOf('snooker', SNOOKER.cfg); }
 usePhysics();
 const game = createGame(PH, createAI);
 const drills = createDrills(), puzzles = createPuzzles();

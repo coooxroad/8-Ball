@@ -48,7 +48,8 @@ const match = {
   afterShot() {
     const shot = match.pending, ev = game.world.ev, potted = ev.pocketed.filter(q => q.id !== 0).length, out = game.resolve();
     // points as the server counts them (a carom score, or a ball potted on a legal pool shot): what the match pays by
-    if (match.log && shot) { const r = out.r; if (game.mode.table === 'carom') { if (r.pts > 0) match.log.points[shot.turn] += r.pts; } else if (!r.foul) match.log.points[shot.turn] += potted; }
+    // (points: a carom table's score, a pool table's legal pots - 스누커's own score, the fouls' points to the other)
+    if (match.log && shot) { const r = out.r; if (game.mode.table === 'carom' || game.mode.scored) { if (r.pts > 0) match.log.points[shot.turn] += r.pts; if (r.give) match.log.points[1 - shot.turn] += r.give; } else if (!r.foul) match.log.points[shot.turn] += potted; }
     if (shot) {
       const r = highlights.rate(game.P, game.mode, shot, ev, out.r), bad = highlights.rateWorst(game.P, game.mode, shot, ev, out.r);
       const n = ++match.count;
@@ -102,8 +103,8 @@ const match = {
     $('#rTitle').textContent = draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
     $('#rTitle').parentNode.classList.toggle('lost', !mine);
     resultPlayers(w, me, solo, carom);
-    // the score: points on carom (as the hall counts them), games won in the series on pool
-    const pts = i => carom ? game.players[i].score * (game.tens ? 10 : 1) : series.s[i];
+    // the score: points on carom (as the hall counts them) and in 스누커 (the frame's), games won in the series on pool
+    const pts = i => carom ? game.players[i].score * (game.tens ? 10 : 1) : game.mode.scored ? game.players[i].score : series.s[i];
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
     const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
     const innings = Math.max(inn[0], inn[1]);
@@ -121,7 +122,8 @@ const match = {
     if (match.log && !match.ctx.online) {
       const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
       if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
-      net.claim('match', { kind, log }); match.log = null;
+      // (a game with no price yet - 스누커 - is not sent: the server does not know it)
+      if (ECONOMY.PER_POINT[game.modeId]) net.claim('match', { kind, log }); match.log = null;
     }
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
     if (on) { ranked.ended(); ranked.paint(); }
@@ -158,7 +160,8 @@ function resultPlayers(w, me, solo, carom) {
 function resultStats(carom, inn) {
   const P0 = game.players[0], P1 = game.players[1], pct = p => p.shots ? Math.round(p.made / p.shots * 100) + '%' : '0%';
   const avg = i => (game.players[i].score / Math.max(1, inn[i])).toFixed(2);
-  const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
+  // (스누커: the highest break - the most points in one visit - in place of the longest run of shots)
+  const rows = [carom ? ['애버리지', avg(0), avg(1)] : ['넣은 공', P0.made, P1.made], game.mode.scored ? ['최고 브레이크', P0.topBrk || 0, P1.topBrk || 0] : ['최고 연속 득점', P0.best, P1.best], ['득점 성공률', pct(P0), pct(P1)], ['파울', P0.fouls, P1.fouls]];
   const box = $('#rStats'); box.textContent = '';
   for (const [k, a, b] of rows) {
     const na = parseFloat(a) || 0, nb = parseFloat(b) || 0, sum = na + nb || 1;

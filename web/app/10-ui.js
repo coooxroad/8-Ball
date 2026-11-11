@@ -39,7 +39,9 @@ function toast(msg, kind, ms) {
 }
 // where on the screen a table position is, left (-1) to right (1), kept gentle
 const panOf = (x, y) => 0.45 * Math.max(-1, Math.min(1, scene.portrait ? -y / game.P.HW : x / game.P.HL));
-const ballChip = (id, style) => el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
+// (스누커's balls are plain colours: tables.js SNOOKER)
+const ballChip = (id, style) => game.mode.table === 'snooker' ? el('i', { class: 'mb', style: `--c:${SNOOKER.css(id)};` + (style || '') })
+  : el('i', { class: 'mb' + (id > 8 ? ' st' : ''), style: `--c:${ballCss(id)};` + (style || '') });
 
 /* ================= screens and layout ================= */
 const CONTROLS = ['#power', '#fine', '#spinBtn'];

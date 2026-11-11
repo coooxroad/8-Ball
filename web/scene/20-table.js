@@ -155,8 +155,16 @@
     const shade = cushionShade(P), ao = new THREE.Mesh(new THREE.PlaneGeometry(shade.w, shade.h), shade.mat); ao.position.z = 0.0007; grp.add(ao);
     // markings
     const dot = (x, y) => { const d = new THREE.Mesh(new THREE.CircleGeometry(0.007, 20), markMat); d.position.set(x, y, 0.0005); grp.add(d); };
+    if (P.KIND === 'snooker') { snookerMarks(grp, P, dot); return; }
     dot(HL / 2, 0); dot(-HL / 2, 0);
     if (P.POCKETED) { const line = new THREE.Mesh(new THREE.PlaneGeometry(0.003, HW * 2), markMat); line.position.set(-HL / 2, 0, 0.0004); grp.add(line); } else dot(0, 0);
+  }
+  // 스누커's markings (tables.js SNOOKER): the baulk line across, the D behind it, and the six colours' spots
+  function snookerMarks(grp, P, dot) {
+    const k = P.HL / 1.7845, xb = -P.HL + SNOOKER.BAULK * k, d = SNOOKER.D * k, t = 0.0025;
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(t, P.HW * 2), markMat); line.position.set(xb, 0, 0.0004); grp.add(line);
+    const arc = new THREE.Mesh(new THREE.RingGeometry(d - t / 2, d + t / 2, 64, 1, Math.PI / 2, Math.PI), markMat); arc.position.set(xb, 0, 0.0004); grp.add(arc);
+    for (let id = 16; id <= 21; id++) { const [x, y] = SNOOKER.spot(P, id); dot(x, y); }
   }
   // the pockets' dark pits going down through the bed
   function pocketPits(grp, P) {
@@ -312,8 +320,8 @@
     cur = P;
     if (!tables.has(P)) tables.set(P, buildTable(P));
     for (const [k, grp] of tables) grp.visible = k === P;
-    for (const set of [sets.pool, sets.carom]) { for (const m of set.mesh) m.visible = false; for (const m of set.blob) m.visible = false; }
-    const set = sets[P.POCKETED ? 'pool' : 'carom'];
+    for (const set of Object.values(sets)) { for (const m of set.mesh) m.visible = false; for (const m of set.blob) m.visible = false; }
+    const set = sets[P.KIND];
     for (const s of set.blob) s.children.forEach((c, i) => c.scale.set(P.R * (i ? 3.3 : 2.7), P.R * (i ? 3.3 : 2.7), 1));
     // the lamps hang over this table's long axis
     placeLamps(); putFloor(); hall.scale.set(2 * P.HL * 0.92, 1, 1);
