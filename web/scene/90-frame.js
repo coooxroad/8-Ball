@@ -87,7 +87,10 @@
         const q = b.q, l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; q[0] /= l; q[1] /= l; q[2] /= l; q[3] /= l;
         m.quaternion.set(q[0], q[1], q[2], q[3]);
         s.children[0].position.x = x + so; s.children[0].position.y = y - so;
-        for (let k = 0; k < LAMPS.length; k++) { const L = LAMPS[k], f = R / (L[2] - R), c2 = s.children[k + 1]; c2.position.x = x + (x - L[0]) * f; c2.position.y = y + (y - L[1]) * f; }
+        // under the lamp (a rectangle, 10-room.js SHADE): one soft shadow, thrown away from its middle and spread as the lamp
+        // is long and wide - the half-shadow of a ball under a wide light reaches out by R times the lamp's size over its height
+        { const f = R / (SHADE.z - R), c2 = s.children[1]; c2.position.x = x + (x - SHADE.x) * f; c2.position.y = y + (y - SHADE.y) * f;
+          c2.scale.set(R * (2.4 + SHADE.len * f * 1.1 / R), R * (2.4 + SHADE.wid * f * 1.1 / R), 1); }
       } else if (!falls.some(f => f.id === i)) m.visible = false;
     }
   }

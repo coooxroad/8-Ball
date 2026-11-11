@@ -23,15 +23,20 @@
   }
 
   /* Light that can be tuned (the app's 디버그 settings, owner 11-11: app/20-sheets.js sheetDebug; only on an account the admin
-     console has put in debug mode). Each is a multiplier on what the scene is built with (1: as built), but exposure (the
-     tone mapping's, as set), blur (how soft the reflections are: the room's blur), gloss (the balls' lacquer roughness) and
-     strip (how many lamps light the balls: below). */
-  const LIGHT0 = { exposure: 1, panel: 1, blur: 0.03, ballEnv: 1, gloss: 0.04, lamp: 1, fill: 1, rail: 1, metal: 1, strip: 3 };
+     console has put in debug mode). Each is a multiplier on the constants below (1: those), but exposure (the tone
+     mapping's, as set), blur (how soft the reflections are: the room's blur) and gloss (the balls' lacquer roughness).
+     LIGHT0 is the game's own light: the owner's pick (11-11), tuned by eye on the tablet - but the lacquer (gloss), 0.24
+     there to run a row of glints into a line, is 0.06 under the one rectangular lamp: a crisp glint of its shape. */
+  const LIGHT0 = { exposure: 1, panel: 0.85, blur: 0.06, ballEnv: 0.65, gloss: 0.06, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 1.9, size: 1 };
   let light = Object.assign({}, LIGHT0), envTex = null;
-  /* reflections for the balls: a dim room with the table's light overhead - one long box along the table, its underside a
-     lit panel and its sides glowing a little (as the light box over the table, hallLight; owner 11-11: one box, not three
-     panels - three gave every ball three pin-point glints in a row). Its lit area is the three panels' had, so the light the
-     room gives is as before. Built again when the panel's brightness or the blur is tuned (setLight). */
+  /* The lamp over the table is one rectangle as long and as wide as the table is (2:1, owner 11-11: "the lamp square, its
+     sides in the table's proportion"). Its size here is the size of the light under it (the static layer's shades light the
+     table; the balls are lit by a RectAreaLight of this size - below); the reflections' room has a box of the same shape. */
+  const LAMP_LEN = 0.45, LAMP_RATIO = 0.5;     // (its length, as a part of the table's - a light box, not a ceiling; its width : its length)
+  /* reflections for the balls: a dim room with the table's light overhead - the lamp, a long box over the table, its
+     underside lit and its sides glowing a little (as the light box over the table, hallLight), as long and as wide as the
+     table (owner 11-11; three panels gave every ball three glints in a row). Its lit area is the three panels' old one, so
+     the light the room gives is as it was. Built again when the panel's brightness or the blur is tuned (setLight). */
   function buildEnv() {
     const es = new THREE.Scene(); es.background = new THREE.Color(0x0c0b0a);
     const lit = (hex, k) => new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k) });
@@ -40,7 +45,8 @@
       m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m);
     };
     const side = lit(0xfff4e2, 1.2 * light.panel), under = lit(0xfff4e2, 5 * light.panel);
-    const box = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.56, 0.14), [side, side, side, side, lit(0x16171a, 1), under]);   // (-z, the underside, faces the table)
+    const L = Math.sqrt(1.344 / LAMP_RATIO);   // (1.344 m², the three panels' area: 1.64 x 0.82)
+    const box = new THREE.Mesh(new THREE.BoxGeometry(L, L * LAMP_RATIO, 0.14), [side, side, side, side, lit(0x16171a, 1), under]);   // (-z, the underside, faces the table)
     box.position.set(0, 0, 2.3); es.add(box);
     panel(6, 2.5, 0, 5, 1.2, 0x6a5a4a, 0.5); panel(6, 2.5, 0, -5, 1.2, 0x4a4038, 0.4);
     const pm = new THREE.PMREMGenerator(renderer), t = pm.fromScene(es, light.blur).texture; pm.dispose();
@@ -49,11 +55,34 @@
   }
   buildEnv();
 
-  /* The table (the static layer) is lit by the three shades, which cast its shadows (lampObjs). The balls, the cue and what
-     moves (the scene) are lit by a row of lamps under the same span - three, one under each shade, as built; more (strip,
-     owner 11-11: "still three lights") and they run together on the lacquer into one long glint, as under a long light
-     box. Together they give the balls the light the three gave. */
-  const lampObjs = [], fills = [], ballLamps = [];
+  /* The table (the static layer) is lit by three shades under the lamp, which cast its shadows (lampObjs). The balls, the
+     cue and what moves (the scene) are lit by the lamp itself: a RectAreaLight, so each ball shows one long glint, the lamp's
+     shape, and is shaded as under a wide light (owner 11-11: "make the lamp a rectangle" rather than a row of lamps). Its
+     strength is set so a ball is as bright as under the row of eight the owner tuned with. A comic (toon) ball can't take
+     a rectangular light (three r128), so it has a key light of its own from the lamp, in its shader (toonKey: 30-balls.js). */
+  initAreaLight();
+  /* three r128 shades a rectangular light on the base layer only: a lacquered ball (clearcoat) would show the lamp as a broad
+     milky patch and never as the sharp glint on its lacquer. So the lacquer's reflection of the lamp is added to three's
+     own rectangular-light shading, as three does it for the base (the same fit at the lacquer's roughness, on its normal,
+     with the lacquer's fixed reflectance 0.04) - for every lacquered material, as three would do it itself. */
+  {
+    const C = THREE.ShaderChunk, k = 'lights_physical_pars_fragment', at = 'reflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate(';
+    if (C[k].indexOf(at) < 0) console.warn('scene: three changed - no lacquer for the rectangular light');
+    else if (C[k].indexOf('ccRectArea') < 0) C[k] = C[k].replace(at, `
+      #ifdef CLEARCOAT
+      { // ccRectArea: the lacquer's glint of the lamp (10-room.js)
+        vec3 ccN = geometry.clearcoatNormal; vec2 ccUv = LTC_Uv( ccN, viewDir, material.clearcoatRoughness );
+        vec4 c1 = texture2D( ltc_1, ccUv ), c2 = texture2D( ltc_2, ccUv );
+        mat3 ccInv = mat3( vec3( c1.x, 0, c1.y ), vec3( 0, 1, 0 ), vec3( c1.z, 0, c1.w ) );
+        float ccF = 0.04 * c2.x + 0.96 * c2.y;
+        reflectedLight.directSpecular += lightColor * material.clearcoat * ccF * LTC_Evaluate( ccN, viewDir, position, ccInv, rectCoords );
+      }
+      #endif
+      ` + at);
+  }
+  const RECT_K = 3.4;                          // (the lamp's strength at lamp 1: a ball's colour as under the row of eight lamps, 11-12)
+  const toonKey = { value: 1.1 };              // (a comic ball's light from the lamp, as the lamps gave it)
+  const lampObjs = [], fills = [];
   for (const sc of [sScene, scene]) {
     const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi); fills.push(hemi);
   }
@@ -64,31 +93,27 @@
     lamp.shadow.camera.near = 0.2; lamp.shadow.camera.far = 3; lamp.shadow.bias = -0.0006; lamp.shadow.normalBias = 0.003;
     sScene.add(lamp, lamp.target); lampObjs.push(lamp);
   }
-  function makeBallLamps(n) {
-    for (const l of ballLamps.splice(0)) scene.remove(l, l.target);
-    for (let i = 0; i < n; i++) { const l = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1); scene.add(l, l.target); ballLamps.push(l); }
-    placeBallLamps();
+  const rectLamp = new THREE.RectAreaLight(0xfff1dc, RECT_K, 1, 1); scene.add(rectLamp);
+  // where the lamp is and how big (the balls' own shadows are cast from it: 90-frame.js) - over the middle shade, as long as
+  // the table says (cur.HL; 60-view.js placeLamps moves the shades with the desk's light, and calls this)
+  const SHADE = { x: 0, y: 0, z: LAMPS[1][2], len: 1, wid: 0.5 };
+  function placeRectLamp() {
+    const HL = cur ? cur.HL : 1.27, m = LAMPS[1];
+    SHADE.len = 2 * HL * LAMP_LEN * light.size; SHADE.wid = SHADE.len * LAMP_RATIO; SHADE.x = m[0]; SHADE.y = m[1];
+    rectLamp.width = SHADE.len; rectLamp.height = SHADE.wid; rectLamp.position.set(m[0], m[1], m[2]);
+    const tg = lampObjs[1].target.position; rectLamp.lookAt(tg.x, tg.y, 0);   // (facing down, aimed as the shades are)
+    // (looking straight down, its width lies along the table's length; turned off-straight it stays so)
+    rectLamp.intensity = RECT_K * light.lamp / (light.size * light.size); toonKey.value = 1.1 * light.lamp;
   }
-  // under the shades' span (60-view.js placeLamps moves the shades): evenly from the first to the last, or under the middle
-  function placeBallLamps() {
-    const n = ballLamps.length, a = LAMPS[0], b = LAMPS[LAMPS.length - 1], k = 0.58 * 3 / n * light.lamp;
-    ballLamps.forEach((l, i) => {
-      const t = n > 1 ? i / (n - 1) : 0.5, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
-      l.intensity = k; l.position.set(x, y, a[2]);
-      const tg = lampObjs[0].target.position, d = [tg.x - a[0], tg.y - a[1]];   // (aimed as the shades are)
-      l.target.position.set(x + d[0], y + d[1], 0); l.target.updateMatrixWorld();
-    });
-  }
-  makeBallLamps(LIGHT0.strip);
-  /* the tuned light put on (o: some of LIGHT0's keys; null or {}: as built). Called by the app only, after everything is made. */
+  placeRectLamp();
+  /* the tuned light put on (o: some of LIGHT0's keys; null or {}: the game's own). Called by the app, after everything is made. */
   function setLight(o) {
     const next = Object.assign({}, LIGHT0);
     for (const k in LIGHT0) if (o && Number.isFinite(+o[k])) next[k] = +o[k];
     const room = next.panel !== light.panel || next.blur !== light.blur; light = next;
     renderer.toneMappingExposure = light.exposure;
     for (const l of lampObjs) l.intensity = 0.58 * light.lamp;
-    light.strip = Math.max(1, Math.min(15, Math.round(light.strip)));
-    if (light.strip !== ballLamps.length) makeBallLamps(light.strip); else placeBallLamps();
+    placeRectLamp();
     for (const h of fills) h.intensity = 0.27 * light.fill;
     woodMat.envMapIntensity = 0.7 * light.rail; metalMat.envMapIntensity = 1.3 * light.metal; chromeMat.envMapIntensity = 1.4 * light.metal;
     for (const set of [sets.pool, sets.carom]) if (set.skin) for (const m of set.mesh) finishOf(set.skin, m.material);

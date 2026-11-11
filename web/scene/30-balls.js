@@ -156,7 +156,10 @@
     const f = k.finish || {};
     if (mat.userData.env0 == null) mat.userData.env0 = mat.envMapIntensity;
     mat.envMapIntensity = mat.userData.env0 * (f.env || 1) * light.ballEnv;        // (env: how strongly it mirrors the room - a gem, more; light: tuned, 10-room.js)
-    mat.roughness = f.rough != null ? f.rough : 0.2; mat.metalness = f.metal || 0; mat.clearcoat = f.coat != null ? f.coat : 1; mat.clearcoatRoughness = f.coat != null && f.coat < 0.5 ? 0.4 : light.gloss;
+    mat.roughness = f.rough != null ? f.rough : 0.2;
+    // a ball is one polished resin: under its lacquer nothing else shines (else the lamp shows as a broad milky patch) - but a
+    // metal, or a matt finish, whose own surface is what shines
+    mat.reflectivity = (f.coat == null || f.coat >= 0.5) && !f.metal ? 0 : 0.5; mat.metalness = f.metal || 0; mat.clearcoat = f.coat != null ? f.coat : 1; mat.clearcoatRoughness = f.coat != null && f.coat < 0.5 ? 0.4 : light.gloss;
     let b = null;
     if (k.holes) b = holeBump(k);
     else if (f.bump && TEXS['ball-' + f.bump]) { b = bumpTex[f.bump]; if (!b) { b = bumpTex[f.bump] = loader.load(TEXS['ball-' + f.bump], () => { dirty = 3; staticDirty = true; }); } }
@@ -186,6 +189,13 @@
     if (!toonGrad) { toonGrad = new THREE.DataTexture(new Uint8Array([70, 150, 255]), 3, 1, THREE.LuminanceFormat); toonGrad.minFilter = toonGrad.magFilter = THREE.NearestFilter; toonGrad.needsUpdate = true; }
     const m = new THREE.MeshToonMaterial({ gradientMap: toonGrad });
     m.onBeforeCompile = sh => {
+      // the lamp, as a key light from straight above (a toon material takes no rectangular light: 10-room.js toonKey),
+      // in the three flat steps as any light it takes
+      sh.uniforms.toonKey = toonKey;
+      sh.fragmentShader = 'uniform float toonKey;\n' + sh.fragmentShader.replace('#include <lights_fragment_end>', `
+        { vec3 kd = normalize((viewMatrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz);
+          reflectedLight.directDiffuse += getGradientIrradiance(normal, kd) * vec3(1.0, 0.945, 0.863) * toonKey * PI * BRDF_Diffuse_Lambert(material.diffuseColor); }
+        #include <lights_fragment_end>`);
       sh.fragmentShader = sh.fragmentShader.replace(FRAG_OUT, `
         { float L = dot(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse, vec3(0.299, 0.587, 0.114)) / max(0.05, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
           vec2 q = fract(gl_FragCoord.xy / 5.0) - 0.5; float rr = clamp(0.62 - L * 0.55, 0.0, 0.46);
@@ -305,10 +315,10 @@
       // (a ball's shadows: where each one lies is kept here, in plain markers; they are drawn all together - blobSync)
       const s = new THREE.Group(); s.visible = false; scene.add(s); blob.push(s);
       const c = new THREE.Object3D(); c.scale.set(R * 2.7, R * 2.7, 1); c.position.z = 0.0009; s.add(c);
-      for (let k = 0; k < LAMPS.length; k++) { const l = new THREE.Object3D(); l.scale.set(R * 3.3, R * 3.3, 1); l.position.z = 0.0008; s.add(l); }
+      const l = new THREE.Object3D(); l.position.z = 0.0008; s.add(l);   // (the lamp's soft shadow: placed and sized by 90-frame.js)
     }
-    // every ball's contact shadow in one draw, and every lamp shadow in another (rather than four draws a ball: 64 for 8볼)
-    const ims = [new THREE.InstancedMesh(unitPlane, blobMat, n), new THREE.InstancedMesh(unitPlane, lampShadowMat, n * LAMPS.length)];
+    // every ball's contact shadow in one draw, and every lamp shadow in another (rather than two draws a ball)
+    const ims = [new THREE.InstancedMesh(unitPlane, blobMat, n), new THREE.InstancedMesh(unitPlane, lampShadowMat, n)];
     for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
     return { mesh, blob, R, ims, kind, skin: null, lod: 0, small: false };
   }

@@ -33,29 +33,28 @@ function sheetSettings() {
 }
 /* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). The table's light, to
    tune by eye: each slider is put on the table at once (scene.setLight, scene/10-room.js), kept on this device
-   (prefs.light), and used only while the account is in debug mode - out of it, the light is as built. The sheet lets the
+   (prefs.light), and used only while the account is in debug mode - out of it, the light is the game's own (LIGHT0). The sheet lets the
    table show through (no dimming, docked to one side). '값 복사' copies the numbers, to be made the game's own. */
 const LIGHT_UI = [
   ['exposure', '노출 (전체 밝기)', 0.3, 1.6, 0.05], ['panel', '반사 조명판 밝기', 0, 2, 0.05], ['blur', '반사 흐림', 0, 0.2, 0.005],
   ['ballEnv', '공 반사 세기', 0, 2, 0.05], ['gloss', '공 하이라이트 퍼짐', 0.01, 0.5, 0.01], ['lamp', '램프 (직사광)', 0, 2, 0.05],
   ['fill', '주변광', 0, 2, 0.05], ['rail', '레일 광택 반사', 0, 2, 0.05], ['metal', '포켓 황동 · 크롬 반사', 0, 2, 0.05],
-  ['strip', '공 비추는 램프 수 (많을수록 한 줄로)', 1, 15, 1],
+  ['size', '램프 크기 (당구대 비율 그대로)', 0.4, 1.4, 0.05],
 ];
-/* Three samples to choose between (owner 11-11), each a whole set of the sliders. 현실: as a broadcast looks - the colours
-   as painted (exposure 0.6 undoes the tone mapping's own lift of 1/0.6), the balls mirroring little, one soft long glint,
-   dark rails. 게임: brighter and punchier, the colours full, a broad soft glint that reads at a glance on a small screen.
-   현실+게임: between - true colours with a little lift, the glint a clear line. All three light the balls with the full row
-   of lamps and a softer lacquer, so the row's glints run into one line (fewer, or sharper, and they show as dots). */
+/* Three samples to choose between (owner 11-11), each a whole set of the sliders; '기본' is the game's own light (the
+   owner's pick, scene/10-room.js LIGHT0). 현실: as a broadcast looks - the colours as painted (exposure 0.6 undoes the tone
+   mapping's own lift of 1/0.6), the balls mirroring little, a crisp lacquer, dark rails. 게임: brighter and punchier, the
+   colours full, a broad soft glint that reads at a glance on a small screen. 현실+게임: between. */
 const LIGHT_PRESETS = [
-  ['현실', { exposure: 0.6, panel: 0.8, blur: 0.05, ballEnv: 0.3, gloss: 0.2, lamp: 1.35, fill: 0.55, rail: 0.35, metal: 0.45, strip: 15 }],
-  ['게임', { exposure: 0.85, panel: 0.9, blur: 0.08, ballEnv: 0.25, gloss: 0.3, lamp: 1.2, fill: 1.15, rail: 0.6, metal: 0.7, strip: 15 }],
-  ['현실+게임', { exposure: 0.72, panel: 0.85, blur: 0.06, ballEnv: 0.3, gloss: 0.24, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 0.55, strip: 15 }],
+  ['현실', { exposure: 0.6, panel: 0.8, blur: 0.05, ballEnv: 0.3, gloss: 0.08, lamp: 1.35, fill: 0.55, rail: 0.35, metal: 0.45, size: 0.9 }],
+  ['게임', { exposure: 0.85, panel: 0.9, blur: 0.08, ballEnv: 0.25, gloss: 0.2, lamp: 1.2, fill: 1.15, rail: 0.6, metal: 0.7, size: 1.15 }],
+  ['현실+게임', { exposure: 0.72, panel: 0.85, blur: 0.06, ballEnv: 0.3, gloss: 0.14, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 0.55, size: 1 }],
 ];
 function lightApply() { scene.setLight(net.debug ? prefs.light : null); }
 lightApply();
 function sheetDebug() {
   const L = Object.assign({}, scene.LIGHT0, prefs.light || {}), shown = {};
-  const put = (k, v, now) => { L[k] = +v; shown[k].textContent = k === 'strip' ? String(+v) : (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
+  const put = (k, v, now) => { L[k] = +v; shown[k].textContent = (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
   const row = ([k, label, min, max, step]) => {
     shown[k] = el('b', { class: 'dbg-v' });
     // (the room's reflections are made again for the panel and the blur: on letting go, not at every step of the drag)
