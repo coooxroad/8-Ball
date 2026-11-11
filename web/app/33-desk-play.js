@@ -2,7 +2,7 @@
    them one trapezoid as it does those: 랭킹전 with the player's tier, 아케이드 and 챌린지 over 친구와 플레이 - blocks of
    the shop's ivory and charcoal, and a pale sky for 아케이드 (owner, 5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
    with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
-let playStep = 'boards';                                              // 'boards' | 'rank' | 'friend' | 'halls' | 'setup' | 'addons'
+let playStep = 'boards';                                              // 'boards' | 'rank' | 'friend' | 'halls' | 'setup' | 'addons' | 'arcade', 'arc-aug', 'arc-ult' (33-desk-arcade.js)
 let rankBarShown = null;                                              // the rating the 랭킹전 card's bar last filled to
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
 const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['pro', '프로']];   // (owner, 11-08: 마스터 and 레전드 are one, 프로; economy.js TIER_AT)
@@ -101,6 +101,7 @@ function deskPlay(d) {
   playEnter(wrap);
 }
 const PLAY_STEPS = {
+  ...ARCADE_STEPS,
   rank({ wrap, fit, panel, tt, head, toBoards, dama }) {
     const f = ranked.finding;
     if (f) {
@@ -183,7 +184,7 @@ const PLAY_STEPS = {
     dkPut(fit, [
       panel('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), [tt('친구와 플레이')], 'card unf'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon unf'),
-      panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '빙판 · 오각형 테이블', '준비 중')], 'card soon unf'),
+      panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구 · 궁극기 당구', `${ARCADE.BALLS}볼`)], 'card unf'),
       panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, 'ONLINE'),
         el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
   },
