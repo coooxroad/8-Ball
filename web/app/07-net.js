@@ -39,6 +39,12 @@ const net = (() => {
   function putAside(who) {
     const old = store.get('acctOld', []); if (!old.some(a => a.id === who.id)) old.push(Object.assign({ at: Date.now(), me: me || null }, who)); store.set('acctOld', old);
   }
+  // this device goes over to another account (a device code, or a Google account already tied to one): the one it had, if
+  // different, is put aside; what was shown is forgotten until the wallet is asked again
+  function takeAccount(id, key) {
+    if (account && account.id !== id) putAside(account);
+    account = { id, key }; store.set('acct', account); me = null; store.set('me', null);
+  }
   // a 401 about the account in use: asked once more, plainly; only a second 401 for the same account lets it go (put aside)
   let doubting = null, lostAccount = false;
   function doubt(who) {
@@ -155,8 +161,7 @@ const net = (() => {
     async linkMake() { if (!(await ensure())) return null; return call('/v1/link/make', {}); },
     async linkUse(code) {
       const r = await call('/v1/link/use', { code }); if (!r || !r.ok || !r.id || !r.key) return r;
-      if (account && account.id !== r.id) putAside(account);
-      account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null); flush();
+      takeAccount(r.id, r.key); flush();
       return r;
     },
     /* Signing up and in with Google (server/src/link.js, google.js; 57-account.js asks Google): the server's client ID (null:
@@ -174,10 +179,7 @@ const net = (() => {
     async google(token) {
       await ensure();
       const r = await call('/v1/link/google', { token }, 20000); if (!r || !r.ok) return r;
-      if (r.key && r.id) {
-        if (account && account.id !== r.id) putAside(account);
-        account = { id: r.id, key: r.key }; store.set('acct', account); me = null; store.set('me', null);
-      }
+      if (r.key && r.id) takeAccount(r.id, r.key);
       await flush(); return r;
     },
     // a member's nickname (2-10 characters): the name the others see

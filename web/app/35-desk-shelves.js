@@ -129,29 +129,32 @@ function shelfPage(d, shop) {
   dkPut(d.rail, SHELF_KEYS.map(k => railBtn(kind === k, SHELVES[k].name, null, () => { shelfClose(); if (shop) shopSel = k; else gearSel = k; paintHome(); })));
   const close = () => { SND.tap(); shelfClose(); paintHome(); };
   const has = i => net.owns(kind, list[i].id);
-  if (shelfOpen == null || !list[shelfOpen]) {
-    // the cards
-    shelfOpen = null; d.stage.dataset.win = '0';
-    dkPut(d.head, dkTitle(K.name, `${shop ? list.length : list.filter((x, i) => has(i)).length}개`));
-    // the cards from the commonest to the rarest, an ivory rule where the rarity changes saying what it is and how many
-    // of it are owned; 내 장비 shows only what is owned, the shop everything with its price
-    const order = list.map((q, i) => [q, i]).filter(([, i]) => shop || has(i)).sort((p, q) => (p[0].rarity || 0) - (q[0].rarity || 0) || p[1] - q[1]), cards = [];
-    for (let n = 0; n < order.length; n++) {
-      const [q, i] = order[n], r = q.rarity || 0;
-      if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
-        cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
-      cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
-        [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
-    }
-    const box = el('div', { class: 'dk-cards pc k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (printed cards, shop and gear alike: 74-shop-cards.css)
-    dkPut(d.stage, box);
-    dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
-    // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
-    if (shop && !net.on) dkPut(d.slate, [dkHr(), dkTxt('서버가 열리면 살 수 있습니다.')]);
-    dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
-    return;
+  if (shelfOpen == null || !list[shelfOpen]) shelfCards(d, shop, kind, K, list, worn, has);
+  else shelfCard(d, shop, kind, K, list, worn, has, close);
+}
+// the shelf's cards, all of them (shelfPage)
+function shelfCards(d, shop, kind, K, list, worn, has) {
+  shelfOpen = null; d.stage.dataset.win = '0';
+  dkPut(d.head, dkTitle(K.name, `${shop ? list.length : list.filter((x, i) => has(i)).length}개`));
+  // the cards from the commonest to the rarest, an ivory rule where the rarity changes saying what it is and how many
+  // of it are owned; 내 장비 shows only what is owned, the shop everything with its price
+  const order = list.map((q, i) => [q, i]).filter(([, i]) => shop || has(i)).sort((p, q) => (p[0].rarity || 0) - (q[0].rarity || 0) || p[1] - q[1]), cards = [];
+  for (let n = 0; n < order.length; n++) {
+    const [q, i] = order[n], r = q.rarity || 0;
+    if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
+      cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
+    cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
+      [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
   }
-  // one card, opened
+  const box = el('div', { class: 'dk-cards pc k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (printed cards, shop and gear alike: 74-shop-cards.css)
+  dkPut(d.stage, box);
+  dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
+  // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
+  if (shop && !net.on) dkPut(d.slate, [dkHr(), dkTxt('서버가 열리면 살 수 있습니다.')]);
+  dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
+}
+// one card, opened (shelfPage): it shown in the tray, what it is and how it plays on the slate, the key to buy or wear it
+function shelfCard(d, shop, kind, K, list, worn, has, close) {
   const i = shelfOpen, q = list[i], own = i === worn;
   d.head.className = 'dk-head open';
   dkPut(d.head, [el('button', { class: 'dk-x', 'aria-label': '카드 목록으로', onclick: close }, el('i')), dkTitle(q.name)]);
@@ -173,15 +176,18 @@ function shelfPage(d, shop) {
   for (const a of about.filter(Boolean)) dkPut(d.slate, typeof a === 'string' ? [dkTxt(a), dkHr()] : el('div', { class: 'dk-spec' }, [el('span', { text: a[0] }), el('b', { text: a[1] })]));
   if (kind === 'table' && !isCarom()) dkPut(d.slate, [dkHr(), dkLab('포켓볼 테이블 크기'), dkSeg(TABLES.map(t => [t.id, t.short]), prefs.table, v => { prefs.table = v; repaintLive(); })]);
   if (shop) {
-    const buy = async () => {
-      // (not enough in the wallet: said here at once - the key shakes, the wallet's chip flashes red - not asked of the server)
-      const p = priceOf(q), w = prefs.wallet || {}, short = p.dia ? (w.dia || 0) < p.dia ? 'dia' : null : p.coin && (w.coin || 0) < p.coin ? 'coin' : null;
-      if (short) { const k = document.querySelector('#dkSlate .dk-main'); if (k) { k.classList.remove('fx-no'); void k.offsetWidth; k.classList.add('fx-no'); setTimeout(() => k.classList.remove('fx-no'), 400); }
-        SND.nope(); walletShort(short); return toast(short === 'dia' ? '다이아 부족' : '코인 부족', 'foul', 1800); }
-      const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? '구매 완료' : r.why, r.ok ? 'good' : 'foul', 1800); paintHome(); };
+    const buy = () => shelfBuy(kind, q);
     dkPut(d.slate, dkActs(has(i) ? dkMain('보유 중', null, () => {}, true) : q.reward ? dkMain('레슨 보상', `${MODE_KO[q.reward]} 레슨을 모두 끝내면`, () => {}, true) : net.on ? dkMain('구매', priceText(q), buy) : dkMain('구매', '서버가 열리면', () => {}, true), dkSec('카드 목록으로', close)));
   }
   else dkPut(d.slate, dkActs(dkMain(own ? '장착 중' : '장착', null, () => { K.wear(q, i); savePrefs(); shelfOpen = null; paintHome(); toast('장착 완료', 'good', 1200); }, own), dkSec('카드 목록으로', close)));
+}
+// the shop's 구매 key (shelfCard)
+async function shelfBuy(kind, q) {
+  // (not enough in the wallet: said here at once - the key shakes, the wallet's chip flashes red - not asked of the server)
+  const p = priceOf(q), w = prefs.wallet || {}, short = p.dia ? (w.dia || 0) < p.dia ? 'dia' : null : p.coin && (w.coin || 0) < p.coin ? 'coin' : null;
+  if (short) { const k = document.querySelector('#dkSlate .dk-main'); if (k) { k.classList.remove('fx-no'); void k.offsetWidth; k.classList.add('fx-no'); setTimeout(() => k.classList.remove('fx-no'), 400); }
+    SND.nope(); walletShort(short); return toast(short === 'dia' ? '다이아 부족' : '코인 부족', 'foul', 1800); }
+  const r = await net.buy(kind, q.id); if (r.ok) { const k = document.querySelector('#dkSlate .dk-main'); if (k) fxBurst(k); } toast(r.ok ? '구매 완료' : r.why, r.ok ? 'good' : 'foul', 1800); paintHome();
 }
 // a card just opened, for its flash (shelfPage)
 let shelfFlash = null;
