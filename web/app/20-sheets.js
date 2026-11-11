@@ -39,12 +39,23 @@ const LIGHT_UI = [
   ['exposure', '노출 (전체 밝기)', 0.3, 1.6, 0.05], ['panel', '반사 조명판 밝기', 0, 2, 0.05], ['blur', '반사 흐림', 0, 0.2, 0.005],
   ['ballEnv', '공 반사 세기', 0, 2, 0.05], ['gloss', '공 하이라이트 퍼짐', 0.01, 0.5, 0.01], ['lamp', '램프 (직사광)', 0, 2, 0.05],
   ['fill', '주변광', 0, 2, 0.05], ['rail', '레일 광택 반사', 0, 2, 0.05], ['metal', '포켓 황동 · 크롬 반사', 0, 2, 0.05],
+  ['strip', '공 비추는 램프 수 (많을수록 한 줄로)', 1, 15, 1],
+];
+/* Three samples to choose between (owner 11-11), each a whole set of the sliders. 현실: as a broadcast looks - the colours
+   as painted (exposure 0.6 undoes the tone mapping's own lift of 1/0.6), the balls mirroring little, one soft long glint,
+   dark rails. 게임: brighter and punchier, the colours full, a broad soft glint that reads at a glance on a small screen.
+   현실+게임: between - true colours with a little lift, the glint a clear line. All three light the balls with the full row
+   of lamps and a softer lacquer, so the row's glints run into one line (fewer, or sharper, and they show as dots). */
+const LIGHT_PRESETS = [
+  ['현실', { exposure: 0.6, panel: 0.8, blur: 0.05, ballEnv: 0.3, gloss: 0.2, lamp: 1.35, fill: 0.55, rail: 0.35, metal: 0.45, strip: 15 }],
+  ['게임', { exposure: 0.85, panel: 0.9, blur: 0.08, ballEnv: 0.25, gloss: 0.3, lamp: 1.2, fill: 1.15, rail: 0.6, metal: 0.7, strip: 15 }],
+  ['현실+게임', { exposure: 0.72, panel: 0.85, blur: 0.06, ballEnv: 0.3, gloss: 0.24, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 0.55, strip: 15 }],
 ];
 function lightApply() { scene.setLight(net.debug ? prefs.light : null); }
 lightApply();
 function sheetDebug() {
   const L = Object.assign({}, scene.LIGHT0, prefs.light || {}), shown = {};
-  const put = (k, v, now) => { L[k] = v; shown[k].textContent = (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
+  const put = (k, v, now) => { L[k] = +v; shown[k].textContent = k === 'strip' ? String(+v) : (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
   const row = ([k, label, min, max, step]) => {
     shown[k] = el('b', { class: 'dbg-v' });
     // (the room's reflections are made again for the panel and the blur: on letting go, not at every step of the drag)
@@ -53,8 +64,13 @@ function sheetDebug() {
     put(k, L[k], false);
     return el('div', { class: 'field dbg' }, [el('div', { class: 'lab' }, [el('span', { text: label }), shown[k]]), r]);
   };
+  const same = (o) => Object.keys(scene.LIGHT0).every(k => Math.abs((o[k] != null ? o[k] : scene.LIGHT0[k]) - L[k]) < 1e-6);
+  const pick = (o) => { prefs.light = o ? Object.assign({}, scene.LIGHT0, o) : null; savePrefs(); lightApply(); sheetDebug(); };
+  const presets = el('div', { class: 'dbg-pre' }, [['기본', null], ...LIGHT_PRESETS].map(([name, o]) =>
+    el('button', { class: 'dbg-p' + (same(o || {}) ? ' on' : ''), text: name, onclick: () => pick(o) })));
   openSheet('디버그 · 빛', [
     note('경기 중에 열면 테이블을 보면서 조정할 수 있습니다. 바꾼 값은 이 기기에만, 디버그 모드에서만 쓰입니다.'),
+    el('div', { class: 'lab', text: '표본' }), presets,
     ...LIGHT_UI.map(row),
     el('div', { class: 'row' }, [flatBtn('기본값으로', () => { prefs.light = null; savePrefs(); lightApply(); sheetDebug(); }),
       flatBtn('값 복사', () => { const t = JSON.stringify(scene.light); try { navigator.clipboard.writeText(t).then(() => toast('복사했습니다', 'good', 1600), () => toast(t, '', 6000)); } catch (e) { toast(t, '', 6000); } })]),

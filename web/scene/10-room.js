@@ -24,8 +24,9 @@
 
   /* Light that can be tuned (the app's 디버그 settings, owner 11-11: app/20-sheets.js sheetDebug; only on an account the admin
      console has put in debug mode). Each is a multiplier on what the scene is built with (1: as built), but exposure (the
-     tone mapping's, as set), blur (how soft the reflections are: the room's blur) and gloss (the balls' lacquer roughness). */
-  const LIGHT0 = { exposure: 1, panel: 1, blur: 0.03, ballEnv: 1, gloss: 0.04, lamp: 1, fill: 1, rail: 1, metal: 1 };
+     tone mapping's, as set), blur (how soft the reflections are: the room's blur), gloss (the balls' lacquer roughness) and
+     strip (how many lamps light the balls: below). */
+  const LIGHT0 = { exposure: 1, panel: 1, blur: 0.03, ballEnv: 1, gloss: 0.04, lamp: 1, fill: 1, rail: 1, metal: 1, strip: 3 };
   let light = Object.assign({}, LIGHT0), envTex = null;
   /* reflections for the balls: a dim room with the table's light overhead - one long box along the table, its underside a
      lit panel and its sides glowing a little (as the light box over the table, hallLight; owner 11-11: one box, not three
@@ -48,19 +49,37 @@
   }
   buildEnv();
 
-  const lampObjs = [], fills = [];
+  /* The table (the static layer) is lit by the three shades, which cast its shadows (lampObjs). The balls, the cue and what
+     moves (the scene) are lit by a row of lamps under the same span - three, one under each shade, as built; more (strip,
+     owner 11-11: "still three lights") and they run together on the lacquer into one long glint, as under a long light
+     box. Together they give the balls the light the three gave. */
+  const lampObjs = [], fills = [], ballLamps = [];
   for (const sc of [sScene, scene]) {
     const hemi = new THREE.HemisphereLight(0xe8ecf2, 0x2a2622, 0.27); hemi.position.set(0, 0, 1); sc.add(hemi); fills.push(hemi);
-    for (const [x, y, z] of LAMPS) {
-      const lamp = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1);
-      lamp.position.set(x, y, z); lamp.target.position.set(x, y, 0);
-      if (sc === sScene) {
-        lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048);
-        lamp.shadow.camera.near = 0.2; lamp.shadow.camera.far = 3; lamp.shadow.bias = -0.0006; lamp.shadow.normalBias = 0.003;
-      }
-      sc.add(lamp, lamp.target); lampObjs.push(lamp);
-    }
   }
+  for (const [x, y, z] of LAMPS) {
+    const lamp = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1);
+    lamp.position.set(x, y, z); lamp.target.position.set(x, y, 0);
+    lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048);
+    lamp.shadow.camera.near = 0.2; lamp.shadow.camera.far = 3; lamp.shadow.bias = -0.0006; lamp.shadow.normalBias = 0.003;
+    sScene.add(lamp, lamp.target); lampObjs.push(lamp);
+  }
+  function makeBallLamps(n) {
+    for (const l of ballLamps.splice(0)) scene.remove(l, l.target);
+    for (let i = 0; i < n; i++) { const l = new THREE.SpotLight(0xfff1dc, 0.58, 0, 1.05, 0.9, 1); scene.add(l, l.target); ballLamps.push(l); }
+    placeBallLamps();
+  }
+  // under the shades' span (60-view.js placeLamps moves the shades): evenly from the first to the last, or under the middle
+  function placeBallLamps() {
+    const n = ballLamps.length, a = LAMPS[0], b = LAMPS[LAMPS.length - 1], k = 0.58 * 3 / n * light.lamp;
+    ballLamps.forEach((l, i) => {
+      const t = n > 1 ? i / (n - 1) : 0.5, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+      l.intensity = k; l.position.set(x, y, a[2]);
+      const tg = lampObjs[0].target.position, d = [tg.x - a[0], tg.y - a[1]];   // (aimed as the shades are)
+      l.target.position.set(x + d[0], y + d[1], 0); l.target.updateMatrixWorld();
+    });
+  }
+  makeBallLamps(LIGHT0.strip);
   /* the tuned light put on (o: some of LIGHT0's keys; null or {}: as built). Called by the app only, after everything is made. */
   function setLight(o) {
     const next = Object.assign({}, LIGHT0);
@@ -68,6 +87,8 @@
     const room = next.panel !== light.panel || next.blur !== light.blur; light = next;
     renderer.toneMappingExposure = light.exposure;
     for (const l of lampObjs) l.intensity = 0.58 * light.lamp;
+    light.strip = Math.max(1, Math.min(15, Math.round(light.strip)));
+    if (light.strip !== ballLamps.length) makeBallLamps(light.strip); else placeBallLamps();
     for (const h of fills) h.intensity = 0.27 * light.fill;
     woodMat.envMapIntensity = 0.7 * light.rail; metalMat.envMapIntensity = 1.3 * light.metal; chromeMat.envMapIntensity = 1.4 * light.metal;
     for (const set of [sets.pool, sets.carom]) if (set.skin) for (const m of set.mesh) finishOf(set.skin, m.material);

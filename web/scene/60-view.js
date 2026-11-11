@@ -6,6 +6,7 @@
     if (!cur) return;
     [-0.615, 0, 0.615].forEach((f, i) => { LAMPS[i][0] = f * cur.HL + lampShift[0]; LAMPS[i][1] = lampShift[1]; });
     lampObjs.forEach((l, i) => { const L = LAMPS[i % 3]; l.position.x = L[0]; l.position.y = L[1]; l.target.position.set(L[0] - lampShift[0] * 0.5, -lampShift[1] * 0.5, 0); l.target.updateMatrixWorld(); });
+    placeBallLamps();
   }
   let lampsOn = false;
   function setDeskLight(lamps) {
