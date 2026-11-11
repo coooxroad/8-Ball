@@ -591,6 +591,9 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
 
 ## 8. 함정 (실제로 겪은 것)
 
+- `web/` 코어 파일(game.js 등)에 `require(...)`를 쓰면 서버 배포가 깨진다(wrangler 번들이 경로를 못 찾음, 11-12 스누커 때). 다른 코어 파일의
+  값은 전역으로 읽고, node 테스트에서는 `global.X = ...`로 넣는다. 배포 실패는 `gh run list`의 'Deploy server'에서만 보인다.
+
 - `web/app/`, `web/reel/`, `web/scene/`은 한 범위다. 이름이 겹치면 뒤의 것이 조용히 덮는다. `check.js`가 잡는다.
 - 가짜 rAF(테스트)에서는 dt가 음수가 될 수 있다 → 시간 누적에 `Math.max(0, dt)`.
 - 컨트롤에 `filter: drop-shadow`를 여럿 쓰면 소프트웨어 렌더링에서 프레임이 무너진다 → `box-shadow`와 `will-change`.

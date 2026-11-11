@@ -184,7 +184,8 @@ function createGame(PH, makeAI) {
      Not here (yet): free ball, the miss rule, putting the other back in, re-racks; a frame level after the black: the black
      is spotted again and played from the D by the one who did not pot it, as the rules say (with no toss).
      State: g.snk = { on: 'red' | 'colour' | 'clear', next: the colour to play in the clearance (16..21) }. */
-  const SN = () => typeof SNOOKER !== 'undefined' ? SNOOKER : require('./tables').SNOOKER;
+  // (tables.js SNOOKER: read where it is defined alongside - the page, the server's engine; a node test puts it on global)
+  const SN = () => SNOOKER;
   const SNK_ON = { red: '빨간 공', colour: '색 공' };
   MODES.snooker = {
     id: 'snooker', name: '스누커', blurb: '빨간 공 다음 색 공, 점수가 더 많으면 승리', table: 'snooker', n: 22, ballInHand: false, scored: true,

@@ -499,7 +499,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // 스누커 (game.js MODES.snooker): frames of loosely aimed shots (any power, any spin, now and then at the wrong ball) all
 // come to an end; the colours are never down when they should be on their spots; the D is kept to; a foul gives at least 4
 {
-  const { SNOOKER } = require(path.join(W, 'tables.js'));
+  const { SNOOKER } = require(path.join(W, 'tables.js')); global.SNOOKER = SNOOKER;   // (game.js reads it as the page does)
   let frames = 0, shots = 0;
   for (let s = 1; s <= 4; s++) {
     const g = createGameRaw({ snooker: createPhysics(SNOOKER.cfg) }), r = createGameRaw.seededRandom(s);
