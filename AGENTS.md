@@ -137,15 +137,28 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 테이블(정지 층)과 공·큐를 각각 `RectAreaLight`(`tableLamp`, `rectLamp`)로 비춘다. 직사각형 빛은 그림자를 못 만들어서 그 아래 스포트 3개
 (`lampObjs`, 넓고 약하게 `SPOT_K`)가 그림자만 맡는다 — 스포트의 반사광은 셰이더에서 뺐다(`lights_fragment_begin`, 레일·공에 점 3개가 비치던 것). three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을
 더했다(`lacquerGlint`, 밝기 `glint` — 큰 램프의 반사는 원래 희미해서 사진처럼 보이게 키운 값). 표 데이터는 `scene/02-ltc.js`(도구
-`tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외). 게임의 빛 값은 `LIGHT0`.
+`tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외). 게임의 빛 값은 `LIGHT0`
+(소유자 확정 11-13 — 장면이 만들어질 때 스스로 적용, 앱에서 조정하지 않는다).
+
+### 테이블 모양 (physics.js `shape`, tables.js `TABLE_SHAPES`)
+테이블은 그대로 두고, 그 안에 다각형을 따라 쿠션을 세운다(`spec.poly` = 공이 튕기는 선, 쿠션과 같은 고무·당점, 쿠션으로 센다).
+`spec.holes` = 천의 구멍(공 중심이 그 위에 오면 빠짐, `pocket` 6부터). 쿠션을 뛰어넘어 바깥에 떨어지면 장외. 모양이 없는 판은 예전 그대로.
+`TABLE_SHAPES.spec(P, { kind })` — circle·oval·penta·hexa·bumpy·poly. 퍼즐은 `shape` 필드(`52-puzzle.js`), 게임은 `opts.shape`(저장에 들어감).
+장면은 바깥을 레일 높이까지 테이블 나무로 채우고 경계에 쿠션 면, 구멍은 검은 컵과 금속 테(`20-table.js` `setShape`). 디버그의
+"테이블 모양 (자유 연습)"으로 본다. 아케이드 서버 방에 쓸 땐 spec 전체를 방이 보내야 한다(같은 기기 안에서만 같은 수를 보장).
+
+### 책상 재질 (00-state.js `DESK_LOOK`)
+책상 나무·트레이 틀·천을 CSS 변수(`--desk-img`, `--tray-img`, `--felt-img`, `--felt-base`)로 둔다 — `applyBackdrop`이 넣는다.
+디버그에서 고르는 동안은 시험(`prefs.deskWood`, `deskTray`), 소유자가 정하면 `deskLook`의 기본을 바꾼다.
 
 ### 하이라이트 편집 추가
 `web/reel/`에 `NN-이름.js`를 만들고 `STYLES.이름 = { name, init, step, ... }`을 넣는다. 다른 편집 파일은 건드리지 않는다.
 
 ### 디버그 모드
 관리자 페이지(`/admin`)에서 계정마다 "디버그 모드"를 켠다(서버 `core.js` `adminGrant({ debug })`, `me().debug`). 앱은 `net.debug`로 알고,
-설정에 "디버그" 메뉴(`20-sheets.js` `sheetDebug`)를 보인다. 지금은 빛 조정(`scene.setLight`, `scene/10-room.js` `LIGHT0`)만 있다 —
-값은 그 기기의 `prefs.light`에, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다. 코인·보유는 풀지 않는다.
+설정에 "디버그" 메뉴(`20-sheets.js` `sheetDebug`)를 보인다: 책상 목재·트레이(`DESK_LOOK`), 테이블 모양(자유 연습), 궁극기 게이지 미리보기,
+그리고 아케이드(준비 중)로 들어가는 길. 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
+코인·보유는 풀지 않는다.
 
 ### 저장 데이터
 `localStorage`의 `dp8.*` 모양을 바꾸면 옛 저장본을 읽는 줄도 같이 넣는다(`app/00-state.js`의 `prefs`). 전적과 진행이 날아가면 안 된다.
