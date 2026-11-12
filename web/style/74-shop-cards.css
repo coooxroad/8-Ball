@@ -30,7 +30,8 @@
    it - 일반 a faint cold light, 시크릿 every colour. It is the card's background: it lies under the white line, the picture and
    the name (the card is a stacking context of its own, the aurora below everything in it), inside the frame (the frame is
    the card's border; the aurora fills the padding box and is cut to it). Two curtains drift past each other by transform
-   only, so the cards move without being painted again; a card's place in the row sets it off from its neighbours. */
+   only, so the cards move without being painted again; a card's place in the row sets it off from its neighbours.
+   (11-12: faster - 6s and 8.5s a sweep, the rays flickering in 2.6-3.4s.) */
 #app.desk .dk-cards.pc .dk-card{isolation:isolate;--a1:#bfe9ff;--a2:#8fd3c9;--a3:#d9e4ef;--ao:.5}
 #app.desk .dk-cards.pc .dk-card.r1{--a1:#4fd8ff;--a2:#3d7bff;--a3:#8ff0e0;--ao:.62}
 #app.desk .dk-cards.pc .dk-card.r2{--a1:#d06bff;--a2:#7a5cff;--a3:#ff8fe3;--ao:.72}
@@ -39,22 +40,30 @@
 #app.desk .dk-cards.pc .dk-card.r5{--a1:#ff5d6c;--a2:#4f9bff;--a3:#5fe08a;--a4:#b072ff;--a5:#ffc23a;--ao:.95}
 #app.desk .dk-cards.pc .dk-card .aur{position:absolute;inset:0;z-index:-1;flex:none;width:auto;min-height:0;margin:0;border-radius:10px;overflow:hidden;pointer-events:none;
   -webkit-mask-image:linear-gradient(0deg,#000 0%,#000 38%,transparent 86%);mask-image:linear-gradient(0deg,#000 0%,#000 38%,transparent 86%)}
-/* (an aurora's curtain: faint upright rays over its glow, drifting with it) */
-#app.desk .dk-cards.pc .dk-card .aur::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 2px,transparent 2px 7px,rgba(255,255,255,.07) 7px 8px,transparent 8px 13px);mix-blend-mode:overlay;opacity:calc(var(--ao) * .9);
-  -webkit-mask-image:linear-gradient(0deg,#000 0%,transparent 55%);mask-image:linear-gradient(0deg,#000 0%,transparent 55%)}
 #app.desk .dk-cards.pc .dk-card .aur>span{position:absolute;left:-60%;width:220%;bottom:-6%;height:72%;opacity:var(--ao);mix-blend-mode:screen;will-change:transform;
-  transform-origin:50% 100%;animation:dkAur 11s ease-in-out infinite alternate}
+  transform-origin:50% 100%;animation:dkAur 6s ease-in-out infinite alternate}
+/* (an aurora's rays: soft upright streaks rising out of its glow, each its own width, height and brightness, drifting with
+   their curtain and flickering - owner 11-12: not even stripes) */
+#app.desk .dk-cards.pc .dk-card .aur>span::before{content:"";position:absolute;inset:0;will-change:opacity,transform;animation:dkRay 2.6s ease-in-out infinite alternate;
+  background:radial-gradient(ellipse 1.1% 64% at 7% 100%,rgba(255,255,255,.34),transparent 100%),radial-gradient(ellipse 2.2% 48% at 13% 100%,rgba(255,255,255,.18),transparent 100%),
+    radial-gradient(ellipse .8% 78% at 21% 100%,rgba(255,255,255,.4),transparent 100%),radial-gradient(ellipse 1.6% 56% at 28% 100%,rgba(255,255,255,.22),transparent 100%),
+    radial-gradient(ellipse 1% 70% at 37% 100%,rgba(255,255,255,.32),transparent 100%),radial-gradient(ellipse 2.6% 40% at 44% 100%,rgba(255,255,255,.14),transparent 100%),
+    radial-gradient(ellipse .9% 84% at 52% 100%,rgba(255,255,255,.38),transparent 100%),radial-gradient(ellipse 1.4% 60% at 61% 100%,rgba(255,255,255,.24),transparent 100%),
+    radial-gradient(ellipse 1% 52% at 69% 100%,rgba(255,255,255,.3),transparent 100%),radial-gradient(ellipse 2% 72% at 77% 100%,rgba(255,255,255,.2),transparent 100%),
+    radial-gradient(ellipse .8% 62% at 86% 100%,rgba(255,255,255,.36),transparent 100%),radial-gradient(ellipse 1.5% 46% at 93% 100%,rgba(255,255,255,.2),transparent 100%)}
+#app.desk .dk-cards.pc .dk-card .aur>span:last-child::before{animation-duration:3.4s;animation-delay:-1.3s;animation-direction:alternate-reverse}
 #app.desk .dk-cards.pc .dk-card .aur>span:first-child{
   background:radial-gradient(ellipse 15% 70% at 22% 100%,var(--a1),transparent 72%),radial-gradient(ellipse 12% 85% at 46% 100%,var(--a2),transparent 70%),
     radial-gradient(ellipse 16% 62% at 70% 100%,var(--a3),transparent 72%),radial-gradient(ellipse 10% 78% at 88% 100%,var(--a1),transparent 70%)}
-#app.desk .dk-cards.pc .dk-card .aur>span:last-child{height:58%;animation-duration:15s;animation-direction:alternate-reverse;
+#app.desk .dk-cards.pc .dk-card .aur>span:last-child{height:58%;animation-duration:8.5s;animation-direction:alternate-reverse;
   background:radial-gradient(ellipse 13% 80% at 12% 100%,var(--a2),transparent 70%),radial-gradient(ellipse 15% 64% at 36% 100%,var(--a3),transparent 72%),
     radial-gradient(ellipse 11% 88% at 60% 100%,var(--a1),transparent 70%),radial-gradient(ellipse 15% 70% at 82% 100%,var(--a2),transparent 72%)}
 #app.desk .dk-cards.pc .dk-card.r5 .aur>span:first-child{
   background:radial-gradient(ellipse 14% 72% at 18% 100%,var(--a1),transparent 72%),radial-gradient(ellipse 12% 86% at 38% 100%,var(--a5),transparent 70%),
     radial-gradient(ellipse 14% 66% at 58% 100%,var(--a3),transparent 72%),radial-gradient(ellipse 12% 80% at 78% 100%,var(--a2),transparent 70%),radial-gradient(ellipse 10% 70% at 94% 100%,var(--a4),transparent 70%)}
-#app.desk .dk-cards.pc .dk-card:nth-child(3n) .aur>span{animation-delay:-4s}
-#app.desk .dk-cards.pc .dk-card:nth-child(3n+1) .aur>span{animation-delay:-8.5s}
-#app.desk .dk-cards.pc .dk-card:nth-child(2n) .aur>span:last-child{animation-delay:-11s}
+#app.desk .dk-cards.pc .dk-card:nth-child(3n) .aur>span{animation-delay:-2.2s}
+#app.desk .dk-cards.pc .dk-card:nth-child(3n+1) .aur>span{animation-delay:-4.7s}
+#app.desk .dk-cards.pc .dk-card:nth-child(2n) .aur>span:last-child{animation-delay:-6.1s}
+@keyframes dkRay{0%{opacity:.55;transform:translateX(-1.2%)}50%{opacity:1}100%{opacity:.7;transform:translateX(1.4%)}}
 @keyframes dkAur{0%{transform:translateX(-14%) scaleY(.82)}35%{transform:translateX(-3%) scaleY(1.06)}70%{transform:translateX(7%) scaleY(.9)}100%{transform:translateX(15%) scaleY(1.1)}}
-@media (prefers-reduced-motion:reduce){#app.desk .dk-cards.pc .dk-card .aur>span{animation:none}}
+@media (prefers-reduced-motion:reduce){#app.desk .dk-cards.pc .dk-card .aur>span,#app.desk .dk-cards.pc .dk-card .aur>span::before{animation:none}}
