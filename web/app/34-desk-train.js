@@ -60,13 +60,13 @@ function deskLesson({ head, stage, slate }) {
   const top = drills.LEVELS; stage.dataset.win = '0';
   const doneOf = ids => ids.filter(id => levelOf(id) >= top).length;
   if (lessonVol == null) {
-    dkPut(head, dkTitle('교본'));
+    dkPut(head, dkTitle('레슨'));
     dkPut(stage, el('div', { class: 'dk-cards vols' }, VOLUMES.map(([v, name], i) => { const ids = volLessons(v);
-      return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 교본', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
+      return el('button', { class: 'dk-card vol' + (ids.length ? '' : ' empty'), 'aria-label': name + ' 레슨', onclick: onTap(() => { lessonVol = v; paintHome(); }) }, [
         el('i', { class: 'tome', style: `background-image:url(ui/vol-${v}.webp)` }, el('span', { class: 'tt' }, [el('b', { text: name })])),
         // (copy audit 03-02: the progress once - books brought to the top level, which is all that is known)
         el('span', { class: 'nm', text: ids.length ? `${doneOf(ids)}/${ids.length}` : '준비 중' }), ECONOMY.LESSON_PRIZE[v] ? el('span', { class: 'prize-tag', text: '보상' }) : null]); })));
-    dkPut(slate, dkH1('교본'));
+    dkPut(slate, dkH1('레슨'));
     const cur = LESSONS().includes(prefs.drill) ? prefs.drill : LESSONS()[0];
     dkPut(slate, dkActs(cur ? dkMain('이어서 하기', drills.byId(cur).name, () => practice.start(cur)) : null,
       // (58-tutorial.js: the first shot, step by step - its prize once per account)
@@ -75,12 +75,12 @@ function deskLesson({ head, stage, slate }) {
   }
   const vol = VOLUMES.find(x => x[0] === lessonVol), ids = volLessons(lessonVol), cur = ids.includes(prefs.drill) ? prefs.drill : ids[0];
   head.className = 'dk-head open';
-  dkPut(head, [el('button', { class: 'dk-x', 'aria-label': '종목 교본으로', onclick: () => { SND.tap(); lessonVol = null; paintHome(); } }, el('i')), dkTitle(`${vol[1]} 교본`, ids.length ? `${ids.length}권 · 다 뗀 교본 ${doneOf(ids)}권` : '준비 중')]);
+  dkPut(head, [el('button', { class: 'dk-x', 'aria-label': '레슨 목록으로', onclick: () => { SND.tap(); lessonVol = null; paintHome(); } }, el('i')), dkTitle(`${vol[1]} 레슨`, ids.length ? `완료 ${doneOf(ids)} / ${ids.length}` : '준비 중')]);
   if (!ids.length) {
     // (copy audit 03-04: one line, and the way back)
     dkPut(stage, el('div', { class: 'msg' }, [el('b', { text: '아직 등록된 레슨이 없습니다' })]));
     dkPut(slate, dkH1(`${vol[1]}`)); dkPut(slate, [dkHr(), prizeLine(lessonVol)]);
-    dkPut(slate, dkActs(dkSec('교본으로', () => { lessonVol = null; paintHome(); })));
+    dkPut(slate, dkActs(dkSec('레슨 목록', () => { lessonVol = null; paintHome(); })));
     return;
   }
   const books = drills.COURSES.flatMap((course, ci) => ids.filter(id => drills.byId(id).course === course).map(id => [course, ci, id]));

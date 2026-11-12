@@ -14,7 +14,7 @@ const ranked = {
   finding: null,                              // waiting in the lobby: { mode, t0, timer }
   // the 랭킹전 panel: the four game panels open (33-desk-play.js), as for 친구와 플레이; picking one starts looking
   pick() {
-    if (!net.on) return toast('랭킹전은 서버가 열리면 시작합니다.', '', 2200);
+    if (!net.on) return toast('랭킹전은 온라인에서만 할 수 있습니다.', '', 2200);
     playFor = 'rank'; playStep = 'rank'; playFx = 'fan'; paintHome();
   },
   /* Waiting: the lobby is asked again every two seconds, and a strip at the top says so (#rkBar) with the time waited and
@@ -284,7 +284,7 @@ const ranked = {
     } else if (flow === match && st.screen === 'play' && !game.over) {
       game.over = draw ? { winner: null, draw: true, why: '후구 · 무승부', plain: false } : { winner: m.winner, why, plain: !['left', 'resigned', 'idle', 'a shot that does not fit'].includes(m.why) }; match.finish();
     } else if (flow === match && st.screen === 'result' && game.over && game.over.winner !== m.winner) {
-      undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('서버 확인으로 결과가 정정됐습니다.', 'foul', 3200);
+      undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('결과가 다시 확인되어 바뀌었습니다.', 'foul', 3200);
     } else if (st.screen === 'result') ranked.paint();
     if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }
     net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after)

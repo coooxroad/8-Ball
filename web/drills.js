@@ -13,11 +13,11 @@ function createDrills() {
   // the courses a volume's books are grouped in, first learned first (each its own leather: ui/book-*.webp)
   const COURSES = ['기본기', '큐볼 다루기', '응용', '자유롭게'];
   const list = [
-    { id: 'free', name: '자유 연습', d: '규칙 없이 마음대로. 공을 옮기고 한 수 되돌릴 수 있습니다.' },
+    { id: 'free', name: '자유 연습', d: '규칙 없이 마음껏 쳐 보세요.' },
     /* 8볼 · 기본기 1 (the first lesson, and the pattern for the rest: tasks/gpt-lessons.md). The cue ball, the 1 and a
        corner pocket on one line: strike it straight, a touch below centre so the cue ball stops where it hits. Farther
        apart at each level. */
-    { id: 'e-straight', name: '정면 넣기', d: '큐볼, 1번 공, 포켓이 한 줄. 똑바로 쳐서 넣습니다.', tip: '큐볼 가운데 조금 아래를 똑바로. 큐볼은 맞힌 자리에 멈춥니다.',
+    { id: 'e-straight', name: '정면 넣기', d: '일직선으로 놓인 공을 똑바로 넣기', tip: '큐볼 가운데 조금 아래를 똑바로. 큐볼은 맞힌 자리에 멈춥니다.',
       vol: 'eight', course: '기본기',
       make(P, t, rnd) {
         const k = [0, 2, 3, 5][Math.floor(rnd() * 4)], pk = P.POCKETS[k], m = Math.hypot(pk.nx, pk.ny);

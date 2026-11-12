@@ -126,7 +126,7 @@ const PLAY_STEPS = {
   },
   friend({ wrap, fit, panel, tt, head, toBoards, dama }) {
     dkPut(wrap, head('친구와 플레이', '', toBoards));
-    const way = (id, t, sub, fn, off) => panel('way-' + id, t, off ? () => toast('서버에 연결되면 할 수 있습니다.', '', 2000) : fn,
+    const way = (id, t, sub, fn, off) => panel('way-' + id, t, off ? () => toast('온라인에서만 할 수 있습니다.', '', 2000) : fn,
       [(() => { const i = el('span', { class: 'way-ico' }); i.innerHTML = WAY_ICO[id]; return i; })(), tt(t, sub)], 'card way unf' + (off ? ' soon' : ''));
     dkPut(fit, [
       way('local', '한 기기에서', null, b => playLeave(b, () => { prefs.friendWay = 'local'; invite.leave(); playStep = 'setup'; repaintLive(); })),

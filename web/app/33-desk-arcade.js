@@ -10,7 +10,7 @@ const ARCADE_STEPS = {
     if (f && f.mode === 'arcade') return seekPaint({ wrap, fit, head }, f, '아케이드');
     dkPut(wrap, head('아케이드', `${ARCADE.BALLS}볼`, toBoards));
     const info = (n, t, sub, cls) => el('div', { class: 'bd card info unf ' + cls, 'aria-hidden': 'true' }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, [el('span', { class: 'arc-n', text: n }), tt(t, sub)])]);
-    const go = b => { if (!net.on) return toast('아케이드는 서버에 연결되면 할 수 있습니다.', '', 2200); playLeave(b, () => { ranked.find('arcade'); playFx = 'flip'; paintHome(); }); };
+    const go = b => { if (!net.on) return toast('아케이드는 온라인에서만 할 수 있습니다.', '', 2200); playLeave(b, () => { ranked.find('arcade'); playFx = 'flip'; paintHome(); }); };
     dkPut(fit, [
       panel('arc-mode', '증강 당구', go, [arcIco(ARC_ICO.mode), tt('증강 당구', `온라인 매칭 · 한 차례 ${ARCADE.SHOTS}번`, `${ARCADE.BALLS}볼`)], 'card way arc unf'),
       info('1', '테이블 투표', `${ARCADE.VOTE_MS / 1000}초 · 다르면 둘 중 무작위`, 'i1'),

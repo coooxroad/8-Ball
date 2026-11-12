@@ -213,15 +213,16 @@ function syncEl() {
   const el = trickOK() ? Math.max(0, st.elWant || 0) : 0;
   if (Math.abs(el - st.el) > 1e-6) { st.el = el; setKindUI(); }
 }
-// what the raised cue will do at the power now drawn: said in a word next to the angle, and on the spin button
-// (a raised cue that will not jump at this power but would at full says so, which is how the jump angles are found)
+// the stroke a raised cue makes at the power now drawn, by its name - next to the angle, and on the spin button (nothing for
+// a raised cue that only lifts the ball off its spin)
 function elSay() {
   const P = game.P, el = shownEl(); if (el < 0.009) return '';
   const kp = cueK().power, h = P.hop(game.vOf(st.power > 0 ? st.power : 0.45) * kp, el), side = Math.abs(st.spin.x) > 0.15, steep = el > 58 * Math.PI / 180;
-  if (h > P.R * 2) return '공을 넘는 점프';
-  if (h > 0.012) return P.hop(game.vOf(1) * kp, el) > P.R * 2 ? '낮게 뜸 · 세게 치면 점프' : '낮게 뜸';
-  if (P.hop(game.vOf(1) * kp, el) > P.R * 2) return side && steep ? '맛세이 · 세게 치면 점프' : '세게 치면 점프';
-  return side ? (steep ? '맛세이 · 휘어 감' : '휘어 감') : '안 뜸';
+  // (the stroke's name, as players call it - owner 11-13: not a note on what the ball does)
+  if (h > P.R * 2) return '점프샷';
+  if (h > 0.012) return '로우 점프';
+  if (P.hop(game.vOf(1) * kp, el) > P.R * 2) return side && steep ? '맛세이' : '';
+  return side ? (steep ? '맛세이' : '커브샷') : '';
 }
 function setKindUI() {
   // (현실 당구: the angle the cue must stand at here, if more than the one set - it cannot be laid lower: 00-state.js shownEl)

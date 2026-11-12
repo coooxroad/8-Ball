@@ -71,7 +71,7 @@ const net = (() => {
     if (!opening) opening = (async () => {
       const r = await call('/v1/account', {}, 20000); if (!r || !r.ok || !r.id || !r.key) return false;
       account = { id: r.id, key: r.key }; store.set('acct', account);
-      if (lostAccount) { lostAccount = false; toast('서버가 이 기기의 계정을 몰라서 새 계정을 만들었습니다. 옛 계정은 기기에 보관됩니다.', 'foul', 4000); }
+      if (lostAccount) { lostAccount = false; toast('새 계정으로 시작합니다. 이전 계정은 이 기기에 보관돼 있습니다.', 'foul', 4000); }
       return true;
     })().finally(() => { opening = null; });
     return opening;
