@@ -563,5 +563,34 @@ for (const name of ['bar', 'pro', 'pub']) {
   console.log(`arcade: ${games} games of 36 played to the end, ${shots} shots`);
 }
 
+// tables of other shapes (physics.js shape, tables.js TABLE_SHAPES): on every shape, pool and carom, hard random shots -
+// no ball ever ends up outside the shape's cushion unless it dropped in a hole or left the table; the holes take balls;
+// the same shots give the same table twice; a ball is never placed outside or on a hole
+{
+  const T = require(path.join(W, 'tables.js')), S = T.TABLE_SHAPES;
+  let shots = 0, holed = 0;
+  for (const tid of ['bar', 'pro']) for (const kind of ['pool', 'carom']) {
+    const P = T.physicsFor(createPhysics, tid)[kind]; if (!P) continue;
+    for (const k of S.kinds) {
+      if (k === 'poly') continue;
+      const spec = S.spec(P, { kind: k }), sh = P.shape(spec), r = createGameRaw.seededRandom(k.length * 7 + (kind === 'pool' ? 1 : 2));
+      if (!sh || !P.inShape(sh, 0, 0)) { fail(`shapes: ${k} on ${tid} ${kind} is not made`); continue; }
+      const once = () => {
+        const w = P.makeWorld(kind === 'pool' ? 8 : 4); w.shape = sh; const rr = createGameRaw.seededRandom(99);
+        for (const b of w.balls) { const [x, y] = P.findFree(w, (rr() - 0.5) * 0.6, (rr() - 0.5) * 0.4); P.place(w, b.id, x, y); }
+        for (let i = 0; i < 6; i++) { if (!w.balls[0].on) { const [x, y] = P.findFree(w, 0, 0); P.place(w, 0, x, y); } P.strike(w, rr() * 6.283, 1.5 + rr() * 4, (rr() - 0.5) * 0.6, (rr() - 0.5) * 0.6); P.run(w, 60); shots++;
+          for (const b of w.balls) if (b.on && !P.inShape(sh, b.x, b.y)) fail(`shapes: a ball outside the ${k} cushion on ${tid} ${kind}`);
+          holed += w.ev.pocketed.filter(q => q.pocket >= 6).length; }
+        return w.balls.map(b => `${b.on ? 1 : 0}${b.x.toFixed(9)},${b.y.toFixed(9)}`).join(';');
+      };
+      if (once() !== once()) fail(`shapes: ${k} on ${tid} ${kind} plays differently twice`);
+      const w = P.makeWorld(2); w.shape = sh;
+      for (let i = 0; i < 200; i++) { const [x, y] = P.findFree(w, (r() - 0.5) * 2 * P.HL, (r() - 0.5) * 2 * P.HW); if (P.isFree(w, x, y) && !P.inShape(sh, x, y)) fail(`shapes: a free spot outside the ${k}`); }
+    }
+  }
+  if (!holed) fail('shapes: no ball ever dropped into a hole');
+  console.log(`shapes: ${shots} shots on ${S.kinds.length - 1} shapes, ${holed} balls into holes`);
+}
+
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);

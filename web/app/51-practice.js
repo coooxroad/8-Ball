@@ -30,10 +30,17 @@ const practice = {
     tutorial.stop(); usePhysics();
     if (id) { prefs.drill = id; savePrefs(); }
     const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
-    game.start('practice', [prefs.names[0], ''], false, {});
+    // (디버그: free practice on a table of another shape - 20-sheets.js sheetDebug, tables.js TABLE_SHAPES)
+    const shapeTry = net.debug && prefs.shapeTry && !drills.byId(prefs.drill).make ? TABLE_SHAPES.spec(PH.pool, { kind: prefs.shapeTry }) : null;
+    game.start('practice', [prefs.names[0], ''], false, { shape: shapeTry });
     flow = practice; scene.setMarks(null); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar();
     if (p.drill.make) p.fresh();
-    else { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++; beginTurn(true); }
+    else {
+      game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++;
+      // (a shaped table: the balls the rack left outside it, or on a hole, moved in)
+      const w = game.world, P = game.P; if (w.shape) for (const b of w.balls) if (b.on && !P.isFree(w, b.x, b.y, b.id)) { const [x, y] = P.findFree(w, b.x * 0.4, b.y * 0.6, b.id); P.place(w, b.id, x, y); }
+      beginTurn(true);
+    }
     if (p.drill.tip) toast(p.drill.tip, '', 5200);
   },
   restart() { practice.start(); },

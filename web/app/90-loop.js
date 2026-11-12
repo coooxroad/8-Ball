@@ -124,7 +124,7 @@ function followTick(dt) {
   const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
   return { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
 }
-let wallsShown = null;
+let wallsShown = null, shapeShown = null;
 function frame(now) {
   requestAnimationFrame(frame);
   if (!paceDue(now)) return;
@@ -156,6 +156,7 @@ function frame(now) {
   // (현실 당구 · 큐 각도: the angle shown follows the cue as it is turned past something it must stand up over)
   if (st.phase === 'aim' && game.world.real && game.world.real.cue) { const e = shownEl(); if (Math.abs(e - (st.elShown || 0)) > 1e-4) { st.elShown = e; setKindUI(); } }
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
+  if ((game.world.shape || null) !== shapeShown) { shapeShown = game.world.shape || null; scene.setShape(shapeShown); }   // (a table of another shape)
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
   const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming()));
   const d0 = performance.now(); scene.prof.guide = 0;

@@ -47,6 +47,7 @@ const prefs = (() => {
     fourMinus: true,                   // 4구 with a friend: a foul costs a point (마이너스 점수 있음) or nothing
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
+    shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
     deskWood: 'oak', deskTray: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);

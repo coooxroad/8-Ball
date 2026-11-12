@@ -40,6 +40,10 @@ function sheetDebug() {
   openSheet('디버그', [
     el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWood', L.wood),
     el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTray', L.tray),
+    // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
+    el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
+    el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>
+      el('button', { 'aria-pressed': String((prefs.shapeTry || '') === k), text: t, onclick: () => { prefs.shapeTry = k || null; savePrefs(); sheetDebug(); } }))),
     // (아케이드's ultimate gauge on the game screen, in any game: 50-match.js paintUlt)
     flatBtn(`궁극기 게이지 미리보기: ${prefs.ultTry ? '켜짐' : '꺼짐'}`, () => { prefs.ultTry = !prefs.ultTry; savePrefs(); paintUlt(); sheetDebug(); }),
     flatBtn('뒤로', sheetSettings),

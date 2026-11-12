@@ -477,6 +477,8 @@ function createGame(PH, makeAI) {
     // g.yellow is the yellow ball's player; the scene and the HUD paint ball 0 or 1 yellow by it
     g.yellow = g.mode.table === 'carom' && modeId === 'four' ? 1 - g.turn : 1;
     g.rnd = opts.rnd || Math.random;             // (the rack's chances - again for a new rack after a break that did not stand)
+    // a table of another shape (opts.shape: its spec - physics.js shape, tables.js TABLE_SHAPES), there before the rack
+    g.shape = opts.shape || null; g.world.shape = g.P.shape(g.shape);
     g.mode.setup(g, g.rnd);
     g.world.ice = g.ice; g.world.real = g.real;
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
@@ -659,7 +661,7 @@ function createGame(PH, makeAI) {
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
     team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance,
-    snk: g.snk ? Object.assign({}, g.snk) : null, arc: g.arc ? { n: g.arc.n } : null,
+    snk: g.snk ? Object.assign({}, g.snk) : null, arc: g.arc ? { n: g.arc.n } : null, shape: g.shape || null,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -672,6 +674,7 @@ function createGame(PH, makeAI) {
     g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     g.minus = d.minus !== false; g.hugu = !!d.hugu; g.first = d.first ? 1 : 0; g.chance = d.chance === 0 || d.chance === 1 ? d.chance : null;
+    g.shape = d.shape && Array.isArray(d.shape.poly) ? d.shape : null; g.world.shape = g.P.shape(g.shape);
     g.arc = d.arc && typeof d.arc === 'object' ? { n: Math.max(0, Math.min(ARCADE.SHOTS - 1, d.arc.n | 0)) } : null;
     g.snk = d.snk && typeof d.snk === 'object' ? { on: ['red', 'colour', 'clear'].includes(d.snk.on) ? d.snk.on : 'red', next: Math.max(16, Math.min(21, +d.snk.next || 16)) } : null;
     if (d.modeId === 'snooker' && !g.snk) g.snk = { on: 'red', next: 16 };

@@ -1,6 +1,8 @@
 /* Four-ball puzzles, in stages: one position each, and an answer seen to work on the game's physics (sol: [direction,
    speed, side, follow/draw, cue raised]). balls: cue, yellow, red, red. walls (optional): barricades standing on the
-   cloth, [{ x, y, len, thick, ang, h }] (physics.js walls()), for the stages that have them. A stage's goal says what the shot has to do
+   cloth, [{ x, y, len, thick, ang, h }] (physics.js walls()), for the stages that have them. shape (optional): the
+   table's shape - { kind: 'circle' | 'oval' | 'penta' | 'hexa' | 'bumpy', ... } (tables.js TABLE_SHAPES) or { poly, holes }
+   (physics.js shape()); the solution must be found on it (the generator: set the world's shape before solving). A stage's goal says what the shot has to do
    (the puzzle rules are in game.js). The list is made by web/tools/puzzles/ (README there) and checked by test/run.js;
    an id is never changed or used again (the server pays each one once, by id). */
 function createPuzzles() {

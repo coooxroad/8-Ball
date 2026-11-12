@@ -173,7 +173,8 @@
   // A pocketed ball keeps rolling over the lip, drops under gravity and rattles down inside the pocket.
   const fallAxis = new THREE.Vector3();
   function fall(P, e) {
-    const p = P.POCKETS[e.pocket];
+    const p = e.pocket >= 6 ? shapeHole(e.pocket) : P.POCKETS[e.pocket];   // (6 and on: a hole of a shaped table - 20-table.js)
+    if (!p) return fly(P, e);
     let vx = e.vx || 0, vy = e.vy || 0; const sp = Math.hypot(vx, vy), cap = 1.5;
     if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
     falls.push({ id: e.id, x: e.x, y: e.y, z: P.R, vx, vy, vz: 0, p });

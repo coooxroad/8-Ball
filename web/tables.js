@@ -30,4 +30,30 @@ const SNOOKER = {
 };
 const physicsFor = (createPhysics, tableId) => ({ pool: createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === tableId) || TABLES[0]).cfg)),
   carom: createPhysics(CAROM.carom), carom3: createPhysics(CAROM.carom3), snooker: createPhysics(SNOOKER.cfg) });
-if (typeof module !== 'undefined') module.exports = { TABLES, CAROM, SNOOKER, physicsFor };
+/* Tables of other shapes (physics.js shape(): a cushion along a polygon inside the table, holes in the cloth). Each maker
+   takes the table (P: HL, HW, R, POCKETED) and options, and gives the spec - { poly, holes } - so the same name makes
+   the same shape on every device and the server. A table with pockets gets holes on the shape's own corners (or round its
+   edge); a carom table none. Puzzles name one ({ kind, ... }: TABLE_SHAPES.spec); 증강 당구's vote will too.
+     circle: a round table as wide as the table is (opts.r: its radius); oval: the largest ellipse; penta and hexa: regular
+     polygons as wide as the table, a corner forward; bumpy: an oval whose edge goes in and out (opts.n bumps, opts.k
+     how deep); poly: any polygon given (opts.poly, opts.holes). */
+const TABLE_SHAPES = (() => {
+  const TAU = 6.283185307179586;
+  // n points round an ellipse (rx, ry), from angle a0, radius times f(i) - with the same arithmetic everywhere: cos and
+  // sin through physics' own (P.DMath is not there: the polygon is made once and handed to the world, which needs no
+  // agreement beyond its numbers - every device makes them from the same spec on its own, so they are rounded to 0.1 mm)
+  const r4 = v => Math.round(v * 1e4) / 1e4;
+  const ring = (n, rx, ry, a0, f) => { const out = []; for (let i = 0; i < n; i++) { const a = a0 + TAU * i / n, k = f ? f(i) : 1; out.push([r4(Math.cos(a) * rx * k), r4(Math.sin(a) * ry * k)]); } return out; };
+  const holesAt = (P, pts, inset) => P.POCKETED ? pts.map(([x, y]) => { const d = Math.hypot(x, y) || 1, r = P.R * 2.05; return { x: r4(x - x / d * (inset || r * 0.55)), y: r4(y - y / d * (inset || r * 0.55)), r: r4(r) }; }) : [];
+  const fit = P => Math.min(P.HL, P.HW) - 0.004;
+  const make = {
+    circle: (P, o) => { const r = o.r || fit(P), poly = ring(64, r, r, 0); return { poly, holes: holesAt(P, ring(6, r, r, Math.PI / 6)) }; },
+    oval: (P, o) => { const rx = P.HL - 0.004, ry = P.HW - 0.004, poly = ring(72, rx, ry, 0); return { poly, holes: holesAt(P, [[-rx, 0], [rx, 0], ...ring(4, rx * 0.72, ry * 0.92, Math.PI / 4)]) }; },
+    penta: (P, o) => { const r = fit(P) / Math.cos(Math.PI / 5) * 0.98, poly = ring(5, r, r, Math.PI, null); const k = fit(P) / Math.max(...poly.map(p => Math.abs(p[1]))); const q = poly.map(([x, y]) => [r4(x * Math.min(1, k)), r4(y * Math.min(1, k))]); return { poly: q, holes: holesAt(P, q) }; },
+    hexa: (P, o) => { const r = fit(P) / Math.cos(Math.PI / 6), poly = ring(6, r, r, 0); const q = poly.map(([x, y]) => [x, Math.max(-fit(P), Math.min(fit(P), y))]); return { poly: q, holes: holesAt(P, q) }; },
+    bumpy: (P, o) => { const n = o.n || 14, k = o.k || 0.07, rx = P.HL - 0.01, ry = P.HW - 0.01, poly = ring(n * 6, rx / (1 + k), ry / (1 + k), 0, i => 1 + k * Math.cos(TAU * i / 6)); return { poly, holes: holesAt(P, ring(6, rx * 0.86 / (1 + k), ry * 0.86 / (1 + k), Math.PI / 6)) }; },
+    poly: (P, o) => ({ poly: (o.poly || []).map(p => [r4(p[0]), r4(p[1])]), holes: (o.holes || []).map(h => ({ x: r4(h.x), y: r4(h.y), r: r4(h.r || P.R * 2.05) })) }),
+  };
+  return { kinds: Object.keys(make), spec: (P, o) => o && make[o.kind] ? make[o.kind](P, o) : null };
+})();
+if (typeof module !== 'undefined') module.exports = { TABLES, CAROM, SNOOKER, physicsFor, TABLE_SHAPES };

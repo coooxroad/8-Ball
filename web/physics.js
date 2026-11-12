@@ -98,7 +98,7 @@ function createPhysics(cfg) {
   function makeWorld(n) {
     const balls = [];
     for (let i = 0; i < n; i++) balls.push({ id: i, x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: 0, spit: 0, on: true, q: [0, 0, 0, 1] });
-    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false, real: null, walls: NO_WALLS };   // real: the 현실 당구 add-on's parts (below)   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades (puzzles), made with walls()
+    return { balls, ev: newEv(), snd: null, track: false, cue: 0, ice: false, real: null, walls: NO_WALLS, shape: null };   // real: the 현실 당구 add-on's parts (below)   // ice: the cloth is a sheet of ice (arcade)   // walls: barricades (puzzles), made with walls()
   }
   /* Barricades (puzzles): blocks standing on the cloth that force a way round. Each { x, y, len, thick, ang, h }: its middle,
      length and thickness (m), its turn (radians, 0 along the table's length) and height (m). A ball rolling into one comes
@@ -114,8 +114,71 @@ function createPhysics(cfg) {
     });
   }
 
+  /* A table of another shape (owner 11-13: the puzzles will reshape the table often; 증강 당구 votes on one). The table
+     itself stays as it is; inside it a cushion runs along a polygon - spec.poly, [[x, y], ...] in metres, the line the
+     balls bounce off (as the cushion's nose: a ball's centre stays R inside it) - and the cloth outside it is out of play
+     (the scene fills it level with the rails). It is a cushion like the table's: the same rubber, side bending a ball the
+     same, counted as a cushion. spec.holes, [{ x, y, r }]: holes in the cloth a ball drops into once its centre is over
+     one (r minus a fifth of a ball: the lip it rolls over) - reported as pocket 6, 7, ... (a hole's index + 6). A ball
+     that jumps the cushion and comes down outside it is off the table. The table's own cushions and pockets still count
+     wherever the polygon leaves them in play. Made once (shape()) and kept on the world (w.shape); worlds without one
+     play exactly as before. tables.js TABLE_SHAPES makes the usual ones. */
+  function shape(spec) {
+    if (!spec || !Array.isArray(spec.poly) || spec.poly.length < 3) return null;
+    const poly = spec.poly.map(p => [+p[0], +p[1]]), faces = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length], l = DMath.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1e-6) continue;
+      faces.push({ ax: a[0], ay: a[1], bx: b[0], by: b[1], len: l, tx: (b[0] - a[0]) / l, ty: (b[1] - a[1]) / l, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, reach: l / 2 + R });
+    }
+    const holes = (spec.holes || []).map(h => { const r = +h.r || 0.06; return { x: +h.x, y: +h.y, r, sink: r - 0.2 * R }; });
+    return { spec, poly, faces, holes };
+  }
+  // whether a point is within a shape's cushion (even-odd: any simple polygon, convex or not)
+  function inShape(sh, x, y) {
+    let c = false; const p = sh.poly;
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      const a = p[i], b = p[j];
+      if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
+    }
+    return c;
+  }
+  // a ball can stand here: inside the shape, clear of its cushion and its holes
+  function freeIn(sh, x, y) {
+    if (!inShape(sh, x, y)) return false;
+    for (const f of sh.faces) { let u = (x - f.ax) * f.tx + (y - f.ay) * f.ty; u = u < 0 ? 0 : u > f.len ? f.len : u; const dx = x - f.ax - f.tx * u, dy = y - f.ay - f.ty * u; if (dx * dx + dy * dy < (R + 0.0008) ** 2) return false; }
+    for (const h of sh.holes) if ((x - h.x) ** 2 + (y - h.y) ** 2 < (h.r + 0.002) ** 2) return false;
+    return true;
+  }
+  // the shape's part of a step: its cushion (the face met first first, as the table's), its holes, and a ball come down outside
+  function shapeSub(w, bs, n) {
+    const sh = w.shape;
+    for (let i = 0; i < n; i++) {
+      const b = bs[i]; if (!b.on) continue;
+      if (b.z <= CLEAR && (b.vx !== 0 || b.vy !== 0)) for (let pass = 0; pass < 4; pass++) {
+        let best = null, bt = -1;
+        for (const f of sh.faces) { if (Math.abs(b.x - f.cx) > f.reach || Math.abs(b.y - f.cy) > f.reach) continue; const t = segTime(b, f); if (t > bt) { bt = t; best = f; } }
+        if (!best) break;
+        hitSeg(w, b, best);
+      }
+      if (b.z !== 0) continue;
+      for (let k = 0; k < sh.holes.length; k++) {
+        const h = sh.holes[k], dx = b.x - h.x, dy = b.y - h.y;
+        if (dx * dx + dy * dy < h.sink * h.sink) {
+          b.on = false; w.ev.pocketed.push({ id: b.id, pocket: 6 + k });
+          if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: 6 + k, x: b.x, y: b.y, vx: b.vx, vy: b.vy });
+          b.vx = b.vy = b.wx = b.wy = b.wz = 0; break;
+        }
+      }
+      if (b.on && !inShape(sh, b.x, b.y)) {
+        b.on = false; w.ev.off.push(b.id);
+        if (w.snd) w.snd.push({ t: 'off', id: b.id, x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz });
+        b.vx = b.vy = b.wx = b.wy = b.wz = 0; b.z = b.vz = 0;
+      }
+    }
+  }
+
   function clone(w) {
-    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice, real: w.real || null, walls: w.walls || NO_WALLS };
+    return { balls: w.balls.map(b => ({ id: b.id, x: b.x, y: b.y, px: b.x, py: b.y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, z: 0, pz: 0, vz: 0, hot: b.hot || 0, spit: b.spit || 0, on: b.on, q: b.q })), ev: newEv(), snd: null, track: false, cue: w.cue, ice: w.ice, real: w.real || null, walls: w.walls || NO_WALLS, shape: w.shape || null };
   }
 
   function place(w, id, x, y, rnd) {
@@ -555,6 +618,7 @@ function createPhysics(cfg) {
       }
       ON_WALL = false;
     }
+    if (w.shape) shapeSub(w, bs, n);
     for (let i = 0; i < n; i++) {
       const b = bs[i]; if (!b.on) continue;
       if (Math.abs(b.x) > HL - R - 0.002 || Math.abs(b.y) > HW - R - 0.002) {
@@ -740,6 +804,7 @@ function createPhysics(cfg) {
 
   function isFree(w, x, y, skipId) {
     if (Math.abs(x) > HL - R || Math.abs(y) > HW - R) return false;
+    if (w.shape && !freeIn(w.shape, x, y)) return false;
     for (const b of w.balls) {
       if (!b.on || b.id === skipId) continue;
       if ((b.x - x) ** 2 + (b.y - y) ** 2 < (2 * R + 0.0008) ** 2) return false;
@@ -759,6 +824,6 @@ function createPhysics(cfg) {
   // how high (metres) a ball struck at speed V with the cue raised by el leaves the cloth; 0 when it stays down
   const hop = (V, el) => { const up = lift(V, el || 0); return up > 0 ? up * up / (2 * G) : 0; };
   // KIND: what is played on it - 'pool', 'carom', or a table of its own ('snooker'): the scene dresses it and its balls so
-  return { KIND: cfg.kind || (POCKETED ? 'pool' : 'carom'), hop, restEl, cueRiseTan, squirtTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
+  return { KIND: cfg.kind || (POCKETED ? 'pool' : 'carom'), hop, restEl, cueRiseTan, squirtTan, R, HL, HW, CW, PO, SO, CM, SM, POCKETED, POCKETS, CUSHIONS, SEGS, makeWorld, walls, shape, inShape, clone, place, strike, step, rest, run, cast, preview, pathClear, isFree, findFree, newEv };
 }
 if (typeof module !== 'undefined') { module.exports = createPhysics; module.exports.DMath = DMath; module.exports.PHYS_V = PHYS_V; }

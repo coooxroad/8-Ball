@@ -342,6 +342,46 @@
     }
     renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
   }
+  /* A table of another shape (physics.js shape): the cloth outside the shape filled up level with the rails in the rail's
+     own wood, its edge a cushion face in the cushion's cloth (the materials the table wears: cushMat, woodMat - so a new
+     cloth or table look dresses it too), and each hole a dark cup with a thin metal rim. In the static layer, as the
+     barricades. The pockets' drop (60-view.js fall) finds a hole by its number (6 + its index: shapeHole). */
+  const shapeGrp = new THREE.Group(); sScene.add(shapeGrp);
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
+  const shapeFillMat = new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0, envMapIntensity: 0.35 });
+  let shapeNow = null;
+  function setShape(sh) {
+    shapeNow = sh || null;
+    while (shapeGrp.children.length) { const m = shapeGrp.children.pop(); m.geometry.dispose(); }
+    if (sh && cur) {
+      const top = RAIL_Z * 0.9, pts = sh.poly, n = pts.length;
+      let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
+      const ccw = area > 0;
+      // the fill: the table's playing field (out under the rails) with the shape cut out of it
+      const ex = cur.HL + 0.06, ey = cur.HW + 0.06, outer = new THREE.Shape([new THREE.Vector2(-ex, -ey), new THREE.Vector2(ex, -ey), new THREE.Vector2(ex, ey), new THREE.Vector2(-ex, ey)]);
+      const cut = pts.map(p => new THREE.Vector2(p[0], p[1])); if (ccw) cut.reverse();
+      outer.holes.push(new THREE.Path(cut));
+      // (matte: the rails' lacquer would mirror the lamp across the whole fill - the table's own wood, its colour, no coat)
+      shapeFillMat.map = woodMat.map; shapeFillMat.color.copy(woodMat.color); shapeFillMat.needsUpdate = true;
+      const fill = new THREE.Mesh(new THREE.ShapeGeometry(outer), shapeFillMat); fill.position.z = top; fill.receiveShadow = true; fill.layers.enable(OCCL); shapeGrp.add(fill);
+      // the cushion's face: from the cloth up to the fill, all the way round, facing in
+      const pos = [], nrm = [];
+      for (let i = 0; i < n; i++) {
+        const a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = (ccw ? -dy : dy) / l, ny = (ccw ? dx : -dx) / l;
+        const q = [[a[0], a[1], 0], [b[0], b[1], 0], [b[0], b[1], top], [a[0], a[1], 0], [b[0], b[1], top], [a[0], a[1], top]];
+        for (const v of q) { pos.push(v[0], v[1], v[2]); nrm.push(nx, ny, 0.25); }
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+      const face = new THREE.Mesh(g, cushMat); face.castShadow = true; face.receiveShadow = true; face.layers.enable(OCCL); shapeGrp.add(face);
+      for (const h of sh.holes) {
+        const cup = new THREE.Mesh(new THREE.CircleGeometry(h.r, 40), holeMat); cup.position.set(h.x, h.y, 0.0006); shapeGrp.add(cup);
+        const rim = new THREE.Mesh(new THREE.RingGeometry(h.r, h.r + 0.006, 40), metalMat); rim.position.set(h.x, h.y, 0.0008); shapeGrp.add(rim);
+      }
+    }
+    renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
+  // a hole as the pocket drop wants it (x, y, r): 6 and on are the shape's holes
+  const shapeHole = k => shapeNow && shapeNow.holes[k - 6] || null;
   /* The swimming pool's water and the night sky's motion, drawn over a painted cloth (the paintings: 15-looks.js). */
   let iceTex = null, poolTex = null;                                                 // (painted once, kept for the next time)
   const waterU = { uT: { value: 0 }, uK: { value: 1.7 } };
