@@ -28,7 +28,7 @@
    Now only the contents' layer is drawn again; the wood never changes. */
 /* (will-change: opacity, not transform: either gives the layer of its own, but with 'transform' the browser keeps drawing
    the layer at the scale it first had - after the page is zoomed or resized, its text stayed blurred) */
-#deskPlane::before{content:'';position:absolute;inset:0;background:#6b4527 url(ui/desk.webp) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:opacity}
+#deskPlane::before{content:'';position:absolute;inset:0;background:var(--desk-base,#6b4527) var(--desk-img,url(ui/desk.webp)) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:opacity}
 #deskPlane>#desk{will-change:opacity}
 #app.desk.tilt{background:#0b0806}
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
@@ -118,7 +118,7 @@
 #app.desk.compact .dk-rb small{display:none}
 #app.desk.compact:not(.portrait) .dk-rb{font-size:16px}
 /* ---------- the tray: felt in a frame, the live table (or a cue) in the middle, a head above it and a foot below ---------- */
-#app.desk .dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;--s:.4;border:0 solid transparent;background:#0e4c8e url(ui/felt.webp) 0 0/var(--felt-tile) repeat;border-radius:calc(36px*var(--s));border-image:url(ui/tray.webp) 112 92 108 92/calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(26px*var(--s));padding:calc(78px*var(--s) + 12px) calc(58px*var(--s) + 14px) calc(48px*var(--s) + var(--lip) + 12px);box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk .dk-tray{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;--s:.4;border:0 solid transparent;background:var(--felt-base,#0e4c8e) var(--felt-img,url(ui/felt.webp)) 0 0/var(--felt-tile) repeat;border-radius:calc(36px*var(--s));border-image:var(--tray-img,url(ui/tray.webp)) 112 92 108 92/calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(26px*var(--s));padding:calc(78px*var(--s) + 12px) calc(58px*var(--s) + 14px) calc(48px*var(--s) + var(--lip) + 12px);box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk.compact .dk-tray{--s:.28;border-radius:16px;padding:calc(78px*var(--s) + 6px) calc(58px*var(--s) + 8px) calc(48px*var(--s) + var(--lip) + 6px)}
 .dk-head{display:flex;align-items:center;gap:12px;min-height:58px;color:#f3eee3}
 .dk-head .tt{flex:1;min-width:0}

@@ -55,7 +55,7 @@
    The desk again, leaning away like the home: a felt tray holding the score sheet on its clipboard (승리 between gold
    laurels, the two players with their balls, the score, the game · innings · time, the numbers side by side) and the
    highlights as small tables; beside it the slate - this match in a few lines and the two keys. Light from the upper right. */
-#app.desk #result{padding:0;overflow:hidden;display:block;background:#6b4527 url(ui/desk.webp) 0 0/var(--desk-tile,640px) repeat;color:var(--slate-ink);
+#app.desk #result{padding:0;overflow:hidden;display:block;background:var(--desk-base,#6b4527) var(--desk-img,url(ui/desk.webp)) 0 0/var(--desk-tile,640px) repeat;color:var(--slate-ink);
   perspective:2400px;perspective-origin:50% 0%}
 #app.desk #result::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 88% 0%,rgba(255,226,170,.22),rgba(255,226,170,0) 62%),radial-gradient(ellipse 130% 110% at 62% 28%,rgba(0,0,0,0) 50%,rgba(18,9,3,.6) 100%)}
 #app.desk .r-plane{position:absolute;left:0;right:0;top:-40px;bottom:0;transform-origin:50% 100%;transform:rotateX(10deg);display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,29%);grid-template-rows:auto minmax(0,1fr);gap:16px 20px;padding:54px 24px 20px;box-sizing:border-box}
@@ -63,9 +63,9 @@
 #app.desk .r-top .r-logo{font:800 22px 'Outfit',sans-serif;letter-spacing:.35em;padding-right:14px;border-right:2px solid rgba(244,236,216,.4)}
 #app.desk .r-top b{font:800 24px var(--ui-font)}
 #app.desk .r-top small{font:600 15px var(--ui-font);opacity:.8}
-#app.desk .r-tray{position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto;scrollbar-width:none;--s:.4;border:0 solid transparent;background:#0e4c8e url(ui/felt.webp) 0 0/300px repeat;
+#app.desk .r-tray{position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto;scrollbar-width:none;--s:.4;border:0 solid transparent;background:var(--felt-base,#0e4c8e) var(--felt-img,url(ui/felt.webp)) 0 0/300px repeat;
   border-width:calc(112px*var(--s)) calc(92px*var(--s)) calc(108px*var(--s)) calc(92px*var(--s));background-clip:padding-box;
-  border-image:url(ui/tray.webp) 112 92 108 92 stretch;padding:4px 2px;box-shadow:none;filter:drop-shadow(-12px 18px 14px rgba(0,0,0,.45))}
+  border-image:var(--tray-img,url(ui/tray.webp)) 112 92 108 92 stretch;padding:4px 2px;box-shadow:none;filter:drop-shadow(-12px 18px 14px rgba(0,0,0,.45))}
 /* (the rail is the tray's real border, so the felt stops at it and what scrolls in the tray slides under it, never over) */
 #app.desk .r-sheet{position:relative;flex:none;color:#2b241c;border:0 solid transparent;border-image:url(ui/scoresheet.webp) 160 50 60 50 fill/72px 22px 26px 22px stretch;padding:70px 40px 26px;filter:drop-shadow(-8px 12px 10px rgba(0,0,0,.45))}
 #app.desk .r-title{display:flex;align-items:center;justify-content:center;gap:10px;margin:0;font:900 28px var(--ui-font);letter-spacing:.2em;color:#9a6a12;text-shadow:0 1px 0 rgba(255,255,255,.7)}

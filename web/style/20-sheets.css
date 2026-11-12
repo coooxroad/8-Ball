@@ -63,9 +63,3 @@
 /* 디버그 (20-sheets.js sheetDebug): the table shows through - no dimming, the sheet docked to the right and scrolling */
 #sheet.see,#app.desk #sheet.see{background:none;place-items:stretch end;pointer-events:none}
 #sheet.see .sheet{pointer-events:auto;width:min(100%,330px);max-height:100%;overflow:auto;gap:10px}
-.dbg .lab{display:flex;justify-content:space-between;gap:10px}
-.dbg-v{font-family:var(--num);font-weight:700}
-.dbg-r{width:100%;margin:0;accent-color:#c9a46a}
-.dbg-pre{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.dbg-p{min-height:44px;padding:6px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-.dbg-p.on{border-color:#c9a46a;background:rgba(201,164,106,.22);color:#f3e6cc}

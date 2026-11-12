@@ -79,7 +79,7 @@ const net = (() => {
   // what the server says now; announce: say so when coins came in that were not answered for at once (a match checked later)
   function setMe(m, announce) {
     const was = me; me = m; store.set('me', m); prefs.wallet = { coin: m.coin, dia: m.dia };
-    if (!!(was && was.debug) !== !!m.debug) lightApply();   // (debug mode came or went in the admin console: the tuned light with it)
+    if (!!(was && was.debug) !== !!m.debug) applyBackdrop();   // (debug mode came or went in the admin console: the desk's look to try with it)
     // (only the coins or diamonds moved and the shop is not open: the two numbers change, the desk is not built again)
     const bare = x => JSON.stringify(Object.assign({}, x, { coin: 0, dia: 0 }));
     if (was && bare(was) === bare(m) && !(st.screen === 'home' && deskTab === 'shop')) { savePrefs(); walletPaint(); return; }

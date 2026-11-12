@@ -322,6 +322,7 @@
     renderer.render(scene, camera);
   }
 
+  setLight(null);                              // (the game's light, LIGHT0 - scene/10-room.js; the app no longer tunes it)
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
     setTable(P) { setTable(P); warmDue = true; }, setWalls, grab(f) { grabWant = f; dirty = 3; }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,

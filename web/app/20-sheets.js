@@ -31,53 +31,20 @@ function sheetSettings() {
     note('CUE 4.0'),
   ]);
 }
-/* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). The table's light, to
-   tune by eye: each slider is put on the table at once (scene.setLight, scene/10-room.js), kept on this device
-   (prefs.light), and used only while the account is in debug mode - out of it, the light is the game's own (LIGHT0). The sheet lets the
-   table show through (no dimming, docked to one side). '값 복사' copies the numbers, to be made the game's own. */
-const LIGHT_UI = [
-  ['exposure', '노출 (전체 밝기)', 0.3, 1.6, 0.05], ['panel', '반사 조명판 밝기', 0, 2, 0.05], ['blur', '반사 흐림', 0, 0.2, 0.005],
-  ['ballEnv', '공 반사 세기', 0, 2, 0.05], ['gloss', '공 하이라이트 퍼짐', 0.01, 0.5, 0.01], ['lamp', '램프 (직사광)', 0, 2, 0.05],
-  ['fill', '주변광', 0, 2, 0.05], ['rail', '레일 광택 반사', 0, 2, 0.05], ['metal', '포켓 황동 · 크롬 반사', 0, 2, 0.05],
-  ['size', '램프 크기 (당구대 비율 그대로)', 0.4, 1.2, 0.05], ['glint', '램프 반사 밝기 (공·레일)', 1, 10, 0.5],
-];
-/* Three samples to choose between (owner 11-11), each a whole set of the sliders; '기본' is the game's own light (the
-   owner's pick, scene/10-room.js LIGHT0). 현실: as a broadcast looks - the colours as painted (exposure 0.6 undoes the tone
-   mapping's own lift of 1/0.6), the balls mirroring little, a crisp lacquer, dark rails. 게임: brighter and punchier, the
-   colours full, a broad soft glint that reads at a glance on a small screen. 현실+게임: between. */
-const LIGHT_PRESETS = [
-  ['현실', { exposure: 0.6, panel: 0.8, blur: 0.05, ballEnv: 0.3, gloss: 0.08, lamp: 1.35, fill: 0.55, rail: 0.35, metal: 0.45, size: 0.9 }],
-  ['게임', { exposure: 0.85, panel: 0.9, blur: 0.08, ballEnv: 0.25, gloss: 0.2, lamp: 1.2, fill: 1.15, rail: 0.6, metal: 0.7, size: 1.15 }],
-  ['현실+게임', { exposure: 0.72, panel: 0.85, blur: 0.06, ballEnv: 0.3, gloss: 0.14, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 0.55, size: 1 }],
-];
-function lightApply() { scene.setLight(net.debug ? prefs.light : null); }
-lightApply();
+/* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). The desk's wood and
+   the tray to try (owner 11-13: DESK_LOOK, 00-state.js - kept on this device, used only in debug mode), and 아케이드's
+   ultimate gauge in any game. (The light's sliders are gone: the owner fixed its values as the game's own - LIGHT0.) */
 function sheetDebug() {
-  const L = Object.assign({}, scene.LIGHT0, prefs.light || {}), shown = {};
-  const put = (k, v, now) => { L[k] = +v; shown[k].textContent = (+v).toFixed(k === 'blur' || k === 'gloss' ? 3 : 2); if (now) { prefs.light = Object.assign({}, L); savePrefs(); lightApply(); } };
-  const row = ([k, label, min, max, step]) => {
-    shown[k] = el('b', { class: 'dbg-v' });
-    // (the room's reflections are made again for the panel and the blur: on letting go, not at every step of the drag)
-    const later = k === 'panel' || k === 'blur' || k === 'glint', r = el('input', { type: 'range', class: 'dbg-r', min, max, step, value: L[k] });
-    r.addEventListener('input', () => put(k, r.value, !later)); r.addEventListener('change', () => put(k, r.value, true));
-    put(k, L[k], false);
-    return el('div', { class: 'field dbg' }, [el('div', { class: 'lab' }, [el('span', { text: label }), shown[k]]), r]);
-  };
-  const same = (o) => Object.keys(scene.LIGHT0).every(k => Math.abs((o[k] != null ? o[k] : scene.LIGHT0[k]) - L[k]) < 1e-6);
-  const pick = (o) => { prefs.light = o ? Object.assign({}, scene.LIGHT0, o) : null; savePrefs(); lightApply(); sheetDebug(); };
-  const presets = el('div', { class: 'dbg-pre' }, [['기본', null], ...LIGHT_PRESETS].map(([name, o]) =>
-    el('button', { class: 'dbg-p' + (same(o || {}) ? ' on' : ''), text: name, onclick: () => pick(o) })));
-  openSheet('디버그 · 빛', [
-    note('경기 중에 열면 테이블을 보면서 조정할 수 있습니다. 바꾼 값은 이 기기에만, 디버그 모드에서만 쓰입니다.'),
-    el('div', { class: 'lab', text: '표본' }), presets,
-    ...LIGHT_UI.map(row),
+  const L = deskLook(), seg = (what, key, cur) => el('div', { class: 'seg' }, Object.entries(DESK_LOOK[what]).map(([id, o]) =>
+    el('button', { 'aria-pressed': String(o === cur), text: o.name, onclick: () => { prefs[key] = id; savePrefs(); applyBackdrop(); sheetDebug(); } })));
+  openSheet('디버그', [
+    el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWood', L.wood),
+    el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTray', L.tray),
     // (아케이드's ultimate gauge on the game screen, in any game: 50-match.js paintUlt)
     flatBtn(`궁극기 게이지 미리보기: ${prefs.ultTry ? '켜짐' : '꺼짐'}`, () => { prefs.ultTry = !prefs.ultTry; savePrefs(); paintUlt(); sheetDebug(); }),
-    el('div', { class: 'row' }, [flatBtn('기본값으로', () => { prefs.light = null; savePrefs(); lightApply(); sheetDebug(); }),
-      flatBtn('값 복사', () => { const t = JSON.stringify(scene.light); try { navigator.clipboard.writeText(t).then(() => toast('복사했습니다', 'good', 1600), () => toast(t, '', 6000)); } catch (e) { toast(t, '', 6000); } })]),
     flatBtn('뒤로', sheetSettings),
   ]);
-  $('#sheet').classList.add('see');
+  $('#sheet').classList.add('see');                                   // (docked to one side: the desk shows through)
 }
 /* 크레딧: what the game uses that others made, with their licenses (owner 11-09) */
 function sheetCredits() {

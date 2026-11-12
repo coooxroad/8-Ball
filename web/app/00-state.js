@@ -47,7 +47,7 @@ const prefs = (() => {
     fourMinus: true,                   // 4구 with a friend: a foul costs a point (마이너스 점수 있음) or nothing
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
-    light: null,                       // the light tuned in the 디버그 settings (20-sheets.js sheetDebug; used in debug mode only)
+    deskWood: 'oak', deskTray: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
@@ -79,6 +79,7 @@ const prefs = (() => {
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   if (p.clk !== 2) { if (p.shotClock === 40) p.shotClock = 60; p.clk = 2; }   // 4.0: the shot clock's default went from 40 to 60 s
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
+  delete p.light;                                                       // (the 디버그 light sliders: gone - LIGHT0 is the light, 11-13)
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
@@ -144,11 +145,28 @@ const lookNow = () => typeof flow !== 'undefined' && flow === match && match.ctx
 function dress(ice) { const L = lookNow(); scene.setCloth(ice ? ICE : iceOn() ? 0 : L ? L.cloth : prefs.cloth); }
 // back to this player's own things (leaving a ranked game)
 function ownLook() { useBalls(prefs.ballSkin); scene.setTrail(prefs.trail); dress(false); }
+/* The desk's wood and the tray (its frame and its cloth) - owner 11-13: walnut and deep green to try (batch 11), chosen in
+   the 디버그 sheet while the owner decides; out of debug mode the game's own (the first of each). Put on #app as CSS
+   variables (style/60-desk.css, 50-result.css read them); base: the colour under the picture while it loads, back: the 3D
+   room behind the table on the desk (it sits in the tray's cloth). */
+const DESK_LOOK = {
+  wood: { oak: { name: '오크', img: 'ui/desk.webp', base: '#6b4527' }, walnut: { name: '월넛', img: 'ui/desk-walnut.webp', base: '#512a1a' },
+    'walnut-dark': { name: '다크 월넛', img: 'ui/desk-walnut-dark.webp', base: '#2d190e' } },
+  tray: { blue: { name: '블루', frame: 'ui/tray.webp', felt: 'ui/felt.webp', base: '#0e4c8e', back: 0x034db0 },
+    green: { name: '그린', frame: 'ui/tray-green.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 },
+    walnut: { name: '월넛 레일', frame: 'ui/tray-walnut.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 } },
+};
+const deskLook = () => {
+  let d = false; try { d = net.debug; } catch (e) {}                 // (the first call is before net is made: 07-net.js)
+  return { wood: DESK_LOOK.wood[d && prefs.deskWood] || DESK_LOOK.wood.oak, tray: DESK_LOOK.tray[d && prefs.deskTray] || DESK_LOOK.tray.blue };
+};
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {
-  const desk = st.screen === 'home';                                  // on the desk's home the table sits on felt
-  document.body.style.background = desk ? '#6b4527' : '#101216';
-  scene.setBackdrop(desk ? 0x034db0 : 0x101216);
+  const desk = st.screen === 'home', L = deskLook(), a = document.getElementById('app').style;   // on the desk's home the table sits on felt
+  a.setProperty('--desk-img', `url(${L.wood.img})`); a.setProperty('--desk-base', L.wood.base);
+  a.setProperty('--tray-img', `url(${L.tray.frame})`); a.setProperty('--felt-img', `url(${L.tray.felt})`); a.setProperty('--felt-base', L.tray.base);
+  document.body.style.background = desk ? L.wood.base : '#101216';
+  scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }
 applyBackdrop();
 // One drawing of the chosen cue, with the same sections and proportions as the 3D one (tip, ferrule, shaft, joint,
