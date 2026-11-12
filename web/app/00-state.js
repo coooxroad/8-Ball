@@ -164,8 +164,11 @@ const deskLook = () => {
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {
   const desk = st.screen === 'home', L = deskLook(), a = document.getElementById('app').style;   // on the desk's home the table sits on felt
-  a.setProperty('--desk-img', `url(${L.wood.img})`); a.setProperty('--desk-base', L.wood.base);
-  a.setProperty('--tray-img', `url(${L.tray.frame})`); a.setProperty('--felt-img', `url(${L.tray.felt})`); a.setProperty('--felt-base', L.tray.base);
+  /* (whole addresses: a url() in a CSS variable is read against the sheet that uses it, and on the web the styles are a
+     file in h/ - site/split.cjs - so 'ui/...' there was h/ui/..., not found: the desk and the tray lost their pictures) */
+  const at = f => `url("${new URL(f, document.baseURI).href}")`;
+  a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--desk-base', L.wood.base);
+  a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
   document.body.style.background = desk ? L.wood.base : '#101216';
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }

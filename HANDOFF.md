@@ -644,6 +644,10 @@ Codex가 짚었지만 이번에 안 한 것: timeout을 일찍 보내는 것(자
 
 ## 8. 함정 (실제로 겪은 것)
 
+- CSS 변수 안의 `url(ui/...)`는 그 변수를 **쓰는 스타일시트** 기준으로 풀린다. 웹(danguuu.com)은 스타일이 `h/style.*.css` 파일이라
+  `h/ui/...`를 찾아 책상·트레이 그림이 사라졌다(11-13, 로컬·APK는 멀쩡). JS에서 변수에 넣는 그림은 `new URL(f, document.baseURI)`로
+  온전한 주소를 넣는다(`00-state.js` `applyBackdrop`). 웹 확인은 `site/split.cjs`로 나눈 빌드로 한다.
+
 - `web/` 코어 파일(game.js 등)에 `require(...)`를 쓰면 서버 배포가 깨진다(wrangler 번들이 경로를 못 찾음, 11-12 스누커 때). 다른 코어 파일의
   값은 전역으로 읽고, node 테스트에서는 `global.X = ...`로 넣는다. 배포 실패는 `gh run list`의 'Deploy server'에서만 보인다.
 
