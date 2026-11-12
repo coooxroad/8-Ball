@@ -28,7 +28,7 @@
      (how bright the lamp shows on lacquer - below).
      LIGHT0 is the game's own light: the owner's pick (11-11), tuned by eye on the tablet - but the lacquer (gloss), 0.24
      there to run a row of glints into a line, is 0.06 under the one rectangular lamp: a crisp glint of its shape. */
-  const LIGHT0 = { exposure: 1, panel: 0.85, blur: 0.06, ballEnv: 0.65, gloss: 0.06, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 1.9, size: 1, glint: 5 };
+  const LIGHT0 = { exposure: 1.1, panel: 0.85, blur: 0.06, ballEnv: 0.8, gloss: 0.06, lamp: 1.3, fill: 0.8, rail: 0.45, metal: 1.9, size: 1, glint: 5 };
   let light = Object.assign({}, LIGHT0), envTex = null;
   /* The lamp over the table is one rectangle in the table's proportions, a little smaller than the table, just above it
      (owner 11-11/12: "the lamp square, its sides in the table's proportion", "a little smaller than the table, over it").
@@ -93,6 +93,16 @@
     return true;
   }
   lacquerGlint(LIGHT0.glint);
+  /* The three spots under the lamp are there for the table's shadows only: they light, but they show nowhere as a light -
+     no glint of their own on the rails' lacquer, the balls or the metal (owner 11-12: three lights still on the rail). The
+     lamp's reflection is the rectangle's alone. So in three's lighting the spots' specular is taken back out (they are the
+     only spots in the game). */
+  {
+    const B = 'lights_fragment_begin', src = THREE.ShaderChunk[B], at = src.indexOf('SpotLight spotLight;'), RE = 'RE_Direct( directLight, geometry, material, reflectedLight );';
+    const k = at < 0 ? -1 : src.indexOf(RE, at);
+    if (k < 0) console.warn('scene: three changed - the shadow spots glint');
+    else THREE.ShaderChunk[B] = src.slice(0, k) + `{ vec3 spotSpec = reflectedLight.directSpecular; ${RE} reflectedLight.directSpecular = spotSpec; }` + src.slice(k + RE.length);
+  }
   const RECT_K = 1.2, TABLE_K = 3.6, SPOT_K = 0.17;   // (at lamp 1: on the balls, on the table, each shadow spot - checked 11-12)
   const toonKey = { value: 1.1 };              // (a comic ball's light from the lamp, as the lamps gave it)
   const lampObjs = [], fills = [];

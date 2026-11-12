@@ -131,7 +131,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 ### 빛 (scene/10-room.js)
 테이블 위 램프는 당구대 비율의 직사각형 하나, 당구대보다 조금 작게(`LAMP_LEN` 0.9) 위에 매달린 상자(`hall`)와 같은 크기·높이.
 테이블(정지 층)과 공·큐를 각각 `RectAreaLight`(`tableLamp`, `rectLamp`)로 비춘다. 직사각형 빛은 그림자를 못 만들어서 그 아래 스포트 3개
-(`lampObjs`, 넓고 약하게 `SPOT_K`)가 그림자만 맡는다. three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을
+(`lampObjs`, 넓고 약하게 `SPOT_K`)가 그림자만 맡는다 — 스포트의 반사광은 셰이더에서 뺐다(`lights_fragment_begin`, 레일·공에 점 3개가 비치던 것). three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을
 더했다(`lacquerGlint`, 밝기 `glint` — 큰 램프의 반사는 원래 희미해서 사진처럼 보이게 키운 값). 표 데이터는 `scene/02-ltc.js`(도구
 `tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외). 게임의 빛 값은 `LIGHT0`.
 
