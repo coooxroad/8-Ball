@@ -41,7 +41,7 @@ const ECONOMY = {
   TUTORIAL_PRIZE: { coin: 500, kind: 'cue', id: 'maple' },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
-const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 } };
+const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 }, arcade: {} };   // (arcade: 증강 당구's room - game.js ARCADE)
 // a game with an invited friend: the host's choices, only those the game offers (anything else: the ranked rules)
 const inviteRules = (mode, r) => {
   const o = Object.assign({}, RANKED_RULES[mode] || {}); r = r || {};

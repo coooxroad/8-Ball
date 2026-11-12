@@ -39,6 +39,8 @@ export { Lobby } from './lobby.js';
 export { Room } from './room.js';
 
 const MODES = ['eight', 'nine', 'four', 'three'];
+// (the lobbies: those, and 아케이드's 증강 당구 - not for friends' rooms)
+const QUEUE_MODES = MODES.concat('arcade');
 /* Where the player asking is (Cloudflare's own word for the continent), as a Durable Object location hint: a game's room
    is made where its hint says - near the players - instead of near the lobby that opens it, which can be anywhere (made
    by whoever asked first; a test from the US put it there). Every aim and shot goes through the room, both ways. */
@@ -186,7 +188,7 @@ async function frontDoor(request, env) {
     }
     if (url.pathname === '/v1/queue' || url.pathname === '/v1/queue/leave') {
       const body = await request.json().catch(() => ({}));
-      if (!MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
+      if (!QUEUE_MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
       if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);

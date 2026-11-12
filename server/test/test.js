@@ -392,6 +392,39 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       ok(R.idleIn() === null && R.timers() === null, 'B15: a seat away is the away rule\'s (RETURN_WITHIN), not the quiet turn\'s'); }
   }
   console.log('ranked rooms: checked');
+  // 증강 당구's room: the table's vote, the augments' rounds, the game played again for the winner, no DAMA
+  {
+    const A = E.ARCADE, initArc = standIn => { const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
+      R.init({ room: 'e'.repeat(32), mode: 'arcade', kind: 'arcade', seed: 77, first: 0, standIn: standIn || null, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: standIn ? null : 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
+      return { R, sent }; };
+    { const { R, sent } = initArc(); R.connected(0); R.connected(1);
+      ok(R.arcIn() > A.VOTE_MS, 'arcade: the vote\'s clock runs once both are in');
+      const G = rankedGame('arcade', 77, 0);
+      R.message(G.msgs[0].seat, G.msgs[0].m); ok(R.count() === 0, 'arcade: no shot before the table is chosen');
+      R.message(0, { t: 'vote', id: 'circle' }); R.message(0, { t: 'vote', id: 'penta' });
+      ok(sent[1].some(m => m.t === 'voted' && m.seat === 0) && !sent[1].some(m => m.t === 'shape'), 'arcade: a vote is heard as made, not what');
+      R.message(1, { t: 'vote', id: 'penta' }); const sh = sent[0].find(m => m.t === 'shape');
+      ok(sh && ['circle', 'penta'].includes(sh.id) && sh.votes.join() === 'circle,penta' && sent[1].some(m => m.t === 'shape' && m.id === sh.id), `arcade: two different votes, one of the two (${sh && sh.id})`);
+      const d0 = A.deal(77, 1, 0), d1 = A.deal(77, 1, 1);
+      R.message(0, { t: 'pick', round: 2, id: A.deal(77, 2, 0)[0] }); ok(!R.get('arc').open, 'arcade: round 2 cannot be picked before round 1');
+      R.message(0, { t: 'pick', round: 1, id: d1.find(x => !d0.includes(x)) || 'nope' }); ok(!R.get('arc').open, 'arcade: a card not dealt to the seat is not taken');
+      R.message(0, { t: 'pick', round: 1, id: d0[1] }); ok(R.get('arc').open && sent[1].some(m => m.t === 'picked'), 'arcade: the first pick opens the round');
+      R.message(1, { t: 'pick', round: 1, id: d1[2] }); const pk = sent[0].find(m => m.t === 'picks');
+      ok(pk && pk.round === 1 && pk.ids.join() === [d0[1], d1[2]].join() && !R.get('arc').open, 'arcade: both picked, both hear the two');
+      // a round with one card missing closes on its clock with one of the seat's three
+      R.message(1, { t: 'pick', round: 2, id: A.deal(77, 2, 1)[0] }); const a = R.get('arc'); a.open.by = Date.now() - 1; R.set('arc', a); R.timers();
+      const p2 = sent[1].find(m => m.t === 'picks' && m.round === 2); ok(p2 && A.deal(77, 2, 0).includes(p2.ids[0]), 'arcade: a card not picked in time is one of the three');
+      for (const x of G.msgs) R.message(x.seat, x.m); R.message(0, { t: 'end' }); R.message(1, { t: 'end' });
+      const r = finish(R); ok(G.winner != null && r.winner === G.winner && r.dama.join() === '30,40' && R.payouts().every(p => p.body.kind === 'arcade' && p.body.dama === 0), `arcade: the replay names the winner, no DAMA (${r.why})`); }
+    { const { R, sent } = initArc({ name: 'S', icon: 0, dama: 40, level: 2 }); R.connected(0);
+      ok(R.arcIn() != null, 'arcade: with a stand-in the vote starts when the player comes in');
+      R.message(0, { t: 'vote', id: 'bumpy' }); ok(sent[0].some(m => m.t === 'shape'), 'arcade: a stand-in\'s vote is the room\'s, there already');
+      R.message(0, { t: 'pick', round: 1, id: A.deal(77, 1, 0)[0] }); const pk = sent[0].find(m => m.t === 'picks');
+      ok(pk && A.deal(77, 1, 1).includes(pk.ids[1]), 'arcade: a stand-in picks one of its own three'); }
+    { const { R } = initArc(); R.connected(0); R.connected(1); const a = R.get('arc'); a.voteBy = Date.now() - 1; R.set('arc', a); R.timers();
+      ok(A.shapes.some(c => c.id === R.get('arc').shape), 'arcade: nobody voted in time - any of the three'); }
+    console.log('arcade rooms: checked');
+  }
   // the server's physics version is the engine's: a change to web/physics.js that moves PHYS_V there must move it here too
   ok(Number.isInteger(E.PHYS_V) && E.PHYS_V === PHYS_V, `physics version: engine ${E.PHYS_V}, server ${PHYS_V}`);
 }

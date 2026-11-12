@@ -4,6 +4,71 @@
 // a chance from a seed: the same numbers on every device and on the server (a ranked game's rack and roll-out)
 // (state() and seek(): where it has got to, so the computer player can go on from there in a Worker - ai-worker.js)
 const seededRandom = s => { s = s >>> 0; const f = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; f.state = () => s; f.seek = v => { s = v >>> 0; }; return f; };
+/* 아케이드 · 증강 당구 (owner 11-12): played online only (a lobby of its own, a room - server/src/ranked.js), its rules here
+   so both devices and the server's room read the same ones.
+     36볼: a triangle of eight rows, row k all ball k (one 1, two 2s ... eight 8s - "8볼 1번공 한개, 2번공 2개"); whoever
+       pots more wins (MODES.arcade below). Missing every ball is no foul; the cue ball in: the other has it in hand.
+     The table's shape: voted on at the start - three green cards, VOTE_MS; the same card, that one; two different, one
+       of the two by chance (the room's).
+     Augments: each time both players have had EVERY more visits, each picks one of three cards dealt to them (deal: from
+       the room's seed, the round and the seat - the room checks the pick was one of them). The first is put on the other
+       (debuffs); the later ones are one's own (buffs, by tier: silver, gold, prism).
+     The ultimate's gauge: filled by every shot, the other's more than one's own (ULT).
+   For now the cards are only picked and shown: what each does is to come (as are the table's shapes). */
+const ARCADE = {
+  BALLS: 36, ROWS: 8, WIN: 19,                       // (19 of 36 cannot be caught: the game ends there)
+  LEAD_MS: 1400,                                     // the table seen alone before the cards come over it
+  VOTE_MS: 10000, PICK_MS: 15000, GRACE_MS: 4000,    // (the room waits its clock and a little more for a late card)
+  EVERY: 2,
+  ULT: { mine: 6, theirs: 10 },                      // (the gauge, out of 100: one's own shot, the other's)
+  shapes: [
+    { id: 'circle', name: '원형', d: '둥근 쿠션 하나' },
+    { id: 'bumpy', name: '울퉁불퉁', d: '들쭉날쭉한 쿠션' },
+    { id: 'penta', name: '정오각형', d: '다섯 면의 쿠션' },
+  ],
+  debuffs: [
+    { id: 'ice', name: '빙판', d: '상대가 칠 때 테이블이 빙판이 됩니다' },
+    { id: 'more', name: '공 추가', d: '상대 차례에 공이 3개 늘어납니다' },
+    { id: 'fog', name: '안개', d: '상대의 조준선이 짧아집니다' },
+    { id: 'heavy', name: '무거운 큐', d: '상대의 최대 세기가 줄어듭니다' },
+    { id: 'narrow', name: '좁은 포켓', d: '상대가 칠 때 포켓이 좁아집니다' },
+    { id: 'flip', name: '거꾸로 당점', d: '상대의 회전이 반대로 걸립니다' },
+  ],
+  // tier: 0 silver, 1 gold, 2 prism (the shop's metals); dealt 6 : 3 : 1
+  buffs: [
+    { id: 'long', name: '긴 조준선', d: '내 조준선이 끝까지 보입니다', tier: 0 },
+    { id: 'wide', name: '넓은 포켓', d: '내가 칠 때 포켓이 넓어집니다', tier: 0 },
+    { id: 'power', name: '강한 큐', d: '내 최대 세기가 늘어납니다', tier: 0 },
+    { id: 'steady', name: '고정 당점', d: '내 회전이 정확히 걸립니다', tier: 0 },
+    { id: 'again', name: '한 번 더', d: '못 넣어도 한 번 더 칩니다', tier: 1 },
+    { id: 'magnet', name: '자석 포켓', d: '포켓 가까운 공이 끌려 들어갑니다', tier: 1 },
+    { id: 'charge', name: '충전', d: '궁극기 게이지가 30 차오릅니다', tier: 1 },
+    { id: 'double', name: '두 배', d: '다음 차례에 넣은 공은 두 개로 셉니다', tier: 2 },
+    { id: 'split', name: '분신 큐볼', d: '다음 샷에 큐볼이 둘로 갈라집니다', tier: 2 },
+  ],
+  TIER_W: [6, 3, 1],
+  // a ball's number by its id: row k of the triangle holds ids k(k-1)/2+1 .. k(k+1)/2
+  face: id => id > 0 ? Math.ceil((Math.sqrt(8 * id + 1) - 1) / 2) : 0,
+  kindOf: round => round === 0 ? 'shape' : round === 1 ? 'debuff' : 'buff',
+  // the three cards a seat is dealt in a round (1, 2, ...): the same on both devices and in the room
+  deal(seed, round, seat) {
+    const rnd = seededRandom((seed ^ Math.imul(round + 1, 0x9e3779b1) ^ Math.imul(seat + 1, 0x85ebca6b)) >>> 0);
+    let pool = (round === 1 ? ARCADE.debuffs : ARCADE.buffs).slice(); const out = [];
+    while (out.length < 3 && pool.length) {
+      const w = pool.map(c => round === 1 ? 1 : ARCADE.TIER_W[c.tier]), sum = w.reduce((a, b) => a + b, 0);
+      let u = rnd() * sum, i = 0; while (i < pool.length - 1 && u >= w[i]) { u -= w[i]; i++; }
+      out.push(pool[i].id); pool = pool.filter((c, j) => j !== i);
+    }
+    return out;
+  },
+  card: id => ARCADE.shapes.find(c => c.id === id) || ARCADE.debuffs.find(c => c.id === id) || ARCADE.buffs.find(c => c.id === id) || null,
+  /* the round due as a visit begins: each player's visits played (inn: visits begun, turn: whose begins now), the rounds
+     already picked - the next round once both have had EVERY more since the last, else 0 */
+  due(inn, turn, picked) {
+    const done = Math.min(inn[0] - (turn === 0 ? 1 : 0), inn[1] - (turn === 1 ? 1 : 0)), k = picked + 1;
+    return done >= ARCADE.EVERY * k ? k : 0;
+  },
+};
 function createGame(PH, makeAI) {
   const typeOf = id => id === 8 ? 'eight' : id < 8 ? 'solid' : 'stripe';
   const GROUP_KO = { solid: '단색', stripe: '줄무늬' };
@@ -300,6 +365,35 @@ function createGame(PH, makeAI) {
     },
   };
 
+  /* 증강 당구's 36볼 (ARCADE above): the eight rows racked as 8볼's five are, the point on the foot spot; every ball potted
+     is a point to whoever potted it (on a scratch too: the scratch only gives the other the cue ball in hand); a ball
+     potted, the same player goes on; none, the turn passes - no ball hit is no foul. Over when someone has WIN (19: past
+     catching) or the table is empty; level then (18 : 18), whoever potted the last. Its balls carry their row's number
+     (face): the scene and the score bar paint ball id by its face. */
+  MODES.arcade = {
+    id: 'arcade', name: '증강 당구', blurb: '공을 더 많이 넣으면 승리', table: 'pool', set: 'arcade', n: ARCADE.BALLS + 1, ballInHand: true, scored: true, face: ARCADE.face,
+    setup(g, rnd) {
+      const P = g.P, { R, HL } = P, w = g.world; let id = 1;
+      for (let r = 0; r < ARCADE.ROWS; r++) for (let k = 0; k <= r; k++) P.place(w, id++, HL / 2 + r * SQ3 * R * 1.0006 + jit(rnd), (k - r / 2) * 2 * R * 1.0006 + jit(rnd), rnd);
+      P.place(w, 0, -HL / 2, 0, rnd);
+      g.placing = 'kitchen'; g.isBreak = true;
+    },
+    intro: () => '브레이크',
+    left: g => g.world.balls.filter(b => b.on && b.id !== 0).length,
+    status: (g, pi) => ({ sub: '', tray: [], pts: g.players[pi].score }),
+    badge(g) { return { text: g.isBreak ? '브레이크' : `남은 공 ${this.left(g)}`, balls: [], plain: true }; },
+    legal: g => g.world.balls.filter(b => b.on && b.id !== 0).map(b => b.id),
+    ctx: g => ({ turn: g.turn, isBreak: g.isBreak }),
+    evaluate(ev) {
+      const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), n = potted.filter(i => i !== 0).length;
+      return { foul: scratch ? '큐볼이 포켓에 빠졌습니다' : null, scratch, respot: [], win: null, why: '', assign: null, keep: !scratch && n > 0, pts: n };
+    },
+    after(g, r, me) {
+      const a = g.players[0].score, b = g.players[1].score;
+      if (a >= ARCADE.WIN || b >= ARCADE.WIN || !this.left(g)) { r.win = a === b ? me : a > b ? 0 : 1; r.why = `${a} : ${b}`; r.plain = true; }
+    },
+  };
+
   // A four-ball puzzle: one player, one position, one shot. The app puts the balls down and says what the shot has to do
   // (g.goal): score - both reds, never the yellow;  gather - score and leave the three balls close together;
   // bank - a cushion before any ball;  three - three cushions before the second red;  direct - no cushion at all on the way.
@@ -375,6 +469,8 @@ function createGame(PH, makeAI) {
     g.world.cue = g.mode.table === 'carom' ? g.turn : 0;
   };
   g.cueBall = () => g.world.balls[g.world.cue];
+  // the number a ball shows (증강 당구's 36 carry their row's: MODES.arcade face); every other game's ball shows its id
+  g.faceOf = id => g.mode.face ? g.mode.face(id) : id;
   /* 4구 starts with the balls rolled out across the table, as a hall does it: the four paired off at random, each pair
      gathered in a corner (the two corners of one diagonal, which one by chance) and rolled towards the middle - each ball
      a little off the line and at its own speed - so they meet, scatter and stop somewhere new every time (owner, 11-08).
@@ -423,6 +519,8 @@ function createGame(PH, makeAI) {
       return b <= 2 && a >= b + 3 ? Math.min(1, (a - b - 2) / 4) : 0;
     }
     if (g.modeId === 'nine' && opp.made >= me.made + 4 && g.mode.lowest(g) >= 7) return 0.6;
+    // (증강 당구: the other well on the way to 19 and far ahead)
+    if (g.modeId === 'arcade' && opp.score >= 12 && opp.score - me.score >= 8) return Math.min(1, (opp.score - me.score - 6) / 6);
     return 0;
   };
   /* How hard the cue ball is struck (m/s) for a power from 0 to 1: 0.35 + B * power^E above LOW. That curve bottoms out at
@@ -566,4 +664,4 @@ function createGame(PH, makeAI) {
   };
   return g;
 }
-if (typeof module !== 'undefined') { module.exports = createGame; module.exports.seededRandom = seededRandom; }
+if (typeof module !== 'undefined') { module.exports = createGame; module.exports.seededRandom = seededRandom; module.exports.ARCADE = ARCADE; }

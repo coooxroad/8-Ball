@@ -35,13 +35,15 @@ export class Room extends DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, ['s' + seat]);
     this.core.connected(seat);
+    { const a = this.core.arcIn(); if (a != null) await this.soon(a + 50); }   // (증강 당구's vote: its clock started)
     return new Response(null, { status: 101, webSocket: client });
   }
   seatOfSocket(ws) { const t = this.ctx.getTags(ws).find(x => /^s[0-3]$/.test(x)); return t ? +t[1] : -1; }
   async webSocketMessage(ws, data) {
     const seat = this.seatOfSocket(ws); if (seat < 0 || typeof data !== 'string' || data.length > 64000) return;
     let m; try { m = JSON.parse(data); } catch (e) { return; }
-    if (this.core.message(seat, m) === 'check') await this.soon(20);
+    if (this.core.message(seat, m) === 'check') return this.soon(20);
+    { const a = this.core.arcIn(); if (a != null) await this.soon(a + 50); }   // (증강 당구: a round opened)
   }
   async webSocketClose(ws) {
     const seat = this.seatOfSocket(ws); if (seat < 0) return;
@@ -57,6 +59,7 @@ export class Room extends DurableObject {
       const gone = this.core.get('gone'), wj = this.core.waitingJoin(), idle = this.core.idleIn();
       if (gone.some(Boolean)) return this.soon(5000);
       if (wj != null) return this.soon(wj + 500);
+      const arc = this.core.arcIn(); if (arc != null) return this.soon(Math.min(arc + 50, idle != null ? idle + 500 : Infinity));   // (증강 당구's clocks)
       if (idle != null) return this.soon(idle + 500);          // (the room's shot clock: RoomCore.timers, IDLE_AFTER)
     }
     // paid out: each vault told, again a little later if one did not answer

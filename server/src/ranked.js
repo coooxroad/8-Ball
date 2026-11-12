@@ -21,6 +21,7 @@ export const STAND_IN_AFTER = 60000;                  // ms of waiting after whi
 const GONE = 15000;
 // the quick emotes a player may send in a game (web/app/59-emote.js EMOTES: the same ids)
 const EMOTES = new Set(['grin', 'joy', 'wow', 'cool', 'think', 'sad', 'angry', 'love', 'sweat', 'wink', 'sleepy', 'thumbs', 'fire', 'poop', 'party', 'skull', 'heart']);
+const arcAny = list => list[Math.floor(Math.random() * list.length)].id;   // (증강 당구: a card nobody gave - RoomCore.arcVote)
 const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -86,9 +87,11 @@ export class LobbyCore {
     this.wait.delete(a.acct); if (b.acct) this.wait.delete(b.acct);
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [a, b];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
-    const init = { room, mode: this.mode, seed, first, standIn: persona,
+    // (증강 당구's lobby: its rooms are arcade games - no DAMA, the vote and the augments: RoomCore)
+    const kind = this.mode === 'arcade' ? 'arcade' : undefined;
+    const init = { room, mode: this.mode, seed, first, standIn: persona, kind,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
-    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, kind, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
     const ready = !this.deferReady;
     this.made.set(a.acct, { at: t, you: you(0), seek: a.seek, room, ready });
     if (b.acct) this.made.set(b.acct, { at: t, you: you(1), seek: b.seek, room, ready });
@@ -336,12 +339,14 @@ export class RoomCore {
 
   init(x) {
     if (this.get('room')) return false;
-    const kind = x.kind === 'invite' ? 'invite' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
+    const kind = x.kind === 'invite' ? 'invite' : x.kind === 'arcade' && x.mode === 'arcade' ? 'arcade' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
     const bots = seats.map((q, i) => q.bot && i > 0 ? i : -1).filter(i => i > 0);
     this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
       rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode], team: n === 4, bots });
     this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
     this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
+    // 증강 당구: the table's vote (a stand-in's card drawn now, unseen till both are in), then the augments' rounds
+    if (kind === 'arcade') this.set('arc', { votes: [null, x.standIn ? arcAny(E.ARCADE.shapes) : null], shape: null, voteBy: null, done: [], open: null });
     return true;
   }
   // every seat but this one (to pass a message on)
@@ -359,10 +364,10 @@ export class RoomCore {
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[r.team ? (seat + 1) % 4 : 1 - seat], pub = q => ({ name: q.name, icon: q.icon, dama: q.dama, gear: q.gear || null, bot: q.bot ? (q.level || 2) : undefined });
     return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null,
-      opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null) };
+      opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null), arc: this.arcState(seat) };
   }
   connected(seat) {
-    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j.every(Boolean)) this.set('turnAt', Date.now()); }
+    const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j.every(Boolean)) { this.set('turnAt', Date.now()); this.arcStart(); } }
     const gone = this.get('gone'); if (gone[seat]) { gone[seat] = null; this.set('gone', gone); this.others(seat, { t: 'back', seat }); }
     this.send(seat, this.state(seat));
   }
@@ -384,6 +389,9 @@ export class RoomCore {
     if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null, seat }; this.others(seat, a); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
     if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.others(seat, { t: 'res', n: m.n, st: m.st }); return null; }
+    if (m.t === 'vote' || m.t === 'pick') { this.arcHear(seat, m); return null; }
+    // (증강 당구: nothing is played before the table is chosen)
+    if ((m.t === 'shot' || m.t === 'timeout') && r.kind === 'arcade' && !(this.get('arc') || {}).shape) return null;
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
       // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
@@ -417,6 +425,7 @@ export class RoomCore {
   // the room looked again: a seat gone too long loses
   timers() {
     if (this.get('status') !== 'playing') return null;
+    this.arcTimers();
     const gone = this.get('gone'), now = Date.now();
     for (let s = 0; s < gone.length; s++) if (gone[s] && now - gone[s] >= RETURN_WITHIN) return this.over('left', sideOf(s));
     // (never came in at all, by the time given: that seat's side loses - both sides missing someone, the game is nobody's)
@@ -434,6 +443,62 @@ export class RoomCore {
   }
   // still waiting for a seat to come in for the first time (the room looks again then)
   waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !j.every(Boolean) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
+  /* 증강 당구 (web/game.js ARCADE): the table's vote and the augments' picks, held by the room - kv 'arc':
+     { votes: [seat 0's, seat 1's], shape, voteBy, done: [[a, b] for rounds 1, 2 ...], open: { k, picks, by } | null }.
+     The vote's clock starts once both are in (each device shows the table first, then its cards: LEAD_MS); both voted, or
+     its time and a little more gone, the table is chosen - a card not given is any of the three - and told to both
+     ({ t: 'shape', id, votes }). A round opens with the first card picked for it (both devices reach it after the same
+     shot); both picked, or PICK_MS and a little more gone, it closes - a card not picked is any of the seat's three - and
+     both hear the two ({ t: 'picks', round, ids }). A card must be one the seat was dealt (ARCADE.deal). A stand-in's are
+     drawn by the room. Each device hears only that the other has voted or picked ({ t: 'voted' | 'picked', seat }). */
+  arcStart() {
+    const a = this.get('arc'); if (!a || a.voteBy) return;
+    a.voteBy = Date.now() + E.ARCADE.LEAD_MS + E.ARCADE.VOTE_MS + E.ARCADE.GRACE_MS; this.set('arc', a);
+  }
+  arcHear(seat, m) {
+    const a = this.get('arc'), r = this.get('room'); if (!a || seat > 1) return;
+    if (m.t === 'vote') {
+      if (a.shape || a.votes[seat] || !E.ARCADE.shapes.some(c => c.id === m.id)) return;
+      a.votes[seat] = m.id; this.set('arc', a); this.send(1 - seat, { t: 'voted', seat });
+      if (a.votes.every(Boolean)) this.arcVote(a);
+      return;
+    }
+    // a pick: for the round open, or the next one (which it opens)
+    const k = m.round | 0, deal = E.ARCADE.deal(r.seed, k, seat);
+    if (!a.shape || !deal.includes(m.id)) return;
+    if (!a.open) {
+      if (k !== a.done.length + 1) return;
+      a.open = { k, picks: [null, r.standIn ? arcAny(E.ARCADE.deal(r.seed, k, 1).map(id => ({ id }))) : null], by: Date.now() + E.ARCADE.PICK_MS + E.ARCADE.GRACE_MS };
+    }
+    if (a.open.k !== k || a.open.picks[seat]) return;
+    a.open.picks[seat] = m.id; this.set('arc', a); this.send(1 - seat, { t: 'picked', seat, round: k });
+    if (a.open.picks.every(Boolean)) this.arcClose(a);
+  }
+  arcVote(a) {
+    const v = a.votes.map(x => x || arcAny(E.ARCADE.shapes)), c = v[0] === v[1] ? [v[0]] : v;
+    a.votes = v; a.shape = c[Math.floor(Math.random() * c.length)]; this.set('arc', a); this.set('turnAt', Date.now());
+    this.others(-1, { t: 'shape', id: a.shape, votes: v });
+  }
+  arcClose(a) {
+    const o = a.open, r = this.get('room'), ids = o.picks.map((x, s) => x || arcAny(E.ARCADE.deal(r.seed, o.k, s).map(id => ({ id }))));
+    a.done.push(ids); a.open = null; this.set('arc', a); this.set('turnAt', Date.now());
+    this.others(-1, { t: 'picks', round: o.k, ids });
+  }
+  // (the room looked again: a clock run out)
+  arcTimers() {
+    const a = this.get('arc'), now = Date.now(); if (!a) return;
+    if (!a.shape && a.voteBy && now >= a.voteBy) this.arcVote(a);
+    else if (a.open && now >= a.open.by) this.arcClose(a);
+  }
+  // when the room should look again for the vote or a round, in ms from now (null: no clock running)
+  arcIn() { const a = this.get('arc'); if (!a || this.get('status') !== 'playing') return null; const t = !a.shape ? a.voteBy : a.open ? a.open.by : null; return t ? Math.max(0, t - Date.now()) : null; }
+  // what a seat is told on coming in: the table if chosen (the votes with it), whether each has voted; the rounds picked;
+  // the round open - this seat's own card in it, and whether the other has picked
+  arcState(seat) {
+    const a = this.get('arc'); if (!a) return undefined;
+    return { shape: a.shape, votes: a.shape ? a.votes : null, voted: a.votes.map(Boolean), mine: a.shape ? null : a.votes[seat], voteIn: !a.shape && a.voteBy ? Math.max(0, a.voteBy - Date.now() - E.ARCADE.GRACE_MS) : null,
+      done: a.done, open: a.open ? { k: a.open.k, mine: a.open.picks[seat], picked: a.open.picks.map(Boolean) } : null };
+  }
   over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {
@@ -467,11 +532,12 @@ export class RoomCore {
   // winner: a side (in 2 seats, the seat); coins and DAMA by seat
   result(winner, points, why) {
     const r = this.get('room'), seats = this.get('seats'), n = seats.length, res = { winner, points, why, coins: seats.map(() => 0), dama: seats.map(q => q.dama) };
-    const inv = r.kind === 'invite';
+    const inv = r.kind === 'invite', rated = !r.kind || r.kind === 'ranked';
     // (a draw in a friend's room pays each their points, as a loss would; a ranked game has no draws)
+    // (증강 당구 moves no DAMA, and pays nothing yet - economy.js matchCoins knows no 'arcade')
     if (winner != null || (inv && why === 'draw')) {
-      if (!inv) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
-      for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : 'ranked', r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
+      if (rated) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
+      for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : rated ? 'ranked' : r.kind, r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
     this.sql.exec(`DELETE FROM shots`);

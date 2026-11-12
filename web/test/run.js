@@ -522,5 +522,36 @@ for (const name of ['bar', 'pro', 'pub']) {
   console.log(`snooker: ${frames} frames played to the end, ${shots} shots`);
 }
 
+// 증강 당구 (game.js ARCADE, MODES.arcade): the 36 racked by rows (one 1 ... eight 8s), every game of loose shots ends with
+// the score adding up to the balls down and the winner the one with more; the cards dealt are three, the same for the same
+// seed, round and seat, of the round's kind
+{
+  const T = require(path.join(W, 'tables.js')), { ARCADE } = createGameRaw;
+  const faces = [...Array(36)].map((_, i) => ARCADE.face(i + 1)), want = [...Array(8)].flatMap((_, k) => Array(k + 1).fill(k + 1));
+  if (faces.join() !== want.join()) fail(`arcade: the faces by id are ${faces.join()}`);
+  let games = 0, shots = 0;
+  for (let s = 1; s <= 3; s++) {
+    const g = createGameRaw(T.physicsFor(createPhysics, 'bar')), r = createGameRaw.seededRandom(s);
+    g.start('arcade', ['A', 'B'], false, { rnd: r });
+    if (g.world.balls.length !== 37 || g.mode.left(g) !== 36) fail('arcade: not 36 balls racked');
+    let n = 0;
+    while (!g.over && n < 2000) {
+      n++; const w = g.world, c = g.cueBall(), on = g.legal();
+      if (g.placing) { const [x, y] = g.P.findFree(w, -g.P.HL / 2, 0.1 * (r() - 0.5), 0); g.P.place(w, 0, x, y); }
+      const t = w.balls[on[Math.floor(r() * on.length)]];
+      g.beginShot(); g.P.strike(w, Math.atan2(t.y - c.y, t.x - c.x) + (r() - 0.5) * 0.05, 1 + r() * 4, 0, 0); g.P.run(w, 60);
+      g.resolve(); shots++;
+    }
+    const a = g.players[0].score, b = g.players[1].score, down = 36 - g.mode.left(g);
+    if (!g.over) fail(`arcade: a game did not end (seed ${s})`);
+    else { games++; if (a + b !== down) fail(`arcade: ${a} + ${b} points but ${down} balls down (seed ${s})`); if (a !== b && g.over.winner !== (a > b ? 0 : 1)) fail(`arcade: ${a} : ${b} won by ${g.over.winner}`); if (Math.max(a, b) < ARCADE.WIN && down < 36) fail(`arcade: ended at ${a} : ${b}`); }
+  }
+  const d = ARCADE.deal(1234, 2, 0);
+  if (d.length !== 3 || new Set(d).size !== 3 || d.join() !== ARCADE.deal(1234, 2, 0).join() || !d.every(id => ARCADE.buffs.some(c => c.id === id))) fail(`arcade: round 2's deal ${d}`);
+  if (!ARCADE.deal(1234, 1, 1).every(id => ARCADE.debuffs.some(c => c.id === id))) fail('arcade: round 1 is not the debuffs');
+  if (ARCADE.due([3, 2], 0, 0) !== 1 || ARCADE.due([2, 2], 1, 0) !== 0 || ARCADE.due([3, 2], 0, 1) !== 0 || ARCADE.due([5, 4], 0, 1) !== 2) fail('arcade: the rounds come at the wrong visits');
+  console.log(`arcade: ${games} games of 36 played to the end, ${shots} shots`);
+}
+
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
