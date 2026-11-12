@@ -21,7 +21,8 @@
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
   const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0, cam: null }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
   function setOrbit(on) {
-    orbit.on = on; orbit.cam = null;
+    const was = orbit.on; orbit.on = on; orbit.cam = null;
+    if (was !== on && rt) fitRT();                                     // (the still picture at twice the size only seen from above: superOK)
     if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.zoom = 1; orbit.live = 4; }
     applyCamera();
   }
@@ -93,14 +94,7 @@
       sizeSig = sig;
       // setPixelRatio calls setSize at the old dimensions. Commit the new size and density together.
       renderer.setDrawingBufferSize(W, H, ratio);
-      const width = canvas.width, height = canvas.height, ss = superOK(width, height) ? 2 : 1;
-      if (rt && rt.ss !== ss) { rt.dispose(); rt = null; }
-      if (rt) rt.setSize(width * ss, height * ss);
-      else {
-        rt = ss > 1 || !renderer.capabilities.isWebGL2 ? new THREE.WebGLRenderTarget(width * ss, height * ss) : new THREE.WebGLMultisampleRenderTarget(width, height); rt.ss = ss;
-        rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
-        quadMat.map = rt.texture; quadMat.needsUpdate = true;
-      }
+      fitRT();
     } else if (!force) {
       return;
     }
@@ -110,10 +104,25 @@
      resolution each way and shown at the screen's - every pixel the average of four, edges and the rails' and pockets'
      highlights smooth where 4x MSAA only smoothed the outlines (graphics, owner 11-09). It is drawn once per view, not per
      frame, so the cost is memory: four times the pixels, kept within 9.5 million (a 1080p screen at its own density), and
-     only on a PC (a mouse, no touch) or when '높음' is chosen - a tablet's memory is kept for the game. */
+     only on a PC (a mouse, no touch) or when '높음' is chosen - a tablet's memory is kept for the game. Only seen from
+     above: in 3D the camera moves with every aim (the player's eye) and every drag, and the picture made again at four
+     times the pixels each time it stopped was a hitch on a PC (owner 11-13: "3D도 끊겨") - there it is the canvas's size,
+     smoothed by multisampling. */
+  // the target the still picture is drawn into, at the canvas's size or twice it (superOK)
+  function fitRT() {
+    const width = canvas.width, height = canvas.height, ss = superOK(width, height) ? 2 : 1;
+    if (rt && rt.ss !== ss) { rt.dispose(); rt = null; }
+    if (rt) rt.setSize(width * ss, height * ss);
+    else {
+      rt = ss > 1 || !renderer.capabilities.isWebGL2 ? new THREE.WebGLRenderTarget(width * ss, height * ss) : new THREE.WebGLMultisampleRenderTarget(width, height); rt.ss = ss;
+      rt.texture.encoding = THREE.sRGBEncoding; rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter; rt.texture.generateMipmaps = false;
+      quadMat.map = rt.texture; quadMat.needsUpdate = true;
+    }
+    staticDirty = true; dirty = 3;
+  }
   const desk = (() => { try { return matchMedia('(hover: hover) and (pointer: fine)').matches && !(navigator.maxTouchPoints > 0); } catch (e) { return false; } })();
   function superOK(w, h) {
-    return !softwareGL && quality !== 'low' && renderer.capabilities.isWebGL2 && (desk || quality === 'high') && w * h * 4 <= 9.5e6 && 2 * w <= maxSide && 2 * h <= maxSide;
+    return !softwareGL && !orbit.on && quality !== 'low' && renderer.capabilities.isWebGL2 && (desk || quality === 'high') && w * h * 4 <= 9.5e6 && 2 * w <= maxSide && 2 * h <= maxSide;
   }
   // where the table will sit for these insets once they have eased in: its outer edge (rails included), in pixels
   function tableRect(t) {

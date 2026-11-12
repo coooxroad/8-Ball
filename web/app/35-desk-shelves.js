@@ -122,6 +122,10 @@ const SHELVES = {
     wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
 };
 const SHELF_KEYS = ['cue', 'ball', 'table', 'trail', 'glove'];
+/* The cards' auroras move only while the card is on the screen (PC menus stuttering, owner 11-13: a long shelf kept dozens
+   of them drifting out of sight): a card gets 'aur-on' while any of it shows (74-shop-cards.css runs the curtains then). */
+const aurIO = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('aur-on', e.isIntersecting); }, { rootMargin: '40px' }) : null;
+const aurSeen = c => { if (aurIO) aurIO.observe(c); else c.classList.add('aur-on'); };
 function shelfClose() { const k = SHELVES[deskTab === 'shop' ? shopSel : gearSel]; if (shelfOpen != null && k && k.undo) k.undo(); shelfOpen = null; }
 function gearOff() { shelfClose(); }                                  // (also called on leaving the place)
 function shelfPage(d, shop) {
@@ -147,6 +151,8 @@ function shelfCards(d, shop, kind, K, list, worn, has) {
       [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
   }
   const box = el('div', { class: 'dk-cards pc k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (printed cards, shop and gear alike: 74-shop-cards.css)
+  if (aurIO) aurIO.disconnect();                                       // (the last shelf's cards: let go)
+  for (const c of cards) if (c.classList.contains('dk-card')) aurSeen(c);
   dkPut(d.stage, box);
   dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
   // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
