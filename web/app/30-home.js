@@ -1,7 +1,7 @@
 /* ================= home: what the desk (32-desk.js) and the flows share ================= */
 const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode] || {}).table === 'carom';
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
-const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커' };
+const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강 당구' };
 // the puzzles on offer, and which stages are open
 const pzList = () => puzzles.list, PZ_NEED = 5;
 const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;

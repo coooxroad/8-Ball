@@ -328,7 +328,10 @@
     for (const im of ims) { im.renderOrder = 1; im.frustumCulled = false; im.count = 0; scene.add(im); }
     return { mesh, blob, R, ims, kind, skin: null, lod: 0, small: false };
   }
-  const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R), snooker: ballSet('snooker', 22, PH.snooker.R) };
+  // (증강 당구's 36 - game.js MODES.arcade: a pool set whose balls carry their row's number, face; one picture for each
+  // number, shared by the balls that carry it)
+  const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R), snooker: ballSet('snooker', 22, PH.snooker.R),
+    arcade: Object.assign(ballSet('pool', ARCADE.BALLS + 1, PH.pool.R), { face: ARCADE.face }) };
   // another ball set: each ball's picture drawn again (the meshes stay)
   let caromY = 1;                                                     // which carom ball wears the yellow (frame)
   // (each set is dressed - its pictures drawn, its shape made - when it is next drawn: a set not on the table waits, and
@@ -348,7 +351,9 @@
     if (set.skin === want && set.lod === lod && set.q === quality) return;
     if (set.skin !== want || set.q !== quality) {
       const keep = skin; skin = want;
-      set.mesh.forEach((m, i) => { const old = m.material.map; dressBall(m, want, lod); m.material.map = ballMap(set.kind, i); m.material.needsUpdate = true; if (old) old.dispose(); });
+      const old = new Set(set.mesh.map(m => m.material.map).filter(Boolean)), made = {};
+      set.mesh.forEach((m, i) => { const f = set.face ? set.face(i) : i; dressBall(m, want, lod); m.material.map = made[f] || (made[f] = ballMap(set.kind, f)); m.material.needsUpdate = true; });
+      for (const t of old) t.dispose();
       skin = keep; set.skin = want; set.q = quality; if (set === sets.carom) caromY = 1;
     } else for (const m of set.mesh) {
       if ((want.finish || {}).facets) continue;

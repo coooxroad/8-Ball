@@ -93,6 +93,7 @@ const match = {
     const w = game.over.winner, draw = w == null, l = draw ? null : 1 - w, pw = game.players[w];
     // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
     // records back as they were before and finishes again with the room's winner, so it is never counted twice)
+    arcade.close();
     if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
     if (!draw) countResult(w, l);
     store.set('save', null); st.phase = 'idle';
@@ -109,7 +110,7 @@ const match = {
     const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
     const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
     const innings = Math.max(inn[0], inn[1]);
-    const onKo = on && (on.kind === 'invite' ? '친구 초대' : '랭킹전');
+    const onKo = on && (on.kind === 'invite' ? '친구 초대' : on.kind === 'arcade' ? '아케이드' : '랭킹전');
     // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
     $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
     $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와 플레이'}`;
@@ -214,13 +215,14 @@ function shotClock(dt) {
 let outT = 0;
 function flashOut(ms) { const h = $('#hud'); h.classList.add('out'); clearTimeout(outT); outT = setTimeout(() => h.classList.remove('out'), ms || 2600); }
 
-/* The ultimate's gauge on the game screen (아케이드 증강 당구, app/33-desk-arcade.js ultGauge): at the bottom middle, the
-   gauge of the player whose turn it is. Until the mode is played it is shown in any game with the debug setting on
-   (20-sheets.js sheetDebug), to see it in place and how it fills. */
-const ultOn = () => net.debug && !!prefs.ultTry;
+/* The ultimate's gauge on the game screen (아케이드 증강 당구 - 55-arcade.js ultGauge, game.js ARCADE.ULT): at the bottom
+   middle, this device's player's own (online: its seat's). Also shown in any game with the debug setting on (20-sheets.js
+   sheetDebug), the gauge of the player whose turn it is. */
+const ultOn = () => !!(match.ctx && match.ctx.online && match.ctx.online.kind === 'arcade' && game.modeId === 'arcade') || (net.debug && !!prefs.ultTry);
 function paintUlt() {
   let h = $('#ultHud');
   if (!ultOn() || !match.ult) { if (h) h.remove(); return; }
   if (!h) { h = el('div', { id: 'ultHud' }); $('#hud').after(h); }     // (beside the score bar: shown while it is - 10-play.css)
-  h.replaceChildren(ultGauge(match.ult[game.turn], game.players[game.turn].name));
+  const o = match.ctx.online, me = o && o.kind === 'arcade' ? o.seat : game.turn;
+  h.replaceChildren(ultGauge(match.ult[me], o && o.kind === 'arcade' ? '나' : game.players[me].name));
 }

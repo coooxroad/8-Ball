@@ -5,6 +5,7 @@
      everything there is - hidden or not, out of view or not, the static layer as it is baked and as the 3D view and a
      falling ball draw it - goes through the renderer once into a single pixel, and is then drawn as usual. */
   let warmDue = true;
+  let grabWant = null;                         // (a picture of the next frame wanted: grab - app/55-arcade.js, the focus behind its cards)
   const warmVp = new THREE.Vector4();
   function prewarm() {
     const shown = [], culled = [], mask = camera.layers.mask;
@@ -49,7 +50,7 @@
     if (falls.length || v.animating) dirty = 3;
     if (waterTick(v.game && v.game.world, dt)) dirty = Math.max(dirty, 1);
     if (dirty <= 0) return false; dirty--; renderer.info.reset();
-    const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.table], a = v.alpha;
+    const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.set || g.mode.table], a = v.alpha;   // (a game's own set: 증강 당구's 36)
     if (warmDue && still && rt) { warmDue = false; const t0 = performance.now(); prewarm(); sProf.warm = performance.now() - t0; }
     // A shaped ball (a potato, a bowling ball) is made of many triangles; small on the screen half of them look the same.
     // '자동': half while the table is seen whole from above and a ball is under 70 screen pixels across; close up, in 3D and
@@ -72,6 +73,8 @@
     if (cue.visible) placeCue(v, c, R, fo);
     if (guide.visible) drawGuide(v, g, P, w, R, c);
     drawLayers();
+    // (a picture of this frame asked for - grab: taken now, while the canvas still holds it)
+    if (grabWant) { const f = grabWant; grabWant = null; try { f(renderer.domElement); } catch (e) { console.warn('scene: grab', e); } }
     return true;
   }
 
@@ -182,7 +185,7 @@
         const pk = guidePreview(v, c, P, w, g.turn, after, k, chosen, speed, sx, sy), pv = pvNow;
         const at = pv.at, pre = pv.pre, kind = g.mode.table;
         // each path in its ball's colour; the cue ball's turns red when the first ball it would reach is not one it may hit
-        const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, w.cue) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, pv.hit) : cCol;
+        const legal = pv.hit == null || v.legalIds.indexOf(pv.hit) >= 0, cCol = legal ? pathCol(kind, g.faceOf(w.cue)) : 0xff5a4a, oCol = pv.hit != null ? pathCol(kind, g.faceOf(pv.hit)) : cCol;
         // Whatever depends on the power is drawn faint till the cue is drawn back, so the stand-in is not taken for the shot.
         const dim = chosen ? 1 : 0.5, ex = at ? at[0] : pre[pre.length - 3], ey = at ? at[1] : pre[pre.length - 2];
         let bent = false;
@@ -317,7 +320,7 @@
 
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable(P) { setTable(P); warmDue = true; }, setWalls, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable(P) { setTable(P); warmDue = true; }, setWalls, grab(f) { grabWant = f; dirty = 3; }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     fxSounds, hit, invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); }, get softwareRendering() { return softwareGL; }, get rendererName() { return rendererName; }, prof: sProf,
   };

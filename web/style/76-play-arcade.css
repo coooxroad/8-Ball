@@ -1,9 +1,7 @@
-/* ---------- 아케이드 (app/33-desk-arcade.js): 증강 당구 - its card, the table vote, the augments, the ultimate ----------
+/* ---------- 아케이드 (app/33-desk-arcade.js): 증강 당구 - its card, and what it is in three cards ----------
    The menu's printed cards (75-play-panels.css: face, dots, edge) in this mode's own colours, dealt as the menu deals
-   (76-play-unfold.css). The gauge (.ultg) is the game screen's too (#ultHud, 50-match.js paintUlt). */
-#dkBoards .bd.arc,#dkBoards .bd.info,#dkBoards .bd.shape,#dkBoards .bd.debuff,#dkBoards .bd.shot,#dkBoards .bd.arc-screen{grid-area:auto}
-
-/* the mode: its card on the left, what it is on the right in three cards */
+   (76-play-unfold.css); the card tapped turns over to the search (seekPaint). */
+#dkBoards .bd.arc,#dkBoards .bd.info{grid-area:auto}
 #dkBoards.arcade .bd-fit{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));grid-template-areas:none}
 #dkBoards.arcade .bd.arc{grid-row:1/4}
 #app.desk.portrait #dkBoards.arcade .bd-fit{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1.6fr) repeat(3,minmax(0,.7fr))}
@@ -17,44 +15,131 @@
 #dkBoards .bd.info .in{flex-direction:row;align-items:center;justify-content:flex-start;gap:calc(var(--u)*5)}
 #dkBoards .arc-n{flex:none;display:grid;place-items:center;width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;background:rgba(255,255,255,.92);color:#18202a;font:400 calc(var(--u)*7.5)/1 var(--game-font)}
 #dkBoards .bd.info .bd-tt{text-align:left;align-items:flex-start}
+/* (the search's card: the 36 racked on its face, smaller to fit) */
+#dkBoards .seek-card .front.bd-g-arcade{--cl:#4a3a86}
+#dkBoards .seek-card .front.bd-g-arcade .rack{--d:calc(var(--u)*6.6)}
 
-/* 1. the vote: green cards; mine raised and ringed, the other's marked; the draw's light; the one chosen, the rest dimmed */
-#dkBoards.arc-vote .bd-fit,#dkBoards.arc-aug .bd-fit{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:none}
-#app.desk.portrait #dkBoards.arc-vote .bd-fit,#app.desk.portrait #dkBoards.arc-aug .bd-fit{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr))}
-#dkBoards .bd.way.shape{--c1:#3fae6a;--c2:#145a33;--sl:#5fbf86;--sd:#0a2a17}
-#dkBoards .bd.shape .way-ico{width:calc(var(--u)*30);height:calc(var(--u)*30);top:36%}
-#dkBoards .votes{position:absolute;top:calc(var(--u)*5);left:0;right:0;display:flex;justify-content:center;gap:calc(var(--u)*2.5)}
-#dkBoards .vote{padding:calc(var(--u)*1.2) calc(var(--u)*4);border-radius:999px;font:800 max(11px,calc(var(--u)*4.2))/1.2 var(--ui-font);letter-spacing:.04em;box-shadow:0 2px 0 rgba(0,0,0,.3)}
-#dkBoards .vote.me{background:#fff;color:#14502c}
-#dkBoards .vote.them{background:#1c232c;color:#ffd84d}
-#dkBoards .bd.shape.mine{transform:translateY(calc(var(--u)*-3));box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 24px 4px rgba(120,255,170,.55)}
-#dkBoards .bd.shape.lit{box-shadow:0 0 0 4px #fff,0 0 34px 8px rgba(255,240,140,.85)}
-#dkBoards .bd.shape.won{transform:scale(1.04);box-shadow:0 0 0 4px #fff,0 0 40px 10px rgba(120,255,170,.75);animation:arcWon .5s cubic-bezier(.2,.9,.28,1.3) both}
-#dkBoards .bd.shape.lost,#dkBoards .bd.debuff.lost{filter:saturate(.35) brightness(.6)}
-@keyframes arcWon{0%{transform:scale(.94)}60%{transform:scale(1.07)}100%{transform:scale(1.04)}}
-/* the clock: the seconds left, red in the last three */
-#dkBoards .arc-clock{display:inline-flex;align-items:baseline;gap:2px;padding:4px 12px;border-radius:999px;background:#10161d;color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
-#dkBoards .arc-clock b{font:400 22px/1 var(--game-font);min-width:1.2em;text-align:center}
-#dkBoards .arc-clock small{font:700 11px/1 var(--ui-font);opacity:.7}
-#dkBoards .arc-clock.done{opacity:.55}
+/* ---------- on the game screen (app/55-arcade.js): the cards over the table ----------
+   Behind: the frame, blurred out from the middle (a zoom blur drawn once) and darkened towards the edges, with a little warm
+   light where the cards are - so the eye goes to them. The cards: the shop's printed cards in metal - a frame of the
+   kind's metal round a face printed in its colour, a white line inside, the kind or tier on a pill, the picture, the
+   name and what it does - each made solid (the face, the edge's layers, the back) and held up in a shallow curve, seen in
+   perspective as they come in and turn over. */
+@property --p{syntax:'<percentage>';inherits:false;initial-value:100%}
+#arcFx{position:absolute;inset:0;z-index:18;overflow:hidden;pointer-events:auto;touch-action:none}
+#arcFx .fx-blur{position:absolute;inset:0;width:100%;height:100%;opacity:0;transform:scale(1);transition:opacity .5s ease,transform 1.1s cubic-bezier(.2,.7,.2,1);will-change:opacity,transform}
+#arcFx .fx-vig{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(ellipse 34% 30% at 50% 54%,rgba(255,232,196,.16),transparent 100%),radial-gradient(ellipse 80% 72% at 50% 52%,rgba(8,10,14,.18) 0%,rgba(8,10,14,.58) 62%,rgba(4,5,7,.9) 100%)}
+#arcFx.in .fx-blur{opacity:1;transform:scale(1.05)}
+#arcFx.in .fx-vig{opacity:1}
+#arcFx.out .fx-blur,#arcFx.out .fx-vig,#arcFx.out .fx-stage{opacity:0;transition:opacity .45s ease}
+#arcFx .fx-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,3.2vh,30px);padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom))}
 
-/* 2. the augments: the debuffs in red; the one taken alone in the middle */
-#dkBoards .bd.way.debuff{--c1:#c2455a;--c2:#4e1428;--sl:#c86274;--sd:#220610}
-#dkBoards .arc-big{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);font:400 calc(var(--u)*24)/1 var(--game-font);color:#fff;text-shadow:0 calc(var(--u)*1) 0 rgba(0,0,0,.35);white-space:nowrap}
-#dkBoards .bd.debuff.took{grid-column:2;box-shadow:0 0 0 4px #fff,0 0 36px 8px rgba(255,120,140,.7)}
-#app.desk.portrait #dkBoards .bd.debuff.took{grid-column:1;grid-row:2}
+/* the head: the kind on a pill, what to do in the game's lettering, the clock's ring running down */
+#arcFx .fx-head{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;animation:fxDrop .5s cubic-bezier(.2,.8,.3,1.15) both}
+@keyframes fxDrop{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+#arcFx .fx-kind{padding:5px 14px;border-radius:999px;font:800 13px/1.2 var(--ui-font);letter-spacing:.08em;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.35)}
+#arcFx .fx-kind.shape{background:linear-gradient(180deg,#47b877,#1d6e42)}
+#arcFx .fx-kind.debuff{background:linear-gradient(180deg,#d65067,#7a1c33)}
+#arcFx .fx-kind.buff{background:linear-gradient(180deg,#e2b04a,#8c5d14)}
+#arcFx .fx-title{font:400 clamp(22px,4.2vh,36px)/1.1 var(--game-font);color:#fff;letter-spacing:-.01em;-webkit-text-stroke:5px #10141a;paint-order:stroke fill;text-shadow:0 4px 0 #10141a}
+#arcFx .fx-clock{position:relative;display:grid;place-items:center;width:46px;height:46px}
+#arcFx .fx-clock i{position:absolute;inset:0;border-radius:50%;background:conic-gradient(#ffd84d var(--p),rgba(255,255,255,.14) 0);-webkit-mask:radial-gradient(circle,transparent 0 60%,#000 61%);mask:radial-gradient(circle,transparent 0 60%,#000 61%);animation:fxClock var(--t) linear forwards}
+#arcFx .fx-clock b{font:400 20px/1 var(--game-font);color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+#arcFx .fx-clock.done{opacity:0;transition:opacity .3s}
+#arcFx .fx-clock.done i{animation-play-state:paused}
+@keyframes fxClock{from{--p:100%}to{--p:0%}}
+/* the foot: whether the other has given their card yet */
+#arcFx .fx-foot{min-height:32px}
+#arcFx .fx-them{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(12,16,22,.78);color:rgba(255,255,255,.85);font:700 13px/1.2 var(--ui-font);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
+#arcFx .fx-them i{width:8px;height:8px;border-radius:50%;background:#9aa6b4;animation:rkDot 1.2s ease-in-out infinite}
+#arcFx .fx-them.on{color:#fff}
+#arcFx .fx-them.on i{background:#5fe08a;animation:none}
 
-/* 3. the ultimate: a sketch of the game screen with its gauge, and the two kinds of shot */
-#dkBoards.arc-ult .bd-fit{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));grid-template-areas:none}
-#dkBoards .bd.arc-screen{grid-row:1/3;cursor:default;--c1:#2b3440;--c2:#151a21;--sl:#4a5563;--sd:#0b0e12}
-#dkBoards .arc-felt{position:absolute;left:9%;right:9%;top:10%;bottom:26%;border-radius:10px;background:radial-gradient(ellipse 70% 60% at 50% 45%,#2bb3c4,#0b6f80);box-shadow:inset 0 0 0 calc(var(--u)*2.4) #6a2e22,inset 0 0 0 calc(var(--u)*3.4) #3f1a12}
-#dkBoards .bd.arc-screen .ultg{position:absolute;left:50%;bottom:6%;transform:translateX(-50%)}
-#app.desk.portrait #dkBoards.arc-ult .bd-fit{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,2fr) minmax(0,1fr)}
-#app.desk.portrait #dkBoards .bd.arc-screen{grid-row:auto;grid-column:1/3}
-#dkBoards .bd.way.shot{--c1:#3c6fb0;--c2:#1a2f55;--sl:#5d84bc;--sd:#0a1428}
-#dkBoards .bd.way.bd-arc-shot-1{--c1:#c2455a;--c2:#4e1428;--sl:#c86274;--sd:#220610}
+/* the row: three cards held up in a shallow curve (the outer ones turned in, a little back) */
+#arcFx .fx-row{--ch:min(46vh,350px,calc(27vw / .7));display:flex;align-items:center;justify-content:center;gap:clamp(10px,2.6vw,34px);perspective:1300px;perspective-origin:50% 40%}
+#arcFx .fx-row.two{gap:clamp(24px,7vw,90px)}
+#arcFx .fx-pair{display:flex;flex-direction:column;align-items:center;gap:12px;transform-style:preserve-3d}
+#arcFx .fx-who{font:800 14px/1.2 var(--ui-font);color:#fff;padding:5px 12px;border-radius:999px;background:rgba(12,16,22,.8)}
+#arcFx .fx-pair.theirs .fx-who{animation:fxDrop .4s .9s both}
 
-/* the gauge: a capsule - who, the bar in five steps, its name; full, it glows and the light runs along it */
+#arcFx .ac{--rx:7deg;--ry:0deg;--rz:0deg;--tz:0px;position:relative;flex:none;height:var(--ch);width:calc(var(--ch) * .7);border:0;padding:0;background:none;color:#fff;font:inherit;cursor:pointer;
+  transform-style:preserve-3d;transition:transform .32s cubic-bezier(.3,.7,.3,1.1),opacity .35s ease,filter .3s ease;-webkit-tap-highlight-color:transparent}
+#arcFx .fx-row:not(.two) .ac:nth-child(1){--ry:13deg;--rz:-3deg;--tz:-26px}
+#arcFx .fx-row:not(.two) .ac:nth-child(3){--ry:-13deg;--rz:3deg;--tz:-26px}
+/* two planes only - the face and the back - each drawn flat, so the card turns over without the browser cutting it up */
+#arcFx .ac-body{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) translateZ(var(--tz))}
+#arcFx .ac-back,#arcFx .ac-face{position:absolute;inset:0;border-radius:15px;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+#arcFx .ac-back{transform:rotateY(180deg);
+  background:radial-gradient(circle,rgba(255,255,255,.08) 1.4px,transparent 2px) 0 0/16px 16px,linear-gradient(160deg,#3a3f8f,#1b1d45);box-shadow:inset 0 0 0 6px #e9e4d6,inset 0 0 0 8px #1b1d45,-1px 1px 0 #15163a,-2px 2px 0 #15163a,-3px 3px 0 #111230,-4px 4px 0 #0e0f28,-5px 5px 0 #0c0c22}
+#arcFx .ac-back i{position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:3px solid rgba(233,228,214,.85);
+  background:radial-gradient(circle at 35% 30%,#fff 0 8%,transparent 9%),radial-gradient(circle,#f4efe2 0 30%,transparent 31%)}
+/* the card's edge: the frame's metal, darkening down its thickness towards the lower left (the light is upper right) */
+#arcFx .ac{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#5f6c7a;--c2:#2c343e;--glow:#cfe6ff;--e1:color-mix(in srgb,var(--f2) 75%,#000);--e2:color-mix(in srgb,var(--f2) 45%,#000)}
+#arcFx .ac.t1{--f1:#fff3c4;--f2:#c98a12;--f3:#ffd36b;--c1:#a77f3a;--c2:#5b3f12;--glow:#ffcf5a}
+#arcFx .ac.t2{--f1:#f4e8ff;--f2:#7d4fc4;--f3:#e4c9ff;--c1:#6c5f9c;--c2:#2b2552;--glow:#c89bff}
+#arcFx .ac.shape{--f1:#e4ffe9;--f2:#1f7a45;--f3:#9de8b6;--c1:#3fae6a;--c2:#145a33;--glow:#7dffaa}
+#arcFx .ac.debuff{--f1:#ffe2e6;--f2:#a3192f;--f3:#ff9aa8;--c1:#c2455a;--c2:#4e1428;--glow:#ff8a9a}
+#arcFx .ac-face{--edge:-1px 1px 0 var(--e1),-2px 2px 0 var(--e1),-3px 3px 0 var(--e2),-4px 4px 0 var(--e2),-5px 5px 0 var(--e2),-6px 6px 0 color-mix(in srgb,var(--e2) 70%,#000);box-shadow:var(--edge);transition:box-shadow .3s ease}
+/* the face: the metal frame, the printed colour fading down from a lighter top, a white line inside (the liked design) */
+#arcFx .ac-print{position:absolute;inset:0;--u:calc(var(--ch) * .007);border-radius:15px;overflow:hidden;
+  border:calc(var(--u)*1.4 + 2px) solid transparent;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:calc(var(--u)*2.4);padding:calc(var(--u)*8) calc(var(--u)*7);text-align:center;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 40%,var(--c2) 100%) padding-box,linear-gradient(155deg,var(--f1),var(--f2) 38%,var(--f3) 58%,var(--f2) 80%,var(--f1)) border-box}
+#arcFx .ac.t2 .ac-print{background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 40%,var(--c2) 100%) padding-box,conic-gradient(from 200deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff,#ff5d6c) border-box}
+#arcFx .ac.t2{--e1:#5a3a8c;--e2:#2e1d4a}
+#arcFx .ac-print::after{content:"";position:absolute;inset:calc(var(--u)*2.2);border:2px solid rgba(255,255,255,.75);border-radius:9px;pointer-events:none}
+#arcFx .ac-print em{position:absolute;top:calc(var(--u)*6);left:50%;transform:translateX(-50%);padding:calc(var(--u)*1) calc(var(--u)*4);border-radius:999px;background:rgba(255,255,255,.92);color:#1d2a3a;font:800 max(10px,calc(var(--u)*4))/1.2 var(--ui-font);font-style:normal;letter-spacing:.08em;white-space:nowrap}
+#arcFx .ac-ico{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
+#arcFx .ac-ico svg{width:calc(var(--u) * 46);height:auto;color:#fff;filter:drop-shadow(0 calc(var(--u)*1) 0 rgba(0,0,0,.35))}
+#arcFx .ac-print b{font:400 max(15px,calc(var(--u)*10))/1.05 var(--game-font);letter-spacing:-.01em;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap}
+#arcFx .ac-print small{min-height:2.7em;font:700 max(10px,calc(var(--u)*4.4))/1.35 var(--ui-font);color:rgba(255,255,255,.88);word-break:keep-all}
+/* (gold and prism: a band of light crossing the face now and then - by transform) */
+#arcFx .ac-sh{position:absolute;inset:-20% -60%;pointer-events:none;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.3) 50%,transparent 60%);transform:translateX(-70%);display:none}
+#arcFx .ac.t1 .ac-sh,#arcFx .ac.t2 .ac-sh{display:block;animation:augShine 3.6s ease-in-out 1.4s infinite}
+#arcFx .ac.t2 .ac-sh{animation-duration:2.6s}
+@keyframes augShine{0%,55%{transform:translateX(-70%)}85%,100%{transform:translateX(70%)}}
+/* its shadow on the table below, softer and further off as it is raised */
+#arcFx .ac-shd{position:absolute;left:4%;right:4%;bottom:-9%;height:15%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.6),rgba(0,0,0,0));transform:translateZ(-60px);transition:transform .32s ease,opacity .32s ease;pointer-events:none}
+/* the marks of who voted for it */
+#arcFx .ac-pins{position:absolute;left:0;right:0;top:-16px;display:flex;justify-content:center;gap:6px;transform:translateZ(30px);pointer-events:none;z-index:2}
+#arcFx .pin{padding:4px 12px;border-radius:999px;font:800 13px/1.2 var(--ui-font);letter-spacing:.04em;box-shadow:0 3px 0 rgba(0,0,0,.35);animation:fxDrop .3s cubic-bezier(.2,.8,.3,1.3) both}
+#arcFx .pin.me{background:#fff;color:#14502c}
+#arcFx .pin.them{background:#1c232c;color:#ffd84d;box-shadow:inset 0 0 0 1.5px #ffd84d,0 3px 0 rgba(0,0,0,.35)}
+
+/* dealt: from below, face down, up into place, turned over - one after another */
+#arcFx .ac.deal .ac-body,#arcFx .fx-pair.deal .ac-body{animation:acDeal .9s cubic-bezier(.3,.6,.25,1) calc(var(--i) * 120ms + 60ms) both}
+#arcFx .fx-pair.deal .ac-body{animation-delay:.25s}
+@keyframes acDeal{
+  0%{transform:translate3d(0,78vh,0) rotateX(40deg) rotateY(180deg) rotateZ(-14deg);opacity:0}
+  25%{opacity:1}
+  55%{transform:translate3d(0,-3%,60px) rotateX(var(--rx)) rotateY(180deg) rotateZ(var(--rz))}
+  100%{transform:rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) translateZ(var(--tz))}}
+/* pointed at, the card comes up a little; pressed, it goes down */
+@media (hover:hover){#arcFx .ac:not(:disabled):hover{transform:translate3d(0,-10px,28px)}#arcFx .ac:not(:disabled):hover .ac-shd{transform:translateZ(-60px) translateY(10px) scale(1.08);opacity:.75}}
+#arcFx .ac:not(:disabled):active{transform:translate3d(0,-4px,10px) scale(.97)}
+/* the vote: mine raised and ringed; the others dimmed; the draw's light; the one chosen forward, the rest sunk */
+#arcFx .ac.mine{transform:translate3d(0,-12px,36px)}
+#arcFx .ac.mine .ac-face,#arcFx .ac.took .ac-face,#arcFx .ac.won .ac-face{box-shadow:var(--edge),0 0 0 3px rgba(255,255,255,.95),0 0 34px 6px var(--glow)}
+#arcFx .ac.dim{filter:saturate(.45) brightness(.62)}
+#arcFx .ac.lit{filter:none}
+#arcFx .ac.lit .ac-face{box-shadow:var(--edge),0 0 0 4px #fff,0 0 40px 10px rgba(255,240,140,.9)}
+#arcFx .ac.won{filter:none;transform:translate3d(var(--gx,0px),-14px,70px) scale(1.06)}
+#arcFx .ac.won .ac-body{--ry:0deg;--rz:0deg;--tz:0px}
+#arcFx .ac.out{opacity:0;transform:translate3d(0,40px,-80px) scale(.9)}
+/* an augment taken: to the middle, forward; the others fall away */
+#arcFx .ac.took{transform:translate3d(var(--gx,0px),-10px,70px) scale(1.06)}
+#arcFx .ac.took .ac-body{--ry:0deg;--rz:0deg;--tz:0px;transition:transform .32s ease}
+#arcFx .ac.took .ac-shd,#arcFx .ac.won .ac-shd{transform:translateZ(-60px) translateY(16px) scale(1.15);opacity:.6}
+#arcFx .ac.away{opacity:0;transform:translate3d(0,70vh,-40px) rotateZ(calc(var(--i) * 8deg - 8deg));transition:transform .5s cubic-bezier(.5,0,.8,.4),opacity .5s ease}
+#arcFx .fx-pair .ac{--rx:4deg}
+#arcFx .fx-pair.mine .ac .ac-face{box-shadow:var(--edge),0 0 0 3px rgba(255,255,255,.95),0 0 30px 5px var(--glow)}
+@media (prefers-reduced-motion:reduce){#arcFx .ac.deal .ac-body,#arcFx .fx-pair.deal .ac-body,#arcFx .ac-sh,#arcFx .fx-head,#arcFx .pin{animation:none}#arcFx .fx-blur{transition:opacity .3s}}
+/* (upright, a phone: the row narrower, the words smaller) */
+#app.portrait #arcFx .fx-title{font-size:22px;-webkit-text-stroke-width:4px}
+#app.portrait #arcFx .fx-row{--ch:min(34vh,calc(26vw / .7));gap:3vw}
+
+/* ---------- the ultimate's gauge (app/55-arcade.js ultGauge; on the game screen #ultHud, 50-match.js paintUlt) ----------
+   A capsule - who, the bar in five steps, its name; full, it glows and the light runs along it. */
 .ultg{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:999px;background:rgba(12,16,22,.86);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
 .ultg-n{font:700 12px/1 var(--ui-font);opacity:.8;max-width:7em;overflow:hidden;text-overflow:ellipsis}
 .ultg-l{font:400 13px/1 var(--game-font);letter-spacing:.02em;color:#ffd84d}
@@ -67,4 +152,4 @@
 /* on the game screen: at the bottom, in the middle, above the table's edge; only while the score bar is up */
 #ultHud{position:absolute;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6;pointer-events:none}
 #hud[hidden]~#ultHud{display:none}
-@media (prefers-reduced-motion:reduce){.ultg.full .ultg-bar::after,#dkBoards .bd.shape.won{animation:none}}
+@media (prefers-reduced-motion:reduce){.ultg.full .ultg-bar::after{animation:none}}

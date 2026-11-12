@@ -23,7 +23,7 @@ const ranked = {
   find(mode) {
     ranked.cancel(true);
     const f = ranked.finding = { mode, t0: Date.now(), timer: 0, seek: Math.random().toString(36).slice(2, 12) }, bar = $('#rkBar');
-    bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
+    bar.querySelector('.t').textContent = `${ranked.label(mode)} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
     // the clock goes on every second (owner 11-09: it went by two, with the asking), on the strip and on the turned-over
     // card (33-desk-play.js)
     const tick = () => { if (ranked.finding !== f) return clearInterval(f.tick); const s = Math.floor((Date.now() - f.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -34,12 +34,12 @@ const ranked = {
       const r = await net.queue(mode, f.seek);
       if (ranked.finding !== f) return;
       if (r && r.ok && r.room) { clearInterval(f.tick); ranked.finding = null; bar.hidden = true; app.classList.remove('rk'); ranked.found(r); return; }
-      if (r && r.why === 'update') { ranked.cancel(true); toast('랭킹전은 업데이트 후 이용할 수 있습니다.', 'foul', 3200); return; }   // (server/src/version.js)
+      if (r && r.why === 'update') { ranked.cancel(true); toast(`${mode === 'arcade' ? '아케이드' : '랭킹전'}은 업데이트 후 이용할 수 있습니다.`, 'foul', 3200); return; }   // (server/src/version.js)
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
       const why = r && r.ok ? null : net.troubleText() || '서버 응답 없음';
       f.fails = why ? (f.fails || 0) + 1 : 0;
-      bar.querySelector('.t').textContent = `랭킹전 ${MODE_KO[mode]} · ` + (f.fails >= 2 ? why : '상대 찾는 중');
+      bar.querySelector('.t').textContent = `${ranked.label(mode)} · ` + (f.fails >= 2 ? why : '상대 찾는 중');
       if (why) console.warn('[ranked] queue:', why, r);
       f.timer = setTimeout(ask, 2000);
     };
@@ -52,7 +52,9 @@ const ranked = {
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)
-  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); clearInterval(f.tick); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); if (!quiet && st.screen === 'home' && deskTab === 'play' && playStep === 'rank') paintHome(); },
+  cancel(quiet) { const f = ranked.finding; if (!f) return; clearTimeout(f.timer); clearInterval(f.tick); ranked.finding = null; $('#rkBar').hidden = true; app.classList.remove('rk'); net.leaveQueue(f.mode); if (!quiet && st.screen === 'home' && deskTab === 'play' && (playStep === 'rank' || playStep === 'arcade')) paintHome(); },
+  // what is being looked for, on the strip: a ranked game, or 아케이드's
+  label: mode => mode === 'arcade' ? '아케이드 증강 당구' : `랭킹전 ${MODE_KO[mode]}`,
 
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)
@@ -64,6 +66,7 @@ const ranked = {
     const names = []; if (o.team) { names[0] = `${o.team[0].name}·${o.team[2].name}`; names[1] = `${o.team[1].name}·${o.team[3].name}`; } else { names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name; }
     const rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
+    if (o.kind === 'arcade') arcade.begin(o);                       // (55-arcade.js: the vote and the augments over the table)
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, minus: rules.minus !== false, hugu: !!rules.hugu, fast: !!rules.fast, online: o, team: !!o.team });
     if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
@@ -127,6 +130,7 @@ const ranked = {
       if (o.watch) return ranked.catchUp();
       for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
       if (m.result) ranked.result(m.result); else if (o.closing) o.ws.send(JSON.stringify(o.closing));
+      if (m.arc) arcade.sync(m.arc);                                 // (증강 당구: the vote and the rounds as the room has them)
       return;
     }
     // (a shot already in line - heard again after a reconnect - is not played twice)
@@ -135,6 +139,7 @@ const ranked = {
     else if (m.t === 'timeout') { o.inbox.push({ n: m.n, timeout: true }); o.aimBuf = null; }
     else if (m.t === 'aim') ranked.aimFrom(m);
     else if (m.t === 'emote') emote.got(m);
+    else if (m.t === 'voted' || m.t === 'shape' || m.t === 'picked' || m.t === 'picks') arcade.hear(m);
     else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
     else if (m.t === 'away') toast(o.team ? `${(o.team[m.seat] || {}).name || '한 명'}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 그 팀이 집니다.` : `${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
     else if (m.t === 'back') toast(`${o.team ? (o.team[m.seat] || {}).name || '한 명' : o.opp.name}이(가) 돌아왔습니다.`, '', 2000);
@@ -305,12 +310,14 @@ const ranked = {
     const o = ranked.on, side = $('#rSide'); if (!o || !side) return;
     for (const x of side.querySelectorAll('.rk')) x.remove();
     const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec rk' }, [el('span', { text: k }), el('b', { text: v })]));
-    if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : '랭킹전', '결과 확인 중…');
+    if (!o.result) return line(o.kind === 'invite' ? '친구 대결' : o.kind === 'arcade' ? '증강 당구' : '랭킹전', '결과 확인 중…');
     const r = o.result, me = o.seat, d = r.dama[me] - o.dama;
+    // (증강 당구 pays nothing yet and moves no rating: only that the room has agreed)
+    if (o.kind === 'arcade') return line('증강 당구', '결과 확인됨');
     line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
     if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
   },
   // leaving the game (home, or the app goes away): it is given up
-  leave() { app.classList.remove('watching'); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
+  leave() { app.classList.remove('watching'); arcade.close(); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; if (o.ws) o.ws.close(); ranked.on = null; },
 };
 press('#rkCancel', () => ranked.cancel());

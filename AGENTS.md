@@ -110,8 +110,11 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
   `72-lessons` 교본·연습, `75-play-panels` 플레이 패널, `80-broadcast` 대결 중계 화면. 파일 끝에 덧붙이지 말고 관련 규칙 옆에.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
-  아케이드는 `33-desk-arcade.js`(증강 당구 한 모드의 화면: 테이블 투표·증강·궁극기. `ARCADE_STEPS`가 플레이의 `PLAY_STEPS`에 들어간다; 카드 내용은
-  `ARCADE`의 한 줄씩, 스타일은 `76-play-arcade.css`). 궁극기 게이지(`ultGauge`)는 경기 화면에도(`50-match.js` `paintUlt`, 지금은 디버그로만).
+  아케이드는 증강 당구 한 모드(온라인 매칭만). 규칙·카드는 코어 `game.js` `ARCADE`(36볼 `MODES.arcade`, 카드 목록, `deal`, `due`),
+  서버는 로비 'arcade' + 방 `RoomCore`의 `arc*`(투표·라운드·시계, 대역 카드), 메뉴는 `33-desk-arcade.js`(카드 → `seekPaint` 상대 찾기),
+  경기 화면 위 카드는 `55-arcade.js`(`arcade.hold`가 `beginTurn`을 막고, 프레임을 잡아 방사형 블러 위에 카드; 스타일 `76-play-arcade.css`).
+  궁극기 게이지(`ultGauge`)는 경기 화면 가운데 아래(`50-match.js` `paintUlt`). 카드 효과·테이블 모양 물리는 아직 — 효과를 넣을 땐 고른
+  카드를 방의 로그(`log()`)에 넣어 리플레이가 같은 게임을 하게 해야 한다.
 - 새 버튼은 `onTap(fn)`(소리 깨우기·딸깍·실행)으로 단다.
 
 ### 레슨 추가
