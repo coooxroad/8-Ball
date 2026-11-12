@@ -39,7 +39,7 @@ const LIGHT_UI = [
   ['exposure', '노출 (전체 밝기)', 0.3, 1.6, 0.05], ['panel', '반사 조명판 밝기', 0, 2, 0.05], ['blur', '반사 흐림', 0, 0.2, 0.005],
   ['ballEnv', '공 반사 세기', 0, 2, 0.05], ['gloss', '공 하이라이트 퍼짐', 0.01, 0.5, 0.01], ['lamp', '램프 (직사광)', 0, 2, 0.05],
   ['fill', '주변광', 0, 2, 0.05], ['rail', '레일 광택 반사', 0, 2, 0.05], ['metal', '포켓 황동 · 크롬 반사', 0, 2, 0.05],
-  ['size', '램프 크기 (당구대 비율 그대로)', 0.4, 1.4, 0.05],
+  ['size', '램프 크기 (당구대 비율 그대로)', 0.4, 1.2, 0.05], ['glint', '램프 반사 밝기 (공·레일)', 1, 10, 0.5],
 ];
 /* Three samples to choose between (owner 11-11), each a whole set of the sliders; '기본' is the game's own light (the
    owner's pick, scene/10-room.js LIGHT0). 현실: as a broadcast looks - the colours as painted (exposure 0.6 undoes the tone
@@ -58,7 +58,7 @@ function sheetDebug() {
   const row = ([k, label, min, max, step]) => {
     shown[k] = el('b', { class: 'dbg-v' });
     // (the room's reflections are made again for the panel and the blur: on letting go, not at every step of the drag)
-    const later = k === 'panel' || k === 'blur', r = el('input', { type: 'range', class: 'dbg-r', min, max, step, value: L[k] });
+    const later = k === 'panel' || k === 'blur' || k === 'glint', r = el('input', { type: 'range', class: 'dbg-r', min, max, step, value: L[k] });
     r.addEventListener('input', () => put(k, r.value, !later)); r.addEventListener('change', () => put(k, r.value, true));
     put(k, L[k], false);
     return el('div', { class: 'field dbg' }, [el('div', { class: 'lab' }, [el('span', { text: label }), shown[k]]), r]);
@@ -71,6 +71,8 @@ function sheetDebug() {
     note('경기 중에 열면 테이블을 보면서 조정할 수 있습니다. 바꾼 값은 이 기기에만, 디버그 모드에서만 쓰입니다.'),
     el('div', { class: 'lab', text: '표본' }), presets,
     ...LIGHT_UI.map(row),
+    // (아케이드's ultimate gauge on the game screen, in any game: 50-match.js paintUlt)
+    flatBtn(`궁극기 게이지 미리보기: ${prefs.ultTry ? '켜짐' : '꺼짐'}`, () => { prefs.ultTry = !prefs.ultTry; savePrefs(); paintUlt(); sheetDebug(); }),
     el('div', { class: 'row' }, [flatBtn('기본값으로', () => { prefs.light = null; savePrefs(); lightApply(); sheetDebug(); }),
       flatBtn('값 복사', () => { const t = JSON.stringify(scene.light); try { navigator.clipboard.writeText(t).then(() => toast('복사했습니다', 'good', 1600), () => toast(t, '', 6000)); } catch (e) { toast(t, '', 6000); } })]),
     flatBtn('뒤로', sheetSettings),
