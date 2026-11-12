@@ -130,7 +130,7 @@ const ranked = {
       if (o.watch) return ranked.catchUp();
       for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
       if (m.result) ranked.result(m.result); else if (o.closing) o.ws.send(JSON.stringify(o.closing));
-      if (m.arc) arcade.sync(m.arc);                                 // (증강 당구: the vote and the rounds as the room has them)
+      if (m.arc) arcade.sync(m.arc);                                 // (증강 당구: its steps as the room has them)
       return;
     }
     // (a shot already in line - heard again after a reconnect - is not played twice)
@@ -139,7 +139,7 @@ const ranked = {
     else if (m.t === 'timeout') { o.inbox.push({ n: m.n, timeout: true }); o.aimBuf = null; }
     else if (m.t === 'aim') ranked.aimFrom(m);
     else if (m.t === 'emote') emote.got(m);
-    else if (m.t === 'voted' || m.t === 'shape' || m.t === 'picked' || m.t === 'picks') arcade.hear(m);
+    else if (m.t === 'carded' || m.t === 'step') arcade.hear(m);
     else if (m.t === 'res') { o.res[m.n] = m.st; if (o.mine[m.n]) ranked.compare(m.n); }
     else if (m.t === 'away') toast(o.team ? `${(o.team[m.seat] || {}).name || '한 명'}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 그 팀이 집니다.` : `${o.opp.name}의 연결이 끊겼습니다. 30초 안에 돌아오지 않으면 승리합니다.`, 'foul', 3600);
     else if (m.t === 'back') toast(`${o.team ? (o.team[m.seat] || {}).name || '한 명' : o.opp.name}이(가) 돌아왔습니다.`, '', 2000);

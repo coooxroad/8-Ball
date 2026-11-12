@@ -187,7 +187,9 @@ const PLAY_STEPS = {
     dkPut(fit, [
       panel('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), [tt('친구와 플레이')], 'card unf'),
       panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon unf'),
-      panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구', `${ARCADE.BALLS}볼`)], 'card unf'),
+      // (아케이드: 준비 중 - open with the debug setting only, owner 11-12)
+      net.debug ? panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구', '디버그')], 'card unf')
+        : panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '증강 당구', '준비 중')], 'card soon unf'),
       panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, 'ONLINE'),
         el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
   },

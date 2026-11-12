@@ -1,18 +1,21 @@
-/* ================= 아케이드 · 증강 당구 on the game screen (owner 11-12) =================
+/* ================= 아케이드 · 증강 당구 on the game screen (owner 11-12) - 준비 중: open with the debug setting only =================
    The game begins as any online game does - the table on the screen, the balls racked (36볼: game.js MODES.arcade) - and
    then, before the first shot, the cards come over it: the table behind goes soft (a zoom blur of the frame, darker at
    the edges: the eye goes to the middle) and three printed cards are dealt into the middle, face down, and turn over.
-     the table's vote: three green cards, ARCADE.VOTE_MS; the other's card shown once both have voted (the room's word:
-       { t: 'shape', id, votes }); two different, the light runs between them and stops on the room's choice;
-     each augments' round (ARCADE.due: each time both have had ARCADE.EVERY more visits): three of the seat's own deal
-       (ARCADE.deal - the first round red, the other's debuffs; later ones one's own, in their tier's metal), ARCADE.PICK_MS;
-       once both have picked (the room's { t: 'picks' }), the two cards side by side, then back to the table.
-   A card not given in time is given at random here (the room does the same for a seat that never sends one). While the
-   cards are up nobody plays: the turn waits (40-shot.js beginTurn asks hold), and begins again once they are done.
-   What the cards do is to come (game.js ARCADE): for now they are picked, shown and kept (arcade.on.done).
-   The cards are the shop's printed cards in metal (silver, gold, the prism - and here green and red for the vote and the
-   debuffs) made as the menu's are, solid - a face with its edge showing towards the lower left (the light from the upper
-   right, as on the desk) and a back - held up in perspective as they come in and turn over (style/76-play-arcade.css). */
+   No words but the step's name on its capsule (owner: players learn by seeing) - and the clock.
+   Each step (game.js ARCADE.step, its cards ARCADE.cards):
+     a vote (the table's shape, green; what makes the game harder for both, red) - once both have given theirs (the room's
+       { t: 'step', ids, id }) each one's card is marked; two different, the light runs between them and stops on the
+       room's choice;
+     a pick (an augment of one's own, in the tier's metal - the same tier for both) - the card taken goes to the middle;
+       once both have, the two side by side.
+   Then back to the table. Step 0 comes before the first shot; the next each time both have had ARCADE.EVERY more visits
+   (ARCADE.due). A card not given in time is given at random here (the room does the same for a seat that never sends one).
+   While the cards are up nobody plays: the turn waits (40-shot.js beginTurn asks hold), and begins again once they are
+   done. What the cards do is to come: for now they are given, shown and kept (arcade.on.done, the room's arc.done).
+   The cards are the shop's printed cards in metal, made as the menu's are, solid - a face with its edge showing towards
+   the lower left (the light from the upper right, as on the desk) and a back - held up in perspective as they come in
+   and turn over (style/76-play-arcade.css). */
 const ARC_TIER = ['실버', '골드', '프리즘'];
 const arcSvg = d => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const ARC_DOT = '<circle cx="24" cy="24" r="2.6" fill="currentColor" stroke="none"/>';
@@ -22,6 +25,7 @@ const ARC_ICO = {
   bumpy: arcSvg('<path d="M9 14l7 3 5-6 6 5 7-4 4 8-3 6 5 7-6 5-6-3-5 6-6-5-7 3-3-8 4-6z"/>' + ARC_DOT),
   penta: arcSvg('<path d="M24 6.5l17 12.4-6.5 20H13.5L7 18.9z"/>' + ARC_DOT),
   ice: arcSvg('<path d="M24 5v38M7.5 14.5l33 19M7.5 33.5l33-19M19 8l5 5 5-5M19 40l5-5 5 5"/>'),
+  rewind: arcSvg('<path d="M10 24a14 14 0 1 0 4.1-9.9"/><path d="M12 6v9h9"/><path d="M24 16v9l6 4"/>'),
   more: arcSvg('<circle cx="18" cy="28" r="10"/><path d="M36 8v14M29 15h14"/>'),
   fog: arcSvg('<path d="M6 16c4-4 8 4 12 0s8 4 12 0 8 4 12 0M6 26c4-4 8 4 12 0s8 4 12 0 8 4 12 0M6 36c4-4 8 4 12 0s8 4 12 0 8 4 12 0"/>'),
   heavy: arcSvg('<path d="M17 15a7 7 0 0 1 14 0"/><path d="M12 19h24l4 21H8z"/><path d="M24 25v8M20 29l4 4 4-4"/>'),
@@ -39,19 +43,19 @@ const ARC_ICO = {
 };
 
 // the game's state of these, with the online game it belongs to (null: not this mode)
+// the game's state of these, with the online game it belongs to (null: not this mode)
 const arcade = {
   on: null,
   begin(o) {
     arcade.close();
-    arcade.on = { o, shape: null, votes: null, voted: [false, false], mine: null, voteIn: null, done: [], shown: 0, sent: {}, view: null, resume: false, tick: 0, later: [] };
+    arcade.on = { o, done: [], shown: 0, given: [false, false], mine: {}, openIn: null, view: null, resume: false, tick: 0, later: [] };
   },
   close() { const a = arcade.on; if (a) { clearInterval(a.tick); a.later.forEach(clearTimeout); } arcade.on = null; arcFxClose(true); },
   live() { const a = arcade.on; return a && ranked.on === a.o && flow === match && st.screen === 'play' ? a : null; },
-  // a turn about to begin: the vote, or a round due, first (true: the turn waits for them)
+  // a turn about to begin: a step due first (true: the turn waits for it)
   hold(first) {
     const a = arcade.live(); if (!a || game.over) return false;
-    if (!a.view && a.shape) { const k = ARCADE.due(match.innings, game.turn, a.shown); if (k) arcRound(a, k); }
-    if (!a.view && !a.shape) arcVote(a);
+    if (!a.view) { const k = a.shown === 0 ? 0 : ARCADE.due(match.innings, game.turn, a.shown - 1); if (a.shown === 0 || k) arcStep(a, a.shown); }
     if (!a.view) return false;
     a.resume = a.resume || !!first; st.phase = 'idle'; st.auto = null; flow.hud(); scene.invalidate();
     return true;
@@ -59,31 +63,21 @@ const arcade = {
   // the room's word on coming in (54-ranked.js hear 'state'): what was missed, and a card sent here it never got, again
   sync(s) {
     const a = arcade.on; if (!a || !s) return;
-    a.done = (s.done || []).map(x => x.slice());
-    if (s.shape) { if (!a.shape) arcade.hear({ t: 'shape', id: s.shape, votes: s.votes }); }
-    else {
-      a.voted = (s.voted || [false, false]).slice(); if (s.voteIn != null && !a.view) a.voteIn = s.voteIn;
-      if (a.mine && !s.mine) ranked.send({ t: 'vote', id: a.mine });
-      arcFoot(a);
-    }
-    const v = a.view;
-    if (v && v.kind === 'round') {
-      if (a.done[v.k - 1]) arcade.hear({ t: 'picks', round: v.k, ids: a.done[v.k - 1] });
-      else if (v.mine && s.open && s.open.k === v.k && !s.open.mine) ranked.send({ t: 'pick', round: v.k, id: v.mine });
+    (s.done || []).forEach((d, k) => { if (!a.done[k]) arcade.hear({ t: 'step', step: k, ids: d.ids, id: d.id }); });
+    const o = s.open, v = a.view;
+    if (o) {
+      if (v && v.k === o.k) { a.given = o.given.slice(); if (a.mine[o.k] && !o.mine) ranked.send({ t: 'card', step: o.k, id: a.mine[o.k] }); arcFoot(a); }
+      if (o.in != null && !(v && v.ready)) a.openIn = o.in;
     }
   },
   hear(m) {
     const a = arcade.on; if (!a) return;
-    const me = a.o.seat, v = a.view;
-    if (m.t === 'voted') { a.voted[m.seat] = true; arcFoot(a); }
-    else if (m.t === 'picked') { if (v && v.kind === 'round' && m.round === v.k) { v.them = true; arcFoot(a); } }
-    else if (m.t === 'shape') {
-      if (a.shape) return;
-      a.shape = m.id; a.votes = m.votes || [m.id, m.id];
-      if (v && v.kind === 'vote' && v.ready) arcVoteReveal(a);       // (not yet dealt: the deal reveals it)
-    } else if (m.t === 'picks') {
-      a.done[m.round - 1] = m.ids.slice();
-      if (v && v.kind === 'round' && v.k === m.round && v.ready && !v.revealed) arcRoundReveal(a, m.ids[me], m.ids[1 - me]);
+    const v = a.view;
+    if (m.t === 'carded') { if (v && v.k === m.step) { a.given[m.seat] = true; arcFoot(a); } }
+    else if (m.t === 'step') {
+      if (a.done[m.step]) return;
+      a.done[m.step] = { ids: m.ids.slice(), id: m.id };
+      if (v && v.k === m.step && v.ready) arcReveal(a);              // (not yet dealt: the deal reveals it)
     }
   },
 };
@@ -114,138 +108,105 @@ function arcFxClose(now) {
   fx.classList.remove('in'); fx.classList.add('out'); fx._gone = setTimeout(() => fx.remove(), 520);
 }
 
-/* ---------- a card ---------- */
+/* ---------- a card: its look by its step's kind (green the table, red harder, a pick its tier's metal) ---------- */
+const arcLook = (kind, id) => kind === 'buff' ? 't' + ARCADE.card(id).tier : kind;
 function arcCard(id, kind, i) {
   const c = ARCADE.card(id), tier = kind === 'buff' ? c.tier : null;
   const ico = el('span', { class: 'ac-ico', 'aria-hidden': 'true' }); ico.innerHTML = ARC_ICO[id] || '';
-  return el('button', { class: `ac ${kind}` + (tier != null ? ' t' + tier : ''), 'data-id': id, 'aria-label': `${c.name}: ${c.d}`, style: `--i:${i || 0}` }, [
+  return el('button', { class: `ac ${arcLook(kind, id)}`, 'data-id': id, 'aria-label': `${c.name}: ${c.d}`, style: `--i:${i || 0}` }, [
     el('i', { class: 'ac-shd', 'aria-hidden': 'true' }),
     el('span', { class: 'ac-body' }, [el('span', { class: 'ac-back', 'aria-hidden': 'true' }, el('i')),
-      el('span', { class: 'ac-face' }, el('span', { class: 'ac-print' }, [el('em', { text: kind === 'shape' ? '테이블' : kind === 'debuff' ? '디버프' : ARC_TIER[tier] }), ico, el('b', { text: c.name }), el('small', { text: c.d }), el('span', { class: 'ac-sh' })]))]),
+      el('span', { class: 'ac-face' }, el('span', { class: 'ac-print' }, [tier != null ? el('em', { text: ARC_TIER[tier] }) : null, ico, el('b', { text: c.name }), el('small', { text: c.d }), el('span', { class: 'ac-sh' })]))]),
     el('span', { class: 'ac-pins' })]);
 }
-// the head over the cards: what this is, what to do, and the clock (a ring running down, the seconds in it)
-function arcHead(stage, kind, title, ms) {
+// the head over the cards: the step's capsule, and its clock (a ring running down, the seconds in it)
+function arcHead(stage, kind, ms) {
   const ring = ms ? el('span', { class: 'fx-clock', style: `--t:${ms}ms` }, [el('i'), el('b', { text: String(Math.ceil(ms / 1000)) })]) : null;
-  stage.replaceChildren(el('div', { class: 'fx-head' }, [el('span', { class: 'fx-kind ' + kind, text: { shape: '테이블 투표', debuff: '증강 · 디버프', buff: '증강' }[kind] }), el('b', { class: 'fx-title', text: title }), ring]),
-    el('div', { class: 'fx-row' }), el('div', { class: 'fx-foot' }));
+  stage.replaceChildren(el('div', { class: 'fx-head' }, [el('span', { class: 'fx-kind ' + kind, text: ARCADE.KINDS[kind].label }), ring]), el('div', { class: 'fx-row' }), el('div', { class: 'fx-foot' }));
 }
-const arcTitle = t => { const b = $('#arcFx .fx-title'); if (b) b.textContent = t; };
 const arcClockDone = () => { const c = $('#arcFx .fx-clock'); if (c) c.classList.add('done'); };
+// (whether the other has given their card: a dot that lights)
 function arcFoot(a) {
   const f = $('#arcFx .fx-foot'), v = a.view; if (!f || !v) return;
-  const them = v.kind === 'vote' ? a.voted[1 - a.o.seat] : !!v.them, mine = v.kind === 'vote' ? !!a.mine : !!v.mine;
-  f.replaceChildren(v.revealed ? '' : el('span', { class: 'fx-them' + (them ? ' on' : '') }, [el('i'), el('span', { text: them ? (v.kind === 'vote' ? '상대 투표 완료' : '상대 선택 완료') : mine ? '상대를 기다리는 중' : '상대가 고르는 중' })]));
+  const them = a.given[1 - a.o.seat];
+  f.replaceChildren(v.revealed ? '' : el('span', { class: 'fx-them' + (them ? ' on' : ''), 'aria-label': them ? '상대 선택 완료' : '상대 선택 중' }, [el('i'), el('span', { text: '상대' })]));
 }
-// a card taken: to the middle of the row, raised; the others away
+const arcPin = (who) => el('span', { class: 'pin ' + who, text: who === 'me' ? '나' : '상대' });
 // (by its place in the row, not the screen: the cards are turned in perspective - every card as wide, the gap between equal)
 const arcCenter = (row, card) => {
   const cs = [...row.children], i = cs.indexOf(card), gap = parseFloat(getComputedStyle(row).columnGap) || 0;
   card.style.setProperty('--gx', (-(i - (cs.length - 1) / 2) * (card.offsetWidth + gap)).toFixed(1) + 'px');
 };
-function arcTake(row, card) {
-  arcCenter(row, card);
-  card.classList.add('took');
-  for (const o of row.querySelectorAll('.ac')) if (o !== card) o.classList.add('away');
-}
 
-/* ---------- the table's vote ---------- */
-function arcVote(a) {
-  const v = a.view = { kind: 'vote', revealed: false, end: 0 };
-  // the table alone first (owner: "당구대 테이블 보여지게 갔다가 증강 카드뜨게")
-  arcAfter(a, ARCADE.LEAD_MS, () => a.view === v && arcFxOpen(stage => {
+/* ---------- a step ---------- */
+function arcStep(a, k) {
+  const kind = ARCADE.step(k), how = ARCADE.KINDS[kind].how, cards = ARCADE.cards(a.o.seed, k, a.o.seat);
+  const v = a.view = { k, kind, how, cards, ready: false, revealed: false, end: 0 }; a.given = [false, false];
+  // (the table alone first - owner: "당구대 테이블 보여지게 갔다가 증강 카드뜨게")
+  arcAfter(a, k === 0 ? ARCADE.LEAD_MS : 0, () => a.view === v && arcFxOpen(stage => {
     if (a.view !== v) return;
     v.ready = true;
-    const ms = a.voteIn != null ? Math.max(1000, a.voteIn) : ARCADE.VOTE_MS; v.end = Date.now() + ms;
-    arcHead(stage, 'shape', '마음에 드는 테이블에 투표하세요', ms);
+    const full = how === 'vote' ? ARCADE.VOTE_MS : ARCADE.PICK_MS, ms = a.openIn != null ? Math.max(1000, a.openIn) : full; a.openIn = null;
+    v.end = Date.now() + ms;
+    arcHead(stage, kind, a.done[k] ? 0 : ms);
     const row = stage.querySelector('.fx-row');
-    ARCADE.shapes.forEach((S, i) => {
-      const c = row.appendChild(arcCard(S.id, 'shape', i)); c.classList.add('deal');
-      c.onclick = () => arcVoteFor(a, S.id);
-    });
+    cards.forEach((id, i) => { const c = row.appendChild(arcCard(id, kind, i)); c.classList.add('deal'); c.onclick = () => arcGive(a, id); });
     arcFoot(a); SND.init(); SND.tap();
+    if (a.done[k]) return arcAfter(a, 900, () => arcReveal(a));    // (decided while the table was shown alone)
     a.tick = setInterval(() => {
       if (a.view !== v || v.revealed) return clearInterval(a.tick);
       const left = v.end - Date.now(), b = $('#arcFx .fx-clock b'); if (b) b.textContent = String(Math.max(0, Math.ceil(left / 1000)));
-      if (left <= 0 && !a.mine) arcVoteFor(a, ARCADE.shapes[Math.floor(Math.random() * ARCADE.shapes.length)].id);
+      if (left <= 0 && !a.mine[k]) arcGive(a, cards[Math.floor(Math.random() * cards.length)]);
     }, 200);
-    if (a.shape) arcVoteReveal(a);                                   // (decided while the table was shown alone)
   }));
 }
-function arcVoteFor(a, id) {
-  if (a.mine || a.shape || !a.view || a.view.revealed) return;
-  a.mine = id; SND.tap(); ranked.send({ t: 'vote', id });
-  for (const c of document.querySelectorAll('#arcFx .ac')) { c.classList.toggle('mine', c.dataset.id === id); c.classList.toggle('dim', c.dataset.id !== id); }
-  const p = $(`#arcFx .ac[data-id="${id}"] .ac-pins`); if (p) p.replaceChildren(el('span', { class: 'pin me', text: '나' }));
-  arcTitle('투표했습니다'); arcFoot(a);
+// this seat's card for the step: a vote marked and the others dimmed; a pick taken to the middle, the others away
+function arcGive(a, id) {
+  const v = a.view; if (!v || !v.ready || v.revealed || a.mine[v.k]) return;
+  a.mine[v.k] = id; a.given[a.o.seat] = true; SND.tap(); ranked.send({ t: 'card', step: v.k, id });
+  const row = $('#arcFx .fx-row'), card = $(`#arcFx .ac[data-id="${id}"]`); if (!row || !card) return;
+  for (const c of row.querySelectorAll('.ac')) c.disabled = true;
+  if (v.how === 'vote') {
+    for (const c of row.querySelectorAll('.ac')) { c.classList.toggle('mine', c === card); c.classList.toggle('dim', c !== card); }
+    card.querySelector('.ac-pins').replaceChildren(arcPin('me'));
+  } else { arcCenter(row, card); card.classList.add('took'); for (const c of row.querySelectorAll('.ac')) if (c !== card) c.classList.add('away'); }
+  arcFoot(a);
 }
-// both voted (or the time up): each one's card marked; two different, the light runs between them; then the table chosen
-function arcVoteReveal(a) {
-  const v = a.view; if (!v || v.revealed) return; v.revealed = true; clearInterval(a.tick); arcClockDone(); arcFoot(a);
-  const me = a.o.seat, mine = a.votes[me], theirs = a.votes[1 - me], cands = mine === theirs ? [mine] : [mine, theirs];
-  for (const c of document.querySelectorAll('#arcFx .ac')) {
-    const id = c.dataset.id, pins = c.querySelector('.ac-pins');
-    pins.replaceChildren(...[id === mine ? el('span', { class: 'pin me', text: '나' }) : null, id === theirs ? el('span', { class: 'pin them', text: '상대' }) : null].filter(Boolean));
+// the step decided: a vote's cards marked, the light run between two different ones, the chosen to the middle; a pick's
+// two cards side by side, the other's dealt face down and turned over - then back to the table
+function arcReveal(a) {
+  const v = a.view, d = a.done[v.k]; if (!v || v.revealed || !d) return;
+  v.revealed = true; clearInterval(a.tick); arcClockDone(); arcFoot(a);
+  const me = a.o.seat, mine = d.ids[me], theirs = d.ids[1 - me], row = $('#arcFx .fx-row');
+  if (!row) return arcAfter(a, 400, () => arcEnd(a));
+  if (v.how === 'pick') {
+    row.classList.add('two');
+    const pair = (id, i, who, cls) => { const c = arcCard(id, v.kind, i); c.disabled = true; c.querySelector('.ac-pins').append(arcPin(who)); return el('div', { class: 'fx-pair ' + cls }, c); };
+    row.replaceChildren(pair(mine, 0, 'me', 'mine'), pair(theirs, 1, 'them', 'theirs deal'));
+    return arcAfter(a, 2600, () => arcEnd(a));
+  }
+  const cands = mine === theirs ? [mine] : [mine, theirs], card = id => $(`#arcFx .ac[data-id="${id}"]`);
+  for (const c of row.querySelectorAll('.ac')) {
+    const id = c.dataset.id;
+    c.querySelector('.ac-pins').replaceChildren(...[id === mine ? arcPin('me') : null, id === theirs ? arcPin('them') : null].filter(Boolean));
     c.classList.remove('mine'); c.classList.toggle('dim', !cands.includes(id)); c.disabled = true;
   }
-  arcTitle(cands.length > 1 ? '서로 달라서 둘 중 하나를 뽑습니다' : '같은 테이블을 골랐습니다');
-  const won = a.shape, card = id => $(`#arcFx .ac[data-id="${id}"]`);
-  let n = cands.length > 1 ? 9 + (cands.indexOf(won) === 1 ? 1 : 0) : 1, i = 0;
+  let n = cands.length > 1 ? 9 + (cands.indexOf(d.id) === 1 ? 1 : 0) : 1, i = 0;
   const step = () => {
     if (a.view !== v) return;
     for (const id of cands) { const c = card(id); if (c) c.classList.toggle('lit', id === cands[i % cands.length]); }
     if (--n > 0) { i++; SND.tap(); arcAfter(a, 110 + (9 - n) * 18, step); return; }
-    for (const c of document.querySelectorAll('#arcFx .ac')) { c.classList.remove('lit'); c.classList.toggle('out', c.dataset.id !== won); }
-    { const row = $('#arcFx .fx-row'), c = card(won); if (row && c) { arcCenter(row, c); c.classList.add('won'); } }
-    arcTitle(`${ARCADE.card(won).name} 테이블`); SND.good ? SND.good() : SND.tap();
-    arcAfter(a, 1500, () => arcEnd(a));
+    for (const c of row.querySelectorAll('.ac')) { c.classList.remove('lit'); c.classList.toggle('out', c.dataset.id !== d.id); }
+    const c = card(d.id); if (c) { arcCenter(row, c); c.classList.add('won'); }
+    SND.tap(); arcAfter(a, 1500, () => arcEnd(a));
   };
   arcAfter(a, 500, step);
-}
-
-/* ---------- an augments' round ---------- */
-function arcRound(a, k) {
-  const kind = ARCADE.kindOf(k), deal = ARCADE.deal(a.o.seed, k, a.o.seat), v = a.view = { kind: 'round', k, card: kind, deal, mine: null, them: false, revealed: false, end: 0 };
-  arcFxOpen(stage => {
-    if (a.view !== v) return;
-    v.ready = true;
-    if (a.done[k - 1]) { arcHead(stage, kind, '', 0); return arcRoundReveal(a, a.done[k - 1][a.o.seat], a.done[k - 1][1 - a.o.seat]); }
-    v.end = Date.now() + ARCADE.PICK_MS;
-    arcHead(stage, kind, kind === 'debuff' ? '상대에게 걸 카드를 고르세요' : '내 증강을 고르세요', ARCADE.PICK_MS);
-    const row = stage.querySelector('.fx-row');
-    deal.forEach((id, i) => { const c = row.appendChild(arcCard(id, kind, i)); c.classList.add('deal'); c.onclick = () => arcPick(a, id); });
-    arcFoot(a); SND.init(); SND.tap();
-    a.tick = setInterval(() => {
-      if (a.view !== v || v.revealed) return clearInterval(a.tick);
-      const left = v.end - Date.now(), b = $('#arcFx .fx-clock b'); if (b) b.textContent = String(Math.max(0, Math.ceil(left / 1000)));
-      if (left <= 0 && !v.mine) arcPick(a, deal[Math.floor(Math.random() * deal.length)]);
-    }, 200);
-    if (a.done[k - 1]) arcRoundReveal(a, a.done[k - 1][a.o.seat], a.done[k - 1][1 - a.o.seat]);
-  });
-}
-function arcPick(a, id) {
-  const v = a.view; if (!v || v.kind !== 'round' || v.mine || v.revealed) return;
-  v.mine = id; SND.tap(); ranked.send({ t: 'pick', round: v.k, id });
-  const row = $('#arcFx .fx-row'), card = $(`#arcFx .ac[data-id="${id}"]`);
-  if (row && card) { for (const c of row.querySelectorAll('.ac')) c.disabled = true; arcTake(row, card); }
-  arcTitle(v.card === 'debuff' ? '상대에게 걸었습니다' : '골랐습니다'); arcFoot(a);
-}
-// both picked: mine and the other's side by side - the other's dealt face down and turned over - then back to the table
-function arcRoundReveal(a, mine, theirs) {
-  const v = a.view; if (!v || v.revealed) return; v.revealed = true; clearInterval(a.tick); arcClockDone(); arcFoot(a);
-  const row = $('#arcFx .fx-row'); if (!row) return arcAfter(a, 400, () => arcEnd(a));
-  const deb = v.card === 'debuff', pair = (id, i, label, cls) => el('div', { class: 'fx-pair ' + cls }, [arcCard(id, v.card, i), el('span', { class: 'fx-who', text: label })]);
-  row.classList.add('two');
-  row.replaceChildren(pair(mine, 0, deb ? '상대에게 건 카드' : '내 증강', 'mine'), pair(theirs, 1, deb ? '나에게 걸린 카드' : '상대의 증강', 'theirs deal'));
-  for (const c of row.querySelectorAll('.ac')) c.disabled = true;
-  arcTitle(deb ? '서로 디버프를 걸었습니다' : '증강을 골랐습니다');
-  arcAfter(a, 2600, () => arcEnd(a));
 }
 
 // done: the cards away, the table back in focus, and the turn that waited begins
 function arcEnd(a) {
   const v = a.view; if (!v) return;
-  if (v.kind === 'round') a.shown = Math.max(a.shown, v.k);
+  a.shown = Math.max(a.shown, v.k + 1);
   a.view = null; clearInterval(a.tick); arcFxClose(false);
   const first = a.resume; a.resume = false;
   if (arcade.live() === a && !game.over) beginTurn(first);

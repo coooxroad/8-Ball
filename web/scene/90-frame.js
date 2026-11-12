@@ -6,6 +6,7 @@
      falling ball draw it - goes through the renderer once into a single pixel, and is then drawn as usual. */
   let warmDue = true;
   let grabWant = null;                         // (a picture of the next frame wanted: grab - app/55-arcade.js, the focus behind its cards)
+  let setDrawn = null;                         // (the ball set the last frame drew)
   const warmVp = new THREE.Vector4();
   function prewarm() {
     const shown = [], culled = [], mask = camera.layers.mask;
@@ -51,6 +52,9 @@
     if (waterTick(v.game && v.game.world, dt)) dirty = Math.max(dirty, 1);
     if (dirty <= 0) return false; dirty--; renderer.info.reset();
     const g = v.game, P = g.P, w = g.world, R = P.R, set = sets[g.mode.set || g.mode.table], a = v.alpha;   // (a game's own set: 증강 당구's 36)
+    /* the set drawn changed (a game of another set, on a table of the same size - setTable hides them all only when the
+       table changes): the last one's balls and shadows hidden (owner 11-12: 증강 당구's 36 were still there in the next game) */
+    if (set !== setDrawn) { if (setDrawn) { for (const m of setDrawn.mesh) m.visible = false; for (const s of setDrawn.blob) s.visible = false; } setDrawn = set; }
     if (warmDue && still && rt) { warmDue = false; const t0 = performance.now(); prewarm(); sProf.warm = performance.now() - t0; }
     // A shaped ball (a potato, a bowling ball) is made of many triangles; small on the screen half of them look the same.
     // '자동': half while the table is seen whole from above and a ball is under 70 screen pixels across; close up, in 3D and

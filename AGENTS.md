@@ -110,11 +110,12 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
   `72-lessons` 교본·연습, `75-play-panels` 플레이 패널, `80-broadcast` 대결 중계 화면. 파일 끝에 덧붙이지 말고 관련 규칙 옆에.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
-  아케이드는 증강 당구 한 모드(온라인 매칭만). 규칙·카드는 코어 `game.js` `ARCADE`(36볼 `MODES.arcade`, 카드 목록, `deal`, `due`),
-  서버는 로비 'arcade' + 방 `RoomCore`의 `arc*`(투표·라운드·시계, 대역 카드), 메뉴는 `33-desk-arcade.js`(카드 → `seekPaint` 상대 찾기),
-  경기 화면 위 카드는 `55-arcade.js`(`arcade.hold`가 `beginTurn`을 막고, 프레임을 잡아 방사형 블러 위에 카드; 스타일 `76-play-arcade.css`).
-  궁극기 게이지(`ultGauge`)는 경기 화면 가운데 아래(`50-match.js` `paintUlt`). 카드 효과·테이블 모양 물리는 아직 — 효과를 넣을 땐 고른
-  카드를 방의 로그(`log()`)에 넣어 리플레이가 같은 게임을 하게 해야 한다.
+  아케이드는 증강 당구 한 모드(온라인 매칭만, **준비 중 — 디버그로만 열림**). 규칙·카드는 코어 `game.js` `ARCADE`(36볼 `MODES.arcade`,
+  한 차례 `SHOTS`번; 진행은 단계 `step(k)` — 0 테이블 투표, 그다음 증강(각자 고르기)·어려움(둘이 투표) 번갈아, 단계의 방식은 `KINDS`;
+  카드 `cards(seed, k, seat)`, 증강은 단계마다 한 등급 `tierOf`, 언제 `due`). 서버 방 `RoomCore`의 `arc*`는 단계의 종류(투표/고르기)만
+  알고 카드는 코어에서 — 메시지 `card`/`carded`/`step`. 메뉴 `33-desk-arcade.js`(카드 → `seekPaint`), 경기 화면 위 카드
+  `55-arcade.js`(`arcade.hold`가 `beginTurn`을 막는다; 스타일 `76-play-arcade.css`), 궁극기 게이지 `50-match.js` `paintUlt`.
+  카드는 더미 — 효과·테이블 모양은 아직. 효과를 넣을 땐 정해진 카드를 방의 로그(`log()`)에 넣어 리플레이가 같은 게임을 하게.
 - 새 버튼은 `onTap(fn)`(소리 깨우기·딸깍·실행)으로 단다.
 
 ### 레슨 추가

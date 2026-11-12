@@ -546,10 +546,20 @@ for (const name of ['bar', 'pro', 'pub']) {
     if (!g.over) fail(`arcade: a game did not end (seed ${s})`);
     else { games++; if (a + b !== down) fail(`arcade: ${a} + ${b} points but ${down} balls down (seed ${s})`); if (a !== b && g.over.winner !== (a > b ? 0 : 1)) fail(`arcade: ${a} : ${b} won by ${g.over.winner}`); if (Math.max(a, b) < ARCADE.WIN && down < 36) fail(`arcade: ended at ${a} : ${b}`); }
   }
-  const d = ARCADE.deal(1234, 2, 0);
-  if (d.length !== 3 || new Set(d).size !== 3 || d.join() !== ARCADE.deal(1234, 2, 0).join() || !d.every(id => ARCADE.buffs.some(c => c.id === id))) fail(`arcade: round 2's deal ${d}`);
-  if (!ARCADE.deal(1234, 1, 1).every(id => ARCADE.debuffs.some(c => c.id === id))) fail('arcade: round 1 is not the debuffs');
-  if (ARCADE.due([3, 2], 0, 0) !== 1 || ARCADE.due([2, 2], 1, 0) !== 0 || ARCADE.due([3, 2], 0, 1) !== 0 || ARCADE.due([5, 4], 0, 1) !== 2) fail('arcade: the rounds come at the wrong visits');
+  // the steps: the table's, then an augment and a harder vote by turns; a pick's three all of the step's tier, the same
+  // tier for both seats; a vote's three the same for both
+  if ([0, 1, 2, 3, 4].map(ARCADE.step).join() !== 'shape,buff,hard,buff,hard') fail('arcade: the steps are out of order');
+  for (const k of [1, 3, 5, 7]) {
+    const a = ARCADE.cards(1234, k, 0), b = ARCADE.cards(1234, k, 1), t = ARCADE.tierOf(1234, k), ok = x => x.length === 3 && new Set(x).size === 3 && x.every(id => ARCADE.buffs.find(c => c.id === id).tier === t);
+    if (!ok(a) || !ok(b) || a.join() !== ARCADE.cards(1234, k, 0).join()) fail(`arcade: step ${k}'s picks ${a} / ${b} (tier ${t})`);
+  }
+  if (ARCADE.cards(99, 2, 0).join() !== ARCADE.cards(99, 2, 1).join() || !ARCADE.cards(99, 2, 0).every(id => ARCADE.hards.some(c => c.id === id))) fail('arcade: a harder vote differs between seats');
+  if (ARCADE.due([3, 2], 0, 0) !== 1 || ARCADE.due([2, 2], 1, 0) !== 0 || ARCADE.due([3, 2], 0, 1) !== 0 || ARCADE.due([5, 4], 0, 1) !== 2) fail('arcade: the steps come at the wrong visits');
+  // two shots a visit: a visit with nothing potted and no foul still has its second shot
+  { const g = createGameRaw(T.physicsFor(createPhysics, 'bar')); g.start('arcade', ['A', 'B'], false, { rnd: createGameRaw.seededRandom(9) }); g.isBreak = false; g.placing = null;
+    const w = g.world; g.beginShot(); g.P.strike(w, Math.PI, 0.3, 0, 0); g.P.run(w, 60); g.resolve();
+    const t1 = g.turn; g.beginShot(); g.P.strike(w, Math.PI, 0.3, 0, 0); g.P.run(w, 60); g.resolve();
+    if (t1 !== 0 || g.turn !== 1 || g.arc.n !== 0) fail(`arcade: a visit of two shots went ${t1}, ${g.turn} (n ${g.arc.n})`); }
   console.log(`arcade: ${games} games of 36 played to the end, ${shots} shots`);
 }
 

@@ -35,17 +35,16 @@
 #arcFx.out .fx-blur,#arcFx.out .fx-vig,#arcFx.out .fx-stage{opacity:0;transition:opacity .45s ease}
 #arcFx .fx-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,3.2vh,30px);padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom))}
 
-/* the head: the kind on a pill, what to do in the game's lettering, the clock's ring running down */
-#arcFx .fx-head{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;animation:fxDrop .5s cubic-bezier(.2,.8,.3,1.15) both}
+/* the head: the step's capsule and the clock's ring running down - no other words (owner 11-12: players learn by seeing) */
+#arcFx .fx-head{display:flex;align-items:center;gap:12px;text-align:center;animation:fxDrop .5s cubic-bezier(.2,.8,.3,1.15) both}
 @keyframes fxDrop{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
-#arcFx .fx-kind{padding:5px 14px;border-radius:999px;font:800 13px/1.2 var(--ui-font);letter-spacing:.08em;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.35)}
+#arcFx .fx-kind{padding:7px 18px;border-radius:999px;font:800 16px/1.2 var(--ui-font);letter-spacing:.08em;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.35)}
 #arcFx .fx-kind.shape{background:linear-gradient(180deg,#47b877,#1d6e42)}
-#arcFx .fx-kind.debuff{background:linear-gradient(180deg,#d65067,#7a1c33)}
+#arcFx .fx-kind.hard{background:linear-gradient(180deg,#d65067,#7a1c33)}
 #arcFx .fx-kind.buff{background:linear-gradient(180deg,#e2b04a,#8c5d14)}
-#arcFx .fx-title{font:400 clamp(22px,4.2vh,36px)/1.1 var(--game-font);color:#fff;letter-spacing:-.01em;-webkit-text-stroke:5px #10141a;paint-order:stroke fill;text-shadow:0 4px 0 #10141a}
-#arcFx .fx-clock{position:relative;display:grid;place-items:center;width:46px;height:46px}
+#arcFx .fx-clock{position:relative;display:grid;place-items:center;width:40px;height:40px}
 #arcFx .fx-clock i{position:absolute;inset:0;border-radius:50%;background:conic-gradient(#ffd84d var(--p),rgba(255,255,255,.14) 0);-webkit-mask:radial-gradient(circle,transparent 0 60%,#000 61%);mask:radial-gradient(circle,transparent 0 60%,#000 61%);animation:fxClock var(--t) linear forwards}
-#arcFx .fx-clock b{font:400 20px/1 var(--game-font);color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+#arcFx .fx-clock b{font:800 16px/1 var(--ui-font);color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 2px 0 rgba(0,0,0,.5)}
 #arcFx .fx-clock.done{opacity:0;transition:opacity .3s}
 #arcFx .fx-clock.done i{animation-play-state:paused}
 @keyframes fxClock{from{--p:100%}to{--p:0%}}
@@ -57,11 +56,9 @@
 #arcFx .fx-them.on i{background:#5fe08a;animation:none}
 
 /* the row: three cards held up in a shallow curve (the outer ones turned in, a little back) */
-#arcFx .fx-row{--ch:min(46vh,350px,calc(27vw / .7));display:flex;align-items:center;justify-content:center;gap:clamp(10px,2.6vw,34px);perspective:1300px;perspective-origin:50% 40%}
+#arcFx .fx-row{--ch:min(52vh,420px,calc(29vw / .7));display:flex;align-items:center;justify-content:center;gap:clamp(10px,2.6vw,34px);perspective:1300px;perspective-origin:50% 40%}
 #arcFx .fx-row.two{gap:clamp(24px,7vw,90px)}
 #arcFx .fx-pair{display:flex;flex-direction:column;align-items:center;gap:12px;transform-style:preserve-3d}
-#arcFx .fx-who{font:800 14px/1.2 var(--ui-font);color:#fff;padding:5px 12px;border-radius:999px;background:rgba(12,16,22,.8)}
-#arcFx .fx-pair.theirs .fx-who{animation:fxDrop .4s .9s both}
 
 #arcFx .ac{--rx:7deg;--ry:0deg;--rz:0deg;--tz:0px;position:relative;flex:none;height:var(--ch);width:calc(var(--ch) * .7);border:0;padding:0;background:none;color:#fff;font:inherit;cursor:pointer;
   transform-style:preserve-3d;transition:transform .32s cubic-bezier(.3,.7,.3,1.1),opacity .35s ease,filter .3s ease;-webkit-tap-highlight-color:transparent}
@@ -79,7 +76,7 @@
 #arcFx .ac.t1{--f1:#fff3c4;--f2:#c98a12;--f3:#ffd36b;--c1:#a77f3a;--c2:#5b3f12;--glow:#ffcf5a}
 #arcFx .ac.t2{--f1:#f4e8ff;--f2:#7d4fc4;--f3:#e4c9ff;--c1:#6c5f9c;--c2:#2b2552;--glow:#c89bff}
 #arcFx .ac.shape{--f1:#e4ffe9;--f2:#1f7a45;--f3:#9de8b6;--c1:#3fae6a;--c2:#145a33;--glow:#7dffaa}
-#arcFx .ac.debuff{--f1:#ffe2e6;--f2:#a3192f;--f3:#ff9aa8;--c1:#c2455a;--c2:#4e1428;--glow:#ff8a9a}
+#arcFx .ac.hard{--f1:#ffe2e6;--f2:#a3192f;--f3:#ff9aa8;--c1:#c2455a;--c2:#4e1428;--glow:#ff8a9a}
 #arcFx .ac-face{--edge:-1px 1px 0 var(--e1),-2px 2px 0 var(--e1),-3px 3px 0 var(--e2),-4px 4px 0 var(--e2),-5px 5px 0 var(--e2),-6px 6px 0 color-mix(in srgb,var(--e2) 70%,#000);box-shadow:var(--edge);transition:box-shadow .3s ease}
 /* the face: the metal frame, the printed colour fading down from a lighter top, a white line inside (the liked design) */
 #arcFx .ac-print{position:absolute;inset:0;--u:calc(var(--ch) * .007);border-radius:15px;overflow:hidden;
@@ -135,8 +132,7 @@
 #arcFx .fx-pair.mine .ac .ac-face{box-shadow:var(--edge),0 0 0 3px rgba(255,255,255,.95),0 0 30px 5px var(--glow)}
 @media (prefers-reduced-motion:reduce){#arcFx .ac.deal .ac-body,#arcFx .fx-pair.deal .ac-body,#arcFx .ac-sh,#arcFx .fx-head,#arcFx .pin{animation:none}#arcFx .fx-blur{transition:opacity .3s}}
 /* (upright, a phone: the row narrower, the words smaller) */
-#app.portrait #arcFx .fx-title{font-size:22px;-webkit-text-stroke-width:4px}
-#app.portrait #arcFx .fx-row{--ch:min(34vh,calc(26vw / .7));gap:3vw}
+#app.portrait #app.portrait #arcFx .fx-row{--ch:min(40vh,calc(28vw / .7));gap:2.4vw}
 
 /* ---------- the ultimate's gauge (app/55-arcade.js ultGauge; on the game screen #ultHud, 50-match.js paintUlt) ----------
    A capsule - who, the bar in five steps, its name; full, it glows and the light runs along it. */

@@ -5,68 +5,80 @@
 // (state() and seek(): where it has got to, so the computer player can go on from there in a Worker - ai-worker.js)
 const seededRandom = s => { s = s >>> 0; const f = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; f.state = () => s; f.seek = v => { s = v >>> 0; }; return f; };
 /* 아케이드 · 증강 당구 (owner 11-12): played online only (a lobby of its own, a room - server/src/ranked.js), its rules here
-   so both devices and the server's room read the same ones.
-     36볼: a triangle of eight rows, row k all ball k (one 1, two 2s ... eight 8s - "8볼 1번공 한개, 2번공 2개"); whoever
-       pots more wins (MODES.arcade below). Missing every ball is no foul; the cue ball in: the other has it in hand.
-     The table's shape: voted on at the start - three green cards, VOTE_MS; the same card, that one; two different, one
-       of the two by chance (the room's).
-     Augments: each time both players have had EVERY more visits, each picks one of three cards dealt to them (deal: from
-       the room's seed, the round and the seat - the room checks the pick was one of them). The first is put on the other
-       (debuffs); the later ones are one's own (buffs, by tier: silver, gold, prism).
+   so both devices and the server's room read the same ones. For now 준비 중: open only with the debug setting, its cards
+   placeholders that do nothing yet (owner 11-12 evening: the ideas will take a while - the screens and the rooms stay).
+     36볼: a triangle of eight rows, row k all ball k (one 1, two 2s ... eight 8s); whoever pots more wins (MODES.arcade
+       below). Each visit is SHOTS shots, potting or not; a foul ends it at once (the cue ball in: the other has it in hand).
+     The game goes in steps (STEPS): before the first shot the table's shape, voted on; then, each time both players have
+       had EVERY more visits, the next step - each picking an augment of their own, or both voting on what makes the game
+       harder for both, by turns. A vote: three cards; the same card, that one; two different, one of the two by chance
+       (the room's). A pick: each is dealt three of one tier - the same tier for both, drawn for the step (TIER_W).
      The ultimate's gauge: filled by every shot, the other's more than one's own (ULT).
-   For now the cards are only picked and shown: what each does is to come (as are the table's shapes). */
+   Every step's cards come from the room's seed (cards), so both devices and the room know them; the room takes only a
+   card that was offered. */
 const ARCADE = {
   BALLS: 36, ROWS: 8, WIN: 19,                       // (19 of 36 cannot be caught: the game ends there)
+  SHOTS: 2,                                          // (a visit: two shots - owner 11-12: 36 balls are too easy to pot)
   LEAD_MS: 1400,                                     // the table seen alone before the cards come over it
   VOTE_MS: 10000, PICK_MS: 15000, GRACE_MS: 4000,    // (the room waits its clock and a little more for a late card)
   EVERY: 2,
   ULT: { mine: 6, theirs: 10 },                      // (the gauge, out of 100: one's own shot, the other's)
+  // the steps by kind: how they are decided and from what; step 0 is the table's, then pick and harder by turns (step())
+  KINDS: {
+    shape: { how: 'vote', label: '테이블 투표' },
+    buff: { how: 'pick', label: '증강' },
+    hard: { how: 'vote', label: '어려움 투표' },
+  },
+  step: k => k === 0 ? 'shape' : k % 2 ? 'buff' : 'hard',
   shapes: [
     { id: 'circle', name: '원형', d: '둥근 쿠션 하나' },
     { id: 'bumpy', name: '울퉁불퉁', d: '들쭉날쭉한 쿠션' },
     { id: 'penta', name: '정오각형', d: '다섯 면의 쿠션' },
   ],
-  debuffs: [
-    { id: 'ice', name: '빙판', d: '상대가 칠 때 테이블이 빙판이 됩니다' },
-    { id: 'more', name: '공 추가', d: '상대 차례에 공이 3개 늘어납니다' },
-    { id: 'fog', name: '안개', d: '상대의 조준선이 짧아집니다' },
-    { id: 'heavy', name: '무거운 큐', d: '상대의 최대 세기가 줄어듭니다' },
-    { id: 'narrow', name: '좁은 포켓', d: '상대가 칠 때 포켓이 좁아집니다' },
-    { id: 'flip', name: '거꾸로 당점', d: '상대의 회전이 반대로 걸립니다' },
+  // (placeholders: what each does is to come)
+  hards: [
+    { id: 'ice', name: '빙판', d: '테이블이 빙판이 됩니다' },
+    { id: 'more', name: '공 추가', d: '공이 3개 늘어납니다' },
+    { id: 'fog', name: '안개', d: '조준선이 짧아집니다' },
+    { id: 'heavy', name: '무거운 큐', d: '최대 세기가 줄어듭니다' },
+    { id: 'narrow', name: '좁은 포켓', d: '포켓이 좁아집니다' },
+    { id: 'flip', name: '거꾸로 당점', d: '회전이 반대로 걸립니다' },
   ],
-  // tier: 0 silver, 1 gold, 2 prism (the shop's metals); dealt 6 : 3 : 1
+  // tier: 0 silver, 1 gold, 2 prism (the shop's metals)
   buffs: [
     { id: 'long', name: '긴 조준선', d: '내 조준선이 끝까지 보입니다', tier: 0 },
     { id: 'wide', name: '넓은 포켓', d: '내가 칠 때 포켓이 넓어집니다', tier: 0 },
     { id: 'power', name: '강한 큐', d: '내 최대 세기가 늘어납니다', tier: 0 },
     { id: 'steady', name: '고정 당점', d: '내 회전이 정확히 걸립니다', tier: 0 },
-    { id: 'again', name: '한 번 더', d: '못 넣어도 한 번 더 칩니다', tier: 1 },
+    { id: 'again', name: '한 번 더', d: '내 차례에 한 번 더 칩니다', tier: 1 },
     { id: 'magnet', name: '자석 포켓', d: '포켓 가까운 공이 끌려 들어갑니다', tier: 1 },
     { id: 'charge', name: '충전', d: '궁극기 게이지가 30 차오릅니다', tier: 1 },
     { id: 'double', name: '두 배', d: '다음 차례에 넣은 공은 두 개로 셉니다', tier: 2 },
     { id: 'split', name: '분신 큐볼', d: '다음 샷에 큐볼이 둘로 갈라집니다', tier: 2 },
+    { id: 'rewind', name: '되감기', d: '상대의 마지막 샷을 되돌립니다', tier: 2 },
   ],
-  TIER_W: [6, 3, 1],
+  TIER_W: [6, 3, 1],                                 // (a pick's tier: silver 6, gold 3, prism 1 - drawn each pick)
   // a ball's number by its id: row k of the triangle holds ids k(k-1)/2+1 .. k(k+1)/2
   face: id => id > 0 ? Math.ceil((Math.sqrt(8 * id + 1) - 1) / 2) : 0,
-  kindOf: round => round === 0 ? 'shape' : round === 1 ? 'debuff' : 'buff',
-  // the three cards a seat is dealt in a round (1, 2, ...): the same on both devices and in the room
-  deal(seed, round, seat) {
-    const rnd = seededRandom((seed ^ Math.imul(round + 1, 0x9e3779b1) ^ Math.imul(seat + 1, 0x85ebca6b)) >>> 0);
-    let pool = (round === 1 ? ARCADE.debuffs : ARCADE.buffs).slice(); const out = [];
-    while (out.length < 3 && pool.length) {
-      const w = pool.map(c => round === 1 ? 1 : ARCADE.TIER_W[c.tier]), sum = w.reduce((a, b) => a + b, 0);
-      let u = rnd() * sum, i = 0; while (i < pool.length - 1 && u >= w[i]) { u -= w[i]; i++; }
-      out.push(pool[i].id); pool = pool.filter((c, j) => j !== i);
-    }
+  rnd: (seed, k, seat) => seededRandom((seed ^ Math.imul(k + 1, 0x9e3779b1) ^ Math.imul(seat + 1, 0x85ebca6b)) >>> 0),
+  // a pick's tier: one for both players (the seat's part of the seed left out)
+  tierOf(seed, k) { const r = ARCADE.rnd(seed, k, 7)(), w = ARCADE.TIER_W, sum = w[0] + w[1] + w[2]; let u = r * sum, t = 0; while (t < 2 && u >= w[t]) { u -= w[t]; t++; } return t; },
+  /* the three cards of step k for a seat: the table's three; three hardships, the same for both (a vote); three of the
+     step's tier, each seat its own draw (a pick) */
+  cards(seed, k, seat) {
+    const kind = ARCADE.step(k);
+    if (kind === 'shape') return ARCADE.shapes.map(c => c.id);
+    const pool = kind === 'hard' ? ARCADE.hards : ARCADE.buffs.filter(c => c.tier === ARCADE.tierOf(seed, k));
+    const rnd = ARCADE.rnd(seed, k, kind === 'hard' ? 7 : seat), left = pool.map(c => c.id), out = [];
+    while (out.length < 3 && left.length) out.push(left.splice(Math.floor(rnd() * left.length), 1)[0]);
     return out;
   },
-  card: id => ARCADE.shapes.find(c => c.id === id) || ARCADE.debuffs.find(c => c.id === id) || ARCADE.buffs.find(c => c.id === id) || null,
-  /* the round due as a visit begins: each player's visits played (inn: visits begun, turn: whose begins now), the rounds
-     already picked - the next round once both have had EVERY more since the last, else 0 */
-  due(inn, turn, picked) {
-    const done = Math.min(inn[0] - (turn === 0 ? 1 : 0), inn[1] - (turn === 1 ? 1 : 0)), k = picked + 1;
-    return done >= ARCADE.EVERY * k ? k : 0;
+  card: id => ARCADE.shapes.find(c => c.id === id) || ARCADE.hards.find(c => c.id === id) || ARCADE.buffs.find(c => c.id === id) || null,
+  /* the step due as a visit begins (after the table's): each player's visits played (inn: visits begun, turn: whose begins
+     now), the steps already done after the table's - the next one once both have had EVERY more since the last, else 0 */
+  due(inn, turn, done) {
+    const played = Math.min(inn[0] - (turn === 0 ? 1 : 0), inn[1] - (turn === 1 ? 1 : 0)), k = done + 1;
+    return played >= ARCADE.EVERY * k ? k : 0;
   },
 };
 function createGame(PH, makeAI) {
@@ -366,29 +378,30 @@ function createGame(PH, makeAI) {
   };
 
   /* 증강 당구's 36볼 (ARCADE above): the eight rows racked as 8볼's five are, the point on the foot spot; every ball potted
-     is a point to whoever potted it (on a scratch too: the scratch only gives the other the cue ball in hand); a ball
-     potted, the same player goes on; none, the turn passes - no ball hit is no foul. Over when someone has WIN (19: past
-     catching) or the table is empty; level then (18 : 18), whoever potted the last. Its balls carry their row's number
-     (face): the scene and the score bar paint ball id by its face. */
+     is a point to whoever potted it (on a scratch too: the scratch only gives the other the cue ball in hand). A visit is
+     ARCADE.SHOTS shots, potting or not (g.arc.n: the shots of this visit played); a foul ends it. No ball hit is no foul.
+     Over when someone has WIN (19: past catching) or the table is empty; level then (18 : 18), whoever potted the last.
+     Its balls carry their row's number (face): the scene and the score bar paint ball id by its face. */
   MODES.arcade = {
     id: 'arcade', name: '증강 당구', blurb: '공을 더 많이 넣으면 승리', table: 'pool', set: 'arcade', n: ARCADE.BALLS + 1, ballInHand: true, scored: true, face: ARCADE.face,
     setup(g, rnd) {
       const P = g.P, { R, HL } = P, w = g.world; let id = 1;
       for (let r = 0; r < ARCADE.ROWS; r++) for (let k = 0; k <= r; k++) P.place(w, id++, HL / 2 + r * SQ3 * R * 1.0006 + jit(rnd), (k - r / 2) * 2 * R * 1.0006 + jit(rnd), rnd);
       P.place(w, 0, -HL / 2, 0, rnd);
-      g.placing = 'kitchen'; g.isBreak = true;
+      g.placing = 'kitchen'; g.isBreak = true; g.arc = { n: 0 };
     },
     intro: () => '브레이크',
     left: g => g.world.balls.filter(b => b.on && b.id !== 0).length,
-    status: (g, pi) => ({ sub: '', tray: [], pts: g.players[pi].score }),
+    status: (g, pi) => ({ sub: g.turn === pi ? `${(g.arc ? g.arc.n : 0) + 1}/${ARCADE.SHOTS}` : '', tray: [], pts: g.players[pi].score }),
     badge(g) { return { text: g.isBreak ? '브레이크' : `남은 공 ${this.left(g)}`, balls: [], plain: true }; },
     legal: g => g.world.balls.filter(b => b.on && b.id !== 0).map(b => b.id),
-    ctx: g => ({ turn: g.turn, isBreak: g.isBreak }),
-    evaluate(ev) {
+    ctx: g => ({ turn: g.turn, isBreak: g.isBreak, n: g.arc ? g.arc.n : 0 }),
+    evaluate(ev, c) {
       const potted = ev.pocketed.map(p => p.id), scratch = potted.includes(0), n = potted.filter(i => i !== 0).length;
-      return { foul: scratch ? '큐볼이 포켓에 빠졌습니다' : null, scratch, respot: [], win: null, why: '', assign: null, keep: !scratch && n > 0, pts: n };
+      return { foul: scratch ? '큐볼이 포켓에 빠졌습니다' : null, scratch, respot: [], win: null, why: '', assign: null, keep: !scratch && c.n + 1 < ARCADE.SHOTS, pts: n };
     },
     after(g, r, me) {
+      g.arc = { n: r.keep ? (g.arc ? g.arc.n : 0) + 1 : 0 };      // (a foul - or a ball off the table - ends the visit too: keep is false)
       const a = g.players[0].score, b = g.players[1].score;
       if (a >= ARCADE.WIN || b >= ARCADE.WIN || !this.left(g)) { r.win = a === b ? me : a > b ? 0 : 1; r.why = `${a} : ${b}`; r.plain = true; }
     },
@@ -548,6 +561,7 @@ function createGame(PH, makeAI) {
   g.timeout = function () {
     const m = g.mode, me = g.turn, p = g.players[me], nx = 1 - me, name = g.players[nx].name;
     p.run = 0; g.turn = nx; if (g.team) g.member[me] ^= 1;
+    if (g.arc) g.arc.n = 0;                                          // (증강 당구: the next visit from its first shot)
     let msg = '시간 초과';
     if (m.ballInHand && !g.isBreak) {
       p.fouls++; p.foulRun = (p.foulRun || 0) + 1; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기';
@@ -645,7 +659,7 @@ function createGame(PH, makeAI) {
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
     team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance,
-    snk: g.snk ? Object.assign({}, g.snk) : null,
+    snk: g.snk ? Object.assign({}, g.snk) : null, arc: g.arc ? { n: g.arc.n } : null,
   });
   g.restore = function (d) {
     if (!d || d.v !== 2 || !MODES[d.modeId] || !Array.isArray(d.balls) || d.balls.length !== MODES[d.modeId].n) return false;
@@ -658,6 +672,7 @@ function createGame(PH, makeAI) {
     g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     g.minus = d.minus !== false; g.hugu = !!d.hugu; g.first = d.first ? 1 : 0; g.chance = d.chance === 0 || d.chance === 1 ? d.chance : null;
+    g.arc = d.arc && typeof d.arc === 'object' ? { n: Math.max(0, Math.min(ARCADE.SHOTS - 1, d.arc.n | 0)) } : null;
     g.snk = d.snk && typeof d.snk === 'object' ? { on: ['red', 'colour', 'clear'].includes(d.snk.on) ? d.snk.on : 'red', next: Math.max(16, Math.min(21, +d.snk.next || 16)) } : null;
     if (d.modeId === 'snooker' && !g.snk) g.snk = { on: 'red', next: 16 };
     return true;

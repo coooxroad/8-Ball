@@ -21,7 +21,7 @@ export const STAND_IN_AFTER = 60000;                  // ms of waiting after whi
 const GONE = 15000;
 // the quick emotes a player may send in a game (web/app/59-emote.js EMOTES: the same ids)
 const EMOTES = new Set(['grin', 'joy', 'wow', 'cool', 'think', 'sad', 'angry', 'love', 'sweat', 'wink', 'sleepy', 'thumbs', 'fire', 'poop', 'party', 'skull', 'heart']);
-const arcAny = list => list[Math.floor(Math.random() * list.length)].id;   // (증강 당구: a card nobody gave - RoomCore.arcVote)
+const arcAny = ids => ids[Math.floor(Math.random() * ids.length)];   // (증강 당구: a card nobody gave - RoomCore.arcClose)
 const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -346,7 +346,7 @@ export class RoomCore {
     this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
     this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
     // 증강 당구: the table's vote (a stand-in's card drawn now, unseen till both are in), then the augments' rounds
-    if (kind === 'arcade') this.set('arc', { votes: [null, x.standIn ? arcAny(E.ARCADE.shapes) : null], shape: null, voteBy: null, done: [], open: null });
+    if (kind === 'arcade') this.set('arc', { done: [], open: { k: 0, cards: [null, x.standIn ? arcAny(E.ARCADE.cards(x.seed, 0, 1)) : null], by: null } });
     return true;
   }
   // every seat but this one (to pass a message on)
@@ -389,9 +389,9 @@ export class RoomCore {
     if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null, seat }; this.others(seat, a); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
     if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.others(seat, { t: 'res', n: m.n, st: m.st }); return null; }
-    if (m.t === 'vote' || m.t === 'pick') { this.arcHear(seat, m); return null; }
+    if (m.t === 'card') { this.arcHear(seat, m); return null; }
     // (증강 당구: nothing is played before the table is chosen)
-    if ((m.t === 'shot' || m.t === 'timeout') && r.kind === 'arcade' && !(this.get('arc') || {}).shape) return null;
+    if ((m.t === 'shot' || m.t === 'timeout') && r.kind === 'arcade' && !(this.get('arc') || { done: [] }).done.length) return null;
     if (m.t === 'shot' || m.t === 'timeout') {
       // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
       // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
@@ -443,61 +443,45 @@ export class RoomCore {
   }
   // still waiting for a seat to come in for the first time (the room looks again then)
   waitingJoin() { const j = this.get('joined', [true, true]); return this.get('status') === 'playing' && !j.every(Boolean) ? Math.max(0, this.get('joinBy', 0) - Date.now()) : null; }
-  /* 증강 당구 (web/game.js ARCADE): the table's vote and the augments' picks, held by the room - kv 'arc':
-     { votes: [seat 0's, seat 1's], shape, voteBy, done: [[a, b] for rounds 1, 2 ...], open: { k, picks, by } | null }.
-     The vote's clock starts once both are in (each device shows the table first, then its cards: LEAD_MS); both voted, or
-     its time and a little more gone, the table is chosen - a card not given is any of the three - and told to both
-     ({ t: 'shape', id, votes }). A round opens with the first card picked for it (both devices reach it after the same
-     shot); both picked, or PICK_MS and a little more gone, it closes - a card not picked is any of the seat's three - and
-     both hear the two ({ t: 'picks', round, ids }). A card must be one the seat was dealt (ARCADE.deal). A stand-in's are
-     drawn by the room. Each device hears only that the other has voted or picked ({ t: 'voted' | 'picked', seat }). */
+  /* 증강 당구 (web/game.js ARCADE): its steps, held by the room - kv 'arc': { done: [{ ids: [seat 0's card, seat 1's], id }
+     for each step decided], open: { k, cards: [a, b], by } | null }. Step 0, the table's vote, is open from the start, its
+     clock started once both are in (each device shows the table first: LEAD_MS); a later step opens with the first card
+     given for it (both devices reach it after the same shot). A card must be one of the step's three for that seat
+     (ARCADE.cards). Both given, or the step's time and a little more gone, it closes - a card not given is any of the
+     seat's three - and both hear { t: 'step', step, ids, id }: a vote's id is the one card (the same, or one of the two by
+     chance), a pick has none (each keeps their own). A stand-in's card is drawn by the room as the step opens. Each device
+     hears only that the other has given theirs ({ t: 'carded', seat, step }). Nothing is played before step 0 is decided. */
   arcStart() {
-    const a = this.get('arc'); if (!a || a.voteBy) return;
-    a.voteBy = Date.now() + E.ARCADE.LEAD_MS + E.ARCADE.VOTE_MS + E.ARCADE.GRACE_MS; this.set('arc', a);
+    const a = this.get('arc'); if (!a || !a.open || a.open.k !== 0 || a.open.by) return;
+    a.open.by = Date.now() + E.ARCADE.LEAD_MS + E.ARCADE.VOTE_MS + E.ARCADE.GRACE_MS; this.set('arc', a);
   }
   arcHear(seat, m) {
     const a = this.get('arc'), r = this.get('room'); if (!a || seat > 1) return;
-    if (m.t === 'vote') {
-      if (a.shape || a.votes[seat] || !E.ARCADE.shapes.some(c => c.id === m.id)) return;
-      a.votes[seat] = m.id; this.set('arc', a); this.send(1 - seat, { t: 'voted', seat });
-      if (a.votes.every(Boolean)) this.arcVote(a);
-      return;
-    }
-    // a pick: for the round open, or the next one (which it opens)
-    const k = m.round | 0, deal = E.ARCADE.deal(r.seed, k, seat);
-    if (!a.shape || !deal.includes(m.id)) return;
+    const k = m.step | 0; if (!E.ARCADE.cards(r.seed, k, seat).includes(m.id)) return;
     if (!a.open) {
-      if (k !== a.done.length + 1) return;
-      a.open = { k, picks: [null, r.standIn ? arcAny(E.ARCADE.deal(r.seed, k, 1).map(id => ({ id }))) : null], by: Date.now() + E.ARCADE.PICK_MS + E.ARCADE.GRACE_MS };
+      if (k !== a.done.length || !a.done.length) return;
+      const how = E.ARCADE.KINDS[E.ARCADE.step(k)].how;
+      a.open = { k, cards: [null, r.standIn ? arcAny(E.ARCADE.cards(r.seed, k, 1)) : null], by: Date.now() + (how === 'vote' ? E.ARCADE.VOTE_MS : E.ARCADE.PICK_MS) + E.ARCADE.GRACE_MS };
     }
-    if (a.open.k !== k || a.open.picks[seat]) return;
-    a.open.picks[seat] = m.id; this.set('arc', a); this.send(1 - seat, { t: 'picked', seat, round: k });
-    if (a.open.picks.every(Boolean)) this.arcClose(a);
-  }
-  arcVote(a) {
-    const v = a.votes.map(x => x || arcAny(E.ARCADE.shapes)), c = v[0] === v[1] ? [v[0]] : v;
-    a.votes = v; a.shape = c[Math.floor(Math.random() * c.length)]; this.set('arc', a); this.set('turnAt', Date.now());
-    this.others(-1, { t: 'shape', id: a.shape, votes: v });
+    if (a.open.k !== k || a.open.cards[seat]) return;
+    a.open.cards[seat] = m.id; this.set('arc', a); this.send(1 - seat, { t: 'carded', seat, step: k });
+    if (a.open.cards.every(Boolean)) this.arcClose(a);
   }
   arcClose(a) {
-    const o = a.open, r = this.get('room'), ids = o.picks.map((x, s) => x || arcAny(E.ARCADE.deal(r.seed, o.k, s).map(id => ({ id }))));
-    a.done.push(ids); a.open = null; this.set('arc', a); this.set('turnAt', Date.now());
-    this.others(-1, { t: 'picks', round: o.k, ids });
+    const o = a.open, r = this.get('room'), ids = o.cards.map((x, s) => x || arcAny(E.ARCADE.cards(r.seed, o.k, s)));
+    const vote = E.ARCADE.KINDS[E.ARCADE.step(o.k)].how === 'vote', id = vote ? (ids[0] === ids[1] ? ids[0] : ids[Math.floor(Math.random() * 2)]) : null;
+    a.done.push({ ids, id }); a.open = null; this.set('arc', a); this.set('turnAt', Date.now());
+    this.others(-1, { t: 'step', step: o.k, ids, id });
   }
-  // (the room looked again: a clock run out)
-  arcTimers() {
-    const a = this.get('arc'), now = Date.now(); if (!a) return;
-    if (!a.shape && a.voteBy && now >= a.voteBy) this.arcVote(a);
-    else if (a.open && now >= a.open.by) this.arcClose(a);
-  }
-  // when the room should look again for the vote or a round, in ms from now (null: no clock running)
-  arcIn() { const a = this.get('arc'); if (!a || this.get('status') !== 'playing') return null; const t = !a.shape ? a.voteBy : a.open ? a.open.by : null; return t ? Math.max(0, t - Date.now()) : null; }
-  // what a seat is told on coming in: the table if chosen (the votes with it), whether each has voted; the rounds picked;
-  // the round open - this seat's own card in it, and whether the other has picked
+  // (the room looked again: a step's clock run out)
+  arcTimers() { const a = this.get('arc'); if (a && a.open && a.open.by && Date.now() >= a.open.by) this.arcClose(a); }
+  // when the room should look again for a step, in ms from now (null: no clock running)
+  arcIn() { const a = this.get('arc'); if (!a || !a.open || !a.open.by || this.get('status') !== 'playing') return null; return Math.max(0, a.open.by - Date.now()); }
+  // what a seat is told on coming in: the steps decided; the step open - this seat's own card in it, whether each has given
+  // theirs, and the time left on it
   arcState(seat) {
     const a = this.get('arc'); if (!a) return undefined;
-    return { shape: a.shape, votes: a.shape ? a.votes : null, voted: a.votes.map(Boolean), mine: a.shape ? null : a.votes[seat], voteIn: !a.shape && a.voteBy ? Math.max(0, a.voteBy - Date.now() - E.ARCADE.GRACE_MS) : null,
-      done: a.done, open: a.open ? { k: a.open.k, mine: a.open.picks[seat], picked: a.open.picks.map(Boolean) } : null };
+    return { done: a.done, open: a.open ? { k: a.open.k, mine: a.open.cards[seat], given: a.open.cards.map(Boolean), in: a.open.by ? Math.max(0, a.open.by - Date.now() - E.ARCADE.GRACE_MS) : null } : null };
   }
   over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
