@@ -21,8 +21,8 @@ const match = {
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
     game.aiRnd = standIn ? seededRandom((o.seed ^ 0x2545f491) >>> 0) : null;
     game.humanStates = [null, null]; game.humanCanResign = !!standIn;
-    match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null;
-    st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now();
+    match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null; match.ult = [0, 0];
+    st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now(); paintUlt();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
     match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}), ...(c.minus === false ? { minus: false } : {}), ...(c.hugu ? { hugu: true } : {}) }, shots: [], points: [0, 0] };
     match.enter();
@@ -47,6 +47,7 @@ const match = {
     match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 }; },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, potted = ev.pocketed.filter(q => q.id !== 0).length, out = game.resolve();
+    if (shot && ultOn()) { ultShot(match.ult, shot.turn); paintUlt(); }   // (the ultimate's gauge: 아케이드, tried in any game in debug)
     // points as the server counts them (a carom score, or a ball potted on a legal pool shot): what the match pays by
     // (points: a carom table's score, a pool table's legal pots - 스누커's own score, the fouls' points to the other)
     if (match.log && shot) { const r = out.r; if (game.mode.table === 'carom' || game.mode.scored) { if (r.pts > 0) match.log.points[shot.turn] += r.pts; if (r.give) match.log.points[1 - shot.turn] += r.give; } else if (!r.foul) match.log.points[shot.turn] += potted; }
@@ -212,3 +213,14 @@ function shotClock(dt) {
 // time ran out: the scorebug's lower edge burns red for as long as the message stays up
 let outT = 0;
 function flashOut(ms) { const h = $('#hud'); h.classList.add('out'); clearTimeout(outT); outT = setTimeout(() => h.classList.remove('out'), ms || 2600); }
+
+/* The ultimate's gauge on the game screen (아케이드 증강 당구, app/33-desk-arcade.js ultGauge): at the bottom middle, the
+   gauge of the player whose turn it is. Until the mode is played it is shown in any game with the debug setting on
+   (20-sheets.js sheetDebug), to see it in place and how it fills. */
+const ultOn = () => net.debug && !!prefs.ultTry;
+function paintUlt() {
+  let h = $('#ultHud');
+  if (!ultOn() || !match.ult) { if (h) h.remove(); return; }
+  if (!h) { h = el('div', { id: 'ultHud' }); $('#hud').after(h); }     // (beside the score bar: shown while it is - 10-play.css)
+  h.replaceChildren(ultGauge(match.ult[game.turn], game.players[game.turn].name));
+}

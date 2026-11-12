@@ -1,81 +1,122 @@
-/* 아케이드 (owner 11-11): two modes, the screens only for now - played with 36 balls ("36볼로 만들거임"), the rules to come.
-     증강 당구: every few shots three cards are dealt, the player takes one, and its effect stays for the rest of the game.
-     궁극기 당구: a gauge fills as the player scores; full, the chosen ultimate can be fired on a shot (TianTian billiards).
-   The same language as the menu's: printed cards (the 4 boards' face and edge), dealt out of the card that was tapped
-   (playEnter 'fan'), the others flying off when one is taken (playLeave). Its steps join 플레이's (33-desk-play.js
-   PLAY_STEPS); what is on a card is here, so a new augment or ultimate is one line. */
+/* 아케이드 (owner 11-11/12): one mode, 증강 당구 - played with 36 balls ("36볼") - the screens only for now, the rules to come.
+     1. 테이블 투표: at the start, three green cards - the table's shape (round, bumpy, a regular pentagon). Both players vote
+        for 10 seconds; the same card, that one; different, one of the two at random (no vote: any of the three).
+     2. 증강: each time both players have had their second turn, each picks an augment - the second pick is a debuff for the
+        other (the table turned to ice, balls added ...).
+     3. 궁극기: a gauge filling with every shot - the other's shots more than one's own (ULT) - at the bottom middle of the
+        game screen (ultGauge: also in 50-match.js, shown in any game while the debug setting is on, to try it).
+   In the menu's language: printed cards on the desk (the 4 boards' face, edge and dots), dealt out of the card tapped
+   (playEnter 'fan'), a taken card to the middle and the others off (playLeave). What is on a card is a line of ARCADE.
+   The vote's other player is played by the screen here (its card at a random moment) until there is a room to vote in. */
 const ARCADE = {
-  BALLS: 36,
-  modes: [
-    { id: 'aug', name: '증강 당구', sub: '카드를 뽑아 강해지기',
-      ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="6" y="13" width="15" height="22" rx="3" transform="rotate(-14 13 24)"/><rect x="17" y="10" width="15" height="24" rx="3"/><rect x="28" y="13" width="15" height="22" rx="3" transform="rotate(14 35 24)"/><path d="M24.5 18l1.6 3.4 3.6.4-2.7 2.4.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.7-2.4 3.6-.4z" fill="currentColor" stroke="none"/></svg>' },
-    { id: 'ult', name: '궁극기 당구', sub: '게이지를 모아 한 방',
-      ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="17" stroke-dasharray="80 27"/><path d="M26 10l-9 16h8l-3 12 10-17h-8z" fill="currentColor" stroke="none"/></svg>' },
+  BALLS: 36, VOTE_S: 10,
+  ULT: { mine: 6, theirs: 10 },      // (the gauge, out of 100: one's own shot, the other's)
+  shapes: [
+    { id: 'circle', name: '원형', sub: '둥근 쿠션 하나', ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2"><circle cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="2.6" fill="currentColor" stroke="none"/></svg>' },
+    { id: 'bumpy', name: '울퉁불퉁', sub: '들쭉날쭉한 쿠션', ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"><path d="M9 14l7 3 5-6 6 5 7-4 4 8-3 6 5 7-6 5-6-3-5 6-6-5-7 3-3-8 4-6z"/><circle cx="24" cy="24" r="2.6" fill="currentColor" stroke="none"/></svg>' },
+    { id: 'penta', name: '정오각형', sub: '다섯 면의 쿠션', ico: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"><path d="M24 6.5l17 12.4-6.5 20H13.5L7 18.9z"/><circle cx="24" cy="24" r="2.6" fill="currentColor" stroke="none"/></svg>' },
   ],
-  // the augments (tier 0 실버, 1 골드, 2 프리즘, as the cards are dealt in other games); three of them dealt at a time
-  TIERS: ['실버', '골드', '프리즘'],
-  augs: [
-    { t: 0, name: '거대 큐볼', d: '큐볼이 1.3배 커집니다', ico: '◯' },
-    { t: 0, name: '긴 조준선', d: '조준선이 한 번 더 꺾여 보입니다', ico: '⟋' },
-    { t: 0, name: '쿠션 탄성', d: '쿠션에서 공이 더 빠르게 튑니다', ico: '⇆' },
-    { t: 1, name: '자석 포켓', d: '포켓 가까이 온 공을 끌어당깁니다', ico: '⊙' },
-    { t: 1, name: '두 번 치기', d: '넣지 못해도 한 번 더 칩니다', ico: '↻' },
-    { t: 1, name: '무거운 공', d: '상대 공이 덜 굴러갑니다', ico: '▣' },
-    { t: 2, name: '분신술', d: '다음 샷에 큐볼이 둘이 됩니다', ico: '◎' },
-    { t: 2, name: '연쇄 폭발', d: '공이 들어가면 주변 공을 밀어냅니다', ico: '✦' },
-    { t: 2, name: '시간 되감기', d: '한 샷을 없던 일로 합니다', ico: '⟲' },
-  ],
-  ults: [
-    { id: 'bolt', name: '번개 샷', d: '세기 두 배, 공이 곧게 뻗습니다', c: '#ffd34d' },
-    { id: 'hole', name: '블랙홀', d: '가장 가까운 포켓이 공을 빨아들입니다', c: '#b072ff' },
-    { id: 'seek', name: '유도탄', d: '맞힐 공으로 휘어 들어갑니다', c: '#4fd8ff' },
-    { id: 'stop', name: '타임 스톱', d: '상대의 다음 샷 시간이 절반', c: '#ff5d6c' },
+  debuffs: [
+    { id: 'ice', name: '빙판', d: '상대가 칠 때 테이블이 빙판이 됩니다', ico: '❄' },
+    { id: 'more', name: '공 추가', d: '상대 테이블에 공이 3개 늘어납니다', ico: '+3' },
+    { id: 'fog', name: '안개', d: '상대의 조준선이 짧아집니다', ico: '◌' },
+    { id: 'heavy', name: '무거운 큐', d: '상대의 최대 세기가 줄어듭니다', ico: '▼' },
+    { id: 'narrow', name: '좁은 포켓', d: '상대가 칠 때 포켓이 좁아집니다', ico: '◖◗' },
+    { id: 'flip', name: '거꾸로 당점', d: '상대의 회전이 반대로 걸립니다', ico: '⇄' },
   ],
 };
-let arcadeDeal = null, arcadePick = null, arcadeTook = false, arcadeUlt = 'bolt';   // (arcadeTook: the card just taken - its glow once)
-const arcadeDraw = () => { const a = ARCADE.augs.map((q, i) => i); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, 3).sort((x, y) => ARCADE.augs[x].t - ARCADE.augs[y].t); };
-const arcadeIco = svg => { const i = el('span', { class: 'way-ico' }); i.innerHTML = svg; return i; };
+// the screens' state: the vote (my card, the other's, when it ends, the outcome), the augments dealt and the one taken, the
+// gauge's try-out
+const arc = { vote: null, deal: null, took: null, gauge: [0, 0], timer: 0 };
+const arcPick = a => a[Math.floor(Math.random() * a.length)];
+const arcIco = svg => { const i = el('span', { class: 'way-ico' }); i.innerHTML = svg; return i; };
+function arcVoteNew() { const now = Date.now(); arc.vote = { me: null, them: null, themAt: now + 1800 + Math.random() * 6200, end: now + ARCADE.VOTE_S * 1000, rolling: null, won: null }; }
+// the vote's clock: the other's card when its moment comes, the end when both have voted or the time is up (the desk is
+// painted again whenever anything changes; the clock only writes the seconds into it)
+function arcTick() {
+  const v = arc.vote, now = Date.now();
+  if (playStep !== 'arc-vote' || !v || v.rolling) { clearInterval(arc.timer); arc.timer = 0; return; }
+  const c = $('#arcClock'); if (c) c.textContent = Math.max(0, Math.ceil((v.end - now) / 1000));
+  if (!v.them && now >= v.themAt) v.them = arcPick(ARCADE.shapes).id;
+  if ((v.me && v.them) || now >= v.end) arcResolve();
+}
+function arcResolve() {
+  const v = arc.vote; if (!v.me) v.me = arcPick(ARCADE.shapes).id; if (!v.them) v.them = arcPick(ARCADE.shapes).id;
+  const cands = v.me === v.them ? [v.me] : [v.me, v.them], won = arcPick(cands);
+  v.rolling = cands; paintHome();
+  // different votes: the light runs between the two and stops on one (as a draw does); then on to the augments
+  let n = cands.length > 1 ? 9 + cands.indexOf(won) : 1, i = 0;
+  const step = () => {
+    if (playStep !== 'arc-vote' || arc.vote !== v) return;
+    for (const c of document.querySelectorAll('#dkBoards .bd.shape')) c.classList.toggle('lit', c.dataset.b === 'arc-sh-' + cands[i % cands.length]);
+    if (--n > 0) { i++; setTimeout(step, 110 + (9 - n) * 16); return; }
+    v.won = won; SND.init(); SND.tap(); paintHome();
+    setTimeout(() => { if (playStep === 'arc-vote' && arc.vote === v) { playStep = 'arc-aug'; playFx = 'fan'; arc.deal = null; arc.took = null; paintHome(); } }, 1600);
+  };
+  setTimeout(step, 300);
+}
 const ARCADE_STEPS = {
-  // the two modes, dealt out of the 아케이드 card
+  // the mode, and what it is in three cards
   arcade({ wrap, fit, panel, tt, head, toBoards }) {
     dkPut(wrap, head('아케이드', `${ARCADE.BALLS}볼`, toBoards));
-    dkPut(fit, ARCADE.modes.map(M => panel('arc-' + M.id, M.name, b => playLeave(b, () => { if (M.id === 'aug') { arcadeDeal = arcadeDraw(); arcadePick = null; } playStep = 'arc-' + M.id; playFx = M.id === 'aug' ? 'deal' : 'fan'; paintHome(); }),
-      [arcadeIco(M.ico), tt(M.name, M.sub, `${ARCADE.BALLS}볼`)], 'card way arc unf')));
+    const info = (n, t, sub, cls) => el('div', { class: 'bd card info unf ' + cls, 'aria-hidden': 'true' }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, [el('span', { class: 'arc-n', text: n }), tt(t, sub)])]);
+    dkPut(fit, [
+      panel('arc-mode', '증강 당구', b => playLeave(b, () => { arcVoteNew(); playStep = 'arc-vote'; playFx = 'fan'; paintHome(); }),
+        [arcIco('<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="6" y="13" width="15" height="22" rx="3" transform="rotate(-14 13 24)"/><rect x="17" y="10" width="15" height="24" rx="3"/><rect x="28" y="13" width="15" height="22" rx="3" transform="rotate(14 35 24)"/><path d="M24.5 17l1.6 3.4 3.6.4-2.7 2.4.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.7-2.4 3.6-.4z" fill="currentColor" stroke="none"/></svg>'),
+          tt('증강 당구', '테이블 투표 · 증강 · 궁극기', `${ARCADE.BALLS}볼`)], 'card way arc unf'),
+      info('1', '테이블 투표', `${ARCADE.VOTE_S}초 · 다르면 둘 중 무작위`, 'i1'),
+      info('2', '증강', '두 번째 차례마다 · 상대에게 디버프', 'i2'),
+      info('3', '궁극기', '상대가 칠 때 더 많이 차오름', 'i3'),
+    ]);
   },
-  // 증강 당구: three cards dealt face down, turned over one after another; tapping one takes it, the other two fly off
-  'arc-aug'({ wrap, fit, head }) {
-    const back = () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); };
-    dkPut(wrap, head('증강 당구', arcadePick == null ? '카드 한 장을 고르세요' : '이 효과가 끝까지 남습니다', back,
-      [el('button', { class: 'dk-chip', text: '다시 뽑기', onclick: onTap(() => { arcadeDeal = arcadeDraw(); arcadePick = null; playFx = 'deal'; paintHome(); }) })]));
-    const deal = arcadeDeal || (arcadeDeal = arcadeDraw());
-    dkPut(fit, deal.map((k, i) => {
-      const A = ARCADE.augs[k], took = arcadePick === k;
-      const card = el('button', { class: `aug t${A.t} unf` + (took ? ' took' : arcadePick != null ? ' gone' : ''), style: `--d:${i * 140}ms`, 'aria-label': `${A.name}, ${ARCADE.TIERS[A.t]}`, 'aria-pressed': String(took) },
-        el('span', { class: 'aug-fc' }, [
-          el('span', { class: 'aug-face' }, [el('i', { class: 'aug-sh', 'aria-hidden': 'true' }), el('em', { text: ARCADE.TIERS[A.t] }), el('span', { class: 'aug-ico', text: A.ico, 'aria-hidden': 'true' }), el('b', { text: A.name }), el('small', { text: A.d })]),
-          el('span', { class: 'aug-back', 'aria-hidden': 'true' }, el('i'))]));
-      // taken: it comes to the middle while the other two fly off (as playLeave does it with the menu's cards), then stays there
-      card.onclick = () => {
-        if (playBusy || arcadePick != null) return; SND.init(); SND.tap(); playBusy = true;
-        const [x, y] = flatMid(card, fit); card.style.setProperty('--gx', (fit.offsetWidth / 2 - x).toFixed(1) + 'px'); card.style.setProperty('--gy', (fit.offsetHeight / 2 - y).toFixed(1) + 'px'); card.classList.add('go');
-        let n = 0; for (const o of fit.querySelectorAll('.aug')) if (o !== card) { o.style.setProperty('--d', (n++ * 45) + 'ms'); o.style.setProperty('--ax', (o.offsetLeft < card.offsetLeft ? -60 : 60) + 'px'); o.classList.add('away'); }
-        setTimeout(() => { playBusy = false; arcadePick = k; arcadeTook = true; paintHome(); }, 340);
-      };
-      return card;
+  // 1. the vote: three green cards; mine and the other's marked on them (the other's once I have voted or the time is up:
+  // each votes not knowing the other's); the clock in the corner
+  'arc-vote'({ wrap, fit, panel, tt, head }) {
+    if (!arc.vote) arcVoteNew();
+    const v = arc.vote, back = () => { arc.vote = null; playStep = 'arcade'; playFx = 'fan'; paintHome(); };
+    const left = Math.max(0, Math.ceil((v.end - Date.now()) / 1000)), name = id => ARCADE.shapes.find(s => s.id === id).name;
+    dkPut(wrap, head('테이블 고르기', v.won ? `${name(v.won)} 테이블로 정해졌습니다` : v.rolling ? (v.rolling.length > 1 ? '서로 달라서 둘 중 하나를 뽑습니다' : '같은 테이블을 골랐습니다') : v.me ? '상대를 기다리는 중' : '마음에 드는 테이블에 투표하세요', back,
+      [el('span', { class: 'arc-clock' + (v.rolling ? ' done' : ''), 'aria-label': '남은 시간' }, [el('b', { id: 'arcClock', text: v.rolling ? '0' : String(left) }), el('small', { text: '초' })])]));
+    dkPut(fit, ARCADE.shapes.map(S => {
+      const marks = [v.me === S.id ? el('span', { class: 'vote me', text: '나' }) : null, v.them === S.id && v.rolling ? el('span', { class: 'vote them', text: '상대' }) : null];
+      return panel('arc-sh-' + S.id, S.name + ' 테이블', () => { if (v.rolling || v.me) return; SND.init(); SND.tap(); v.me = S.id; paintHome(); },
+        [arcIco(S.ico), tt(S.name, S.sub), el('span', { class: 'votes' }, marks)],
+        'card way shape unf' + (v.won ? (v.won === S.id ? ' won' : ' lost') : v.rolling && !v.rolling.includes(S.id) ? ' lost' : v.me === S.id ? ' mine' : ''));
     }));
-    if (playFx === 'deal') { playFx = null; for (const c of fit.querySelectorAll('.aug')) c.classList.add('deal'); }
-    if (arcadeTook) { arcadeTook = false; const t = fit.querySelector('.aug.took'); if (t) t.classList.add('pop'); }
+    if (!arc.timer && !v.rolling) arc.timer = setInterval(arcTick, 200);
   },
-  // 궁극기 당구: the ultimates, each with its gauge; the one taken has its gauge running
-  'arc-ult'({ wrap, fit, head }) {
+  // 2. an augment: three cards to put on the other (the second pick of a game - the debuffs); the one taken stays in the middle
+  'arc-aug'({ wrap, fit, panel, tt, head }) {
     const back = () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); };
-    dkPut(wrap, head('궁극기 당구', '득점할수록 게이지가 찹니다', back));
-    dkPut(fit, ARCADE.ults.map((U, i) => {
-      const on = arcadeUlt === U.id;
-      const card = el('button', { class: 'bd card ult unf' + (on ? ' on' : ''), style: `--uc:${U.c};--d:${i * 60}ms`, 'aria-label': U.name, 'aria-pressed': String(on) }, [el('i', { class: 'sk' }),
-        el('span', { class: 'in' }, [el('span', { class: 'ult-g', 'aria-hidden': 'true' }, [el('i'), el('b', { text: on ? 'MAX' : '' })]), el('span', { class: 'bd-tt' }, [on ? el('em', { text: '장착' }) : null, el('b', { text: U.name }), el('small', { text: U.d })])])]);
-      card.onclick = () => { if (playBusy) return; SND.init(); SND.tap(); arcadeUlt = U.id; paintHome(); };
-      return card;
+    if (!arc.deal) { const a = ARCADE.debuffs.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } arc.deal = a.slice(0, 3).map(d => d.id); }
+    const took = arc.took;
+    dkPut(wrap, head('증강', took ? '상대에게 걸었습니다' : '두 번째 차례마다 · 상대에게 걸 카드를 고르세요', back, [
+      took ? null : el('button', { class: 'dk-chip', text: '다시 뽑기', onclick: onTap(() => { arc.deal = null; playFx = 'fan'; paintHome(); }) }),
+      took ? el('button', { class: 'dk-chip', text: '궁극기 보기', onclick: onTap(() => { playStep = 'arc-ult'; playFx = 'fan'; paintHome(); }) }) : null]));
+    dkPut(fit, arc.deal.filter(id => !took || id === took).map(id => {
+      const D = ARCADE.debuffs.find(d => d.id === id);
+      return panel('arc-db-' + id, D.name, b => { if (arc.took) return; playLeave(b, () => { arc.took = id; paintHome(); }); },
+        [el('span', { class: 'arc-big', text: D.ico, 'aria-hidden': 'true' }), tt(D.name, D.d, '상대에게')], 'card way debuff unf' + (took ? ' took' : ''));
     }));
+  },
+  // 3. the ultimate: the game screen's gauge as it will be, filled here by the two kinds of shot
+  'arc-ult'({ wrap, fit, panel, tt, head }) {
+    const back = () => { playStep = 'arc-aug'; playFx = 'fan'; paintHome(); };
+    dkPut(wrap, head('궁극기', `내가 치면 +${ARCADE.ULT.mine} · 상대가 치면 +${ARCADE.ULT.theirs}`, back,
+      [el('button', { class: 'dk-chip', text: '비우기', onclick: onTap(() => { arc.gauge = [0, 0]; paintHome(); }) })]));
+    const screen = el('div', { class: 'bd card arc-screen unf', 'aria-hidden': 'true' }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, [el('span', { class: 'arc-felt' }), ultGauge(arc.gauge[0], '나')])]);
+    const shot = (who, label) => panel('arc-shot-' + who, label, () => { ultShot(arc.gauge, who); paintHome(); },
+      [tt(label, `내 게이지 +${who ? ARCADE.ULT.theirs : ARCADE.ULT.mine}`)], 'card way shot unf');
+    dkPut(fit, [screen, shot(0, '내가 침'), shot(1, '상대가 침')]);
   },
 };
+/* The ultimate's gauge (owner 11-12): at the bottom middle of the game screen, filling as both players shoot - the other's
+   shots more (ARCADE.ULT); full, it glows. g: the two players' gauges; who: the one who just shot. */
+function ultShot(g, who) { g[who] = Math.min(100, g[who] + ARCADE.ULT.mine); g[1 - who] = Math.min(100, g[1 - who] + ARCADE.ULT.theirs); }
+function ultGauge(v, name) {
+  const full = v >= 100;
+  return el('div', { class: 'ultg' + (full ? ' full' : ''), role: 'meter', 'aria-label': `${name} 궁극기`, 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.round(v)) }, [
+    el('span', { class: 'ultg-n', text: name }),
+    el('span', { class: 'ultg-bar' }, [el('i', { style: `--v:${(v / 100).toFixed(3)}` }), ...[1, 2, 3, 4].map(k => el('b', { style: `left:${k * 20}%` }))]),
+    el('span', { class: 'ultg-l', text: full ? '궁극기 준비' : '궁극기' })]);
+}

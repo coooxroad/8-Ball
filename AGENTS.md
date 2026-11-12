@@ -110,7 +110,8 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   `50-result` 경기 종료, `60-desk` 책상 틀(레일·트레이·슬레이트·키), `71-shelves` 상점·내 장비 카드,
   `72-lessons` 교본·연습, `75-play-panels` 플레이 패널, `80-broadcast` 대결 중계 화면. 파일 끝에 덧붙이지 말고 관련 규칙 옆에.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
-  아케이드는 `33-desk-arcade.js`(`ARCADE_STEPS`가 플레이의 `PLAY_STEPS`에 들어간다; 증강 카드·궁극기는 `ARCADE`의 한 줄씩, 스타일은 `76-play-arcade.css`).
+  아케이드는 `33-desk-arcade.js`(증강 당구 한 모드의 화면: 테이블 투표·증강·궁극기. `ARCADE_STEPS`가 플레이의 `PLAY_STEPS`에 들어간다; 카드 내용은
+  `ARCADE`의 한 줄씩, 스타일은 `76-play-arcade.css`). 궁극기 게이지(`ultGauge`)는 경기 화면에도(`50-match.js` `paintUlt`, 지금은 디버그로만).
 - 새 버튼은 `onTap(fn)`(소리 깨우기·딸깍·실행)으로 단다.
 
 ### 레슨 추가
@@ -128,10 +129,11 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - `test/run.js`에 끝까지 가는 판 검사를 더한다(스누커 블록).
 
 ### 빛 (scene/10-room.js)
-테이블 위 램프는 당구대 비율(2:1)의 직사각형 하나: 테이블은 그 아래 스포트 3개(그림자), 공·큐는 `RectAreaLight` 하나(공마다 직사각형
-반사 하나)로 비춘다. three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을 더했다(`ccRectArea`). 그 표 데이터는
-`scene/02-ltc.js`(만드는 도구 `tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외).
-게임의 빛 값은 `LIGHT0`(소유자가 디버그로 고른 값). 반사용 방(`buildEnv`)의 박스도 같은 비율·같은 면적.
+테이블 위 램프는 당구대 비율의 직사각형 하나, 당구대보다 조금 작게(`LAMP_LEN` 0.9) 위에 매달린 상자(`hall`)와 같은 크기·높이.
+테이블(정지 층)과 공·큐를 각각 `RectAreaLight`(`tableLamp`, `rectLamp`)로 비춘다. 직사각형 빛은 그림자를 못 만들어서 그 아래 스포트 3개
+(`lampObjs`, 넓고 약하게 `SPOT_K`)가 그림자만 맡는다. three r128은 직사각형 빛에 래커(clearcoat)를 안 그려서 `ShaderChunk`에 그 항을
+더했다(`lacquerGlint`, 밝기 `glint` — 큰 램프의 반사는 원래 희미해서 사진처럼 보이게 키운 값). 표 데이터는 `scene/02-ltc.js`(도구
+`tools/ltc.js`). 공은 래커 아래가 빛나지 않는다(`finishOf` `reflectivity 0`, 금속·무광 마감은 예외). 게임의 빛 값은 `LIGHT0`.
 
 ### 하이라이트 편집 추가
 `web/reel/`에 `NN-이름.js`를 만들고 `STYLES.이름 = { name, init, step, ... }`을 넣는다. 다른 편집 파일은 건드리지 않는다.
