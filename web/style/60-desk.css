@@ -71,7 +71,7 @@
 #deskBar{position:absolute;left:0;right:0;top:0;height:var(--bar);z-index:6;display:flex;align-items:center;gap:8px;padding:0 18px;box-sizing:border-box;background:#26292d url(ui/bar.webp) 0 0/auto 100% repeat-x;box-shadow:0 6px 16px rgba(0,0,0,.5)}
 #app.desk.compact #deskBar{padding:0 8px;gap:6px}
 #deskBar .sp{flex:1}
-.dk-logo{font:600 22px var(--ui-font);letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
+.dk-logo{font:600 22px Outfit,sans-serif;letter-spacing:.22em;color:#c9c2b4;margin-right:20px}
 #app.desk.compact .dk-logo{display:none}
 .dk-tabs{display:flex;gap:6px;min-width:0;flex-shrink:0}
 #app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px var(--ui-font);--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0}
@@ -88,7 +88,7 @@
 #app.desk.compact .dk-tab{--s:.42;min-width:0;height:40px;padding:0 11px;font-size:14px}
 /* the player: an ivory counter in a brass ring (the plates in the tray wear the same ring) */
 .dk-me{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px 0 6px;color:#e9e4da;text-align:left}
-#app.desk .dk-me .av{position:relative;overflow:visible;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px var(--ui-font);color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
+#app.desk .dk-me .av{position:relative;overflow:visible;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;font:800 14px Outfit,sans-serif;color:#2b241c;background:radial-gradient(circle at 35% 30%,#fffaf0,#e9dfcc 55%,#b9ad94)}
 #app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
 .dk-me b{display:block;font:800 14.5px var(--ui-font);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dk-me small{display:block;font:600 12px var(--ui-font);color:#b9b2a5}
@@ -141,7 +141,7 @@
 /* in the foot: the players' plates, the puzzle stages, the swatches each down in a well of the felt */
 #app.desk .dk-plate{flex:1;max-width:260px;display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 16px;color:var(--ivory-ink);text-align:left;transition:transform 90ms ease-out;--s:.42;border:0 solid transparent;background:none;border-radius:calc(18px*var(--s));border-image:url(ui/plate.webp) 40 40 68 40 fill/calc(40px*var(--s)) calc(40px*var(--s)) calc(68px*var(--s)) calc(40px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(30px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:calc(10px + var(--lip));box-shadow:-6px 9px 12px rgba(0,0,0,.4)}
 .dk-plate:active{transform:translateY(2px)}
-#app.desk .dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px var(--ui-font);font-style:normal;color:#fff;background:#3b3229;position:relative;overflow:visible;margin:0 6px}
+#app.desk .dk-plate .av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 15px Outfit,sans-serif;font-style:normal;color:#fff;background:#3b3229;position:relative;overflow:visible;margin:0 6px}
 #app.desk .dk-plate.two .av{background:#8f1414}
 .dk-plate b{display:block;font:800 17px var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dk-plate small{display:block;font:600 13px var(--ui-font);opacity:.7}
@@ -150,7 +150,7 @@
 #app.desk.compact .dk-plate b{font-size:15px}
 #app.desk.compact .dk-plate small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app.desk.compact .dk-plate>span{min-width:0}
-.dk-vs{align-self:center;font:600 16px var(--ui-font);color:#c3cedd;letter-spacing:.1em}
+.dk-vs{align-self:center;font:600 16px Outfit,sans-serif;color:#c3cedd;letter-spacing:.1em}
 /* a swatch: the chosen one framed, the one in use badged */
 /* ---------- the slate: the options, which scroll if they must, and the buttons, which stay put at the foot ---------- */
 #app.desk .dk-slate{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-radius:calc(26px*var(--s));border-image:url(ui/slate.webp) 48 48 76 48 fill/calc(48px*var(--s)) calc(48px*var(--s)) calc(76px*var(--s)) calc(48px*var(--s))/calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) calc(20px*var(--s)) stretch;--lip:calc(28px*var(--s));padding:30px 28px calc(26px + var(--lip));box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
@@ -183,9 +183,9 @@
 .dk-seg button:disabled{opacity:.38}
 #app.desk.compact:not(.portrait) .dk-seg button{height:38px}
 .dk-step{display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:6px}
-.dk-step button{height:52px;color:#eee8dc;font:500 28px var(--ui-font)}
+.dk-step button{height:52px;color:#eee8dc;font:500 28px Outfit,sans-serif}
 .dk-step button:disabled{opacity:.35}
-.dk-step b{text-align:center;font:600 34px var(--ui-font)}
+.dk-step b{text-align:center;font:600 34px Outfit,sans-serif}
 .dk-step.mini{grid-template-columns:44px 56px 44px}
 .dk-step.mini button{height:42px;font-size:22px}
 .dk-step.mini b{font-size:24px}
@@ -229,7 +229,7 @@
 /* the swatches share the tray's width (all of them in view), and a cue's swatch shows its butt piece whole, end to joint */
 /* the wallet, between the player and the record: coins and the rare diamonds, each in a little well of slate */
 .dk-wallet{display:flex;gap:8px;margin-right:4px}
-.dk-cur{position:relative;display:flex;align-items:center;gap:7px;height:40px;padding:0 16px 0 8px;border:0 solid transparent;border-image:url(ui/chip.webp) 44 fill/calc(44px*var(--s))/calc(4px*var(--s)) stretch;color:#f3ecdc;font:700 15px var(--ui-font);font-variant-numeric:tabular-nums}
+.dk-cur{position:relative;display:flex;align-items:center;gap:7px;height:40px;padding:0 16px 0 8px;border:0 solid transparent;border-image:url(ui/chip.webp) 44 fill/calc(44px*var(--s))/calc(4px*var(--s)) stretch;color:#f3ecdc;font:700 15px Outfit,sans-serif;font-variant-numeric:tabular-nums}
 .dk-cur i{flex:none;width:26px;height:26px;background:center/contain no-repeat;filter:drop-shadow(-1px 2px 1px rgba(0,0,0,.45))}
 .dk-cur.coin i{background-image:url(ui/coin.webp)}
 .dk-cur.dia i{background-image:url(ui/dia.webp);width:30px;height:30px;margin:0 -2px}

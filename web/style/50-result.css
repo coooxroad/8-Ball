@@ -1,7 +1,7 @@
 /* after a match */
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
-.r-title{margin-top:auto;font-family:var(--ui-font);font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
+.r-title{margin-top:auto;font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
 .r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);flex-wrap:wrap}
 .r-p{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 0;color:var(--sub)}
 .r-p.two{justify-content:flex-end;text-align:right}
@@ -25,7 +25,7 @@
 .srow .bar.r i{background:#e5484d;opacity:.85}
 /* highlights: one card per shot worth watching again, under the numbers */
 #rHlBox{width:100%;max-width:760px}
-.hl-lab{font-family:var(--ui-font);font-size:12px;letter-spacing:.2em;color:var(--sub);text-align:center;margin-bottom:8px}
+.hl-lab{font-family:'Outfit',var(--ui-font);font-size:12px;letter-spacing:.2em;color:var(--sub);text-align:center;margin-bottom:8px}
 #rHl{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .hcard{position:relative;display:flex;align-items:stretch;justify-content:space-between;gap:8px;min-height:104px;padding:12px 12px 12px 14px;border-radius:var(--r-card);background:var(--panel);border:1px solid var(--bd);box-shadow:var(--sh);color:var(--fg);text-align:left;overflow:hidden;transition:transform .08s}
 .hcard:active{transform:scale(.98)}
@@ -39,7 +39,7 @@
 .hcard .pic{flex:none;align-self:center;width:96px;height:56px;border-radius:7px;display:block}
 .hcard .go{position:absolute;right:46px;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:#fff;font-size:13px;padding-left:2px;opacity:0;transition:opacity .15s}
 .hcard:active .go,.hcard:hover .go{opacity:.95}
-.hcard .rib{position:absolute;right:0;top:0;padding:3px 9px 3px 10px;border-bottom-left-radius:10px;font:800 10.5px/1.4 var(--ui-font);letter-spacing:.14em;background:#f2b705;color:#1b1e24}
+.hcard .rib{position:absolute;right:0;top:0;padding:3px 9px 3px 10px;border-bottom-left-radius:10px;font:800 10.5px/1.4 'Outfit',sans-serif;letter-spacing:.14em;background:#f2b705;color:#1b1e24}
 .hcard.best{box-shadow:inset 0 0 0 2px #f2b705,var(--sh)}
 .hcard.worst{box-shadow:inset 0 0 0 2px #e5484d,var(--sh)}
 .hcard.worst .rib{background:#e5484d;color:#fff}
@@ -60,7 +60,7 @@
 #app.desk #result::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 88% 0%,rgba(255,226,170,.22),rgba(255,226,170,0) 62%),radial-gradient(ellipse 130% 110% at 62% 28%,rgba(0,0,0,0) 50%,rgba(18,9,3,.6) 100%)}
 #app.desk .r-plane{position:absolute;left:0;right:0;top:-40px;bottom:0;transform-origin:50% 100%;transform:rotateX(10deg);display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,29%);grid-template-rows:auto minmax(0,1fr);gap:16px 20px;padding:54px 24px 20px;box-sizing:border-box}
 #app.desk .r-top{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;color:#f4ecd8;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-#app.desk .r-top .r-logo{font:800 22px var(--ui-font);letter-spacing:.35em;padding-right:14px;border-right:2px solid rgba(244,236,216,.4)}
+#app.desk .r-top .r-logo{font:800 22px 'Outfit',sans-serif;letter-spacing:.35em;padding-right:14px;border-right:2px solid rgba(244,236,216,.4)}
 #app.desk .r-top b{font:800 24px var(--ui-font)}
 #app.desk .r-top small{font:600 15px var(--ui-font);opacity:.8}
 #app.desk .r-tray{position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto;scrollbar-width:none;--s:.4;border:0 solid transparent;background:var(--felt-base,#0e4c8e) var(--felt-img,url(ui/felt.webp)) 0 0/300px repeat;
@@ -82,7 +82,7 @@
 #app.desk .r-p .nm{font:800 clamp(18px,2.3vw,26px) var(--ui-font);color:#2b241c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app.desk .r-p .rc{font:600 13px var(--ui-font);color:#6b5f4e;margin-top:3px}
 #app.desk .r-p .rc .me{display:inline-block;padding:1px 10px;border-radius:99px;background:#d8d2c6;color:#4a4236;font-weight:800;margin-right:6px}
-#app.desk .r-score{display:flex;align-items:center;gap:14px;padding:0 6px;font:900 clamp(46px,6vw,74px)/1 var(--ui-font);color:#1d1a16;background:none;border:0;filter:none;text-shadow:none}
+#app.desk .r-score{display:flex;align-items:center;gap:14px;padding:0 6px;font:900 clamp(46px,6vw,74px)/1 'Outfit',sans-serif;color:#1d1a16;background:none;border:0;filter:none;text-shadow:none}
 #app.desk .r-score b{color:#1d1a16;font-weight:900}
 #app.desk .r-score .sep{font-size:.5em;color:#9a9083}
 #app.desk .r-score .ot{color:#9a6a12}
@@ -91,7 +91,7 @@
 #app.desk #rStats .srow{grid-template-columns:62px minmax(0,1fr) 128px minmax(0,1fr) 62px;padding:9px 4px}
 #app.desk #rStats .srow+.srow{border-top:1px solid rgba(60,80,140,.16)}
 #app.desk #rStats .k{justify-self:center;color:#4a4236;font:700 13.5px var(--ui-font);background:none;border:0;padding:0}
-#app.desk #rStats b,#app.desk #rStats span.n{color:#1d1a16;font:800 21px var(--ui-font)}
+#app.desk #rStats b,#app.desk #rStats span.n{color:#1d1a16;font:800 21px 'Outfit',sans-serif}
 #app.desk #rStats .bar{height:9px;border-radius:5px;background:rgba(60,50,30,.12)}
 #app.desk #rStats .bar i{border-radius:5px;background:linear-gradient(90deg,#4aa3f0,#2a78d2)}
 #app.desk #rStats .bar.r i{background:linear-gradient(90deg,#c9a24e,#9a7a2a);opacity:1}

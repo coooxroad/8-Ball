@@ -17,10 +17,10 @@
 @keyframes invBreathe{50%{box-shadow:inset 0 3px 10px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.22)}}
 #app.desk .inv-code{display:flex;align-items:center;gap:14px;padding:8px 8px 8px 20px;border-radius:16px;background:#f3eee2;box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 -3px 0 rgba(0,0,0,.08);max-width:100%}
 #app.desk .inv-code span{font:700 14px var(--ui-font);color:#5b5246;padding-right:14px;border-right:1px solid rgba(0,0,0,.18);white-space:nowrap}
-#app.desk .inv-code b{font:800 clamp(24px,4.4vh,36px)/1 var(--ui-font);letter-spacing:.14em;color:#1c1a17}
+#app.desk .inv-code b{font:800 clamp(24px,4.4vh,36px)/1 'Outfit',var(--ui-font);letter-spacing:.14em;color:#1c1a17}
 #app.desk .inv-code button{height:44px;padding:0 22px;border:0;border-radius:12px;background:#1d1f22;color:#f3eee2;font:800 15px var(--ui-font);cursor:pointer}
 #app.desk .inv-code button[disabled]{opacity:.4}
-#sheet .txt.code{text-transform:uppercase;letter-spacing:.3em;text-align:center;font:800 26px var(--ui-font)}
+#sheet .txt.code{text-transform:uppercase;letter-spacing:.3em;text-align:center;font:800 26px 'Outfit',var(--ui-font)}
 /* a phone: the tray is small - the places shorter, the code plate tighter, nothing wrapping */
 #app.desk.compact .dk-stage .inv{inset:3% 3% 3%;gap:10px}
 #app.desk.compact .inv-slot{width:min(36%,150px)}

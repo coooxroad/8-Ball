@@ -58,6 +58,9 @@ body{margin:0}
 @font-face{font-family:'Gothic A1';font-weight:500;font-display:swap;src:url(fonts/GothicA1-Medium.woff2) format('woff2')}
 @font-face{font-family:'Gothic A1';font-weight:700;font-display:swap;src:url(fonts/GothicA1-Bold.woff2) format('woff2')}
 @font-face{font-family:'Gothic A1';font-weight:800;font-display:swap;src:url(fonts/GothicA1-ExtraBold.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-weight:100 900;font-display:swap;src:url(fonts/Outfit.woff2) format('woff2')}
+@font-face{font-family:'Jua';font-weight:400;font-display:swap;src:url(fonts/Jua-Regular.woff2) format('woff2')}
+@font-face{font-family:'Black Han Sans';font-weight:400;font-display:swap;src:url(fonts/BlackHanSans.woff2) format('woff2')}
 </style>
 </head>
 <body>

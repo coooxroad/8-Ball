@@ -18,5 +18,5 @@
 #league.in .crest{transform:translate(-50%,-50%) scale(1);opacity:1}
 #league .crest .box{display:block;width:min(42vw,40vh,380px);aspect-ratio:1028/818;background:#0042a0;position:relative}
 #league .crest .mk{position:absolute;inset:0;background:url(ui/league-mark-w.webp) center/100% 100% no-repeat}
-#league .crest b{font:800 clamp(30px,6vmin,56px)/1 var(--ui-font);letter-spacing:-.015em;color:#111}
+#league .crest b{font:800 clamp(30px,6vmin,56px)/1 'Outfit',sans-serif;letter-spacing:-.015em;color:#111}
 #league .crest small{font:700 clamp(13px,2.2vmin,18px)/1.2 var(--ui-font);color:#3b4149}

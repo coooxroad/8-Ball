@@ -48,7 +48,7 @@ const prefs = (() => {
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
-    deskWood: 'oak', deskTray: 'blue', deskTheme: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
+    deskWood: 'oak', deskTray: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
@@ -157,13 +157,10 @@ const DESK_LOOK = {
   tray: { blue: { name: '블루', frame: 'ui/tray.webp', felt: 'ui/felt.webp', base: '#0e4c8e', back: 0x034db0 },
     green: { name: '그린', frame: 'ui/tray-green.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 },
     walnut: { name: '월넛 레일', frame: 'ui/tray-walnut.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 } },
-  // the menu's colours (style/77-themes.css #app[data-theme]): the selected tab and the printed boards
-  theme: { blue: { name: '기본' }, brass: { name: '클래식' }, ivory: { name: '아이보리' }, green: { name: '그린' } },
 };
 const deskLook = () => {
   let d = false; try { d = net.debug; } catch (e) {}                 // (the first call is before net is made: 07-net.js)
-  return { wood: DESK_LOOK.wood[d && prefs.deskWood] || DESK_LOOK.wood.oak, tray: DESK_LOOK.tray[d && prefs.deskTray] || DESK_LOOK.tray.blue,
-    theme: DESK_LOOK.theme[d && prefs.deskTheme] ? (d && prefs.deskTheme) : 'blue' };
+  return { wood: DESK_LOOK.wood[d && prefs.deskWood] || DESK_LOOK.wood.oak, tray: DESK_LOOK.tray[d && prefs.deskTray] || DESK_LOOK.tray.blue };
 };
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {
@@ -173,7 +170,6 @@ function applyBackdrop() {
   const at = f => `url("${new URL(f, document.baseURI).href}")`;
   a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--edge-img', at(L.wood.edge)); a.setProperty('--desk-base', L.wood.base);
   a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
-  document.getElementById('app').dataset.theme = L.theme;
   document.body.style.background = desk ? L.wood.base : '#101216';
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }

@@ -52,12 +52,6 @@ function playEnter(wrap) {
     b.classList.add(fx);
   });
 }
-// the menu's signs (boards): line drawings in the badge's colour
-const MENU_ICO = {
-  friend: '<circle cx="17" cy="16" r="6"/><circle cx="33" cy="18" r="5"/><path d="M5 39c1-8 6-12 12-12s11 4 12 12M28 29c2-1.5 3.5-2 5-2 5 0 9 3.5 10 10"/>',
-  train: '<circle cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="10"/><circle cx="24" cy="24" r="3" fill="currentColor"/>',
-  arcade: '<rect x="7" y="10" width="20" height="29" rx="3" transform="rotate(-12 17 24)"/><rect x="21" y="9" width="20" height="29" rx="3" transform="rotate(10 31 23)"/><path d="M31 18l1.6 3.4 3.6.4-2.7 2.4.8 3.6-3.3-1.8-3.3 1.8.8-3.6-2.7-2.4 3.6-.4z"/>' };
-const menuIco = (k, cls) => { const s = el('span', { class: cls, 'aria-hidden': 'true' }); s.innerHTML = `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">${MENU_ICO[k]}</svg>`; return s; };
 const WAY_ICO = {
   local: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="5" width="30" height="38" rx="5"/><path d="M20 37h8"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="20" r="4"/></svg>',
   make: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M24 18v12M18 24h12"/></svg>',
@@ -181,29 +175,23 @@ const PLAY_STEPS = {
     else dkPut(fit, el('div', { class: 'tb-none' }, [el('b', { text: '열린 방 없음' }),
       el('button', { class: 'dk-chip', text: '방 만들기', onclick: onTap(() => { invite.stopRooms(); prefs.friendWay = 'invite'; invite.pw = ''; playStep = 'setup'; repaintLive(); }) })]));
   },
-  /* The menu (owner 11-13, from the 메인메뉴 drafts): 랭킹전 large on the left - the one thing most come for, its card all
-     one button that opens its four games (the games are chosen there, not here); the other three as rows on the right,
-     each a round ivory badge with its sign, its name, one line of what it is, and an arrow that says it opens. One face
-     only (the base one), heavy words drawn heavy and outlined, nothing smaller than 14px on a phone. */
-  boards({ fit, panel, tt, dama }) {
+  boards({ wrap, fit, panel, tt, head, toBoards, dama }) {
+    // (5.0: plain blocks of the shop's two colours - ivory and charcoal - with only words on them for now; pictures come
+    // back one by one, drawn to match. 투어 and the shop's window are gone: 챌린지 and 아케이드 in their places.)
     const soon = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
     const T = ECONOMY.TIER_AT, ti = Math.max(0, T.filter(x => dama >= x).length - 1), tier = TIERS[Math.min(TIERS.length - 1, ti)];
     // the way to the next tier, filling like a level bar: it fills from empty when the number has changed since it was
     // last shown, and sits still otherwise (the desk paints again often)
     const lo = T[ti], hi = T[ti + 1], part = hi == null ? 1 : Math.max(0, Math.min(1, (dama - lo) / (hi - lo))), grow = rankBarShown !== dama; rankBarShown = dama;
-    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: hi == null ? '최고 등급' : `${TIERS[ti + 1][1]}까지 ${hi - dama}점` })]);
-    const row = (id, label, fn, ico, t, sub, tag, cls) => panel(id, label, fn,
-      [menuIco(ico, 'bd-med'), tt(t, sub, tag), el('span', { class: 'bd-go', 'aria-hidden': 'true' })], 'card row unf' + (cls ? ' ' + cls : ''));
+    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
     dkPut(fit, [
-      panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, '온라인 1:1'),
-        el('span', { class: 'bd-tier' }, [el('b', { text: tier[1] }), bar]),
-        el('span', { class: 'bd-balls', 'aria-hidden': 'true' }, ['four', 'three', 'eight', 'nine'].map(m => el('span', null, [el('img', { src: `ui/mode-${m}.webp`, alt: '' }), el('small', { text: MODE_KO[m] })]))),
-        el('span', { class: 'bd-start', text: '시작하기' })], 'card hero unf'),
-      row('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), 'friend', '친구와 플레이', '한 기기에서 함께 · 친구 초대'),
-      row('train', '훈련', b => playLeave(b, () => deskGo('train')), 'train', '훈련', '레슨 · 퍼즐 · 혼자 연습'),
+      panel('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), [tt('친구와 플레이')], 'card unf'),
+      panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon unf'),
       // (아케이드: 준비 중 - open with the debug setting only, owner 11-12)
-      net.debug ? row('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), 'arcade', '아케이드', '증강 카드로 겨루는 당구', '디버그')
-        : row('arcade', '아케이드', soon('아케이드는'), 'arcade', '아케이드', '증강 카드로 겨루는 당구', '준비 중', 'soon')]);
+      net.debug ? panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구', '디버그')], 'card unf')
+        : panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '증강 당구', '준비 중')], 'card soon unf'),
+      panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, 'ONLINE'),
+        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
   },
 };
 // inviting a friend: the code open on the server while this shows; the tray shows the two places and the code

@@ -1,12 +1,10 @@
-// 훈련 (from 플레이's menu, owner 11-13 - no tab of its own): lessons, puzzles, free practice and the computer on the rail,
-// each with its own tray and slate; the rail's head the way back to the menu
+// 훈련: lessons, puzzles and free practice on the rail, each with its own tray and slate
 function deskTrain(d) {
   const t = trainOf() || 'puzzle';
   const to = (mode, drill) => () => { prefs.lastTrain = mode; if (drill) drill(); prefs.mode = mode; repaintLive(); };
   const cpu = () => { prefs.lastTrain = 'cpu'; prefs.trainCpu = true; prefs.vsAI = true; prefs.mode = GAME4.includes(prefs.cpuMode) ? prefs.cpuMode : 'eight'; repaintLive(); };
   const off = () => { prefs.trainCpu = false; prefs.vsAI = false; };
-  dkPut(d.rail, [el('button', { class: 'dk-back', onclick: onTap(() => deskGo('play')) }, [svgArrow(0), el('span', { text: '메뉴' })]),
-    railBtn(t === 'lesson', '레슨', null, to('practice', () => { off(); prefs.lessons = true; })),
+  dkPut(d.rail, [railBtn(t === 'lesson', '레슨', null, to('practice', () => { off(); prefs.lessons = true; })),
     railBtn(t === 'puzzle', '퍼즐', null, to('puzzle', off)),
     railBtn(t === 'free', '자유 연습', null, to('practice', () => { off(); prefs.lessons = false; })),
     railBtn(t === 'cpu', '컴퓨터 대전', null, cpu)]);

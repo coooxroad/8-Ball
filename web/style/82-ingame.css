@@ -22,7 +22,7 @@
 #app.bcast #hud .pill.on::after{width:4px;background:linear-gradient(var(--live1),var(--live2))}
 /* the points to reach, large and faint behind the score */
 #app.bcast #hud .pts[data-goal]::before{content:attr(data-goal);position:absolute;right:3px;bottom:1px;z-index:-1;
-  font:800 calc(var(--bh)*.5)/1 var(--ui-font);letter-spacing:-.02em;color:rgba(255,255,255,.26)}
+  font:800 calc(var(--bh)*.5)/1 'Outfit',sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.26)}
 #app.bcast:not(.portrait) #hud .pts,#app.bcast:not(.portrait) #hud .pill.on .pts{min-width:calc(var(--bh)*1.5)}
 #app.bcast #hud .pts[data-goal]{isolation:isolate}
 #app.bcast #hud .pts[data-goal=""]::before{content:none}
