@@ -40,6 +40,7 @@ function sheetDebug() {
   openSheet('디버그', [
     el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWood', L.wood),
     el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTray', L.tray),
+    el('div', { class: 'lab', text: '색 조합' }), seg('theme', 'deskTheme', DESK_LOOK.theme[L.theme]),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

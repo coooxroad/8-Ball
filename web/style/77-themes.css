@@ -1,0 +1,30 @@
+/* ---------- 색 조합: colour sets to try on the walnut desk and the green tray (owner 11-13, 디버그 only) ----------
+   #app[data-theme] (00-state.js DESK_LOOK.theme, picked in the 디버그 sheet): the selected tab and the menu's printed boards
+   in the set's colours. 'blue' is the game's own (no rule here).
+     brass   클래식 - a billiard hall's: burgundy leather, slate navy, ochre, forest green; the tab in brass
+     ivory   아이보리 - light boards printed in dark ink (the most legible: the words dark on light), faint tints apart
+     green   그린 - greens and walnut brown, the tab in the cloth's green */
+
+/* brass */
+#app.desk[data-theme="brass"] .dk-tab[aria-selected="true"]{border-image-source:url(ui/tab-on-brass.webp);color:#2a1d0c}
+#app[data-theme="brass"] #dkBoards .bd.card.bd-rank,#app[data-theme="brass"] #dkBoards .bd.card.bd-four{--c1:#8e3a33;--c2:#561d1a;--sl:#a35a52;--sd:#2a0b08}
+#app[data-theme="brass"] #dkBoards .bd.card.bd-arcade,#app[data-theme="brass"] #dkBoards .bd.card.bd-three{--c1:#4a5a74;--c2:#28344a;--sl:#6a7a94;--sd:#10182a}
+#app[data-theme="brass"] #dkBoards .bd.card.bd-challenge,#app[data-theme="brass"] #dkBoards .bd.card.bd-nine{--c1:#a0752e;--c2:#664514;--sl:#b58a48;--sd:#33200a}
+#app[data-theme="brass"] #dkBoards .bd.card.bd-friend,#app[data-theme="brass"] #dkBoards .bd.card.bd-eight{--c1:#3f7552;--c2:#214632;--sl:#5f8e6c;--sd:#0b2416}
+
+/* ivory: the boards light, their words in ink - no white outline game lettering */
+#app.desk[data-theme="ivory"] .dk-tab[aria-selected="true"]{border-image-source:url(ui/tab-on-ivory.webp);color:#2b241c}
+#app[data-theme="ivory"] #dkBoards .bd.card{--c1:#f3ecdc;--c2:#ddd0b2;--sl:#e9dcc0;--sd:#7c6a48;--ink:#2b241c}
+#app[data-theme="ivory"] #dkBoards .bd.card.bd-rank,#app[data-theme="ivory"] #dkBoards .bd.card.bd-four{--c2:#e2c9bd}
+#app[data-theme="ivory"] #dkBoards .bd.card.bd-friend,#app[data-theme="ivory"] #dkBoards .bd.card.bd-eight{--c2:#c9d7bf}
+#app[data-theme="ivory"] #dkBoards .bd.card.bd-arcade,#app[data-theme="ivory"] #dkBoards .bd.card.bd-three{--c2:#c8cfd9}
+#app[data-theme="ivory"] #dkBoards .bd.card.bd-challenge,#app[data-theme="ivory"] #dkBoards .bd.card.bd-nine{--c2:#e3d1a8}
+#app[data-theme="ivory"] #dkBoards .bd.card .bd-tt b,#app[data-theme="ivory"] #dkBoards .bd.card .bd-foot b{color:#2b241c;text-shadow:0 calc(var(--u)*.5) 0 rgba(255,255,255,.7)}
+#app[data-theme="ivory"] #dkBoards .bd.card .bd-tt small,#app[data-theme="ivory"] #dkBoards .bd.card .bd-foot small{color:#5a4c38;text-shadow:none}
+
+/* green */
+#app.desk[data-theme="green"] .dk-tab[aria-selected="true"]{border-image-source:url(ui/tab-on-green.webp)}
+#app[data-theme="green"] #dkBoards .bd.card.bd-rank,#app[data-theme="green"] #dkBoards .bd.card.bd-four{--c1:#2f6a4a;--c2:#163d29;--sl:#4f8466;--sd:#06190f}
+#app[data-theme="green"] #dkBoards .bd.card.bd-arcade,#app[data-theme="green"] #dkBoards .bd.card.bd-three{--c1:#7a5034;--c2:#43281a;--sl:#94694c;--sd:#1e0f07}
+#app[data-theme="green"] #dkBoards .bd.card.bd-challenge,#app[data-theme="green"] #dkBoards .bd.card.bd-nine{--c1:#6f6b3a;--c2:#403d1c;--sl:#8a8656;--sd:#1c1a08}
+#app[data-theme="green"] #dkBoards .bd.card.bd-friend,#app[data-theme="green"] #dkBoards .bd.card.bd-eight{--c1:#4a8a5e;--c2:#24543a;--sl:#6a9e7a;--sd:#0c2a18}
