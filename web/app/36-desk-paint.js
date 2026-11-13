@@ -87,7 +87,7 @@ function walletPaint() {
 function walletShort(k) { const chip = $('#dkWallet .' + k); if (!chip) return; chip.classList.remove('short'); void chip.offsetWidth; chip.classList.add('short'); setTimeout(() => chip.classList.remove('short'), 700); }
 function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
-  for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
+  for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === (deskTab === 'train' ? 'play' : deskTab)));   // (훈련 opens from 플레이's menu)
   walletPaint();
   // (the name, and under it whether this is a member or a guest - a guest is asked to sign up: 57-account.js)
   $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : recText(prefs.names[0]);

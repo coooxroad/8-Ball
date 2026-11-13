@@ -6,7 +6,7 @@
 #app.desk .dk-pill{flex:none;min-width:76px;height:62px;padding:0 12px;color:#eee8dc;font:700 14px var(--ui-font);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;--s:.36;border:0 solid transparent;background:none;border-radius:calc(20px*var(--s));border-image:url(ui/sec.webp) 46 38 54 38 fill/calc(46px*var(--s)) calc(38px*var(--s)) calc(54px*var(--s)) calc(38px*var(--s))/calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) calc(14px*var(--s)) stretch;--lip:calc(14px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.4)}
 #app.desk .dk-pill[aria-pressed="true"]{--s:.42;border:0 solid transparent;background:none;border-radius:calc(17px*var(--s));border-image:url(ui/seg-on.webp) 34 32 42 32 fill/calc(34px*var(--s)) calc(32px*var(--s)) calc(42px*var(--s)) calc(32px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));color:#2b241c;padding-bottom:var(--lip)}
 #app.desk .dk-pill.lock{opacity:.7}
-.dk-pill small{font:500 12px Outfit,sans-serif;color:#9fb0c4}
+.dk-pill small{font:500 12px var(--ui-font);color:#9fb0c4}
 .dk-pill[aria-pressed="true"] small{color:#6b5f4e}
 .dk-pill img.lock{width:22px;height:22px}
 .dk-stars{display:flex;align-items:center;gap:4px;font:600 15px var(--ui-font);color:#cfc8ba}
@@ -35,7 +35,7 @@
 #app.desk .dk-card.book .cover b{font:800 17px/1.25 var(--ui-font);color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45);word-break:keep-all}
 #app.desk.compact .dk-card.book .cover b{font-size:12.5px}
 #app.desk.compact .dk-card.book .cover small{font-size:8.5px}
-#app.desk .dk-card.book .cover em{position:absolute;bottom:-28%;left:0;right:0;text-align:center;font:700 12px 'Outfit',sans-serif;font-style:normal;opacity:.7}
+#app.desk .dk-card.book .cover em{position:absolute;bottom:-28%;left:0;right:0;text-align:center;font:700 12px var(--ui-font);font-style:normal;opacity:.7}
 #app.desk .dk-card.book .lvl{display:flex;gap:4px}
 #app.desk .dk-card.book .lvl i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}
 #app.desk .dk-card.book .lvl i.on{background:#e9c46a}

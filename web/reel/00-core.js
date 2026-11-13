@@ -214,7 +214,7 @@ function glow(col, w) {                                      // the current path
 }
 function trails(T, w, only) { for (const p of r.paths) if (!only || only.includes(p.id)) { line(p, 0, T); glow(p.col, w); } }
 function label(x, y, text, col, size, align) {
-  g.font = `600 ${size || r.fs}px Outfit, sans-serif`; g.textAlign = align || 'center'; g.textBaseline = 'middle';
+  g.font = `600 ${size || r.fs}px system-ui, -apple-system, 'Noto Sans KR', 'Gothic A1', sans-serif`; g.textAlign = align || 'center'; g.textBaseline = 'middle';
   g.lineWidth = 4; g.strokeStyle = 'rgba(8,10,14,.78)'; g.lineJoin = 'round'; g.strokeText(text, x, y); g.fillStyle = col; g.fillText(text, x, y);
 }
 function ring(x, y, rad, col, w, dash) {                     // a circle lying on the table

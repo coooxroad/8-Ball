@@ -13,7 +13,7 @@
 #dkBoards .bd.info.i2{--c1:#a2435a;--c2:#45162a}
 #dkBoards .bd.info.i3{--c1:#c98a24;--c2:#5a3410}
 #dkBoards .bd.info .in{flex-direction:row;align-items:center;justify-content:flex-start;gap:calc(var(--u)*5)}
-#dkBoards .arc-n{flex:none;display:grid;place-items:center;width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;background:rgba(255,255,255,.92);color:#18202a;font:400 calc(var(--u)*7.5)/1 var(--game-font)}
+#dkBoards .arc-n{flex:none;display:grid;place-items:center;width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;background:rgba(255,255,255,.92);color:#18202a;font:900 calc(var(--u)*7)/1 var(--ui-font)}
 #dkBoards .bd.info .bd-tt{text-align:left;align-items:flex-start}
 /* (the search's card: the 36 racked on its face, smaller to fit) */
 #dkBoards .seek-card .front.bd-g-arcade{--cl:#4a3a86}
@@ -88,7 +88,7 @@
 #arcFx .ac-print em{position:absolute;top:calc(var(--u)*6);left:50%;transform:translateX(-50%);padding:calc(var(--u)*1) calc(var(--u)*4);border-radius:999px;background:rgba(255,255,255,.92);color:#1d2a3a;font:800 max(10px,calc(var(--u)*4))/1.2 var(--ui-font);font-style:normal;letter-spacing:.08em;white-space:nowrap}
 #arcFx .ac-ico{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
 #arcFx .ac-ico svg{width:calc(var(--u) * 46);height:auto;color:#fff;filter:drop-shadow(0 calc(var(--u)*1) 0 rgba(0,0,0,.35))}
-#arcFx .ac-print b{font:400 max(15px,calc(var(--u)*10))/1.05 var(--game-font);letter-spacing:-.01em;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap}
+#arcFx .ac-print b{font:900 max(15px,calc(var(--u)*9.4))/1.08 var(--ui-font);letter-spacing:-.03em;-webkit-text-stroke:max(3px,calc(var(--u)*1.3)) rgba(0,0,0,.42);paint-order:stroke fill;text-shadow:0 2px 0 rgba(0,0,0,.35);white-space:nowrap}
 #arcFx .ac-print small{min-height:2.7em;font:700 max(10px,calc(var(--u)*4.4))/1.35 var(--ui-font);color:rgba(255,255,255,.88);word-break:keep-all}
 /* (gold and prism: a band of light crossing the face now and then - by transform) */
 #arcFx .ac-sh{position:absolute;inset:-20% -60%;pointer-events:none;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.3) 50%,transparent 60%);transform:translateX(-70%);display:none}
@@ -138,7 +138,7 @@
    A capsule - who, the bar in five steps, its name; full, it glows and the light runs along it. */
 .ultg{display:flex;align-items:center;gap:10px;padding:7px 14px;border-radius:999px;background:rgba(12,16,22,.86);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
 .ultg-n{font:700 12px/1 var(--ui-font);opacity:.8;max-width:7em;overflow:hidden;text-overflow:ellipsis}
-.ultg-l{font:400 13px/1 var(--game-font);letter-spacing:.02em;color:#ffd84d}
+.ultg-l{font:900 13px/1 var(--ui-font);letter-spacing:.02em;color:#ffd84d}
 .ultg-bar{position:relative;width:min(34vw,220px);height:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
 .ultg-bar>i{position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(var(--v));background:linear-gradient(90deg,#ff9a1f,#ffd84d);border-radius:999px;transition:transform .45s cubic-bezier(.3,.7,.3,1)}
 .ultg-bar>b{position:absolute;top:2px;bottom:2px;width:2px;margin-left:-1px;background:rgba(12,16,22,.55)}

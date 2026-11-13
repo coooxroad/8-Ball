@@ -20,7 +20,7 @@
 #app.bcast.carom #hud .pill .av{font-size:0;background:radial-gradient(circle at 62% 32%,#fff,#f1ece0 45%,#b9b1a0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
 #app.bcast.carom #hud .pill.r .av{background:radial-gradient(circle at 62% 32%,#fff6c2,#f4c20d 48%,#a37a00)}
 #app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{flex:none;align-self:stretch;display:grid;place-items:center;min-width:calc(var(--bh)*1.3);padding:0 6px;
-  font:800 calc(var(--bh)*.62)/1 'Outfit',sans-serif;color:#fff;background:linear-gradient(var(--blue1),var(--blue2));transition:background .25s,color .25s}
+  font:800 calc(var(--bh)*.62)/1 var(--ui-font);color:#fff;background:linear-gradient(var(--blue1),var(--blue2));transition:background .25s,color .25s}
 #app.bcast #hud .pill.on .pts{background:linear-gradient(var(--gold1),var(--gold2));color:#0a1a3f}
 #app.bcast #hud .pill .pts:empty,#app.bcast #hud .pill .tray:empty{display:none}
 #app.bcast #hud .pill .tray{flex:none;padding:0 8px;gap:3px}
@@ -39,11 +39,11 @@
   display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;column-gap:4px;row-gap:1px;padding:calc(var(--bh)*.1) 6px 0;overflow:hidden;white-space:nowrap;
   background:linear-gradient(#13285c,var(--navy));border:0;border-top:3px solid var(--gold1);border-radius:0;box-shadow:0 6px 18px rgba(0,0,0,.35);
   font-size:max(9px,calc(var(--bh)*.2));line-height:1.25;color:#9fb3d9}
-#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 'Outfit',var(--ui-font);letter-spacing:.2em;color:#fff}
+#app.bcast:not(.portrait) #badge b{flex:0 0 100%;text-align:center;font:800 max(10px,calc(var(--bh)*.24))/1.2 var(--ui-font);letter-spacing:.2em;color:#fff}
 #app.bcast:not(.portrait) #badge .mb{width:calc(var(--bh)*.26);height:calc(var(--bh)*.26)}
 #app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge{font-size:0}
 #app.bcast:not(.portrait) #hud:has(#clock:not([hidden])) #badge .mb{display:none}
-#app.bcast:not(.portrait) #hud::before{position:fixed;left:calc(50% - var(--wb)/2 + var(--bh)*.3);bottom:calc(var(--bb) + 6px + var(--bh));padding:3px 12px 2px;background:var(--navy);color:var(--gold1);font:800 11px/1.3 'Outfit',sans-serif;letter-spacing:.28em;border-radius:3px 3px 0 0}
+#app.bcast:not(.portrait) #hud::before{position:fixed;left:calc(50% - var(--wb)/2 + var(--bh)*.3);bottom:calc(var(--bb) + 6px + var(--bh));padding:3px 12px 2px;background:var(--navy);color:var(--gold1);font:800 11px/1.3 var(--ui-font);letter-spacing:.28em;border-radius:3px 3px 0 0}
 /* the shot clock: its number in the middle, its bar under the whole score bar */
 #app.bcast #clock{--c:#ffffff;top:auto;margin:0;pointer-events:none;display:block;filter:none;background:none}
 #app.bcast #clock.two{--c:#ffd21f}
@@ -53,7 +53,7 @@
 #app.bcast #clock i{position:absolute;left:0;right:0;bottom:0;height:5px;border-radius:0;background:rgba(10,26,63,.85);box-shadow:none}
 #app.bcast #clock i::after{border-radius:0;background:var(--c);box-shadow:0 0 8px var(--c)}
 #app.bcast #clock b{position:absolute;left:50%;bottom:calc(6px + var(--bh)*.1);transform:translateX(-50%);min-width:0;padding:0;background:none;
-  font:800 calc(var(--bh)*.44)/1 'Outfit',sans-serif;color:var(--c)}
+  font:800 calc(var(--bh)*.44)/1 var(--ui-font);color:var(--c)}
 #app.bcast #clock[data-lv="2"] b{color:#ff6b61}
 #app.bcast #hud.out #badge{background:linear-gradient(#e0262e,#8e0c12);border-top-color:#fff}
 /* upright: the plates along the top */

@@ -58,8 +58,7 @@ function sheetCredits() {
   openSheet('크레딧', [
     item('이모티콘 · Fluent Emoji', 'Microsoft Corporation', 'MIT License', 'https://github.com/microsoft/fluentui-emoji'),
     item('3D · three.js', 'three.js authors', 'MIT License', 'https://threejs.org'),
-    item('글꼴 · Gothic A1, Jua, Black Han Sans', 'HanYang I&C, Woowahan Brothers, Zess Type', 'SIL Open Font License 1.1', 'https://fonts.google.com'),
-    item('글꼴 · Outfit', 'Outfit Project Authors', 'SIL Open Font License 1.1', 'https://fonts.google.com/specimen/Outfit'),
+    item('글꼴 · Gothic A1', 'HanYang I&C', 'SIL Open Font License 1.1', 'https://fonts.google.com/specimen/Gothic+A1'),
     flatBtn('뒤로', sheetSettings),
   ]);
 }
