@@ -47,7 +47,7 @@
 #app.desk #desk::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;background:linear-gradient(215deg,rgba(255,240,210,.09),rgba(255,240,210,0) 36%,rgba(0,0,0,0) 58%,rgba(10,5,0,.24))}
 #app.desk #desk>*{position:relative;z-index:1}
 /* the desk's own front edge along the bottom, and the dark floor beyond it */
-#app.desk #desk>.dk-edge{position:absolute;z-index:0;left:0;right:0;bottom:0;height:calc(200px*var(--es));background:url(ui/edge.webp) 0 0/auto 100% repeat-x;-webkit-mask-image:linear-gradient(#0000,#000 22%);mask-image:linear-gradient(#0000,#000 22%);pointer-events:none}
+#app.desk #desk>.dk-edge{position:absolute;z-index:0;left:0;right:0;bottom:0;height:calc(200px*var(--es));background:var(--edge-img,url(ui/edge.webp)) 0 0/auto 100% repeat-x;-webkit-mask-image:linear-gradient(#0000,#000 22%);mask-image:linear-gradient(#0000,#000 22%);pointer-events:none}
 /* things on the desk: leaves leaning in at the top right, a towel over the front-left corner, a cube of chalk; on a phone
    they lie under the panels, peeking out, and on its side there is no room for them */
 #app.desk #desk>.dk-prop{position:absolute;z-index:3;pointer-events:none;background-position:center;background-size:contain;background-repeat:no-repeat}

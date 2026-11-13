@@ -151,8 +151,9 @@ function ownLook() { useBalls(prefs.ballSkin); scene.setTrail(prefs.trail); dres
    variables (style/60-desk.css, 50-result.css read them); base: the colour under the picture while it loads, back: the 3D
    room behind the table on the desk (it sits in the tray's cloth). */
 const DESK_LOOK = {
-  wood: { oak: { name: '오크', img: 'ui/desk.webp', base: '#6b4527' }, walnut: { name: '월넛', img: 'ui/desk-walnut.webp', base: '#512a1a' },
-    'walnut-dark': { name: '다크 월넛', img: 'ui/desk-walnut-dark.webp', base: '#2d190e' } },
+  // (edge: the desk's front at the bottom of the screen - the walnut ones shaded from the oak's, row by row)
+  wood: { oak: { name: '오크', img: 'ui/desk.webp', edge: 'ui/edge.webp', base: '#6b4527' }, walnut: { name: '월넛', img: 'ui/desk-walnut.webp', edge: 'ui/edge-walnut.webp', base: '#512a1a' },
+    'walnut-dark': { name: '다크 월넛', img: 'ui/desk-walnut-dark.webp', edge: 'ui/edge-walnut-dark.webp', base: '#2d190e' } },
   tray: { blue: { name: '블루', frame: 'ui/tray.webp', felt: 'ui/felt.webp', base: '#0e4c8e', back: 0x034db0 },
     green: { name: '그린', frame: 'ui/tray-green.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 },
     walnut: { name: '월넛 레일', frame: 'ui/tray-walnut.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 } },
@@ -167,7 +168,7 @@ function applyBackdrop() {
   /* (whole addresses: a url() in a CSS variable is read against the sheet that uses it, and on the web the styles are a
      file in h/ - site/split.cjs - so 'ui/...' there was h/ui/..., not found: the desk and the tray lost their pictures) */
   const at = f => `url("${new URL(f, document.baseURI).href}")`;
-  a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--desk-base', L.wood.base);
+  a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--edge-img', at(L.wood.edge)); a.setProperty('--desk-base', L.wood.base);
   a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
   document.body.style.background = desk ? L.wood.base : '#101216';
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
