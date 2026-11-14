@@ -16,6 +16,7 @@ const note = text => el('p', { class: 'note', text });
 
 function sheetSettings() {
   openSheet('설정', [
+    segRow('화면 모드', [['dark', '다크'], ['light', '라이트']], themeNow(), v => { prefs.theme = v; savePrefs(); applyBackdrop(); if (st.screen === 'home') paintHome(); sheetSettings(); }),
     segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
     segRow('음악', [[true, '켬'], [false, '끔']], prefs.music !== false, v => { prefs.music = v; savePrefs(); MUSIC.setOn(v); sheetSettings(); }),
     flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
@@ -35,11 +36,12 @@ function sheetSettings() {
    the tray to try (owner 11-13: DESK_LOOK, 00-state.js - kept on this device, used only in debug mode), and 아케이드's
    ultimate gauge in any game. (The light's sliders are gone: the owner fixed its values as the game's own - LIGHT0.) */
 function sheetDebug() {
-  const L = deskLook(), seg = (what, key, cur) => el('div', { class: 'seg' }, Object.entries(DESK_LOOK[what]).map(([id, o]) =>
-    el('button', { 'aria-pressed': String(o === cur), text: o.name, onclick: () => { prefs[key] = id; savePrefs(); applyBackdrop(); sheetDebug(); } })));
+  // (화면 모드대로: the mode's own wood and tray; the rest tried over it)
+  const seg = (what, key) => el('div', { class: 'seg' }, [[null, '화면 모드대로'], ...Object.entries(DESK_LOOK[what]).map(([id, o]) => [id, o.name])].map(([id, name]) =>
+    el('button', { 'aria-pressed': String((prefs[key] || null) === id), text: name, onclick: () => { prefs[key] = id; savePrefs(); applyBackdrop(); sheetDebug(); } })));
   openSheet('디버그', [
-    el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWood', L.wood),
-    el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTray', L.tray),
+    el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWoodTry'),
+    el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTrayTry'),
     // (플레이's menu: the hall, or the desk's boards as they were - 37-desk-hall.js)
     el('div', { class: 'lab', text: '메인 메뉴' }),
     el('div', { class: 'seg' }, [[false, '새 메뉴'], [true, '예전 메뉴']].map(([v, t]) =>

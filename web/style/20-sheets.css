@@ -43,6 +43,7 @@
 #app.desk .sheet .opt .t{color:#f1ebe0}
 #app.desk .sheet .opt .d{color:#a7afab}
 #app.desk .sheet .opt[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);border-image-slice:66 56 74 56 fill;border-image-width:calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s));border-image-outset:calc(16px*var(--s))}
+#app.desk.theme-dark .sheet .opt[aria-pressed="true"]{border-image-source:url(ui/key-on-green.webp)}
 #app.desk .sheet input{background:#0f1515;border:1px solid #2b3434;color:#f1ebe0;border-radius:10px;box-shadow:inset -1px 3px 5px rgba(0,0,0,.6)}
 #app.desk.compact .sheet{--s:.36;padding:22px 20px calc(20px + var(--lip))}
 /* a switch for on and off */
@@ -54,6 +55,7 @@
 /* on the desk: the made pieces - a switch of an ivory knob in a slate groove (felt-lit when on), brass dividers between rows */
 #app.desk .sheet .tgl{width:104px;height:50px;border:0;border-radius:0;background:url(ui/toggle-off.webp) center/100% 100% no-repeat}
 #app.desk .sheet .tgl[aria-checked="true"]{background-image:url(ui/toggle-on.webp)}
+#app.desk.theme-dark .sheet .tgl[aria-checked="true"]{background-image:url(ui/toggle-on-green.webp)}
 #app.desk .sheet .tgl i{display:none}
 #app.desk .sheet #sheetBody>*+.field{padding-top:14px;background:url(ui/divider.webp) top center/100% 6px no-repeat}
 #app.desk .sheet .tglrow .lab{font-size:15px;color:#e3ddd1}

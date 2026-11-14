@@ -54,6 +54,7 @@
 #app.desk #desk>.dk-prop.plant{right:-44px;top:-58px;width:190px;height:190px;background-image:url(ui/plant.webp)}
 #app.desk #desk>.dk-prop.towel{left:0;bottom:0;width:270px;height:193px;background-image:url(ui/towel.webp)}
 #app.desk #desk>.dk-prop.chalk{left:258px;bottom:calc(130px*var(--es) - 22px);width:92px;height:80px;background-image:url(ui/chalk.webp)}
+#app.desk.theme-dark #desk>.dk-prop.chalk{background-image:url(ui/chalk-green.webp)}
 #app.desk.compact #desk>.dk-prop{z-index:0}
 #app.desk.compact #desk>.dk-prop.plant{width:140px;height:140px;right:-20px;top:-30px}
 #app.desk.compact #desk>.dk-prop.towel{width:180px;height:128px}
@@ -76,6 +77,7 @@
 .dk-tabs{display:flex;gap:6px;min-width:0;flex-shrink:0}
 #app.desk .dk-tab{height:44px;min-width:128px;padding:0 18px;color:#e9e4da;font:700 16px var(--ui-font);--s:.5;border:0 solid transparent;background:none;border-radius:calc(12px*var(--s));border-image:url(ui/tab.webp) 30 30 38 30 fill/calc(30px*var(--s)) calc(30px*var(--s)) calc(38px*var(--s)) calc(30px*var(--s))/calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) calc(10px*var(--s)) stretch;--lip:calc(8px*var(--s));padding-bottom:var(--lip);box-shadow:-4px 6px 8px rgba(0,0,0,.45);transition:none;white-space:nowrap;flex-shrink:0}
 #app.desk .dk-tab[aria-selected="true"]{color:#fff;border-image-source:url(ui/tab-on.webp)}
+#app.desk.theme-dark .dk-tab[aria-selected="true"]{border-image-source:url(ui/tab-on-green.webp)}   /* (다크: the blue keys green - owner 11-15) */
 /* Desktop windows between tablet and full monitor widths still use the desk, but cannot fit its full-size bar. */
 @media (min-width:900px) and (max-width:1200px){
   #app.desk .dk-tab{min-width:76px;padding-left:12px;padding-right:12px;font-size:14px}
@@ -108,6 +110,7 @@
 #app.desk.compact:not(.portrait) .dk-slot{flex:none;height:50px;min-width:0}
 #app.desk .dk-rb{position:relative;font:800 28px var(--ui-font);--s:.33;border:0 solid transparent;background:none;border-radius:calc(34px*var(--s));border-image:url(ui/key.webp) 66 56 74 56 fill/calc(66px*var(--s)) calc(56px*var(--s)) calc(74px*var(--s)) calc(56px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(20px*var(--s));flex:1;height:auto;min-width:0;--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);color:var(--ivory-ink);box-shadow:-4px 6px 8px rgba(0,0,0,.3);transition:none}
 #app.desk .dk-rb:active{transform:none;border-image-source:url(ui/key-press.webp);--pt:calc(12px*var(--s));--pb:calc(8px*var(--s));box-shadow:-2px 3px 4px rgba(0,0,0,.28)}
+#app.desk.theme-dark .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on-green.webp)}
 #app.desk .dk-rb[aria-pressed="true"]{border-image-source:url(ui/key-on.webp);--pt:calc(6px*var(--s));--pb:calc(14px*var(--s));color:#f3eee3;box-shadow:-3px 4px 6px rgba(0,0,0,.32)}
 #app.desk .dk-rb[aria-pressed="true"]::before{content:"";position:absolute;border-radius:50%;width:20px;height:20px;left:22px;margin:0;background:url(ui/dot.webp) center/contain no-repeat;box-shadow:none}
 .dk-rb.soon{opacity:.55}
@@ -197,6 +200,8 @@
 #app.desk.compact .dk-acts>.dk-main{flex-grow:1.7}
 #app.desk .dk-main{position:relative;height:88px;color:#fff;font:800 28px var(--ui-font);--s:.42;border:0 solid transparent;background:none;border-radius:calc(36px*var(--s));border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s))/calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) calc(16px*var(--s)) stretch;--lip:calc(22px*var(--s));--pt:0px;--pb:var(--lip);padding:var(--pt) 0 var(--pb);text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:-8px 12px 16px rgba(0,0,0,.45);transition:none}
 #app.desk .dk-main:active{transform:none;border-image-source:url(ui/main-press.webp);--pt:calc(14px*var(--s));--pb:calc(8px*var(--s));box-shadow:-3px 5px 8px rgba(0,0,0,.4)}
+#app.desk.theme-dark .dk-main{border-image-source:url(ui/main-green.webp)}
+#app.desk.theme-dark .dk-main:active{border-image-source:url(ui/main-press-green.webp)}
 #app.desk .dk-main:disabled{opacity:.5}
 .dk-main small{display:block;font:700 13px var(--ui-font);opacity:.8;margin:2px 0 8px}
 #app.desk.compact .dk-main{--s:.34;height:64px;font-size:22px}
@@ -262,7 +267,8 @@
 #app.desk .dk-x i::after{transform:translate(-50%,-50%) rotate(-45deg)}
 #app.desk.compact .dk-x{width:34px;height:34px}
 #app.desk .dk-spec{display:flex;justify-content:space-between;gap:12px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.08);font:600 14px var(--ui-font);color:#a9b6c6}
-#app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right}
+#app.desk .dk-spec>span{flex:none;white-space:nowrap}
+#app.desk .dk-spec b{color:#f1ece2;font-weight:700;text-align:right;min-width:0}
 /* 5.0: a slimmer bar (owner) - the keys lower, the words as they were */
 #app.desk{--ivory-ink:#3b3229;--slate-ink:#eee8dc;--slate-sub:#9fa8a2;--felt-tile:300px;--desk-tile:640px;--desk-density:1;--bar:52px}
 #app.desk.compact{--pp:1500px;--bar:48px}

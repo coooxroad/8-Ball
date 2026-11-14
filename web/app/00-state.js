@@ -48,7 +48,8 @@ const prefs = (() => {
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
-    deskWood: 'oak', deskTray: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
+    theme: 'dark',                     // 화면 모드 (owner 11-15): 'dark' - walnut desk, green tray, green keys (the default); 'light' - oak and blue
+    deskWoodTry: null, deskTrayTry: null, // 디버그: a wood and a tray to try over the mode's (DESK_LOOK; null: the mode's own)
     oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-hall.js)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
@@ -159,9 +160,13 @@ const DESK_LOOK = {
     green: { name: '그린', frame: 'ui/tray-green.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 },
     walnut: { name: '월넛 레일', frame: 'ui/tray-walnut.webp', felt: 'ui/felt-green.webp', base: '#104d3a', back: 0x0d4634 } },
 };
+// 다크 (the default) and 라이트 (owner 11-15, set in 설정): each its desk and tray; in dark the keys that were blue are green
+const THEMES = { dark: { wood: 'walnut', tray: 'green' }, light: { wood: 'oak', tray: 'blue' } };
+const themeNow = () => prefs.theme === 'light' ? 'light' : 'dark';
 const deskLook = () => {
   let d = false; try { d = net.debug; } catch (e) {}                 // (the first call is before net is made: 07-net.js)
-  return { wood: DESK_LOOK.wood[d && prefs.deskWood] || DESK_LOOK.wood.oak, tray: DESK_LOOK.tray[d && prefs.deskTray] || DESK_LOOK.tray.blue };
+  const T = THEMES[themeNow()];
+  return { wood: DESK_LOOK.wood[d && prefs.deskWoodTry] || DESK_LOOK.wood[T.wood], tray: DESK_LOOK.tray[d && prefs.deskTrayTry] || DESK_LOOK.tray[T.tray] };
 };
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {
@@ -173,6 +178,7 @@ function applyBackdrop() {
   a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
   document.body.style.background = desk ? L.wood.base : '#101216';
   document.getElementById('app').classList.toggle('hm-dark', L.wood !== DESK_LOOK.wood.oak);   // (the menu's hall in the dark look: 84-hall.css)
+  document.getElementById('app').classList.toggle('theme-dark', themeNow() === 'dark');        // (the green keys: 60-desk.css)
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }
 applyBackdrop();
