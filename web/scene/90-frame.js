@@ -5,6 +5,9 @@
      everything there is - hidden or not, out of view or not, the static layer as it is baked and as the 3D view and a
      falling ball draw it - goes through the renderer once into a single pixel, and is then drawn as usual. */
   let warmDue = true;
+  // (the cloth last put on, and on which table: the same again does nothing - every home screen asked for it, and each
+  // time the materials were rebuilt and everything drawn once more to warm them: PC menus stuttering, owner 11-15)
+  let clothAt = null;
   let grabWant = null;                         // (a picture of the next frame wanted: grab - app/55-arcade.js, the focus behind its cards)
   let setDrawn = null;                         // (the ball set the last frame drew)
   const warmVp = new THREE.Vector4();
@@ -34,8 +37,10 @@
   }
 
   /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
+  let heldUntil = 0;                                                   // (hold: nothing drawn till then - the canvas keeps its last picture)
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
+    if (heldUntil) { if (performance.now() < heldUntil) return false; heldUntil = 0; dirty = 3; }
     // (the table out of sight - the desk covers it: nothing is drawn, not even the water; drawn afresh once it shows again)
     if (v.covered) { coveredNow = true; return false; }
     if (coveredNow) { coveredNow = false; dirty = 3; }
@@ -325,9 +330,11 @@
   setLight(null);                              // (the game's light, LIGHT0 - scene/10-room.js; the app no longer tunes it)
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable(P) { setTable(P); setShape(shapeNow); warmDue = true; }, setWalls, setShape, setHall, get hallOn() { return !!hallBack; }, grab(f) { grabWant = f; dirty = 3; },
+    setTable(P) { const was = cur, shown = tables.has(P) && tables.get(P).visible; setTable(P); setShape(shapeNow); if (cur !== was || !shown) warmDue = true; }, setWalls, setShape, setHall, get hallOn() { return !!hallBack; }, grab(f) { grabWant = f; dirty = 3; },
     // (the picture drawn again now, as the last frame was, and handed over at once - app/37-desk-hall.js hallCross)
-    snap(f) { if (gl.isContextLost() || !W || !H) return; drawLayers(); f(renderer.domElement); }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    snap(f) { if (gl.isContextLost() || !W || !H) return; drawLayers(); f(renderer.domElement); },
+    // (the picture on the canvas kept as it is for a moment - at most ms - while a copy of it is made ready: hallCross)
+    hold(ms) { heldUntil = ms ? performance.now() + ms : 0; if (!ms) dirty = 3; }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { if (i === clothI && clothAt === cur) return; setCloth(i); clothAt = cur; warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     fxSounds, hit, invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); }, get softwareRendering() { return softwareGL; }, get rendererName() { return rendererName; }, prof: sProf,
   };

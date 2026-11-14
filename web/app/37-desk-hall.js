@@ -52,14 +52,38 @@ function hallPaint() {
    over it (the 'hallmenu' class: style/84-hall.css). */
 function hallCross(on) {
   const x = $('#xfade') || (() => { const c = el('canvas', { id: 'xfade', 'aria-hidden': 'true' }); $('#gl').after(c); return c; })();
-  let ok = false;
-  if (st.screen === 'home' && (hallShown() || deskTableShown())) scene.snap(c => {
-    x.width = c.width; x.height = c.height; const g = x.getContext('2d'); g.clearRect(0, 0, x.width, x.height);
+  const lean = app.classList.contains('tilt'), live = st.screen === 'home' && (hallShown() || deskTableShown());
+  /* The copy: an ImageBitmap of the canvas, made on the GPU and shown on a 'bitmaprenderer' canvas - no reading the
+     picture back to the CPU, which a 2D canvas's drawImage did (well over 100 ms on a large PC screen: the menus stuttering,
+     owner 11-15). It is ready a moment later, so the 3D canvas keeps its last picture till then (scene.hold); a browser
+     without either draws it the old way. */
+  const fade = () => { void x.offsetWidth; x.classList.add('go'); clearTimeout(x._t); x._t = setTimeout(() => { x.hidden = true; x.classList.remove('go'); }, 420); };
+  x.classList.remove('go'); x.hidden = true; x.classList.toggle('lean', lean);
+  // (back to the desk: it leans from its first frame - not after the next layout - once the copy covers the canvas)
+  const lean2 = () => { if (!on && st.screen === 'home' && !app.classList.contains('hallmenu')) app.classList.add('tilt'); };
+  let bmp = null, ok = false;
+  if (live) scene.snap(c => {
+    if (typeof createImageBitmap === 'function' && x.dataset.ctx !== '2d') { try { bmp = createImageBitmap(c); } catch (e) { bmp = null; } }
+    if (bmp) return;
+    if (x.width !== c.width || x.height !== c.height) { x.width = c.width; x.height = c.height; }
+    const g = x.getContext('2d'); if (!g) return; x.dataset.ctx = '2d'; g.clearRect(0, 0, x.width, x.height);
     try { g.drawImage(c, 0, 0); ok = true; } catch (e) {}
   });
-  x.classList.toggle('lean', app.classList.contains('tilt'));
-  x.classList.remove('go'); x.hidden = !ok;
-  app.classList.toggle('hallmenu', on);
-  if (ok) { void x.offsetWidth; x.classList.add('go'); clearTimeout(x._t); x._t = setTimeout(() => { x.hidden = true; x.classList.remove('go'); }, 420); }
+  if (bmp) {
+    // (and till then the canvas, still showing the desk's table, leans as it did: gllean)
+    scene.hold(250); const n = x._n = (x._n || 0) + 1; if (lean) app.classList.add('gllean'); setTimeout(() => app.classList.remove('gllean'), 260);
+    bmp.then(b => {
+      if (x._n !== n) { b.close && b.close(); return; }
+      if (x.width !== b.width || x.height !== b.height) { x.width = b.width; x.height = b.height; }
+      const r = x.getContext('bitmaprenderer');
+      if (r) { x.dataset.ctx = 'bmp'; r.transferFromImageBitmap(b); } else { const g = x.getContext('2d'); if (g) g.drawImage(b, 0, 0); b.close && b.close(); }
+      x.hidden = false; scene.hold(0); fade(); lean2(); app.classList.remove('gllean');
+    }, () => { scene.hold(0); lean2(); app.classList.remove('gllean'); });
+  } else if (ok) { x.hidden = false; fade(); }
+  // (the desk fading out keeps leaning as it fades - it used to go flat at once, the hall's layout taking the tilt off: owner
+  // 11-15; and the desk coming back leans from its first frame, not after the next layout)
+  if (on && lean) { app.classList.add('tiltout'); clearTimeout(app._tiltout); app._tiltout = setTimeout(() => app.classList.remove('tiltout'), 420); }
+  else if (!on) { clearTimeout(app._tiltout); app.classList.remove('tiltout'); }
+  app.classList.toggle('hallmenu', on); if (!bmp) lean2();
   hallBusy = true; setTimeout(() => { hallBusy = false; }, 380);
 }

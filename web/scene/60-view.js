@@ -39,11 +39,14 @@
   /* The menu's hall on (name: the picture in tex/, e.g. 'hall-kr') or off (null): the camera held at the picture's own
      (HALL_VIEW.cam), the floor and its darkening and the light box hidden, the feet's smudges and a deeper table shadow
      shown. Off, the view is straight down again (the app's views start from there: 70-buttons.js setView). */
+  let hallTex = null;                                                  // { name, t }: the hall's picture, uploaded once
   function setHall(name) {
     name = name || null; if (name === hallBack) return;
     hallBack = name; const on = !!name;
     if (on) {
-      loadTex(name, 0, t => { if (hallBack !== name) return; if (backMat.map && backMat.map !== t) backMat.map.dispose(); t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; backMat.map = t; backMat.needsUpdate = true; applyCamera(); });
+      // (the picture kept on the GPU once loaded: coming back to the menu used to load and upload it again - 50 ms and more)
+      if (hallTex && hallTex.name === name) { if (backMat.map !== hallTex.t) { backMat.map = hallTex.t; backMat.needsUpdate = true; } }
+      else loadTex(name, 0, t => { if (hallBack !== name) return; if (hallTex) hallTex.t.dispose(); t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; hallTex = { name, t }; backMat.map = t; backMat.needsUpdate = true; applyCamera(); });
       placeFeet(); orbit.on = true; orbit.cam = HALL_VIEW.cam; orbit.el = orbit.elTo = HALL_VIEW.cam.el; orbit.live = 0;
     } else { orbit.on = false; orbit.cam = null; orbit.el = orbit.elTo = 1.4; }
     sScene.background = on ? null : bgCol; floorMesh.visible = floorDark.visible = tableShadow.visible = !on; feetGrp.visible = hallShade.visible = on;
