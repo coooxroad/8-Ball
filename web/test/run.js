@@ -261,7 +261,27 @@ for (const name of ['bar', 'pro', 'pub']) {
     // with a finish: the finish is what goes out
     g.start('four', ['A', 'B'], false, { target: 3, hugu: true, finish: 'cushion', first: 0, rnd }); g.players[0].score = 3;
     { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; ev.cushions = 1; g._ctx = g.MODES.four.ctx(g); g.world.ev = ev; g.resolve(); } if (g.over || g.chance !== 0 || g.turn !== 1) fail('후구: a finish by the first player gave no last visit');
-    const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, { rnd }); if (!g.restore(d) || !g.hugu || g.chance !== 0 || g.first !== 0) fail('후구: a saved game lost the last visit'); }
+    const d = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, { rnd }); if (!g.restore(d) || !g.hugu || g.chance !== 0 || g.first !== 0) fail('후구: a saved game lost the last visit'); 
+    // 연장 (ranked, owner 11-15): caught up is not a draw - a visit each, the one who began first; more points wins, level again
+    const ot = () => { g.start('four', ['A', 'B'], false, { target: 3, hugu: true, ot: true, first: 0, rnd }); g.players[0].score = 2; pt(); g.players[1].score = 2; pt(); };
+    ot(); if (g.over || !g.ot || g.turn !== 0 || g.chance != null) fail('연장: catching up in 후구 did not begin 연장 with the first player');
+    pt(); pt(); miss(); if (g.over || g.turn !== 1 || g.ot.pts[0] !== 2) fail('연장: the first visit did not count two points and pass');
+    pt(); miss(); if (!g.over || g.over.winner !== 0) fail('연장: two points to one did not win for the first player');
+    ot(); pt(); miss(); pt(); pt(); miss(); if (!g.over || g.over.winner !== 1) fail('연장: one point to two did not win for the second player');
+    ot(); pt(); miss(); pt(); miss(); if (g.over || g.ot.n !== 2 || g.turn !== 0 || g.ot.pts[0] !== 0) fail('연장: level after a round did not begin another');
+    { const f = P.newEv(); f.firstHit = 1; f.hits = [1, 2, 3]; g._ctx = g.MODES.four.ctx(g); g.world.ev = f; g.resolve(); } if (g.over || g.turn !== 1 || g.players[0].score !== 3) fail('연장: a foul did not end the visit, or cost a point');
+    g.timeout(); if (g.over || g.ot.n !== 3 || g.turn !== 0) fail('연장: a timeout did not end the visit (0 : 0, another round)');
+    ot(); pt(); { const d2 = JSON.parse(JSON.stringify(g.serialize())); g.start('four', ['A', 'B'], false, { rnd }); if (!g.restore(d2) || !g.otOn || !g.ot || g.ot.pts[0] !== 1) fail('연장: a saved game lost it'); }
+    // with a 쓰리쿠션 finish: in 연장 a point is a finish made
+    g.start('four', ['A', 'B'], false, { target: 3, hugu: true, ot: true, finish: 'three', first: 0, rnd }); g.players[0].score = 3; g.players[1].score = 3;
+    const fin = c => { const ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3]; ev.cushions = c; g._ctx = g.MODES.four.ctx(g); g.world.ev = ev; return g.resolve(); };
+    fin(3); fin(3); if (g.over || !g.ot) fail('연장 with a finish: did not begin'); fin(1); if (g.turn !== 1 || g.ot.pts[0] !== 0) fail('연장 with a finish: a one-cushion shot counted');
+    fin(3); fin(0); if (!g.over || g.over.winner !== 1) fail('연장 with a finish: a finish made did not win'); }
+  // ranked by tier (owner 11-15): the higher tier of the two decides; 다이아 and 프로 4구 finish with a 쓰리쿠션
+  { const { ECONOMY, rankedRules } = require(path.join(W, 'economy.js')), T = ECONOMY.TIER_AT, r4 = (...d) => rankedRules('four', d);
+    if (r4(T[0]).target !== 3 || r4(T[1]).target !== 4 || r4(T[2]).target !== 5 || r4(T[3]).target !== 7 || r4(T[3]).finish) fail('ranked tiers: 4구 targets');
+    if (r4(T[4]).target !== 7 || r4(T[4]).finish !== 'three' || r4(T[5]).target !== 10 || r4(T[5]).finish !== 'three') fail('ranked tiers: 다이아·프로 4구');
+    if (r4(500, T[4] + 10).finish !== 'three' || !r4(500).hugu || !r4(500).ot || rankedRules('three', [500]).cushions !== 3) fail('ranked tiers: the higher tier, 후구 and 연장, 3구 cushions'); }
   g.start('four', ['A', 'B'], false, { targets: [3, 5], tens: true, finish: true, rnd });
   // the other ball is a foul (-1) even with both reds; one red and the other ball too
   { g.players[0].score = 1; const M = g.MODES.four, ev = P.newEv(); ev.firstHit = 2; ev.hits = [2, 3, 1]; ev.cushions = 1; const r = M.evaluate(ev, M.ctx(g), g); if (!r.foul || r.pts !== -1 || r.keep) fail('four-ball: both reds and the other ball should cost a point');

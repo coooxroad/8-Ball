@@ -26,7 +26,7 @@ const DMath = (() => {
 })();
 /* PHYS_V: which physics this is. Raised whenever a change here makes a shot go otherwise, so devices on different
    physics are not matched together, nor checked by a server on another (server/src/version.js, the same number). */
-const PHYS_V = 14;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise); 13: 4구 - no point lost while finishing, 마이너스 점수 off, 후구; 14: 현실 당구 measured - squirt by end mass, the cue's rise by its shape
+const PHYS_V = 15;                                   // 2-3: the contact model (PR #14); 4: the game physics; 5: the stroke (11-07); 6: the game physics with the cushion's roll; 7: 4구 roll-out, a red pair knocked apart; 8: balls run as far as on a real table; 9: the rules as they are (breaks, fouls, the 3쿠션 opening); 10: 2:2; 11: 4구 finish as its own stage; 12: 현실 당구 (throw, squirt, the cue's rise); 13: 4구 - no point lost while finishing, 마이너스 점수 off, 후구; 14: 현실 당구 measured - squirt by end mass, the cue's rise by its shape; 15: ranked rules by tier, 4구 후구 with 연장
 function createPhysics(cfg) {
   const R = cfg.R, RB = R, POCKETED = !!cfg.pockets;
   const HL = cfg.HL || 1.27, HW = cfg.HW || 0.635, G = 9.8;

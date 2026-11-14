@@ -42,7 +42,15 @@ export class Room extends DurableObject {
   async webSocketMessage(ws, data) {
     const seat = this.seatOfSocket(ws); if (seat < 0 || typeof data !== 'string' || data.length > 64000) return;
     let m; try { m = JSON.parse(data); } catch (e) { return; }
-    if (this.core.message(seat, m) === 'check') return this.soon(20);
+    const said = this.core.message(seat, m);
+    if (said === 'check') return this.soon(20);
+    // 다시 하기: everyone agreed - the next room opened, then every seat told where
+    if (said === 'again') {
+      const x = this.core.nextInit();
+      const res = await this.env.ROOM.get(this.env.ROOM.idFromName(x.room)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(x) }).catch(() => null);
+      if (res && res.ok) this.core.nextGo(x); else this.core.nextFailed();
+      return;
+    }
     { const a = this.core.arcIn(); if (a != null) await this.soon(a + 50); }   // (증강 당구: a round opened)
   }
   async webSocketClose(ws) {

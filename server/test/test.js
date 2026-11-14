@@ -218,7 +218,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   // a ranked game the way two devices play it: the room's seed for the rack (and the 4구 roll-out), each shot by its seat
   function rankedGame(mode, seed, first) {
     const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI);
-    g.start(mode, ['A', 'B'], false, Object.assign({ rnd: E.seededRandom(seed), first, level: 2 }, RANKED_RULES[mode])); g.players[0].ai = g.players[1].ai = true; g.level = 2;
+    g.start(mode, ['A', 'B'], false, Object.assign({ rnd: E.seededRandom(seed), first, level: 2 }, E.rankedRules(mode, [30, 40]))   /* (the room's seats: 30 and 40 - roomOf) */); g.players[0].ai = g.players[1].ai = true; g.level = 2;
     if (mode === 'four') { g.rollOut(E.seededRandom((seed ^ 0x5bd1e995) >>> 0)); g.P.run(g.world, 40); g.world.ev = g.P.newEv(); }
     const msgs = [];
     while (!g.over && msgs.length < 300) {
@@ -259,7 +259,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     G.players[1].score = 0; G.players[1].shots = 2; ok(!standInMayResign(G), 'stand-in resign: not this early'); }
   // New stroke families go through the same room log/replay as real ranked shots, including rotation and raised cues.
   for (const mode of ['eight', 'nine', 'four', 'three']) {
-    const seed = 511, person = E.createAI(null).rankedPersonaFor(2000, E.seededRandom(41), { style: 'spinner' }), rules = E.RANKED_RULES[mode];
+    const seed = 511, person = E.createAI(null).rankedPersonaFor(2000, E.seededRandom(41), { style: 'spinner' }), rules = E.rankedRules(mode, [30, 40]);
     const G = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI), { R } = roomOf(mode, seed, 1, person);
     G.start(mode, ['A', 'B'], true, { ...rules, first: 1, rnd: E.seededRandom(seed), personas: [person, person] });
     G.aiRnd = E.seededRandom(seed ^ 0x2545f491);
@@ -523,6 +523,27 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const ws = R.watchState(); ok(ws.watch && ws.seat === -1 && ws.seats.length === 2 && ws.seats[1].name === 'B' && !('token' in ws.seats[0]) && !('acct' in ws.seats[0]) && ws.shots.length === 1, 'room: a watcher hears both players and every shot');
     ok(['aim', 'emote', 'timeout'].every(t => sent.w.some(m => m.t === t)), 'room: watchers hear the aims, emotes and shots');
     R.message(0, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5); ok(sent.w.some(m => m.t === 'result' && m.seat === -1), 'room: watchers hear the result'); }
+  // 다시 하기 (owner 11-15): after a friend's game, every player asking opens the next room - the loser begins; one leaving tells the other
+  { const { sql, tx } = sqlOf(), sent = { 0: [], 1: [], w: [] }, R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
+    R.init({ room: 'f'.repeat(32), mode: 'four', seed: 5, first: 0, kind: 'invite', rules: { target: 10, hugu: true }, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: 40 }] });
+    ok(R.message(0, { t: 'again' }) == null && !R.get('again'), 'again: not while the game is played');
+    R.message(1, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5);
+    ok(R.message(0, { t: 'again' }) == null && sent[1].some(m => m.t === 'again' && m.want[0] && !m.want[1]), 'again: one asking is told to the other');
+    ok(R.state(1).again[0] === true, 'again: a device coming back hears who has asked');
+    ok(R.message(1, { t: 'again' }) === 'again' && R.message(1, { t: 'again' }) == null, 'again: both asking opens the next room, once');
+    const x = R.nextInit(); ok(/^[0-9a-f]{32}$/.test(x.room) && x.room !== 'f'.repeat(32) && x.first === 1 && x.kind === 'invite' && x.seats[0].token === 't0' && x.rules.target === 10, `again: the next room - new, the same seats and rules, the loser begins (${x.first})`);
+    R.nextGo(x); ok(sent[0].some(m => m.t === 'next' && m.room === x.room) && sent[1].some(m => m.t === 'next' && m.seed === x.seed), 'again: both told where');
+    const { sql: q2, tx: t2 } = sqlOf(), R2 = new RoomCore(q2, () => {}, t2); ok(R2.init(x) && R2.seatOf('t1') === 1 && R2.get('status') === 'playing', 'again: the next room opens with the same tokens');
+    const { sql: q3, tx: t3 } = sqlOf(), s3 = { 0: [], 1: [], w: [] }, R3 = new RoomCore(q3, (s, m) => s3[s].push(m), t3);
+    R3.init({ room: '9'.repeat(32), mode: 'eight', seed: 5, first: 0, kind: 'ranked', seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: 40 }] });
+    R3.message(1, { t: 'resign' }); k = 0; while (R3.work(500) && k++ < 1e5); ok(R3.message(0, { t: 'again' }) == null && !s3[1].some(m => m.t === 'again'), 'again: not in a ranked game');
+    const { sql: q4, tx: t4 } = sqlOf(), s4 = { 0: [], 1: [], w: [] }, R4 = new RoomCore(q4, (s, m) => s4[s].push(m), t4);
+    R4.init({ room: '8'.repeat(32), mode: 'eight', seed: 5, first: 0, kind: 'invite', rules: {}, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: 40 }] });
+    R4.message(1, { t: 'resign' }); k = 0; while (R4.work(500) && k++ < 1e5); R4.disconnected(1); ok(s4[0].some(m => m.t === 'again' && m.left === 1), 'again: leaving the result is told to the other'); }
+  // ranked by tier (owner 11-15): the room's rules are the higher tier's
+  { const T = E.ECONOMY.TIER_AT, { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx);
+    R.init({ room: '7'.repeat(32), mode: 'four', seed: 5, first: 0, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 500 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: T[4] + 5 }] });
+    const ru = R.get('room').rules; ok(ru.target === 7 && ru.finish === 'three' && ru.hugu && ru.ot, `ranked rules: a bronze against a diamond plays the diamond's (${JSON.stringify(ru)})`); }
   // 2:2: friends take seats as they come, the host gives the computer a seat and starts; everyone seated hears the room
   { const L = new InviteCore(), host = { acct: 'h'.repeat(32), dama: 500, name: 'H', mode: 'four', listed: true, size: 4 };
     const o = L.open(host); ok(o.size === 4 && o.seats.length === 4 && o.seats[0].name === 'H' && !o.seats[1], 'invite 2:2: a room for four, the host in seat 0');

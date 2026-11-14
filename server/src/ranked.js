@@ -342,7 +342,7 @@ export class RoomCore {
     const kind = x.kind === 'invite' ? 'invite' : x.kind === 'arcade' && x.mode === 'arcade' ? 'arcade' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
     const bots = seats.map((q, i) => q.bot && i > 0 ? i : -1).filter(i => i > 0);
     this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
-      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : RANKED_RULES[x.mode], team: n === 4, bots });
+      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : kind === 'ranked' ? E.rankedRules(x.mode, seats.map(q => q.dama)) : RANKED_RULES[x.mode], team: n === 4, bots });
     this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
     this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
     // 증강 당구: the table's vote (a stand-in's card drawn now, unseen till both are in), then the augments' rounds
@@ -364,7 +364,8 @@ export class RoomCore {
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[r.team ? (seat + 1) % 4 : 1 - seat], pub = q => ({ name: q.name, icon: q.icon, dama: q.dama, gear: q.gear || null, bot: q.bot ? (q.level || 2) : undefined });
     return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null,
-      opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null), arc: this.arcState(seat) };
+      opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null), arc: this.arcState(seat),
+      again: this.get('again', null) || undefined, next: this.get('next', null) || undefined };
   }
   connected(seat) {
     const j = this.get('joined', [true, true]); if (!j[seat]) { j[seat] = true; this.set('joined', j); if (j.every(Boolean)) { this.set('turnAt', Date.now()); this.arcStart(); } }
@@ -373,11 +374,14 @@ export class RoomCore {
   }
   // a device went away: true when the room should look again in RETURN_WITHIN
   disconnected(seat) {
+    // (a friend's game over: whoever leaves the result can no longer agree to another - the others are told)
+    if (this.get('status') === 'done') { const r = this.get('room'); if (r.kind === 'invite' && !this.get('next')) this.others(seat, { t: 'again', left: seat }); return false; }
     if (this.get('status') !== 'playing') return false;
     const gone = this.get('gone'); gone[seat] = Date.now(); this.set('gone', gone); this.others(seat, { t: 'away', seat }); return true;
   }
   // a message from a seat's device. Answers what the Durable Object should do next: 'check' (start the replay) or null
   message(seat, m) {
+    if (m && m.t === 'again') return this.againHear(seat);
     if (!m || typeof m !== 'object' || this.get('status') !== 'playing') return null;
     const r = this.get('room'), other = 1 - seat, team = !!r.team;
     // a quick emote (web/app/59-emote.js): one of the known ones, passed on as it is, at most one a second and a half
@@ -483,6 +487,24 @@ export class RoomCore {
     const a = this.get('arc'); if (!a) return undefined;
     return { done: a.done, open: a.open ? { k: a.open.k, mine: a.open.cards[seat], given: a.open.cards.map(Boolean), in: a.open.by ? Math.max(0, a.open.by - Date.now() - E.ARCADE.GRACE_MS) : null } : null };
   }
+  /* 다시 하기 (owner 11-15): a friend's game over, each seat may ask for another; once every player has (the computer's
+     seats in 2:2 always have), the Durable Object opens the next room (nextInit) and every seat is told where (nextGo).
+     A new room, not this one again: the vaults pay each room once (core.js ranked 'room-' + id). */
+  againHear(seat) {
+    const r = this.get('room'); if (!r || r.kind !== 'invite' || this.get('status') !== 'done') return null;
+    const next = this.get('next', null); if (next) { this.send(seat, next); return null; }
+    const a = this.get('again', null) || this.get('seats').map((q, i) => (r.bots || []).includes(i)); a[seat] = true; this.set('again', a);
+    const msg = { t: 'again', want: a }; this.others(-1, msg);
+    return a.every(Boolean) && !this.get('opening') ? (this.set('opening', true), 'again') : null;
+  }
+  // the next room's opening: the same seats, tokens and rules, a new seed; the side that lost begins (a draw: the other side)
+  nextInit() {
+    const r = this.get('room'), res = this.get('result', {}) || {}, first = res.winner === 0 || res.winner === 1 ? 1 - res.winner : 1 - r.first;
+    return { room: hex(16), mode: r.mode, seed: crypto.getRandomValues(new Uint32Array(1))[0], first, standIn: null, kind: 'invite', rules: r.rules, watch: null,
+      seats: this.get('seats').map(q => Object.assign({}, q)), game: (this.get('game', 1) | 0) + 1 };
+  }
+  nextGo(x) { const msg = { t: 'next', room: x.room, seed: x.seed, first: x.first, rules: x.rules }; this.set('next', msg); this.others(-1, msg); }
+  nextFailed() { this.set('opening', false); this.set('again', null); this.others(-1, { t: 'again', want: this.get('seats').map(() => false), failed: true }); }
   over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {

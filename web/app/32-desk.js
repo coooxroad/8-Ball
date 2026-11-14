@@ -9,7 +9,13 @@ const GAME4 = ['three', 'four', 'eight', 'nine'];
 // with a friend on one device, also 스누커 (owner 11-11: only there, for now - no computer player, no room, no price)
 const FRIEND_GAMES = GAME4.concat('snooker');
 // (copy audit 01-08: only what this game is played to - 랭킹전's rules - 8볼 and 9볼 by name alone)
-const GAME_SUB = { three: '쓰리쿠션 · 5점', four: '5점', eight: null, nine: null, snooker: null };
+// a ranked game's line under its name: the rules at this player's tier (economy.js rankedRules - an opponent of a higher
+// tier plays theirs)
+const GAME_SUB = {
+  get three() { const r = rankedRules('three', [net.me ? net.me.dama : ECONOMY.DAMA_START]); return `쓰리쿠션 · ${r.target}점`; },
+  get four() { const r = rankedRules('four', [net.me ? net.me.dama : ECONOMY.DAMA_START]); return `${r.target}점` + (r.finish ? ' · 쓰리쿠션 마무리' : ''); },
+  eight: null, nine: null, snooker: null,
+};
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';
 const LESSONS = () => drills.list.filter(d => d.make).map(d => d.id);       // (drills.js: every lesson names its game volume and course)
 const trainOf = () => prefs.mode === 'puzzle' ? 'puzzle' : prefs.mode === 'practice' ? (prefs.lessons ? 'lesson' : 'free') : prefs.trainCpu && GAME4.includes(prefs.mode) ? 'cpu' : null;

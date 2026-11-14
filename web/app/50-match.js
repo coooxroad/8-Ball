@@ -14,7 +14,7 @@ const match = {
     // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
     // the other seat plays at its level
     const o = c.online, standIn = o && o.standIn;
-    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null, minus: c.minus !== false, hugu: !!c.hugu,
+    game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null, minus: c.minus !== false, hugu: !!c.hugu, ot: !!c.ot,
       rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
     if (o && (o.watch || o.team)) game.players.forEach(p => { p.ai = true; });   // (2:2: set shot by shot - ranked.auto)
     else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
@@ -130,7 +130,8 @@ const match = {
     // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
     if (on) { ranked.ended(); ranked.paint(); }
     // (copy audit 07-07: online, the key looks for a new opponent)
-    $('#againBtn').textContent = on ? '다시 매칭' : '한 판 더';
+    $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
+    if (on && on.kind === 'invite') ranked.againPaint();
     $('#rWhy').textContent = game.over.plain ? '' : game.over.why;   // (copy audit 07-08: only an end the score does not explain)
     show('result'); SND.win();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song

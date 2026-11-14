@@ -226,7 +226,8 @@ function createGame(PH, makeAI) {
       intro: g => g.finish ? FINISH[g.finish] + ' 마무리' : '',
       // (goal: the points to reach, written faint behind the score; the line under the name is the player's rating - app)
       status: (g, pi) => ({ sub: '', goal: g.targets[pi] * (g.tens ? 10 : 1), tray: [], pts: Math.min(g.players[pi].score, g.targets[pi]) * (g.tens ? 10 : 1) }),
-      badge: g => ({ text: g.finish && g.players[g.turn].score >= g.targets[g.turn] ? `마무리 · ${FINISH[g.finish]}` : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
+      badge: g => ({ text: g.ot ? `연장${g.ot.n > 1 ? ' ' + g.ot.n : ''} · ${g.ot.pts[0]} : ${g.ot.pts[1]}` + (g.finish ? ` · ${FINISH[g.finish]}` : '')
+        : g.finish && g.players[g.turn].score >= g.targets[g.turn] ? `마무리 · ${FINISH[g.finish]}` : `빨간 공 두 개 맞히면 ${g.tens ? 10 : 1}점`, balls: [] }),
       legal() { return [2, 3]; },
       // last: this player has all their points and the game is played with a finish; need: the cushions it asks for
       // minus: a foul costs a point (a game with a friend may play without - owner 11-10)
@@ -471,6 +472,9 @@ function createGame(PH, makeAI) {
     g.ice = !!opts.ice; g.real = realOf(opts.real); g.masse = opts.masse !== false; g.levels = opts.levels || null;
     // 4구 with a friend or the computer: minus false - a foul costs nothing; hugu - 후구 (resolve, below)
     g.minus = !(modeId === 'four' && opts.minus === false); g.hugu = modeId === 'four' && !!opts.hugu; g.first = g.turn; g.chance = null;
+    // ot: 후구 caught up is not a draw but 연장 (ranked, owner 11-15) - a visit each, the one who began first; more points in
+    // it wins, the same again for another round. g.ot: { n: the round, pts: each player's points in it } once it begins
+    g.otOn = g.hugu && !!opts.ot; g.ot = null;
     // personas: a person-like computer opponent for a player (ai/), in place of a level; null for the rest
     g.personas = opts.personas || null;
     // carom: in 4구 the first to play has the white ball and the other the yellow (owner, 11-08: it was the other way).
@@ -565,6 +569,7 @@ function createGame(PH, makeAI) {
     p.run = 0; g.turn = nx; if (g.team) g.member[me] ^= 1;
     if (g.arc) g.arc.n = 0;                                          // (증강 당구: the next visit from its first shot)
     let msg = '시간 초과';
+    if (g.ot) { if (m.table === 'carom') g.world.cue = g.turn; return otVisitEnd(me, { msg, kind: 'foul', dur: 2600 }); }
     if (m.ballInHand && !g.isBreak) {
       p.fouls++; p.foulRun = (p.foulRun || 0) + 1; g.placing = 'any'; msg = '시간 초과 · 큐볼 놓기';
       if (m.id === 'nine' && p.foulRun >= 3) { g.over = { winner: nx, why: '연속 파울 3번', plain: false }; return { msg: '연속 파울 3번', kind: 'foul', dur: 2600 }; }
@@ -573,6 +578,16 @@ function createGame(PH, makeAI) {
     if (g.chance != null && g.turn === g.chance) g.over = { winner: g.chance, why: '', plain: true };   // (후구: the visit ran out)
     return { msg, kind: 'foul', dur: 2600 };
   };
+
+  /* 연장: the visit of `me` is over (g.turn already the other's). The one who began played first in the round: now the
+     other plays theirs. The round over: more points wins; level, another round. */
+  function otVisitEnd(me, out) {
+    const o = g.ot;
+    if (me === g.first) { out.msg = out.msg || `연장 · ${g.players[g.turn].name}`; return out; }
+    if (o.pts[0] !== o.pts[1]) { const win = o.pts[0] > o.pts[1] ? 0 : 1; g.over = { winner: win, why: `연장 ${o.pts[win]} : ${o.pts[1 - win]}`, plain: false }; return out; }
+    o.n++; o.pts = [0, 0]; g.turn = g.first; if (g.mode.table === 'carom') g.world.cue = g.turn;
+    out.msg = `연장 ${o.n} · ${g.players[g.turn].name}`; out.kind = 'good'; out.dur = 2800; return out;
+  }
 
   // Called once every ball has stopped. Applies the result and says what happened.
   g.resolve = function () {
@@ -607,6 +622,14 @@ function createGame(PH, makeAI) {
     p.foulRun = r.foul ? (p.foulRun || 0) + 1 : 0;
     if (m.id === 'nine' && p.foulRun >= 3 && r.win == null) { r.win = 1 - me; r.why = '연속 파울 3번'; }
     if (r.keep || r.win === me) { p.made++; p.run++; p.best = Math.max(p.best, p.run); } else p.run = 0;
+    // 연장: a point (or a finish made, in a game with one) goes on the round's count and the visit goes on; anything
+    // else ends the visit - a foul costs nothing here. The score itself stays at the target.
+    if (g.ot) {
+      if (!r.foul && r.pts > 0) { g.ot.pts[me]++; out.kind = 'good'; return out; }
+      if (r.foul) { out.msg = `파울 · ${r.foul}`; out.kind = 'foul'; out.dur = 3000; } else if (r.note) { out.msg = r.note; out.dur = 2600; }
+      p.run = 0; g.turn = 1 - me; if (g.team) g.member[me] ^= 1; if (m.table === 'carom') w.cue = g.turn;
+      return otVisitEnd(me, out);
+    }
     if (r.pts) p.score = Math.max(0, p.score + r.pts);
     if (r.give) g.players[1 - me].score += r.give;                    // (스누커: a foul's points go to the other player)
     if (m.after) m.after(g, r, me);                                   // (스누커: what is on next, and the frame's end)
@@ -619,7 +642,11 @@ function createGame(PH, makeAI) {
       g.chance = me; g.turn = 1 - me; if (g.team) g.member[me] ^= 1; if (m.table === 'carom') w.cue = g.turn;
       out.msg = `후구 · ${g.players[g.turn].name}`; out.kind = 'good'; out.dur = 2600; return out;
     }
-    if (g.chance != null && r.win === me && me !== g.chance) { g.over = { winner: null, draw: true, why: '후구 · 무승부', plain: false }; return out; }
+    if (g.chance != null && r.win === me && me !== g.chance) {
+      if (!g.otOn) { g.over = { winner: null, draw: true, why: '후구 · 무승부', plain: false }; return out; }
+      g.ot = { n: 1, pts: [0, 0] }; g.chance = null; g.turn = g.first; if (g.team) g.member[me] ^= 1; if (m.table === 'carom') w.cue = g.turn;
+      out.msg = `연장 · ${g.players[g.turn].name}`; out.kind = 'good'; out.dur = 2800; return out;
+    }
     if (r.win != null) { g.over = { winner: r.win, why: r.why, plain: !!r.plain }; return out; }   // (plain: an ordinary end the score says already)
     if (r.again) { g.turn = 1 - me; g.placing = 'd'; p.run = 0; out.msg = '동점 · 검은 공 재경기'; out.kind = 'good'; out.dur = 3000; return out; }
     if (r.assign) {
@@ -660,7 +687,7 @@ function createGame(PH, makeAI) {
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,
     turn: g.turn, players: g.players, isBreak: g.isBreak, placing: g.placing, target: g.target, level: g.level, cushions: g.cushions,
     targets: g.targets, tens: g.tens, finish: g.finish, potTray: g.potTray, ice: g.ice, real: g.real, masse: g.masse, yellow: g.yellow,
-    team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance,
+    team: g.team, member: g.member.slice(), minus: g.minus, hugu: g.hugu, first: g.first, chance: g.chance, otOn: g.otOn, ot: g.ot ? { n: g.ot.n, pts: g.ot.pts.slice() } : null,
     snk: g.snk ? Object.assign({}, g.snk) : null, arc: g.arc ? { n: g.arc.n } : null, shape: g.shape || null,
   });
   g.restore = function (d) {
@@ -674,6 +701,7 @@ function createGame(PH, makeAI) {
     g.ice = !!d.ice; g.world.ice = g.ice; g.real = realOf(d.real); g.world.real = g.real; g.masse = d.masse !== false;
     g.team = !!d.team; g.member = Array.isArray(d.member) ? d.member.slice(0, 2).map(x => x ? 1 : 0) : [0, 0];
     g.minus = d.minus !== false; g.hugu = !!d.hugu; g.first = d.first ? 1 : 0; g.chance = d.chance === 0 || d.chance === 1 ? d.chance : null;
+    g.otOn = g.hugu && !!d.otOn; g.ot = g.otOn && d.ot && Array.isArray(d.ot.pts) ? { n: Math.max(1, d.ot.n | 0), pts: [d.ot.pts[0] | 0, d.ot.pts[1] | 0] } : null;
     g.shape = d.shape && Array.isArray(d.shape.poly) ? d.shape : null; g.world.shape = g.P.shape(g.shape);
     g.arc = d.arc && typeof d.arc === 'object' ? { n: Math.max(0, Math.min(ARCADE.SHOTS - 1, d.arc.n | 0)) } : null;
     g.snk = d.snk && typeof d.snk === 'object' ? { on: ['red', 'colour', 'clear'].includes(d.snk.on) ? d.snk.on : 'red', next: Math.max(16, Math.min(21, +d.snk.next || 16)) } : null;
