@@ -32,7 +32,6 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | towel, chalk, plant | E2, E3, E4 | on the desk; scaled down and blurred a little here (out of focus) | – |
 | dot | 13-glossy-red-dot-128 | the chosen rail key's red ball | – |
 | ring | 19-brass-avatar-ring-160 | ring round a player's avatar; opening centre 80,80, radius 54 | – |
-| tag | 21-cream-equipped-tag-160x64 | the "장착" tab on what is in use | slice 24, body from 8 |
 | lock | 22-closed-brass-padlock-96 | a locked puzzle stage | – |
 | star, star-off | 23-puzzle-star-* | a puzzle's stars | – |
 | cloth-teal … cloth-ice | 24a–f | the table cloths' swatches (ids as in look.js CLOTHS), tiled | – |
@@ -44,7 +43,6 @@ from `32-desk.js` as `ui/<name>.webp` (lock, star, star-off, and the cue photogr
 | mode-snooker | a red and a black ball, drawn in code (Claude, 11-12) until a picture is made to match the others | beside 스누커 on the rail | – |
 | toggle-off, toggle-on | S1 200×96 | the settings' on/off switch (knob 45,45 → 155,45) | – |
 | divider | S3 600×12 | the brass line between settings rows | slice 6 l r |
-| streak | R3 220×80 | the "N연승" badge | slice 28 l r |
 
 ## Table materials (`web/tex/`)
 
