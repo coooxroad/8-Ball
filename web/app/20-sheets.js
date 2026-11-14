@@ -40,6 +40,10 @@ function sheetDebug() {
   openSheet('디버그', [
     el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWood', L.wood),
     el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTray', L.tray),
+    // (플레이's menu: the hall, or the desk's boards as they were - 37-desk-hall.js)
+    el('div', { class: 'lab', text: '메인 메뉴' }),
+    el('div', { class: 'seg' }, [[false, '새 메뉴'], [true, '예전 메뉴']].map(([v, t]) =>
+      el('button', { 'aria-pressed': String(!!prefs.oldMenu === v), text: t, onclick: () => { prefs.oldMenu = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

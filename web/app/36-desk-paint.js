@@ -66,7 +66,7 @@ function boardSides() {
 }
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)
-const deskTableShown = () => $('#dkStage').dataset.win === '1';
+const deskTableShown = () => hallShown() || $('#dkStage').dataset.win === '1';   // (the menu's hall: the table stands in it)
 /* The wallet: a number that changes rolls to its new value (a clink when it grows), and its chip lights a moment - green
    up, red down. The first paint just shows it. */
 const walletShown = { coin: null, dia: null };
@@ -87,10 +87,19 @@ function walletPaint() {
 function walletShort(k) { const chip = $('#dkWallet .' + k); if (!chip) return; chip.classList.remove('short'); void chip.offsetWidth; chip.classList.add('short'); setTimeout(() => chip.classList.remove('short'), 700); }
 function deskPaint() {
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
-  for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === deskTab));
+  const hallMenu = hallMenuOn();
+  app.classList.toggle('oldmenu', !hallMenu);                         // (the 훈련 tab only with the old menu: 37-desk-hall.js)
+  const tabOf = hallMenu && deskTab === 'train' ? 'play' : deskTab;   // (훈련 opens from 플레이's menu)
+  for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === tabOf));
   walletPaint();
   // (the name, and under it whether this is a member or a guest - a guest is asked to sign up: 57-account.js)
   $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : recText(prefs.names[0]);
+  /* 플레이's menu is the hall (37-desk-hall.js): the desk is left as it was - it fades out as it is - and is laid out
+     again when it comes back */
+  const hall = hallNow();
+  if (hall !== hallShown()) hallCross(hall);
+  if (hall) { invite.leave(); app.classList.remove('rkcard', 'hall'); scene.setHall(HALL_PIC); hallPaint(); if (st.screen === 'home') requestAnimationFrame(layout); return; }
+  scene.setHall(null);
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';

@@ -1,0 +1,71 @@
+/* ---------- 플레이's menu: the billiard hall (app/37-desk-hall.js) ----------
+   The hall is the 3D canvas itself (its picture and the live table: scene setHall); over it, under the bar, a sheet of
+   smoked glass turned a little towards the table holds the four cards. The cards are the desk's printed cards (a colour,
+   a faint dot print, a white line printed inside the edge) lying flat on the glass, with an edge of their own below. */
+#app:not(.oldmenu) #dkTabs .dk-tab[data-t=train]{display:none}
+/* (between the hall and the desk: the old picture over the canvas fades out, the desk's plane fades in or out over it) */
+#xfade{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block}
+#xfade[hidden]{display:none}
+#app.desk #xfade.lean{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
+#xfade.go{animation:hm-out .38s ease-out forwards}
+@keyframes hm-out{to{opacity:0}}
+#deskPlane,#dkBeams{transition:opacity .32s ease-out}
+#app.hallmenu #deskPlane,#app.hallmenu #dkBeams{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .32s ease-out,visibility 0s .32s}
+#hallMenu{position:absolute;inset:var(--bar) 0 0 0;z-index:5;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .32s ease-out,visibility 0s .32s}
+#app.hallmenu #hallMenu{opacity:1;visibility:visible;transition:opacity .32s ease-out}
+@media (prefers-reduced-motion:reduce){#xfade.go{animation-duration:.01s}#deskPlane,#dkBeams,#hallMenu,#app.hallmenu #hallMenu{transition:none}}
+
+/* the glass: light (the oak desk) - pale and warm, a brass line round it; dark (the walnut desk) - smoked */
+.hm-glass{position:absolute;left:4%;top:3.2vh;width:min(36%,520px);box-sizing:border-box;display:flex;flex-direction:column;gap:clamp(8px,1.6vh,14px);
+  padding:clamp(12px,2.4vh,22px);border-radius:24px;pointer-events:auto;transform:perspective(1500px) rotateY(14deg);transform-origin:0 50%;
+  background:linear-gradient(180deg,rgba(252,246,234,.58),rgba(226,214,194,.5));-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);
+  box-shadow:inset 0 0 0 1px rgba(160,120,60,.55),inset 0 1px 0 rgba(255,255,255,.7),0 30px 70px rgba(0,0,0,.45)}
+#app.hm-dark .hm-glass{background:linear-gradient(180deg,rgba(40,32,24,.62),rgba(14,11,8,.72));
+  box-shadow:inset 0 0 0 1px rgba(214,178,110,.35),inset 0 1px 0 rgba(255,236,200,.18),0 30px 70px rgba(0,0,0,.6)}
+
+/* a card: its colours (--c1 light, --c2 dark, --sd its edge), light then dark look */
+.hm-card{--c1:#4176c4;--c2:#1d4688;--sd:#0a2550;position:relative;display:block;width:100%;height:clamp(50px,10vh,84px);margin:0 0 3px;padding:0;border:0;border-radius:13px;
+  background:none;color:#fff;text-align:left;cursor:pointer;font:inherit;-webkit-tap-highlight-color:transparent}
+.hm-card.hm-friend{--c1:#43915e;--c2:#1f5735;--sd:#0a2615}
+.hm-card.hm-train{--c1:#bb5a52;--c2:#7c2d29;--sd:#3a0c0a}
+.hm-card.hm-arcade{--c1:#8062b1;--c2:#4c357a;--sd:#22143a}
+#app.hm-dark .hm-card.hm-rank{--c1:#2d6a4b;--c2:#143a27;--sd:#05170d}
+#app.hm-dark .hm-card.hm-friend{--c1:#7c5538;--c2:#462a19;--sd:#1d0f06}
+#app.hm-dark .hm-card.hm-train{--c1:#8a3b36;--c2:#4f1b19;--sd:#220707}
+#app.hm-dark .hm-card.hm-arcade{--c1:#5f4b7c;--c2:#33264a;--sd:#130b20}
+.hm-sk{position:absolute;inset:0;border-radius:13px;overflow:hidden;transition:transform .08s;
+  background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));
+  box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25),0 3px 0 var(--sd),0 8px 14px rgba(0,0,0,.28)}
+.hm-sk::after{content:"";position:absolute;inset:clamp(5px,.9vh,8px);border-radius:9px;border:2px solid rgba(255,255,255,.9)}
+.hm-in{position:absolute;inset:0;display:flex;align-items:center;padding:0 clamp(16px,2.6vh,24px);box-sizing:border-box;pointer-events:none;transition:transform .08s}
+.hm-card:active .hm-sk,.hm-card:active .hm-in{transform:translateY(2px)}
+.hm-tt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.hm-tt b{display:flex;align-items:center;gap:.32em;font:800 clamp(16px,2.7vh,22px)/1.1 var(--ui-font);letter-spacing:-.01em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap}
+.hm-tt small{font:600 clamp(12.5px,1.75vh,15px)/1.2 var(--ui-font);color:color-mix(in srgb,var(--c1) 28%,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hm-tt em{font:800 clamp(11px,1.45vh,12.5px)/1.2 var(--ui-font);font-style:normal;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.9);color:var(--c2);letter-spacing:.02em}
+.hm-tt b em{margin-left:.3em;font-size:clamp(10.5px,1.35vh,12px)}
+.hm-ico{flex:none;display:inline-grid;width:1.05em;height:1.05em}
+.hm-ico svg{width:100%;height:100%}
+.hm-go{flex:none;margin-left:auto;margin-right:6px;width:.6em;height:.6em;font-size:clamp(16px,2.4vh,20px);border:solid rgba(255,255,255,.85);border-width:.17em .17em 0 0;transform:rotate(45deg)}
+.hm-card.soon .hm-tt b,.hm-card.soon .hm-tt small{opacity:.85}
+
+/* 랭킹전: large, the tier on the way to the next, and 시작 - the one button that stands out */
+.hm-card.hm-rank{height:clamp(136px,24vh,210px)}
+.hm-rank .hm-in{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:clamp(4px,1vh,10px);padding:clamp(12px,2.2vh,22px) clamp(16px,2.6vh,24px) clamp(12px,2vh,20px)}
+.hm-rank .hm-tt b{font-size:clamp(24px,4.2vh,34px);font-weight:900}
+.hm-tier{display:flex;align-items:center;gap:12px;font:800 clamp(14px,2.1vh,17px)/1.2 var(--ui-font);color:#fff}
+.hm-tier b{font-weight:800;white-space:nowrap}
+.hm-tier i{flex:1;max-width:46%;height:8px;border-radius:99px;background:rgba(0,0,0,.3);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.35)}
+.hm-tier i::after{content:"";display:block;width:calc(var(--p,0) * 100%);min-width:6px;height:100%;border-radius:99px;background:linear-gradient(#f0d488,#c19a45)}
+.hm-tier small{font:600 clamp(12.5px,1.75vh,15px)/1.2 var(--ui-font);color:color-mix(in srgb,var(--c1) 28%,#fff);white-space:nowrap}
+.hm-start{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,2.4vh,22px);height:clamp(38px,7vh,60px);border-radius:12px;
+  background:linear-gradient(#f6efdf,#e2d6bb);color:#15233d;font:900 clamp(17px,2.6vh,22px)/1 var(--ui-font);box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 #fff}
+#app.hm-dark .hm-start{color:#143a27}
+.hm-start .hm-go{margin:0 6px 0 0;border-color:currentColor;font-size:clamp(15px,2.2vh,19px)}
+
+/* 훈련's way back to the menu: the rail's head (app/34-desk-train.js) */
+#app.desk .dk-back{flex:none;display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:2px 6px 10px;padding:0 12px 0 6px;border-radius:12px;
+  background:rgba(60,45,25,.1);box-shadow:inset 0 0 0 1.5px rgba(60,45,25,.22);color:#3a3026;font:800 18px var(--ui-font)}
+#app.desk .dk-back:active{background:rgba(60,45,25,.2)}
+#app.desk .dk-back svg{width:20px;height:20px}
+#app.desk.compact .dk-back{min-height:44px;margin:0 0 6px;font-size:16px}

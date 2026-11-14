@@ -63,7 +63,7 @@
   renderer.shadowMap.autoUpdate = false;
   renderer.autoClear = false;
   const sScene = new THREE.Scene(), scene = new THREE.Scene();   // static layer, moving layer
-  sScene.background = new THREE.Color(0x101216).convertSRGBToLinear();
+  const bgCol = new THREE.Color(0x101216).convertSRGBToLinear(); sScene.background = bgCol;   // (none while the menu's hall shows its picture: setHall)
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.5, 30);
   const col = h => new THREE.Color(h).convertSRGBToLinear();
   const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());

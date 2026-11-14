@@ -53,6 +53,7 @@ function show(screen) {
   // the desk's bar along the top, and on the home screen its leaning plane
   $('#deskBar').hidden = !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !home;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
+  if (!home) { app.classList.remove('hallmenu'); scene.setHall(null); }   // (the menu's hall only on the home screen: 37-desk-hall.js)
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
@@ -64,8 +65,9 @@ function layout() {
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
   layoutW = W; layoutH = H; layoutDpr = window.devicePixelRatio || 1;
   const portrait = H > W; wide = W >= 900 && H >= 560;
+  if (st.screen === 'home' && deskTab && hallNow() !== hallShown()) return deskPaint();   // (turned upright or back: the menu's hall or the desk - 37-desk-hall.js; deskPaint lays out again)
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
-  const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (36-desk-paint.js)
+  const tilt = st.screen === 'home' && !hallShown();                 // the desk's home: its plane leans away (36-desk-paint.js) - not the menu's hall
   app.classList.toggle('tilt', tilt);                                // (before the scene sizes itself: it draws finer while leaning)
   scene.resize();
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do

@@ -324,7 +324,7 @@
     // (a pool table's size changes its balls': the contact shadows are sized again; the lamp's is sized every frame - 90-frame.js)
     for (const set of Object.values(sets)) if (set.kind === P.KIND) for (const s of set.blob) s.children[0].scale.set(P.R * 2.7, P.R * 2.7, 1);
     // the lamps hang over this table's long axis
-    placeLamps(); putFloor(); sizeHall();
+    placeLamps(); putFloor(); sizeHall(); if (hallBack) placeFeet();
     woodU.uOuter.value.set(P.HL + CW + RW, P.HW + CW + RW);
     const ow = 2 * (P.HL + CW + RW), oh = 2 * (P.HW + CW + RW);
     tableShadow.scale.set(ow * 1.59, oh * 1.8, 1);

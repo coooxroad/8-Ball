@@ -21,6 +21,7 @@
      moving camera); as soon as it stops, the still picture is made again and frames are cheap as before. */
   const orbit = { on: false, az: 0, el: 1.4, elTo: 1.4, zoom: 1, live: 0, cam: null }, fitV = new THREE.Vector3(), fitP = new THREE.Vector3();
   function setOrbit(on) {
+    if (hallBack) return;                                              // (the menu's hall holds its own camera: setHall)
     const was = orbit.on; orbit.on = on; orbit.cam = null;
     if (was !== on && rt) fitRT();                                     // (the still picture at twice the size only seen from above: superOK)
     if (on) { orbit.az = 0; orbit.el = 1.4; orbit.elTo = 0.82; orbit.zoom = 1; orbit.live = 4; }
@@ -35,24 +36,45 @@
   // zoom < 1 is closer than "whole table in view", and it looks at the table point (tx, ty).
   let onFree = null;
   function setCam(c) { orbit.on = true; orbit.cam = c; orbit.el = orbit.elTo = c.el; orbit.live = 4; applyCamera(); }
+  /* The menu's hall on (name: the picture in tex/, e.g. 'hall-kr') or off (null): the camera held at the picture's own
+     (HALL_VIEW.cam), the floor and its darkening and the light box hidden, the feet's smudges and a deeper table shadow
+     shown. Off, the view is straight down again (the app's views start from there: 70-buttons.js setView). */
+  function setHall(name) {
+    name = name || null; if (name === hallBack) return;
+    hallBack = name; const on = !!name;
+    if (on) {
+      loadTex(name, 0, t => { if (hallBack !== name) return; if (backMat.map && backMat.map !== t) backMat.map.dispose(); t.generateMipmaps = false; t.minFilter = THREE.LinearFilter; backMat.map = t; backMat.needsUpdate = true; applyCamera(); });
+      placeFeet(); orbit.on = true; orbit.cam = HALL_VIEW.cam; orbit.el = orbit.elTo = HALL_VIEW.cam.el; orbit.live = 0;
+    } else { orbit.on = false; orbit.cam = null; orbit.el = orbit.elTo = 1.4; }
+    sScene.background = on ? null : bgCol; floorMesh.visible = floorDark.visible = tableShadow.visible = !on; feetGrp.visible = hallShade.visible = on;
+    if (rt) fitRT(); applyCamera(); renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
   // where table points are on the screen, in pixels from the top-left of the game area (for overlays drawn on top of the
   // 3D picture): call begin() once, then at() for each point, which says whether the point is in front of the camera
   const scr = new THREE.Vector3();
   const proj = { begin() { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); }, at(x, y, z, out) { scr.set(x, y, z || 0).project(camera); out[0] = (scr.x + 1) / 2 * W; out[1] = (1 - scr.y) / 2 * H; return scr.z < 1 && scr.z > -1; } };
   // f > 1 moves the camera away, f < 1 brings it in
   function zoomBy(f) { if (!orbit.on) return; orbit.zoom = Math.max(0.4, Math.min(1.35, orbit.zoom * f)); orbit.live = 4; applyCamera(); }
+  // The menu's hall (10-room.js HALL_VIEW): its frame scaled to cover the screen, and where the screen sits in it
+  function hallFrame() {
+    const V = HALL_VIEW, s = Math.max(W / V.w, H / V.h), w = V.w * s, h = V.h * s;
+    return { w, h, ox: (w - W) * V.ax, oy: (h - H) * V.ay, ins: { t: V.ins.t * s, l: V.ins.l * s, r: V.ins.r * s, b: V.ins.b * s } };
+  }
   function applyCamera(soft) {
     if (!W || !H) return;
-    const sw = Math.max(40, W - ins.l - ins.r), sh = Math.max(40, H - ins.t - ins.b), cx = ins.l + sw / 2, cy = ins.t + sh / 2;
+    // (in the menu's hall the camera is worked out for the picture's frame, then the screen's part of it is shown)
+    const F = hallBack ? hallFrame() : null, FW = F ? F.w : W, FH = F ? F.h : H, I = F ? F.ins : ins, up = portrait && !F;
+    if (F && backMat.map) { const t = backMat.map; t.repeat.set(W / F.w, H / F.h); t.offset.set(F.ox / F.w, 1 - (F.oy + H) / F.h); }
+    const sw = Math.max(40, FW - I.l - I.r), sh = Math.max(40, FH - I.t - I.b), cx = I.l + sw / 2, cy = I.t + sh / 2;
     const TW = 2 * (cur.HL + CW + RW) + 0.03, TH = 2 * (cur.HW + CW + RW) + 0.03;
-    ppm = portrait ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
-    const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
+    ppm = up ? Math.min(sw / TH, sh / TW) : Math.min(sw / TW, sh / TH);
+    const fw = 2 * Math.max(cx, FW - cx), fh = 2 * Math.max(cy, FH - cy);
     const dist = fh / (2 * ppm * Math.tan(FOV * Math.PI / 360));
     camera.far = Math.max(30, dist * 1.6 + 4);                          // (a small table on a phone is a long way off down that lens)
     camera.aspect = fw / fh;
     if (orbit.on) {
       // looking round: the camera circles the middle of the table at the same distance, anywhere from nearly overhead to low
-      const cam = orbit.cam, az = cam ? cam.az : orbit.az + (portrait ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
+      const cam = orbit.cam, az = cam ? cam.az : orbit.az + (up ? -Math.PI / 2 : 0), ce = Math.cos(orbit.el);
       const dir = fitV.set(ce * Math.sin(az), -ce * Math.cos(az), Math.sin(orbit.el));
       // step back until the whole table is inside the free part of the screen, whichever way it is turned
       const tan = Math.tan(FOV * Math.PI / 360), limX = tan * (fw / fh) * (sw / fw), limY = tan * (sh / fh), ex = cur.HL + CW + RW, ey = cur.HW + CW + RW;
@@ -71,8 +93,8 @@
       else { camera.position.copy(dir).multiplyScalar(d * orbit.zoom); fitP.set(0, 0, 0); camera.near = 0.5; }
     } else { hall.visible = false; camera.near = 0.5; fitP.set(0, 0, 0); camera.position.set(0, 0, dist); camera.up.set(portrait ? 1 : 0, portrait ? 0 : 1, 0); }
     camera.lookAt(fitP);
-    camera.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
-    hall.visible = false; if (orbit.on) { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); hall.visible = hallClear(); }
+    camera.setViewOffset(fw, fh, fw / 2 - cx + (F ? F.ox : 0), fh / 2 - cy + (F ? F.oy : 0), W, H);
+    hall.visible = false; if (orbit.on && !F) { camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert(); hall.visible = hallClear(); }
     guideKey = ''; dirty = 3;
     if (soft && rt && !staticDirty && !orbit.on) stale = true; else staticDirty = true;
   }
@@ -122,7 +144,7 @@
   }
   const desk = (() => { try { return matchMedia('(hover: hover) and (pointer: fine)').matches && !(navigator.maxTouchPoints > 0); } catch (e) { return false; } })();
   function superOK(w, h) {
-    return !softwareGL && !orbit.on && quality !== 'low' && renderer.capabilities.isWebGL2 && (desk || quality === 'high') && w * h * 4 <= 9.5e6 && 2 * w <= maxSide && 2 * h <= maxSide;
+    return !softwareGL && (!orbit.on || !!hallBack) && quality !== 'low' && renderer.capabilities.isWebGL2 && (desk || quality === 'high') && w * h * 4 <= 9.5e6 && 2 * w <= maxSide && 2 * h <= maxSide;
   }
   // where the table will sit for these insets once they have eased in: its outer edge (rails included), in pixels
   function tableRect(t) {

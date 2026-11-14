@@ -49,6 +49,7 @@ const prefs = (() => {
     addons: { real: false, throw: true, squirt: true, cue: true },
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
     deskWood: 'oak', deskTray: 'blue', // 디버그: the desk's wood and the tray to try (DESK_LOOK; out of debug mode the game's own)
+    oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-hall.js)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
@@ -171,6 +172,7 @@ function applyBackdrop() {
   a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--edge-img', at(L.wood.edge)); a.setProperty('--desk-base', L.wood.base);
   a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
   document.body.style.background = desk ? L.wood.base : '#101216';
+  document.getElementById('app').classList.toggle('hm-dark', L.wood !== DESK_LOOK.wood.oak);   // (the menu's hall in the dark look: 84-hall.css)
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }
 applyBackdrop();

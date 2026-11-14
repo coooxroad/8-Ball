@@ -291,7 +291,7 @@
   function drawLayers() {
     if (orbit.on && orbit.live > 0) {
       orbit.live--; staticDirty = true;
-      renderer.setClearColor(clearCol, 1); unmask(); renderer.clear();
+      renderer.setClearColor(clearCol, 1); unmask(); renderer.clear(); drawBack();
       const bg = sScene.background; sScene.background = null; camera.layers.enable(1);
       renderer.render(sScene, camera); camera.layers.disable(1); sScene.background = bg;
       renderer.render(scene, camera);
@@ -299,7 +299,7 @@
     }
     if (staticDirty && rt) {
       staticDirty = false; camera.layers.enable(1);
-      renderer.setRenderTarget(rt); unmask(); renderer.clear(); renderer.render(sScene, camera); renderer.setRenderTarget(null);
+      renderer.setRenderTarget(rt); unmask(); renderer.clear(); drawBack(); renderer.render(sScene, camera); renderer.setRenderTarget(null);
       camera.layers.disable(1);
       corners(bakeA, bakeB); stale = false;
     }
@@ -325,7 +325,9 @@
   setLight(null);                              // (the game's light, LIGHT0 - scene/10-room.js; the app no longer tunes it)
   return {
     set onFreeLook(f) { onFree = f; }, get eyeView() { return !!(orbit.cam && orbit.cam.eye); },
-    setTable(P) { setTable(P); setShape(shapeNow); warmDue = true; }, setWalls, setShape, grab(f) { grabWant = f; dirty = 3; }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
+    setTable(P) { setTable(P); setShape(shapeNow); warmDue = true; }, setWalls, setShape, setHall, get hallOn() { return !!hallBack; }, grab(f) { grabWant = f; dirty = 3; },
+    // (the picture drawn again now, as the last frame was, and handed over at once - app/37-desk-hall.js hallCross)
+    snap(f) { if (gl.isContextLost() || !W || !H) return; drawLayers(); f(renderer.domElement); }, setLight, get light() { return Object.assign({}, light); }, LIGHT0, setCloth(i) { setCloth(i); warmDue = true; }, setCue(i) { setCue(i); warmDue = true; }, setBalls(id) { setBalls(id); warmDue = true; }, setTrail(id) { setTrail(id); warmDue = true; }, ballPortrait, cuePortrait, ballShot, cueShot, get portraitSpan() { return portraitSpan; }, setBackdrop, setZone, setMarks, fly, setOrbit, setCam, setScale, get scale() { return dynScale; }, info: renderer.info, proj, orbitBy, zoomBy, get orbiting() { return orbit.on; }, setInsets, tableRect, tableOutline, setDeskLight, setQuality, resize, toTable, frame, fall,
     fxSounds, hit, invalidate() { dirty = 3; }, clearFalls() { falls.length = 0; fallEvents.length = 0; dirty = 3; }, fallEvents, get ppm() { return ppm; }, get portrait() { return portrait; }, get falling() { return falls.length > 0; },
     get pixelRatio() { return renderer.getPixelRatio(); }, get softwareRendering() { return softwareGL; }, get rendererName() { return rendererName; }, prof: sProf,
   };

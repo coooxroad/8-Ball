@@ -188,9 +188,9 @@
   const floorOf = () => made[cur.POCKETED ? 'carpet-checker' : 'carpet-geo'] || carpet;
   const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 1.05); floorMat.needsUpdate = true; } };
   loadTex('carpet-checker', 9, putFloor); loadTex('carpet-geo', 9, putFloor);
-  let tableShadow = null;
+  let tableShadow = null, floorMesh = null, floorDark = null;
   (function backdrop() {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; m.receiveShadow = true; m.layers.set(1); sScene.add(m);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); floorMesh = m; m.position.z = -0.8; m.receiveShadow = true; m.layers.set(1); sScene.add(m);
     const s = mkCanvas(512, 320), sg = s.getContext('2d');
     sg.shadowColor = 'rgba(0,0,0,0.8)'; sg.shadowBlur = 52; sg.fillStyle = 'rgba(0,0,0,0.8)';
     const rr = (x, y, w, h, r) => { sg.beginPath(); sg.moveTo(x + r, y); sg.arcTo(x + w, y, x + w, y + h, r); sg.arcTo(x + w, y + h, x, y + h, r); sg.arcTo(x, y + h, x, y, r); sg.arcTo(x, y, x + w, y, r); sg.fill(); };
@@ -202,8 +202,52 @@
     gr.addColorStop(0, 'rgba(4,4,6,0)'); gr.addColorStop(0.16, 'rgba(4,4,6,0)'); gr.addColorStop(0.36, 'rgba(4,4,6,0.55)'); gr.addColorStop(0.6, 'rgba(4,4,6,0.95)'); gr.addColorStop(0.75, 'rgba(4,4,6,1)');
     vg.fillStyle = gr; vg.fillRect(0, 0, 256, 256);
     const dk = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
-    dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk);
+    dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk); floorDark = dk;
   })();
+  /* The menu's hall (owner 11-14): a picture of a billiard hall, drawn by the owner (GPT) over line drawings taken from this
+     very camera, behind the live table - the floor, its darkening and the light box hidden, the table's shadow on the
+     picture's floor and a dark smudge under each foot. HALL_VIEW is the frame the picture was drawn for: a 1536 x 1024
+     screen with the table fitted right of the menu (ins, in its pixels), seen from cam. Any other screen shows the
+     picture scaled to cover it, cut off at the left (the menu's side: ax 1) and a little more at the top than the bottom
+     (ay), and the camera the same way (60-view.js hallFrame), so table and room stay one picture. Drawn behind the still
+     layer only (drawBack), never toned: the picture is already as it should look. */
+  const HALL_VIEW = { w: 1536, h: 1024, ins: { t: 69, l: 645, r: 0, b: 0 }, cam: { az: 0, el: 0.33, zoom: 0.98, tx: 0, ty: 0 }, ax: 1, ay: 0.6 };
+  let hallBack = null;                                          // the picture's name while the menu's hall is shown
+  const backMat = new THREE.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false });
+  const backScene = new THREE.Scene(); backScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), backMat));
+  const drawBack = () => { if (hallBack && backMat.map) renderer.render(backScene, quadCam); };
+  // the table's shadow on the picture's floor: its outline straight down, softened (as the hall's light from all round
+  // throws it), and under each foot standing on the floor (a mesh of the table reaching down to it, low and flat) a dark smudge
+  const feetGrp = new THREE.Group(); feetGrp.visible = false; sScene.add(feetGrp);
+  const hallShade = (() => {
+    const c = mkCanvas(512, 320), g = c.getContext('2d');
+    g.shadowColor = 'rgba(0,0,0,1)'; g.shadowBlur = 26; g.shadowOffsetX = 2000; g.fillStyle = '#000';
+    g.fillRect(73 - 2000, 50, 366, 220);                       // (the rectangle itself drawn off the canvas: only its blurred shadow lands)
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, opacity: 0.82, depthWrite: false, toneMapped: false }));
+    m.position.z = -0.798; m.layers.set(1); feetGrp.visible = false; sScene.add(m); m.visible = false; return m;
+  })();
+  const footMat = (() => {
+    const c = mkCanvas(128, 64), g = c.getContext('2d'), gr = g.createRadialGradient(64, 32, 4, 64, 32, 32);
+    gr.addColorStop(0, 'rgba(0,0,0,0.92)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.setTransform(2, 0, 0, 1, -64, 0); g.fillStyle = gr; g.fillRect(0, 0, 128, 64);
+    return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false });
+  })();
+  const footBox = new THREE.Box3(), footGeo = new THREE.PlaneGeometry(1, 1);
+  function placeFeet() {
+    while (feetGrp.children.length) feetGrp.remove(feetGrp.children[0]);
+    hallShade.scale.set(2 * (cur.HL + CW + RW) * 1.4, 2 * (cur.HW + CW + RW) * 1.45, 1);   // (the canvas's rectangle: the rails' outline)
+    const grp = tables.get(cur); if (!grp) return;
+    grp.updateMatrixWorld(true);
+    grp.traverse(o => {
+      if (!o.isMesh || !o.geometry) return;
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      footBox.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+      if (footBox.min.z > -0.785 || footBox.max.z - footBox.min.z > 0.1) return;
+      const m = new THREE.Mesh(footGeo, footMat); m.layers.set(1);
+      m.position.set((footBox.min.x + footBox.max.x) / 2, (footBox.min.y + footBox.max.y) / 2, -0.797);
+      m.scale.set(footBox.max.x - footBox.min.x + 0.16, footBox.max.y - footBox.min.y + 0.12, 1); feetGrp.add(m);
+    });
+  }
   /* The table's own light, as in a billiard hall: a long box hung on two wires over the table, its underside a lit
      acrylic panel and its sides glowing through frosted panels, so it reads as a light from any side. It lights nothing
      itself (the lamps under it do that). Shown when the camera looks round, unless on screen it would hang over the
@@ -232,5 +276,5 @@
     const a = box(t), b = box(h); if (!a || !b) return false;
     return a[1] < b[0] || b[1] < a[0] || a[3] < b[2] || b[3] < a[2];
   }
-  function setBackdrop(hex) { sScene.background.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }   // (beyond the floor, and behind the desk's window)
+  function setBackdrop(hex) { bgCol.copy(col(hex)); clearCol.set(hex); staticDirty = true; dirty = 3; }   // (beyond the floor, and behind the desk's window)
 

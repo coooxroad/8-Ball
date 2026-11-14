@@ -1,10 +1,12 @@
-// 훈련: lessons, puzzles and free practice on the rail, each with its own tray and slate
+// 훈련: lessons, puzzles, free practice and the computer on the rail, each with its own tray and slate. With the new menu
+// (owner 11-14: 37-desk-hall.js) it has no tab - 플레이's menu opens it - and the rail's head is the way back there.
 function deskTrain(d) {
   const t = trainOf() || 'puzzle';
   const to = (mode, drill) => () => { prefs.lastTrain = mode; if (drill) drill(); prefs.mode = mode; repaintLive(); };
   const cpu = () => { prefs.lastTrain = 'cpu'; prefs.trainCpu = true; prefs.vsAI = true; prefs.mode = GAME4.includes(prefs.cpuMode) ? prefs.cpuMode : 'eight'; repaintLive(); };
   const off = () => { prefs.trainCpu = false; prefs.vsAI = false; };
-  dkPut(d.rail, [railBtn(t === 'lesson', '레슨', null, to('practice', () => { off(); prefs.lessons = true; })),
+  dkPut(d.rail, [hallMenuOn() ? el('button', { class: 'dk-back', onclick: onTap(() => deskGo('play')) }, [svgArrow(0), el('span', { text: '메뉴' })]) : null,
+    railBtn(t === 'lesson', '레슨', null, to('practice', () => { off(); prefs.lessons = true; })),
     railBtn(t === 'puzzle', '퍼즐', null, to('puzzle', off)),
     railBtn(t === 'free', '자유 연습', null, to('practice', () => { off(); prefs.lessons = false; })),
     railBtn(t === 'cpu', '컴퓨터 대전', null, cpu)]);
