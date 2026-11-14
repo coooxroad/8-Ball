@@ -7,7 +7,9 @@ padding-left); otherwise it stays where it was. Comments are kept; a merged rule
 Prove each use changed nothing with web/test/browser/styles.js (computed styles before and after):
     node web/test/browser/styles.js /tmp/before.json;  python3 web/tools/cssmerge.py web/style/NN-x.css
     sh web/build.sh && node web/test/browser/styles.js /tmp/after.json;  node web/test/browser/styles.js --compare /tmp/before.json /tmp/after.json
-(11-11: used on 60-desk, 75-play-panels, 76-play-unfold, 10-play, 80-broadcast.)"""
+(11-11: used on 60-desk, 75-play-panels, 76-play-unfold, 10-play, 80-broadcast. 11-15: the overridden-declaration pass
+added, then used on 10-play (its in-play desk controls then laid out by hand), 75-play-panels, 76-play-unfold,
+80-broadcast, 90-portrait.)"""
 import sys,re
 p=sys.argv[1]; src=open(p).read()
 # tokenise top-level rules and comments, keeping @media blocks intact
@@ -46,6 +48,29 @@ sels={}
 for idx,(t,s) in enumerate(items):
     if t=='r' and not s.lstrip().startswith('@'):
         sel=re.sub(r'\s+',' ',s[:s.index('{')]).strip(); sels.setdefault(sel,[]).append(idx)
+# First, drop what can never show: a declaration that a later rule of the very same selector (same elements, same
+# specificity, later) sets again - itself or through a shorthand that covers it - is overridden wherever it applies.
+# Kept: anything !important, vendor-prefixed, or written with units an old WebView may not know (a fallback pair).
+COVERS={'inset':{'top','right','bottom','left'},'gap':{'row-gap','column-gap'},'overflow':{'overflow-x','overflow-y'},
+        'font':{'line-height'}}
+PREFIXED={'background','margin','padding','border-image','mask','font','transition','animation','border-radius'}
+def covers(later,earlier):
+    if later==earlier: return True
+    if earlier in COVERS.get(later,()): return True
+    if later=='border-radius': return earlier.startswith('border-') and earlier.endswith('-radius')
+    return later in PREFIXED and earlier.startswith(later+'-')
+RISKY=re.compile(r'!important|dvh|svh|lvh|dvw|cq[whib]|cqmin|cqmax|env\(|-webkit-|-moz-')
+def risky(k,x): return k.startswith('-') or bool(RISKY.search(x))
+dropped=0
+for sel,idxs in sels.items():
+    if len(idxs)<2: continue
+    for n,idx in enumerate(idxs[:-1]):
+        later=[(k,x) for j in idxs[n+1:] for k,x in decls(items[j][1][items[j][1].index('{')+1:items[j][1].rindex('}')])]
+        s=items[idx][1]; body=s[s.index('{')+1:s.rindex('}')]; keep=[]
+        for k,x in decls(body):
+            if not risky(k,x) and any(covers(lk,k) and not risky(lk,lx) for lk,lx in later): dropped+=1; continue
+            keep.append(x)
+        items[idx]=('r', s[:s.index('{')]+'{'+';'.join(keep)+'}')
 def selset(s): return set(re.sub(r'\s+',' ',x).strip() for x in s[:s.index('{')].split(','))
 def overlap(a,b): return a==b or a.startswith(b+'-') or b.startswith(a+'-')
 def inner_rules(s):
@@ -57,14 +82,39 @@ def inner_rules(s):
             d-=1
             if d==0: out.append(body[st:i+1].strip()); st=i+1
     return out
+def split0(s,seps):
+    # split at the separators outside parentheses (a list's commas, a selector's combinators)
+    out=[];buf='';d=0
+    for ch in s:
+        if ch=='(': d+=1
+        if ch==')': d-=1
+        if d==0 and ch in seps: out.append(buf); buf=''
+        else: buf+=ch
+    out.append(buf); return [x.strip() for x in out if x.strip()]
+def subject(part):
+    # what a selector picks out: its last compound - its id, its tag and its pseudo-element, outside any :not(...)
+    last=split0(part,' >+~')[-1] if part else ''
+    bare=re.sub(r'\([^()]*\)','',last)
+    pe=re.search(r'::?(before|after|placeholder|marker|selection|backdrop|-webkit-[\w-]+)\b',bare)
+    i=re.search(r'#([\w-]+)',bare); t=re.match(r'[a-zA-Z][\w-]*',bare)
+    return (pe.group(1) if pe else None, i.group(1) if i else None, t.group(0).lower() if t else None)
+def meet(a,b):
+    # could these two subjects ever be the same element (or the same pseudo-element of it)? (no means never; yes may mean maybe)
+    if a[0]!=b[0]: return False
+    if a[1] and b[1] and a[1]!=b[1]: return False
+    if a[2] and b[2] and a[2]!=b[2]: return False
+    return True
 def props_for(idx, sel):
     t,s=items[idx]
     if t!='r': return []
     rs=inner_rules(s) if s.lstrip().startswith('@') else [s]
+    mine=[subject(x) for x in split0(sel,',')]
     out=[]
     for r in rs:
         if '{' not in r: continue
-        out+= [k for k,_ in decls(r[r.index('{')+1:r.rindex('}')])]   # (any selector: another may match the same elements)
+        theirs=[subject(x) for x in split0(r[:r.index('{')].strip(),',')]
+        if r.lstrip().startswith('@') or any(meet(a,b) for a in mine for b in theirs):   # (only a rule that may style the same elements)
+            out+= [k for k,_ in decls(r[r.index('{')+1:r.rindex('}')])]
     return out
 for sel,idxs in sels.items():
     if len(idxs)<2: continue
@@ -83,4 +133,4 @@ for sel,idxs in sels.items():
     items[last]=('r', s[:s.index('{')]+'{'+';'.join(moved.values())+'}')
 out=''.join(s for t,s in items if t!='x')
 open(p,'w').write(out.rstrip('\n')+'\n')
-print('merged', sum(1 for v in sels.values() if len(v)>1))
+print('dropped', dropped, 'merged', sum(1 for v in sels.values() if len(v)>1))
