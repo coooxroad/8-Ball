@@ -121,9 +121,9 @@
 #dkBoards.boards .bd-shop .bd-show,#dkBoards.boards .bd-modes{display:none}
 /* 5.0: the four boards as plain blocks of the shop's two colours - ivory (its keys) and charcoal (its slate) - with the
    shop's own type on them and nothing else yet: pictures will come back one by one, drawn to match (33-desk-play.js) */
-#dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank arcade challenge" "rank friend friend"}
-#app.desk.portrait #dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank rank" "arcade challenge" "friend friend"}
-#dkBoards .bd-challenge{grid-area:challenge}
+#dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank arcade train" "rank friend friend"}
+#app.desk.portrait #dkBoards.boards .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rank rank" "arcade train" "friend friend"}
+#dkBoards .bd-train{grid-area:train}
 #dkBoards .bd-arcade{grid-area:arcade}
 #dkBoards .bd.ivory{--sl:#f1ead8;--sd:#8f8772;--ink:#22262b}
 #dkBoards .bd.sky{--sl:#bfe6ff;--sd:#5f8aa5;--ink:#15283a}
@@ -148,7 +148,7 @@
    with a printed border line, a faint paper grain and the light at the upper right; its thickness the card's own colour */
 #dkBoards .bd.card.bd-rank{--c1:#4174bf;--c2:#194685;--sl:#6387bd;--sd:#062046}
 #dkBoards .bd.card.bd-friend{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911}
-#dkBoards .bd.card.bd-challenge{--c1:#b05551;--c2:#772b2a;--sl:#b3726d;--sd:#3e1010}
+#dkBoards .bd.card.bd-train{--c1:#b05551;--c2:#772b2a;--sl:#b3726d;--sd:#3e1010}
 #dkBoards .bd.card.bd-arcade{--c1:#8265a3;--c2:#533a6e;--sl:#907ca8;--sd:#281938}
 #dkBoards .bd.card .sk{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25)}
 #dkBoards .bd.card .sk::before{display:none}

@@ -186,7 +186,8 @@ const PLAY_STEPS = {
     const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
     dkPut(fit, [
       panel('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), [tt('친구와 플레이')], 'card unf'),
-      panel('challenge', '챌린지', soon('챌린지는'), [tt('챌린지', '실제 경기 장면 재현', '준비 중')], 'card soon unf'),
+      // (훈련 where 챌린지 was - owner 11-14: 챌린지 left the menu, to come back as each puzzle theme's last step)
+      panel('train', '훈련', b => playLeave(b, () => deskGo('train')), [tt('훈련', '레슨 · 퍼즐 · 자유 연습')], 'card unf'),
       // (아케이드: 준비 중 - open with the debug setting only, owner 11-12)
       net.debug ? panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구', '디버그')], 'card unf')
         : panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '증강 당구', '준비 중')], 'card soon unf'),

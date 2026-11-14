@@ -154,7 +154,7 @@ function shelfCards(d, shop, kind, K, list, worn, has) {
   if (aurIO) aurIO.disconnect();                                       // (the last shelf's cards: let go)
   for (const c of cards) if (c.classList.contains('dk-card')) aurSeen(c);
   dkPut(d.stage, box);
-  dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', `${K.name} · ${list.length}개`));
+  dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', shop ? `${K.name} · ${list.length}개` : `${K.name} · ${order.length} / ${list.length}`));   // (내 장비: what is owned of all there are)
   // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
   if (shop && !net.on) dkPut(d.slate, [dkHr(), dkTxt('서버가 열리면 살 수 있습니다.')]);
   dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));
