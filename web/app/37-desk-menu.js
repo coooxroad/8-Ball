@@ -45,13 +45,15 @@ const soonToast = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
 /* The cards, in their order. id (its colour and sign: style/84-menu.css), title, sub (a line under it), strip (the black
    strip on top: where I am in it), go (the tap), soon (준비 중: dimmed, the tap only says so), hero (랭킹전: larger, lit). */
 const MENU_CARDS = [
-  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼', hero: true, strip: () => `레이팅 ${myTier().dama.toLocaleString('ko-KR')} · 온라인 1:1`, go: () => ranked.pick() },
-  { id: 'friend', title: '친구와 플레이', sub: '한 기기 · 방 만들기', strip: () => '친구와 번갈아', go: () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); } },
-  { id: 'lesson', title: '레슨', sub: '샷을 하나씩 배우기', strip: () => { const ids = drills.list.filter(q => q.make && q.vol).map(q => q.id); return `${ids.filter(id => prefs.lessonProof[id]).length} / ${ids.length} 깼음`; }, go: () => trainGo('lesson') },
-  { id: 'puzzle', title: '퍼즐', sub: '정해진 공을 한 번에', strip: () => { const L = puzzles.list; return L.length ? `${L.filter(q => prefs.pz.stars[q.id]).length} / ${L.length} 풀었음` : '준비 중'; }, go: () => trainGo('puzzle') },
+  // (the strips: a number or a word, as a game's card shows it - not a sentence about it; owner 11-16: "레이팅 ****",
+  // "온라인 1 : 1", "친구와 번갈아", "깼음" read as written by an AI)
+  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
+  { id: 'friend', title: '친구와 플레이', sub: '한 기기 · 방 만들기', strip: () => '1 : 1 · 2 : 2', go: () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); } },
+  { id: 'lesson', title: '레슨', sub: '기본기부터 차근차근', strip: () => { const ids = drills.list.filter(q => q.make && q.vol).map(q => q.id); return `${ids.filter(id => prefs.lessonProof[id]).length} / ${ids.length}`; }, go: () => trainGo('lesson') },
+  { id: 'puzzle', title: '퍼즐', sub: '한 번에 끝내기', strip: () => { const L = puzzles.list; return L.length ? `${L.filter(q => prefs.pz.stars[q.id]).length} / ${L.length}` : '준비 중'; }, go: () => trainGo('puzzle') },
   { id: 'arcade', title: '아케이드', sub: '증강 당구', soon: () => !net.debug, strip: () => net.debug ? '디버그' : '준비 중', go: () => net.debug ? (playStep = 'arcade', playFx = 'fan', paintHome()) : soonToast('아케이드는')() },
-  { id: 'cpu', title: '컴퓨터 대전', sub: '사람 같은 상대와 한 판', strip: () => '4종목 · 난이도 4단계', go: () => trainGo('cpu') },
-  { id: 'free', title: '자유 연습', sub: '공을 놓고 마음대로', strip: () => '혼자 · 시간 제한 없음', go: () => trainGo('free') }];
+  { id: 'cpu', title: '컴퓨터 대전', sub: '봇과 한 판', strip: () => `봇 ${typeof BOTS !== 'undefined' ? BOTS.length : 0}명`, go: () => trainGo('cpu') },
+  { id: 'free', title: '자유 연습', sub: '마음대로 치기', strip: () => '4구 · 3구 · 8볼 · 9볼', go: () => trainGo('free') }];
 /* Where the row lives. The cloth is part of the desk (#dkFelt, in the leaning plane), but the row of cards that scrolls
    on it is not: a scroller inside the plane's 3D lean was drawn again and again by the tablet as it scrolled - cards cut
    off at one height, whole frames gone, the bar's buttons too (owner 11-15, GPT's reading of the video). So the row is

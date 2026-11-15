@@ -82,9 +82,12 @@
 .mn-pc .nm{font:900 calc(22px*var(--u)) var(--ui-font);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mn-pc .who{font:700 calc(13px*var(--u)) var(--ui-font);opacity:.7;margin-top:calc(-6px*var(--u))}
 .mn-pc .em{position:relative;width:calc(150px*var(--u));height:calc(118px*var(--u));display:grid;place-items:center;margin-top:calc(6px*var(--u))}
-.mn-pc .em::before{content:"";position:absolute;left:50%;top:50%;width:calc(104px*var(--u));height:calc(104px*var(--u));transform:translate(-50%,-50%);background:url(ui/ring.webp) center/contain no-repeat;filter:var(--ring) drop-shadow(0 6px 8px rgba(0,0,0,.4))}
-.mn-pc .em::after{content:"";position:absolute;left:-10%;right:-10%;bottom:2px;height:calc(50px*var(--u));background:url(ui/laurel.webp) center/contain no-repeat;filter:var(--ring)}
-.mn-pc .em b{position:relative;z-index:1;font:900 calc(21px*var(--u)) var(--ui-font);color:#f0d488;-webkit-text-stroke:calc(4px*var(--u)) #2a1d08;paint-order:stroke fill;white-space:nowrap}
+/* the tier: an 8 ball of its metal (owner 11-16, no laurel - pictures from web/tools/tier-balls.cjs), on a soft shadow */
+.mn-pc .em::before{content:"";position:absolute;left:50%;bottom:calc(4px*var(--u));width:calc(92px*var(--u));height:calc(16px*var(--u));transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.42),rgba(0,0,0,0))}
+.mn-pc .em::after{content:"";position:absolute;left:50%;top:0;width:calc(112px*var(--u));height:calc(112px*var(--u));transform:translateX(-50%);background:var(--ball,url(ui/tier-ball-bronze.webp)) center/contain no-repeat}
+.mn-pc .em b{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mn-pc.t-silver{--ball:url(ui/tier-ball-silver.webp)}.mn-pc.t-gold{--ball:url(ui/tier-ball-gold.webp)}.mn-pc.t-platinum{--ball:url(ui/tier-ball-platinum.webp)}
+.mn-pc.t-diamond{--ball:url(ui/tier-ball-diamond.webp)}.mn-pc.t-pro{--ball:url(ui/tier-ball-pro.webp)}
 .mn-pc .bar{width:100%;display:flex;align-items:center;gap:calc(8px*var(--u))}.mn-pc .bar small{font:800 calc(12.5px*var(--u)) var(--ui-font);white-space:nowrap}
 .mn-pc .bar i{flex:1;height:calc(10px*var(--u));border-radius:9px;background:rgba(0,0,0,.25);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
 .mn-pc .bar i::after{content:"";display:block;width:var(--p,0%);min-width:calc(6px*var(--u));height:100%;background:linear-gradient(#f0d488,#c39a45)}
