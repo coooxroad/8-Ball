@@ -91,7 +91,7 @@ function menuPaint() {
   if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' }));
   let layer = $('#dkCards');
   if (!layer) {
-    layer = el('div', { id: 'dkCards' }); $('#deskPlane').after(layer);
+    layer = el('div', { id: 'dkCards' }); ($('#dkProps') || $('#deskPlane')).after(layer);   // (over the menu's towel and plant)
     // (fitted again when the cloth changes size - not step by step while the window does: layout() fits it after)
     if (window.ResizeObserver) new ResizeObserver(() => { if (!app.classList.contains('resizing')) menuFit(); }).observe($('#dkFelt'));
     // (a wheel turns the row sideways on a computer)

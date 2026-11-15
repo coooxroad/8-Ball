@@ -23,7 +23,7 @@
    the face's outline drawn a little smaller about that point; the face's edge catches the light (a glossy rim), the side
    darkens down to the desk, lit a little more on the faces towards the light (upper right). --sl / --sd: the side's light
    and dark, set per panel. Pressed, the face goes part of the way down. */
-#app.desk{--game-font:'Black Han Sans',var(--ui-font)}
+#app.desk{--game-font:var(--ui-font)}   /* (one face for everything, owner 11-16: the round and the poster faces are gone - weight and outline make the heavy words) */
 #dkBoards .bd{position:relative;border:0;padding:0;border-radius:13px;background:none;box-shadow:none}
 #dkBoards .bd .ly{position:absolute;inset:0;border-radius:13px;pointer-events:none;transform-origin:var(--fx) var(--fy);transform:scale(var(--k,1));
   --c:color-mix(in srgb,var(--sd) var(--m),var(--sl));background:linear-gradient(215deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c) 38%,color-mix(in srgb,var(--c) 80%,#000))}
@@ -38,7 +38,7 @@
 #dkBoards .bd{container-type:size;--u:min(1cqw,1.5cqh);--sl:#e9d3a2;--sd:#8a6a3a;--fx:50%;--fy:200%;--kp:.995;margin:0;cursor:pointer;color:#fff;text-align:left;--ink:#1c0f04;--ol:calc(var(--u)*.55)}
 #dkBoards .bd-tt em{align-self:flex-start;display:inline-block;margin-bottom:calc(var(--u)*1.4);padding:calc(var(--u)*.55) calc(var(--u)*2.2);border-radius:calc(var(--u)*.9);transform:skewX(-10deg);
   font:900 italic calc(var(--u)*3.1)/1.15 'Outfit',sans-serif;letter-spacing:.08em;color:var(--ink);background:linear-gradient(#ffe27a,#f2b72e);box-shadow:-2px 2px 0 var(--ink)}
-#dkBoards .bd-tt b{display:block;font:400 calc(var(--u)*12.5)/1 var(--game-font);letter-spacing:-.01em;color:#fff;
+#dkBoards .bd-tt b{display:block;font:800 calc(var(--u)*12.5)/1 var(--game-font);letter-spacing:-.01em;color:#fff;
   text-shadow:var(--ol) 0 0 var(--ink),calc(0px - var(--ol)) 0 0 var(--ink),0 var(--ol) 0 var(--ink),0 calc(0px - var(--ol)) 0 var(--ink),
     var(--ol) var(--ol) 0 var(--ink),calc(0px - var(--ol)) var(--ol) 0 var(--ink),var(--ol) calc(0px - var(--ol)) 0 var(--ink),calc(0px - var(--ol)) calc(0px - var(--ol)) 0 var(--ink),
     0 calc(var(--u)*1.3) 0 var(--ink)}
@@ -46,7 +46,7 @@
 #dkBoards .bd-tag{margin-top:auto;align-self:flex-start;padding:calc(var(--u)*1.1) calc(var(--u)*3);border-radius:999px;font:800 calc(var(--u)*3.2)/1.2 var(--ui-font);color:#fff;
   background:rgba(10,18,40,.55);border:calc(var(--u)*.45) solid #fff;box-shadow:-2px 2px 0 var(--ink)}
 #dkBoards .bd-foot{margin-top:auto;text-align:center}
-#dkBoards .bd-foot b{display:block;font:400 calc(var(--u)*6)/1.15 var(--game-font);color:#fff;
+#dkBoards .bd-foot b{display:block;font:800 calc(var(--u)*6)/1.15 var(--game-font);color:#fff;
   text-shadow:var(--ol) 0 0 var(--ink),calc(0px - var(--ol)) 0 0 var(--ink),0 var(--ol) 0 var(--ink),0 calc(0px - var(--ol)) 0 var(--ink),0 calc(var(--u)*.8) 0 var(--ink)}
 #dkBoards .bd-foot small{display:block;margin-top:calc(var(--u)*1);font:800 calc(var(--u)*3.4)/1.2 var(--ui-font);color:#fff;text-shadow:0 1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink),0 2px 0 var(--ink)}
 /* A printed ground in the panel's colour - speed lines and halftone from the light (the key art that lay over it, ui/pp-*,

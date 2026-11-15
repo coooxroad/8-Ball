@@ -115,3 +115,16 @@
 #app.desk .dk-back:active{background:rgba(60,45,25,.2)}
 #app.desk .dk-back svg{width:20px;height:20px}
 #app.desk.compact .dk-back{min-height:44px;margin:0 0 6px;font-size:16px}
+
+/* The towel and the plant on the menu (owner 11-16: cut off and blurred on the leaning desk): flat, in a layer of their
+   own over the desk and under the cards (#dkProps, as #dkCards) - drawn at the screen's own sharpness, the plant hung
+   from past the right edge under the bar, the towel draped past the left and bottom edges, so no picture edge shows. */
+#dkProps{display:none;position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+#app.desk.mnon:not(.resizing) #deskPlane:not([hidden])~#dkProps{display:block}   /* (under the cards: #dkCards goes in after it - 37-desk-menu.js) */
+#app.mnon #desk>.dk-prop.towel,#app.mnon #desk>.dk-prop.plant{display:none}
+#dkProps i{position:absolute;background-position:center;background-size:contain;background-repeat:no-repeat}
+#dkProps .plant{right:-8px;top:calc(var(--bar) - 34px);width:220px;height:220px;background-image:url(ui/plant.webp);filter:drop-shadow(-6px 10px 8px rgba(0,0,0,.35))}
+#dkProps .towel{left:-6px;bottom:-14px;width:280px;height:200px;background-image:url(ui/towel.webp);filter:drop-shadow(4px -2px 6px rgba(0,0,0,.35))}
+#app.desk.compact #dkProps .plant{width:140px;height:140px;right:-20px;top:calc(var(--bar) - 40px)}
+#app.desk.compact #dkProps .towel{width:180px;height:128px}
+#app.desk.compact:not(.portrait) #dkProps{display:none}
