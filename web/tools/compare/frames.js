@@ -1,12 +1,12 @@
 /* A tool, not a check: saves the 3D canvas at a few fixed moments - aiming, mid-shot, the 3D view after it - with
    Math.random seeded and the frame clock driven by hand, so two builds give byte-identical pictures when the drawing
    has not changed. Use it to prove a rendering refactor changes nothing:
-     sh web/build.sh && node web/test/browser/frames.js /tmp/before   (old code)
-     sh web/build.sh && node web/test/browser/frames.js /tmp/after    (new code)
+     sh web/build.sh && node web/tools/compare/frames.js /tmp/before   (old code)
+     sh web/build.sh && node web/tools/compare/frames.js /tmp/after    (new code)
      md5sum /tmp/before-*.png /tmp/after-*.png
    It also prints the draw calls and triangles of each moment. */
 const fs = require('fs');
-const { open } = require('./harness.js');
+const { open } = require('../../test/browser/harness.js');
 const out = process.argv[2] || 'frames';
 (async () => {
   const { browser, page, errors } = await open(1024, 640, 1, { init: () => {

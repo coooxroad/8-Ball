@@ -4,9 +4,9 @@
 A declaration moves forward to the last rule only when no rule at all between the two (any selector - another may match
 the same elements - and the rules inside @media blocks) sets the same property or one that overlaps it (padding and
 padding-left); otherwise it stays where it was. Comments are kept; a merged rule comes out on one line.
-Prove each use changed nothing with web/test/browser/styles.js (computed styles before and after):
-    node web/test/browser/styles.js /tmp/before.json;  python3 web/tools/cssmerge.py web/style/NN-x.css
-    sh web/build.sh && node web/test/browser/styles.js /tmp/after.json;  node web/test/browser/styles.js --compare /tmp/before.json /tmp/after.json
+Prove each use changed nothing with web/tools/compare/styles.js (computed styles before and after):
+    node web/tools/compare/styles.js /tmp/before.json;  python3 web/tools/cssmerge.py web/style/NN-x.css
+    sh web/build.sh && node web/tools/compare/styles.js /tmp/after.json;  node web/tools/compare/styles.js --compare /tmp/before.json /tmp/after.json
 (11-11: used on 60-desk, 75-play-panels, 76-play-unfold, 10-play, 80-broadcast. 11-15: the overridden-declaration pass
 added, then used on 10-play (its in-play desk controls then laid out by hand), 75-play-panels, 76-play-unfold,
 80-broadcast, 90-portrait.)"""

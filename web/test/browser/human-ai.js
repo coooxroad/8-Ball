@@ -41,10 +41,10 @@ function fixture(kind) {
     });
     await page.waitForFunction(() => __dp8.st.auto && __dp8.st.auto.plan && __dp8.game.humanStates[1], { timeout: 30000 });
     assert(await page.evaluate(() => __dp8.st.auto.aiJob && !__dp8.st.auto.aiJob.res.err), 'actual Worker answer missing');
-    assert(await page.evaluate(() => {
-      const { st } = __dp8, p = st.auto.plan;
-      return p.preShot.version === 3 && p.el > 0 && p.preShot.keyframes[0].el === 0 && st.el === 0;
-    }), 'v3 Worker must aim level before raising the cue');
+    { const v = await page.evaluate(() => { const { st } = __dp8, p = st.auto.plan; return { ver: p.preShot.version, el: p.el, k0: p.preShot.keyframes[0].el, st: st.el }; });
+      // (the cue starts level whatever the plan ends at: this layout's plan used to raise the cue, and since the physics of
+      // 11-07 it chooses a level shot - the start is what is checked, not which shot the computer likes)
+      assert(v.ver === 3 && v.k0 === 0 && v.st === 0 && v.el >= 0, 'v3 Worker must aim level before raising the cue ' + JSON.stringify(v)); }
 
     const install = async f => page.evaluate(f => {
       const d = __dp8; d.game.restore(f.game); d.scene.setTable(d.game.P); d.scene.invalidate();

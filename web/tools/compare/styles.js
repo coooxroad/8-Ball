@@ -2,11 +2,11 @@
    three ways, a friend game's setup, the add-ons, 랭킹전's games, lessons, 내 장비, 상점) at five sizes and play (free
    practice, a friend's 8볼 and 4구, the broadcast dress, a puzzle) at three - written to one JSON file, so that a CSS
    tidy (web/tools/cssmerge.py) can be shown to change nothing:
-     node web/test/browser/styles.js /tmp/before.json   (old CSS, built)
-     node web/test/browser/styles.js /tmp/after.json    (new CSS, built)
-     node web/test/browser/styles.js --compare /tmp/before.json /tmp/after.json
+     node web/tools/compare/styles.js /tmp/before.json   (old CSS, built)
+     node web/tools/compare/styles.js /tmp/after.json    (new CSS, built)
+     node web/tools/compare/styles.js --compare /tmp/before.json /tmp/after.json
    What animates (the toast, the clock, fades, the shop's badges) differs from run to run and is left out of the comparison. */
-const { open } = require('./harness');
+const { open } = require('../../test/browser/harness.js');
 const fs = require('fs');
 const DESK = ['display', 'position', 'top', 'left', 'right', 'bottom', 'width', 'height', 'padding', 'margin', 'border', 'border-image-source', 'border-radius', 'background-image', 'background-color', 'box-shadow', 'color', 'font', 'z-index', 'opacity', 'transform', 'filter', 'gap', 'flex', 'grid-template-columns', 'grid-template-rows', 'overflow', 'visibility', 'min-width', 'min-height', 'max-width', 'text-align', 'letter-spacing', '--bar', '--s', '--lip'];
 const PLAY = ['display', 'position', 'top', 'left', 'right', 'bottom', 'width', 'height', 'padding', 'margin', 'border', 'border-image-source', 'border-radius', 'background-image', 'background-color', 'box-shadow', 'color', 'font', 'z-index', 'opacity', 'filter', 'gap', 'flex', 'grid-template-columns', 'overflow', 'visibility', 'min-width', 'max-width', 'text-align', 'clip-path', 'justify-self', 'grid-column'];

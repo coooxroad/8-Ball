@@ -14,7 +14,12 @@ const { open } = require('./harness.js');
       const tap = async locator => { const b = await locator.first().boundingBox(); assert(b); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await settle(); };
       // Compare the table opening with the native-density layout, including the ranked-search strip.
       // (the cards open: the three ways come out of the middle and settle before one is tapped)
-      await tap(page.locator('[data-b="friend"]')); await page.waitForTimeout(1300);
+      // (플레이's menu: the card row on a wide screen - the card brought into view first; the desk's boards when upright)
+      if (await page.evaluate(() => document.getElementById('desk').classList.contains('menu'))) {
+        await page.evaluate(() => { const c = document.querySelector('.mn-card[data-k="friend"]'); c.closest('.mn-row').scrollLeft = c.offsetLeft - 200; }); await page.waitForTimeout(300);
+        await tap(page.locator('.mn-card[data-k="friend"]'));
+      } else await tap(page.locator('[data-b="friend"]'));
+      await page.waitForTimeout(1300);
       // (headless frames are slow: the cards' coming out is finished by hand, else the tap lands on whichever card is passing)
       if (await page.locator('[data-b="way-local"]').count()) { await page.evaluate(() => document.getAnimations().forEach(a => { if (/unfoldIn|flyAway/.test(a.animationName || '')) a.finish(); })); await tap(page.locator('[data-b="way-local"]')); await page.waitForTimeout(800); }
       if (await page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }).count()) await tap(page.locator('#dkSlate .dk-seg button', { hasText: '한 기기에서' }));
@@ -39,7 +44,7 @@ const { open } = require('./harness.js');
           current.hole.forEach((v, j) => assert(Math.abs(v - native[i].hole[j]) <= 3, 'table opening shifted at a different pixel density'));
         }
       }
-      if (w > 900 && dpr < 2) { assert(plain.density > 1); assert(plain.pixels <= 8e6); }
+      if (w > 900 && dpr < 2) { assert(plain.density > 1, JSON.stringify(plain)); assert(plain.pixels <= 8e6, JSON.stringify(plain)); }
       else assert.equal(plain.density, 1);
       // Compare at the same DPR: WebGL may legitimately have its own per-device pixel budget.
       const independent = await page.evaluate(() => {
