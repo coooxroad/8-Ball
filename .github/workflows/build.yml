@@ -28,18 +28,22 @@ jobs:
         run: node web/tools/check.js
 
   # The app in a real browser (headless Chromium, software WebGL): the smoke run through the app at a tablet and a phone
-  # size, desktop text, the PC frame policy, the stand-in's wiring, desktop sizes and GPU fallback. Here, not on Claude's machine, which has no GPU
-  # and takes many minutes for the same. A smoke run that fails is tried once more (software rendering is slow and a
-  # wait can run out); the others must pass first time.
+  # size, desktop text, the PC frame policy, the stand-in's wiring, desktop sizes and GPU fallback. Here, not on Claude's
+  # machine, which has no GPU and takes many minutes for the same. Three runners side by side and alongside 'check', so
+  # the release waits about as long as the slowest (~4 min). A smoke run that fails is tried once more (software rendering
+  # is slow and a wait can run out); the others must pass first time.
   browser:
-    needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [smoke, desk-text, rest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Playwright and Chromium
         run: |
           npm i --no-save --no-package-lock --no-audit --no-fund playwright@1.63.0
@@ -47,15 +51,17 @@ jobs:
       - name: Build the page
         run: sh web/build.sh
       - name: Smoke
+        if: matrix.part == 'smoke'
         run: node web/test/browser/smoke.js || { echo "::warning::smoke failed once - trying again"; node web/test/browser/smoke.js; }
       - name: Desktop text
+        if: matrix.part == 'desk-text'
         run: node web/test/browser/desk-text.js
-      - name: PC frame policy
-        run: node web/test/browser/pc-performance.js
-      - name: Stand-in wiring
-        run: node web/test/browser/human-ai.js
-      - name: Desktop sizes, high DPI, GPU fallback
-        run: node web/test/browser/graphics.js
+      - name: PC frame policy, stand-in wiring, desktop sizes and GPU fallback
+        if: matrix.part == 'rest'
+        run: |
+          node web/test/browser/pc-performance.js
+          node web/test/browser/human-ai.js
+          node web/test/browser/graphics.js
 
   # Only what lands on main becomes an APK and a release.
   apk:
