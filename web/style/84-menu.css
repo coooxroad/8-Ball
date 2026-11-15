@@ -1,27 +1,34 @@
 /* ---------- 플레이's card menu on the desk (app/37-desk-menu.js) ----------
-   A charcoal cloth across the desk (past both sides of the screen, stitched along its long edges), and on it one row that
-   scrolls sideways: my 선수증, then the printed cards. Sizes are in u (--u: the row's height / 560, set by the script), so
-   the cards grow and shrink whole with the cloth. Only transform and opacity move (the sheen, the glints, the sparkles),
-   each on its own small layer, so the leaning desk is not painted again for them - and nothing here is masked: a mask
-   over the scrolling row (its fading ends) or round a rim made the tablet draw the whole row again every frame, and in
-   the leaning desk it flickered and went blank while scrolling (owner 11-15). A rim is the card's own colour, its face
-   laid over it a little smaller, the glint running between the two. */
+   A charcoal cloth across the desk (#dkFelt, part of the leaning desk: past both sides of the screen, stitched along its
+   long edges), and on it one row that scrolls sideways: my 선수증, then the printed cards. The row is not in the desk's
+   plane but in a layer of its own laid over it (#dkCards - see menuFit: a scroller inside the 3D lean flickered and went
+   blank on the tablet); only its strip of cards leans, by the same projection, so they lie on the cloth.
+   Sizes are in u (--u, set by menuFit: the 랭킹전 card is 560u), so the cards grow and shrink whole with the cloth, and
+   the cloth comes in to the cards when the screen's width is what limits them (--fi). Only transform and opacity move
+   (the sheen, the glints, the sparkles), each on its own small layer - and nothing here is masked (a mask over a scrolling
+   row or round a rim is drawn again every frame). A rim is the card's own colour, its face laid over it a little smaller,
+   the glint running between the two. */
 #app:not(.oldmenu) #dkTabs .dk-tab[data-t=train]{display:none}
 #desk.menu>.dk-rail,#desk.menu>.dk-tray,#desk.menu>.dk-slate{display:none}
-#desk:not(.menu)>.dk-menu{display:none}
-#app.desk #desk>.dk-menu{position:absolute;z-index:2;left:0;right:0;top:30px;bottom:calc(130px*var(--es) + 24px);--u:1}
-#app.desk.compact #desk>.dk-menu{top:8px;bottom:calc(130px*var(--es) + 8px)}
+#desk:not(.menu)>.dk-felt,#app:not(.mnon) #dkCards,#deskPlane[hidden]~#dkCards{display:none}
+#app.desk #desk>.dk-felt{position:absolute;z-index:2;left:0;right:0;top:44px;bottom:calc(130px*var(--es) + 24px);pointer-events:none;--fi:0px}
+#app.desk.compact #desk>.dk-felt{top:12px;bottom:calc(130px*var(--es) + 8px)}
+/* (while 랭킹전 looks for an opponent its strip sits under the bar: the desk moves down, the cloth a little more) */
+#app.desk.rk #desk>.dk-felt{top:54px}
 /* (the cloth: its darker hems drawn in its background, no blurred inner shadow - those are slow to draw this wide) */
-.dk-menu::before{content:"";position:absolute;left:-160px;right:-160px;top:0;bottom:0;box-shadow:0 8px 12px rgba(0,0,0,.4);
+.dk-felt::before{content:"";position:absolute;left:-160px;right:-160px;top:var(--fi);bottom:var(--fi);box-shadow:0 8px 12px rgba(0,0,0,.4);
   background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.08) 5%,rgba(0,0,0,0) 14%,rgba(0,0,0,0) 86%,rgba(0,0,0,.08) 95%,rgba(0,0,0,.3)),#2a2a2a url(ui/felt-charcoal.webp) 0 0/320px repeat}
-.dk-menu::after{content:"";position:absolute;left:-160px;right:-160px;top:14px;bottom:14px;border-top:2px dashed rgba(255,255,255,.2);border-bottom:2px dashed rgba(255,255,255,.2);pointer-events:none}
-.mn-row{position:absolute;inset:0;display:flex;align-items:center;gap:calc(18px*var(--u));overflow-x:auto;overflow-y:hidden;padding:0 calc(64px*var(--u)) 0 calc(54px*var(--u));
-  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.dk-felt::after{content:"";position:absolute;left:-160px;right:-160px;top:calc(var(--fi) + 14px);bottom:calc(var(--fi) + 14px);border-top:2px dashed rgba(255,255,255,.2);border-bottom:2px dashed rgba(255,255,255,.2)}
+/* the layer over the desk: the plane's own box, flat; the scroller across it at the cloth's height (menuFit), and in it
+   the strip of cards leaning about the plane's bottom edge (--oy below the strip's top) by the desk's angle */
+#dkCards{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;pointer-events:none}
+.mn-row{position:absolute;left:0;right:0;overflow-x:auto;overflow-y:hidden;pointer-events:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;--u:1;--edge:0px;--oy:0px}
 .mn-row::-webkit-scrollbar{display:none}
-.mn-row::after{content:"";flex:none;width:1px;height:1px}
+.mn-track{display:flex;align-items:center;gap:calc(14px*var(--u));width:max-content;height:100%;box-sizing:border-box;
+  padding:0 calc(var(--edge) + 60px*var(--u)) 0 calc(var(--edge) + 30px*var(--u));transform:rotateX(var(--tilt));transform-origin:0 var(--oy)}
 
 /* a card: the desk's printed card - its colour (--c1 light, --c2 dark), a dot print, a white line inside, a black strip on top */
-.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(212px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
+.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
   background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s}
 .mn-card:active{transform:translateY(3px)}
 .mn-card::after{content:"";position:absolute;inset:calc(8px*var(--u));top:calc(46px*var(--u));border-radius:calc(9px*var(--u));border:calc(2px*var(--u)) solid rgba(255,255,255,.85);pointer-events:none}
@@ -42,7 +49,7 @@
 .mn-card.k-cpu{--c1:#56708f;--c2:#25354b}
 .mn-card.k-free{--c1:#6f7f45;--c2:#353f1a}
 /* 랭킹전: larger, its sign larger, its rim alight - a gold line round it with a glint running along, and a slow glow */
-.mn-card.hero{width:calc(282px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
+.mn-card.hero{width:calc(272px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
 .mn-card.hero .mn-ico{top:calc(110px*var(--u));height:calc(170px*var(--u))}.mn-card.hero .mn-ico svg{width:calc(160px*var(--u));height:calc(160px*var(--u))}
 .mn-card.hero b{bottom:calc(92px*var(--u));font-size:calc(42px*var(--u))}.mn-card.hero small{bottom:calc(62px*var(--u));font-size:calc(16px*var(--u))}
 .mn-card.hero .strip{left:calc(3px*var(--u));right:calc(3px*var(--u));top:calc(3px*var(--u));border-radius:calc(15px*var(--u)) calc(15px*var(--u)) 0 0;color:#f0d488}
@@ -62,7 +69,7 @@
 
 /* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */
 .mn-pc{--pcBg:url(ui/leather-ivory.webp) center/400px;--pcInk:#2b241c;--pcHd:linear-gradient(#a8703f,#6a4020);--pcCell:rgba(60,45,25,.1);--rim:linear-gradient(135deg,#d9a571,#7a4a24 50%,#e9c39a);--ring:sepia(.6) saturate(1.3) hue-rotate(-12deg) brightness(.9);
-  position:relative;flex:none;width:calc(236px*var(--u));height:calc(560px*var(--u));border-radius:calc(20px*var(--u));box-sizing:border-box;padding:calc(62px*var(--u)) calc(18px*var(--u)) calc(18px*var(--u));
+  position:relative;flex:none;width:calc(228px*var(--u));height:calc(560px*var(--u));border-radius:calc(20px*var(--u));box-sizing:border-box;padding:calc(62px*var(--u)) calc(18px*var(--u)) calc(18px*var(--u));
   display:flex;flex-direction:column;align-items:center;gap:calc(9px*var(--u));background:var(--rim);color:var(--pcInk);box-shadow:-4px 6px 0 rgba(0,0,0,.3),-8px 18px 26px rgba(0,0,0,.45)}
 .mn-pc .mn-face{border-radius:calc(17px*var(--u));background:var(--pcBg)}
 .mn-pc>:not(.mn-rim):not(.mn-face):not(.hd):not(.mn-sheen):not(.mn-sp){position:relative}

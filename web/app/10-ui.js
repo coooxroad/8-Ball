@@ -69,9 +69,14 @@ function layout() {
   const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (36-desk-paint.js)
   app.classList.toggle('tilt', tilt);                                // (before the scene sizes itself: it draws finer while leaning)
   if (tilt) deskBeams();                                             // (the window's light, drawn again only if the size changed)
-  scene.resize();
+  /* (the live table hidden under the desk - the card menu, the boards - is neither shown nor sized again: entering full
+     screen on the tablet went black for seconds while everything was redone at once, owner 11-15. It is sized when it
+     shows again: every place that shows it lays out again) */
+  const glHid = st.screen === 'home' && !deskTableShown();
+  app.classList.toggle('glhide', glHid);
+  if (!glHid) scene.resize();
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do
-  if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }
+  if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); menuFit(); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
   else scene.setInsets(playInsets(H, portrait));
   if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); if (!$('#spinPop').hidden) { fitSpinPop(); setSpinUI(); setKindUI(); } }
@@ -173,14 +178,26 @@ function fullCan() {
   const root = document.documentElement, supported = !!(root.requestFullscreen || root.webkitRequestFullscreen);
   return location.protocol !== 'file:' && (fullOn() || (supported && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches));
 }
+// (debug: how long full screen takes - from the tap to frames coming steadily again - shown as a note; owner 11-15)
+let fullT0 = 0;
+function fullTime() {
+  const t0 = fullT0; fullT0 = 0; if (!t0 || !net.debug) return;
+  let last = performance.now(), worst = 0, calm = 0;
+  const step = now => {
+    worst = Math.max(worst, now - last); calm = now - last < 40 ? calm + 1 : 0; last = now;
+    if (calm >= 5 || now - t0 > 20000) return toast(`전체 화면 전환 ${Math.round(now - t0)}ms · 가장 긴 멈춤 ${Math.round(worst)}ms`, '', 5000);
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function fullToggle() {
-  const d = document.documentElement;
+  const d = document.documentElement; fullT0 = performance.now();
   if (fullOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   else { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => toast('이 브라우저에서는 전체 화면을 쓸 수 없습니다.', '', 2200)); }
 }
 function paintFull() { const b = $('#dkFull'); if (!b) return; b.hidden = !fullCan(); b.querySelector('span').textContent = fullOn() ? '창 모드' : '전체 화면'; }
 function fullChanged() {
-  paintFull();
+  paintFull(); fullTime();
   clearTimeout(layoutT);
   layoutPending = true;
   scene.invalidate();

@@ -31,6 +31,7 @@
 #deskPlane::before{content:'';position:absolute;inset:0;background:var(--desk-base,#6b4527) var(--desk-img,url(ui/desk.webp)) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:opacity}
 #deskPlane>#desk{will-change:opacity}
 #app.desk.tilt{background:#0b0806}
+#app.glhide #gl{visibility:hidden}   /* (the live table under the desk when nothing shows it: not drawn, not sized - 10-ui.js layout) */
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
    On its side, the three columns again, narrow. */
 /* Lay out at the original size, rasterize the contents more densely, then restore their screen size before tilting.

@@ -2,11 +2,12 @@
    After 8 Ball Pool's row of game cards, on our desk (its wood and slope, its towel and chalk; no rail, tray or slate): a
    charcoal cloth runs across the desk past both sides of the screen, and on it, in one row that scrolls on sideways as far
    as it goes (no pages), my 선수증 - its look, sheen and the glint going round its rim by my tier - then the cards: 랭킹전
-   (the largest, its rim alight: the tap opens its games), 친구와 플레이, 레슨, 퍼즐, 아케이드 (준비 중; open in
-   debug), 컴퓨터 대전, 자유 연습 (관전 and 투어 were cards for a day: out, owner 11-15). 훈련 has no tab or card of its own now: its four parts are cards. Each card is a
-   printed card (a colour, a faint dot print, a white line inside the edge) with a black strip on top saying where I am in it.
-   The cards are MENU_CARDS: one entry each - add one there. Everything is sized from the row's height (--u: the 랭킹전 card
-   is 560u tall), so the row is the same on any screen that holds it.
+   (the largest, its rim alight: the tap opens its games), 친구와 플레이, 레슨, 퍼즐, 아케이드 (준비 중; open in debug),
+   컴퓨터 대전, 자유 연습. 훈련 has no tab or card of its own: its four parts are cards. Each card is a printed card (a
+   colour, a faint dot print, a white line inside the edge) with a black strip on top saying where I am in it.
+   The cards are MENU_CARDS (one entry each - add one there, its sign in MENU_ICO under the same id). Sizes are in u, set by
+   menuFit from the cloth's height and the screen's width; the row itself lies in a layer of its own over the desk (see
+   menuFit). The screens each card opens are the desk's (33-desk-play.js, 34-desk-train.js) until they are made anew.
    디버그 · 메인 메뉴 예전: the desk's boards as they were (33-desk-play.js boards), with the 훈련 tab. A screen held upright
    keeps the boards for now (its own layout to come). */
 // (the card menu, unless the debug setting asks for the old boards, or the screen is held upright)
@@ -22,7 +23,7 @@ const MENU_ICO = {
   puzzle: '<path d="M9 4h3a2 2 0 1 1 4 0h3v5a2 2 0 1 1 0 4v6h-5a2 2 0 1 0-4 0H5v-6a2 2 0 1 0 0-4V4z"/>',
   arcade: '<rect x="3.5" y="5" width="10" height="14" rx="1.6" transform="rotate(-10 8.5 12)"/><rect x="10.5" y="4.5" width="10" height="14" rx="1.6" transform="rotate(8 15.5 11.5)"/>',
   cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
-  solo: '<circle cx="15.5" cy="15.5" r="4.5"/><path d="M3 3l9 9"/>' };
+  free: '<circle cx="15.5" cy="15.5" r="4.5"/><path d="M3 3l9 9"/>' };   // (each sign under its card's id)
 const menuIco = k => { const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' }); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${MENU_ICO[k]}</svg>`; return s; };
 // my rating and tier (economy.js TIER_AT; 33-desk-play.js TIERS)
 function myTier() {
@@ -51,16 +52,49 @@ const MENU_CARDS = [
   { id: 'arcade', title: '아케이드', sub: '증강 당구', soon: () => !net.debug, strip: () => net.debug ? '디버그' : '준비 중', go: () => net.debug ? (playStep = 'arcade', playFx = 'fan', paintHome()) : soonToast('아케이드는')() },
   { id: 'cpu', title: '컴퓨터 대전', sub: '사람 같은 상대와 한 판', strip: () => '4종목 · 난이도 4단계', go: () => trainGo('cpu') },
   { id: 'free', title: '자유 연습', sub: '공을 놓고 마음대로', strip: () => '혼자 · 시간 제한 없음', go: () => trainGo('free') }];
+/* Where the row lives. The cloth is part of the desk (#dkFelt, in the leaning plane), but the row of cards that scrolls
+   on it is not: a scroller inside the plane's 3D lean was drawn again and again by the tablet as it scrolled - cards cut
+   off at one height, whole frames gone, the bar's buttons too (owner 11-15, GPT's reading of the video). So the row is
+   a layer of its own over the plane (#dkCards, laid exactly where the plane is, flat), the scroller in it flat too, and
+   only the strip of cards inside it leans: the scroller's own 'perspective' (from the point the plane leans about, its
+   bottom middle) and the strip's rotateX by the same angle about the same line make the plane's own projection - so the
+   cards sit on the cloth as before, while the scrolling itself is plain. menuFit places it and sizes the cards. */
 let menuScroll = 0;                                                   // (where the row was scrolled to, kept while the desk is away)
+const MENU_W = { pad: 30, pc: 228, hero: 272, card: 204, gap: 14 };   // (the row's sizes in u: 84-menu.css uses the same)
+function menuFit() {
+  const felt = $('#dkFelt'), layer = $('#dkCards'), row = layer && layer.firstChild, pl = $('#deskPlane');
+  if (!felt || !row || !menuShown() || !pl.offsetWidth) return;
+  const dk = $('#desk'), density = parseFloat(app.style.getPropertyValue('--desk-density')) || 1;
+  const t = parseFloat(app.style.getPropertyValue('--tilt')) || 0.26, P = parseFloat(app.style.getPropertyValue('--pp')) || 2300;
+  const pw = pl.offsetWidth, ph = pl.offsetHeight;
+  // the cloth in the plane's own flat coordinates (as deskWindow finds the tray)
+  const fy = dk.offsetTop * density + felt.offsetTop, fh = felt.offsetHeight; if (!fh) return;
+  /* the card size: the 랭킹전 card (560u) at 88% of the cloth's height - but no larger than lets the 선수증 and four cards
+     show whole across the screen (the screen's width W shows W / k of the plane at a height h up it, k = P / (P + h sin t);
+     taken low on the cards, where they show widest), and then the cloth comes in to the cards rather than leaving them
+     small on it (owner 11-15: on a full screen only four showed) */
+  const W = app.clientWidth, h = ph - (fy + fh * 0.8), k = P / (P + h * Math.sin(t)), seen = W / k;
+  const need = MENU_W.pad + MENU_W.pc + MENU_W.hero + 3 * MENU_W.card + 4 * MENU_W.gap + 24;
+  const u = Math.max(0.3, Math.min(fh * 0.88 / 560, seen / need));
+  const clothH = Math.min(fh, 560 * u / 0.86);
+  felt.style.setProperty('--fi', ((fh - clothH) / 2).toFixed(1) + 'px');
+  // the row over the cloth, in the same coordinates (the layer is the plane's box, untransformed)
+  Object.assign(row.style, { top: fy + 'px', height: fh + 'px' });
+  row.style.setProperty('--u', u.toFixed(4));
+  row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
+  row.style.perspective = P + 'px';
+  row.style.perspectiveOrigin = `${(pw / 2).toFixed(1)}px ${(ph - fy).toFixed(1)}px`;
+  row.style.setProperty('--oy', (ph - fy).toFixed(1) + 'px');
+}
 function menuPaint() {
-  let root = $('#dkMenu');
-  if (!root) {
-    root = el('div', { class: 'dk-menu', id: 'dkMenu' }); $('#desk').appendChild(root);
-    // the row's unit: the 랭킹전 card (560u) takes 88% of the cloth's height, whatever the screen - every size in the cards
-    // is in u, so they grow and shrink whole (owner 11-15); a wheel turns the row sideways on a computer
-    const fit = () => { const r = root.firstChild; if (r && r.clientHeight) root.style.setProperty('--u', Math.max(0.3, r.clientHeight * 0.88 / 560).toFixed(4)); };
-    if (window.ResizeObserver) new ResizeObserver(fit).observe(root); root._fit = fit;
-    root.addEventListener('wheel', e => { const r = root.firstChild; if (r && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { r.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  // the cloth on the desk, and the layer for the row over the plane (made once)
+  if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' }));
+  let layer = $('#dkCards');
+  if (!layer) {
+    layer = el('div', { id: 'dkCards' }); $('#deskPlane').after(layer);
+    if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe($('#dkFelt'));
+    // (a wheel turns the row sideways on a computer)
+    layer.addEventListener('wheel', e => { const r = layer.firstChild; if (r && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { r.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
   }
   const t = myTier(), r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
   const go = fn => () => { SND.init(); SND.tap(); fn(); };
@@ -81,9 +115,10 @@ function menuPaint() {
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
-  const row = el('div', { class: 'mn-row' }, [pc, ...cards]);
-  const old = root.firstChild; if (old) menuScroll = old.scrollLeft;
-  root.textContent = ''; root.appendChild(row);
+  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
+  const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
+  layer.textContent = ''; layer.appendChild(row);
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
-  requestAnimationFrame(() => { if (root._fit) root._fit(); row.scrollLeft = menuScroll; });
+  menuFit(); row.scrollLeft = menuScroll;
+  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; });
 }

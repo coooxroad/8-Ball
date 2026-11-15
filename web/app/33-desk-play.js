@@ -1,7 +1,7 @@
-/* 플레이: four panels side by side on the desk, over the same ground as the rail, tray and slate, so the desk's lean makes
-   them one trapezoid as it does those: 랭킹전 with the player's tier, 아케이드 and 챌린지 over 친구와 플레이 - blocks of
-   the shop's ivory and charcoal, and a pale sky for 아케이드 (owner, 5.0). 친구와 플레이 opens the four games as four panels (4구 and 8볼 above, 3구 and 9볼 below), each its cloth
-   with its balls on it (the balls as the table draws them); a game opens the match to set up, with an X back. */
+/* 플레이's steps after the menu (the menu itself is the card row, 37-desk-menu.js): 랭킹전's four games, 친구와 플레이's
+   three ways, the rooms, the add-ons - panels standing on the desk, over the same ground as the rail, tray and slate, so the
+   desk's lean makes them one trapezoid as it does those. The step 'boards' is the old menu of four panels, kept for a
+   screen held upright and for 디버그 · 메인 메뉴 예전 (owner 11-15: the screens after each card are to be made anew). */
 let playStep = 'boards';                                              // 'boards' | 'rank' | 'friend' | 'halls' | 'setup' | 'addons' | 'arcade' (33-desk-arcade.js)
 let rankBarShown = null;                                              // the rating the 랭킹전 card's bar last filled to
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
@@ -82,7 +82,7 @@ function addonCard() {
     [el('i', { class: 'sk' }), ico, el('b', { text: '애드온' }), el('small', { text: on.length ? on.join(' · ') : '없음' })]);
 }
 const RULE_KO = (m, r) => m === 'four' ? `${(r && r.target) || 10}점${r && r.finish ? ` · ${r.finish === 'three' ? '쓰리쿠션' : '쿠션'} 마무리` : ''}${r && r.minus === false ? ' · 마이너스 없음' : ''}` : m === 'three' ? `${{ 0: '쿠션 자유', 1: '원쿠션', 3: '쓰리쿠션' }[(r && r.cushions) || 0] || ''} · ${(r && r.target) || 5}점` : '';
-/* 플레이's boards: the menu (boards), 랭킹전's games or its search (rank), 친구와 플레이's three ways (friend), the add-ons
+/* 플레이's boards: the old menu (boards: upright screens, debug), 랭킹전's games or its search (rank), 친구와 플레이's three ways (friend), the add-ons
    (addons) and the hall of open rooms (halls) - each painted by its own function below into the same frame (k: the frame
    and what the steps share). A game set up (setup) is the slate's (deskMatch). */
 function deskPlay(d) {

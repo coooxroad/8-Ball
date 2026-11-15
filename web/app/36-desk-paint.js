@@ -122,7 +122,7 @@ function deskPaint() {
   /* 플레이's menu is a row of cards on a cloth across the desk (37-desk-menu.js): the rail, the tray and the slate are put
      away (and kept as they were - the next place fills them again), no table in the tray */
   const menu = menuNow();
-  $('#desk').classList.toggle('menu', menu);
+  $('#desk').classList.toggle('menu', menu); app.classList.toggle('mnon', menu);   // (mnon: the card layer over the desk shows - 37-desk-menu.js)
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
   // (every place starts from a clean desk - the card menu too: 랭킹전's or 친구와 플레이's boards stayed over the cards, owner 11-15)
