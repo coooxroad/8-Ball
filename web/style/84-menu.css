@@ -14,7 +14,6 @@
 #app.desk #desk>.dk-felt{position:absolute;z-index:2;left:0;right:0;top:44px;bottom:calc(130px*var(--es) + 24px);pointer-events:none;--fi:0px}
 #app.desk.compact #desk>.dk-felt{top:12px;bottom:calc(130px*var(--es) + 8px)}
 /* (while 랭킹전 looks for an opponent its strip sits under the bar: the desk moves down, the cloth a little more) */
-#app.desk.rk #desk>.dk-felt{top:54px}
 /* (the cloth: its darker hems drawn in its background, no blurred inner shadow - those are slow to draw this wide) */
 .dk-felt::before{content:"";position:absolute;left:-160px;right:-160px;top:var(--fi);bottom:var(--fi);box-shadow:0 8px 12px rgba(0,0,0,.4);
   background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.08) 5%,rgba(0,0,0,0) 14%,rgba(0,0,0,0) 86%,rgba(0,0,0,.08) 95%,rgba(0,0,0,.3)),#2a2a2a url(ui/felt-charcoal.webp) 0 0/320px repeat}

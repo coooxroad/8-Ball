@@ -92,7 +92,8 @@ function menuPaint() {
   let layer = $('#dkCards');
   if (!layer) {
     layer = el('div', { id: 'dkCards' }); $('#deskPlane').after(layer);
-    if (window.ResizeObserver) new ResizeObserver(() => menuFit()).observe($('#dkFelt'));
+    // (fitted again when the cloth changes size - not step by step while the window does: layout() fits it after)
+    if (window.ResizeObserver) new ResizeObserver(() => { if (!app.classList.contains('resizing')) menuFit(); }).observe($('#dkFelt'));
     // (a wheel turns the row sideways on a computer)
     layer.addEventListener('wheel', e => { const r = layer.firstChild; if (r && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { r.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
   }
