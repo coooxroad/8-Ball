@@ -12,6 +12,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.window.OnBackInvokedDispatcher;
 import android.os.CancellationSignal;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -104,6 +105,8 @@ public class MainActivity extends Activity {
         setContentView(web);
         web.loadUrl(PAGE);
         hideSystemBars();
+        // Back: from Android 13 the system asks this (targetSdk 36 no longer calls onBackPressed); before that, onBackPressed
+        if (Build.VERSION.SDK_INT >= 33) getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::pageBack);
     }
 
     /** What the page may ask of the app (window.CueAndroid in web/app/57-account.js). */
@@ -198,7 +201,10 @@ public class MainActivity extends Activity {
 
     @SuppressWarnings("deprecation")
     @Override
-    public void onBackPressed() {
+    public void onBackPressed() { pageBack(); }
+
+    /** Back goes to the page first (a sheet closes, a screen goes back); only when it has nowhere to go does the app close. */
+    private void pageBack() {
         web.evaluateJavascript(PAGE_BACK, result -> {
             if (!"1".equals(result)) finish();
         });

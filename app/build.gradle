@@ -9,12 +9,12 @@ def keystorePath = System.getenv('KEYSTORE_FILE')
 
 android {
     namespace 'io.github.coooxroad.eightball'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId 'io.github.coooxroad.eightball'
         minSdk 26
-        targetSdk 34
+        targetSdk 36   // (Google Play: new apps and updates from 2026-08-31)
         versionCode buildNumber
         versionName "4.0.${buildNumber}"
     }

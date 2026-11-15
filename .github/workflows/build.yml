@@ -88,7 +88,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.13'
 
       # Optional fixed signing key. Without these two secrets the APK is signed with a
       # throwaway key, which installs fine but cannot update an earlier install in place.
