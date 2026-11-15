@@ -184,6 +184,15 @@ export class VaultCore {
       return { ok: true, paid: p.coin || 0, item: p.id ? { kind: p.kind, id: p.id } : null, me: this.me() };
     });
   }
+  /* The account deleted (owner 11-16; Google Play asks for it): everything it had - coins, diamonds, items, rating, the
+     games and the ledger, its keys - is gone at once and cannot come back; the vault is as one never opened (its keys no
+     longer open it). The Google account tied to it and its line in the admin's directory are let go by the Durable Object
+     (vault.js). What the app asks to be sure: { sure: '삭제' }. */
+  erase(body) {
+    if (!body || body.sure !== '삭제') return { ok: false, why: 'not sure' };
+    this.tx(() => { for (const t of ['kv', 'owned', 'solved', 'reqs', 'match_claims', 'daily', 'matches', 'ledger']) this.sql.exec(`DELETE FROM ${t}`); });
+    return { ok: true };
+  }
   // the app's progress, kept for the account's other devices: a small object, as the app gives it
   save({ data }) {
     const s = JSON.stringify(data == null ? null : data); if (s.length > 16000) return { ok: false, why: 'too big' };

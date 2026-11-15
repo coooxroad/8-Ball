@@ -95,6 +95,8 @@ const account = {
     else kids.push(el('button', { class: 'acct-join out', onclick: () => { SND.tap(); account.sheetOut(); } }, [el('b', { text: '로그아웃' })]));
     if (!member) kids.push(el('p', { class: 'note legal' }, [document.createTextNode('가입하면 '), el('a', { href: 'https://danguuu.com/terms', target: '_blank', rel: 'noopener', text: '서비스 약관' }),
       document.createTextNode('과 '), el('a', { href: 'https://danguuu.com/privacy', target: '_blank', rel: 'noopener', text: '개인정보처리방침' }), document.createTextNode('에 동의합니다.')]));
+    // (계정 삭제, owner 11-16 - Google Play asks for it: at the bottom, quiet, for a guest as for a member)
+    kids.push(el('button', { class: 'acct-del', text: '계정 삭제', onclick: () => { SND.tap(); account.sheetErase(); } }));
     openSheet(member ? '계정' : '계정 · 게스트', kids);
     if (member) return;
     const id = await net.googleConfig();
@@ -103,6 +105,27 @@ const account = {
       // (the app: our own key - the system's picker comes up)
       host.appendChild(el('button', { class: 'btn cta google', text: '구글로 계속하기', onclick: async () => { SND.tap(); account.signIn(await account.googleToken(id)); } }));
     } else account.googleButton(id, host, '구글로 계속하기');
+  },
+  /* Deleting the account: said plainly what goes, and '삭제' typed to be sure. Then the server empties it, this device's
+     own progress and records go too, and the app goes on as a new guest. */
+  sheetErase() {
+    const input = el('input', { class: 'txt', maxlength: '4', placeholder: '삭제', 'aria-label': '삭제라고 입력', autocomplete: 'off', spellcheck: 'false' });
+    const msg = note('');
+    const go = async () => {
+      if (input.value.trim() !== '삭제') { msg.textContent = '\'삭제\'라고 입력해 주세요.'; return; }
+      msg.textContent = '삭제하는 중…';
+      if (!(await net.erase())) { msg.textContent = '삭제하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'; return; }
+      prefs.drillLv = {}; if (prefs.pz) prefs.pz.stars = {}; prefs.tutDone = false; prefs.names[0] = '플레이어1'; savePrefs();
+      for (const k of Object.keys(rec)) delete rec[k]; store.set('rec', rec); store.set('save', null);
+      closeSheet(); toast('계정을 삭제했습니다', 'good', 2400); if (st.screen === 'home') paintHome();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    openSheet('계정 삭제', [
+      note('코인, 다이아, 가진 아이템, 레이팅, 경기 기록이 모두 지워지고 되돌릴 수 없습니다. 구글 계정 연결도 풀립니다.'),
+      note('계속하려면 아래에 삭제라고 입력하세요.'), input, msg,
+      el('div', { class: 'row' }, [flatBtn('취소', () => account.sheet()), el('button', { class: 'btn cta danger', text: '계정 삭제', onclick: () => { SND.tap(); go(); } })]),
+    ]);
+    setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
   },
   sheetOut() {
     openSheet('로그아웃', [

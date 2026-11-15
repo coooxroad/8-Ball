@@ -53,6 +53,14 @@ export class Vault extends DurableObject {
     if (path === '/v1/tutorial') return json(this.core.tutorial(body));
     if (path === '/v1/save') return json(this.core.save(body));
     if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }
+    // the account deleted (core.js erase): the vault emptied, then its Google account and its directory line let go
+    if (path === '/v1/erase') {
+      const r = this.core.erase(body); if (!r.ok) return json(r);
+      await this.ctx.storage.deleteAlarm();
+      const acct = this.acct, lob = n => this.env.LOBBY.get(this.env.LOBBY.idFromName(n));
+      if (acct) await Promise.all([lob('links').fetch('https://lobby/link/forget', { method: 'POST', body: JSON.stringify({ acct }) }), lob('directory').fetch('https://lobby/dir/forget', { method: 'POST', body: JSON.stringify({ acct }) })].map(p => p.catch(() => null)));
+      return json({ ok: true });
+    }
     return json({ ok: false, why: 'no such thing' }, 404);
   }
 }

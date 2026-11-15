@@ -88,7 +88,7 @@ rm -rf "$A/music"; mkdir -p "$A/music"; cp music/*.mp3 "$A/music/"
 # the web version installed as an app (site/): its name, icon and full-screen display
 cp manifest.webmanifest icon-192.png icon-512.png "$A/"
 # the privacy policy and the terms (Google sign-in and a store listing want them on the site: /privacy, /terms)
-cp legal/privacy.html legal/terms.html "$A/"
+cp legal/privacy.html legal/terms.html legal/delete.html "$A/"
 # Google Search Console's proof that the site is the owner's (asked for by the Google sign-in consent screen)
 cp legal/google*.html "$A/"
 # the admin console (/admin; the server lets only the owner's Google account use it - server/src/index.js adminRoute)

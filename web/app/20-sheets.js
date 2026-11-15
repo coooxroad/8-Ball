@@ -26,7 +26,6 @@ function sheetSettings() {
     net.on ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '계정' }), el('div', { class: 'acct-id', text: acctLine() })]) : null,
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
-    net.on ? el('div', { class: 'row' }, [flatBtn('다른 기기 연결', sheetLinkMake), flatBtn('코드로 연결', sheetLinkUse)]) : null,
     net.debug ? flatBtn('디버그', sheetDebug) : null,
     el('div', { class: 'row' }, [flatBtn('크레딧', sheetCredits), flatBtn('약관 · 개인정보', () => window.open('https://danguuu.com/privacy', '_blank', 'noopener'))]),
     note('CUE 4.0'),
@@ -68,37 +67,9 @@ function sheetCredits() {
     flatBtn('뒤로', sheetSettings),
   ]);
 }
-/* The account (07-net.js): which it is, in short, and on how many devices; a code to link another device to it, or another
-   device's code to take this one to that account. */
+/* The account (07-net.js): which it is, in short, and on how many devices (another device is the same account by signing
+   in with the same Google account - 57-account.js; the device codes are gone, owner 11-16). */
 const acctLine = () => { const id = net.accountId, n = net.me && net.me.devices; return id ? `${id.slice(0, 4).toUpperCase()}·${id.slice(4, 8).toUpperCase()}${n ? ` · 기기 ${n}대` : ''}` : '아직 없음 (처음 서버에 연결할 때 만들어집니다)'; };
-const codeShown = c => c.slice(0, 4) + '-' + c.slice(4);
-let linkTick = 0;
-async function sheetLinkMake() {
-  clearInterval(linkTick);
-  openSheet('다른 기기 연결', [note('코드를 만드는 중…')]);
-  const r = await net.linkMake();
-  if (!r || !r.ok) return openSheet('다른 기기 연결', [note('코드를 만들 수 없습니다' + (net.troubleText() ? ` (${net.troubleText()})` : '') + '.'), flatBtn('다시 시도', sheetLinkMake)]);
-  const left = el('p', { class: 'note' });
-  const tick = () => { const s = Math.max(0, Math.round((r.until - Date.now()) / 1000)); left.textContent = s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 동안 한 번 쓸 수 있습니다.` : '시간이 지났습니다. 새 코드를 만드세요.'; if (!s || $('#sheet').hidden) clearInterval(linkTick); };
-  openSheet('다른 기기 연결', [el('div', { class: 'linkcode', text: codeShown(r.code) }), left,
-    note('다른 기기에서 설정 → 계정 → 코드로 연결에 이 코드를 넣으면, 그 기기도 이 계정(코인·다이아·가진 아이템·레이팅)을 씁니다.'),
-    flatBtn('새 코드', sheetLinkMake)]);
-  tick(); linkTick = setInterval(tick, 1000);
-}
-function sheetLinkUse() {
-  const input = el('input', { class: 'txt', maxlength: '9', placeholder: 'XXXX-XXXX', 'aria-label': '연결 코드', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
-  const msg = el('p', { class: 'note', text: '다른 기기의 설정 → 계정 → 다른 기기 연결에서 받은 코드입니다. 연결하면 이 기기의 지금 계정은 이 기기에 보관되고, 그 계정을 쓰게 됩니다.' });
-  const go = async () => {
-    const code = input.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (code.length !== 8) { msg.textContent = '코드는 여덟 글자입니다.'; return; }
-    msg.textContent = '연결하는 중…';
-    const r = await net.linkUse(code);
-    if (r && r.ok) { closeSheet(); toast('연결했습니다. 이제 이 기기도 같은 계정입니다.', 'good', 3000); if (st.screen === 'home') paintHome(); return; }
-    msg.textContent = !r ? `연결할 수 없습니다 (${net.troubleText() || '서버 응답 없음'}).` : r.why === 'slow down' ? '잘못 넣은 코드가 많습니다. 1분 뒤에 다시 해 보세요.' : '맞는 코드가 없습니다. 시간이 지났거나 이미 쓴 코드일 수 있습니다.';
-  };
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-  openSheet('코드로 연결', [input, msg, el('button', { class: 'btn cta', text: '연결', onclick: () => { SND.tap(); go(); } })]);
-  setTimeout(() => { try { input.focus(); } catch (e) {} }, 60);
-}
 // shown once, to someone new: how to play a shot
 function sheetHow() {
   prefs.how = true; savePrefs();

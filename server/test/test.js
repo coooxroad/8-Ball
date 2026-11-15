@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
-import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
+import { LinkCore } from '../src/link.js';
 import { originOk } from '../src/origins.js';
 import { PHYS_V } from '../src/version.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
@@ -603,16 +603,14 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
 // are capped a minute; any of an account's keys opens it, at most MAX_DEVICES besides the first
 {
   let t = 1000, n = 0; const { sql } = sqlOf(), K = new LinkCore(sql, () => t, k => Uint8Array.from({ length: k }, () => (n = (n * 7 + 3) % 251)));
-  const a = K.make('a'.repeat(32)); ok(/^[A-Z2-9]{8}$/.test(a.code) && a.until === t + CODE_MS, `link: a code of 8 (${a.code})`);
-  const b = K.make('a'.repeat(32)); ok(K.use(a.code).why === 'no such code', 'link: a newer code replaces the last one');
-  ok(K.use(b.code.toLowerCase().replace(/(....)/, '$1-')).acct === 'a'.repeat(32), 'link: a code typed in any case, with a dash, works');
-  ok(K.use(b.code).why === 'no such code', 'link: and only once');
-  const c = K.make('c'.repeat(32)); t += CODE_MS + 1; ok(K.use(c.code).why === 'no such code', 'link: not after its time');
-  t += 120000; for (let i = 0; i < TRIES_PER_MIN; i++) K.use('ZZZZZZZZ');
-  const d = K.make('d'.repeat(32)); ok(K.use(d.code).why === 'slow down', 'link: too many wrong tries a minute hold everyone off');
-  t += 61000; ok(K.use(d.code).acct === 'd'.repeat(32), 'link: and a minute later it works');
+  // (the device codes are gone, owner 11-16: Google is the one way)
+  ok(!K.make && !K.use, 'link: no device codes');
   ok(K.google('g1', null).why === 'not tied', 'link: a Google account tied to nothing, signed in with no account: nothing');
   ok(K.google('g1', 'e'.repeat(32)).tied && K.google('g1', 'f'.repeat(32)).acct === 'e'.repeat(32), 'link: a Google account is tied once, to the first account');
+  K.forget('e'.repeat(32)); ok(K.google('g1', 'f'.repeat(32)).tied, 'link: an account deleted lets its Google account go - signing in again ties it anew');
+  { const w = vault(); w.init('9'.repeat(64)); w.buy && 0; ok(!w.erase({}).ok && w.authed('9'.repeat(64)), 'erase: not without being sure');
+    ok(w.erase({ sure: '삭제' }).ok && !w.authed('9'.repeat(64)) && w.me().coin === 0, 'erase: everything gone, the key opens nothing');
+    ok(w.init('8'.repeat(64)), 'erase: the vault is as one never opened'); }
   const v = vault(); v.init('1'.repeat(64)); ok(v.authed('1'.repeat(64)) && !v.authed('2'.repeat(64)), 'devices: the first key opens it');
   ok(v.addDevice('2'.repeat(64)).ok && v.authed('2'.repeat(64)) && v.authed('1'.repeat(64)) && v.me().devices === 2, 'devices: a linked key opens it too');
   for (let i = 3; i < 3 + MAX_DEVICES + 2; i++) v.addDevice(i.toString(16).padStart(64, '0'));

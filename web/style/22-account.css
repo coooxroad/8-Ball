@@ -20,3 +20,6 @@
 .credit b{font-size:14px}
 .credit small{font-size:12px;opacity:.75}
 .credit a{font-size:12px;color:#8fb8ff;text-decoration:none;word-break:break-all}
+/* 계정 삭제 (57-account.js sheetErase): quiet at the bottom of the account sheet, red only where it is done */
+#sheet .acct-del{display:block;margin:14px auto 0;padding:8px 14px;border:0;background:none;color:rgba(255,255,255,.55);font:500 13px/1 inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#sheet .btn.cta.danger{background:linear-gradient(165deg,#c0453a,#8e2a22);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}

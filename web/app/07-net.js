@@ -154,20 +154,19 @@ const net = (() => {
     inviteStart: code => call('/v1/invite/start', { code }),
     inviteReady: (code, on) => call('/v1/invite/ready', { code, on: !!on }),
     inviteKick: (code, seat) => call('/v1/invite/kick', { code, seat }),
-    /* Linking devices to one account (server/src/link.js): a code from this device for another (make: { code, until }),
-       or another device's code typed in here (use). Using one, this device takes a key of its own for that account; the
-       account it had is put aside in acctOld with what it showed (never deleted), and the wallet is asked for at once. */
     get accountId() { return account ? account.id : null; },
-    async linkMake() { if (!(await ensure())) return null; return call('/v1/link/make', {}); },
-    async linkUse(code) {
-      const r = await call('/v1/link/use', { code }); if (!r || !r.ok || !r.id || !r.key) return r;
-      takeAccount(r.id, r.key); flush();
-      return r;
+    /* The account deleted (owner 11-16): the server empties it (vault.js erase) - nothing to put aside, it is gone - and
+       this device goes on as a new guest. true when done. */
+    async erase() {
+      if (!account) return false;
+      const r = await call('/v1/erase', { sure: '삭제' }); if (!r || !r.ok) return false;
+      account = null; store.set('acct', null); me = null; store.set('me', null);
+      await ensure(); flush(); return true;
     },
     /* Signing up and in with Google (server/src/link.js, google.js; 57-account.js asks Google): the server's client ID (null:
        not set up), and a Google ID token given to the server. Tied to this device's account the first time (signed up:
        its prize, r.joined); or, when that Google account is already another CUE account, this device goes over to it -
-       the one it had is put aside in acctOld, as with a device code. */
+       the one it had is put aside in acctOld. */
     // signing out (owner 11-10): this device lets go of the account - it stays on the server, tied to its Google account,
     // to sign in to again - and goes on as a new guest (the old one is kept aside on the device, as when one is lost)
     signOut() {

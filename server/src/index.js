@@ -107,9 +107,7 @@ async function adminRoute(what, request, env) {
   return json(await r.json());
 }
 
-/* POST /v1/link/make                  (this device's key) a code to give another device: { code, until }
-   POST /v1/link/use { code }          a code from another device: this device gets a key of its own for that account
-                                       { id, key } - the device keeps its old account's key aside (07-net.js)
+/* (the device codes - /v1/link/make, /use - are gone, owner 11-16: Google is the one way to have an account on more devices)
    POST /v1/link/google { token }      a Google sign-in (google.js): the account tied to it - tied now to this device's
                                        account (its key sent) if it had none - and a key for it when it is another account
                                        { id, key? , tied }
@@ -124,11 +122,6 @@ async function linkRoute(what, request, env, m) {
     return r.ok ? { id: acct, key, devices: r.devices } : null; };
   if (what === 'google-config') return json({ ok: true, clientId: env.GOOGLE_CLIENT_ID || null });
   const body = await request.json().catch(() => ({}));
-  if (what === 'make') { const acct = await mine(); if (!acct) return json({ ok: false, why: 'who are you' }, 401); return json(await ask('make', { acct })); }
-  if (what === 'use') {
-    const r = await ask('use', { code: String(body.code || '').slice(0, 20) }); if (!r.ok) return json(r, r.why === 'slow down' ? 429 : 200);
-    const k = await keyFor(r.acct); return k ? json(Object.assign({ ok: true }, k)) : json({ ok: false, why: 'no such account' });
-  }
   if (what === 'google') {
     const who = await googleWho(body.token, env.GOOGLE_CLIENT_ID); if (!who.sub) return json({ ok: false, why: who.why });
     const acct = await mine(), r = await ask('google', { sub: who.sub, acct }); if (!r.ok) return json(r);
@@ -185,7 +178,7 @@ async function frontDoor(request, env) {
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
     const adm = /^\/v1\/admin\/(find|view|grant|catalog)$/.exec(url.pathname);
     if (adm) return adminRoute(adm[1], request, env);
-    const link = /^\/v1\/link\/(make|use|google|google-config)$/.exec(url.pathname);
+    const link = /^\/v1\/link\/(google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);
     if (!m) return json({ ok: false, why: 'who are you' }, 401);
     const vault = env.VAULT.get(env.VAULT.idFromName(m[1]));

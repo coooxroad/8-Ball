@@ -14,8 +14,7 @@ export class Lobby extends DurableObject {
     // the lobby named 'links': codes and Google accounts that link devices to an account (link.js; kept in its SQLite)
     if (path.startsWith('/link/')) {
       const K = this.links || (this.links = new LinkCore(this.ctx.storage.sql)), what = path.slice(6);
-      if (what === 'make') return Response.json(Object.assign({ ok: true }, K.make(body.acct)));
-      if (what === 'use') { const r = K.use(body.code); return Response.json(r.acct ? { ok: true, acct: r.acct } : { ok: false, why: r.why }); }
+      if (what === 'forget') return Response.json(K.forget(String(body.acct || '')));
       if (what === 'google') { const r = K.google(body.sub, body.acct || null); return Response.json(r.acct ? Object.assign({ ok: true }, r) : { ok: false, why: r.why }); }
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
@@ -25,6 +24,7 @@ export class Lobby extends DurableObject {
       if (what === 'put') return Response.json(D.put(body));
       if (what === 'find') return Response.json(D.find(body.q));
       if (what === 'fails') return Response.json(D.fails(!!body.add));
+      if (what === 'forget') return Response.json(D.forget(String(body.acct || '')));
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)

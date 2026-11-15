@@ -20,6 +20,8 @@ export class Directory {
       acct, nick ? String(nick).slice(0, 20) : null, joined ? 1 : 0, dama | 0, coin | 0, dia | 0, Date.now());
     return { ok: true };
   }
+  // an account deleted (vault.js erase): off the list
+  forget(acct) { this.sql.exec(`DELETE FROM people WHERE acct = ?`, acct); return { ok: true }; }
   // by the account id (or its start, as the settings show it: 'ABCD·1234' or 'abcd1234'), or by a name; the latest seen first
   find(q) {
     const s = String(q || '').trim().replace(/[%_]/g, ''), id = s.toLowerCase().replace(/[^0-9a-f]/g, '');
