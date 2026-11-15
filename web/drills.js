@@ -15,7 +15,7 @@ function createDrills() {
   const COURSES = ['기본기', '큐볼 다루기', '응용', '자유롭게'];
   const list = [
     { id: 'free', name: '자유 연습', d: '규칙 없이 마음껏 쳐 보세요.' },
-    /* 8볼 · 기본기 1 (the first lesson, and the pattern for the rest: tasks/gpt-lessons.md). The cue ball, the 1 and a
+    /* 8볼 · 기본기 1 (the first lesson, and the pattern for the rest). The cue ball, the 1 and a
        corner pocket on one line: strike it straight, a touch below centre so the cue ball stops where it hits. Farther
        apart at each level. */
     { id: 'e-straight', name: '정면 넣기', d: '일직선으로 놓인 공을 똑바로 넣기', tip: '큐볼 가운데 조금 아래를 똑바로. 큐볼은 맞힌 자리에 멈춥니다.',

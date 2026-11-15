@@ -12,17 +12,29 @@ CUE는 위에서 내려다보는 3D 당구(8볼·9볼·3구·4구)다. 게임은
 - 커밋은 되돌릴 수 있게 작게 나눈다. "정리하는 김에" 다른 것을 고치지 않는다.
 - 지우기 전에 묻는다: 오래됐거나 방해되는 코드를 발견하면 목록으로 소유자에게 보이고, 허락받은 것만 지운다.
 
-## 2. 올리기 전 검사 네 가지 (모두 통과해야 한다)
+## 2. 검사 (모두 통과해야 릴리스된다)
+
+푸시하면 CI(`.github/workflows/build.yml`)가 차례로 돌린다: **check**(run.js · 빌드 · check.js) → **browser**(브라우저 검사) → **apk**(릴리스).
+서버는 `server.yml`(서버 테스트 → 배포 → live 검사). 어느 하나가 실패하면 APK가 나오지 않는다 — `gh run view <id> --log-failed`로 보고 고친다.
 
 ```sh
-node web/test/run.js      # 규칙·컴퓨터·사람 같은 상대·레슨·퍼즐·물리 (브라우저 없이, 5분쯤)
+# 로컬에서 늘 (몇 초)
 sh web/build.sh           # 페이지 만들기 → app/src/main/assets/
 node web/tools/check.js   # 만든 페이지 검사: 문법, 이름 겹침, content/ 항목, 그림 파일, id 중복
-node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·설정·자유 연습·8볼 대결·컴퓨터 4구 끝까지·결과·홈 (태블릿·폰, 몇 분)
+# 규칙·물리·컴퓨터·레슨·퍼즐·경제(web/*.js, web/ai/, web/content/)를 고쳤을 때 (5분쯤)
+node web/test/run.js
+# 서버를 고쳤을 때
+cd server && npm test
+# 브라우저 검사 - CI가 돌린다. 로컬에선 CI가 실패한 걸 볼 때만 (이 컨테이너는 GPU가 없어 몇 분~십여 분)
+node web/test/browser/smoke.js         # 앱 한 바퀴: 설정·자유 연습·8볼 대결·컴퓨터 4구 끝까지·결과·홈 (태블릿·폰)
+node web/test/browser/desk-text.js     # 데스크톱 배율(1·1.25·2)과 폰에서 책상 글자·조작
+node web/test/browser/pc-performance.js  # 고주사율·픽셀 상한 정책
+node web/test/browser/human-ai.js      # 대역의 실제 Worker·조작·기권 연결
+node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·GPU 대체·컨텍스트 복구
 ```
-스모크 테스트는 playwright가 필요하다. 크기마다 한 줄이 나오고, `NO RESULT`나 오류가 보이면 실패다. 검사를 통과시키려고
-검사를 지우거나 약하게 만들지 않는다. 물리나 규칙을 바꿨으면 그 동작을 보는 검사를 `web/test/run.js`에 더한다.
-실기기에서 못 해 본 것(손맛, 소리, 속도)은 "확인 못 함"이라고 적는다. 소유자가 태블릿에서 직접 본다.
+브라우저 검사는 playwright가 필요하다(`CHROME=<경로>`로 크롬을 고른다). 검사를 통과시키려고 검사를 지우거나 약하게 만들지 않는다.
+물리나 규칙을 바꿨으면 그 동작을 보는 검사를 `web/test/run.js`에 더한다. 전후 비교 도구(검사 아님)는 `web/tools/compare/`
+(`styles.js` 계산된 스타일, `frames.js` 3D 프레임 md5). 실기기에서 못 해 본 것(손맛, 소리, 속도)은 "확인 못 함"이라고 적는다.
 
 ## 3. 어디에 무엇이 있나
 
@@ -92,7 +104,7 @@ node web/test/browser/smoke.js   # 브라우저에서 앱 한 바퀴: 전적·�
    `scene/56-fx.js`(입자는 GPU가 모양을 그림, 천에 남는 자국은 `scene/55-marks.js`), 만화 효과음 말풍선·미러볼 빛은
    `scene/57-comic.js`. 모두 물리의 궤적 기록(`w.trace`: 큐볼의 매 스텝 위치와 꺾인 곳, 켤 때만 기록하고 결과는 바꾸지 않음)을 읽는다.
    천 높이는 z=0, 공 중심은 z=R이다(조준선 `ribbon`만 공 중심 기준 높이를 받는다).
-4. 검사 네 가지. 빠진 그림, 겹친 id, 범위 밖 희귀도는 `check.js`가 잡는다. 다른 파일은 고치지 않아도 상점·내 장비에 나온다.
+4. 검사(2절). 빠진 그림, 겹친 id, 범위 밖 희귀도는 `check.js`가 잡는다. 다른 파일은 고치지 않아도 상점·내 장비에 나온다.
 
 **`id`는 한번 정하면 바꾸지 않는다.** 저장된 장착 정보와 앞으로 서버의 보유 목록이 `id`로 아이템을 찾는다.
 이름(`name`)은 바꿔도 된다.
