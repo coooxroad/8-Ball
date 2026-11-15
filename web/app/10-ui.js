@@ -97,28 +97,22 @@ function playInsets(H, portrait) {
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.
 let layoutT = 0, layoutPending = false;
-/* While the window changes size on the home screen the desk is put away (#app.resizing, 60-desk.css) and shown again once
-   it is laid out at the new size. The leaning desk and the row of cards over it are large layers: a full screen grows
-   the window step by step, and each step had them drawn again at its size - the menu stalled or went black for seconds,
-   where a game (no desk up) took a full screen at once (owner 11-15). Not while typing: the keyboard coming up changes
-   the size too, and the desk stays under the sheet then. */
+/* While the window changes size on the home screen the desk is put away (#app.resizing, 60-desk.css) and comes back in
+   the frame it is laid out at the new size. The leaning desk and the row of cards over it are large layers: a full screen
+   grows the window step by step, and each step had them laid out and drawn again at its size - the menu stalled or went
+   black for seconds, where a game (no desk up) took a full screen at once (owner 11-15). Away means not laid out at all
+   (display:none), the row of cards only unseen (it keeps where it was scrolled to). Not while typing: the keyboard coming
+   up changes the size too, and the desk stays under the sheet then. */
+let sizedAt = 0;
+function sizing() { if (st.screen === 'home') { app.classList.add('resizing'); sizedAt = performance.now(); } }
 function layoutSoon() {
   clearTimeout(layoutT);
   const a = document.activeElement, typing = a && a.tagName === 'INPUT';
-  if (!typing && st.screen === 'home' && (app.clientWidth !== layoutW || app.clientHeight !== layoutH)) { app.classList.add('resizing'); sizedAt = performance.now(); }
+  if (!typing && (app.clientWidth !== layoutW || app.clientHeight !== layoutH)) sizing();
   layoutT = setTimeout(() => {
     const a = document.activeElement;
-    if (!a || a.tagName !== 'INPUT') layoutPending = true; else resized();
+    if (!a || a.tagName !== 'INPUT' || app.classList.contains('resizing')) layoutPending = true;
   }, 120);
-}
-// (the desk back two frames after the layout - its new size drawn in a frame the window has stopped changing in; a size
-// change still coming, or one just in, keeps it away: the layout after that one brings it back)
-let sizedAt = 0;
-function resized() {
-  if (!app.classList.contains('resizing')) return;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (!layoutPending && performance.now() - sizedAt > 140) app.classList.remove('resizing');
-  }));
 }
 window.addEventListener('resize', layoutSoon);
 if (window.ResizeObserver) new ResizeObserver(layoutSoon).observe(app);
@@ -127,12 +121,17 @@ function checkLayout() {
   const dprChanged = (window.devicePixelRatio || 1) !== layoutDpr;
   if (!layoutPending && !dprChanged) return;
   layoutPending = false;
-  if (dprChanged || app.clientWidth !== layoutW || app.clientHeight !== layoutH) {
+  // (the desk away: laid out once the size has stopped changing for a moment - asked again until it has)
+  let back = false;
+  if (app.classList.contains('resizing')) {
+    if (performance.now() - sizedAt < 100) { clearTimeout(layoutT); layoutT = setTimeout(() => { layoutPending = true; }, 120); return; }
+    app.classList.remove('resizing'); back = true;
+  }
+  if (back || dprChanged || app.clientWidth !== layoutW || app.clientHeight !== layoutH) {
     const start = performance.now();
     layout();
     prof.add('ui', performance.now() - start);
   }
-  resized();
 }
 
 const powerUI = { p: -1, k: 0, th: -1, num: '', h: null, lay: -1 };
@@ -209,7 +208,7 @@ function fullTime() {
 }
 function fullToggle() {
   const d = document.documentElement; fullT0 = performance.now();
-  if (st.screen === 'home') { app.classList.add('resizing'); sizedAt = performance.now(); }   // (put away before the window starts to grow)
+  sizing();   // (put away before the window starts to grow)
   if (fullOn()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   else { const p = (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { layoutPending = true; toast('이 브라우저에서는 전체 화면을 쓸 수 없습니다.', '', 2200); }); }
 }
@@ -217,7 +216,7 @@ function paintFull() { const b = $('#dkFull'); if (!b) return; b.hidden = !fullC
 function fullChanged() {
   paintFull(); fullTime();
   clearTimeout(layoutT);
-  if (st.screen === 'home') { app.classList.add('resizing'); sizedAt = performance.now(); }
+  sizing();
   layoutPending = true;
   scene.invalidate();
 }

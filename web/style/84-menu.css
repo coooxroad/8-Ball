@@ -30,6 +30,10 @@
 .mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
   background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s}
 .mn-card:active{transform:translateY(3px)}
+/* every card (and the 선수증) a layer of its own, always: a press (12-press.js - the sink, the ripple) makes the pressed card
+   one, and then all drawn after it - the cards to its right - were gathered into one new layer and drawn again, blinking
+   while a finger rested on a card (owner 11-15; the layer tree before and after a press showed it). Kept, nothing moves. */
+.mn-card,.mn-pc{will-change:transform}
 .mn-card::after{content:"";position:absolute;inset:calc(8px*var(--u));top:calc(46px*var(--u));border-radius:calc(9px*var(--u));border:calc(2px*var(--u)) solid rgba(255,255,255,.85);pointer-events:none}
 .mn-card .strip{position:absolute;left:0;right:0;top:0;height:calc(38px*var(--u));display:flex;align-items:center;justify-content:center;padding:0 calc(8px*var(--u));background:#111;color:rgba(255,255,255,.9);
   font:800 calc(13.5px*var(--u)) var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
