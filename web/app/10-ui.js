@@ -68,6 +68,7 @@ function layout() {
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
   const tilt = st.screen === 'home';                                 // the desk's home: its plane leans away (36-desk-paint.js)
   app.classList.toggle('tilt', tilt);                                // (before the scene sizes itself: it draws finer while leaning)
+  if (tilt) deskBeams();                                             // (the window's light, drawn again only if the size changed)
   scene.resize();
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); }

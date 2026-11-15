@@ -67,6 +67,31 @@ function boardSides() {
 const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)
 const deskTableShown = () => $('#dkStage').dataset.win === '1';
+/* the window's light over the desk: four soft beams from the upper right falling to the lower left (each: from the right
+   edge, its width, its strength), drawn once into a canvas at half size, blurred and faded along their length */
+const BEAMS = [[0, 190, .20], [.16, 90, .16], [.25, 240, .12], [.45, 110, .09]];
+let beamsAt = '';
+function deskBeams() {
+  const c = $('#dkBeams canvas'), box = $('#dkBeams'); if (!c) return;
+  const W = box.clientWidth, H = box.clientHeight, k = 0.5, key = W + 'x' + H; if (!W || !H || key === beamsAt) return; beamsAt = key;
+  c.width = Math.round(W * k); c.height = Math.round(H * k);
+  const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
+  const one = mkBeam(c.width, c.height);
+  for (const [r, w, a] of BEAMS) {
+    const b = one.getContext('2d'); b.setTransform(1, 0, 0, 1, 0, 0); b.clearRect(0, 0, one.width, one.height);
+    // (as the CSS had it: right r of the width, w wide, from 30% above the top, 170% long, turned 36° about its top middle)
+    const bw = w * k, bh = H * 1.7 * k, cx = c.width - r * c.width - bw / 2, top = -0.3 * H * k;
+    b.translate(cx, top); b.rotate(36 * Math.PI / 180);
+    const across = b.createLinearGradient(-bw / 2, 0, bw / 2, 0);
+    across.addColorStop(0, 'rgba(255,232,188,0)'); across.addColorStop(.3, `rgba(255,232,188,${a})`); across.addColorStop(.7, `rgba(255,232,188,${a})`); across.addColorStop(1, 'rgba(255,232,188,0)');
+    b.fillStyle = across; b.fillRect(-bw / 2, 0, bw, bh);
+    b.globalCompositeOperation = 'destination-in';
+    const along = b.createLinearGradient(0, 0, 0, bh); along.addColorStop(.1, '#000'); along.addColorStop(.9, 'rgba(0,0,0,0)');
+    b.fillStyle = along; b.fillRect(-bw / 2, 0, bw, bh); b.globalCompositeOperation = 'source-over';
+    g.filter = 'blur(6px)'; g.drawImage(one, 0, 0); g.filter = 'none';
+  }
+}
+const mkBeam = (w, h) => { const o = document.createElement('canvas'); o.width = w; o.height = h; return o; };
 /* The wallet: a number that changes rolls to its new value (a clink when it grows), and its chip lights a moment - green
    up, red down. The first paint just shows it. */
 const walletShown = { coin: null, dia: null };
@@ -98,14 +123,15 @@ function deskPaint() {
      away (and kept as they were - the next place fills them again), no table in the tray */
   const menu = menuNow();
   $('#desk').classList.toggle('menu', menu);
-  if (menu) { invite.leave(); app.classList.remove('rkcard', 'hall'); $('#dkStage').dataset.win = '0'; menuPaint(); if (st.screen === 'home') requestAnimationFrame(layout); return; }
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
+  // (every place starts from a clean desk - the card menu too: 랭킹전's or 친구와 플레이's boards stayed over the cards, owner 11-15)
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';
   for (const k of [...d.stage.children]) if (k.id !== 'dkShade') k.remove();
-  d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   d.head.className = 'dk-head';
   $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); } app.classList.remove('rkcard', 'hall');
+  if (menu) { invite.leave(); d.stage.dataset.win = '0'; menuPaint(); if (st.screen === 'home') requestAnimationFrame(layout); return; }
+  d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   invite.shown = false;
   DESK_PLACES[deskTab](d);
   if (!invite.shown) invite.leave();                                  // (the invite's code is open only while it shows)
