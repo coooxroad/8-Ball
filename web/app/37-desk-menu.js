@@ -82,7 +82,7 @@ function menuFit() {
   felt.style.setProperty('--fi', ((fh - clothH) / 2).toFixed(1) + 'px');
   // the row over the cloth, in the same coordinates (the layer is the plane's box, untransformed)
   Object.assign(row.style, { top: fy + 'px', height: fh + 'px' });
-  row.style.setProperty('--u', u.toFixed(4));
+  row.style.setProperty('--u', u.toFixed(4)); app.style.setProperty('--mu', u.toFixed(4));   // (--mu: the screens after the menu size their cards by it)
   row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
   row.style.perspective = P + 'px';
   row.style.perspectiveOrigin = `${(pw / 2).toFixed(1)}px ${(ph - fy).toFixed(1)}px`;

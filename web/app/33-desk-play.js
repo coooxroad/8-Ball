@@ -97,6 +97,9 @@ function deskPlay(d) {
   const toBoards = () => { playStep = 'boards'; playFx = 'fan'; invite.stopRooms(); paintHome(); };
   const dama = net.me ? net.me.dama : ECONOMY.DAMA_START;
   const k = { wrap, fit, panel, tt, head, toBoards, dama };
+  // (랭킹전's games and 친구와 플레이's ways lie on the menu's charcoal cloth too, their cards a little larger than the menu's -
+  // owner 11-16; 84-menu.css .felt)
+  if (['rank', 'friend'].includes(playStep) && menuOn()) { $('#desk').classList.add('felt'); if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' })); }
   (PLAY_STEPS[playStep] || PLAY_STEPS.boards)(k);
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
   playEnter(wrap);

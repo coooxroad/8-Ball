@@ -130,7 +130,7 @@ function deskPaint() {
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';
   for (const k of [...d.stage.children]) if (k.id !== 'dkShade') k.remove();
   d.head.className = 'dk-head';
-  $('#desk').classList.remove('boards'); { const b = $('#dkBoards'); if (b) b.remove(); } app.classList.remove('rkcard', 'hall');
+  $('#desk').classList.remove('boards', 'felt'); { const b = $('#dkBoards'); if (b) b.remove(); } app.classList.remove('rkcard', 'hall');
   if (menu) { invite.leave(); d.stage.dataset.win = '0'; menuPaint(); if (st.screen === 'home') requestAnimationFrame(layout); return; }
   d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   invite.shown = false;

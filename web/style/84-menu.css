@@ -10,7 +10,7 @@
    the glint running between the two. */
 #app:not(.oldmenu) #dkTabs .dk-tab[data-t=train]{display:none}
 #desk.menu>.dk-rail,#desk.menu>.dk-tray,#desk.menu>.dk-slate{display:none}
-#desk:not(.menu)>.dk-felt,#app:not(.mnon) #dkCards,#deskPlane[hidden]~#dkCards{display:none}
+#desk:not(.menu):not(.felt)>.dk-felt,#app:not(.mnon) #dkCards,#deskPlane[hidden]~#dkCards{display:none}
 #app.desk #desk>.dk-felt{position:absolute;z-index:2;left:0;right:0;top:44px;bottom:calc(130px*var(--es) + 24px);pointer-events:none;--fi:0px}
 #app.desk.compact #desk>.dk-felt{top:12px;bottom:calc(130px*var(--es) + 8px)}
 /* (while 랭킹전 looks for an opponent its strip sits under the bar: the desk moves down, the cloth a little more) */
@@ -131,3 +131,10 @@
 #app.desk.compact #dkProps .plant{width:140px;height:140px;right:-20px;top:calc(var(--bar) - 40px)}
 #app.desk.compact #dkProps .towel{width:180px;height:128px}
 #app.desk.compact:not(.portrait) #dkProps{display:none}
+
+/* 랭킹전's games and 친구와 플레이's ways (33-desk-play.js deskPlay: #desk.felt): on the same cloth, their cards a little
+   larger than the menu's (owner 11-16 - the menu's are 204 × 492u, 랭킹전's 272 × 560u; --mu, the menu's u) and centred
+   on it, not filling the desk */
+#desk.felt>#dkBoards{z-index:3}
+#app.desk:not(.portrait) #desk.felt #dkBoards.rank .bd-fit{grid-template-columns:repeat(4,min(calc(236px*var(--mu,1)),22%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(18px*var(--mu,1))}
+#app.desk:not(.portrait) #desk.felt #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,min(calc(250px*var(--mu,1)),28%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(22px*var(--mu,1))}
