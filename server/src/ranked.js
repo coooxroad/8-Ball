@@ -89,9 +89,13 @@ export class LobbyCore {
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
     // (증강 당구's lobby: its rooms are arcade games - no DAMA, the vote and the augments: RoomCore)
     const kind = this.mode === 'arcade' ? 'arcade' : undefined;
-    const init = { room, mode: this.mode, seed, first, standIn: persona, kind,
+    // the rules, by the two players' tiers (economy.js rankedRules), worked out once here and given to the room and to both
+    // devices alike - the devices once played the base rules while the room replayed the tier's, and every ranked game
+    // ended 무효 (the replay found no winner where the devices had one: 11-16)
+    const rules = kind === 'arcade' ? undefined : E.rankedRules(this.mode, seats.map(s => s.dama));
+    const init = { room, mode: this.mode, seed, first, standIn: persona, kind, rules,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
-    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, kind, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, kind, rules, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
     const ready = !this.deferReady;
     this.made.set(a.acct, { at: t, you: you(0), seek: a.seek, room, ready });
     if (b.acct) this.made.set(b.acct, { at: t, you: you(1), seek: b.seek, room, ready });
@@ -342,7 +346,7 @@ export class RoomCore {
     const kind = x.kind === 'invite' ? 'invite' : x.kind === 'arcade' && x.mode === 'arcade' ? 'arcade' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
     const bots = seats.map((q, i) => q.bot && i > 0 ? i : -1).filter(i => i > 0);
     this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
-      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : kind === 'ranked' ? E.rankedRules(x.mode, seats.map(q => q.dama)) : RANKED_RULES[x.mode], team: n === 4, bots });
+      rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : kind === 'ranked' ? (x.rules && x.rules.target ? x.rules : E.rankedRules(x.mode, seats.map(q => q.dama))) : RANKED_RULES[x.mode], team: n === 4, bots });
     this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
     this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
     // 증강 당구: the table's vote (a stand-in's card drawn now, unseen till both are in), then the augments' rounds

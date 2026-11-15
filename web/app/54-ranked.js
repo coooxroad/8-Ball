@@ -64,7 +64,7 @@ const ranked = {
     // (2:2: r.team - the four seats; each side's name is its two players', and whose shot it is goes round - game.js)
     if (r.team) { o.team = r.team; o.side = o.seat % 2; }
     const names = []; if (o.team) { names[0] = `${o.team[0].name}·${o.team[2].name}`; names[1] = `${o.team[1].name}·${o.team[3].name}`; } else { names[o.seat] = prefs.names[0]; names[1 - o.seat] = o.opp.name; }
-    const rules = r.rules || RANKED_RULES[o.mode];
+    const rules = o.rules = r.rules || RANKED_RULES[o.mode];
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     if (o.kind === 'arcade') arcade.begin(o);                       // (55-arcade.js: the vote and the augments over the table)
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, minus: rules.minus !== false, hugu: !!rules.hugu, ot: !!rules.ot, fast: !!rules.fast, online: o, team: !!o.team });
@@ -128,6 +128,11 @@ const ranked = {
       if (m.team && !o.team) o.team = m.team;
       for (let i = o.n + o.inbox.length; i < have; i++) if (byOf(m.shots[i]) !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
       if (o.watch) return ranked.catchUp();
+      // (the room's rules are the rules: a device that began the game on others, before any shot, begins it again on the
+      // room's - the 무효 games of 11-16 were a device playing the base rules while the room replayed the tier's)
+      if (!o.watch && !o.after && !o.done && m.rules && !have && !o.n && !o.sent.length && !ranked.sameRules(m.rules, o.rules)) {
+        o.r = Object.assign({}, o.r, { rules: m.rules }); const r = o.r; ranked.on = null; if (o.ws) { const ws = o.ws; o.ws = null; try { ws.close(); } catch (e) {} } return ranked.play(r);
+      }
       if (o.after) { if (m.next) return ranked.next(m.next); if (o.againMine && !(m.again || [])[o.seat]) o.ws.send(JSON.stringify({ t: 'again' })); if (m.again) ranked.againHeard({ want: m.again }); return; }
       for (const s of o.sent) if (s.n >= have) o.ws.send(JSON.stringify(s));
       if (m.result) ranked.result(m.result); else if (o.closing) o.ws.send(JSON.stringify(o.closing));
@@ -148,6 +153,8 @@ const ranked = {
     else if (m.t === 'again') ranked.againHeard(m);
     else if (m.t === 'next') ranked.next(m);
   },
+  // the rules that decide a game, the same on both sides (target, cushions, finish, 후구 and 연장, minus, add-on)
+  sameRules(a, b) { const k = x => JSON.stringify(['target', 'cushions', 'finish', 'hugu', 'ot', 'minus', 'real', 'tens', 'targets'].map(n => x && x[n] != null && x[n] !== false ? x[n] : null)); return k(a) === k(b); },
   /* 다시 하기 (owner 11-15): after a friend's game the room stays open; each asks for another on the result screen's key,
      and once all have the room opens the next (server RoomCore.againHear) - the same seats and rules, the loser first. */
   again() {

@@ -186,6 +186,10 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in DAMA are paired at once');
   const a = L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }); ok(a.room === b.room && a.seat === 1 && a.token !== b.token && a.seed === b.seed, 'lobby: the other hears the same room, its own seat');
   ok(L.ask({ acct: 'c', dama: 460, name: 'C' }).waiting && L.ask({ acct: 'd', dama: 660, name: 'D' }).waiting, 'lobby: far apart, they wait');
+  // (11-16: the devices played the base rules while the room replayed the tier's - every ranked game ended 무효)
+  { const T = E.ECONOMY.TIER_AT, F = new LobbyCore('four', () => 0, () => 20000); F.ask({ acct: 'p', dama: T[4] + 1, name: 'P' }); const y = F.ask({ acct: 'q', dama: T[4] + 3, name: 'Q' });
+    const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx); R.init(F.lastInit);
+    ok(y.rules && y.rules.target === 7 && y.rules.finish === 'three' && y.rules.ot && JSON.stringify(y.rules) === JSON.stringify(R.get('room').rules), `lobby: the devices are told the room's own rules (${JSON.stringify(y.rules)})`); }
   t = 5000; L.ask({ acct: 'c', dama: 460 }); t = 10000; L.ask({ acct: 'c', dama: 460 }); L.ask({ acct: 'd', dama: 660 }); t = 14000; L.ask({ acct: 'c', dama: 460 });
   t = 16000; ok(L.ask({ acct: 'd', dama: 660 }).waiting, 'lobby: 200 apart is still too far after 16 s');
   L.ask({ acct: 'c', dama: 460 }); t = 20000; L.ask({ acct: 'd', dama: 660 });
