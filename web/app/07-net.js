@@ -103,7 +103,7 @@ const net = (() => {
         // (kept for later unless the server has decided: paid, or turned down for good. No answer, a 401 (the account
         // in doubt), 403, 408 or 429 (try later) leave it waiting - a reward is never lost to a passing fault)
         const c = q[0], r = await call('/v1/' + c.kind, c.body); if (!r || [401, 403, 408, 429].includes(r.status)) return;
-        if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);
+        if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.dia ? ` · 다이아 ${r.dia}` : '') + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);   // (다이아: a puzzle stage's 챌린지)
         if (r.me) setMe(r.me);
         if (r.pending) laterN = 0;
         store.set('claims', queue().filter(x => x.body.req !== c.body.req));

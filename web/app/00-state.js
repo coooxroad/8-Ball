@@ -44,6 +44,9 @@ const prefs = (() => {
     shotClock: 60,
     ballSkin: 'classic', trail: 'none', glove: null, lessons: false,
     friendWay: 'local', fourTarget: 10, lessonProof: {},
+    // 훈련's game for each place (owner 11-16: the rail picks 3구, 4구, 8볼, 9볼 or 스누커): 레슨's volume, 퍼즐's set, 자유 연습's
+    // table (컴퓨터 대전's is cpuMode); and the computer's bot (BOTS, 34-desk-bots.js) and the bots beaten
+    trainGame: { lesson: 'eight', puzzle: 'four', free: 'eight' }, bot: null, botBeat: {},
     fourMinus: true,                   // 4구 with a friend: a foul costs a point (마이너스 점수 있음) or nothing
     // add-ons for games with a friend (33-desk-play.js): 현실 당구 on or off, and which of its parts
     addons: { real: false, throw: true, squirt: true, cue: true },
@@ -55,7 +58,8 @@ const prefs = (() => {
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
-  delete p.ui; delete p.uiv; delete p.theme; delete p.news;           // the lobby, the old home, the light theme and the 2.0 news: gone
+  delete p.ui; delete p.uiv; delete p.news;                             // the lobby, the old home and the 2.0 news: gone (theme is 화면 모드 again since 11-15: an old
+  // save's theme is read by themeNow as dark unless it says 'light')
   if (!p.trainCpu) p.vsAI = false;                                      // (the computer is played from 훈련 only)
   if (!TABLES.some(t => t.id === p.table)) p.table = 'bar';
   delete p.puz; delete p.arcade;                                        // from before the puzzles were stages, and the arcade row
@@ -109,7 +113,7 @@ const recBook = o => Object.assign(Object.create(null), o && typeof o === 'objec
 let rec = recBook(store.get('rec', {}));
 const recOf = n => { const r = rec[n] || (rec[n] = { w: 0, l: 0, streak: 0, best: 0 }); if (!r.form) r.form = []; return r; };
 const series = { key: '', s: [0, 0] };
-const oppName = () => prefs.vsAI ? '컴퓨터' : prefs.names[1];
+const oppName = () => prefs.vsAI ? botNow().name : prefs.names[1];   // (the computer: the bot picked - 34-desk-bots.js)
 // four-ball handicaps, the way a hall counts: 50 means five scores to go out. Kept per name.
 const SUJI = [3, 5, 8, 10, 15, 20];
 const sujiOf = i => i === 1 && prefs.vsAI ? prefs.sujiAI || 5 : prefs.suji[prefs.names[i]] || 5;

@@ -23,20 +23,23 @@ function lessonPrize(vol) {
   toast(`${MODE_KO[vol]} 레슨을 모두 끝냈습니다! 보상을 받는 중…`, 'good', 2600);
   net.claim('lessons', { vol, proofs });
 }
+// 자유 연습's game (prefs.trainGame.free: 34-desk-train.js)
+const freeGame = () => FRIEND_GAMES.includes((prefs.trainGame || {}).free) ? prefs.trainGame.free : 'eight';
 const practice = {
   quiet: false, save: false,
   drill: null, level: 1, streak: 0, tries: 0, ok: 0, layout: null, before: null, beforeAim: 0, edit: false,
   start(id) {
     tutorial.stop(); usePhysics();
     if (id) { prefs.drill = id; savePrefs(); }
-    const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
+    const p = practice; p.botTurn = false; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     // (디버그: free practice on a table of another shape - 20-sheets.js sheetDebug, tables.js TABLE_SHAPES)
     const shapeTry = net.debug && prefs.shapeTry && !drills.byId(prefs.drill).make ? TABLE_SHAPES.spec(PH.pool, { kind: prefs.shapeTry }) : null;
-    game.start('practice', [prefs.names[0], ''], false, { shape: shapeTry });
+    // (자유 연습: the game picked on the rail, on its own table - game.js free-*; a lesson on practice's pool table)
+    game.start(p.drill.make ? 'practice' : 'free-' + freeGame(), [prefs.names[0], ''], false, { shape: shapeTry });
     flow = practice; scene.setMarks(null); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar();
     if (p.drill.make) p.fresh();
     else {
-      game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++;
+      game.placing = null; game.isBreak = false; scene.clearFalls(); st.aim = 0; st.rev++;
       // (a shaped table: the balls the rack left outside it, or on a hole, moved in)
       const w = game.world, P = game.P; if (w.shape) for (const b of w.balls) if (b.on && !P.isFree(w, b.x, b.y, b.id)) { const [x, y] = P.findFree(w, b.x * 0.4, b.y * 0.6, b.id); P.place(w, b.id, x, y); }
       beginTurn(true);
@@ -52,11 +55,18 @@ const practice = {
   },
   again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
   guide: () => GUIDE_STD,
-  auto: () => null,
+  // 자유 연습's partner (owner 11-16: the bots are picked here too - 34-desk-bots.js): asked, it plays one shot from the table as
+  // it lies, as it would - its rating, its style - and the turn is the player's again (되돌리기 takes it back)
+  botTurn: false,
+  auto: () => practice.botTurn ? { think: 0.4, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
+  botShot() {
+    const p = practice, b = botNow(), me = botPersona(b); if (!me) return;
+    game.personas = [me, null]; game.levels = [me.level, me.level]; p.botTurn = true; toast(`${b.name}의 시범`, '', 1400); beginTurn(false);
+  },
   beforeShot(V, a, b, el) { practice.before = game.world.balls.map(q => [q.x, q.y, q.on]); practice.beforeAim = st.aim; practice.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
   afterShot() {
     const p = practice;
-    if (!p.drill.make) { game.resolve(); return beginTurn(false); }
+    if (!p.drill.make) { game.resolve(); p.botTurn = false; game.personas = null; return beginTurn(false); }
     const why = drills.judge(p.layout, game.world.ev, game.world.balls[0]);
     game.resolve(); p.tries++;
     if (p.drill === TUT_DRILL) { tutorial.shot(!why); if (why) { SND.bad(); hold(1.7, p.again); } return; }   // (58-tutorial.js)
@@ -72,7 +82,7 @@ const practice = {
   hud() {
     const p = practice;
     paintPill(0, { name: p.drill.name, on: true, sub: p.drill === TUT_DRILL ? '' : p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
-    paintBadge('레슨', { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
+    paintBadge(p.drill.make ? '레슨' : MODE_KO[freeGame()], { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
   },
   // the row of buttons where the second player's panel would be
   bar() {
@@ -81,6 +91,7 @@ const practice = {
     const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === practice && st.phase === 'aim') fn(); };
     if (!p.drill.make) {
+      btn(`${botNow().name} 시범`, aiming(p.botShot));
       btn('되돌리기', p.undo);
       btn('옮기기', () => { p.edit = !p.edit; p.bar(); if (p.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, p.edit);
       btn('공 놓기', p.sheetRack);
@@ -108,7 +119,10 @@ const practice = {
   },
   sheetRack() {
     const P = game.P, w = game.world, done = () => { closeSheet(); st.rev++; flow.hud(); scene.invalidate(); };
-    const clear = () => { for (let i = 1; i < 16; i++) { w.balls[i].on = false; w.balls[i].x = w.balls[i].px = 9 + i; } };
+    const clear = () => { for (let i = 1; i < w.balls.length; i++) { w.balls[i].on = false; w.balls[i].x = w.balls[i].px = 9 + i; } };
+    // (a carom table or 스누커's: the game's own layout again; the pool table's racks below - 8볼's has the balls to make 9볼's)
+    const first = () => { game.mode.setup(game, Math.random); game.placing = null; game.isBreak = false; done(); };
+    if (game.mode.table !== 'pool' || w.balls.length < 16) return openSheet('공 놓기', [flatBtn('처음 배치로', first)]);
     openSheet('공 놓기', [
       flatBtn('8볼 모양으로 15개', () => { game.MODES.eight.setup(game, Math.random); game.placing = null; game.isBreak = false; done(); }),
       flatBtn('9볼 모양으로 9개', () => { clear(); game.MODES.nine.setup({ P, world: w }, Math.random); done(); }),

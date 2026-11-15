@@ -8,14 +8,15 @@ const match = {
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn(), real: prefs.vsAI ? null : realPref(),   // (add-ons: with a friend only)
-      minus: prefs.vsAI || prefs.fourMinus !== false, hugu: prefs.mode === 'four', fast: !!prefs.fast };   // (4구: 마이너스 점수 with a friend, 후구 - game.js)
+      minus: prefs.vsAI || prefs.fourMinus !== false, hugu: prefs.mode === 'four', fast: !!prefs.fast,   // (4구: 마이너스 점수 with a friend, 후구 - game.js)
+      bot: prefs.vsAI ? botPersona(botNow()) : null };   // (the computer as the bot picked: 34-desk-bots.js)
     const key = c.names.join('\u0001') + c.mode;
     if (series.key !== key) { series.key = key; series.s = [0, 0]; }
     // a ranked game (54-ranked.js): the rack from the room's seed, so both devices start from the same table; a stand-in in
     // the other seat plays at its level
     const o = c.online, standIn = o && o.standIn;
     game.start(c.mode, c.names, c.ai, { level: prefs.level, target: c.target, first: first || 0, cushions: o ? c.cushions : prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, potTray: true, ice: !!c.ice, real: c.real || null, minus: c.minus !== false, hugu: !!c.hugu, ot: !!c.ot,
-      rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : undefined });
+      rnd: o ? seededRandom(o.seed) : undefined, team: !!c.team, levels: standIn ? [standIn.level, standIn.level] : c.bot ? [c.bot.level, c.bot.level] : undefined, personas: standIn ? (o.seat ? [standIn, null] : [null, standIn]) : c.bot ? [null, c.bot] : undefined });
     if (o && (o.watch || o.team)) game.players.forEach(p => { p.ai = true; });   // (2:2: set shot by shot - ranked.auto)
     else if (o) { game.players[o.seat].ai = false; game.players[1 - o.seat].ai = true; }
     // a stand-in's chances come from the room's seed (the same table and seed give the same shot: one day the server can check them)
@@ -96,6 +97,7 @@ const match = {
     arcade.close();
     if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
     if (!draw) countResult(w, l);
+    if (match.ctx.bot && !match.ctx.online && w === 0) botBeaten(match.ctx.bot.bot);   // (a bot beaten: the next one opens)
     store.set('save', null); st.phase = 'idle';
     // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
     // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
@@ -113,7 +115,7 @@ const match = {
     const onKo = on && (on.kind === 'invite' ? '친구 초대' : on.kind === 'arcade' ? '아케이드' : '랭킹전');
     // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
     $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
-    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? '컴퓨터 ' + LEVELS[prefs.level] : '친구와 플레이'}`;
+    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? (match.ctx.bot ? `${match.ctx.bot.name} ${match.ctx.bot.dama}` : '컴퓨터 ' + LEVELS[prefs.level]) : '친구와 플레이'}`;
     resultStats(carom, inn);
     // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
     // the innings, the time or the best run (copy audit 07-02, 07-03)

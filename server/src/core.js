@@ -102,8 +102,10 @@ export class VaultCore {
       if (this.sql.exec(`SELECT 1 FROM solved WHERE id = ?`, id).toArray().length) return { ok: true, paid: 0, me: this.me() };
       const r = playPuzzle(id, shot); if (!r.ok) return { ok: false, why: r.why };
       this.sql.exec(`INSERT INTO solved (id, at) VALUES (?, ?)`, id, Date.now());
-      this.pay(`puzzle ${id}`, E.ECONOMY.PUZZLE, 0);
-      return { ok: true, paid: E.ECONOMY.PUZZLE, me: this.me() };
+      // (a stage's 챌린지 - its tenth: puzzles.js challenge - pays diamonds as well)
+      const Z = E.createPuzzles(), dia = Z.challenge(Z.byId(id)) ? E.ECONOMY.PUZZLE_CHALLENGE_DIA : 0;
+      this.pay(`puzzle ${id}`, E.ECONOMY.PUZZLE, dia);
+      return { ok: true, paid: E.ECONOMY.PUZZLE, dia, me: this.me() };
     });
   }
 

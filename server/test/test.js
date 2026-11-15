@@ -43,6 +43,17 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
 
 // puzzles: an unknown one, or a nonsense shot, pays nothing
 { const v = vault(); v.init('h'); ok(!v.puzzle({ req: req(), id: 99999, shot: { aim: 0, V: 2, a: 0, b: 0 } }).ok && v.me().coin === 0, 'unknown puzzle'); ok(!playPuzzle(1, { aim: 0, V: 999, a: 0, b: 0 }).ok, 'nonsense shot'); console.log('puzzles: checked (none to solve yet)'); }
+// a stage's 챌린지 (every tenth puzzle) pays diamonds besides the coins, the first time only; the others coins alone
+{ const v = vault(); v.init('h'); const Z = E.createPuzzles(), shot = z => ({ aim: z.sol[0], V: z.sol[1], a: z.sol[2], b: z.sol[3], el: z.sol[4] });
+  const ch = Z.list.find(z => Z.challenge(z)), plain = Z.list.find(z => !Z.challenge(z));
+  if (ch && plain && playPuzzle(ch.id, shot(ch)).ok && playPuzzle(plain.id, shot(plain)).ok) {
+    const d0 = v.me().dia || 0, c0 = v.me().coin;
+    ok(v.puzzle({ req: req(), id: plain.id, shot: shot(plain) }).ok && (v.me().dia || 0) === d0 && v.me().coin === c0 + E.ECONOMY.PUZZLE, 'a puzzle pays coins only');
+    const r = v.puzzle({ req: req(), id: ch.id, shot: shot(ch) });
+    ok(r.ok && r.dia === E.ECONOMY.PUZZLE_CHALLENGE_DIA && v.me().dia === d0 + E.ECONOMY.PUZZLE_CHALLENGE_DIA, 'a challenge pays diamonds too');
+    ok(v.puzzle({ req: req(), id: ch.id, shot: shot(ch) }).paid === 0 && v.me().dia === d0 + E.ECONOMY.PUZZLE_CHALLENGE_DIA, 'a challenge pays once');
+    console.log('puzzles: a challenge pays diamonds, once');
+  } else console.log('puzzles: (no solvable challenge to check)'); }
 
 // a match recorded the way the app records it, by two computers playing it out
 let s = 99; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };

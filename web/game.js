@@ -450,6 +450,13 @@ function createGame(PH, makeAI) {
     ctx(g) { return { turn: g.turn }; },
     evaluate(ev) { return { foul: null, scratch: ev.pocketed.some(p => p.id === 0), respot: [], win: null, why: '', assign: null, keep: true, pts: 0 }; },
   };
+  /* Free practice on each game's own table (owner 11-16: 자유 연습 picks its game - 3구, 4구, 8볼, 9볼, 스누커): the game's
+     table, balls and opening layout, with practice's lack of rules - one player, no turns, nothing counted. 'free-' + the
+     game's id; what is added to a game (a table, a set of balls) comes with it. */
+  for (const id of ['three', 'four', 'eight', 'nine', 'snooker']) MODES['free-' + id] = Object.assign({}, MODES[id], {
+    id: 'free-' + id, of: id, name: MODES[id].name + ' 연습', solo: true, free: true, ballInHand: false, target: false, scored: false,
+    intro: () => '', legal: g => g.world.balls.filter(b => b.on && b.id !== g.world.cue).map(b => b.id), ctx: g => ({ turn: g.turn }),
+    evaluate: MODES.practice.evaluate });
 
   const mkP = (name, ai) => ({ name, ai: !!ai, group: null, score: 0, shots: 0, made: 0, run: 0, best: 0, fouls: 0, foulRun: 0 });
   const g = {
@@ -681,7 +688,8 @@ function createGame(PH, makeAI) {
   g.shooter = () => g.team ? g.turn + 2 * g.member[g.turn] : g.turn;
 
   // the computer player is ai/ (createAI): given, it answers g.aiPlan()
-  if (makeAI) { const ai = makeAI(g); g.aiPlan = ai.plan; }
+  // (aiPersona: a person-like opponent made at a rating, its personality and style named or drawn - ai/51-people.js; 훈련's bots)
+  if (makeAI) { const ai = makeAI(g); g.aiPlan = ai.plan; g.aiPersona = ai.rankedPersonaFor; }
 
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,

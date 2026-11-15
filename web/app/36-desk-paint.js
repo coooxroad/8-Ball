@@ -126,12 +126,17 @@ function deskPaint() {
   $('#desk').classList.toggle('menu', menu); app.classList.toggle('mnon', menu);   // (mnon: the card layer over the desk shows - 37-desk-menu.js)
   const d = { rail: $('#dkRail'), head: $('#dkHead'), stage: $('#dkStage'), foot: $('#dkFoot'), slate: $('#dkSlate') };
   const top = (d.slate.querySelector('.dk-body') || d.slate).scrollTop;
-  // (every place starts from a clean desk - the card menu too: 랭킹전's or 친구와 플레이's boards stayed over the cards, owner 11-15)
+  // (every place starts from a clean desk - the card menu too: 랭킹전's or 친구와 플레이's boards stayed over the cards, owner 11-15;
+  // what was there is kept aside, and put back where it is painted the same: deskReuse)
+  const was = [d.rail, d.head, d.foot, d.slate].map(n => [n, n.className, [...n.childNodes]]);
   for (const n of [d.rail, d.head, d.foot, d.slate]) n.textContent = '';
   for (const k of [...d.stage.children]) if (k.id !== 'dkShade') k.remove();
-  d.head.className = 'dk-head';
+  d.head.className = 'dk-head'; d.foot.className = 'dk-foot';
   $('#desk').classList.remove('boards', 'felt'); { const b = $('#dkBoards'); if (b) b.remove(); } app.classList.remove('rkcard', 'hall');
   if (menu) { invite.leave(); d.stage.dataset.win = '0'; menuPaint(); if (st.screen === 'home') requestAnimationFrame(layout); return; }
+  try { deskPaintPlace(d, top); } finally { for (const [n, cls, olds] of was) if (n.className === cls) deskReuse(n, olds); }
+}
+function deskPaintPlace(d, top) {
   d.stage.dataset.win = '1';                                         // the live table shows through, unless something else is laid in the tray
   invite.shown = false;
   DESK_PLACES[deskTab](d);
@@ -144,6 +149,45 @@ function deskPaint() {
   const more = () => body.classList.toggle('more', body.scrollHeight - body.clientHeight - body.scrollTop > 4);
   body.addEventListener('scroll', more, { passive: true }); requestAnimationFrame(more); setTimeout(more, 400);
   if (st.screen === 'home') requestAnimationFrame(layout);          // the table sits in the tray, whose size the content just set
+}
+/* The desk is painted again whole for any change - a tap, the wallet, a message from the server - and a node made anew is
+   drawn anew: on a phone the leaning desk's layer was drawn again over most of its area each time, which showed as parts of it
+   stuttering (owner 11-16). So a part painted exactly as before keeps the node it had (nothing to draw), given the new
+   node's handlers (el() keeps them in _on); the slate's scrolling body is kept as it is and its rows are matched the same
+   way. A part with a canvas is always the new one (what is drawn in it is not in its markup). */
+function deskReuse(box, olds) {
+  const news = [...box.childNodes];
+  news.forEach((nw, i) => {
+    const od = olds[i]; if (!od || od.nodeType !== nw.nodeType) return;
+    if (od.nodeType !== 1 ? od.isEqualNode(nw) : bare(od).isEqualNode(bare(nw))) { if (nw.nodeType === 1 && nw.querySelector('canvas')) return; relisten(od, nw); box.replaceChild(od, nw); return; }
+    if (nw.nodeType === 1 && nw.classList.contains('dk-body') && od.nodeType === 1 && od.classList.contains('dk-body')) {
+      const kids = [...od.childNodes]; od.replaceChildren(...nw.childNodes); box.replaceChild(od, nw); deskReuse(od, kids);
+      requestAnimationFrame(() => od.classList.toggle('more', od.scrollHeight - od.clientHeight - od.scrollTop > 4));   // (its fade, for what it holds now)
+    }
+  });
+}
+// a node as painted, without what 12-press.js adds after (its fx- classes, shine and ripples, the entrance's --fx-i, the
+// position it makes relative to hold them): an old node has them, a node just made not yet
+function bare(n) {
+  const c = n.cloneNode(true);
+  for (const x of c.querySelectorAll('[class^="fx-"]')) x.remove();
+  for (const x of [c, ...c.querySelectorAll('[class*="fx-"], [style]')]) {
+    for (const k of [...x.classList]) if (k.slice(0, 3) === 'fx-') x.classList.remove(k);
+    if (x.getAttribute('class') === '') x.removeAttribute('class');
+    if (x.style.getPropertyValue('--fx-i')) x.style.removeProperty('--fx-i');
+    if (x.style.position === 'relative') x.style.removeProperty('position');
+    if (x.getAttribute('style') === '') x.removeAttribute('style');
+  }
+  return c;
+}
+// the new node's handlers onto the old one, all the way down (the two are the same shape: isEqualNode)
+function relisten(od, nw) {
+  if (od.nodeType !== 1) return;
+  for (const [t, f] of od._on || []) od.removeEventListener(t, f);
+  for (const [t, f] of nw._on || []) od.addEventListener(t, f);
+  od._on = nw._on;
+  const kids = n => [...n.children].filter(k => !(k.className && String(k.className).slice(0, 3) === 'fx-'));   // (12-press.js's own, as bare)
+  const A = kids(od), B = kids(nw); A.forEach((a, i) => B[i] && relisten(a, B[i]));
 }
 $('#dkTabs').addEventListener('click', e => { const b = e.target.closest('.dk-tab'); if (!b) return; SND.init(); SND.tap(); deskGo(b.dataset.t); });
 press('#dkSet', sheetSettings);

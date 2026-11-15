@@ -4,7 +4,8 @@ function el(tag, attrs, kids) {
   if (attrs) for (const k in attrs) {
     if (attrs[k] == null) continue;                                  // an attribute given as null is left off (disabled: null = enabled)
     if (k === 'class') n.className = attrs[k]; else if (k === 'text') n.textContent = attrs[k];
-    else if (k === 'style') n.style.cssText = attrs[k]; else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), attrs[k]); else n.setAttribute(k, attrs[k]);
+    else if (k === 'style') n.style.cssText = attrs[k]; else if (k.slice(0, 2) === 'on') { n.addEventListener(k.slice(2), attrs[k]); (n._on || (n._on = [])).push([k.slice(2), attrs[k]]); }   // (_on: kept, so the desk can hand them to the same node painted before - 36-desk-paint.js deskReuse)
+    else n.setAttribute(k, attrs[k]);
   }
   if (kids) for (const c of [].concat(kids)) if (c) n.appendChild(c);
   return n;

@@ -1,10 +1,12 @@
 /* ================= home: what the desk (32-desk.js) and the flows share ================= */
-const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode] || {}).table === 'carom';
+const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode === 'practice' && !prefs.lessons ? 'free-' + freeGame() : prefs.mode] || {}).table === 'carom';
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강 당구' };
 // the puzzles on offer, and which stages are open
 const pzList = () => puzzles.list, PZ_NEED = 5;
 const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
+// a puzzle open to play: its topic open, and - the topic a road of stages, owner 11-16 - the stage before it on the road solved
+const pzOpenQ = q => pzOpen(q.stage) && (q.n === 1 || !!prefs.pz.stars[(puzzles.of(q.stage).find(x => x.n === q.n - 1) || {}).id]);
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() { deskPaint(); if (!tutorial.asked && st.screen === 'home') setTimeout(() => { if (st.screen === 'home' && $('#sheet').hidden) tutorial.offer(); }, 700); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
@@ -20,7 +22,7 @@ function homePreview() {
     if (L) { flow = null; putLayout(L); scene.setZone(L.zone); playDemo(L.demo, { quiet: true, after: homePreview }); return; }
   }
   flow = null; scene.setMarks(null); useCue(prefs.cues[0]);
-  const mode = prefs.mode === 'puzzle' ? 'four' : game.MODES[prefs.mode] && prefs.mode !== 'practice' ? prefs.mode : 'eight', ice = iceOn();
+  const mode = prefs.mode === 'puzzle' ? 'four' : prefs.mode === 'practice' ? (prefs.lessons ? 'eight' : freeGame()) : game.MODES[prefs.mode] ? prefs.mode : 'eight', ice = iceOn();
   game.start(mode, [prefs.names[0], oppName()], false, { ice, levels: [2, 2], target: 99 });
   dress(ice); scene.setTable(game.P); st.rev++; scene.invalidate();
   { game.players[0].ai = game.players[1].ai = true; flow = homeDemo; st.el = 0; hold(1.2, () => { if (flow === homeDemo && st.screen === 'home') beginTurn(true); }); }
@@ -47,6 +49,8 @@ function resume(d) {
   if (d.series) { series.key = d.series.key; series.s = d.series.s; }
   match.ctx = { names: game.players.map(p => p.name), mode: game.modeId, ai: game.players[1].ai, target: game.target,
     targets: game.tens ? game.targets.slice() : null, finish: game.finish, ice: game.ice, real: game.real, minus: game.minus, hugu: game.hugu, fast: !!(match.ctx && match.ctx.fast) };
+  // (against a bot: the same bot again, found by its name - 34-desk-bots.js)
+  { const b = game.players[1].ai && BOTS.find(x => x.name === game.players[1].name); if (b) { match.ctx.bot = botPersona(b); game.personas = [null, match.ctx.bot]; game.levels = [match.ctx.bot.level, match.ctx.bot.level]; } }
   const h = d.hl || {}; match.shots = h.shots || []; match.best = h.best || null; match.worst = h.worst || null; match.count = h.count || 0;
   match.log = d.log || null; match.innings = d.inn || [1, 1];
   match.t0 = Date.now() - (+d.el > 0 ? +d.el : 0);                        // (the time played before, not the time it lay saved)

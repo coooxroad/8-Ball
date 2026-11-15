@@ -242,21 +242,21 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
   const m = (cpu ? GAME4 : FRIEND_GAMES).includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on && m !== 'snooker';
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
   if (!cpu) dkPut(rail, FRIEND_GAMES.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
-  if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
+  if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': cpu ? '메뉴로' : '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(cpu ? '컴퓨터 대전' : '친구와 플레이'));   // (copy audit 01-10: the rules are told when the game begins)
   const plate = i => {
-    const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? LEVELS[prefs.level] : recText(nm);
+    const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? `레이팅 ${botNow().rating}` : recText(nm);
     return el('button', { class: 'dk-plate' + (i ? ' two' : ''), onclick: onTap(() => sheetName(i)) }, [el('i', { class: 'av', text: String(i + 1) }), el('span', null, [el('b', { text: nm }), el('small', { text: sub })])]);
   };
   if (!inv) dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
 
-  dkPut(slate, dkH1(MODE_KO[m]));
-  if (cpu) dkPut(slate, [dkHr(), dkLab('종목'), dkSeg(GAME4.map(id => [id, MODE_KO[id]]), m, v => pick(v)())]);
+  // (컴퓨터 대전: the game on the rail - 34-desk-train.js - and the computer one of its bots, picked here: 34-desk-bots.js)
+  if (cpu) dkPut(slate, botPicker());
   // (with a friend: here on one device, taking turns - or invited to play from theirs, by a code: 55-invite.js)
   // (스누커: on one device only, for now)
-  else dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on || m === 'snooker']], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);
+  else dkPut(slate, [...dkH1(MODE_KO[m])]), dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on || m === 'snooker']], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);
   if (inv) return deskInvite(slate, d => d, m);
-  if (prefs.vsAI) dkPut(slate, [dkLab('난이도'), dkSeg(LEVELS.map((t, i) => [i, t]), Math.min(3, prefs.level), v => { prefs.level = v; repaint(); })]);
+  if (cpu) dkPut(slate, dkHr());
   if (m === 'four') {
     const suji = (name, i, set) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-txt', text: name }), dkStep(SUJI, sujiOf(i), v => String(v * 10), v => { set(v); repaint(); }, true)]);
     dkPut(slate, [dkLab('수지'),

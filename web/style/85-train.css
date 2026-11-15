@@ -1,0 +1,92 @@
+/* 훈련 (34-desk-train.js, 34-desk-bots.js, owner 11-16): 퍼즐's topics as holograms across the tray's foot, a topic's road of
+   stages on the slate, and 컴퓨터 대전's bots. */
+
+/* the topics: light standing over the tray's foot, the width of the tray shared out with small gaps between */
+#app.desk .dk-foot.holo{gap:6px;justify-content:stretch;overflow:visible}
+#app.desk .dk-holo{flex:1 1 0;min-width:0;height:62px;padding:4px 2px 7px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:#c9fbef;font:700 12px/1.15 var(--ui-font);letter-spacing:-.03em;text-align:center;word-break:keep-all;overflow-wrap:anywhere;white-space:pre-line;border-radius:9px;border:1px solid rgba(140,255,225,.42);
+  background:linear-gradient(180deg,rgba(120,255,220,.06),rgba(70,215,190,.2)),repeating-linear-gradient(0deg,rgba(170,255,235,.07) 0 1px,transparent 1px 3px);
+  box-shadow:0 0 10px rgba(80,240,200,.22),inset 0 0 14px rgba(80,240,200,.16);text-shadow:0 0 6px rgba(120,255,220,.55)}
+#app.desk .dk-holo b{font:inherit;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#app.desk .dk-holo small{font:600 11px var(--ui-font);color:rgba(190,255,240,.75);text-shadow:none}
+/* (the light it is thrown from: a line of glow on the tray under each) */
+#app.desk .dk-holo::before{content:'';position:absolute;left:12%;right:12%;bottom:-6px;height:4px;border-radius:50%;background:rgba(120,255,220,.55);filter:blur(3px);pointer-events:none}
+#app.desk .dk-holo[aria-pressed="true"]{color:#fff;border-color:rgba(200,255,242,.95);
+  background:linear-gradient(180deg,rgba(150,255,230,.2),rgba(80,230,200,.42)),repeating-linear-gradient(0deg,rgba(220,255,245,.12) 0 1px,transparent 1px 3px);
+  box-shadow:0 0 18px rgba(110,255,215,.55),inset 0 0 18px rgba(150,255,230,.35)}
+#app.desk .dk-holo[aria-pressed="true"] small{color:#e9fff9}
+#app.desk .dk-holo.lock{opacity:.62;box-shadow:none}
+#app.desk .dk-holo img.lock{width:16px;height:16px;opacity:.85}
+#app.desk .dk-holo:active{transform:translateY(1px);filter:brightness(1.15)}
+/* (a short screen: the topics keep a readable width and the row scrolls) */
+#app.desk.compact .dk-foot.holo{overflow-x:auto;justify-content:flex-start;padding-bottom:6px}
+#app.desk.compact .dk-holo{flex:1 0 66px;height:50px;font-size:11.5px}
+#app.desk.compact .dk-holo small{font-size:10px}
+#app.desk.compact .rd-node{width:36px;height:36px}
+#app.desk.compact .rd-node b{font-size:15px}
+#app.desk.compact .rd-node.ch{width:46px;height:46px;border-radius:11px}
+#app.desk.compact .rd-node.ch .gem{width:20px;height:20px}
+#app.desk.compact .bot-pic.big{width:56px;height:56px;border-radius:12px}
+#app.desk.compact .bot-id>b{font-size:20px}
+/* (the rail's games: one line each) */
+#app.desk.compact .dk-rb.iconed .lb{white-space:nowrap}
+
+/* a topic's road: the stages along a winding line, the line lit as far as they are open */
+.pz-road-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pz-road-h b{font:800 18px var(--ui-font);color:var(--slate-ink, #f1ebe0);word-break:keep-all}
+.pz-road-h small{font:700 14px var(--ui-font);color:var(--slate-sub)}
+.pz-road{position:relative;width:100%;max-width:300px;margin:4px auto 0;flex:none}
+.pz-road svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.pz-road path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.pz-road .rd-all{stroke:rgba(255,255,255,.14);stroke-width:6;stroke-dasharray:2 9}
+.pz-road .rd-on{stroke:rgba(255,214,120,.55);stroke-width:5}
+.rd-node{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;
+  color:#2b241c;background:radial-gradient(circle at 38% 30%,#fffaf0,#e6dccb 62%,#b9ab94);box-shadow:0 3px 6px rgba(0,0,0,.45),inset 0 -2px 3px rgba(0,0,0,.18)}
+.rd-node b{font:800 17px var(--ui-font)}
+.rd-node.done{background:radial-gradient(circle at 38% 30%,#fff4cf,#f0c95c 60%,#b8892a);color:#3a2a08}
+.rd-node.lock{background:radial-gradient(circle at 38% 30%,#5a605f,#3a3f3e 70%);color:rgba(255,255,255,.35);box-shadow:inset 0 2px 4px rgba(0,0,0,.4)}
+.rd-node[aria-pressed="true"]{outline:3px solid rgba(255,255,255,.92);outline-offset:3px}
+.rd-node .st{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);display:flex;gap:1px}
+.rd-node .st i{width:11px;height:11px;background:url(ui/star-off.webp) center/contain no-repeat}
+.rd-node .st i.on{background-image:url(ui/star.webp)}
+/* the 챌린지: a cut stone, larger, its name under it */
+.rd-node.ch{width:58px;height:58px;border-radius:14px;transform:translate(-50%,-50%) rotate(45deg);
+  background:linear-gradient(135deg,#e9fbff 0%,#8fd6f2 35%,#3d8fc0 70%,#1d4f78 100%);box-shadow:0 0 16px rgba(120,210,255,.55),0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.55)}
+.rd-node.ch.lock{background:linear-gradient(135deg,#7b8a92,#46525a 60%,#2c343a);box-shadow:0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.18)}
+.rd-node.ch.done{background:linear-gradient(135deg,#fffbe6 0%,#ffd76a 35%,#d69a1f 70%,#8a5a0c 100%);box-shadow:0 0 18px rgba(255,210,110,.6),0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.6)}
+.rd-node.ch .gem{width:26px;height:26px;transform:rotate(-45deg);background:url(ui/dia.webp) center/contain no-repeat;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.rd-node.ch.lock .gem{opacity:.45;filter:grayscale(1)}
+.rd-node.ch em{position:absolute;top:100%;left:100%;transform:rotate(-45deg) translate(-50%,8px);transform-origin:0 0;white-space:nowrap;font:800 12px var(--ui-font);font-style:normal;color:#9fdcff;letter-spacing:.02em}
+.rd-node.ch.done em{color:#ffd76a}
+.rd-node.ch .st{bottom:auto;top:50%;left:50%;transform:rotate(-45deg) translate(-50%,24px);transform-origin:0 0}
+
+/* 컴퓨터 대전's bots: the one picked large with its line, then each group's pictures */
+.bot-pic{flex:none;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background-size:cover;background-position:center;
+  box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 -3px 6px rgba(0,0,0,.25),inset 0 2px 4px rgba(255,255,255,.45)}
+.bot-pic b{font:800 20px var(--ui-font);color:rgba(30,24,18,.82);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.bot-pic.big{width:72px;height:72px;border-radius:16px}
+.bot-pic.big b{font-size:32px}
+.bot-pic.t-bronze{background-color:#c0834f;background-image:radial-gradient(circle at 35% 28%,#f2c9a0,#c0834f 55%,#7a4a22)}
+.bot-pic.t-silver{background-color:#c4c8cc;background-image:radial-gradient(circle at 35% 28%,#ffffff,#c4c8cc 55%,#7d848b)}
+.bot-pic.t-gold{background-color:#d8b04a;background-image:radial-gradient(circle at 35% 28%,#fff1b8,#d8b04a 55%,#8f6a14)}
+.bot-pic.t-platinum{background-color:#a9d6d2;background-image:radial-gradient(circle at 35% 28%,#f2fffd,#a9d6d2 55%,#5b8e8a)}
+.bot-pic.t-diamond{background-color:#8fd0f0;background-image:radial-gradient(circle at 35% 28%,#f0fbff,#8fd0f0 55%,#3b7fa8)}
+.bot-pic.t-pro{background-color:#3a3530;background-image:radial-gradient(circle at 35% 28%,#8a7f70,#3a3530 55%,#16120f);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 0 0 2px #d8b04a}
+.bot-pic.t-pro b{color:#f2d27a;text-shadow:none}
+.bot-cur{display:flex;gap:14px;align-items:flex-start}
+.bot-id{display:flex;flex-direction:column;gap:4px;min-width:0}
+.bot-id>b{font:800 26px/1.1 var(--ui-font);color:var(--slate-ink, #f1ebe0)}
+.bot-rt{display:flex;align-items:center;gap:6px;font:700 15px var(--ui-font);color:#e3ddd1}
+.bot-rt em{font:700 12px var(--ui-font);font-style:normal;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.1);color:var(--slate-sub)}
+.bot-id small{position:relative;margin-top:4px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.08);font:500 14px/1.4 var(--ui-font);color:#e9e3d6;word-break:keep-all}
+.bot-id small::before{content:'';position:absolute;left:-6px;top:10px;border:6px solid transparent;border-left:0;border-right-color:rgba(255,255,255,.08)}
+.bot-group{display:flex;flex-direction:column;gap:8px}
+.bot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}
+.bot-cell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;background:none;border:0;color:#d9d2c4;font:600 12px var(--ui-font);position:relative}
+.bot-cell[aria-pressed="true"] .bot-pic{outline:3px solid var(--key-on, #3fbf7f);outline-offset:2px}
+.bot-cell[aria-pressed="true"] span{color:#fff}
+.bot-cell.lock .bot-pic{filter:grayscale(.85) brightness(.55)}
+.bot-cell.lock .bot-pic b{visibility:hidden}
+.bot-cell.lock::after{content:'';position:absolute;top:16px;left:50%;width:18px;height:18px;transform:translateX(-50%);background:url(ui/lock.webp) center/contain no-repeat}
+.bot-cell.beat .bot-pic::after{content:'✓';position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;background:#3fbf7f;color:#fff;font:800 11px/16px var(--ui-font);text-align:center}
+.bot-cell .bot-pic{position:relative}

@@ -25,7 +25,7 @@ const puzzle = {
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
   // the next one not yet solved after this (or simply the next, when all are), staying inside the stages that are open
   step(dir) {
-    const L = pzList().filter(q => pzOpen(q.stage)), i = Math.max(0, L.indexOf(puzzle.cur)); let k = i;
+    const L = pzList().filter(pzOpenQ), i = Math.max(0, L.indexOf(puzzle.cur)); let k = i;
     for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.pz.stars[L[k].id]) break; }
     if (k === i) k = (i + dir + L.length) % L.length;
     puzzle.start(L[k].id);
@@ -68,11 +68,12 @@ const puzzle = {
     const p = puzzle, z = p.cur, r = game.resolve().r;
     if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
     // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
-    const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = pzList().filter(q => pzOpen(q.stage)).length;
+    const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = puzzles.STAGES.filter((_, si) => pzOpen(si)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
     if (!was) net.claim('puzzle', { id: z.id, shot: puzzle.shot });     // (paid once, by the server, after it plays the shot again)
-    const now = pzList().filter(q => pzOpen(q.stage)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
-    toast(all && !was ? '정답! 퍼즐을 모두 풀었습니다.' : now > opened ? '정답! 다음 스테이지가 열렸습니다.' : '정답! ' + '★'.repeat(stars), 'good', 2000); SND.good();
+    const now = puzzles.STAGES.filter((_, si) => pzOpen(si)).length, all = pzList().every(q => prefs.pz.stars[q.id]);
+    // (주제: a set of puzzles - puzzles.js STAGES; 스테이지: one puzzle on its road, every tenth a 챌린지 - owner 11-16)
+    toast(all && !was ? '정답! 퍼즐을 모두 풀었습니다.' : now > opened ? `정답! 새 주제 '${puzzles.STAGES[z.stage + 1].name}' 열림` : puzzles.challenge(z) && !was ? '챌린지 성공!' : '정답! ' + '★'.repeat(stars), 'good', 2000); SND.good();
     hold(1.9, () => p.step(1));
   },
   hud() {

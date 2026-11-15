@@ -25,6 +25,7 @@ const ECONOMY = {
   RANKED_WIN: 2, RANKED_LOSS: 0.5, FRIEND: 0.25, CPU: 0.25,
   TOUR_CUT: 0.1,
   PUZZLE: 150,
+  PUZZLE_CHALLENGE_DIA: 10,   // a puzzle stage's 챌린지 (every tenth: puzzles.js challenge), solved the first time - diamonds besides PUZZLE's coins (owner 11-16; the amount mine: as signing up's)
   // until the server plays every match again to check it (paid plan), matches it cannot check pay at most this a day
   UNCHECKED_DAILY: 3000, CHECK_SHARE: 1, CHECK_OVER: 600, CHECK_FIRST: 3,   // (CHECK_SHARE 1: every match - the paid plan, owner 11-16; it was 0.25 on the free one)
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿

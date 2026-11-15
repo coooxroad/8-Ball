@@ -89,6 +89,10 @@ function createPuzzles() {
     {"id":809,"stage":7,"n":9,"balls":[[-0.190869,0.117509],[0.652931,0.304361],[-0.042048,0.509278],[-0.167928,0.462948]],"sol":[1.220841649,6.401875421,0.6,0,0],"walls":[{"x":-0.156776,"y":0.212072,"len":0.44614,"thick":0.03,"ang":3.057565,"h":0.04},{"x":-0.412685,"y":-0.125246,"len":0.253018,"thick":0.03,"ang":-2.720043,"h":0.04},{"x":0.926382,"y":0.268371,"len":0.202265,"thick":0.03,"ang":-1.458837,"h":0.04}]},
     {"id":810,"stage":7,"n":10,"balls":[[-0.316113,-0.101749],[-0.540248,-0.451709],[-0.138706,-0.008152],[0.0927,-0.248626]],"sol":[-0.269234674,6.245732118,0.6,0,0],"walls":[{"x":-0.233692,"y":-0.061396,"len":0.254979,"thick":0.03,"ang":1.929676,"h":0.04}]}
   ];
-  return { list, STAGES, byId: id => list.find(p => p.id === id), of: s => list.filter(p => p.stage === s) };
+  /* Every tenth puzzle of a stage is its 챌린지 (owner 11-16): a shot a real player made, set out as the puzzle (until those
+     are entered from the players' shots, the generator's tenth stands in its place). Solved the first time it pays
+     diamonds as well (economy.js PUZZLE_CHALLENGE_DIA - server/src/core.js puzzle). */
+  const challenge = p => !!p && p.n % 10 === 0;
+  return { list, STAGES, byId: id => list.find(p => p.id === id), of: s => list.filter(p => p.stage === s), challenge };
 }
 if (typeof module !== 'undefined') module.exports = createPuzzles;
