@@ -5,6 +5,8 @@ const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snoo
 // the puzzles on offer, and which stages are open
 const pzList = () => puzzles.list, PZ_NEED = 5;
 const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
+// a puzzle's name: its topic and its place on the topic's road, or 챌린지 (34-desk-train.js pzRoad)
+const pzName = q => `${puzzles.STAGES[q.stage].name} ${puzzles.challenge(q) ? '챌린지' : q.n}`;
 // a puzzle open to play: its topic open, and - the topic a road of stages, owner 11-16 - the stage before it on the road solved
 const pzOpenQ = q => pzOpen(q.stage) && (q.n === 1 || !!prefs.pz.stars[(puzzles.of(q.stage).find(x => x.n === q.n - 1) || {}).id]);
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));

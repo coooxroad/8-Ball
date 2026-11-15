@@ -49,7 +49,7 @@ function deskPuzzle(d) {
   const z = prefs.pz, L = puzzles.list.filter(pzOpenQ), cur0 = puzzles.byId(z.cur) || puzzles.list[0], cur = pzOpenQ(cur0) ? cur0 : L.find(q => q.stage === cur0.stage) || L[0], S = puzzles.STAGES[cur.stage];
   const solved = qs => qs.filter(q => z.stars[q.id]).length, here = puzzles.of(cur.stage);
   // (the stage in hand by its topic and its place on the road - the road on the slate picks it)
-  trainHead(head, `${S.name} ${puzzles.challenge(cur) ? '챌린지' : cur.n}`, S.desc);
+  trainHead(head, pzName(cur), S.desc);
   foot.classList.add('holo');
   dkPut(foot, puzzles.STAGES.map((s, si) => {
     const qs = puzzles.of(si), open = pzOpen(si);

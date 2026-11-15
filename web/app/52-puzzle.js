@@ -19,7 +19,7 @@ const puzzle = {
     p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
     usePhysics(); game.start('puzzle4', [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
-    toast(`${z.stage + 1}-${z.n} ${p.stage(z).name} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+    toast(`${pzName(z)} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
   },
   restart() { puzzle.start(); },
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
@@ -78,7 +78,7 @@ const puzzle = {
   },
   hud() {
     const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
-    paintPill(0, { name: `${z.stage + 1}-${z.n} ${p.stage(z).name}`, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
+    paintPill(0, { name: pzName(z), on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
     paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
   },
   // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
