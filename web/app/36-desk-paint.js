@@ -9,7 +9,8 @@ function deskLean(W, H, portrait) {
   // Low-DPI text needs more samples before the desk is tilted. Only the HTML contents are enlarged, then scaled back;
   // the wood and WebGL stay at their own resolution. Native HiDPI needs no extra layer; cap the extra work at 8M pixels.
   const dpr = window.devicePixelRatio || 1;
-  const density = wide && CSS.supports('zoom', '2') ? Math.max(1, Math.min(2 / dpr, Math.sqrt(8e6 / (W * hb)) / dpr)) : 1;
+  // (aimed a little under 8M: the desk itself measures some pixels taller than hb - 1920×1080 came to 8.06M, desk-text.js)
+  const density = wide && CSS.supports('zoom', '2') ? Math.max(1, Math.min(2 / dpr, Math.sqrt(7.8e6 / (W * hb)) / dpr)) : 1;
   app.style.setProperty('--desk-density', (Math.floor(density * 1000) / 1000).toFixed(3));
   app.style.setProperty('--tilt', t + 'rad');
   app.style.setProperty('--pp', P + 'px');
