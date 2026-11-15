@@ -1,0 +1,102 @@
+/* ---------- 플레이's card menu on the desk (app/37-desk-menu.js) ----------
+   A charcoal cloth across the desk (past both sides of the screen, stitched along its long edges), and on it one row that
+   scrolls sideways: my 선수증, then the printed cards. Sizes are in u (--u: the row's height / 560, set by the script), so
+   the row keeps its proportions on any screen. Only transform and opacity move (the sheen, the glints, the sparkles), each
+   on its own small layer, so the leaning desk is not painted again for them. */
+#app:not(.oldmenu) #dkTabs .dk-tab[data-t=train]{display:none}
+#desk.menu>.dk-rail,#desk.menu>.dk-tray,#desk.menu>.dk-slate{display:none}
+#desk:not(.menu)>.dk-menu{display:none}
+#app.desk #desk>.dk-menu{position:absolute;z-index:2;left:0;right:0;top:40px;bottom:calc(130px*var(--es) + 30px);--u:1}
+#app.desk.compact #desk>.dk-menu{top:8px;bottom:calc(130px*var(--es) + 8px)}
+.dk-menu::before{content:"";position:absolute;left:-600px;right:-600px;top:0;bottom:0;background:#2a2a2a url(ui/felt-charcoal.webp) 0 0/320px repeat;
+  box-shadow:inset 0 10px 0 rgba(0,0,0,.14),inset 0 -10px 0 rgba(0,0,0,.14),inset 0 0 50px rgba(0,0,0,.35),0 -1px 0 rgba(255,255,255,.07),0 12px 18px rgba(0,0,0,.45)}
+.dk-menu::after{content:"";position:absolute;left:-600px;right:-600px;top:14px;bottom:14px;border-top:2px dashed rgba(255,255,255,.2);border-bottom:2px dashed rgba(255,255,255,.2);pointer-events:none}
+.mn-row{position:absolute;inset:0;display:flex;align-items:center;gap:calc(18px*var(--u));overflow-x:auto;overflow-y:hidden;padding:0 calc(64px*var(--u)) 0 calc(54px*var(--u));
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  -webkit-mask:linear-gradient(90deg,transparent 0,#000 calc(30px*var(--u)),#000 calc(100% - 60px*var(--u)),transparent);mask:linear-gradient(90deg,transparent 0,#000 calc(30px*var(--u)),#000 calc(100% - 60px*var(--u)),transparent)}
+.mn-row::-webkit-scrollbar{display:none}
+.mn-row::after{content:"";flex:none;width:1px;height:1px}
+
+/* a card: the desk's printed card - its colour (--c1 light, --c2 dark), a dot print, a white line inside, a black strip on top */
+.mn-card{--c1:#43915e;--c2:#1f5735;position:relative;flex:none;width:calc(212px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
+  background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s}
+.mn-card:active{transform:translateY(3px)}
+.mn-card::after{content:"";position:absolute;inset:calc(8px*var(--u));top:calc(46px*var(--u));border-radius:calc(9px*var(--u));border:calc(2px*var(--u)) solid rgba(255,255,255,.85);pointer-events:none}
+.mn-card .strip{position:absolute;left:0;right:0;top:0;height:calc(38px*var(--u));display:flex;align-items:center;justify-content:center;padding:0 8px;background:#111;color:rgba(255,255,255,.9);
+  font:800 max(11px,calc(13.5px*var(--u))) var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn-card .mn-ico{position:absolute;left:0;right:0;top:calc(108px*var(--u));display:grid;place-items:center;height:calc(130px*var(--u))}
+.mn-card .mn-ico svg{width:calc(118px*var(--u));height:calc(118px*var(--u));color:rgba(255,255,255,.93);filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))}
+.mn-card b{position:absolute;left:0;right:0;bottom:calc(76px*var(--u));font:900 max(15px,calc(24px*var(--u))) var(--ui-font);letter-spacing:-.01em;white-space:nowrap;text-shadow:0 2px 3px rgba(0,0,0,.45)}
+.mn-card small{position:absolute;left:6px;right:6px;bottom:calc(50px*var(--u));font:700 max(11px,calc(14.5px*var(--u))) var(--ui-font);color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn-card.soon{filter:saturate(.35) brightness(.78)}
+.mn-card.k-rank{--c1:#4176c4;--c2:#1d4688}
+.mn-card.k-friend{--c1:#43915e;--c2:#1f5735}
+.mn-card.k-lesson{--c1:#bb5a52;--c2:#7c2d29}
+.mn-card.k-puzzle{--c1:#b5813a;--c2:#68420f}
+.mn-card.k-watch{--c1:#3d8a8a;--c2:#174646}
+.mn-card.k-tour{--c1:#a88a4a;--c2:#5a461c}
+.mn-card.k-arcade{--c1:#8062b1;--c2:#4c357a}
+.mn-card.k-cpu{--c1:#56708f;--c2:#25354b}
+.mn-card.k-free{--c1:#6f7f45;--c2:#353f1a}
+/* 랭킹전: larger, its sign larger, its rim alight - a gold line round it with a glint running along, and a slow glow */
+.mn-card.hero{width:calc(282px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible}
+.mn-card.hero .mn-ico{top:calc(110px*var(--u));height:calc(170px*var(--u))}.mn-card.hero .mn-ico svg{width:calc(160px*var(--u));height:calc(160px*var(--u))}
+.mn-card.hero b{bottom:calc(92px*var(--u));font-size:max(20px,calc(42px*var(--u)))}.mn-card.hero small{bottom:calc(62px*var(--u));font-size:max(11px,calc(16px*var(--u)))}
+.mn-card.hero .strip{border-radius:calc(18px*var(--u)) calc(18px*var(--u)) 0 0;color:#f0d488}
+.mn-card.hero::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 calc(22px*var(--u)) calc(3px*var(--u)) rgba(240,212,136,.65),0 0 calc(4px*var(--u)) calc(1px*var(--u)) rgba(255,240,200,.9);opacity:.3;animation:mn-glow 2.4s ease-in-out infinite;pointer-events:none;will-change:opacity}
+@keyframes mn-glow{50%{opacity:1}}
+.mn-card.hero .mn-rim{--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);padding:calc(3px*var(--u))}
+.mn-card.hero .mn-rim i{animation-duration:2.6s;background:linear-gradient(100deg,transparent,rgba(255,255,255,1),transparent)}
+
+/* the rim (선수증, 랭킹전): a line round the card in its own colours, with a glint running along it */
+.mn-rim{position:absolute;inset:0;z-index:3;border-radius:inherit;padding:calc(3px*var(--u));background:var(--rim);overflow:hidden;pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.mn-rim i,.mn-sheen i{position:absolute;top:-30%;bottom:-30%;left:-50%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translateX(0) skewX(-18deg);animation:mn-glint 3.6s ease-in-out infinite;will-change:transform}
+@keyframes mn-glint{0%,45%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
+.mn-sheen{position:absolute;inset:0;z-index:2;border-radius:inherit;overflow:hidden;pointer-events:none;opacity:var(--sheen,0)}
+.mn-sheen i{width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
+
+/* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */
+.mn-pc{--pcBg:url(ui/leather-ivory.webp) center/400px;--pcInk:#2b241c;--pcHd:linear-gradient(#a8703f,#6a4020);--pcCell:rgba(60,45,25,.1);--rim:linear-gradient(135deg,#d9a571,#7a4a24 50%,#e9c39a);--ring:sepia(.6) saturate(1.3) hue-rotate(-12deg) brightness(.9);
+  position:relative;flex:none;width:calc(236px*var(--u));height:calc(560px*var(--u));border-radius:calc(20px*var(--u));box-sizing:border-box;padding:calc(62px*var(--u)) calc(18px*var(--u)) calc(18px*var(--u));
+  display:flex;flex-direction:column;align-items:center;gap:calc(9px*var(--u));background:var(--pcBg);color:var(--pcInk);box-shadow:-4px 6px 0 rgba(0,0,0,.3),-8px 18px 26px rgba(0,0,0,.45)}
+.mn-pc .hd{position:absolute;left:0;right:0;top:0;height:calc(44px*var(--u));border-radius:calc(20px*var(--u)) calc(20px*var(--u)) 0 0;display:flex;align-items:center;justify-content:center;background:var(--pcHd);color:#fff;font:900 max(12px,calc(16px*var(--u))) var(--ui-font);letter-spacing:.04em}
+.mn-pc .rt{font:800 max(10.5px,calc(12.5px*var(--u))) var(--ui-font);opacity:.6;letter-spacing:.02em;margin-top:calc(-8px*var(--u))}
+.mn-pc .av{width:calc(70px*var(--u));height:calc(70px*var(--u));border-radius:50%;display:grid;place-items:center;background:url(ui/ring.webp) center/contain no-repeat,radial-gradient(#3f6f55,#173325 72%);font:900 max(16px,calc(28px*var(--u))) Outfit,var(--ui-font);color:#fff}
+.mn-pc .nm{font:900 max(15px,calc(22px*var(--u))) var(--ui-font);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mn-pc .who{font:700 max(10.5px,calc(13px*var(--u))) var(--ui-font);opacity:.7;margin-top:calc(-6px*var(--u))}
+.mn-pc .em{position:relative;width:calc(150px*var(--u));height:calc(118px*var(--u));display:grid;place-items:center;margin-top:calc(6px*var(--u))}
+.mn-pc .em::before{content:"";position:absolute;left:50%;top:50%;width:calc(104px*var(--u));height:calc(104px*var(--u));transform:translate(-50%,-50%);background:url(ui/ring.webp) center/contain no-repeat;filter:var(--ring) drop-shadow(0 6px 8px rgba(0,0,0,.4))}
+.mn-pc .em::after{content:"";position:absolute;left:-10%;right:-10%;bottom:2px;height:calc(50px*var(--u));background:url(ui/laurel.webp) center/contain no-repeat;filter:var(--ring)}
+.mn-pc .em b{position:relative;z-index:1;font:900 max(13px,calc(21px*var(--u))) var(--ui-font);color:#f0d488;-webkit-text-stroke:calc(4px*var(--u)) #2a1d08;paint-order:stroke fill;white-space:nowrap}
+.mn-pc .bar{width:100%;display:flex;align-items:center;gap:8px}.mn-pc .bar small{font:800 max(10.5px,calc(12.5px*var(--u))) var(--ui-font);white-space:nowrap}
+.mn-pc .bar i{flex:1;height:calc(10px*var(--u));min-height:6px;border-radius:9px;background:rgba(0,0,0,.25);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.mn-pc .bar i::after{content:"";display:block;width:var(--p,0%);min-width:6px;height:100%;background:linear-gradient(#f0d488,#c39a45)}
+.mn-pc .st{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:auto}
+.mn-pc .st>span{padding:calc(8px*var(--u)) 2px;border-radius:calc(10px*var(--u));background:var(--pcCell);text-align:center;font:700 max(10px,calc(11.5px*var(--u))) var(--ui-font)}
+.mn-pc .st b{display:block;font:900 max(13px,calc(18px*var(--u))) Outfit,var(--ui-font)}
+.mn-pc.t-silver{--pcBg:linear-gradient(#f4f5f7,#dfe2e7);--pcInk:#2a2f37;--pcHd:linear-gradient(#c3c9d2,#848d9a);--pcCell:rgba(40,50,70,.08);--rim:linear-gradient(135deg,#fff,#9aa3ae 50%,#eef1f5);--ring:grayscale(1) brightness(1.25);--sheen:.35}
+.mn-pc.t-gold{--pcBg:linear-gradient(#fbf3dc,#efdfae);--pcInk:#3a2a08;--pcHd:linear-gradient(#e9c66a,#b0852d);--pcCell:rgba(90,60,0,.1);--rim:linear-gradient(135deg,#fff2c4,#c39a45 50%,#f6e2a6);--ring:none;--sheen:.45}
+.mn-pc.t-platinum{--pcBg:linear-gradient(#eef8f7,#cfe6e4);--pcInk:#173936;--pcHd:linear-gradient(#8fcfcb,#3f8580);--pcCell:rgba(20,80,75,.1);--rim:linear-gradient(135deg,#e9fffd,#5fa8a2 50%,#cdf3ef);--ring:grayscale(.7) hue-rotate(130deg) brightness(1.15);--sheen:.5}
+.mn-pc.t-diamond{--pcBg:radial-gradient(80% 50% at 50% 30%,rgba(140,200,255,.25),rgba(0,0,0,0) 70%),linear-gradient(#1d3358,#0e1a30);--pcInk:#eaf3ff;--pcHd:linear-gradient(#7cc3ff,#2f6fd6);--pcCell:rgba(255,255,255,.08);--rim:linear-gradient(135deg,#e4f4ff,#4a8fe8 50%,#bfe3ff);--ring:hue-rotate(170deg) saturate(1.4) brightness(1.1);--sheen:.55}
+.mn-pc.t-pro{--pcBg:radial-gradient(80% 50% at 50% 30%,rgba(230,196,122,.18),rgba(0,0,0,0) 70%),linear-gradient(#262321,#0f0d0c);--pcInk:#f3e6c4;--pcHd:linear-gradient(#3a2e22,#1a140f);--pcCell:rgba(230,196,122,.1);--rim:linear-gradient(135deg,#fff3c8,#c39a45 45%,#7a5a1e 55%,#f0d488);--ring:saturate(1.3) brightness(1.1);--sheen:.4}
+.mn-pc.t-pro .hd{color:#f0d488}
+.mn-pc.t-bronze .mn-rim i{opacity:.55}
+.mn-pc.t-diamond .mn-rim,.mn-pc.t-pro .mn-rim{padding:calc(4px*var(--u))}
+/* sparkles: from 골드 up, a few stars blinking in turn (blue on 다이아몬드, gold on 프로) */
+.mn-sp{position:absolute;z-index:4;width:calc(22px*var(--u));height:calc(22px*var(--u));pointer-events:none;opacity:0;display:none;will-change:opacity,transform;
+  background:radial-gradient(circle,#fff 0 18%,transparent 22%),linear-gradient(0deg,transparent 46%,var(--spc,#fff8de) 46% 54%,transparent 54%),linear-gradient(90deg,transparent 46%,var(--spc,#fff8de) 46% 54%,transparent 54%);
+  animation:mn-twinkle 2.8s ease-in-out infinite}
+.mn-pc.t-gold .mn-sp,.mn-pc.t-platinum .mn-sp,.mn-pc.t-diamond .mn-sp,.mn-pc.t-pro .mn-sp{display:block}
+.mn-pc.t-diamond{--spc:#bfe3ff}.mn-pc.t-pro{--spc:#f0d488}
+.mn-sp.s0{left:16%;top:30%}.mn-sp.s1{right:14%;top:44%;animation-delay:.7s}.mn-sp.s2{left:22%;top:62%;animation-delay:1.4s}.mn-sp.s3{right:20%;top:14%;animation-delay:2.1s}
+@keyframes mn-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}70%{opacity:0;transform:scale(.5) rotate(90deg)}}
+@media (prefers-reduced-motion:reduce){.mn-rim i,.mn-sheen i,.mn-sp,.mn-card.hero::before{animation:none}.mn-sp{display:none!important}}
+
+/* 훈련's way back to the menu: the rail's head (app/34-desk-train.js) */
+#app.desk .dk-back{flex:none;display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:2px 6px 10px;padding:0 12px 0 6px;border-radius:12px;
+  background:rgba(60,45,25,.1);box-shadow:inset 0 0 0 1.5px rgba(60,45,25,.22);color:#3a3026;font:800 18px var(--ui-font)}
+#app.desk .dk-back:active{background:rgba(60,45,25,.2)}
+#app.desk .dk-back svg{width:20px;height:20px}
+#app.desk.compact .dk-back{min-height:44px;margin:0 0 6px;font-size:16px}

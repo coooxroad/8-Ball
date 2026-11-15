@@ -50,7 +50,7 @@ const prefs = (() => {
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
     theme: 'dark',                     // 화면 모드 (owner 11-15): 'dark' - walnut desk, green tray, green keys (the default); 'light' - oak and blue
     deskWoodTry: null, deskTrayTry: null, // 디버그: a wood and a tray to try over the mode's (DESK_LOOK; null: the mode's own)
-    oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-hall.js)
+    oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-menu.js)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
@@ -177,7 +177,6 @@ function applyBackdrop() {
   a.setProperty('--desk-img', at(L.wood.img)); a.setProperty('--edge-img', at(L.wood.edge)); a.setProperty('--desk-base', L.wood.base);
   a.setProperty('--tray-img', at(L.tray.frame)); a.setProperty('--felt-img', at(L.tray.felt)); a.setProperty('--felt-base', L.tray.base);
   document.body.style.background = desk ? L.wood.base : '#101216';
-  document.getElementById('app').classList.toggle('hm-dark', L.wood !== DESK_LOOK.wood.oak);   // (the menu's hall in the dark look: 84-hall.css)
   document.getElementById('app').classList.toggle('theme-dark', themeNow() === 'dark');        // (the green keys: 60-desk.css)
   scene.setBackdrop(desk ? L.tray.back : 0x101216);
 }

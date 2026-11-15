@@ -132,5 +132,5 @@
 .beat #gl,.beat #reelCv{animation:beat .2s ease-out}
 @keyframes hit{0%{transform:scale(1.12) translate(6px,-5px) rotate(.5deg)}18%{transform:scale(1.07) translate(-7px,5px) rotate(-.4deg)}36%{transform:scale(1.05) translate(5px,4px)}55%{transform:scale(1.03) translate(-3px,-3px)}100%{transform:scale(1)}}
 @keyframes beat{0%{transform:scale(1.035)}100%{transform:scale(1)}}
-#app.desk.tilt #deskPlane,#app.desk.tilt #gl,#app.desk.tiltout #deskPlane,#app.desk.gllean #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}   /* (tiltout: the desk fading out to the menu's hall leans as it did - 37-desk-hall.js hallCross) */
+#app.desk.tilt #deskPlane,#app.desk.tilt #gl{transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
 #app.desk #gl{transition:transform .35s ease}

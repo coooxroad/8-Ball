@@ -44,8 +44,8 @@ function compare(fa, fb) {
     await page.waitForFunction(() => !!window.__dp8); await page.waitForTimeout(1200);
     const frames = async () => { for (let k = 0; k < 4; k++) await page.screenshot({ timeout: 120000 }); };   // (a slow software GL: screenshots move the animations on)
     const tapT = async t => { let b = null; try { b = await page.getByText(t, { exact: true }).first().boundingBox({ timeout: 5000 }); } catch (e) {} if (!b) return console.log('not found:', t); await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(1300); };
-    // (on a wide screen 플레이 is the hall's cards now, 37-desk-hall.js: the old boards' keys have their cards there)
-    const ALT = { '[data-b="friend"]': '.hm-friend', '[data-b="rank"]': '.hm-rank' };
+    // (on a wide screen 플레이 is the card row now, 37-desk-menu.js: the old boards' keys have their cards there)
+    const ALT = { '[data-b="friend"]': '.mn-card[data-k="friend"]', '[data-b="rank"]': '.mn-card[data-k="rank"]' };
     const clk = async s => { await page.evaluate(([s, a]) => (document.querySelector(s) || document.querySelector(a)).click(), [s, ALT[s] || s]); await page.waitForTimeout(1500); await frames(); };
     out[`desk/${W}/home`] = await dump(page, DESK);
     await clk('[data-b="friend"]'); out[`desk/${W}/ways`] = await dump(page, DESK);

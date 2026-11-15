@@ -85,7 +85,7 @@
 /* (and, up to a wide monitor, the keys without their words and then without the player, so the last one is not pushed off the edge) */
 @media (min-width:900px) and (max-width:1440px){#app.desk .dk-top span{display:none}#app.desk .dk-top{padding:0 12px}}
 /* (where the bar is short of room the player is its counter alone - never gone: it is the way to sign in, owner 11-10) */
-@media (min-width:900px) and (max-width:1300px){#app.desk .dk-me>span{display:none}#app.desk .dk-me{padding:0 4px}}
+@media (max-width:1150px){#app.desk .dk-me small{display:none}#app.desk .dk-me b{max-width:110px}}   /* (the name stays beside its badge at every width, owner 11-15; only the line under it goes) */
 #app.desk .dk-tab:active{transform:translateY(2px)}
 #app.desk.compact .dk-tab{--s:.42;min-width:0;height:40px;padding:0 11px;font-size:14px}
 /* the player: an ivory counter in a brass ring (the plates in the tray wear the same ring) */
@@ -94,8 +94,8 @@
 #app.desk .dk-plate .av::after,#app.desk .dk-me .av::after{content:"";position:absolute;inset:-24%;background:url(ui/ring.webp) center/contain no-repeat;pointer-events:none}
 .dk-me b{display:block;font:800 14.5px var(--ui-font);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dk-me small{display:block;font:600 12px var(--ui-font);color:#b9b2a5}
-#app.desk.compact .dk-me>span{display:none}
-#app.desk.compact .dk-me{padding:0 4px}
+#app.desk.compact .dk-me{padding:0 8px 0 4px;gap:6px}
+#app.desk.compact .dk-me b{max-width:84px;font-size:13px}
 /* records and settings are square keys (below) */
 .dk-top{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;color:#e9e4da;font:700 15px var(--ui-font);white-space:nowrap;flex-shrink:0}
 #app.desk.compact .dk-top{height:40px;padding:0 11px}

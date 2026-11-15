@@ -42,7 +42,7 @@ function sheetDebug() {
   openSheet('디버그', [
     el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWoodTry'),
     el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTrayTry'),
-    // (플레이's menu: the hall, or the desk's boards as they were - 37-desk-hall.js)
+    // (플레이's menu: the card row, or the desk's boards as they were - 37-desk-menu.js)
     el('div', { class: 'lab', text: '메인 메뉴' }),
     el('div', { class: 'seg' }, [[false, '새 메뉴'], [true, '예전 메뉴']].map(([v, t]) =>
       el('button', { 'aria-pressed': String(!!prefs.oldMenu === v), text: t, onclick: () => { prefs.oldMenu = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
