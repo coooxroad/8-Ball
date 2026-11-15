@@ -84,9 +84,6 @@ function menuFit() {
   Object.assign(row.style, { top: fy + 'px', height: fh + 'px' });
   row.style.setProperty('--u', u.toFixed(4)); app.style.setProperty('--mu', u.toFixed(4));   // (--mu: the screens after the menu size their cards by it)
   row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
-  row.style.perspective = P + 'px';
-  row.style.perspectiveOrigin = `${(pw / 2).toFixed(1)}px ${(ph - fy).toFixed(1)}px`;
-  row.style.setProperty('--oy', (ph - fy).toFixed(1) + 'px');
 }
 function menuPaint() {
   // the cloth on the desk, and the layer for the row over the plane (made once)
@@ -106,7 +103,6 @@ function menuPaint() {
     el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' }), el('span', { class: 'mn-sheen', 'aria-hidden': 'true' }, el('i')),
     ...[0, 1, 2, 3].map(k => el('i', { class: 'mn-sp s' + k, 'aria-hidden': 'true' })),
     el('div', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` })]),
-    el('small', { class: 'rt', text: `레이팅 ${t.dama.toLocaleString('ko-KR')}` }),
     el('span', { class: 'av', text: $('#dkMe .av').textContent || '1' }),
     el('b', { class: 'nm', text: prefs.names[0] }), el('small', { class: 'who', text: net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : '오프라인' }),
     el('span', { class: 'em' }, el('b', { text: t.name })),

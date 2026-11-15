@@ -18,13 +18,15 @@
 .dk-felt::before{content:"";position:absolute;left:-160px;right:-160px;top:var(--fi);bottom:var(--fi);box-shadow:0 8px 12px rgba(0,0,0,.4);
   background:linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.08) 5%,rgba(0,0,0,0) 14%,rgba(0,0,0,0) 86%,rgba(0,0,0,.08) 95%,rgba(0,0,0,.3)),#2a2a2a url(ui/felt-charcoal.webp) 0 0/320px repeat}
 .dk-felt::after{content:"";position:absolute;left:-160px;right:-160px;top:calc(var(--fi) + 14px);bottom:calc(var(--fi) + 14px);border-top:2px dashed rgba(255,255,255,.2);border-bottom:2px dashed rgba(255,255,255,.2)}
-/* the layer over the desk: the plane's own box, flat; the scroller across it at the cloth's height (menuFit), and in it
-   the strip of cards leaning about the plane's bottom edge (--oy below the strip's top) by the desk's angle */
-#dkCards{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;pointer-events:none}
+/* the layer over the desk: the plane's own box, leaning as the plane does (the same transform about the same edge), and in it
+   a plain flat scroller at the cloth's height (menuFit) - as the shop's list scrolls inside the desk, so the browser
+   scrolls it on its own. (11-16: the strip itself used to lean inside a scroller with a perspective - the row scrolled
+   less smoothly than the shop's; the earlier flicker was the desk plane's, not this small layer's) */
+#dkCards{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;pointer-events:none;transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
 .mn-row{position:absolute;left:0;right:0;overflow-x:auto;overflow-y:hidden;pointer-events:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;--u:1;--edge:0px;--oy:0px}
 .mn-row::-webkit-scrollbar{display:none}
 .mn-track{display:flex;align-items:center;gap:calc(14px*var(--u));width:max-content;height:100%;box-sizing:border-box;
-  padding:0 calc(var(--edge) + 60px*var(--u)) 0 calc(var(--edge) + 30px*var(--u));transform:rotateX(var(--tilt));transform-origin:0 var(--oy)}
+  padding:0 calc(var(--edge) + 60px*var(--u)) 0 calc(var(--edge) + 30px*var(--u))}
 
 /* a card: the desk's printed card - its colour (--c1 light, --c2 dark), a dot print, a white line inside, a black strip on top */
 .mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
