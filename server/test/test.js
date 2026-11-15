@@ -5,6 +5,7 @@ import { VaultCore } from '../src/core.js';
 import { playMatch, playPuzzle, Replay, E } from '../src/check.js';
 import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore, CODE_MS, TRIES_PER_MIN } from '../src/link.js';
+import { originOk } from '../src/origins.js';
 import { PHYS_V } from '../src/version.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
@@ -128,7 +129,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const u = vault({ CHECK_MATCHES: 'slices' }); u.init('h'); let queued = 0;
     const random = Math.random;
     try { for (let k = 0; k < 40; k++) { Math.random = () => k % 4 === 0 ? 0.1 : 0.99; if (u.match({ req: req(), kind: 'cpu', log: uncheckedLog(k, [3, 1]) }).pending) queued++; } } finally { Math.random = random; }
-    ok(queued >= 3 && queued < 30, `only a share is checked (${queued} of 40)`);
+    // (CHECK_SHARE: a share on the free plan, every match on the paid one - owner 11-16)
+    ok(E.ECONOMY.CHECK_SHARE >= 1 ? queued === 40 : queued >= 3 && queued < 30, `checked as CHECK_SHARE says (${queued} of 40, share ${E.ECONOMY.CHECK_SHARE})`);
     console.log(`sliced checking: ${n} slices for two matches, paid ${v.me().coin}; ${queued} of 40 ordinary matches picked for checking`);
   }
 }
@@ -527,6 +529,9 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const ws = R.watchState(); ok(ws.watch && ws.seat === -1 && ws.seats.length === 2 && ws.seats[1].name === 'B' && !('token' in ws.seats[0]) && !('acct' in ws.seats[0]) && ws.shots.length === 1, 'room: a watcher hears both players and every shot');
     ok(['aim', 'emote', 'timeout'].every(t => sent.w.some(m => m.t === t)), 'room: watchers hear the aims, emotes and shots');
     R.message(0, { t: 'resign' }); let k = 0; while (R.work(500) && k++ < 1e5); ok(sent.w.some(m => m.t === 'result' && m.seat === -1), 'room: watchers hear the result'); }
+  // which pages may call (owner 11-16: a copy of the site elsewhere may not): ours, the app's file page, a developer's machine
+  ok(originOk('https://danguuu.com') && originOk('null') && originOk(null) && originOk('http://localhost:8787') && !originOk('https://danguuu.co') && !originOk('https://evil.example')
+    && !originOk('http://localhost.evil.example') && originOk('http://x.test', { ORIGINS_EXTRA: 'http://x.test' }), 'origins: ours and the app answered, other pages not');
   // 다시 하기 (owner 11-15): after a friend's game, every player asking opens the next room - the loser begins; one leaving tells the other
   { const { sql, tx } = sqlOf(), sent = { 0: [], 1: [], w: [] }, R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
     R.init({ room: 'f'.repeat(32), mode: 'four', seed: 5, first: 0, kind: 'invite', rules: { target: 10, hugu: true }, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', dama: 30 }, { acct: 'b'.repeat(32), token: 't1', name: 'B', dama: 40 }] });

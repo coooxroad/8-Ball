@@ -75,6 +75,12 @@ jobs:
       - name: Build the page
         run: sh web/build.sh
 
+      # (what is shipped is minified, its local names scrambled - web/tools/protect.cjs; the checks ran on the plain page)
+      - name: Protect the page
+        run: |
+          npm i --no-save --no-package-lock --no-audit --no-fund terser@5
+          node web/tools/protect.cjs app/src/main/assets
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

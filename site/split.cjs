@@ -44,5 +44,26 @@ html = html.replace(app[0], () => `<script src="${put('app', 'js', js)}"></scrip
 fs.writeFileSync(path.join(dir, 'index.html'), html);
 
 // what never changes under its name is kept; the page itself is asked for each time (Cloudflare's own default)
-fs.writeFileSync(path.join(dir, '_headers'), '/h/*\n  Cache-Control: public, max-age=31536000, immutable\n');
+/* and every page with the guards (owner 11-16: no scripts slipped into the page, no copy of it in another site's frame):
+   scripts only from here and Google's sign-in; nothing inline but styles (the app sets style attributes); the game's
+   server; Google's sign-in frame; pictures and sounds from here, data: and blob: (the 3D's textures, the cue portraits);
+   the computer player's Worker from a blob: (app/40-shot.js) or here. CSP_EXTRA (site.yml) can add a source for a test. */
+const API = ['https://api.danguuu.com', 'wss://api.danguuu.com', 'https://cue-server.oxcorp.workers.dev', 'wss://cue-server.oxcorp.workers.dev'];
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' https://accounts.google.com/gsi/client",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
+  "img-src 'self' data: blob: https://*.googleusercontent.com",
+  "media-src 'self' data: blob:",
+  "font-src 'self' data:",
+  `connect-src 'self' ${API.join(' ')} https://accounts.google.com/gsi/ ${process.env.CSP_EXTRA || ''}`.trim(),
+  "frame-src https://accounts.google.com/gsi/",
+  "worker-src 'self' blob:",
+  "object-src 'none'", "base-uri 'none'", "form-action 'self'", "frame-ancestors 'none'",
+].join('; ');
+const GUARD = ['  Content-Security-Policy: ' + CSP, '  X-Frame-Options: DENY', '  X-Content-Type-Options: nosniff',
+  '  Referrer-Policy: strict-origin-when-cross-origin', '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
+  '  Cross-Origin-Opener-Policy: same-origin-allow-popups'].join('\n');
+fs.writeFileSync(path.join(dir, '_headers'), `/*\n${GUARD}\n\n/h/*\n  Cache-Control: public, max-age=31536000, immutable\n`);
+if (process.env.CSP_OUT) fs.writeFileSync(process.env.CSP_OUT, CSP);
 console.log(`split: index.html ${(html.length / 1024).toFixed(0)} KB, ${fs.readdirSync(H).length} files in h/ (${nt} pictures, ${ns} sounds)`);

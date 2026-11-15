@@ -39,6 +39,11 @@ jobs:
       # (the web's page in cached parts: code, styles, pictures and sounds as files named by their contents - site/split.cjs)
       - name: Split for the web
         run: node site/split.cjs app/src/main/assets
+      # (then its scripts minified, their local names scrambled - web/tools/protect.cjs)
+      - name: Protect
+        run: |
+          npm i --no-save --no-package-lock --no-audit --no-fund terser@5
+          node web/tools/protect.cjs app/src/main/assets
       - name: Record the deployed version
         run: node site/version.cjs write app/src/main/assets/version.json
       - name: Wrangler

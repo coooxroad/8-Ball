@@ -26,7 +26,7 @@ const ECONOMY = {
   TOUR_CUT: 0.1,
   PUZZLE: 150,
   // until the server plays every match again to check it (paid plan), matches it cannot check pay at most this a day
-  UNCHECKED_DAILY: 3000, CHECK_SHARE: 0.25, CHECK_OVER: 600, CHECK_FIRST: 3,
+  UNCHECKED_DAILY: 3000, CHECK_SHARE: 1, CHECK_OVER: 600, CHECK_FIRST: 3,   // (CHECK_SHARE 1: every match - the paid plan, owner 11-16; it was 0.25 on the free one)
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 500, DAMA_FLOOR: 100, RD_START: 350, RD_MIN: 50, RD_MAX: 350, RD_GROW: 15,

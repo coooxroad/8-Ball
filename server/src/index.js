@@ -32,6 +32,7 @@
 import { googleWhoAny as googleWho } from './google.js';
 import * as E from './gen/engine.js';
 import { PHYS_V } from './version.js';
+import { originOk } from './origins.js';
 // (a device on other physics - version.js - is told to update rather than matched: queue and invites)
 const samePhysics = body => (body && Number.isInteger(body.phys) ? body.phys : 1) === PHYS_V;
 export { Vault } from './vault.js';
@@ -144,10 +145,26 @@ async function linkRoute(what, request, env, m) {
 /* Anything that throws on the way - here or in a Durable Object behind - comes back as an answer the app can read: with
    its CORS headers and what went wrong. (Cloudflare's own error page has no CORS headers, so a page saw only a failed
    fetch, and could not say why: 54-ranked.js, 55-invite.js show it now.) */
+/* Who may call from a web page (owner 11-16: a copy of the site elsewhere must not be able to play on our server). A
+   browser says where the page came from (Origin); only these pages are answered so that the browser lets them read it:
+   the site, its old address, the app (its page is a file - Origin "null" or "file://"), and a developer's own machine.
+   A call with no Origin is not from a page in a browser (curl, the tests, a Durable Object) and is answered as before -
+   what keeps those honest is the account key and the server playing every result again, not this. More pages for a test
+   or a preview: ORIGINS_EXTRA (wrangler.toml var or --var, space-separated). */
+const guard = (request, env, res) => {
+  const origin = request.headers.get('Origin');
+  if (!origin || res.status === 101) return res;                       // (a WebSocket's answer cannot be changed - checked before: frontDoor)
+  const r = new Response(res.body, res);
+  if (originOk(origin, env)) { r.headers.set('Access-Control-Allow-Origin', origin); r.headers.append('Vary', 'Origin'); }
+  else r.headers.delete('Access-Control-Allow-Origin');
+  return r;
+};
 export default {
   async fetch(request, env) {
-    try { return await frontDoor(request, env); }
-    catch (e) { console.error('front door', new URL(request.url).pathname, e && e.stack || e); return json({ ok: false, why: 'error', error: String(e && e.message || e).slice(0, 200) }, 500); }
+    // (a game's room is a WebSocket: one from a page not ours is refused outright - browsers do not apply CORS to them)
+    if (request.headers.get('Upgrade') === 'websocket' && !originOk(request.headers.get('Origin'), env)) return new Response('not from here', { status: 403 });
+    try { return guard(request, env, await frontDoor(request, env)); }
+    catch (e) { console.error('front door', new URL(request.url).pathname, e && e.stack || e); return guard(request, env, json({ ok: false, why: 'error', error: String(e && e.message || e).slice(0, 200) }, 500)); }
   },
 };
 async function frontDoor(request, env) {
