@@ -200,8 +200,9 @@ const PLAY_STEPS = {
 };
 // inviting a friend: the code open on the server while this shows; the tray shows the two places and the code
 // 4구's finish, chosen with the game (here and for a friend's room): none, a cushion, or three (game.js MODES.four)
-const finishPref = () => prefs.finish === 'three' ? 'three' : prefs.finish ? 'cushion' : false;
-const finishSeg = () => dkSeg([[false, '없음'], ['cushion', '쿠션'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
+// (owner 11-17: only 없음 and 쓰리쿠션 - the one-cushion finish is gone; one chosen before counts as 쓰리쿠션)
+const finishPref = () => prefs.finish ? 'three' : false;
+const finishSeg = () => dkSeg([[false, '없음'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
 // on one device: the friend's cue and glove, from what this player owns (owner 11-10) - prefs.cues[1], prefs.glove2
 function friendGear() {
   const cues = CUES.map((c, i) => i).filter(i => net.owns('cue', CUES[i].id)), gl = [null].concat(GLOVES.filter(g => net.owns('glove', g.id)).map(g => g.id));

@@ -109,14 +109,16 @@ function menuPaint() {
     el('span', { class: 'em' }, el('b', { text: t.name })),
     el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
-  // (each card alive, calmly - owner 11-16: its dot print drifting in two depths, the light crossing it now and then, each on
-  // its own beat (--i), the icon breathing; only a card in sight moves - 'mn-live' below - 84-menu.css)
+  // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), the icon
+  // breathing; only a card in sight moves - 'mn-live' below - 84-menu.css. 11-17: and alive by what it is - its own table
+  // and shot, one card at a time, 컴퓨터 대전's bot standing in it, a changed strip shining once: 37-menu-scenes.js)
   const cards = MENU_CARDS.map((c, i) => {
-    const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
-    return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
+    const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon, scene = !c.hero && !soon && c.id in MENU_SCENES, bot = c.id === 'cpu' ? menuBotArt() : null, strip = c.strip();
+    return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}${scene ? ' has-scene' : ''}${bot ? ' has-bot' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
-      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('span', { class: 'd1' }), el('span', { class: 'd2' }), el('i')]),
-      el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
+      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('i')]),
+      el('span', { class: 'strip' + (menuStripNew(c.id, strip) ? ' mn-new' : ''), text: strip }), scene ? el('canvas', { class: 'mn-scene', 'aria-hidden': 'true' }) : null, bot,
+      menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
@@ -124,8 +126,8 @@ function menuPaint() {
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
   // (a card moves only while it is in sight: the rest wait, their animations paused)
   if (menuIO) menuIO.disconnect();
-  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); }, { root: row, threshold: 0.05 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
-  else for (const c of [pc, ...cards]) c.classList.add('mn-live');
+  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) { e.target.classList.toggle('mn-live', e.isIntersecting); menuLive(e.target, e.isIntersecting); } }, { root: row, threshold: 0.05 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
+  else for (const c of [pc, ...cards]) { c.classList.add('mn-live'); menuLive(c, true); }
   menuFit(); row.scrollLeft = menuScroll;
-  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; });
+  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; menuScenes(cards); });
 }

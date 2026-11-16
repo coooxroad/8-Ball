@@ -57,6 +57,55 @@ const BOTS = [
   { id: 'lukas', name: '루카스', from: 'at', lang: 'de', rating: 2300, personality: 'calm', style: 'power', pic: true,
     line: 'Wer zögert, hat schon verloren.', ko: '망설이는 사람은 이미 진 거야.', bio: '빈의 프로 포켓볼 선수. 브레이크 한 번에 경기를 끝낸 적이 있다.' },
 ];
+/* Each bot's face on its card (owner 11-17: like chess.com's bot icons, simpler still - drawn here, not the painting): a
+   square of its colour, its shoulders in its clothes, a round face, its hair as one shape, two dots for eyes; a few have a
+   thing of their own (glasses, a beard, a cap...). [background, skin, hair colour, hair, clothes, extra] */
+const BOT_FACE = {
+  haneul: ['#7cc6a8', '#f3c9a8', '#8a6a52', 'wavy', '#3b5d40', 'clip'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
+  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], camila: ['#f2c14e', '#b97d55', '#1e1612', 'curly', '#3f5f8c', 'bandana'],
+  luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], linh: ['#f2a6b8', '#f1c8a6', '#141216', 'pony', '#efe4cc', ''],
+  sofia: ['#8ec5e8', '#e2b38e', '#2a1d16', 'crown', '#2c3e5c', ''], sean: ['#8fbf6a', '#f2c6a5', '#b5562a', 'short', '#7a5a3a', 'cap beard'],
+  emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], nour: ['#e7b26a', '#c88f68', '#1e1612', 'long', '#5b6234', ''],
+  femke: ['#7fb2d8', '#f4cdb0', '#d0784a', 'pixie', '#e86a1c', ''], ana: ['#e28a7a', '#ecc09c', '#3a2418', 'low', '#3a3a40', ''],
+  priya: ['#c9a0e8', '#b9805a', '#121014', 'bun', '#222222', ''], lea: ['#e6c38a', '#f0c8aa', '#6b3e26', 'wavy', '#8a3a2a', 'beret'],
+  jose: ['#f2b65e', '#b07a52', '#151214', 'short', '#2f8f8a', ''], ingrid: ['#9ab0c8', '#f5d6c2', '#dcdde2', 'pony', '#9e2a2a', ''],
+  hangyeol: ['#c9b28a', '#dcae8a', '#a9a7a2', 'combed', '#6b4a32', 'glasses'], frederic: ['#b8c4d6', '#e8bc98', '#2a2624', 'slick', '#1f2a44', 'tie'],
+  jack: ['#e0a65a', '#f0c7a6', '#c9a35a', 'messy', '#222222', 'bow'], lena: ['#a8d0c0', '#f3cfb6', '#e2c47a', 'bun', '#1e1e1e', 'glasses'],
+  lukas: ['#8a9bb8', '#edc4a3', '#3a2a1e', 'slick', '#1a1a1a', ''],
+};
+const BOT_HAIR = {
+  short: 'M14.6 22.5Q14 12 24 11.6Q34 12 33.4 22.5Q31 16.5 24 16.8Q17 16.5 14.6 22.5Z',
+  combed: 'M14.6 22Q14.5 11.5 24 11.5Q33.5 11.5 33.4 22Q32 15 26 15.4Q19 15.6 14.6 22Z',
+  slick: 'M14.8 21Q15 11 25 11.4Q34 12 33.2 21Q31 14.6 24.5 15Q18.5 14.6 14.8 21Z',
+  messy: 'M13.8 22Q13 13 17 12Q18 9 22 10.5Q25 8.4 28 10.6Q33 10 34 15Q35.4 18 33.6 22Q31 16 24 16.6Q17 16 13.8 22Z',
+  curly: 'M13 24Q11 19 14 16Q13 11 18 11Q20 8 24 9.4Q28 8 30.5 11Q35.5 11 34.5 16Q37 20 35 24Q32 17 24 17Q16 17 13 24Z',
+  wavy: 'M12.6 30Q11 20 14 15Q17 10 24 10.2Q31 10 34 15Q37 21 35.4 30Q33 31 32.4 27Q32.6 19 24 17.4Q15.4 19 15.6 27Q15 31 12.6 30Z',
+  long: 'M12 37Q10.6 22 13.6 15Q17 9.6 24 9.8Q31 9.6 34.4 15Q37.4 22 36 37L31.6 37Q32.6 21 24 17.2Q15.4 21 16.4 37Z',
+  blunt: 'M13 31Q12 16 16 12.4Q19.4 10 24 10Q28.6 10 32 12.4Q36 16 35 31L31.4 31L31.4 19.4L16.6 19.4L16.6 31Z',
+  low: 'M13.8 26Q12.4 14 18 11.6Q21 10.2 24 10.2Q33 10.2 34.6 18Q35.4 23 33.6 27Q32.6 19 24 16.8Q16 18 15.8 27Z',
+  pony: 'M14 24Q13 12 24 11Q35 12 34 24Q32.4 17 24 16.8Q15.6 17 14 24ZM31 12Q37 9 38.6 14Q40 20 36.4 27Q35.4 20 33 15Z',
+  bun: 'M14.4 23Q14 12 24 11.4Q34 12 33.6 23Q31.4 16.6 24 16.8Q16.6 16.6 14.4 23ZM24 4.6A4.6 4.6 0 1 1 23.99 4.6Z',
+  pixie: 'M14 23Q12.8 12.4 21 11.2Q27 10 31.6 12.8Q35 16 34 23Q32.6 18 27 16.2Q22 17.6 18 16.6Q15.6 19 14 23Z',
+  crown: 'M14.2 22Q14 12 24 11.4Q34 12 33.8 22Q31.6 16.4 24 16.6Q16.4 16.4 14.2 22ZM13.6 15.4Q16 9.4 24 9Q32 9.4 34.4 15.4Q31 11.4 24 11.6Q17 11.4 13.6 15.4Z',
+};
+function botAvatar(b) {
+  const f = BOT_FACE[b.id] || ['#9aa7b4', '#eac3a2', '#2a2420', 'short', '#445', ''], [bg, skin, hair, style, wear, extra] = f, x = extra.split(' ');
+  const has = k => x.includes(k);
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" fill="${bg}"/>`
+    + `<path d="M8.5 48Q9 35.4 24 34.4Q39 35.4 39.5 48Z" fill="${wear}"/>`
+    + (has('tie') ? '<path d="M22.6 35.2h2.8l.9 2-1.6 8.4h-1.4l-1.6-8.4z" fill="#7a1f2a"/>' : has('bow') ? '<path d="M19.6 35.4l4.4 1.8 4.4-1.8v4l-4.4-1.8-4.4 1.8z" fill="#111"/>' : '')
+    + `<rect x="21.2" y="29.6" width="5.6" height="6" rx="2.4" fill="${skin}"/><circle cx="24" cy="23" r="9.2" fill="${skin}"/>`
+    + (has('beard') ? `<path d="M15.6 24.6Q16.6 33.4 24 33.4Q31.4 33.4 32.4 24.6Q30 29.6 24 29.4Q18 29.6 15.6 24.6Z" fill="${hair}"/>` : '')
+    + (has('tache') ? `<path d="M19.6 27.4Q24 25 28.4 27.4Q24 26.6 19.6 27.4Z" fill="${hair}" stroke="${hair}" stroke-width="1.4" stroke-linejoin="round"/>` : '')
+    + `<path d="${BOT_HAIR[style] || BOT_HAIR.short}" fill="${hair}"/>`
+    + (has('bandana') ? '<path d="M14.4 17.4Q24 9.6 33.6 17.4L33 14.4Q24 7.4 15 14.4Z" fill="#c8202a"/>' : '')
+    + (has('cap') ? `<path d="M13.6 18.6Q14 10.4 24 10.2Q34 10.4 34.4 18.6Q24 15.8 13.6 18.6Z" fill="#5a4a38"/><path d="M13 18.8Q24 15.6 35 18.8L34.6 20Q24 17.6 13.4 20Z" fill="#3e3226"/>` : '')
+    + (has('beret') ? '<ellipse cx="22.4" cy="12.6" rx="11" ry="4.6" fill="#2a2430" transform="rotate(-10 22.4 12.6)"/><circle cx="21" cy="8" r="1.2" fill="#2a2430"/>' : '')
+    + (has('clip') ? '<rect x="27.4" y="13.4" width="5" height="1.8" rx=".9" fill="#ffd166" transform="rotate(-24 29.9 14.3)"/>' : '')
+    + '<circle cx="20.4" cy="23.6" r="1.35" fill="#231d19"/><circle cx="27.6" cy="23.6" r="1.35" fill="#231d19"/>'
+    + (has('glasses') ? '<g fill="none" stroke="#2a2420" stroke-width="1"><circle cx="20.4" cy="23.6" r="2.9"/><circle cx="27.6" cy="23.6" r="2.9"/><path d="M23.3 23.4h1.4"/></g>' : '')
+    + '</svg>';
+}
 /* The flags, drawn here (60 × 40) so they look the same on every device - a phone's emoji flags are letters on some. */
 const BOT_FLAGS = (() => {
   const bars = (dir, cols, w) => cols.map((c, i) => dir === 'v' ? `<rect x="${i * 60 / cols.length}" width="${60 / cols.length + 0.2}" height="40" fill="${c}"/>`
@@ -108,10 +157,10 @@ function botPersona(b) {
   const p = game.aiPersona ? game.aiPersona(b.rating, seededRandom(h), { personality: b.personality, style: b.style }) : null;
   return p ? Object.assign(p, { name: b.name, bot: b.id, lang: b.lang }) : null;
 }
-// its picture: drawn, or its initial on its tier's metal
+// its face: the flat drawing (BOT_FACE), on its card and on the slate
 function botPic(b, big) {
-  const [tier] = botTier(b);
-  return el('i', { class: `bot-pic t-${tier}${big ? ' big' : ''}`, 'aria-hidden': 'true', style: b.pic ? `background-image:url(ui/bot-${b.id}.webp)` : null }, b.pic ? null : el('b', { text: b.name[0] }));
+  const [tier] = botTier(b), i = el('i', { class: `bot-pic t-${tier}${big ? ' big' : ''}`, 'aria-hidden': 'true' });
+  i.innerHTML = botAvatar(b); return i;
 }
 // a game against a bot won: beaten, and the next opens (50-match.js finish)
 function botBeaten(id) {
@@ -130,7 +179,9 @@ function botTray(stage) {
     if (prefs.bot === b.id) return; prefs.bot = b.id; savePrefs(); repaint();
   };
   let n = 0;
-  dkPut(stage, el('div', { class: 'bot-tray' }, TIERS.map(([, name], t) => {
+  // (owner 11-17: the bot picked, painted, on the tray's left behind the cards - painting itself in: botArt)
+  if (cur.pic) dkPut(stage, botArt(cur));
+  dkPut(stage, el('div', { class: 'bot-tray' + (cur.pic ? ' with-art' : '') }, TIERS.map(([, name], t) => {
     const L = BOTS.filter(b => Math.min(TIERS.length - 1, tierOf(b.rating)) === t);
     return el('section', { class: 'bot-row' }, [el('h3', { text: name }),
       el('div', { class: 'bot-cards' }, L.map(b => {
@@ -150,7 +201,7 @@ function botInfo() {
       el('div', { class: 'bot-nm' }, [el('b', { text: b.name }), botFlag(b)]),
       el('span', { class: 'bot-rt' }, [el('em', { text: tierName }), document.createTextNode(String(b.rating))])])]),
     el('div', { class: 'bot-say' }, [el('p', { lang: b.lang, text: b.line }), foreign && b.ko ? el('small', { text: b.ko }) : null]),
-    el('div', { class: 'bot-tags' }, [me ? el('span', { text: me.style.name }) : null, me ? el('span', { text: me.personality.name }) : null,
+    el('div', { class: 'bot-tags' }, [me ? el('span', { text: me.style.name.replace(/파$/, '') }) : null, me ? el('span', { text: me.personality.name }) : null,
       botWon(b) ? el('span', { class: 'won', text: '이긴 상대' }) : null]),
     el('p', { class: 'bot-bio', text: b.bio })];
 }
@@ -164,12 +215,12 @@ function botLines(b, moment, stage = 0) {
   return [];
 }
 const botTalk = {
-  at: 0, last: '',
+  at: 0, said: '',
   bot() { const c = match.ctx; return flow === match && c && c.bot && !c.online ? botById(c.bot.bot) : null; },
   chat() { const c = match.ctx, p = c && c.bot && c.bot.personality || {}; return 0.3 + (p.taunt || 0) * 0.45 + (p.tempo || 0) * 0.15 - (p.hesitation || 0) * 0.1; },
   line(b, moment) {
-    const L = botLines(b, moment).filter(x => x[0] !== botTalk.last), pick = L[Math.floor(Math.random() * L.length)];
-    if (pick) botTalk.last = pick[0]; return pick || null;
+    const L = botLines(b, moment).filter(x => x[0] !== botTalk.said), pick = L[Math.floor(Math.random() * L.length)];
+    if (pick) botTalk.said = pick[0]; return pick || null;
   },
   // moment: as BOT_LINES; chance: of speaking at all, before its personality; delay: after the moment, seconds
   say(moment, chance = 1, delay = 0.5) {
@@ -201,3 +252,41 @@ const botTalk = {
   last(won) { const b = botTalk.bot(); return b ? botTalk.line(b, won ? 'win' : 'lose') : null; },
   clear() { const old = $('#botBub'); if (old) old.remove(); },
 };
+/* The bot picked, painted (style g), standing on the tray's left behind the cards on its backdrop (the dark desk's green
+   painting, the light one's blue), painting itself in: brush strokes laid one after another, each showing the picture
+   under it, from the bottom up - as if being painted. Drawn on a canvas; the same bot again is not painted twice. */
+const BOT_ART_IMG = {};
+const botImg = src => BOT_ART_IMG[src] || (BOT_ART_IMG[src] = Object.assign(new Image(), { src, decoding: 'async' }));
+let botArtLast = null;
+function botArt(b) {
+  const cv = el('canvas', { class: 'bot-art', 'aria-hidden': 'true', 'data-bot': b.id + '|' + themeNow() });
+  const fig = botImg(`ui/bot-${b.id}.webp`), back = botImg(`ui/bot-bg-${themeNow() === 'light' ? 'light' : 'dark'}.webp`), again = botArtLast === b.id + themeNow();
+  botArtLast = b.id + themeNow();
+  const go = () => {
+    if (!cv.isConnected) return requestAnimationFrame(go);
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr); if (!W || !H) return;
+    cv.width = W; cv.height = H; const g = cv.getContext('2d');
+    const paint = g2 => {
+      const bs = Math.max(W, H); g2.drawImage(back, (W - bs) / 2, (H - bs) / 2, bs, bs);
+      // (the figure a little wider than the place, its face high up; under it the backdrop - its own lower edge is brush strokes)
+      const s = Math.min(W * 1.18 / fig.width, H * 0.9 / fig.height), fw = fig.width * s, fh = fig.height * s; g2.drawImage(fig, (W - fw) / 2 - W * 0.04, Math.max(H * 0.03, H - fh - H * 0.2), fw, fh);
+    };
+    const full = document.createElement('canvas'); full.width = W; full.height = H; paint(full.getContext('2d'));
+    if (again || matchMedia('(prefers-reduced-motion: reduce)').matches) { g.drawImage(full, 0, 0); return; }
+    // the strokes: rows from the bottom up, each a few broad dabs across, a little askew
+    const strokes = [], rows = 22, R = H / rows;
+    for (let r = 0; r < rows; r++) for (let k = 0; k < 5; k++) strokes.push({ y: H - (r + Math.random() * 0.8) * R, x: (k / 5 + Math.random() * 0.2) * W, len: W * (0.35 + Math.random() * 0.4), w: R * (1.6 + Math.random() * 1.2), a: (Math.random() - 0.5) * 0.5 });
+    const mask = document.createElement('canvas'); mask.width = W; mask.height = H; const m = mask.getContext('2d'); m.lineCap = 'round'; m.strokeStyle = '#000';
+    let i = 0; const t0 = performance.now(), dur = 1100;
+    const step = now => {
+      if (!cv.isConnected) return;
+      const upto = Math.min(strokes.length, Math.round(strokes.length * Math.min(1, (now - t0) / dur)));
+      for (; i < upto; i++) { const q = strokes[i]; m.lineWidth = q.w; m.beginPath(); m.moveTo(q.x - q.len / 2, q.y + Math.sin(q.a) * q.len / 2); m.quadraticCurveTo(q.x, q.y - q.w * 0.3, q.x + q.len / 2, q.y - Math.sin(q.a) * q.len / 2); m.stroke(); }
+      g.clearRect(0, 0, W, H); g.drawImage(full, 0, 0); g.globalCompositeOperation = 'destination-in'; g.drawImage(mask, 0, 0); g.globalCompositeOperation = 'source-over';
+      if (i < strokes.length) requestAnimationFrame(step); else { g.clearRect(0, 0, W, H); g.drawImage(full, 0, 0); }
+    };
+    requestAnimationFrame(step);
+  };
+  Promise.all([fig, back].map(im => im.complete && im.naturalWidth ? 1 : new Promise(r => { im.onload = im.onerror = r; }))).then(() => requestAnimationFrame(go));
+  return cv;
+}
