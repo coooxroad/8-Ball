@@ -95,6 +95,7 @@
 #dkBoards .bd-four,#dkBoards .bd-three{--cl:#1f5fc0}
 #dkBoards .bd-eight{--cl:#2a7a50}
 #dkBoards .bd-nine{grid-area:nine;--cl:#167378}
+#dkBoards .bd-snooker{grid-area:snooker;--cl:#8a2a2a}
 #dkBoards .game .in{justify-content:flex-end}
 #dkBoards .game .bd-tt b{font-size:calc(var(--u)*12)}
 #dkBoards .rack{position:absolute;--d:calc(var(--u)*8);right:calc(var(--u)*7);top:50%;width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d));transform:translateY(-62%);filter:drop-shadow(-3px 5px 3px rgba(0,0,0,.45))}
@@ -188,6 +189,7 @@
 #dkBoards .bd.card.bd-three{--c1:#5862b4;--c2:#272f74;--sl:#7a82bd;--sd:#0d1240}
 #dkBoards .bd.card.bd-eight{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911}
 #dkBoards .bd.card.bd-nine{--c1:#3d8a88;--c2:#155252;--sl:#62a09c;--sd:#042a2a}
+#dkBoards .bd.card.bd-snooker{--c1:#a8433c;--c2:#62170f;--sl:#bf6a62;--sd:#2e0805}
 #dkBoards .bd.card.game{--u:min(1.6cqw,1cqh)}
 #dkBoards .bd.card.game .in{justify-content:flex-start;padding:calc(var(--u)*6) calc(var(--u)*5.5)}
 #dkBoards .bd.card.game .bd-tt b{font-size:calc(var(--u)*8.5)}

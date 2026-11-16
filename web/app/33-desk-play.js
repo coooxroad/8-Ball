@@ -12,7 +12,9 @@ const RACK = {
   three: ['carom', [[0, 0, .4], [1, 1.15, -.15], [2, 2.15, .35]]],
   eight: ['pool', [[1], [11, 5], [2, 8, 10], [9, 7, 14, 4], [6, 15, 13, 3, 12]]],
   nine: ['pool', [[1], [2, 3], [4, 9, 5], [6, 7], [8]]],
-  arcade: ['pool', [...Array(8)].map((_, k) => Array(k + 1).fill(k + 1))] };   // (증강 당구's 36: row k all ball k)
+  arcade: ['pool', [...Array(8)].map((_, k) => Array(k + 1).fill(k + 1))],
+  // (스누커: the reds as a triangle and the white below - drawn as the carom table's red and white balls)
+  snooker: ['carom', [[0, 1.53, 4.3], ...[0, 1, 2, 3].flatMap(r => [...Array(r + 1)].map((_, i) => [2, 1.53 + (i - r / 2) * 1.02, r * .885]))]] };   // (증강 당구's 36: row k all ball k)
 function rackOf(id) {
   const [kind, L] = RACK[id], at = kind === 'carom' ? L : L.flatMap((row, r) => row.map((n, i) => [n, (i - (row.length - 1) / 2) * 1.02, r * .885]));
   const xs = at.map(b => b[1]), ys = at.map(b => b[2]), mx = Math.min(...xs), my = Math.min(...ys);
@@ -123,8 +125,10 @@ const PLAY_STEPS = {
     else {
       dkPut(wrap, head('랭킹전', `레이팅 ${dama}`, toBoards));
       const go = id => b => playLeave(b, () => { ranked.find(id); playFx = 'flip'; paintHome(); });
-      // (printed cards, as the menu's four are: owner 11-09 - they were cloth)
-      dkPut(fit, ['four', 'three', 'eight', 'nine'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id])], 'card game unf')));
+      // (printed cards, as the menu's four are: owner 11-09 - they were cloth. 11-16: 스누커 too; each game rated in its family -
+      // 캐롬, 포켓, 스누커 (economy.js familyOf) - its own rating under it; the head the highest)
+      const fam = id => net.me && net.me.damas ? net.me.damas[familyOf(id)] : dama;
+      dkPut(fit, ['four', 'three', 'eight', 'nine', 'snooker'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], [GAME_SUB[id], `레이팅 ${fam(id)}`].filter(Boolean).join(' · '))], 'card game unf')));
     }
   },
   friend({ wrap, fit, panel, tt, head, toBoards, dama }) {

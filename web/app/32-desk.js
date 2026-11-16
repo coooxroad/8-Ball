@@ -11,9 +11,11 @@ const FRIEND_GAMES = GAME4.concat('snooker');
 // (copy audit 01-08: only what this game is played to - 랭킹전's rules - 8볼 and 9볼 by name alone)
 // a ranked game's line under its name: the rules at this player's tier (economy.js rankedRules - an opponent of a higher
 // tier plays theirs)
+// (a game's rules go by its family's rating - economy.js familyOf; 캐롬's for these two)
+const caromDama = () => net.me ? (net.me.damas ? net.me.damas.carom : net.me.dama) : ECONOMY.DAMA_START;
 const GAME_SUB = {
-  get three() { const r = rankedRules('three', [net.me ? net.me.dama : ECONOMY.DAMA_START]); return `쓰리쿠션 · ${r.target}점`; },
-  get four() { const r = rankedRules('four', [net.me ? net.me.dama : ECONOMY.DAMA_START]); return `${r.target}점` + (r.finish ? ' · 쓰리쿠션 마무리' : ''); },
+  get three() { const r = rankedRules('three', [caromDama()]); return `쓰리쿠션 · ${r.target}점`; },
+  get four() { const r = rankedRules('four', [caromDama()]); return `${r.target}점` + (r.finish ? ' · 쓰리쿠션 마무리' : ''); },
   eight: null, nine: null, snooker: null,
 };
 let deskTab = null, gearSel = 'cue', shopSel = 'cue';

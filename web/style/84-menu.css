@@ -181,5 +181,5 @@
    larger than the menu's (owner 11-16 - the menu's are 204 × 492u, 랭킹전's 272 × 560u; --mu, the menu's u) and centred
    on it, not filling the desk */
 #desk.felt>#dkBoards{z-index:3}
-#app.desk:not(.portrait) #desk.felt #dkBoards.rank .bd-fit{grid-template-columns:repeat(4,min(calc(236px*var(--mu,1)),22%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(18px*var(--mu,1))}
+#app.desk:not(.portrait) #desk.felt #dkBoards.rank .bd-fit{grid-template-columns:repeat(5,min(calc(214px*var(--mu,1)),18.4%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(18px*var(--mu,1))}
 #app.desk:not(.portrait) #desk.felt #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,min(calc(250px*var(--mu,1)),28%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(22px*var(--mu,1))}

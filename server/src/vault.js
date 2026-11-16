@@ -1,6 +1,7 @@
 /* The vault as a Durable Object: one per account, its own SQLite, one request at a time. The rules are in core.js. */
 import { DurableObject } from 'cloudflare:workers';
 import { VaultCore } from './core.js';
+import { E } from './check.js';
 
 const hashOf = async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
@@ -45,7 +46,9 @@ export class Vault extends DurableObject {
          its owner's own device.) */
       let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
       const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;
-      const me = this.core.me(); return json({ ok: true, dama: me.dama, rd: me.rd, gear, nick: me.joined ? me.nick : null });
+      // (the rating of the family of the game asked for - X-Mode, economy.js familyOf - else the highest)
+      const me = this.core.me(), mode = request.headers.get('X-Mode'), f = mode ? E.familyOf(mode) : null;
+      return json({ ok: true, dama: f ? me.damas[f] : me.dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));

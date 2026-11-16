@@ -230,6 +230,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   서버 주소는 그 파일의 `SERVER`. 비어 있으면 예전처럼 오프라인으로 모든 아이템을 쓴다.
 - 검사: `cd server && npm test`(규칙, 같은 요청 두 번, 잔액 부족, 바뀐 샷·옮긴 공 잡기, 하루 상한).
   배포: `main`에 푸시하면 `.github/workflows/server.yml`이 검사 후 배포한다(저장소 Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
+- 레이팅은 계열마다 따로(11-16): 캐롬(4구·3구) / 포켓(8볼·9볼·증강 당구) / 스누커 — `economy.js` `familyOf`. 금고에 `dama:<계열>`·`rd:<계열>`
+  (없으면 예전 하나뿐이던 `dama`), 경기는 자기 계열만 움직인다(`core.js ranked`). `me().dama`는 셋 중 **최고값**(선수증·랭킹전 머리글),
+  `me().damas`가 계열별. 줄 설 때 금고 표(`/v1/ticket`, `X-Mode`)가 그 종목 계열의 레이팅을 주므로 매칭·티어 규칙도 그 계열 기준.
+  스누커도 랭킹전(한 프레임, 대역은 아직 사람형 AI가 없어 수준 AI — `ai/90-plan.js`).
 - 랭킹전(`server/src/ranked.js`의 규칙, `lobby.js`·`room.js`는 그 Durable Object): 종목마다 로비 하나가 DAMA가 가까운 둘을
   짝짓는다(기다릴수록 범위가 넓어짐). 플레이어마다 정해지는 시간(30%는 10~20초, 50%는 20~30초, 20%는 30~60초, `ranked.js` `standInDelay`) 안에 없으면 **대역**(사람 같은 컴퓨터 상대, `web/ai/`)이 앉는다 — 화면에는 컴퓨터라고
   쓰지 않는다. 경기마다 방 하나: 두 기기가 WebSocket으로 붙고, 각자 자기 샷을 쳐서 보내면 상대 기기가 같은 물리로 그대로 친다

@@ -39,7 +39,7 @@ export { Vault } from './vault.js';
 export { Lobby } from './lobby.js';
 export { Room } from './room.js';
 
-const MODES = ['eight', 'nine', 'four', 'three'];
+const MODES = ['eight', 'nine', 'four', 'three', 'snooker'];
 // (the lobbies: those, and 아케이드's 증강 당구 - not for friends' rooms)
 const QUEUE_MODES = MODES.concat('arcade');
 /* Where the player asking is (Cloudflare's own word for the continent), as a Durable Object location hint: a game's room
@@ -187,7 +187,7 @@ async function frontDoor(request, env) {
       const body = await request.json().catch(() => ({})), code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       if (inv[1] === 'open' && !MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
       if ((inv[1] === 'open' || inv[1] === 'join' || inv[1] === 'watch') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
-      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
+      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Mode': String(body.mode || ''), 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       // (a member plays under their own nickname, kept in their vault; a guest under the name the app gives)
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
@@ -200,7 +200,7 @@ async function frontDoor(request, env) {
       const body = await request.json().catch(() => ({}));
       if (!QUEUE_MODES.includes(body.mode)) return json({ ok: false, why: 'no such game' }, 400);
       if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
-      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
+      const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Mode': body.mode, 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const lobby = env.LOBBY.get(env.LOBBY.idFromName(body.mode));

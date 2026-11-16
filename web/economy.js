@@ -21,7 +21,7 @@
    every one from an account caught once. The rest pay at once by what the app says (within sense, at most
    UNCHECKED_DAILY a day). */
 const ECONOMY = {
-  PER_POINT: { four: 100, eight: 60, three: 150, nine: 60 },
+  PER_POINT: { four: 100, eight: 60, three: 150, nine: 60, snooker: 8 },
   RANKED_WIN: 2, RANKED_LOSS: 0.5, FRIEND: 0.25, CPU: 0.25,
   TOUR_CUT: 0.1,
   PUZZLE: 150,
@@ -42,11 +42,15 @@ const ECONOMY = {
   TUTORIAL_PRIZE: { coin: 500, kind: 'cue', id: 'maple' },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
-const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 }, arcade: {} };   // (arcade: 증강 당구's room - game.js ARCADE)
+const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 }, snooker: {}, arcade: {} };   // (snooker: one frame - owner 11-16)   // (arcade: 증강 당구's room - game.js ARCADE)
 /* Ranked by tier (owner 11-15: a bronze player could hardly make 5, and at the top 5 went in one visit). The higher
    tier of the two decides (owner). 4구: 브론즈 3 · 실버 4 · 골드 5 · 플래티넘 7 · 다이아 7 and 프로 10, the two of them
    finished with a 쓰리쿠션 (owner); 후구, and when the second player catches up 연장 - a visit each, more points wins
    (game.js ot). 3구 by tier as well (owner); its numbers Claude's first cut. */
+/* (owner 11-16) a rating for each family of games - 캐롬 (4구, 3구), 포켓 (8볼, 9볼, 증강 당구), 스누커 - each moved only by its
+   own games, matched and tiered by its own; what the screens show (선수증, 랭킹전's head) is the highest of the three */
+const FAMILIES = ['carom', 'pocket', 'snooker'];
+const familyOf = mode => mode === 'four' || mode === 'three' ? 'carom' : mode === 'snooker' ? 'snooker' : 'pocket';
 const tierOf = rating => Math.max(0, ECONOMY.TIER_AT.filter(x => (rating || 0) >= x).length - 1);
 const RANKED_TIERS = {
   four: [{ target: 3 }, { target: 4 }, { target: 5 }, { target: 7 }, { target: 7, finish: 'three' }, { target: 10, finish: 'three' }],
@@ -95,4 +99,4 @@ const damaAfter = (a, b, aWon, rdA, rdB) => {
   const A = one(a, ra, b, rb, s), B = one(b, rb, a, ra, 1 - s);
   return [A[0], B[0], A[1], B[1]];
 };
-if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, RANKED_TIERS, rankedRules, tierOf, inviteRules, matchCoins, tourPayout, priceOf, damaAfter, rdNow };
+if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, RANKED_TIERS, FAMILIES, familyOf, rankedRules, tierOf, inviteRules, matchCoins, tourPayout, priceOf, damaAfter, rdNow };

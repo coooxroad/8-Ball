@@ -15,9 +15,9 @@
 @media (prefers-reduced-motion:reduce){#dkBoards .unf.fan,#dkBoards .unf.hall,#dkBoards .bd.away{animation-duration:.01s}#dkBoards .bd.go{transition:none}}
 
 /* 랭킹전's four games in one row, 친구와 플레이's three ways (upright: one column) */
-#dkBoards.rank .bd-fit{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:"four three eight nine"}
+#dkBoards.rank .bd-fit{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:"four three eight nine snooker"}   /* (11-16: 스누커 too) */
 #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr);grid-template-areas:"local make join"}
-#app.desk.portrait #dkBoards.rank .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"four three" "eight nine"}
+#app.desk.portrait #dkBoards.rank .bd-fit{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));grid-template-areas:"four three" "eight nine" "snooker snooker"}
 #app.desk.portrait #dkBoards.friend .bd-fit{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));grid-template-areas:"local" "make" "join"}
 #dkBoards.rank .game .rack{right:auto;left:50%;top:38%;transform:translate(-50%,-50%)}
 #dkBoards.rank .game .in{justify-content:flex-end}
@@ -109,6 +109,7 @@
 #dkBoards .seek-card .front{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#4174bf,#194685)}
 #dkBoards .seek-card .front.bd-g-three{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#5862b4,#272f74)}
 #dkBoards .seek-card .front.bd-g-eight{--cl:#2a7a50;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#458554,#1b552c)}
+#dkBoards .seek-card .front.bd-g-snooker{--cl:#8a2a2a;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#a8433c,#62170f)}
 #dkBoards .seek-card .front.bd-g-nine{--cl:#167378;background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,#3d8a88,#155252)}
 #dkBoards .seek-card .front::after{content:"";position:absolute;inset:8px;border-radius:9px;border:calc(var(--u)*.45 + 2px) solid rgba(255,255,255,.95);pointer-events:none}
 

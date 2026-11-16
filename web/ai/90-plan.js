@@ -1,6 +1,8 @@
   // the shot for the player whose turn it is (00-kit.js says what a plan is)
   function plan() {
     const persona = g.personas && g.personas[g.turn];
+    // (스누커 has no person-like player yet: a stand-in plays it at its level - 11-16, 스누커 in 랭킹전)
+    if (persona && g.mode.table === 'snooker') { const keep = g.levels; g.levels = [persona.level || 0, persona.level || 0]; try { return aiPool(); } finally { g.levels = keep; } }
     if (persona && typeof humanPlan === 'function') return humanPlan(persona);
     return g.mode.table === 'carom' ? aiCarom() : aiPool();
   }

@@ -452,6 +452,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const v = vault(); v.init('h');
   v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
   ok(v.me().dama === E.ECONOMY.DAMA_START + 3 && v.me().drops === undefined, 'ranked: a win moves DAMA, an invite game none; no drops any more');
+  // (owner 11-16: a rating for each family - 캐롬, 포켓, 스누커; a game moves its own; me().dama is the highest, the ticket the family's)
+  { const w = vault(); w.init('h'); const S = E.ECONOMY.DAMA_START;
+    w.ranked({ room: '5'.repeat(32), mode: 'four', won: true, coins: 0, dama: 40, rd: 200 }); w.ranked({ room: '6'.repeat(32), mode: 'snooker', won: false, coins: 0, dama: -20 });
+    const d = w.me().damas;
+    ok(d.carom === S + 40 && d.pocket === S && d.snooker === S - 20 && w.me().dama === S + 40 && w.me().rds.carom === 200, 'ranked: each family its own rating, the highest shown'); }
   ok(!v.buy({ req: req(), kind: 'cue', id: 'breaker' }).ok, 'the break cue is not for sale');
   console.log('ranked wins: checked');
 }

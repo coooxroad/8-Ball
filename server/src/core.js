@@ -57,7 +57,9 @@ export class VaultCore {
     if (!this.get('r5')) { const old = this.get('dama', null);
       if (old != null) { this.set('dama', old >= 1000 ? E.ECONOMY.DAMA_START : Math.max(E.ECONOMY.DAMA_FLOOR, Math.round(E.ECONOMY.DAMA_START + (old - 30) * 4))); this.set('rd', old >= 1000 ? E.ECONOMY.RD_START : 250); }
       this.set('r5', 1); }
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: this.get('dama', E.ECONOMY.DAMA_START), rd: Math.round(this.rd()), owned, devices: 1 + this.get('devices', []).length,
+    // (dama: the highest of the three - what the screens show; damas: each family's; rd: how sure, the highest's)
+    const damas = this.damas(), top = E.FAMILIES.reduce((a, f) => damas[f] > damas[a] ? f : a, 'carom');
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: damas[top], damas, rd: Math.round(this.rd(top)), rds: Object.fromEntries(E.FAMILIES.map(f => [f, Math.round(this.rd(f))])), owned, devices: 1 + this.get('devices', []).length,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       // a member (signed up with Google: link.js) and their nickname; the tutorial's prize taken; the progress kept here
       // for the account's other devices (the app's own: lessons, puzzles - save())
@@ -110,7 +112,10 @@ export class VaultCore {
   }
 
   // how sure this account's rating is now: as last set, less sure for every day since its last ranked game (economy.js)
-  rd() { return E.rdNow(this.get('rd', E.ECONOMY.RD_START), (Date.now() - this.get('rdAt', Date.now())) / 86400000); }
+  rd(f) { return E.rdNow(this.get('rd:' + f, this.get('rd', E.ECONOMY.RD_START)), (Date.now() - this.get('rdAt:' + f, this.get('rdAt', Date.now()))) / 86400000); }
+  // a family's rating (economy.js familyOf): its own once it has one, else the one rating there was before the split
+  damaOf(f) { return this.get('dama:' + f, this.get('dama', E.ECONOMY.DAMA_START)); }
+  damas() { const o = {}; for (const f of E.FAMILIES) o[f] = this.damaOf(f); return o; }
   // a game's result from its room (room.js), once per room: coins, the change in DAMA and how sure it is now - a ranked
   // game, or one with an invited friend (kind 'invite': no DAMA).
   ranked({ room, mode, won, draw, coins, dama, kind, rd }) {
@@ -118,8 +123,10 @@ export class VaultCore {
     return this.once('room-' + room, () => {
       // (증강 당구 - kind 'arcade' - moves no DAMA either, and is kept as its own kind)
       const inv = kind === 'invite' || kind === 'arcade', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_STEP_MAX, Math.min(E.ECONOMY.DAMA_STEP_MAX, dama | 0));
-      this.set('dama', Math.max(E.ECONOMY.DAMA_FLOOR, this.get('dama', E.ECONOMY.DAMA_START) + d));
-      if (!inv && Number.isFinite(rd)) { this.set('rd', Math.max(E.ECONOMY.RD_MIN, Math.min(E.ECONOMY.RD_MAX, rd))); this.set('rdAt', Date.now()); }
+      // (its own family's rating only - economy.js familyOf)
+      const f = E.familyOf(mode);
+      if (!inv) this.set('dama:' + f, Math.max(E.ECONOMY.DAMA_FLOOR, this.damaOf(f) + d));
+      if (!inv && Number.isFinite(rd)) { this.set('rd:' + f, Math.max(E.ECONOMY.RD_MIN, Math.min(E.ECONOMY.RD_MAX, rd))); this.set('rdAt:' + f, Date.now()); }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
       return { ok: true };
@@ -162,7 +169,7 @@ export class VaultCore {
         else if (it.rarity > 0 && !this.owns(kind, id)) { this.sql.exec(`INSERT INTO owned (kind, id, at) VALUES (?, ?, ?)`, kind, id, Date.now()); did.push(`gave ${kind} ${id}`); }
       }
       if (v != null) {
-        did.push(`dama ${this.get('dama', E.ECONOMY.DAMA_START)} -> ${v}`); this.set('dama', v);
+        did.push(`dama ${JSON.stringify(this.damas())} -> ${v}`); this.set('dama', v); for (const f of E.FAMILIES) this.set('dama:' + f, v);
       }
       if (typeof debug === 'boolean' && debug !== !!this.get('debug')) { this.set('debug', debug); did.push(`debug ${debug ? 'on' : 'off'}`); }
       if (!did.length) return { ok: false, why: 'nothing to do' };
