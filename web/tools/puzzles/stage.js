@@ -4,13 +4,15 @@ const { STAGES, seeded, width, play, verify, simulations } = require('./engine')
 const { propose, similar, occluded } = require('./layouts');
 const { proposeWalls } = require('./walls');
 const { search, refine, counterexample } = require('./search');
-function generate(stage, seed, count = 10) {
+// (avoid: positions already published - when adding to a stage, --add; first: the n the new ones start after)
+function generate(stage, seed, count = 10, avoid = [], first = 0) {
   const rnd = seeded((seed ^ Math.imul(stage + 1, 0x9e3779b9)) >>> 0), found = [], report = [];
-  for (let attempt = 1; found.length < count && attempt <= 3000; attempt++) {
+  const most = first ? 9000 : 3000;   // (adding to a published stage: it has had its easy positions taken - look further)
+  for (let attempt = 1; found.length < count && attempt <= most; attempt++) {
     if (attempt % 25 === 0) console.log(`stage ${stage}: proposal ${attempt}, accepted ${found.length}/${count}`);
     // Reuse the existing close-ball proposal for the barricade stage; walls are proposed separately.
     const balls = propose(stage === 7 ? 0 : stage, rnd), goal = STAGES[stage].goal;
-    if (stage === 6 && !occluded(balls) || found.some(z => similar(balls, z.balls))) continue;
+    if (stage === 6 && !occluded(balls) || found.some(z => similar(balls, z.balls)) || avoid.some(b => similar(balls, b))) continue;
     let open, walls, openTolerance, blocked;
     if (stage === 4) {
       open = search(balls, 0, { yellow: false, limit: 2000 });
@@ -39,9 +41,9 @@ function generate(stage, seed, count = 10) {
       ...(stage === 7 ? { openGood: openTolerance.good, openTotal: openTolerance.total, openPercent: openTolerance.percent, blockedWalls: blocked.ev.walls, wallCount: walls.length, solutionWalls: answerShot.ev.walls, solutionCushions: answerShot.ev.cushions } : {}) });
     console.log(`stage ${stage}: ${found.length}/${count}, width ${tolerance.percent.toFixed(1)}%, proposal ${attempt}, simulations ${simulations()}`);
   }
-  if (found.length !== count) throw Error(`stage ${stage}: only ${found.length}/${count} after 3000 proposals`);
+  if (found.length !== count) throw Error(`stage ${stage}: only ${found.length}/${count} after ${most} proposals`);
   const order = found.map((z, i) => ({ z, r: report[i] })).sort((a, b) => b.r.percent - a.r.percent);
-  return { stage, puzzles: order.map(({ z }, i) => ({ id: (stage + 1) * 100 + i + 1, stage, n: i + 1, balls: z.balls, sol: z.sol, ...(z.walls ? { walls: z.walls } : {}) })), report: order.map(({ r }, i) => ({ id: (stage + 1) * 100 + i + 1, ...r })) };
+  return { stage, puzzles: order.map(({ z }, i) => ({ id: (stage + 1) * 100 + first + i + 1, stage, n: first + i + 1, balls: z.balls, sol: z.sol, ...(z.walls ? { walls: z.walls } : {}) })), report: order.map(({ r }, i) => ({ id: (stage + 1) * 100 + i + 1, ...r })) };
 }
-if (parentPort) { try { parentPort.postMessage(generate(workerData.stage, workerData.seed, workerData.count)); } catch (e) { throw e; } }
+if (parentPort) { try { parentPort.postMessage(generate(workerData.stage, workerData.seed, workerData.count, workerData.avoid || [], workerData.first || 0)); } catch (e) { throw e; } }
 module.exports = generate;

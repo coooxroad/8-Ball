@@ -49,6 +49,48 @@ function createDrills() {
         if (!fits(P, L)) return null;
         return ringed(P, L, vOf, strokes([power - 0.08, power, power + 0.08, power + 0.16], [-0.08, -0.13, -0.18, -0.24, -0.3, -0.38, -0.46]), g, 0.13 - 0.06 * t, end => Math.hypot(end[0] - g[0], end[1] - g[1]) < 0.06);
       } },
+    /* 8볼 · 기본기 4-6 (owner 11-17: lessons as a billiards teacher gives them - stance and stroke, the thickness of the hit,
+       the ball against the cushion). A long straight one: nothing but a straight stroke through the ball; the length grows. */
+    { id: 'e-long', name: '긴 정면', d: '멀리 놓인 공을 정면으로 넣기', tip: '어깨·팔꿈치·큐가 한 줄. 브리지를 단단히, 큐를 끝까지 똑바로 내미세요.',
+      vol: 'eight', course: '기본기',
+      make(P, t, rnd, vOf) {
+        const pk = corner(P, rnd), u = inward(pk, (rnd() - 0.5) * 0.3), d1 = 0.3 + 0.25 * t + rnd() * 0.08, ob = [pk.ax + u[0] * d1, pk.ay + u[1] * d1], g = ghost(P, ob, pk);
+        const d2 = 0.4 + 0.35 * t + rnd() * 0.08, cb = [g[0] + u[0] * d2, g[1] + u[1] * d2];
+        // (a touch below centre, so the cue ball does not follow the 1 in)
+        for (const [power, b] of [[0.4 + 0.12 * t, -0.35], [0.48 + 0.12 * t, -0.45], [0.36 + 0.1 * t, -0.25]]) {
+          const L = { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: aimTo(cb, g), power, a: 0, b } };
+          if (fits(P, L) && works(P, L, vOf)) return L;
+        }
+        return null;
+      } },
+    // 8볼 · 기본기 5. A thin hit: the 1 barely touched on its edge (45 to 65 degrees) - how thick to hit, by eye.
+    { id: 'e-thin', name: '얇게 치기', d: '공의 가장자리만 스치듯 맞혀 넣기', tip: '두께는 큐볼과 1번 공이 겹쳐 보이는 정도. 얇을수록 1번 공 바깥쪽 끝을 보세요.',
+      vol: 'eight', course: '기본기',
+      make(P, t, rnd, vOf) {
+        const pk = corner(P, rnd), u = inward(pk, (rnd() - 0.5) * 0.4), d1 = 0.18 + 0.2 * t + rnd() * 0.08;
+        const ob = [pk.ax + u[0] * d1, pk.ay + u[1] * d1], g = ghost(P, ob, pk), th = (45 + 20 * t + rnd() * 4) * Math.PI / 180 * (rnd() < 0.5 ? -1 : 1);
+        const v = rot(u, th), d2 = 0.3 + 0.25 * t + rnd() * 0.08, cb = [g[0] + v[0] * d2, g[1] + v[1] * d2];
+        for (const power of [0.3, 0.38, 0.46]) {
+          const L = { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: aimTo(cb, g), power, a: 0, b: 0.1 } };
+          if (fits(P, L) && works(P, L, vOf)) return L;
+        }
+        return null;
+      } },
+    // 8볼 · 기본기 6. A ball against the cushion, potted along it into the corner: the cue ball low and straight down the rail.
+    { id: 'e-rail', name: '쿠션에 붙은 공', d: '쿠션 가까이 놓인 공을 쿠션 따라 넣기', tip: '공과 쿠션을 같이 맞힌다는 느낌으로. 세게 치지 말고 끝까지 밀어 주세요.',
+      vol: 'eight', course: '기본기',
+      make(P, t, rnd, vOf) {
+        const sx = rnd() < 0.5 ? -1 : 1, sy = rnd() < 0.5 ? -1 : 1, pk = P.POCKETS.find(k => Math.sign(k.x) === sx && Math.sign(k.y) === sy && Math.abs(k.x) > P.HL * 0.5);
+        if (!pk) return null;
+        const y = sy * (P.HW - P.R * (1.08 + 0.25 * rnd())), x1 = sx * (P.HL - 0.2 - 0.35 * t - 0.1 * rnd()), ob = [x1, y], g = ghost(P, ob, pk);
+        const back = [ob[0] - g[0], ob[1] - g[1]], m = Math.hypot(back[0], back[1]), d2 = 0.3 + 0.35 * t + 0.08 * rnd(), cb = [g[0] - back[0] / m * d2, g[1] - back[1] / m * d2 - sy * P.R * 0.6];
+        for (const [power, b] of [[0.32, -0.1], [0.4, -0.1], [0.32, 0.15], [0.48, 0]]) {
+          const L = { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: aimTo(cb, g), power, a: 0, b } };
+          // (fits() keeps balls off the cushions - this one is on it by design: only the cue ball is held to that)
+          if (Math.abs(cb[0]) < P.HL - 2.2 * P.R && Math.abs(cb[1]) < P.HW - 2.2 * P.R && Math.hypot(cb[0] - ob[0], cb[1] - ob[1]) > 2.4 * P.R && works(P, L, vOf)) return L;
+        }
+        return null;
+      } },
     // 8볼 · 큐볼 다루기 1. Draw: the cue ball back towards where it came from, into a ring behind.
     { id: 'e-draw', name: '끌어치기', d: '큐볼을 뒤로 끌어오기', tip: '큐볼 아래를 세게. 큐를 끝까지 밀어 주세요.',
       vol: 'eight', course: '큐볼 다루기',
@@ -71,6 +113,39 @@ function createDrills() {
         if (!fits(P, L)) return null;
         // (on along the way it was going: ahead of where it struck by a hand's width)
         return ringed(P, L, vOf, strokes([0.16, 0.2, 0.24, 0.28, 0.32], [0.25, 0.4, 0.55]), g, 0.15 - 0.06 * t, end => (end[0] - g[0]) * -v[0] + (end[1] - g[1]) * -v[1] > 0.15);
+      } },
+    /* 8볼 · 큐볼 다루기 4-5. A stun-run: straight in, the cue ball rolling on only a little - between the stop and the
+       follow, the stroke a teacher asks for most. */
+    { id: 'e-stun', name: '반 밀어치기', d: '넣고 큐볼을 조금만 앞으로', tip: '가운데를 부드럽게. 멈추는 샷보다 한 단계 높게, 밀어치기보다 약하게.',
+      vol: 'eight', course: '큐볼 다루기',
+      make(P, t, rnd, vOf) {
+        const pk = corner(P, rnd), u = inward(pk, (rnd() - 0.5) * 0.4), d1 = 0.25 + 0.2 * rnd(), ob = [pk.ax + u[0] * d1, pk.ay + u[1] * d1], g = ghost(P, ob, pk);
+        const d2 = 0.3 + 0.3 * t + rnd() * 0.08, cb = [g[0] + u[0] * d2, g[1] + u[1] * d2];
+        const L = { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: aimTo(cb, g), power: 0.3, a: 0, b: 0 } };
+        if (!fits(P, L)) return null;
+        const fwd = end => (end[0] - g[0]) * -u[0] + (end[1] - g[1]) * -u[1];
+        return ringed(P, L, vOf, strokes([0.24, 0.28, 0.32, 0.36], [0, -0.05, 0.05, -0.1, 0.1]), g, 0.11 - 0.04 * t, end => fwd(end) > 0.06 && fwd(end) < 0.24);
+      } },
+    // 8볼 · 큐볼 다루기 5. Side spin (잉글리시): a cut, and the cue ball sent off the cushion where no spin would not take it.
+    { id: 'e-side', name: '옆회전', d: '회전을 걸어 큐볼이 쿠션에서 꺾이는 방향 바꾸기', tip: '왼쪽을 치면 쿠션에서 왼쪽으로, 오른쪽을 치면 오른쪽으로 더 꺾입니다.',
+      vol: 'eight', course: '큐볼 다루기',
+      make(P, t, rnd, vOf) {
+        const pk = corner(P, rnd), u = inward(pk, (rnd() - 0.5) * 0.4), d1 = 0.25 + 0.2 * rnd(), ob = [pk.ax + u[0] * d1, pk.ay + u[1] * d1], g = ghost(P, ob, pk);
+        const th = (20 + 15 * rnd()) * Math.PI / 180 * (rnd() < 0.5 ? -1 : 1), v = rot(u, th), d2 = 0.3 + 0.2 * t, cb = [g[0] + v[0] * d2, g[1] + v[1] * d2];
+        const L = { cue: cb, balls: [[1, ob[0], ob[1]]], need: { pot: 1 }, demo: { angle: aimTo(cb, g), power: 0.42, a: 0, b: 0.15 } };
+        if (!fits(P, L)) return null;
+        const plain = play(P, L, vOf); if (judge(L, plain.ev, plain.cue) !== '' || !plain.cue.on) return null;
+        const p0 = [plain.cue.x, plain.cue.y], side = th > 0 ? 1 : -1;
+        const tried = [];
+        for (const pw of [0.42, 0.5]) for (const a of [0.5 * side, -0.5 * side]) tried.push([pw, a]);
+        for (const [power, a] of tried) {
+          L.demo.power = power; L.demo.a = a; L.zone = null; const q = play(P, L, vOf);
+          if (judge(L, q.ev, q.cue) !== '' || !q.cue.on) continue;
+          const end = [q.cue.x, q.cue.y], r = Math.max(0.06, 0.13 - 0.05 * t);
+          if (Math.hypot(end[0] - p0[0], end[1] - p0[1]) < 0.3 || Math.abs(end[0]) > P.HL - r * 0.6 || Math.abs(end[1]) > P.HW - r * 0.6) continue;
+          L.zone = { x: end[0], y: end[1], r }; return L;
+        }
+        return null;
       } },
     // 8볼 · 큐볼 다루기 3. Position: a cut, and the cue ball left in a ring somewhere on the table - the next shot's place.
     { id: 'e-place', name: '자리 잡기', d: '넣고 큐볼을 원 안에 세우기', tip: '세기로 거리를, 당점으로 방향을 정하세요.',
