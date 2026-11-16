@@ -1,6 +1,6 @@
   /* Person-like planning is independent of the deterministic training levels. See 51-people.js for its three axes.
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
-  function humanPlan(persona) {
+  function humanPlan(persona, review) {
     const person = humanPerson(persona), skill = person.skill, practice = person.practice, turn = humanTurn(person), P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
@@ -8,7 +8,14 @@
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
     // (ranked: room for weighing how sure each scoring line is - see sure() below)
     const budget = ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill); let sims = 0;   // (a pool simulation costs more)
-    const exploreMasse = g.masse && !ordinaryFour && rand() < style.masse * (ranked ? 0.04 + 0.22 * skill : 0.45 + 0.5 * skill);
+    /* (owner 11-16: the bots never played a massé, scored off kisses, never drew the ball back hard, and hardly fouled.
+       A person: massé grows with skill - a beginner hardly tries it, from gold on a blocked ball or a curve is part of
+       the game, the style only tilts it; a kiss (쫑) is luck, nobody plays for it - only a pro now and then; a weak
+       player does not always see the foul a line ends in (the cue ball following the pot in, the wrong ball first), so
+       plays it; and the longer the way round the cushions, the more an ordinary hand strays - see legsOf below.) */
+    const masseWill = clamp((skill - 0.3) * 1.3, 0, 0.9) * (0.35 + style.masse * 0.65);
+    const exploreMasse = g.masse && !ordinaryFour && rand() < (ranked ? masseWill : style.masse * (0.45 + 0.5 * skill));
+    const kissOk = ranked && skill > 0.9 && rand() < 0.2, blindFoul = ranked ? 0.5 * (1 - skill) ** 1.6 : 0;
     const bankChance = ordinaryFour ? 0.025 + 0.82 * practice.bank ** 1.7 + style.bank * 0.18 :
       0.07 + practice.bank * 0.83 + style.bank * 0.16;
     const seeBank = ranked ? rand() < Math.min(0.98, bankChance) : style.bank > 0.3;
@@ -21,9 +28,9 @@
     const nextChance = (world, who, r) => {
       const players = g.players.map(p => ({ ...p }));
       if (r && r.assign) { players[me].group = r.assign; players[1 - me].group = r.assign === 'solid' ? 'stripe' : 'solid'; }
-      const view = { ...g, world, players }, cue = world.balls[pool ? world.cue : who];
+      const view = { ...g, world, players, isBreak: false }, cue = world.balls[pool ? world.cue : who];
       if (!cue.on) return 0;
-      if (!pool) return humanCaromPosition(world, who);
+      if (!pool) return humanCaromPosition(world, who, view);
       let best = 0;
       for (const id of g.mode.legal(view, who)) {
         const T = world.balls[id]; if (!T || !T.on) continue;
@@ -39,8 +46,8 @@
     const simulate = shot => {
       const copy = P.clone(w); if (shot.pos) P.place(copy, copy.cue, ...shot.pos);
       P.strike(copy, shot.angle, shot.V, shot.a, shot.b, shot.el); const ev = P.run(copy, 20); sims++;
-      const r = g.mode.evaluate(ev, ctx, { ...g, world: copy });
-      const safe = !r.foul && !ev.off.length && r.win !== 1 - me, made = safe && (r.keep || r.pts > 0 || r.win === me);
+      const r = g.mode.evaluate(ev, ctx, { ...g, world: copy }), unseen = r.foul && !ev.off.length && rand() < blindFoul;
+      const safe = (!r.foul || unseen) && !ev.off.length && r.win !== 1 - me, made = safe && (r.keep || r.pts > 0 || r.win === me);
       let value = r.win === me && safe ? 100 : made ? 10 : safe ? 0 : -12;
       if (made) value += (1 + 4 * practice.position + (style.position || 0) * 2 + (style.gather || 0) * 3) * nextChance(copy, me, r) * (ranked ? skill : 1);
       if (!made && safe && skill > 0.5) value -= 4 * (style.safety + (1 - character.aggression)) * nextChance(copy, 1 - me, r);
@@ -53,13 +60,40 @@
       // Do not reward gratuitous force: a comfortable scoring stroke should usually leave the table under control.
       value -= g.powerOf(shot.V) * (0.25 + (1 - style.power) * 0.5);
       value -= shot.difficulty * (1 - skill) * 0.3;
+      if (made && !pool && ev.kiss && !kissOk) value -= 9;
       if (ranked && pool && made) value -= shot.difficulty * (1.2 - 0.6 * skill);
       if (ordinaryFour) {
         value -= (1 - skill) * (Math.min(ev.cushions, 3) * 2.2 + Math.hypot(shot.a, shot.b) * 2);
         if (!made && safe && ev.hits.length) value += 1;
       }
-      return { shot, safe, made, value, ev };
+      return { shot, safe, made, value, ev, r, world: copy, legs: legsOf(ev, shot) };
     };
+    // how far round the cushions the line goes before it is made, past what the game asks for anyway (3쿠션's three)
+    function legsOf(ev, shot) {
+      if (!ev) return shot.kind === 'bank' ? 1 : 0;
+      const n = pool ? (ev.pre || 0) + (shot.kind === 'bank' && shot.route === 'object-bank' ? 1 : 0) : (ev.cushions || 0) - Math.max(0, (g.modeId === 'three' ? g.cushions : ctx.need || 0) - 1);
+      return Math.max(0, Math.min(6, n));
+    }
+    const legsFactor = legs => 1 + legs * (0.14 + 0.4 * (1 - skill) ** 1.5);
+    /* The game review (owner 11-16, chess.com's review for billiards): the shot a player made, set against what a strong
+       player (the reviewer, plan.review) finds on the same table. Its worth is what the table looked like after it - a
+       point made, the next shot left, the other player's chances, a foul - and the best line's the same less how hard it is
+       to make. The grade is from the gap between the two (app/50-match.js names them: 예술입니다 .. 실수입니다).
+       예술 점수: how fine a made shot looked (the cushions it went round, the spin, a massé or a jump, the length).
+       실용성: what it left - for the player when it scored, for the other player when it did not; a foul leaves nothing. */
+    function humanReview(p) {
+      const mine = simulate({ pos: p.pos || null, angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, kind: 'played', difficulty: 0 });
+      const ev = mine.ev, spin = Math.hypot(p.a || 0, p.b || 0), won = mine.r.win === me && mine.safe;
+      const first = ev.firstHit == null ? null : w.balls[ev.firstHit], length = first ? distance(p.pos ? { x: p.pos[0], y: p.pos[1] } : c, first) : 0;
+      const cushions = pool ? (ev.pre || 0) + (ev.railed || []).filter(id => id !== w.cue).length * 0.5 : Math.max(0, (ev.cushions || 0) - (g.modeId === 'three' ? g.cushions || 3 : 0)) + (g.modeId === 'three' ? 1.4 : 0);
+      const art = mine.made ? Math.round(clamp(18 + Math.min(5, cushions) * 11 + Math.min(1, spin / 0.6) * 18 + (p.el > 0.3 ? 25 : 0) + (ev.air > P.R * 1.2 ? 20 : 0) + Math.min(1, length / 1.6) * 12 - (ev.kiss ? 15 : 0), 0, 100)) : 0;
+      const scale = pool ? 0.32 : 0.28, leave = who => clamp(nextChance(mine.world, who, mine.r) / scale, 0, 1);
+      const practical = won ? 100 : !mine.safe ? 0 : Math.round(100 * (mine.made ? leave(me) : 1 - leave(1 - me)));
+      const top = Number.isFinite(topAdj) ? topAdj : 0, gap = won ? 0 : top - mine.value;
+      const grade = mine.made && art >= 72 && gap <= 3 ? 0 : won || mine.made && gap <= 0.6 || gap <= -2 ? 1 : gap <= 3 ? 2 : gap <= 7 ? 3 : gap <= 13 ? 4 : 5;
+      return { grade, art, practical, gap: Math.round(gap * 10) / 10, made: mine.made, foul: !!mine.r.foul && !mine.safe };
+    }
+    if (review && g.isBreak && pool) return null;
     if (g.isBreak && pool) {
       const y = (rand() - 0.5) * P.HW * 0.7, pos = [-P.HL / 2 - 0.04, y];
       const apex = targets.map(id => w.balls[id]).sort((a, b) => a.x - b.x)[0], angle = Math.atan2(apex.y - y, apex.x - pos[0]);
@@ -147,8 +181,8 @@
       return (pool ? 1 : 0.20) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7);
     };
     const paceSigma = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
-    const sure = shot => {
-      const sa = aimSigma(shot) * 1.4, sp = paceSigma * 1.2; let n = 0, k = 0;
+    const sure = (shot, legs = 0) => {
+      const sa = aimSigma(shot) * 1.4 * legsFactor(legs), sp = paceSigma * 1.2 * (1 + legs * 0.12); let n = 0, k = 0;
       for (const [da, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (sims >= budget) break;
         const s = simulate({ ...shot, angle: shot.angle + da * sa, V: speed(shot.V * (1 + dv * sp)) }); n++; k += s.made ? 1 : 0;
@@ -161,11 +195,12 @@
       k.notice = salience(k) + (rand() - 0.5) * (0.025 + (1 - skill) * 0.16);
     }
     candidates.sort((a, b) => ranked ? a.notice - b.notice : salience(a) - salience(b));
-    let best = null, alternative = null;
+    let best = null, alternative = null, topAdj = -Infinity;
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
-      if (ranked && r.made && r.value < 100) { r.sure = sure(shot); r.value -= (1 - r.sure) * 11; }
+      if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.legs); r.value -= (1 - r.sure) * 11; }
+      topAdj = Math.max(topAdj, r.value);
       if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
@@ -200,6 +235,7 @@
       }
       if (!best) best = { shot: { pos, angle: base, V: g.vOf(desperate ? 1 : 0.4), a: 0, b: 0, el: 0, distance: distance(c, T), difficulty: 0.7, kind: desperate ? 'blast' : 'contact' }, made: false };
     }
+    if (review) return humanReview(review);
     let chosen = best.shot;
     if (ordinaryFour && g.masse && !best.made && !turn.throwing) chosen = humanFourEscape(c, ordered, person) || chosen;
     if (ordinaryFour && !chosen.a && !chosen.b && !chosen.el && !turn.throwing) {
@@ -218,8 +254,9 @@
     // Carom's scoring window is much narrower than a pocket; motor scatter is scaled separately from shot reading.
     // (nerves: the shot that matters shakes a nervous player's hand a little, less so one with grit)
     const pressure = humanPressure(), shake = 1 + pressure * (character.nerves * 0.9 + (1 - practice.grit) * 0.3) * (1 - skill * 0.5);
-    const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake;
-    const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
+    const legs = ranked ? (best && best.shot === chosen ? best.legs || 0 : legsOf(null, chosen)) : 0;
+    const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake * legsFactor(legs);
+    const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28) * (1 + legs * 0.12);
     const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)), 0, 1);
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
     const thicknessError = practice.thicknessBias * (1 - practice.aim) * (pool ? 0.003 : 0.0005);

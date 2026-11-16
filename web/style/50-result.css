@@ -158,3 +158,26 @@
 #app.desk.portrait #rStats .k{font-size:11.5px}
 #app.desk.portrait .r-title{font-size:22px}
 #app.desk.portrait .r-meta{font-size:11.5px}
+/* the game review on the slate (app/50-review.js): six grades counted, the averages, the list in a sheet */
+#rRev{display:flex;flex-direction:column;gap:10px;padding:12px 2px 2px;border-top:1px solid rgba(255,255,255,.1)}
+#rRev[hidden]{display:none}
+.rv-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;color:#f3eee3}
+.rv-h b{font:800 17px var(--ui-font)}
+.rv-h span{font:600 12.5px var(--ui-font);color:#9fb0c3}
+.rv-grades{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.rv-g{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border-radius:10px;background:color-mix(in srgb,var(--gc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gc) 45%,transparent)}
+.rv-g i{font:800 18px/1 var(--num,var(--ui-font));font-style:normal;color:var(--gc)}
+.rv-g small{font:700 10.5px/1.1 var(--ui-font);color:#d9dfe7;white-space:nowrap}
+.rv-g.zero{opacity:.38}
+.g-art{--gc:#2ec4a6}.g-great{--gc:#5d95f2}.g-good{--gc:#8cc152}.g-ok{--gc:#aab3bd}.g-meh{--gc:#f2b134}.g-miss{--gc:#ef5a43}
+.rv-avg{display:flex;align-items:baseline;gap:6px;font:600 13.5px var(--ui-font);color:#c9d3df}
+.rv-avg b{font:800 16px var(--ui-font);color:#f3eee3;margin-right:12px}
+#rRev .rv-open{align-self:flex-start;min-height:38px;padding:0 16px}
+.rv-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.rv-row{display:grid;grid-template-columns:54px auto 1fr 20px;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:12px;cursor:pointer;text-align:left;
+  background:color-mix(in srgb,var(--gc) 10%,var(--card,rgba(255,255,255,.04)));box-shadow:inset 3px 0 0 var(--gc);color:var(--fg)}
+.rv-row .rv-n{font:700 12.5px var(--ui-font);color:var(--sub)}
+.rv-row .rv-t{font:800 15px var(--ui-font);color:var(--gc);white-space:nowrap}
+.rv-row .rv-s{font:600 12.5px var(--ui-font);color:var(--sub);text-align:right}
+.rv-row .rv-play{width:0;height:0;border-left:9px solid var(--sub);border-top:6px solid transparent;border-bottom:6px solid transparent;justify-self:end}
+#app.compact .rv-g small{font-size:9.5px}

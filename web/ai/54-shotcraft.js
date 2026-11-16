@@ -7,6 +7,9 @@
       { a: 0, b: 0, stroke: 'stun', preference: 0.12 + (s.natural || 0) * 0.6 },
       { a: 0, b: 0.34, stroke: 'follow', preference: 0.15 + (s.follow || 0) * 0.7 + (s.gather || 0) * 0.1 },
       { a: 0, b: -0.32, stroke: 'draw', preference: 0.08 + (s.draw || 0) * 0.7 },
+      // (owner 11-16: players draw the ball back hard - 극끌어치기 - all the time; the bots hardly ever did. Low on the ball and
+      // struck through, by anyone who can hold a cue: more the more skilled, most by the draw players)
+      { a: 0, b: -0.66, V: Math.min(g.vOf(1), shot.V * 1.3), stroke: 'deep-draw', preference: 0.03 + person.skill * 0.2 + (s.draw || 0) * 0.55 },
       { a: side, b: 0.12, stroke: 'right', preference: s.spin * 0.3 + (shot.kind === 'bank' ? s.bank * 0.2 : 0) },
       { a: -side, b: 0.12, stroke: 'left', preference: s.spin * 0.3 + (shot.kind === 'bank' ? s.bank * 0.2 : 0) },
     ];
@@ -71,7 +74,7 @@
       const hit = P.cast(w, cue.x, cue.y, Math.cos(angle), Math.sin(angle), w.cue);
       if (hit.type === 'rail') return { pos: null, angle, V: g.vOf(0.85 + rand() * 0.15), a: 0, b: 0, el: 0.5 + rand() * 0.24, kind: 'overhit-kick', difficulty: 1.5 };
     }
-    if (rand() >= s.masse * (0.04 + skill * 0.12)) return null;
+    if (rand() >= Math.max(0, Math.min(0.85, (skill - 0.3) * 1.2)) * (0.3 + s.masse * 0.7)) return null;   // (massé by skill - see humanPlan)
     for (const T of targets) {
       const dx = T.x - cue.x, dy = T.y - cue.y, base = Math.atan2(dy, dx);
       const hit = P.cast(w, cue.x, cue.y, Math.cos(base), Math.sin(base), w.cue);
@@ -84,8 +87,8 @@
     }
     return null;
   }
-  function humanCaromPosition(world, who) {
-    const cue = world.balls[who], ids = g.mode.legal({ ...g, world }, who), P = g.P;
+  function humanCaromPosition(world, who, view) {
+    const cue = world.balls[who], ids = g.mode.legal(view || { ...g, world, isBreak: false }, who), P = g.P;
     if (ids.length !== 2 || !cue.on) return 0;
     const [a, b] = ids.map(id => world.balls[id]), dist = (x, y) => Math.hypot(x.x - y.x, x.y - y.y);
     const da = dist(cue, a), db = dist(cue, b), gap = dist(a, b), cluster = 1 / (1 + 1.8 * (da + db + gap));

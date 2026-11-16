@@ -152,6 +152,13 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     그 아래 회색 번역, 플레이 스타일·성격, 소개). 봇은 `app/34-desk-bots.js` `BOTS`(id는 다시 쓰지 않음, `from` 국가 = `BOT_FLAGS`의
     SVG 국기, `lang` 말, `ko` 번역): 사람형 AI(`ai/51-people.js`)를 그 레이팅·성격·스타일로 만들어(`botPersona`, `game.aiPersona`)
     상대에 앉힌다. 이기면 다음 봇이 열림. 그림은 `ui/bot-<id>.webp`를 넣고 그 봇에 `pic: true`.
+    봇 21명(티어마다 3~5명, 트레이 줄 = 티어). 다른 봇 자리를 이어받은 봇은 `was`(옛 id의 승리를 그대로 셈 — `botWon`).
+    경기 중 봇은 말풍선으로 말한다(`botTalk`, 이모티콘 대신): 대사는 `app/34-bot-lines.js` `BOT_LINES[id][관계 단계][순간]`에
+    미리 써 둠(원어 + 한국어, 단계 0만 있음 — 단계를 더하면 없는 순간은 0으로 돌아감). 순간: hello·think·score·miss·nice·oops·win·lose.
+- 게임 리뷰(`app/50-review.js`): 이 기기 사람의 샷마다 Worker에서 강한 리뷰어가 같은 배치를 다시 찾아(`ai/50-human.js` `humanReview`,
+  `ai-worker.js`의 `job.review`) 6단계(예술입니다·환상적입니다·좋습니다·무난합니다·아쉽습니다·실수입니다)와 예술 점수·실용성을 매김.
+  결과 슬레이트에 등급별 개수·평균, '샷별 리뷰' 시트(누르면 그 샷 다시 보기).
+- 이모티콘: 칸은 6개 그대로, 같은 순간이라도 가끔(약 1/6) 같은 분위기의 다른 얼굴(`EMOTE_ALT`; 서버 `ranked.js` `EMOTES`도 같은 id).
 - 책상은 무엇이 바뀌든 통째로 다시 칠한다(`deskPaint`). 대신 레일·머리·발·슬레이트에서 **전과 똑같이 칠해진 부분은 예전 노드를
   그대로 둔다**(`deskReuse`: 다시 그릴 게 없어 폰에서 책상 일부가 끊겨 보이던 것 — 11-16). 그래서 버튼 처리기는 `el()`의 `onclick`
   같은 속성으로 단다(`el`이 `_on`에 적어 두고 새 노드의 처리기를 옛 노드에 옮겨 줌). 그려지는 내용이 마크업에 없는 것(캔버스)은

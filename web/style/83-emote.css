@@ -17,3 +17,19 @@
    upright screen first in the column of view keys */
 #app.desk:not(.portrait) #emoteBtn{position:fixed;right:12px;top:80px}
 #app.desk.compact:not(.portrait) #emoteBtn{top:68px}
+/* 컴퓨터 대전: the bot's speech bubble under its plate (app/34-desk-bots.js botTalk) - its words, the Korean under them in a
+   near-black grey (owner 11-16) */
+.bot-bub{position:fixed;z-index:25;max-width:min(340px,46vw);padding:10px 14px 11px;border-radius:16px 4px 16px 16px;pointer-events:none;
+  background:#fbf7ee;color:#1d1a16;box-shadow:0 8px 22px rgba(0,0,0,.35),inset 0 0 0 1px rgba(0,0,0,.06);transform-origin:90% 0;
+  animation:bubIn .42s cubic-bezier(.2,1.5,.4,1) both}
+.bot-bub::before{content:"";position:absolute;right:14px;top:-7px;border:8px solid transparent;border-top:0;border-bottom-color:#fbf7ee}
+.bot-bub p{margin:0;font:700 15px/1.35 var(--ui-font);word-break:keep-all}
+.bot-bub small{display:block;margin-top:4px;font:600 12.5px/1.35 var(--ui-font);color:#3d3a36;word-break:keep-all}
+.bot-bub.out{animation:bubOut .35s ease-in both}
+#app.compact .bot-bub p{font-size:13.5px}
+@media (prefers-reduced-motion:reduce){.bot-bub,.bot-bub.out{animation-duration:.01s}}
+/* its last word on the result's slate */
+.bot-said{position:relative;margin-top:4px;padding:12px 14px;border-radius:14px;background:#fbf7ee;color:#1d1a16}
+.bot-said .who{display:block;font:800 12px var(--ui-font);color:#6b6358;margin-bottom:3px}
+.bot-said p{margin:0;font:700 15px/1.35 var(--ui-font);word-break:keep-all}
+.bot-said small{display:block;margin-top:4px;font:600 12.5px/1.35 var(--ui-font);color:#3d3a36}

@@ -4,7 +4,7 @@ const match = {
   ctx: null,                                              // who is playing what, and under which rules
   pending: null, best: null, worst: null, shots: [], count: 0,                              // the shot in progress, and the best one of the match so far
   start(first, ctx) {
-    emote.reset();
+    emote.reset(); review.reset();
     usePhysics(ctx && ctx.online ? ctx.online.table || 'bar' : undefined); scene.clearFalls();
     const c = match.ctx = ctx || { names: [prefs.names[0], oppName()], mode: prefs.mode, ai: prefs.vsAI, target: prefs.target,
       targets: prefs.mode === 'four' ? [sujiOf(0), sujiOf(1)] : null, finish: prefs.mode === 'four' && finishPref(), ice: iceOn(), real: prefs.vsAI ? null : realPref(),   // (add-ons: with a friend only)
@@ -32,20 +32,22 @@ const match = {
     if (c.mode === 'four' && o && o.watch) { game.rollOut(seededRandom((o.seed ^ 0x5bd1e995) >>> 0)); game.P.run(game.world, 40); game.world.ev = game.P.newEv(); st.rev++; beginTurn(true); }
     else if (c.mode === 'four' && (!ctx || o)) { st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
     { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
+    if (c.bot) { botTalk.clear(); botTalk.at = 0; botTalk.say('hello', 1, 1.4); }
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
   cue() { const L = lookNow(); useCue(L ? L.cues[game.shooter()] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
-  rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); beginTurn(true); },
+  rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); if (match.ctx.bot && !match.ctx.online) { botTalk.at = 0; botTalk.say('hello', 1, 0.8); } beginTurn(true); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (game.over) { toast(out.msg, out.kind, out.dur); return match.finish(); } if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,
-  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
+  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? (botTalk.say('think', 0.22, 0.3), { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }) : null,
   beforeShot(V, a, b, el) {
     if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });
     if (match.ctx.online) ranked.struck(JSON.parse(JSON.stringify(highlights.snapshot(game.world))), V, a, b, el);
-    match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 }; },
+    match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 };
+    review.shot(match.pending); },
   afterShot() {
     const shot = match.pending, ev = game.world.ev, potted = ev.pocketed.filter(q => q.id !== 0).length, out = game.resolve();
     if (shot && ultOn()) { ultShot(match.ult, shot.turn); paintUlt(); }   // (the ultimate's gauge: 아케이드, tried in any game in debug)
@@ -63,6 +65,7 @@ const match = {
       if (bad.score >= 20) keep(bad, false);
     }
     if (match.ctx.online && shot) { ranked.settled(shot.turn); emote.shot(shot.turn, out.r); }
+    if (shot && match.ctx.bot) botTalk.shot(shot.turn, out.r, shot && match.shots.length && match.shots[match.shots.length - 1].n === match.count ? match.shots[match.shots.length - 1].score : 0);
     if (game.over) return match.finish();
     if (game.turn !== shot.turn && match.innings) match.innings[game.turn]++;   // (a new visit to the table)
     if (out.msg) toast(out.msg, out.kind, out.dur); match.cue(); beginTurn(false);
@@ -134,7 +137,11 @@ const match = {
     // (copy audit 07-07: online, the key looks for a new opponent)
     $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
     if (on && on.kind === 'invite') ranked.againPaint();
-    $('#rWhy').textContent = game.over.plain ? '' : game.over.why;   // (copy audit 07-08: only an end the score does not explain)
+    $('#rWhy').textContent = game.over.plain ? '' : game.over.why;
+    // (컴퓨터 대전: the bot's last word, in its language with the Korean under it)
+    { const said = match.ctx.bot && !on && !draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
+      if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }   // (copy audit 07-08: only an end the score does not explain)
+    review.finishing = true; review.paint(); review.finishing = false;
     show('result'); SND.win();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);

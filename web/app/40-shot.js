@@ -42,7 +42,7 @@ function aiWorker() {
     const url = src && src.length > 1000 ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : core && core.src ? core.src : null;
     if (!url) { aiw.dead = true; return null; }
     const w = new Worker(url);
-    w.onmessage = e => { const r = e.data, j = aiw.wait.get(r.id); aiw.wait.delete(r.id); if (j) j.res = r; };
+    w.onmessage = e => { const r = e.data, j = aiw.wait.get(r.id); aiw.wait.delete(r.id); if (j) { j.res = r; if (j.cb) j.cb(r); } };
     w.onerror = () => { aiw.dead = true; aiw.w = null; for (const j of aiw.wait.values()) j.res = { err: 'worker' }; aiw.wait.clear(); };
     aiw.w = w;
   } catch (e) { aiw.dead = true; }

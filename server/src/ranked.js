@@ -20,7 +20,8 @@ export const STAND_IN_AFTER = 60000;                  // ms of waiting after whi
    one slow answer, or a moment away from the app, must not set a long wait back to the start (it was 8 s). */
 const GONE = 15000;
 // the quick emotes a player may send in a game (web/app/59-emote.js EMOTES: the same ids)
-const EMOTES = new Set(['grin', 'joy', 'wow', 'cool', 'think', 'sad', 'angry', 'love', 'sweat', 'wink', 'sleepy', 'thumbs', 'fire', 'poop', 'party', 'skull', 'heart']);
+const EMOTES = new Set(['grin', 'joy', 'wow', 'cool', 'think', 'sad', 'angry', 'love', 'sweat', 'wink', 'sleepy', 'thumbs', 'fire', 'poop', 'party', 'skull', 'heart',
+  'grin2', 'grin3', 'joy2', 'wow3', 'cool2', 'think2', 'sad2', 'sad3', 'angry3', 'love2', 'sweat2', 'sweat3', 'wink2', 'sleepy2', 'thumbs2', 'fire2', 'fire3', 'poop2', 'party2', 'party3', 'skull2', 'heart2', 'heart3']);   // (the second and third of a mood, 11-17)
 const arcAny = ids => ids[Math.floor(Math.random() * ids.length)];   // (증강 당구: a card nobody gave - RoomCore.arcClose)
 const range = waited => Math.min(240, 16 + 8 * waited / 1000);   // rating apart that is close enough, after waiting so long (ms)
 const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');

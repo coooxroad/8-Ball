@@ -5,6 +5,7 @@
    aiServe(job) is the whole of it, plain and testable in node:
      job:   { id, tbl, d: game.serialize(), levels, personas, rnd: the seeded chance's state or null }
      reply: { id, plan, rnd: its state after } or { id, err }
+   or, with job.review (a shot played: { pos, angle, V, a, b, el }), { id, review: its grade, 예술 점수, 실용성 } - the game review
    The game is rebuilt from the saved table - exactly, the numbers go across as they are - and the same code makes the same
    plan: a stand-in's seeded chances come back so the page's own go on from where the plan left them. */
 const aiServe = (() => {
@@ -17,6 +18,8 @@ const aiServe = (() => {
       G.levels = job.levels || null; G.personas = job.personas || null;
       G.humanStates = job.humanStates || null; G.humanCanResign = !!job.humanCanResign;
       G.aiRnd = job.rnd == null ? null : seededRandom(job.rnd);
+      // (a game review: how the shot played on this table measures up - ai/50-human.js humanReview)
+      if (job.review) { G.personas = null; G.aiRnd = seededRandom(job.id * 7919 + 17); return { id: job.id, review: G.aiReview(job.review) }; }
       const plan = G.aiPlan();
       return { id: job.id, plan, rnd: G.aiRnd ? G.aiRnd.state() : null };
     } catch (e) { return { id: job.id, err: String(e && e.message || e) }; }
