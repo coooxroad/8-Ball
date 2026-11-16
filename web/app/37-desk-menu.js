@@ -48,7 +48,7 @@ const soonToast = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
 const MENU_CARDS = [
   // (the strips: a number or a word, as a game's card shows it - not a sentence about it; owner 11-16: "레이팅 ****",
   // "온라인 1 : 1", "친구와 번갈아", "깼음" read as written by an AI)
-  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
+  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼 · 스누커', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
   { id: 'friend', title: '친구와 플레이', sub: '한 기기 · 방 만들기', strip: () => '1 : 1 · 2 : 2', go: () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); } },
   { id: 'lesson', title: '레슨', sub: '기본기부터 차근차근', strip: () => { const ids = drills.list.filter(q => q.make && q.vol).map(q => q.id); return `${ids.filter(id => prefs.lessonProof[id]).length} / ${ids.length}`; }, go: () => trainGo('lesson') },
   { id: 'puzzle', title: '퍼즐', sub: '한 번에 끝내기', strip: () => { const L = puzzles.list; return L.length ? `${L.filter(q => prefs.pz.stars[q.id]).length} / ${puzzles.STAGES.length * PZ_SLOTS}` : '준비 중'; }, go: () => trainGo('puzzle') },
@@ -110,15 +110,14 @@ function menuPaint() {
     el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), the icon
-  // breathing; only a card in sight moves - 'mn-live' below - 84-menu.css. 11-17: and alive by what it is - its own table
-  // and shot, one card at a time, 컴퓨터 대전's bot standing in it, a changed strip shining once: 37-menu-scenes.js)
+  // breathing; only a card in sight moves - 'mn-live' below - 84-menu.css. 11-17: the small tables, the bot standing in
+  // 컴퓨터 대전's card and the strip shining were tried and taken out again - owner: too busy)
   const cards = MENU_CARDS.map((c, i) => {
-    const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon, scene = !c.hero && !soon && c.id in MENU_SCENES, bot = c.id === 'cpu' ? menuBotArt() : null, strip = c.strip();
-    return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}${scene ? ' has-scene' : ''}${bot ? ' has-bot' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
+    const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
+    return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
       el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('i')]),
-      el('span', { class: 'strip' + (menuStripNew(c.id, strip) ? ' mn-new' : ''), text: strip }), scene ? el('canvas', { class: 'mn-scene', 'aria-hidden': 'true' }) : null, bot,
-      menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
+      el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
@@ -126,8 +125,8 @@ function menuPaint() {
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
   // (a card moves only while it is in sight: the rest wait, their animations paused)
   if (menuIO) menuIO.disconnect();
-  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) { e.target.classList.toggle('mn-live', e.isIntersecting); menuLive(e.target, e.isIntersecting); } }, { root: row, threshold: 0.05 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
-  else for (const c of [pc, ...cards]) { c.classList.add('mn-live'); menuLive(c, true); }
+  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); }, { root: row, threshold: 0.05 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
+  else for (const c of [pc, ...cards]) c.classList.add('mn-live');
   menuFit(); row.scrollLeft = menuScroll;
-  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; menuScenes(cards); });
+  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; });
 }

@@ -88,32 +88,6 @@
 @keyframes mn-cross{0%,78%{opacity:0;transform:translateX(0) skewX(-18deg)}80%{opacity:1}96%{opacity:1;transform:translateX(380%) skewX(-18deg)}100%{opacity:0;transform:translateX(380%) skewX(-18deg)}}
 @keyframes mn-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(calc(-4px*var(--u))) scale(1.03)}}
 
-/* 11-17 (37-menu-scenes.js): a card's own small table, its icon smaller under it; the card that plays lit (.mn-on); a cushion
-   met - its edge flashes, it gives a little (.mn-hit); 컴퓨터 대전's bot standing in it, head over the top; a changed strip
-   shining once (.mn-new) */
-.mn-card .mn-scene{position:absolute;left:calc(16px*var(--u));right:calc(16px*var(--u));top:calc(62px*var(--u));width:calc(100% - 32px*var(--u));height:calc(90px*var(--u));
-  border-radius:calc(6px*var(--u));box-shadow:0 calc(4px*var(--u)) calc(8px*var(--u)) rgba(0,0,0,.35);pointer-events:none}
-.mn-card.has-scene .mn-ico{top:calc(170px*var(--u));height:calc(96px*var(--u))}
-.mn-card.has-scene .mn-ico svg{width:calc(84px*var(--u));height:calc(84px*var(--u))}
-.mn-card.has-scene::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .45s;
-  box-shadow:inset 0 0 0 calc(3px*var(--u)) rgba(255,236,170,.95),inset 0 0 calc(26px*var(--u)) rgba(255,230,150,.35),0 0 calc(18px*var(--u)) rgba(255,226,140,.55)}
-.mn-card.has-scene.mn-on::before{opacity:1}
-.mn-card.mn-hit{animation:mn-hit .26s ease-out}
-.mn-card.mn-hit::before{transition:none;box-shadow:inset 0 0 0 calc(4px*var(--u)) #fff,inset 0 0 calc(30px*var(--u)) rgba(255,255,255,.5),0 0 calc(24px*var(--u)) rgba(255,240,190,.8)}
-@keyframes mn-hit{30%{transform:translate(calc(1.5px*var(--u)),calc(-1px*var(--u))) rotate(.35deg)}65%{transform:translate(calc(-1px*var(--u)),calc(.5px*var(--u))) rotate(-.2deg)}}
-.mn-card.has-bot{overflow:visible}
-.mn-card.has-bot .mn-ico{display:none}
-.mn-bot{position:absolute;left:calc(-22px*var(--u));right:calc(-22px*var(--u));top:calc(-50px*var(--u));height:calc(262px*var(--u));pointer-events:none;z-index:2}
-.mn-bot .art{position:absolute;inset:0;background:center bottom/contain no-repeat;filter:drop-shadow(0 calc(6px*var(--u)) calc(8px*var(--u)) rgba(0,0,0,.45));
-  -webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
-.mn-bub{position:absolute;left:calc(58% );top:calc(4px*var(--u));max-width:calc(160px*var(--u));padding:calc(7px*var(--u)) calc(10px*var(--u));border-radius:calc(12px*var(--u)) calc(12px*var(--u)) calc(12px*var(--u)) calc(3px*var(--u));
-  background:#fbf7ee;color:#1d1a16;font:700 calc(12px*var(--u))/1.3 var(--ui-font);box-shadow:0 calc(4px*var(--u)) calc(10px*var(--u)) rgba(0,0,0,.35);opacity:0;transform:translateY(calc(6px*var(--u))) scale(.8);transform-origin:0 100%;transition:opacity .3s,transform .35s cubic-bezier(.2,1.5,.4,1)}
-.mn-bub p{margin:0;word-break:keep-all}
-.mn-bub.on{opacity:1;transform:none}
-.mn-card .strip.mn-new{overflow:hidden}
-.mn-card .strip.mn-new::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:35%;background:linear-gradient(100deg,transparent,rgba(255,236,170,.75),transparent);transform:skewX(-18deg);animation:mn-new 1.6s .6s ease-in-out 2 both}
-@keyframes mn-new{to{transform:translateX(420%) skewX(-18deg)}}
-@media (prefers-reduced-motion:reduce){.mn-card.mn-hit,.mn-card .strip.mn-new::after{animation:none}}
 
 /* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */
 .mn-pc{--pcBg:url(ui/leather-ivory.webp) center/400px;--pcInk:#2b241c;--pcHd:linear-gradient(#a8703f,#6a4020);--pcCell:rgba(60,45,25,.1);--rim:linear-gradient(135deg,#d9a571,#7a4a24 50%,#e9c39a);--ring:sepia(.6) saturate(1.3) hue-rotate(-12deg) brightness(.9);
