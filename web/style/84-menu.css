@@ -29,7 +29,7 @@
   padding:0 calc(var(--edge) + 60px*var(--u)) 0 calc(var(--edge) + 30px*var(--u))}
 
 /* a card: the desk's printed card - its colour (--c1 light, --c2 dark), a dot print, a white line inside, a black strip on top */
-.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
+.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
   background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s}
 .mn-card:active{transform:translateY(3px)}
 /* every card (and the 선수증) a layer of its own, always: a press (12-press.js - the sink, the ripple) makes the pressed card
@@ -71,6 +71,30 @@
 @keyframes mn-glint{0%,45%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
 .mn-sheen{position:absolute;inset:calc(3px*var(--u));border-radius:calc(17px*var(--u));overflow:hidden;pointer-events:none;opacity:var(--sheen,0)}
 .mn-sheen i{width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
+
+/* the cards alive, calmly (owner 11-16 - 8 Ball Pool's, 당구의 신's menus move and shine and are liked by every age; ours keep
+   their calm and only gain some finish): the dot print in two depths drifting apart, a light crossing each card now and then
+   on its own beat (--i), the icon breathing. All by transform and opacity, and only on a card in sight (.mn-live,
+   37-desk-menu.js); none with reduced motion. */
+.mn-fx{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.mn-card.hero .mn-fx{inset:calc(3px*var(--u));border-radius:calc(15px*var(--u))}
+.mn-fx .d1,.mn-fx .d2{position:absolute;inset:calc(-40px*var(--u))}
+.mn-fx .d1{background:radial-gradient(circle,rgba(255,255,255,.075) calc(1.2px*var(--u)),transparent calc(1.8px*var(--u))) 0 0/calc(18px*var(--u)) calc(18px*var(--u))}
+.mn-fx .d2{background:radial-gradient(circle,rgba(255,255,255,.05) calc(2px*var(--u)),transparent calc(2.8px*var(--u))) 0 0/calc(40px*var(--u)) calc(40px*var(--u))}
+.mn-fx i{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-18deg)}
+@media (prefers-reduced-motion:no-preference){
+  .mn-fx .d1{animation:mn-d1 9s linear infinite paused}
+  .mn-fx .d2{animation:mn-d2 16s linear infinite paused}
+  .mn-fx i{animation:mn-cross 11s ease-in-out infinite paused;animation-delay:calc(var(--i,0) * 1.3s)}
+  .mn-card .mn-ico svg{animation:mn-breathe 5.5s ease-in-out infinite paused;animation-delay:calc(var(--i,0) * -.7s)}
+  .mn-live .mn-fx>*,.mn-live .mn-ico svg{animation-play-state:running}
+}
+/* (the rims' glints, the 랭킹전 glow and the 선수증's sheen and sparkles wait too while their card is out of sight) */
+.mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused}
+@keyframes mn-d1{to{transform:translate(calc(18px*var(--u)),calc(-18px*var(--u)))}}
+@keyframes mn-d2{to{transform:translate(calc(-40px*var(--u)),calc(-40px*var(--u)))}}
+@keyframes mn-cross{0%,78%{opacity:0;transform:translateX(0) skewX(-18deg)}80%{opacity:1}96%{opacity:1;transform:translateX(380%) skewX(-18deg)}100%{opacity:0;transform:translateX(380%) skewX(-18deg)}}
+@keyframes mn-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(calc(-4px*var(--u))) scale(1.03)}}
 
 /* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */
 .mn-pc{--pcBg:url(ui/leather-ivory.webp) center/400px;--pcInk:#2b241c;--pcHd:linear-gradient(#a8703f,#6a4020);--pcCell:rgba(60,45,25,.1);--rim:linear-gradient(135deg,#d9a571,#7a4a24 50%,#e9c39a);--ring:sepia(.6) saturate(1.3) hue-rotate(-12deg) brightness(.9);

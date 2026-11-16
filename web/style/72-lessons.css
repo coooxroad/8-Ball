@@ -1,4 +1,4 @@
-/* 훈련: the lesson volumes and books, lessons/puzzles/free practice in play */
+/* 훈련: the lesson cards, lessons/puzzles/free practice in play */
 #pracBar{justify-self:end;display:flex;gap:6px;min-width:0}
 #pracBar .btn{height:46px;padding:0 14px;font-size:14px;white-space:nowrap}
 #pracBar .btn[aria-pressed="true"]{background:var(--on-bg);border-color:var(--on-bd);color:var(--on-fg)}
@@ -19,41 +19,22 @@
 #app.desk .dk-rb::after,#app.desk .dk-main::after,#app.desk .dk-sec::after,#app.desk .dk-arrow::after,#app.desk .dk-step button::after,#app.desk .dk-chip::after,#app.desk .dk-plate::after,#app.desk .dk-pill::after,#app.desk .dk-tab::after,#app.desk .dk-top::after,#app.desk .dk-seg button[aria-pressed="true"]::after{
   content:"";display:block;position:absolute;left:0;right:0;top:var(--pt,0px);bottom:var(--pb,var(--lip));border-radius:inherit;pointer-events:none;
   box-shadow:inset 0 1.5px 0 rgba(255,255,255,.42),inset -1.5px 0 0 rgba(255,255,255,.16),inset 0 -4px 5px -2px rgba(0,0,0,.22),inset 3px 0 4px -2px rgba(0,0,0,.14)}
-/* the lessons' textbooks: the made covers (one per course's leather, the title below the emblem, y 190-400 of 480; gilt
-   when every level is done), the levels as dots under them */
-#app.desk .dk-cards.books{grid-auto-rows:minmax(0,calc(50% - 8px))}
-#app.desk.compact .dk-cards.books{grid-auto-rows:136px}
-#app.desk.compact.portrait .dk-cards.books{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:136px}
-#app.desk .dk-cards.books>.dk-card,#app.desk .dk-cards.vols>.dk-card{height:auto}
-#app.desk .dk-card.book{justify-content:flex-start;gap:6px;padding:8px 8px 8px}
-#app.desk .dk-card.book .cover{position:relative;display:block;flex:1;min-height:0;aspect-ratio:360/480;width:auto;max-width:100%;height:auto;max-height:100%;margin:0 auto;
-  flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border-radius:0;padding:0;box-sizing:border-box;color:#e9cf8a;
-  background:center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(-4px 6px 5px rgba(0,0,0,.5))}
-#app.desk.compact .dk-card.book .cover{padding:8px 4px 8px 12px;width:90%}
-#app.desk .dk-card.book .cover .tt{position:absolute;left:19%;right:12%;top:40%;height:43%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
-#app.desk .dk-card.book .cover small{font:700 10.5px var(--ui-font);letter-spacing:.12em;opacity:.85}
-#app.desk .dk-card.book .cover b{font:800 17px/1.25 var(--ui-font);color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45);word-break:keep-all}
-#app.desk.compact .dk-card.book .cover b{font-size:12.5px}
-#app.desk.compact .dk-card.book .cover small{font-size:8.5px}
-#app.desk .dk-card.book .cover em{position:absolute;bottom:-28%;left:0;right:0;text-align:center;font:700 12px 'Outfit',sans-serif;font-style:normal;opacity:.7}
-#app.desk .dk-card.book .lvl{display:flex;gap:4px}
-#app.desk .dk-card.book .lvl i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}
-#app.desk .dk-card.book .lvl i.on{background:#e9c46a}
-/* the game volumes, two by two filling the tray (four in a row upright): the made tomes, their names on the plain leather
-   below the medallion (y 300-480 of 560) */
-#app.desk .dk-cards.vols{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,calc(50% - 10px));align-content:stretch;gap:14px 18px}
-#app.desk.compact.portrait .dk-cards.vols{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,calc(100% - 4px));gap:8px 6px}
-#app.desk .dk-card.vol{justify-content:center;gap:4px;padding:10px 8px 8px}
-#app.desk .dk-card.vol .tome{position:relative;display:block;flex:1;min-height:0;aspect-ratio:420/560;width:auto;max-width:100%;height:auto;margin:0 auto;
-  flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:0;color:#f1d993;
-  background:center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
-#app.desk .dk-card.vol.empty .tome{filter:saturate(.6) brightness(.82) drop-shadow(-6px 9px 8px rgba(0,0,0,.5))}
-#app.desk .dk-card.vol .tome .tt{position:absolute;left:17%;right:14%;top:56%;height:28%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-#app.desk .dk-card.vol .tome b{font:900 clamp(16px,2.6vw,30px) var(--ui-font);color:#f4efe6;text-shadow:0 1px 1px rgba(0,0,0,.45)}
-#app.desk .dk-card.vol .tome small{font:700 11px var(--ui-font);letter-spacing:.45em;color:#f4efe6;opacity:.75}
-#app.desk.compact .dk-card.vol .tome b{font-size:16px}
-#app.desk.compact .dk-card.vol .tome small{font-size:9px}
-#app.desk.compact.portrait .dk-card.vol .nm{font-size:10px}
+/* 레슨's cards (34-desk-train.js deskLesson, owner 11-16: the books were of another look): the shop's printed cards
+   (74-shop-cards.css) in their course's colour - 기본기 blue, 큐볼 다루기 red, 응용 green; the lesson's table drawn in the
+   middle, its name, its levels as dots, a mark at the corner once done; the one to carry on with ringed */
+#app.desk .dk-cards.lessons>.dk-card{height:clamp(190px,32vh,250px)}
+#app.desk.compact .dk-cards.lessons>.dk-card{height:150px}
+#app.desk .dk-cards.pc .dk-card.lc-green{--f1:#d9f5e3;--f2:#1f8f55;--f3:#7fd9a6;--c1:#3f8a62;--c2:#1d5136}
+#app.desk .dk-cards.pc .dk-card.lesson{justify-content:flex-start;padding:14px 8px 12px;gap:7px}
+#app.desk .dk-card.lesson .lp{position:relative;z-index:1;flex:1;min-height:0;width:auto;max-width:72%;object-fit:contain;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+#app.desk .dk-card.lesson .nm{font-size:16px;line-height:1.15;word-break:keep-all;text-align:center}
+#app.desk.compact .dk-card.lesson .nm{font-size:12.5px}
+#app.desk .dk-card.lesson .lvl{position:relative;z-index:2;display:flex;gap:4px}
+#app.desk .dk-card.lesson .lvl i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.28)}
+#app.desk .dk-card.lesson .lvl i.on{background:#ffd76a;box-shadow:0 0 4px rgba(255,215,106,.7)}
+#app.desk .dk-card.lesson .ok{position:absolute;z-index:3;top:11px;right:11px;width:22px;height:22px;border-radius:50%;background:#3fbf7f;color:#fff;font:800 13px/22px var(--ui-font);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+#app.desk .dk-cards.pc .dk-card.lesson.last{box-shadow:inset 0 5px 9px rgba(0,0,0,.5),0 0 0 3px #f4ecd8,0 0 14px rgba(244,236,216,.45)}
+#app.desk .dk-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 16px var(--ui-font);color:rgba(255,255,255,.6)}
 /* in play: the drill's keys, the desk's ivory keys */
 #app.desk #pracBar{gap:10px;margin-right:220px}
 #app.desk #pracBar .btn{height:48px;padding:0 16px 8px;color:#2b241c;font:800 15px var(--ui-font);--s:.3;border:0 solid transparent;background:none;border-radius:0;box-shadow:none;
@@ -68,8 +49,9 @@
 #app.desk .dk-prize b{display:block;font:800 14px var(--ui-font);color:#ffe3a3}
 #app.desk .dk-prize small{font:600 12.5px var(--ui-font);color:var(--slate-sub)}
 #app.desk .dk-prize.got{opacity:.7}
-#app.desk .dk-card.vol .prize-tag{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:999px;background:#e7b54a;color:#2a1c05;font:800 11px var(--ui-font);box-shadow:0 2px 6px rgba(0,0,0,.35)}
-#app.desk .dk-prize .got-tag{margin-left:auto;font:800 12px var(--ui-font);font-style:normal;color:#1b2a12;background:#9fe08a;border-radius:999px;padding:3px 10px}
+#app.desk .dk-prize>span{min-width:0;flex:1}
+#app.desk .dk-prize .got-tag.n{background:rgba(255,214,120,.2);color:#ffe3a3}
+#app.desk .dk-prize .got-tag{flex:none;white-space:nowrap;margin-left:auto;font:800 12px var(--ui-font);font-style:normal;color:#1b2a12;background:#9fe08a;border-radius:999px;padding:3px 10px}
 /* lying down, one plate (a lesson, a puzzle, free practice): the plate, the lesson's line in the room left between it and the
    keys, the keys clear of the view knobs (owner 11-10: the line ran under the knobs and the first key under the cue) */
 #app:not(.portrait) #hud:has(#p1[hidden]){grid-template-columns:auto auto minmax(0,1fr) auto auto}

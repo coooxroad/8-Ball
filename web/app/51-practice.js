@@ -31,7 +31,7 @@ const practice = {
   start(id) {
     tutorial.stop(); usePhysics();
     if (id) { prefs.drill = id; savePrefs(); }
-    const p = practice; p.botTurn = false; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
+    const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     // (디버그: free practice on a table of another shape - 20-sheets.js sheetDebug, tables.js TABLE_SHAPES)
     const shapeTry = net.debug && prefs.shapeTry && !drills.byId(prefs.drill).make ? TABLE_SHAPES.spec(PH.pool, { kind: prefs.shapeTry }) : null;
     // (자유 연습: the game picked on the rail, on its own table - game.js free-*; a lesson on practice's pool table)
@@ -55,18 +55,11 @@ const practice = {
   },
   again() { const p = practice; flow = practice; putLayout(p.layout); scene.setZone(p.layout.zone); beginTurn(true); },       // the same layout once more
   guide: () => GUIDE_STD,
-  // 자유 연습's partner (owner 11-16: the bots are picked here too - 34-desk-bots.js): asked, it plays one shot from the table as
-  // it lies, as it would - its rating, its style - and the turn is the player's again (되돌리기 takes it back)
-  botTurn: false,
-  auto: () => practice.botTurn ? { think: 0.4, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } } : null,
-  botShot() {
-    const p = practice, b = botNow(), me = botPersona(b); if (!me) return;
-    game.personas = [me, null]; game.levels = [me.level, me.level]; p.botTurn = true; toast(`${b.name}의 시범`, '', 1400); beginTurn(false);
-  },
+  auto: () => null,
   beforeShot(V, a, b, el) { practice.before = game.world.balls.map(q => [q.x, q.y, q.on]); practice.beforeAim = st.aim; practice.shot = { aim: st.aim, V, a, b, el: el || 0 }; },
   afterShot() {
     const p = practice;
-    if (!p.drill.make) { game.resolve(); p.botTurn = false; game.personas = null; return beginTurn(false); }
+    if (!p.drill.make) { game.resolve(); return beginTurn(false); }
     const why = drills.judge(p.layout, game.world.ev, game.world.balls[0]);
     game.resolve(); p.tries++;
     if (p.drill === TUT_DRILL) { tutorial.shot(!why); if (why) { SND.bad(); hold(1.7, p.again); } return; }   // (58-tutorial.js)
@@ -91,7 +84,6 @@ const practice = {
     const btn = (text, fn, on) => box.appendChild(el('button', { class: 'btn', text, 'aria-pressed': String(!!on), onclick: () => { SND.tap(); fn(); } }));
     const aiming = fn => () => { if (flow === practice && st.phase === 'aim') fn(); };
     if (!p.drill.make) {
-      btn(`${botNow().name} 시범`, aiming(p.botShot));
       btn('되돌리기', p.undo);
       btn('옮기기', () => { p.edit = !p.edit; p.bar(); if (p.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, p.edit);
       btn('공 놓기', p.sheetRack);

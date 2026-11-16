@@ -238,7 +238,7 @@ function deskInvite(slate, _, m) {
 }
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터
 // 대전, picked on the slate); back, if given, puts an X on the tray's head
-function deskMatch({ rail, head, foot, slate }, cpu, back) {
+function deskMatch({ rail, head, stage, foot, slate }, cpu, back) {
   const m = (cpu ? GAME4 : FRIEND_GAMES).includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on && m !== 'snooker';
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
   if (!cpu) dkPut(rail, FRIEND_GAMES.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
@@ -248,10 +248,12 @@ function deskMatch({ rail, head, foot, slate }, cpu, back) {
     const nm = i ? oppName() : prefs.names[0], sub = m === 'four' ? `수지 ${sujiOf(i) * 10}` : i && prefs.vsAI ? `레이팅 ${botNow().rating}` : recText(nm);
     return el('button', { class: 'dk-plate' + (i ? ' two' : ''), onclick: onTap(() => sheetName(i)) }, [el('i', { class: 'av', text: String(i + 1) }), el('span', null, [el('b', { text: nm }), el('small', { text: sub })])]);
   };
-  if (!inv) dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
+  // (컴퓨터 대전: the bots in the tray instead, the one picked on the slate - 34-desk-bots.js)
+  if (cpu) botTray(stage);
+  else if (!inv) dkPut(foot, [plate(0), el('span', { class: 'dk-vs', text: 'VS' }), plate(1)]);
 
   // (컴퓨터 대전: the game on the rail - 34-desk-train.js - and the computer one of its bots, picked here: 34-desk-bots.js)
-  if (cpu) dkPut(slate, botPicker());
+  if (cpu) dkPut(slate, botInfo());
   // (with a friend: here on one device, taking turns - or invited to play from theirs, by a code: 55-invite.js)
   // (스누커: on one device only, for now)
   else dkPut(slate, [...dkH1(MODE_KO[m])]), dkPut(slate, [dkHr(), dkSeg([['local', '한 기기에서'], ['invite', '초대하기', !net.on || m === 'snooker']], inv ? 'invite' : 'local', v => { prefs.friendWay = v; if (v === 'local') invite.leave(); repaint(); })]);

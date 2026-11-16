@@ -45,7 +45,7 @@
 .dk-body.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent);mask-image:linear-gradient(#000 calc(100% - 26px),transparent)}
 #app.desk.compact.portrait .dk-card{height:136px}
 #app.desk.compact.portrait .dk-cards{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:auto;align-content:start;gap:12px 8px;padding-bottom:30px;-webkit-mask-image:linear-gradient(#000 calc(100% - 30px),transparent);mask-image:linear-gradient(#000 calc(100% - 30px),transparent)}
-#app.desk.compact.portrait .dk-cards.books,#app.desk.compact.portrait .dk-cards.vols{-webkit-mask-image:none;mask-image:none}
+#app.desk.compact.portrait .dk-cards.lessons{-webkit-mask-image:none;mask-image:none}
 #app.desk.compact #dkBoards .bd-tt small,#app.desk.compact #dkBoards .bd-foot small,#app.desk.compact #dkBoards .bd-bar small{font-size:max(11px,calc(var(--u)*3.6))}
 #app.desk.compact #dkBoards .bd-tt em{font-size:max(9px,calc(var(--u)*2.9))}
 #app.desk.compact.portrait .dk-foot{gap:8px}
