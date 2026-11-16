@@ -1220,6 +1220,68 @@
       ]
     },
     {
+      "stage": 6,
+      "seed": 20261118,
+      "physics": "9c37bd40cc5dc4914debab9c584bda6dce0379fedec1225d897ec7f26879efdf",
+      "rules": "fb5b3f6db30212b8df8a6090f5c7ef812c1b1de9f344a724fc82c1cfb8784b76",
+      "samples": 441,
+      "percentRange": [
+        1,
+        90
+      ],
+      "puzzles": [
+        {
+          "id": 711,
+          "attempt": 292,
+          "percent": 85.71428571428571,
+          "good": 378,
+          "total": 441
+        },
+        {
+          "id": 712,
+          "attempt": 2255,
+          "percent": 76.64399092970521,
+          "good": 338,
+          "total": 441
+        },
+        {
+          "id": 713,
+          "attempt": 179,
+          "percent": 62.131519274376416,
+          "good": 274,
+          "total": 441
+        },
+        {
+          "id": 714,
+          "attempt": 451,
+          "percent": 36.054421768707485,
+          "good": 159,
+          "total": 441
+        },
+        {
+          "id": 715,
+          "attempt": 120,
+          "percent": 32.19954648526077,
+          "good": 142,
+          "total": 441
+        },
+        {
+          "id": 716,
+          "attempt": 20,
+          "percent": 26.303854875283445,
+          "good": 116,
+          "total": 441
+        },
+        {
+          "id": 717,
+          "attempt": 733,
+          "percent": 19.501133786848072,
+          "good": 86,
+          "total": 441
+        }
+      ]
+    },
+    {
       "stage": 7,
       "seed": 20261101,
       "physics": "d92adf6dcf529bdb5eb7fef2170371963176300dc0a193f5a68e904d1a4e4f96",
