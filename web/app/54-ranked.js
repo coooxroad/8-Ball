@@ -7,6 +7,9 @@
      a stand-in's shots are worked out here, and sent as its seat's;
      the room plays the whole game again when it ends, and its result - who won, the coins, the DAMA - is the one shown.
    The seats are the room's: seat 0 on the left. */
+// this player's rating in a game's family (economy.js familyOf - each family its own, 11-16), and a rating's tier name
+const famDama = mode => net.me ? (net.me.damas ? net.me.damas[familyOf(mode)] : net.me.dama) : ECONOMY.DAMA_START;
+const tierName = v => TIERS[Math.min(TIERS.length - 1, tierOf(v))][1];
 const RANKED_CLOCK = 60;                      // seconds to shoot in a ranked game
 const AIM_LAG = 150, AIM_GAP = 66;            // ms the other player's cue is shown behind; ms between the aims sent while it moves
 const ranked = {
@@ -59,7 +62,7 @@ const ranked = {
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)
     const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, table: r.table || 'bar', opp: r.opp, standIn: r.standIn || null, kind: r.kind || 'ranked',
-      inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: net.me ? net.me.dama : ECONOMY.DAMA_START, r };
+      inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: famDama(r.mode), t0: Date.now(), r };
     ranked.connect();
     // (2:2: r.team - the four seats; each side's name is its two players', and whose shot it is goes round - game.js)
     if (r.team) { o.team = r.team; o.side = o.seat % 2; }
@@ -354,7 +357,15 @@ const ranked = {
     // (증강 당구 pays nothing yet and moves no rating: only that the room has agreed)
     if (o.kind === 'arcade') return line('증강 당구', '결과 확인됨');
     line('코인', `+${(r.coins[me] || 0).toLocaleString('ko-KR')}`);
-    if (o.kind !== 'invite') line('레이팅', `${o.dama} → ${r.dama[me]} (${d >= 0 ? '+' : ''}${d})`);
+    if (o.kind === 'invite') return;
+    /* (승급전: the vault keeps the rating under the next tier while a series is on, so its own word is asked for a moment
+       after the room's - economy.js PROMO_* - and what came of the game for the series said under the rating) */
+    const fam = familyOf(o.mode), now = net.me && net.me.damas && o.vaultSeen ? net.me.damas[fam] : r.dama[me], dv = now - o.dama;
+    line('레이팅', `${o.dama} → ${now} (${dv >= 0 ? '+' : ''}${dv})`);
+    const pl = net.me && net.me.promoLast, p = net.me && net.me.promo && net.me.promo[fam], tn = t => (TIERS[t] || [])[1] || '';
+    if (o.vaultSeen && pl && pl.f === fam && pl.at >= o.t0) line('승급전', pl.what === 'promo' ? `${tn(p ? p.to : 0)} 승급전 시작 · 3판 2선승` : pl.what === 'up' ? `${tierName(now)} 승급!` : pl.what === 'failed' ? '승급전 실패 · 다시 도전' : `강등 방어 · 남은 ${(net.me.shield || {})[fam] || 0}번`);
+    else if (o.vaultSeen && p) line('승급전', `${tn(p.to)} · ${p.w}승 ${p.l}패`);
+    if (!o.flushing) { o.flushing = true; setTimeout(() => net.flush().then(() => { o.vaultSeen = true; if (ranked.on === o && st.screen === 'result') ranked.paint(); }), 1800); }
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { app.classList.remove('watching'); arcade.close(); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; o.after = false; if (o.ws) o.ws.close(); ranked.on = null; },

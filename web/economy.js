@@ -31,7 +31,13 @@ const ECONOMY = {
   // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 500, DAMA_FLOOR: 100, RD_START: 350, RD_MIN: 50, RD_MAX: 350, RD_GROW: 15,
-  DAMA_STEP_MAX: 600,                      // (the most one game can move a rating: a vault refuses more from a room)
+  DAMA_STEP_MAX: 600,
+  /* 승급전 (owner 11-16): a ranked win that would carry a family's rating into the next tier stops just under it and opens a
+     series - the best of three, played under the next tier's rules; two wins and the tier is reached, two losses and it is
+     closed with nothing kept (the next crossing opens a new one). A tier reached is shielded: the next PROMO_SHIELD losses
+     that would take the rating under it leave it at the tier's floor instead. PROMO_PRIZE: paid once for each tier of each
+     family the first time it is reached, never taken back (what it is: later - nothing yet). */
+  PROMO_WINS: 2, PROMO_SHIELD: 3, PROMO_PRIZE: { coin: 0, dia: 0 },                      // (the most one game can move a rating: a vault refuses more from a room)
   // the tiers by rating, each from its number up: 브론즈 실버 골드 플래티넘 다이아몬드 프로 (owner: 프로 from 2000; the
   // others a first cut between the start, 500, and that)
   TIER_AT: [0, 800, 1100, 1400, 1700, 2000],

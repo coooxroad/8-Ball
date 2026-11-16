@@ -127,8 +127,10 @@ const PLAY_STEPS = {
       const go = id => b => playLeave(b, () => { ranked.find(id); playFx = 'flip'; paintHome(); });
       // (printed cards, as the menu's four are: owner 11-09 - they were cloth. 11-16: 스누커 too; each game rated in its family -
       // 캐롬, 포켓, 스누커 (economy.js familyOf) - its own rating under it; the head the highest)
-      const fam = id => net.me && net.me.damas ? net.me.damas[familyOf(id)] : dama;
-      dkPut(fit, ['four', 'three', 'eight', 'nine', 'snooker'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], [GAME_SUB[id], `레이팅 ${fam(id)}`].filter(Boolean).join(' · '))], 'card game unf')));
+      // (승급전 under way in a family: its count on its games' cards, in place of the rating - economy.js PROMO_*)
+      const fam = id => famDama(id), promo = id => net.me && net.me.promo && net.me.promo[familyOf(id)];
+      const sub = id => { const p = promo(id); return p ? `${TIERS[p.to][1]} 승급전 ${p.w}승 ${p.l}패` : `레이팅 ${fam(id)}`; };
+      dkPut(fit, ['four', 'three', 'eight', 'nine', 'snooker'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], [GAME_SUB[id], sub(id)].filter(Boolean).join(' · '))], 'card game unf' + (promo(id) ? ' promo' : ''))));
     }
   },
   friend({ wrap, fit, panel, tt, head, toBoards, dama }) {

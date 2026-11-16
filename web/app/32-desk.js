@@ -12,7 +12,8 @@ const FRIEND_GAMES = GAME4.concat('snooker');
 // a ranked game's line under its name: the rules at this player's tier (economy.js rankedRules - an opponent of a higher
 // tier plays theirs)
 // (a game's rules go by its family's rating - economy.js familyOf; 캐롬's for these two)
-const caromDama = () => net.me ? (net.me.damas ? net.me.damas.carom : net.me.dama) : ECONOMY.DAMA_START;
+// (in a 승급전, the tier played for: economy.js PROMO_*)
+const caromDama = () => { const m = net.me; if (!m) return ECONOMY.DAMA_START; const d = m.damas ? m.damas.carom : m.dama, p = m.promo && m.promo.carom; return p ? Math.max(d, ECONOMY.TIER_AT[p.to]) : d; };
 const GAME_SUB = {
   get three() { const r = rankedRules('three', [caromDama()]); return `쓰리쿠션 · ${r.target}점`; },
   get four() { const r = rankedRules('four', [caromDama()]); return `${r.target}점` + (r.finish ? ' · 쓰리쿠션 마무리' : ''); },

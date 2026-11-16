@@ -59,7 +59,9 @@ export class VaultCore {
       this.set('r5', 1); }
     // (dama: the highest of the three - what the screens show; damas: each family's; rd: how sure, the highest's)
     const damas = this.damas(), top = E.FAMILIES.reduce((a, f) => damas[f] > damas[a] ? f : a, 'carom');
-    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: damas[top], damas, rd: Math.round(this.rd(top)), rds: Object.fromEntries(E.FAMILIES.map(f => [f, Math.round(this.rd(f))])), owned, devices: 1 + this.get('devices', []).length,
+    // (승급전 under way and the shields, by family: economy.js PROMO_*)
+    const promo = {}, shield = {}; for (const f of E.FAMILIES) { const p = this.promoOf(f); if (p) promo[f] = p; const s = this.get('shield:' + f, 0); if (s) shield[f] = s; }
+    return { coin: this.get('coin', 0), dia: this.get('dia', 0), dama: damas[top], damas, promo, shield, promoLast: this.get('promoLast', null), rd: Math.round(this.rd(top)), rds: Object.fromEntries(E.FAMILIES.map(f => [f, Math.round(this.rd(f))])), owned, devices: 1 + this.get('devices', []).length,
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       // a member (signed up with Google: link.js) and their nickname; the tutorial's prize taken; the progress kept here
       // for the account's other devices (the app's own: lessons, puzzles - save())
@@ -116,6 +118,27 @@ export class VaultCore {
   // a family's rating (economy.js familyOf): its own once it has one, else the one rating there was before the split
   damaOf(f) { return this.get('dama:' + f, this.get('dama', E.ECONOMY.DAMA_START)); }
   damas() { const o = {}; for (const f of E.FAMILIES) o[f] = this.damaOf(f); return o; }
+  // a family's 승급전 under way ({ to: the tier, w, l }) or null; its demotion shield (games left)
+  promoOf(f) { return this.get('promo:' + f, null); }
+  /* A ranked game's change to its family's rating, through 승급전 and the shield (economy.js PROMO_*): returns the rating
+     to keep and what happened ('promo' opened, 'up' reached, 'failed', 'shield' used, or null) */
+  promoStep(f, won, draw, d) {
+    const X = E.ECONOMY, T = X.TIER_AT, before = this.damaOf(f), next = Math.max(X.DAMA_FLOOR, before + d), p = this.promoOf(f);
+    if (p) {
+      if (!draw) won ? p.w++ : p.l++;
+      if (p.w >= X.PROMO_WINS) {
+        this.set('promo:' + f, null); this.set('shield:' + f, X.PROMO_SHIELD);
+        if (!this.get(`promoPrize:${f}:${p.to}`)) { this.set(`promoPrize:${f}:${p.to}`, Date.now()); const z = X.PROMO_PRIZE; if (z.coin || z.dia) this.pay(`promo ${f} ${p.to}`, z.coin || 0, z.dia || 0); }
+        return [Math.max(T[p.to], next), 'up'];
+      }
+      if (p.l >= X.PROMO_WINS) { this.set('promo:' + f, null); return [Math.min(next, T[p.to] - 1), 'failed']; }
+      this.set('promo:' + f, p); return [Math.min(next, T[p.to] - 1), null];
+    }
+    const tb = E.tierOf(before), tn = E.tierOf(next);
+    if (won && tn > tb && T[tb + 1] != null) { this.set('promo:' + f, { to: tb + 1, w: 0, l: 0 }); return [T[tb + 1] - 1, 'promo']; }
+    if (tn < tb) { const sh = this.get('shield:' + f, 0); if (sh > 0) { this.set('shield:' + f, sh - 1); return [T[tb], 'shield']; } }
+    return [next, null];
+  }
   // a game's result from its room (room.js), once per room: coins, the change in DAMA and how sure it is now - a ranked
   // game, or one with an invited friend (kind 'invite': no DAMA).
   ranked({ room, mode, won, draw, coins, dama, kind, rd }) {
@@ -125,7 +148,7 @@ export class VaultCore {
       const inv = kind === 'invite' || kind === 'arcade', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_STEP_MAX, Math.min(E.ECONOMY.DAMA_STEP_MAX, dama | 0));
       // (its own family's rating only - economy.js familyOf)
       const f = E.familyOf(mode);
-      if (!inv) this.set('dama:' + f, Math.max(E.ECONOMY.DAMA_FLOOR, this.damaOf(f) + d));
+      if (!inv) { const [v, what] = this.promoStep(f, !!won, !!draw, d); this.set('dama:' + f, v); if (what) this.set('promoLast', { f, what, at: Date.now() }); }
       if (!inv && Number.isFinite(rd)) { this.set('rd:' + f, Math.max(E.ECONOMY.RD_MIN, Math.min(E.ECONOMY.RD_MAX, rd))); this.set('rdAt:' + f, Date.now()); }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked'} ${mode}`, c, 0);

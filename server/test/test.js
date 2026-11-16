@@ -457,6 +457,19 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     w.ranked({ room: '5'.repeat(32), mode: 'four', won: true, coins: 0, dama: 40, rd: 200 }); w.ranked({ room: '6'.repeat(32), mode: 'snooker', won: false, coins: 0, dama: -20 });
     const d = w.me().damas;
     ok(d.carom === S + 40 && d.pocket === S && d.snooker === S - 20 && w.me().dama === S + 40 && w.me().rds.carom === 200, 'ranked: each family its own rating, the highest shown'); }
+  // 승급전 (economy.js PROMO_*): crossing into 실버 stops just under it and opens the best of three; two wins reach it and shield it;
+  // a series lost closes with nothing kept; a shielded loss keeps the floor
+  { const w = vault(); w.init('h'); const T = E.ECONOMY.TIER_AT; let n = 10; const room = () => (n++).toString(16).padStart(32, '0');
+    w.ranked({ room: room(), mode: 'eight', won: true, coins: 0, dama: T[1] - E.ECONOMY.DAMA_START + 30 });
+    let m = w.me(); ok(m.damas.pocket === T[1] - 1 && m.promo.pocket && m.promo.pocket.to === 1, 'promo: opened just under the tier');
+    w.ranked({ room: room(), mode: 'nine', won: false, coins: 0, dama: -10 }); w.ranked({ room: room(), mode: 'eight', won: true, coins: 0, dama: 10 });
+    ok(w.me().promo.pocket.w === 1 && w.me().promo.pocket.l === 1 && w.me().damas.pocket <= T[1] - 1, 'promo: one each, still under');
+    w.ranked({ room: room(), mode: 'eight', won: true, coins: 0, dama: 10 }); m = w.me();
+    ok(!m.promo.pocket && m.damas.pocket >= T[1] && m.shield.pocket === E.ECONOMY.PROMO_SHIELD, 'promo: two wins - the tier, shielded');
+    w.ranked({ room: room(), mode: 'eight', won: false, coins: 0, dama: -200 }); m = w.me();
+    ok(m.damas.pocket === T[1] && m.shield.pocket === E.ECONOMY.PROMO_SHIELD - 1, 'shield: a loss under the floor keeps the floor');
+    const v2 = vault(); v2.init('h'); v2.ranked({ room: room(), mode: 'four', won: true, coins: 0, dama: 400 }); v2.ranked({ room: room(), mode: 'four', won: false, coins: 0, dama: -5 }); v2.ranked({ room: room(), mode: 'three', won: false, coins: 0, dama: -5 });
+    ok(!v2.me().promo.carom && v2.me().damas.carom < T[1] && v2.me().promoLast.what === 'failed', 'promo: two losses close it, nothing kept'); }
   ok(!v.buy({ req: req(), kind: 'cue', id: 'breaker' }).ok, 'the break cue is not for sale');
   console.log('ranked wins: checked');
 }

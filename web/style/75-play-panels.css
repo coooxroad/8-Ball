@@ -195,3 +195,8 @@
 #dkBoards .bd.card.game .bd-tt b{font-size:calc(var(--u)*8.5)}
 #dkBoards .bd.card.game .bd-tt small{font-size:max(11px,calc(var(--u)*3.4))}
 #dkBoards .bd.card.game .rack{top:auto;bottom:calc(var(--u)*12);left:50%;right:auto;transform:translateX(-50%)}
+/* a game whose family is in a 승급전 (economy.js PROMO_*): its card ringed in gold, the count in gold */
+#dkBoards .bd.card.game.promo{box-shadow:0 0 0 3px #e9c46a,0 0 22px rgba(233,196,106,.55),0 10px 20px rgba(0,0,0,.4)}
+#dkBoards .bd.card.game.promo .bd-tt small{color:#ffe08a}
+@media (prefers-reduced-motion:no-preference){#dkBoards .bd.card.game.promo{animation:promoGlow 2.4s ease-in-out infinite}}
+@keyframes promoGlow{50%{box-shadow:0 0 0 3px #f6dc8e,0 0 34px rgba(246,220,142,.8),0 10px 20px rgba(0,0,0,.4)}}
