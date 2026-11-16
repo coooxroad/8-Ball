@@ -64,7 +64,8 @@ function deskPuzzle(d) {
 // a stage on either road picked: the one in hand, or why it cannot be (closed, or not made yet)
 function pzPick(x) {
   const z = prefs.pz;
-  if (!x.q) return toast(x.more ? (pzBothCh(x.si) ? '준비 중입니다' : '챌린지 둘을 깨면 열립니다') : '준비 중인 스테이지입니다', '', 1800);
+  if (x.more && pzBothCh(x.si)) return puzzle.practice(x.si);   // (∞: 연습 퍼즐 - 52-puzzle.js practiceOf)
+  if (!x.q) return toast(x.more ? '챌린지 둘을 깨면 열립니다' : '준비 중인 스테이지입니다', '', 1800);
   if (!pzOpenQ(x.q)) return toast(!pzOpen(x.si) ? `'${puzzles.STAGES[x.si - 1].name}'에서 ${PZ_NEED}문제를 풀면 열립니다` : x.ch ? '앞 스테이지를 모두 풀면 챌린지가 열립니다' : '앞 스테이지를 풀면 열립니다', '', 1900);
   if (z.cur === x.q.id) return; z.cur = x.q.id; z.open = x.si; repaintLive();
 }

@@ -12,19 +12,38 @@ const puzzle = {
     w.cue = 0; game.goal = puzzle.stage(z).goal;
     scene.clearFalls(); scene.setZone(null); scene.setMarks(null); st.aim = Math.atan2(z.balls[n][1] - z.balls[0][1], z.balls[n][0] - z.balls[0][0]); st.rev++; scene.invalidate();
   },
-  start(id) {
+  /* 연습 퍼즐 (owner 11-16: a topic's two 챌린지 beaten, more of it without end, no reward): one of the topic's puzzles turned
+     over - mirrored end to end, side to side or both, its answer with it (the table and its physics are the same either way:
+     test/run.js 'mirror') - a new one after each solved. */
+  practiceOf(si) {
+    const L = puzzles.of(si).filter(q => !q.shape && q.sol), P = (usePhysics(), PH.carom), goal = puzzles.STAGES[si].goal;
+    // (only a turn whose answer still works on this physics - the answer is played on a copy first)
+    for (let tries = 0; tries < 16 && L.length; tries++) {
+      const q = L[Math.floor(Math.random() * L.length)], k = 1 + Math.floor(Math.random() * 3), fx = k & 1 ? -1 : 1, fy = k & 2 ? -1 : 1, [ang, V, a, b, el] = q.sol;
+      const angle = Math.atan2(Math.sin(ang) * fy, Math.cos(ang) * fx), side = fx * fy < 0 ? -a : a;
+      const walls = q.walls && q.walls.map(w => Object.assign({}, w, { x: w.x * fx, y: w.y * fy, ang: Math.atan2(Math.sin(w.ang || 0) * fy, Math.cos(w.ang || 0) * fx) }));
+      const z = { id: `p${q.id}-${k}-${Date.now() % 100000}`, stage: si, n: 0, practice: true, balls: q.balls.map(([x, y]) => [x * fx, y * fy]), sol: [angle, V, side, b, el || 0], ...(walls ? { walls } : {}) };
+      const w = P.makeWorld(4); w.walls = P.walls(z.walls); z.balls.forEach(([x, y], i) => P.place(w, i, x, y)); w.cue = 0;
+      P.strike(w, angle, V, side, b, el || 0);
+      if (game.MODES.puzzle4.judge(goal, P.run(w, 30), w).ok) return z;
+    }
+    return null;
+  },
+  practice(si) { const z = puzzle.practiceOf(si); if (z) puzzle.start(null, z); else toast('연습 퍼즐을 만들지 못했습니다. 다시 눌러 주세요.', '', 2200); },
+  start(id, made) {
     if (!puzzles.list.length) return toast('새 퍼즐을 만드는 중입니다.', '', 2200);
-    const z = puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
+    const z = made || puzzles.byId(id || prefs.pz.cur) || puzzles.list[0], p = puzzle;
     if (!p.cur || p.cur.id !== z.id) { p.helped = 0; p.tries = 0; }
-    p.cur = z; prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs();
+    p.cur = z; if (!z.practice) { prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs(); }
     usePhysics(); game.start('puzzle4', [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
-    toast(`${pzName(z)} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+    toast(`${z.practice ? `${p.stage(z).name} 연습` : pzName(z)} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
   },
-  restart() { puzzle.start(); },
+  restart() { const z = puzzle.cur; if (z && z.practice) puzzle.start(null, z); else puzzle.start(); },
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
   // the next one not yet solved after this (or simply the next, when all are), staying inside the stages that are open
   step(dir) {
+    if (puzzle.cur && puzzle.cur.practice) return puzzle.practice(puzzle.cur.stage);
     const L = pzList().filter(pzOpenQ), i = Math.max(0, L.indexOf(puzzle.cur)); let k = i;
     for (let n = 0; n < L.length; n++) { k = (k + dir + L.length) % L.length; if (!prefs.pz.stars[L[k].id]) break; }
     if (k === i) k = (i + dir + L.length) % L.length;
@@ -68,6 +87,7 @@ const puzzle = {
     const p = puzzle, z = p.cur, r = game.resolve().r;
     if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
     // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
+    if (z.practice) { toast('정답! ' + '★'.repeat(Math.min(3 - p.helped, p.starsOf(p.stage(z).goal))) + ' · 다음 연습 퍼즐', 'good', 2000); return hold(1.9, () => p.practice(z.stage)); }   // (no stars kept, nothing paid)
     const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = puzzles.STAGES.filter((_, si) => pzOpen(si)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
     if (!was) net.claim('puzzle', { id: z.id, shot: puzzle.shot });     // (paid once, by the server, after it plays the shot again)
@@ -78,7 +98,7 @@ const puzzle = {
   },
   hud() {
     const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
-    paintPill(0, { name: pzName(z), on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
+    paintPill(0, { name: z.practice ? `${p.stage(z).name} 연습` : pzName(z), on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
     paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
   },
   // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
