@@ -1,6 +1,6 @@
   /* Person-like planning is independent of the deterministic training levels. See 51-people.js for its three axes.
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
-  function humanPlan(persona, review) {
+  function humanPlan(persona) {
     const person = humanPerson(persona), skill = person.skill, practice = person.practice, turn = humanTurn(person), P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
     const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), noise = () => { let n = -3; for (let i = 0; i < 6; i++) n += rand(); return n / Math.sqrt(0.5); };
@@ -75,25 +75,6 @@
       return Math.max(0, Math.min(6, n));
     }
     const legsFactor = legs => 1 + legs * (0.14 + 0.4 * (1 - skill) ** 1.5);
-    /* The game review (owner 11-16, chess.com's review for billiards): the shot a player made, set against what a strong
-       player (the reviewer, plan.review) finds on the same table. Its worth is what the table looked like after it - a
-       point made, the next shot left, the other player's chances, a foul - and the best line's the same less how hard it is
-       to make. The grade is from the gap between the two (app/50-match.js names them: 예술입니다 .. 실수입니다).
-       예술 점수: how fine a made shot looked (the cushions it went round, the spin, a massé or a jump, the length).
-       실용성: what it left - for the player when it scored, for the other player when it did not; a foul leaves nothing. */
-    function humanReview(p) {
-      const mine = simulate({ pos: p.pos || null, angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, kind: 'played', difficulty: 0 });
-      const ev = mine.ev, spin = Math.hypot(p.a || 0, p.b || 0), won = mine.r.win === me && mine.safe;
-      const first = ev.firstHit == null ? null : w.balls[ev.firstHit], length = first ? distance(p.pos ? { x: p.pos[0], y: p.pos[1] } : c, first) : 0;
-      const cushions = pool ? (ev.pre || 0) + (ev.railed || []).filter(id => id !== w.cue).length * 0.5 : Math.max(0, (ev.cushions || 0) - (g.modeId === 'three' ? g.cushions || 3 : 0)) + (g.modeId === 'three' ? 1.4 : 0);
-      const art = mine.made ? Math.round(clamp(18 + Math.min(5, cushions) * 11 + Math.min(1, spin / 0.6) * 18 + (p.el > 0.3 ? 25 : 0) + (ev.air > P.R * 1.2 ? 20 : 0) + Math.min(1, length / 1.6) * 12 - (ev.kiss ? 15 : 0), 0, 100)) : 0;
-      const scale = pool ? 0.32 : 0.28, leave = who => clamp(nextChance(mine.world, who, mine.r) / scale, 0, 1);
-      const practical = won ? 100 : !mine.safe ? 0 : Math.round(100 * (mine.made ? leave(me) : 1 - leave(1 - me)));
-      const top = Number.isFinite(topAdj) ? topAdj : 0, gap = won ? 0 : top - mine.value;
-      const grade = mine.made && art >= 72 && gap <= 3 ? 0 : won || mine.made && gap <= 0.6 || gap <= -2 ? 1 : gap <= 3 ? 2 : gap <= 7 ? 3 : gap <= 13 ? 4 : 5;
-      return { grade, art, practical, gap: Math.round(gap * 10) / 10, made: mine.made, foul: !!mine.r.foul && !mine.safe };
-    }
-    if (review && g.isBreak && pool) return null;
     if (g.isBreak && pool) {
       const y = (rand() - 0.5) * P.HW * 0.7, pos = [-P.HL / 2 - 0.04, y];
       const apex = targets.map(id => w.balls[id]).sort((a, b) => a.x - b.x)[0], angle = Math.atan2(apex.y - y, apex.x - pos[0]);
@@ -195,12 +176,11 @@
       k.notice = salience(k) + (rand() - 0.5) * (0.025 + (1 - skill) * 0.16);
     }
     candidates.sort((a, b) => ranked ? a.notice - b.notice : salience(a) - salience(b));
-    let best = null, alternative = null, topAdj = -Infinity;
+    let best = null, alternative = null;
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
       if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.legs); r.value -= (1 - r.sure) * 11; }
-      topAdj = Math.max(topAdj, r.value);
       if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
@@ -235,7 +215,6 @@
       }
       if (!best) best = { shot: { pos, angle: base, V: g.vOf(desperate ? 1 : 0.4), a: 0, b: 0, el: 0, distance: distance(c, T), difficulty: 0.7, kind: desperate ? 'blast' : 'contact' }, made: false };
     }
-    if (review) return humanReview(review);
     let chosen = best.shot;
     if (ordinaryFour && g.masse && !best.made && !turn.throwing) chosen = humanFourEscape(c, ordered, person) || chosen;
     if (ordinaryFour && !chosen.a && !chosen.b && !chosen.el && !turn.throwing) {

@@ -4,7 +4,8 @@
    BOT_LINES[id][stage][moment]: stage 0 is how a bot talks to someone it has just met; later stages (how it talks once it
    knows the player better) go beside it as 1, 2, … and fall back to 0 where they have no line (botSay, 34-desk-bots.js).
    The moments: hello (the game begins), think (before its own shot, now and then), score (it scored), miss (it missed),
-   nice (the player's good shot), oops (the player missed or fouled), win, lose (the game is over). */
+   nice (the player's good shot), oops (the player missed or fouled), win, lose (the game is over); and by the review's
+   grade of the player's shot (BOT_REACT, below): wow, lucky, gift. A line is said at most once a game (botTalk.line). */
 const BOT_LINES = {
   sua: { 0: {
     hello: [['안녕하세요! 동아리 선배들 말고 다른 사람이랑은 처음이에요.']],
@@ -187,3 +188,88 @@ const BOT_LINES = {
     win: [['Good game. Want a rematch? Speed round?', '좋은 경기였어. 한 판 더? 속기로?']],
     lose: [['Well, I’ll be. You’re the real deal.', '이거 참. 너 진짜구나.']] } },
 };
+/* (owner 11-17 night) The bot answers the player's shot by the review's grade (botTalk.graded): wow - the player's 예술,
+   lucky - a 요행, gift - a 실수. Kept apart and laid into each bot's first stage. */
+const BOT_REACT = {
+  sua: {
+    wow: [['헐, 방금 거 뭐예요? 진짜 예술이다…'], ['선배들한테 영상으로 보여 주고 싶어요!']],
+    lucky: [['어? 그게 들어가요? 운 좋다!'], ['그건 노린 거 아니죠? 그쵸?']],
+    gift: [['어, 쉬운 공이었는데! 저 기회 받을게요.'], ['괜찮아요, 그럴 때 있어요. 저도 맨날 그래요.']] },
+  marco: {
+    wow: [['Che spettacolo! Sembra un’opera d’arte.', '이런 장관이! 예술 작품 같아요.'], ['Mamma mia… questo lo racconto a casa.', '맘마미아… 이건 집에 가서 얘기할래요.']],
+    lucky: [['Fortunello! Ma conta lo stesso.', '운이 좋네요! 그래도 득점은 득점이죠.'], ['Ehi, la fortuna ti vuole bene oggi.', '어이, 오늘은 행운이 당신 편이네요.']],
+    gift: [['Oh… questa era facile, no?', '어… 이건 쉬운 거였죠?'], ['Grazie del regalo!', '선물 고마워요!']] },
+  yuki: {
+    wow: [['…芸術ですね。言葉が出ません。', '…예술이네요. 말이 안 나와요.'], ['今の、録画しておけばよかった。', '방금 거, 녹화해 둘 걸 그랬어요.']],
+    lucky: [['運も実力のうち、ですね。', '운도 실력이라고들 하죠.'], ['今のは…狙っていましたか？', '방금 건… 노린 거였나요?']],
+    gift: [['あ、もったいない。', '아, 아깝다.'], ['チャンス、いただきます。', '기회, 받을게요.']] },
+  luiza: {
+    wow: [['Que tacada linda! Parece música.', '너무 예쁜 샷이야! 음악 같아.'], ['Uau… arrepiei.', '와… 소름 돋았어.']],
+    lucky: [['Sortudo! Mas eu gostei.', '운 좋네! 그래도 마음에 들어.'], ['Essa foi sorte, hein?', '그건 운이었지, 그치?']],
+    gift: [['Ih, desafinou feio.', '이런, 음이 크게 틀렸네.'], ['Obrigada pela chance!', '기회 줘서 고마워!']] },
+  ploy: {
+    wow: [['สวยมาก! อย่างกับงานศิลปะเลย', '너무 예뻐! 예술 작품 같아.'], ['ว้าว ขนลุกเลย', '와, 소름 돋았어.']],
+    lucky: [['โชคดีจัง! ได้ไปฟรีๆ เลย', '운 좋다! 공짜로 들어갔네.'], ['อันนั้นฟลุคใช่มั้ย', '그거 플루크지?']],
+    gift: [['อ้าว! ลูกง่ายๆ เองนะ', '어머! 쉬운 공이었는데.'], ['ขอบคุณที่ให้โอกาสนะ', '기회 줘서 고마워.']] },
+  sofia: {
+    wow: [['Υπέροχο! Σαν ζωγραφιά.', '훌륭해요! 그림 같아요.'], ['Αυτό ήταν τέχνη.', '그건 예술이었어요.']],
+    lucky: [['Τυχερός! Η θάλασσα σε βοήθησε.', '운이 좋네요! 바다가 도와줬나 봐요.'], ['Αυτό ήταν τύχη, ε;', '그건 운이었죠?']],
+    gift: [['Ωχ, αυτή ήταν εύκολη.', '어머, 그건 쉬운 거였는데.'], ['Ευχαριστώ για την ευκαιρία.', '기회 고마워요.']] },
+  sean: {
+    wow: [['Ah, that’s pure art, so it is.', '아, 그거 진짜 예술이네.'], ['I’d buy you a pint for that one.', '그 샷이면 맥주 한 잔 사야겠는걸.']],
+    lucky: [['The luck of the Irish, and you’re not even Irish.', '아일랜드 사람의 행운이네, 아일랜드 사람도 아니면서.'], ['Jammy. Fair play, though.', '운빨이네. 그래도 인정.']],
+    gift: [['Ah, you left that one for me.', '아, 그건 나 먹으라고 남겨 줬구나.'], ['Easy one, that. Thanks a million.', '쉬운 공이었는데. 정말 고마워.']] },
+  meilin: {
+    wow: [['太美了，像一支舞。', '너무 아름다워요, 춤 같아요.'], ['这一杆，是艺术。', '이 한 샷은 예술이에요.']],
+    lucky: [['运气不错嘛。', '운이 좋네요.'], ['这个是蒙的吧？', '이건 얻어걸린 거죠?']],
+    gift: [['哎呀，可惜了。', '어머, 아깝네요.'], ['谢谢你送的机会。', '기회 줘서 고마워요.']] },
+  emre: {
+    wow: [['Maşallah! Sanat eseri gibi.', '마샬라! 예술 작품 같아요.'], ['Bu vuruşa bir çay ısmarlarım.', '이 샷엔 차 한 잔 대접해야겠네요.']],
+    lucky: [['Şanslısın bugün!', '오늘 운이 좋네요!'], ['Bu biraz şanstı, değil mi?', '이건 좀 운이었죠?']],
+    gift: [['Eyvah, kolay topu kaçırdın.', '이런, 쉬운 공을 놓쳤네요.'], ['Sağ ol, sıra bende.', '고마워요, 제 차례네요.']] },
+  darya: {
+    wow: [['Браво. Это было красиво.', '브라보. 아름다웠어요.'], ['Такое и в Москве не каждый день увидишь.', '이런 건 모스크바에서도 매일 못 봐요.']],
+    lucky: [['Повезло. Но я запомню.', '운이 좋았네요. 하지만 기억해 둘게요.'], ['Это было везение, а не расчёт.', '그건 계산이 아니라 운이었어요.']],
+    gift: [['Такой шар нельзя промахивать.', '그런 공은 놓치면 안 돼요.'], ['Спасибо. Я не упущу.', '고마워요. 놓치지 않을게요.']] },
+  femke: {
+    wow: [['Wauw, dat was kunst!', '와, 그건 예술이었어!'], ['Die moet ik onthouden.', '그건 기억해 둬야겠다.']],
+    lucky: [['Geluksvogel!', '운 좋은 녀석!'], ['Die was mazzel, geef het maar toe.', '그건 운이었어, 인정해.']],
+    gift: [['Hè, die lag er gewoon voor!', '어, 그건 그냥 앞에 놓여 있었잖아!'], ['Dank je, snel door.', '고마워, 빨리 칠게.']] },
+  ana: {
+    wow: [['¡Olé! Eso fue arte puro.', '올레! 그건 순수한 예술이었어요.'], ['Qué belleza… me has dejado sin compás.', '아름다워요… 박자를 잃어버렸어요.']],
+    lucky: [['¡Qué suerte tienes hoy!', '오늘 운이 정말 좋네요!'], ['Esa entró de milagro.', '그건 기적처럼 들어갔네요.']],
+    gift: [['Ay, esa era fácil.', '아, 그건 쉬운 거였는데.'], ['Gracias por el regalo.', '선물 고마워요.']] },
+  lea: {
+    wow: [['Magnifique. C’est de la poésie.', '멋져요. 그건 시예요.'], ['Ça, c’était de l’art.', '그건 예술이었어요.']],
+    lucky: [['Quelle chance !', '운도 좋네요!'], ['Celle-là, c’était un coup de pot.', '그건 순전히 운이었어요.']],
+    gift: [['Oh… celle-là était facile.', '어… 그건 쉬운 거였는데.'], ['Merci pour le cadeau.', '선물 고마워요.']] },
+  migo: {
+    wow: [['Grabe! Ang galing mo!', '대박! 진짜 잘한다!'], ['Turuan mo ako niyan!', '그거 나도 가르쳐 줘요!']],
+    lucky: [['Swerte! Tsamba lang ’yan!', '운 좋다! 그건 그냥 얻어걸린 거예요!'], ['Ay, pumasok pa!', '헐, 그게 들어가네!']],
+    gift: [['Yes! Akin na ang mesa!', '앗싸! 이제 테이블은 내 거!'], ['Madali lang ’yon, ah!', '그거 쉬운 거였는데!']] },
+  ingrid: {
+    wow: [['Snyggt. Riktigt snyggt.', '멋지다. 진짜 멋지다.'], ['Det där var konst.', '그건 예술이었어.']],
+    lucky: [['Tur. Ren tur.', '운. 순전히 운.'], ['Den var inte planerad, va?', '그거 계획한 거 아니지?']],
+    gift: [['Den var enkel.', '그건 쉬운 거였어.'], ['Tack. Jag tar den.', '고마워. 내가 가져갈게.']] },
+  ole: {
+    wow: [['Det der var vakkert.', '그거 아름다웠어요.'], ['Sånt ser man sjelden, selv i Bergen.', '그런 건 베르겐에서도 보기 드물어요.']],
+    lucky: [['Flaks. Men flaks teller også.', '운이네요. 하지만 운도 쳐주죠.'], ['Havet var snilt med deg der.', '바다가 그때 당신한테 친절했네요.']],
+    gift: [['Den skulle du hatt.', '그건 넣었어야 했어요.'], ['Takk. Jeg tar over.', '고마워요. 제가 이어받을게요.']] },
+  frederic: {
+    wow: [['Superbe. Rien à redire.', '훌륭해요. 할 말이 없네요.'], ['Ça, c’est du grand billard.', '이게 바로 큰 당구죠.']],
+    lucky: [['Chanceux.', '운이 좋군요.'], ['Le billard pardonne parfois.', '당구는 가끔 봐주기도 하죠.']],
+    gift: [['Une faute de concentration.', '집중력 실수군요.'], ['Merci. À moi.', '고마워요. 제 차례.']] },
+  jack: {
+    wow: [['Now THAT is how you play to a crowd!', '바로 그거지, 관중 앞에서 그렇게 치는 거야!'], ['Shot of the night, mate.', '오늘 밤 최고의 샷이야, 친구.']],
+    lucky: [['Cheeky! Didn’t mean that, did you?', '얌체네! 그거 노린 거 아니지?'], ['Fluke! Still counts, sadly.', '플루크! 아쉽게도 그래도 인정이야.']],
+    gift: [['Oh dear. The crowd felt that one.', '이런. 관중도 그건 느꼈을 거야.'], ['Cheers for the open table!', '테이블 열어 줘서 고마워!']] },
+  lena: {
+    wow: [['Präzise. Und schön. Selten beides.', '정확하고, 아름다워요. 둘 다인 건 드물죠.'], ['Das war Kunst.', '그건 예술이었어요.']],
+    lucky: [['Glück gehabt.', '운이 좋았네요.'], ['Das war kein Plan, das war Glück.', '그건 계획이 아니라 운이었어요.']],
+    gift: [['Den hätten Sie treffen müssen.', '그건 넣었어야 했어요.'], ['Danke. Ich übernehme.', '고마워요. 제가 이어받죠.']] },
+  elijah: {
+    wow: [['Okay, okay. I’ll give you that one.', '그래, 그래. 그건 인정해 줄게.'], ['Huh. Didn’t see that coming. Nice.', '흠. 그건 예상 못 했네. 멋져.']],
+    lucky: [['Lucky. Don’t get used to it.', '운이야. 익숙해지지 마.'], ['The table likes you today, partner.', '오늘은 테이블이 널 좋아하나 봐, 친구.']],
+    gift: [['Thanks, partner. I’ll take it from here.', '고마워, 친구. 여기서부턴 내가 할게.'], ['That one was a gimme.', '그건 거저먹는 공이었는데.']] },
+};
+for (const id in BOT_REACT) if (BOT_LINES[id]) Object.assign(BOT_LINES[id][0], BOT_REACT[id]);

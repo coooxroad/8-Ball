@@ -23,6 +23,8 @@ sh web/build.sh           # 페이지 만들기 → app/src/main/assets/
 node web/tools/check.js   # 만든 페이지 검사: 문법, 이름 겹침, content/ 항목, 그림 파일, id 중복
 # 규칙·물리·컴퓨터·레슨·퍼즐·경제(web/*.js, web/ai/, web/content/)를 고쳤을 때 (5분쯤)
 node web/test/run.js
+# 샷 심판(web/ai/60-judge.js)이나 물리를 고쳤을 때 (1분쯤): 정해 둔 배치의 등급, 포켓 확률 계산 대 물리
+node web/test/judge.js
 # 서버를 고쳤을 때
 cd server && npm test
 # 브라우저 검사 - CI가 돌린다. 로컬에선 CI가 실패한 걸 볼 때만 (이 컨테이너는 GPU가 없어 몇 분~십여 분)
@@ -161,9 +163,15 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     같은 크기로 그리고, 기울어진 책상(`#deskPlane` 기울기)을 거꾸로 펴서(`botAnamorph`) 보는 사람에게 바로 서 보이게. 다른 봇 자리를 이어받은 봇은 `was`(옛 id의 승리를 그대로 셈 — `botWon`).
     경기 중 봇은 말풍선으로 말한다(`botTalk`, 이모티콘 대신): 대사는 `app/34-bot-lines.js` `BOT_LINES[id][관계 단계][순간]`에
     미리 써 둠(원어 + 한국어, 단계 0만 있음 — 단계를 더하면 없는 순간은 0으로 돌아감). 순간: hello·think·score·miss·nice·oops·win·lose.
-- 게임 리뷰(`app/50-review.js`): 이 기기 사람의 샷마다 Worker에서 강한 리뷰어가 같은 배치를 다시 찾아(`ai/50-human.js` `humanReview`,
-  `ai-worker.js`의 `job.review`) 6단계(예술입니다·환상적입니다·좋습니다·무난합니다·아쉽습니다·실수입니다)와 예술 점수·실용성을 매김.
-  결과 슬레이트에 등급별 개수·평균, '샷별 리뷰' 시트(누르면 그 샷 다시 보기).
+- 게임 리뷰(`app/50-review.js`, 말은 `app/50-review-words.js`): 두 사람의 모든 샷(관전·풀 브레이크 빼고)을 리뷰 전용 Worker에서
+  샷 심판(`ai/60-judge.js` `judgeShot`, 아래)이 매김 — 5등급(예술·좋음·무난·아쉬움·실수, 예술은 연보라)과 요행 딱지. 점수(예술·실용성)는
+  안에서만 쓰고 숫자로 내보이지 않는다(소유자 11-17). 결과 슬레이트: 등급별 개수(나 · 상대)·샷 성공률·경기력(`REVIEW_PERF`), '게임 리뷰'
+  버튼(한 판 더 위) → 트레이가 당구대(샷 다시 보기, 더 좋은 샷은 보라 점선), 슬레이트가 코치(통계 → 리뷰 시작 → 샷 목록·해설).
+  봇은 내 샷의 등급에 대사로 답한다(`botTalk.graded`, `BOT_REACT`: wow·lucky·gift), 한 판에 같은 말은 한 번만.
+- 샷 심판(`ai/60-judge.js`): 고정된 기준 손(`JUDGE.SIG_*`, 초보 보정 없음)으로 샷이 될 확률을 잰다 — 포켓은 기하로 계산(물리에 맞춘
+  식, `test/judge.js`가 대조), 캐롬은 조준을 쓸어 창을 찾음. 자리 가치 = 다음 샷 상위 3개(1 : 0.33 : 0.15). 등급은 최선의 기대값 B와
+  실제 결과 A의 차(B − A); 예술 = 어려운 길(`JUDGE.HARD`)을 노린 대로 넣고 다음 자리가 좋을 때. 의도 = 친 것에서 가장 가까운 성공(조준 →
+  세기 → 당점 순), 빗나간 이유(얇게·두껍게·약하게·세게·당점). 등급 분포·경기력 표는 `node web/tools/judge-games.js <종목> <레이팅들>`.
 - 이모티콘: 칸은 6개 그대로, 같은 순간이라도 가끔(약 1/6) 같은 분위기의 다른 얼굴(`EMOTE_ALT`; 서버 `ranked.js` `EMOTES`도 같은 id).
 - 책상은 무엇이 바뀌든 통째로 다시 칠한다(`deskPaint`). 대신 레일·머리·발·슬레이트에서 **전과 똑같이 칠해진 부분은 예전 노드를
   그대로 둔다**(`deskReuse`: 다시 그릴 게 없어 폰에서 책상 일부가 끊겨 보이던 것 — 11-16). 그래서 버튼 처리기는 `el()`의 `onclick`

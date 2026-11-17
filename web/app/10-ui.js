@@ -54,6 +54,7 @@ function show(screen) {
   // the desk's bar along the top, and on the home screen its leaning plane
   $('#deskBar').hidden = !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !home;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
+  if (screen !== 'result' && typeof review !== 'undefined') review.close(true);
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)

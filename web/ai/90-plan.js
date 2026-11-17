@@ -6,11 +6,8 @@
     if (persona && typeof humanPlan === 'function') return humanPlan(persona);
     return g.mode.table === 'carom' ? aiCarom() : aiPool();
   }
-  // the game review's strong player (50-human.js humanReview): the same one every time
-  let reviewer = null;
-  function review(played) {
-    if (!reviewer) { let h = 20261117; reviewer = personaFor(2300, () => ((h = (Math.imul(h, 1664525) + 1013904223) >>> 0) / 4294967296), { style: 'position', personality: 'calm' }, true); reviewer.name = '리뷰'; }
-    return typeof humanPlan === 'function' ? humanPlan(reviewer, played) : null;
-  }
+  // the game review: one shot judged (60-judge.js) - the reference hand, the same for everyone
+  const review = played => judgeShot(played);
   // The lobby opts into v3 using the rating it will display and settle the match against.
-  return { plan, review, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };
+  // (judgeKit: the judge's parts, for the tests and the tuning tools - web/test/judge.js)
+  return { plan, review, judgeKit: { JUDGE, potLines, caromLines, leaveOf, judgeView, judgeSim, winChance }, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };

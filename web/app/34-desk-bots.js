@@ -243,9 +243,12 @@ const botTalk = {
   at: 0, said: '',
   bot() { const c = match.ctx; return flow === match && c && c.bot && !c.online ? botById(c.bot.bot) : null; },
   chat() { const c = match.ctx, p = c && c.bot && c.bot.personality || {}; return 0.3 + (p.taunt || 0) * 0.45 + (p.tempo || 0) * 0.15 - (p.hesitation || 0) * 0.1; },
+  // (owner 11-17: 'it keeps saying the same things' - a line said once is not said again in the same game: a bot with
+  // nothing new to say for a moment keeps quiet, which makes what it does say worth waiting for)
+  used: new Set(),
   line(b, moment) {
-    const L = botLines(b, moment).filter(x => x[0] !== botTalk.said), pick = L[Math.floor(Math.random() * L.length)];
-    if (pick) botTalk.said = pick[0]; return pick || null;
+    const L = botLines(b, moment).filter(x => !botTalk.used.has(x[0])), pick = L[Math.floor(Math.random() * L.length)];
+    if (pick) { botTalk.said = pick[0]; botTalk.used.add(pick[0]); } return pick || null;
   },
   // moment: as BOT_LINES; chance: of speaking at all, before its personality; delay: after the moment, seconds
   say(moment, chance = 1, delay = 0.5) {
@@ -270,12 +273,25 @@ const botTalk = {
     if (!botTalk.bot() || game.over) return;
     const good = !!(r && !r.foul && (r.keep || r.pts > 0));
     if (by === 1) botTalk.say(good ? 'score' : 'miss', good ? 0.5 : 0.6);
+    // (the player's shot: answered by its grade when the review's verdict comes - graded, below; without a review, by
+    // what happened)
+    else if (reviewWorker()) return;
     else if (good) botTalk.say('nice', score >= 20 ? 0.95 : 0.3);
     else botTalk.say('oops', r && r.foul ? 0.75 : 0.4);
   },
+  /* (owner 11-17 night: the bot answers the player's shot by how good it was - review.heard) 예술: it cannot help
+     itself; 요행: it says so; 실수: a gift, taken; a good one, a plain miss: now and then; a plain shot: nothing */
+  graded(r) {
+    if (!botTalk.bot() || game.over) return;
+    if (r.fluke && r.made) return botTalk.say('lucky', 0.85, 0.2);
+    if (r.grade === 0) return botTalk.say('wow', 1, 0.2);
+    if (r.grade === 4) return botTalk.say('gift', 0.65, 0.2);
+    if (r.grade === 1 && r.made) return botTalk.say('nice', 0.3, 0.2);
+    if (r.grade === 3) return botTalk.say('oops', 0.3, 0.2);
+  },
   // the end of the game: what it says, for the result's slate
   last(won) { const b = botTalk.bot(); return b ? botTalk.line(b, won ? 'win' : 'lose') : null; },
-  clear() { const old = $('#botBub'); if (old) old.remove(); },
+  clear() { const old = $('#botBub'); if (old) old.remove(); botTalk.used.clear(); },
 };
 /* Where each painting's face is, so all are shown alike (botArt): [centre x, centre y, height from hairline to chin], as
    parts of the picture's width and height - read off the pictures (owner 11-17: Priya looked far smaller than Ingrid). A new

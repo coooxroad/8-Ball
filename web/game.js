@@ -689,7 +689,7 @@ function createGame(PH, makeAI) {
 
   // the computer player is ai/ (createAI): given, it answers g.aiPlan()
   // (aiPersona: a person-like opponent made at a rating, its personality and style named or drawn - ai/51-people.js; 훈련's bots)
-  if (makeAI) { const ai = makeAI(g); g.aiPlan = ai.plan; g.aiPersona = ai.rankedPersonaFor; g.aiReview = ai.review; }
+  if (makeAI) { const ai = makeAI(g); g.aiPlan = ai.plan; g.aiPersona = ai.rankedPersonaFor; g.aiReview = ai.review; g.aiJudge = ai.judgeKit; }
 
   g.serialize = () => ({
     v: 2, modeId: g.modeId, balls: g.world.balls.map(b => [b.x, b.y, b.on ? 1 : 0, b.q.slice()]), cue: g.world.cue,

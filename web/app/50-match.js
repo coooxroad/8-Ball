@@ -141,7 +141,7 @@ const match = {
     // (컴퓨터 대전: the bot's last word, in its language with the Korean under it)
     { const said = match.ctx.bot && !on && !draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
       if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }   // (copy audit 07-08: only an end the score does not explain)
-    review.finishing = true; review.paint(); review.finishing = false;
+    review.close(true); review.finishing = true; review.paint(); review.finishing = false;
     show('result'); SND.win();
     MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     for (const [cv, q] of pics) drawShot(cv, q);

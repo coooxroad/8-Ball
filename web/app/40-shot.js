@@ -132,12 +132,13 @@ function paintBadge(name, b) {
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
 
 // A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.
+// a ball's colour on the little tables (the highlights, the review's table)
+const shotColour = (i, cue) => game.mode.table === 'carom' ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i < 2 && game.yellow === 0 ? 1 - i : i] : i === cue ? '#ffffff' : game.mode.table === 'snooker' ? SNOOKER.css(i) : ballCss(game.faceOf(i));
 function drawShot(cv, shot) {
   const dpr = Math.min(3, window.devicePixelRatio || 1), cw = cv.clientWidth, ch = cv.clientHeight; if (!cw || !ch) return;
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const g = cv.getContext('2d'), P = game.P, pad = 5 * dpr, k = Math.min((cv.width - 2 * pad) / (2 * P.HL), (cv.height - 2 * pad) / (2 * P.HW));
-  const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k, carom = game.mode.table === 'carom';
-  const colOf = i => carom ? ['#ffffff', '#ffd23c', '#ff4d43', '#ff4d43'][i < 2 && game.yellow === 0 ? 1 - i : i] : i === shot.snap.cue ? '#ffffff' : game.mode.table === 'snooker' ? SNOOKER.css(i) : ballCss(game.faceOf(i));
+  const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k, colOf = i => shotColour(i, shot.snap.cue);
   g.fillStyle = hex(CLOTHS[prefs.cloth].felt); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * dpr;
   g.fillRect(0, 0, cv.width, cv.height);                             // (the cloth right up to the little table's frame)
   g.beginPath(); g.rect(X(-P.HL), Y(P.HW), 2 * P.HL * k, 2 * P.HW * k); g.fill(); g.stroke();
