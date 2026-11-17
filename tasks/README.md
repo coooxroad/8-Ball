@@ -7,6 +7,7 @@
 |---|---|---|
 | `gpt-skins.md` | 스킨(큐·공·테이블·트레일·장갑) 추가, 스킨별 소리 | `web/content/`, `web/ui/`, `web/tex/`, `web/sound/` |
 | `CUE-prompts-bots-art.md` | 그림(소유자가 GPT 이미지로): 봇 21명 그림, 그림체 g(유화 + 애니), 투명 배경 | `web/ui/bot-<id>.webp` (Claude가 넣음) |
+| `CUE-prompts-bots-art2.md` | 그림 2차(11-17): 다시 그릴 8명(하늘·루이자·린·누르·프리야·루카스·한결 + 남자가 된 카를로스)과 없던 호세·프레데리크. 얼굴 생김새·포즈를 사람마다 정하고, 얼굴 크기·위치를 고정 | `web/ui/bot-<id>.webp`, 받으면 `BOT_FRAME` 줄 갱신 |
 | `CUE-prompts-style-test.md` | 그림(소유자가 GPT 이미지로): 봇 그림체 고르기 — 한 인물을 6가지 그림체로 | 고른 그림체로 봇 프롬프트를 다시 씀 |
 | `CUE-prompts-bots-props.md` | 그림(소유자가 GPT 이미지로): 봇 초상 15장, 메뉴의 수건·식물 고해상도 — zip으로 Claude에게 | `web/ui/` (Claude가 넣음) |
 | `gpt-assets-3.md` | 소리 묶음 3: 통기타·플루트·크리스탈·농구공 타격음 (당구드롭 효과음은 필요 없어졌다) | `web/sound/` |

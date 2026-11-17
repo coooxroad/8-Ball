@@ -90,11 +90,11 @@
 .bot-row h3{margin:0 0 8px 2px;font:800 15px var(--ui-font);letter-spacing:.04em;color:rgba(255,255,255,.72)}
 .bot-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 /* (owner 11-17) the painting of the bot picked on the tray's left, behind the cards; the cards keep to the right of it */
-#dkStage .bot-art{position:absolute;left:0;top:0;width:50%;height:100%;z-index:0;pointer-events:none;border-radius:inherit;
-  -webkit-mask-image:linear-gradient(90deg,#000 62%,transparent);mask-image:linear-gradient(90deg,#000 62%,transparent)}
+#dkStage .bot-art{position:absolute;left:0;top:0;width:56%;height:100%;z-index:0;pointer-events:none;border-radius:inherit;
+  -webkit-mask-image:linear-gradient(90deg,#000 66%,transparent 92%);mask-image:linear-gradient(90deg,#000 66%,transparent 92%)}
 #dkStage .bot-tray{z-index:1}
-#dkStage .bot-tray.with-art{padding-left:31%}
-#dkStage .bot-tray.with-art .bot-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+#dkStage .bot-tray.with-art{padding-left:41%}   /* (the painting keeps the left two fifths to itself - owner 11-17) */
+#dkStage .bot-tray.with-art .bot-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
 /* a card of its tier's metal (owner 11-17: lines drawn on a colour are not metal) - a plate rendered with three.js
    (tools/bot-plates.cjs: brushed, bevelled, the light sweeping across it), the bot's face, its name, flag and rating; a little
    taller than wide. The light runs across it now and then (each card on its own beat, --i), with the motion on. */
@@ -142,8 +142,9 @@
 .bot-cur{display:flex;gap:14px;align-items:center}
 .bot-id{display:flex;flex-direction:column;gap:6px;min-width:0}
 .bot-nm{display:flex;align-items:center;gap:9px}
-.bot-nm b{font:800 28px/1.1 var(--ui-font);color:var(--slate-ink,#f1ebe0)}
-.bot-nm .flag{width:30px;height:20px}
+.bot-nm b{font:800 clamp(19px,2.2vw,28px)/1.1 var(--ui-font);color:var(--slate-ink,#f1ebe0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bot-nm b.long{font-size:clamp(17px,1.75vw,23px);text-overflow:clip}
+.bot-nm .flag{flex:none;width:30px;height:20px}
 .bot-rt{display:flex;align-items:center;gap:7px;font:700 16px var(--ui-font);color:#e3ddd1}
 .bot-rt em{font:700 12px var(--ui-font);font-style:normal;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:var(--slate-sub)}
 .bot-say{position:relative;margin-top:4px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08)}

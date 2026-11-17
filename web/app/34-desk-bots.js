@@ -20,17 +20,21 @@ const BOTS = [
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
     line: '一球一球、心を込めて。', ko: '한 공 한 공, 마음을 담아서.', bio: '도쿄 동네 당구장 사장님 딸. 매일 밀어치기만 연습한다.' },
-  { id: 'camila', name: '카밀라', from: 'co', lang: 'es', rating: 700, personality: 'impatient', style: 'power', pic: true, was: 'carlos',
+  { id: 'carlos', name: '카를로스', from: 'co', lang: 'es', rating: 700, personality: 'impatient', style: 'power', was: 'camila',
     line: '¡Si no entra, que por lo menos suene!', ko: '안 들어가면 소리라도 크게 나야지!', bio: '메데인의 오토바이 정비공. 힘 조절은 아직 공부 중.' },
   { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'showman', pic: true,
     line: 'Quem joga com alegria nunca perde de verdade.', ko: '즐겁게 치는 사람은 진짜로 지는 법이 없어.', bio: '리우데자네이루의 삼바 강사. 샷마다 스텝을 밟는다.' },
-  { id: 'linh', name: '린', from: 'vn', lang: 'vi', rating: 850, personality: 'fidgety', style: 'spinner', pic: true,
+  { id: 'ploy', name: '플로이', from: 'th', lang: 'th', rating: 820, personality: 'playful', style: 'follow', pic: true,
+    line: 'สนุกไว้ก่อน แล้วลูกจะลงเอง', ko: '일단 즐기면, 공은 알아서 들어가.', bio: '방콕의 디저트 카페 사장. 분홍 머리는 가게 마카롱 색.' },
+  { id: 'linh', name: '린', from: 'vn', lang: 'vi', rating: 900, personality: 'fidgety', style: 'spinner', pic: true,
     line: 'Đường thẳng thì ai cũng đi được.', ko: '곧은 길은 누구나 갈 수 있죠.', bio: '하노이의 대학생. 회전 거는 게 제일 신난다.' },
-  { id: 'sofia', name: '소피아', from: 'gr', lang: 'el', rating: 950, personality: 'calm', style: 'balanced', pic: true,
+  { id: 'sofia', name: '소피아', from: 'gr', lang: 'el', rating: 980, personality: 'calm', style: 'balanced', pic: true,
     line: 'Η θάλασσα δεν βιάζεται ποτέ.', ko: '바다는 절대 서두르지 않아.', bio: '아테네의 해양생물학자. 파도 소리를 들으며 연습한다.' },
   { id: 'sean', name: '숀', from: 'ie', lang: 'en', rating: 1050, personality: 'calm', style: 'defensive', pic: true,
     line: 'The man who leaves nothing wins the night.', ko: '아무것도 안 남기는 사람이 그날 밤을 이기지.', bio: '더블린 펍의 단골. 상대에게 쉬운 공을 남긴 적이 없다.' },
-  { id: 'emre', name: '엠레', from: 'tr', lang: 'tr', rating: 1150, personality: 'calm', style: 'gather', pic: true,
+  { id: 'meilin', name: '메이린', from: 'cn', lang: 'zh', rating: 1120, personality: 'calm', style: 'position', pic: true,
+    line: '心静，球自然就稳了。', ko: '마음이 고요하면, 공도 저절로 안정돼요.', bio: '상하이의 고전무용 강사. 큐를 들면 춤추듯 움직인다.' },
+  { id: 'emre', name: '엠레', from: 'tr', lang: 'tr', rating: 1180, personality: 'calm', style: 'gather', pic: true,
     line: 'Toplar bir araya gelirse oyun kendiliğinden akar.', ko: '공이 모이면 경기는 저절로 흘러가요.', bio: '이스탄불 찻집 겸 당구장 주인. 차 한 잔 마시고 친다.' },
   { id: 'nour', name: '누르', from: 'eg', lang: 'ar', rating: 1250, personality: 'meticulous', style: 'banker', pic: true,
     line: 'الكوشة الصح بتوصلك لأي مكان.', ko: '맞는 쿠션 하나면 어디든 갈 수 있어.', bio: '카이로의 쓰리쿠션 선수. 할아버지에게 배운 시스템을 외운다.' },
@@ -62,7 +66,8 @@ const BOTS = [
    thing of their own (glasses, a beard, a cap...). [background, skin, hair colour, hair, clothes, extra] */
 const BOT_FACE = {
   haneul: ['#7cc6a8', '#f3c9a8', '#8a6a52', 'wavy', '#3b5d40', 'clip'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
-  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], camila: ['#f2c14e', '#b97d55', '#1e1612', 'curly', '#3f5f8c', 'bandana'],
+  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], carlos: ['#f2c14e', '#b97d55', '#1e1612', 'curly', '#3f5f8c', 'bandana tache'],
+  ploy: ['#f6b3cf', '#f1c9a5', '#f08cb8', 'long', '#fbf3f6', 'bow2'], meilin: ['#e7a0a0', '#f4d3bd', '#1d2a4a', 'bun', '#b8242c', ''],
   luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], linh: ['#f2a6b8', '#f1c8a6', '#141216', 'pony', '#efe4cc', ''],
   sofia: ['#8ec5e8', '#e2b38e', '#2a1d16', 'crown', '#2c3e5c', ''], sean: ['#8fbf6a', '#f2c6a5', '#b5562a', 'short', '#7a5a3a', 'cap beard'],
   emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], nour: ['#e7b26a', '#c88f68', '#1e1612', 'long', '#5b6234', ''],
@@ -101,6 +106,7 @@ function botAvatar(b) {
     + (has('bandana') ? '<path d="M14.4 17.4Q24 9.6 33.6 17.4L33 14.4Q24 7.4 15 14.4Z" fill="#c8202a"/>' : '')
     + (has('cap') ? `<path d="M13.6 18.6Q14 10.4 24 10.2Q34 10.4 34.4 18.6Q24 15.8 13.6 18.6Z" fill="#5a4a38"/><path d="M13 18.8Q24 15.6 35 18.8L34.6 20Q24 17.6 13.4 20Z" fill="#3e3226"/>` : '')
     + (has('beret') ? '<ellipse cx="22.4" cy="12.6" rx="11" ry="4.6" fill="#2a2430" transform="rotate(-10 22.4 12.6)"/><circle cx="21" cy="8" r="1.2" fill="#2a2430"/>' : '')
+    + (has('bow2') ? '<path d="M28.4 12.2l3.4-2.6.4 4.4zm3.8 1.8l3.8 1.8-3.8 1.8z" fill="#ff6aa2"/>' : '')
     + (has('clip') ? '<rect x="27.4" y="13.4" width="5" height="1.8" rx=".9" fill="#ffd166" transform="rotate(-24 29.9 14.3)"/>' : '')
     + '<circle cx="20.4" cy="23.6" r="1.35" fill="#231d19"/><circle cx="27.6" cy="23.6" r="1.35" fill="#231d19"/>'
     + (has('glasses') ? '<g fill="none" stroke="#2a2420" stroke-width="1"><circle cx="20.4" cy="23.6" r="2.9"/><circle cx="27.6" cy="23.6" r="2.9"/><path d="M23.3 23.4h1.4"/></g>' : '')
@@ -134,19 +140,24 @@ const BOT_FLAGS = (() => {
     in: `${bars('h', ['#ff9933', '#fff', '#138808'])}<circle cx="30" cy="20" r="5" fill="none" stroke="#000080" stroke-width="1.2"/><circle cx="30" cy="20" r="1" fill="#000080"/>`,
     se: `<rect width="60" height="40" fill="#006aa7"/><rect x="17" width="7" height="40" fill="#fecc00"/><rect y="16.5" width="60" height="7" fill="#fecc00"/>`,
     at: bars('h', ['#c8102e', '#fff', '#c8102e']),
+    cn: `<rect width="60" height="40" fill="#de2910"/><path d="M10 6l1.8 5.5h5.8l-4.7 3.4 1.8 5.5-4.7-3.4-4.7 3.4 1.8-5.5-4.7-3.4h5.8z" fill="#ffde00"/>${[[20, 4], [24, 8], [24, 14], [20, 18]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#ffde00"/>`).join('')}`,
+    th: bars('h', ['#a51931', '#f4f5f8', '#2d2a4a', '#2d2a4a', '#f4f5f8', '#a51931']),
     gb: `<rect width="60" height="40" fill="#012169"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#c8102e" stroke-width="2.6"/><path d="M30 0v40M0 20h60" stroke="#fff" stroke-width="12"/><path d="M30 0v40M0 20h60" stroke="#c8102e" stroke-width="7"/>`,
   };
   const out = {}; for (const k in F) out[k] = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">${F[k]}</svg>`);
   return out;
 })();
-const BOT_COUNTRY = { br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
+const BOT_COUNTRY = { cn: '중국', th: '태국', br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
 const botFlag = b => el('img', { class: 'flag', src: BOT_FLAGS[b.from], alt: BOT_COUNTRY[b.from] || '', title: BOT_COUNTRY[b.from] || '' });
 const botById = id => BOTS.find(b => b.id === id);
 const botTier = b => TIERS[Math.min(TIERS.length - 1, tierOf(b.rating))];
 // open: the first two, one whose bot before it is beaten, or one at or under the player's own rating
+/* (owner 11-17: a beginner should meet a pretty opponent from the start) 브론즈 and 실버 all open; from 골드 to 프로 the
+   lowest-rated of each tier open; the rest when the one before is beaten or the player's rating has reached it */
 function botOpen(b) {
-  const i = BOTS.indexOf(b), mine = net.me && net.me.dama != null ? net.me.dama : 0;
-  return i < 2 || botWon(BOTS[i - 1]) || b.rating <= mine;
+  const i = BOTS.indexOf(b), mine = net.me && net.me.dama != null ? net.me.dama : 0, t = tierOf(b.rating);
+  if (t <= 1 || BOTS.filter(x => tierOf(x.rating) === t).every(x => x.rating >= b.rating)) return true;
+  return botWon(BOTS[i - 1]) || b.rating <= mine;
 }
 // beaten (a bot that took over an old one's place - was - counts the old one's win: prefs.botBeat keeps ids)
 const botWon = b => { const w = prefs.botBeat || {}; return !!(w[b.id] || b.was && w[b.was]); };
@@ -198,7 +209,7 @@ function botTray(stage) {
 function botInfo() {
   const b = botNow(), [, tierName] = botTier(b), me = botPersona(b), foreign = b.lang !== 'ko';
   return [el('div', { class: 'bot-cur' }, [botPic(b, true), el('div', { class: 'bot-id' }, [
-      el('div', { class: 'bot-nm' }, [el('b', { text: b.name }), botFlag(b)]),
+      el('div', { class: 'bot-nm' }, [el('b', { class: b.name.length >= 4 ? 'long' : null, text: b.name }), botFlag(b)]),
       el('span', { class: 'bot-rt' }, [el('em', { text: tierName }), document.createTextNode(String(b.rating))])])]),
     el('div', { class: 'bot-say' }, [el('p', { lang: b.lang, text: b.line }), foreign && b.ko ? el('small', { text: b.ko }) : null]),
     el('div', { class: 'bot-tags' }, [me ? el('span', { text: me.style.name.replace(/파$/, '') }) : null, me ? el('span', { text: me.personality.name }) : null,
@@ -252,6 +263,35 @@ const botTalk = {
   last(won) { const b = botTalk.bot(); return b ? botTalk.line(b, won ? 'win' : 'lose') : null; },
   clear() { const old = $('#botBub'); if (old) old.remove(); },
 };
+/* Where each painting's face is, so all are shown alike (botArt): [centre x, centre y, height from hairline to chin], as
+   parts of the picture's width and height - read off the pictures (owner 11-17: Priya looked far smaller than Ingrid). A new
+   picture without a line here is taken as the prompts ask for it (tasks/CUE-prompts-bots-art.md): [0.5, 0.15, 0.14]. */
+const BOT_FRAME = {
+  ana: [0.62, 0.15, 0.14], emre: [0.47, 0.11, 0.15], femke: [0.53, 0.12, 0.13], haneul: [0.48, 0.13, 0.14], hangyeol: [0.54, 0.13, 0.15],
+  ingrid: [0.36, 0.15, 0.15], jack: [0.43, 0.12, 0.14], lea: [0.48, 0.17, 0.14], lena: [0.4, 0.14, 0.13], linh: [0.42, 0.16, 0.15],
+  luiza: [0.4, 0.14, 0.14], lukas: [0.4, 0.12, 0.14], marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14], nour: [0.43, 0.18, 0.13],
+  ploy: [0.33, 0.16, 0.14], priya: [0.5, 0.12, 0.11], sean: [0.42, 0.15, 0.14], sofia: [0.42, 0.15, 0.13], yuki: [0.38, 0.15, 0.14],
+};
+/* (owner 11-17: shown on the desk as it leans back - 'like the old painters') The desk plane is tilted away from the eye
+   (#deskPlane: perspective --pp, rotateX --tilt, about its bottom edge), so a picture lying on it is squashed and its top
+   narrowed. As a painter does for a picture seen at an angle, the painting is drawn stretched against that - each row
+   moved and widened by what the tilt will take from it - so that from where the player looks it stands as painted.
+   (No tilt - a flat desk -: drawn as it is.) */
+function botAnamorph(cv, flat, dpr) {
+  const app = $('#app'), plane = $('#deskPlane');
+  const th = parseFloat(app.style.getPropertyValue('--tilt')) || 0, P = parseFloat(app.style.getPropertyValue('--pp')) || 2300;
+  if (!app.classList.contains('tilt') || !plane || !th) return flat;
+  let top = 0; for (let e = cv; e && e !== plane; e = e.offsetParent) top += e.offsetTop;
+  const W = flat.width, H = flat.height, Hc = H / dpr, hB = plane.offsetHeight - (top + Hc), sin = Math.sin(th), cos = Math.cos(th);
+  const f = h => P / (P + h * sin), Y = h => h * cos * f(h);            // (a point h above the plane's foot: its scale, its height on the screen)
+  const YB = Y(hB), YT = Y(hB + Hc), fRef = f(hB + Hc * 0.35);         // (kept true at the face's height)
+  const out = document.createElement('canvas'); out.width = W; out.height = H; const g = out.getContext('2d');
+  for (let i = 0; i < H; i += 2) {
+    const r = h => H * (YT - Y(h)) / (YT - YB), h0 = hB + Hc - i / dpr, h1 = hB + Hc - (i + 2) / dpr, r0 = r(h0), r1 = r(h1), sw = W * f(h0) / fRef;
+    g.drawImage(flat, (W - sw) / 2, r0, sw, Math.max(0.5, r1 - r0), 0, i, W, 2);
+  }
+  return out;
+}
 /* The bot picked, painted (style g), standing on the tray's left behind the cards on its backdrop (the dark desk's green
    painting, the light one's blue), painting itself in: brush strokes laid one after another, each showing the picture
    under it, from the bottom up - as if being painted. Drawn on a canvas; the same bot again is not painted twice. */
@@ -268,10 +308,14 @@ function botArt(b) {
     cv.width = W; cv.height = H; const g = cv.getContext('2d');
     const paint = g2 => {
       const bs = Math.max(W, H); g2.drawImage(back, (W - bs) / 2, (H - bs) / 2, bs, bs);
-      // (the figure a little wider than the place, its face high up; under it the backdrop - its own lower edge is brush strokes)
-      const s = Math.min(W * 1.18 / fig.width, H * 0.9 / fig.height), fw = fig.width * s, fh = fig.height * s; g2.drawImage(fig, (W - fw) / 2 - W * 0.04, Math.max(H * 0.03, H - fh - H * 0.2), fw, fh);
+      /* (owner 11-17: everyone the same size, placed as a portrait painter would) each picture's face - BOT_FRAME: where its
+         centre is and how tall it is, as parts of the picture - drawn at one height, its centre on the upper third, a little
+         in the middle of the part the cards leave free; the rest of the figure falls where it falls */
+      const [fx, fy, fh0] = BOT_FRAME[b.id] || [0.5, 0.15, 0.14], ih = H * 0.105 / fh0, iw = ih * fig.width / fig.height;
+      g2.drawImage(fig, W * 0.36 - fx * iw, H * 0.25 - fy * ih, iw, ih);
     };
-    const full = document.createElement('canvas'); full.width = W; full.height = H; paint(full.getContext('2d'));
+    const flat = document.createElement('canvas'); flat.width = W; flat.height = H; paint(flat.getContext('2d'));
+    const full = botAnamorph(cv, flat, dpr);
     if (again || matchMedia('(prefers-reduced-motion: reduce)').matches) { g.drawImage(full, 0, 0); return; }
     // the strokes: rows from the bottom up, each a few broad dabs across, a little askew
     const strokes = [], rows = 22, R = H / rows;

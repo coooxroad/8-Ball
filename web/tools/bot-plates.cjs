@@ -41,11 +41,11 @@ window.render = (color, rough, brush, tier) => {
   // the face's UVs over the plate (ExtrudeGeometry gives the shape's own x, y)
   const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + w / 2) / w, (uv.getY(i) + h / 2) / h);
   const mat = new THREE.MeshStandardMaterial({ color, metalness: 1, roughness: 1, metalnessMap: mr, roughnessMap: mr, normalMap: nm, normalScale: new THREE.Vector2(1, 1), envMap: env, envMapIntensity: 1.5 });
-  const plate = new THREE.Mesh(geo, mat); plate.rotation.set(-0.12, 0.16, 0); const sc = new THREE.Scene(); sc.add(plate);
+  const plate = new THREE.Mesh(geo, mat); plate.rotation.set(0, 0, 0); const sc = new THREE.Scene(); sc.add(plate);   // (square on: turned, its far side read as a dent - owner 11-17)
   // pro: a gold line inside the edge
   // (pro: its gold line is drawn over it by the card - 85-train.css)
   const key = new THREE.DirectionalLight(0xfff2e0, 1.2); key.position.set(3, 4, 3); sc.add(key); sc.add(new THREE.AmbientLight(0xffffff, 0.15));
-  const cam = new THREE.PerspectiveCamera(30, 300 / 420, 0.1, 20); cam.position.set(0, 0, 4.55); cam.lookAt(0, 0, 0);
+  const cam = new THREE.PerspectiveCamera(30, 300 / 420, 0.1, 20); cam.position.set(0, 0, 4.45); cam.lookAt(0, 0, 0);
   r.setClearColor(0x000000, 0); r.render(sc, cam); return c.toDataURL('image/png');
 };
 </script></body></html>`;

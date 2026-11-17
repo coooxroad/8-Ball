@@ -154,7 +154,9 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     그 아래 회색 번역, 플레이 스타일·성격, 소개). 봇은 `app/34-desk-bots.js` `BOTS`(id는 다시 쓰지 않음, `from` 국가 = `BOT_FLAGS`의
     SVG 국기, `lang` 말, `ko` 번역): 사람형 AI(`ai/51-people.js`)를 그 레이팅·성격·스타일로 만들어(`botPersona`, `game.aiPersona`)
     상대에 앉힌다. 이기면 다음 봇이 열림. 그림은 `ui/bot-<id>.webp`를 넣고 그 봇에 `pic: true`.
-    봇 21명(티어마다 3~5명, 트레이 줄 = 티어). 다른 봇 자리를 이어받은 봇은 `was`(옛 id의 승리를 그대로 셈 — `botWon`).
+    봇 23명(여 14 : 남 9 ≈ 3:2, 티어마다 3~5명, 트레이 줄 = 티어). 브론즈·실버는 처음부터 전부, 골드~프로는 티어마다 레이팅이 가장
+    낮은 한 명만 처음부터 열림(나머지는 앞 봇을 이기거나 레이팅이 닿으면, `botOpen`). 그림은 얼굴 위치·크기(`BOT_FRAME`)로 맞춰
+    같은 크기로 그리고, 기울어진 책상(`#deskPlane` 기울기)을 거꾸로 펴서(`botAnamorph`) 보는 사람에게 바로 서 보이게. 다른 봇 자리를 이어받은 봇은 `was`(옛 id의 승리를 그대로 셈 — `botWon`).
     경기 중 봇은 말풍선으로 말한다(`botTalk`, 이모티콘 대신): 대사는 `app/34-bot-lines.js` `BOT_LINES[id][관계 단계][순간]`에
     미리 써 둠(원어 + 한국어, 단계 0만 있음 — 단계를 더하면 없는 순간은 0으로 돌아감). 순간: hello·think·score·miss·nice·oops·win·lose.
 - 게임 리뷰(`app/50-review.js`): 이 기기 사람의 샷마다 Worker에서 강한 리뷰어가 같은 배치를 다시 찾아(`ai/50-human.js` `humanReview`,
