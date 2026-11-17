@@ -80,6 +80,7 @@ function layout() {
   scene.setDeskLight(tilt);                                          // the lamps move up and right, so shadows fall as the desk's do
   if (tilt) { deskLean(W, H, portrait); deskWindow(W, H, portrait); menuFit(); }
   else if (st.screen === 'reel') scene.setInsets({ t: H * 0.09, l: 0, r: 0, b: H * 0.09 }, true);
+  else if (st.screen === 'result' && review.on) scene.setInsets(review.insets(W, H), true);   // (the game review: the table alone, copied onto the tray)
   else scene.setInsets(playInsets(H, portrait));
   if (st.screen === 'play') { paintPowerCue(); requestAnimationFrame(drawDial); if (!$('#spinPop').hidden) { fitSpinPop(); setSpinUI(); setKindUI(); } }
   setPowerUI(st.power);

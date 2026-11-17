@@ -197,7 +197,7 @@
 #app.desk #result.rv .r-tray{overflow:hidden}
 #rvBoard{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px}
 #rvBoard[hidden]{display:none}
-#rvBoard canvas{display:block;box-sizing:border-box;border:26px solid transparent;border-image:url(ui/mini-table.webp) 40/26px stretch;filter:drop-shadow(-8px 12px 12px rgba(0,0,0,.45))}
+#rvBoard canvas{display:block;filter:drop-shadow(-8px 12px 14px rgba(0,0,0,.5))}
 #app.desk #result.rv .r-side>:not(#rvPanel){display:none}
 #rvPanel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;color:#f3eee3;overflow-y:auto;scrollbar-width:none}
 #rvPanel[hidden]{display:none}
@@ -252,7 +252,6 @@
 #app.desk.compact .rv-act{min-height:30px;padding:0 10px;font-size:12px}
 #app.desk.compact .rv-shots{flex:none;overflow:visible}
 #app.desk.compact .rv-shot{min-height:34px;font-size:12px}
-#app.desk.compact #rvBoard canvas{border-width:16px;border-image-width:16px}
 .rv-strip{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .rv-strip span{display:flex;align-items:center;justify-content:center;gap:3px}
 .rv-strip .rv-ico{width:18px;height:18px}

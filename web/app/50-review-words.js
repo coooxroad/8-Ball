@@ -14,7 +14,7 @@ function reviewWords(q) {
     3: ['아쉽습니다', '조금 아쉽습니다', '아쉬운 샷입니다'],
     4: ['실수입니다', '아까운 실수입니다', '실수가 나왔습니다'],
   }[r.grade]);
-  const say = [];
+  const say = []; review.saidBetter = false;
   // a foul first: what went wrong is the whole story
   if (r.foul) say.push(pick({
     scratch: ['수구가 포켓에 빠졌어요.', '수구까지 따라 들어갔어요.'],
@@ -38,12 +38,14 @@ function reviewWords(q) {
       tip: ['당점(회전)이 길을 틀었어요.', '회전이 공을 비껴가게 했어요.'], aim: ['조준이 조금 빗나갔어요.'],
     }[r.cause] || ['조금 빗나갔어요.'];
     say.push('길은 맞았는데 ' + pick(why));
-    say.push(easy ? pick(['넣어야 하는 공이었어요.', '쉬운 공이라 더 아까워요.']) : hard ? (b && b.easier && !b.same ? pick(['어려운 공을 골랐어요.', '굳이 어려운 길로 갔어요.']) : pick(['어려운 공이라 놓칠 수도 있어요.', '쉽지 않은 샷이었어요.'])) : '');
+    const chose = hard && b && b.easier && !b.same && !b.safety;
+    say.push(easy ? pick(['넣어야 하는 공이었어요.', '쉬운 공이라 더 아까워요.']) : chose ? pick([`더 쉬운 ${goal}을 두고 어려운 길을 골랐어요.`, `굳이 어려운 길로 갔어요. 더 확실한 ${goal}이 있었어요.`]) : hard ? pick(['어려운 공이라 놓칠 수도 있어요.', '쉽지 않은 샷이었어요.']) : '');
+    if (chose) review.saidBetter = true;
     if (r.grade <= 2 && r.leave < 0.3) say.push(pick(['그래도 상대에게 쉬운 공을 남기지 않았어요.', '다행히 상대에게 남긴 게 없어요.']));
   } else if (r.grade <= 1) say.push(pick(['상대에게 칠 공을 남기지 않았어요. 좋은 수비예요.', '수비로 충분했어요.']));
   else say.push(pick(['어떤 길을 노렸는지 알기 어려운 샷이에요.', `${carom ? '득점' : '넣을'} 길과는 거리가 있었어요.`]));
   // the better shot, and why it was better
-  if (b && !r.won) {
+  if (b && !r.won && !review.saidBetter) {
     if (b.safety) say.push(pick(['이 자리에선 수비가 나았어요.', '무리하기보다 상대에게 어려운 공을 남기는 게 좋았어요.']));
     else if (b.same) say.push(pick([`같은 ${carom ? '길' : '공'}이라도 세기와 회전을 바꾸면 다음 자리가 훨씬 좋아요.`, '같은 길, 다른 세기로 다음 공을 세울 수 있었어요.']));
     else if (b.easier) say.push(pick(['더 쉬운 길이 있었어요.', `더 확실한 ${goal}이 있었어요.`]));

@@ -150,6 +150,7 @@ function frame(now) {
     if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
     else if (st.phase === 'gather') { gatherTick(dt); animating = true; st.rev++; }
     else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
+    else if (st.phase === 'rvplay') { if (review.tick(dt)) animating = true; }
     else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
   }
   if (st.phase === 'aim') syncEl();
@@ -169,6 +170,7 @@ function frame(now) {
     covered: st.screen === 'home' && !deskTableShown(),
   }, dt);
   { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
+  if (drew && review.on) review.copy();                    // (the game review shows the live table on its tray: 50-review.js)
   drainFalls(); drainFx();
   if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
   prof.add('js', performance.now() - f0);

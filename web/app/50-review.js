@@ -114,11 +114,16 @@ const review = {
     if (!review.list.length) return;
     review.on = true; review.stage = 'stats'; review.pick = -1; review.ghost = false;
     $('#result').classList.add('rv'); $('#rvBoard').hidden = false; $('#rvPanel').hidden = false;
-    review.panel(); requestAnimationFrame(() => review.board(null));
+    // (the game's table as the game ended is kept, to be put back when the review closes)
+    review.keep = highlights.snapshot(game.world); st.phase = 'rvplay';
+    review.panel(); review.board(null); layout();
   },
   close(quiet) {
     if (!review.on && quiet) return;
     review.on = false; review.stop();
+    if (review.keep) { highlights.restore(game.world, review.keep); review.keep = null; scene.clearFalls(); }
+    if (st.phase === 'rvplay') st.phase = 'idle';
+    if (st.screen === 'result') layout();
     const r = $('#result'); if (r) r.classList.remove('rv');
     if ($('#rvBoard')) $('#rvBoard').hidden = true; if ($('#rvPanel')) $('#rvPanel').hidden = true;
   },
@@ -163,65 +168,82 @@ const review = {
     review.pick = i; review.ghost = false; review.panel(); review.board(review.list[i]);
   },
 
-  /* ---- the table on the tray: the shot played again from where the balls stood (its tape: highlights.record), the cue
-     ball's and the struck ball's lines drawn as they go; the better shot the same way, in the review's purple ---- */
-  raf: 0,
-  stop() { if (review.raf) cancelAnimationFrame(review.raf); review.raf = 0; },
+  /* ---- the table on the tray: the game's own table (owner 11-18: '인게임 당구대로') ----
+     The live 3D table, the one the game is played on, is under the result screen all along. While the review is open it
+     is framed alone in the screen from straight above (layout: review.insets), its balls put where the chosen shot found
+     them and run along the shot's tape (highlights.record; st.phase 'rvplay', review.tick from the frame loop), and every
+     frame it draws is copied into the tray's canvas (review.copy, right after the scene has drawn - a WebGL canvas can be
+     read only before the frame is shown). Over it, on the tray's canvas, the lines the balls have run so far - the better
+     shot's in the review's purple, dashed. Sound as in play. */
+  tp: null, T: 0, playing: false, run: null, keep: null,
+  insets(W, H) { const m = Math.round(Math.min(W, H) * 0.02); return { t: m, l: m, r: m, b: m, lie: H > W }; },
+  stop() { review.playing = false; review.tp = null; review.run = null; SND.rolling(0); },
   board(q) {
-    review.stop();
-    const cv = $('#rvBoard canvas'), box = $('#rvBoard'); if (!cv || !box) return;
-    // (the little table's frame is the highlights' - ui/mini-table.webp round the canvas, 50-result.css -; the canvas is the
-    // cloth, sized to the table's own proportions in the room the tray gives it)
-    const P = game.P, fr = $('#app').classList.contains('compact') ? 16 : 26, bw = box.clientWidth - 12, bh = box.clientHeight - 12; if (bw < 50 || bh < 50) return;
-    const sc = Math.min((bw - 2 * fr) / (2 * P.HL), (bh - 2 * fr) / (2 * P.HW));
-    cv.style.width = Math.round(2 * P.HL * sc + 2 * fr) + 'px'; cv.style.height = Math.round(2 * P.HW * sc + 2 * fr) + 'px';
-    const dpr = Math.min(2, window.devicePixelRatio || 1), cw = Math.round(2 * P.HL * sc), ch = Math.round(2 * P.HW * sc);
-    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
-    const g = cv.getContext('2d'), k = cv.width / (2 * P.HL);
-    const X = x => cv.width / 2 + x * k, Y = y => cv.height / 2 - y * k;
-    // (no shot chosen yet: the table as the first shot found it, standing still)
-    const base = q || review.list[0];
-    if (!base) return;
-    let shot = base;
+    review.stop(); scene.clearFalls();
+    const base = q || review.list[0]; if (!base) return;
+    let shot;
     if (q && review.ghost && q.res && q.res.better) {
       const b = q.res.better.shot, snap = JSON.parse(JSON.stringify(q.snap));
       if (b.pos) { snap.balls[snap.cue][0] = b.pos[0]; snap.balls[snap.cue][1] = b.pos[1]; }
       shot = { snap, aim: b.angle, V: b.V, a: b.a || 0, b: b.b || 0, el: b.el || 0, key: -1 };
     } else shot = Object.assign({}, base, { key: -1 });
-    let tape = null; try { tape = highlights.record(P, shot.snap.balls.length, shot); } catch (e) { tape = null; }
-    const colOf = i => shotColour(i, shot.snap.cue), ghost = !!(q && review.ghost && q.res && q.res.better);
-    // (the lines: the cue ball's first, then up to three of the balls it set moving)
+    highlights.restore(game.world, shot.snap); game.world.snd.length = 0;
+    // (no shot chosen yet: the table as the first shot found it, standing still)
+    if (!q) { scene.invalidate(); return; }
+    try { review.tp = highlights.record(game.P, shot.snap.balls.length, shot); } catch (e) { review.tp = null; }
+    if (!review.tp) return;
+    review.run = shot; review.ghostOn = !!(review.ghost && q.res && q.res.better); review.T = -0.45; review.playing = true;
     const ids = [shot.snap.cue, ...shot.snap.balls.map((_, i) => i).filter(i => i !== shot.snap.cue)];
-    const paths = tape && q ? ids.map(id => [id, highlights.path(tape, id)]).filter(x => x[1]).slice(0, 4) : [];
-    const a = [0, 0], dur = tape ? tape.dur : 0, t0 = performance.now() + 350;
-    const frame = now => {
-      const t = !q ? 0 : Math.max(0, Math.min(dur, (now - t0) / 1000));
-      // the cloth and its pockets (the wood is the frame round the canvas)
-      g.fillStyle = hex(CLOTHS[prefs.cloth].felt); g.fillRect(0, 0, cv.width, cv.height);
-      g.fillStyle = '#0b0b0d'; for (const p of P.POCKETS) { g.beginPath(); g.arc(X(p.x), Y(p.y), p.r * k * 0.8, 0, 6.3); g.fill(); }
-      // the lines so far
-      for (const [id, pts] of paths) {
-        g.beginPath(); let started = false;
-        for (let i = 0; i < pts.length; i += 3) { if (pts[i + 2] > t) break; if (started) g.lineTo(X(pts[i]), Y(pts[i + 1])); else { g.moveTo(X(pts[i]), Y(pts[i + 1])); started = true; } }
-        if (tape && q && highlights.at(tape, id, t, a) && started) g.lineTo(X(a[0]), Y(a[1]));
-        g.lineJoin = g.lineCap = 'round';
-        if (ghost) g.setLineDash([6 * dpr, 6 * dpr]); else g.setLineDash([]);
-        g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = 4 * dpr; g.stroke();
-        g.strokeStyle = ghost ? '#c9b2ff' : id === shot.snap.cue ? 'rgba(255,255,255,.9)' : colOf(id); g.lineWidth = 2.2 * dpr; g.stroke();
-      }
-      g.setLineDash([]);
-      // the balls where they are now
-      shot.snap.balls.forEach((b, i) => {
-        let x = b[0], y = b[1], on = !!b[2];
-        if (tape && q) { on = highlights.at(tape, i, t, a); x = a[0]; y = a[1]; }
-        if (!on) return;
-        const r = Math.max(3 * dpr, P.R * k);
-        g.beginPath(); g.arc(X(x) - r * 0.25, Y(y) + r * 0.35, r, 0, 6.3); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
-        g.beginPath(); g.arc(X(x), Y(y), r, 0, 6.3); g.fillStyle = colOf(i); g.fill();
-        g.beginPath(); g.arc(X(x) + r * 0.3, Y(y) - r * 0.35, r * 0.35, 0, 6.3); g.fillStyle = 'rgba(255,255,255,.45)'; g.fill();
-      });
-      if (q && t < dur) review.raf = requestAnimationFrame(frame); else review.raf = 0;
-    };
-    review.raf = requestAnimationFrame(frame);
+    review.paths = ids.map(id => [id, highlights.path(review.tp, id)]).filter(x => x[1]).slice(0, 4);
+    scene.invalidate();
+  },
+  // (the frame loop, phase 'rvplay') the tape run on at its own speed, its knocks and drops sounded as they come
+  tick(dt) {
+    if (!review.playing || !review.tp) return false;
+    const tp = review.tp, from = review.T; review.T += dt; if (review.T < 0) return true;
+    const T = Math.min(tp.dur, review.T);
+    for (const e of tp.events) if (e.time > from && e.time <= T) {
+      const pan = panOf(e.x, e.y);
+      if (e.t === 'pocket') { scene.fall(game.P, e); SND.drop('lip', Math.hypot(e.vx, e.vy), pan); }
+      else if (e.t === 'ball') SND.ball(e.v, pan);
+      else if (e.t === 'off') scene.fly(game.P, e);
+      else if (e.t === 'land') SND.ball(Math.min(1.2, e.v * 0.4), pan);
+      else SND.rail(e.v, pan);
+    }
+    const v = highlights.seek(game.world, tp, T); SND.rolling(Math.min(8, v));
+    if (review.T >= tp.dur) { review.playing = false; SND.rolling(0); }
+    return true;
+  },
+  // (the frame loop, after the scene drew) the table's part of the live canvas onto the tray, and the lines over it
+  copy() {
+    const cv = $('#rvBoard canvas'), box = $('#rvBoard'), gl = $('#gl'); if (!cv || !box || !gl || !review.on) return;
+    const W = app.clientWidth, H = app.clientHeight, rc = scene.tableRect(review.insets(W, H)); if (!rc.w || !rc.h) return;
+    const bw = box.clientWidth - 12, bh = box.clientHeight - 12; if (bw < 50 || bh < 50) return;
+    const sc = Math.min(bw / rc.w, bh / rc.h), cw = Math.round(rc.w * sc), ch = Math.round(rc.h * sc);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(cw * dpr) || cv.height !== Math.round(ch * dpr)) { cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; }
+    const g = cv.getContext('2d'), kx = gl.width / W, ky = gl.height / H;
+    g.clearRect(0, 0, cv.width, cv.height);
+    // (cut to the rails' rounded corners, so the room behind them stays out - its radius from the scene once per size)
+    const key = W + 'x' + H; if (review.rrKey !== key) { review.rrKey = key; review.rr = scene.tableOutline(review.insets(W, H)).r; }
+    const r = review.rr / rc.w * cv.width, w = cv.width, h = cv.height;
+    g.save(); g.beginPath(); g.moveTo(r, 0); g.arcTo(w, 0, w, h, r); g.arcTo(w, h, 0, h, r); g.arcTo(0, h, 0, 0, r); g.arcTo(0, 0, w, 0, r); g.closePath(); g.clip();
+    g.drawImage(gl, rc.x * kx, rc.y * ky, rc.w * kx, rc.h * ky, 0, 0, cv.width, cv.height);
+    g.restore();
+    // the lines run so far, from where the balls were struck to where they are now
+    if (!review.tp || !review.paths) return;
+    const t = Math.max(0, Math.min(review.tp.dur, review.T)), o = [0, 0], a = [0, 0], X = () => (o[0] - rc.x) / rc.w * cv.width, Y = () => (o[1] - rc.y) / rc.h * cv.height;
+    scene.proj.begin(); g.lineJoin = g.lineCap = 'round';
+    const ghost = review.ghostOn, z = game.P.R;
+    for (const [id, pts] of review.paths) {
+      g.beginPath(); let started = false;
+      for (let i = 0; i < pts.length; i += 3) { if (pts[i + 2] > t) break; scene.proj.at(pts[i], pts[i + 1], z, o); if (started) g.lineTo(X(), Y()); else { g.moveTo(X(), Y()); started = true; } }
+      if (started && highlights.at(review.tp, id, t, a)) { scene.proj.at(a[0], a[1], z, o); g.lineTo(X(), Y()); }
+      if (!started) continue;
+      g.setLineDash(ghost ? [6 * dpr, 6 * dpr] : []);
+      g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 4 * dpr; g.stroke();
+      g.strokeStyle = ghost ? '#c9b2ff' : id === review.run.snap.cue ? 'rgba(255,255,255,.85)' : shotColour(id, review.run.snap.cue); g.lineWidth = 2 * dpr; g.stroke();
+    }
+    g.setLineDash([]);
   },
 };
