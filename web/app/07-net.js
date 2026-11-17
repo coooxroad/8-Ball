@@ -119,7 +119,8 @@ const net = (() => {
   let laterT = 0, laterN = 0;
   function later() { clearTimeout(laterT); laterT = setTimeout(() => { laterN++; flush(); }, Math.min(60000, 4000 * Math.pow(1.6, laterN))); }
   // the 일반 things are everyone's; the rest are owned once bought (all of them, while there is no server)
-  const owns = (kind, id) => { const it = (KIND_OF[kind] ? KIND_OF[kind].list() : []).find(q => q.id === id); return !!it && (!SERVER || !(it.rarity > 0) || !!(me && me.owned[kind] && me.owned[kind].includes(id))); };
+  // (a debug item - content's debug: true - is had by an account in debug mode, and by no one else)
+  const owns = (kind, id) => { const it = (KIND_OF[kind] ? KIND_OF[kind].list() : []).find(q => q.id === id); if (it && it.debug) return !!(me && me.debug); return !!it && (!SERVER || !(it.rarity > 0) || !!(me && me.owned[kind] && me.owned[kind].includes(id))); };
   // who sits down in a game with others: the physics this app plays by, the name and what is worn (read at the time of asking)
   const seatOf = () => ({ phys: PHYS_V, name: prefs.names[0], icon: 0, gear: ranked.gear() });
   window.addEventListener('online', () => flush());

@@ -40,13 +40,14 @@ const BALLSKINS = [
   { id: 'planets', name: '행성', rarity: 4, note: '테이블 위의 태양계', pal: null,
     cue: 0xe2e0d8, yel: 0xf6c84a, red: 0xd65c34, dots: false, paint: 'planets', finish: { rough: 0.55, coat: 0.3 } },
   // the five-and-six panel ball
-  { id: 'soccer', name: '축구공', rarity: 1, note: '골대 대신 포켓으로', pal: null,
+  // (debug: true - owner 11-17: kept at its rarity, but only for an account in debug mode; nobody else sees it - 07-net.js owns)
+  { id: 'soccer', name: '축구공', rarity: 1, debug: true, note: '골대 대신 포켓으로', pal: null,
     cue: 0xf6f6f2, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'soccer', finish: { rough: 0.45, coat: 0.5 } },
   // cut crystal: each ball a gem in its colour, faceted, throwing rainbow light on the cloth (scene/35-paint.js, 57-comic.js)
   { id: 'crystal', name: '크리스탈', rarity: 3, vfx: true, note: '빛을 머금은 크리스탈', pal: null,
     cue: 0xd6e8fa, yel: 0xf6d24a, red: 0xe0405a, dots: false, paint: 'crystal', finish: { rough: 0.04, coat: 1, env: 1.8, crystal: { rim: 0.7, sparkle: 0.09, cut: 11, sticker: 1 }, spots: 'rainbow' } },
   // basketballs, each in its colour
-  { id: 'basketball', name: '농구공', rarity: 1, note: '포켓으로 슛', pal: null,
+  { id: 'basketball', name: '농구공', rarity: 1, debug: true, note: '포켓으로 슛', pal: null,
     cue: 0xf4f2ec, yel: 0xf2c21a, red: 0xd3241c, dots: false, paint: 'basketball', finish: { rough: 0.75, coat: 0 } }
 ];
 if (typeof module !== 'undefined') module.exports = { BALL_HEX, ballHex, ballCss, BALLSKINS };

@@ -71,3 +71,6 @@
 @keyframes dkRay{0%{opacity:.55;transform:translateX(-1.2%)}50%{opacity:1}100%{opacity:.7;transform:translateX(1.4%)}}
 @keyframes dkAur{0%{transform:translateX(-14%) scaleY(.82)}35%{transform:translateX(-3%) scaleY(1.06)}70%{transform:translateX(7%) scaleY(.9)}100%{transform:translateX(15%) scaleY(1.1)}}
 @media (prefers-reduced-motion:reduce){#app.desk .dk-cards.pc .dk-card .aur>span,#app.desk .dk-cards.pc .dk-card .aur>span::before{animation:none}}
+/* a debug item (content's debug: true - only an account in debug mode has it, owner 11-17): its card ringed in 적갈색, its
+   aurora black */
+#app.desk .dk-cards.pc .dk-card.dbg{--f1:#d9876a;--f2:#7a2f1d;--f3:#b2553a;--c1:#2a2220;--c2:#0d0b0a;--a1:#000;--a2:#1c1412;--a3:#3a2620;--ao:.95}

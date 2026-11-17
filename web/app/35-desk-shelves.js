@@ -139,22 +139,24 @@ function shelfPage(d, shop) {
 // the shelf's cards, all of them (shelfPage)
 function shelfCards(d, shop, kind, K, list, worn, has) {
   shelfOpen = null; d.stage.dataset.win = '0';
-  dkPut(d.head, dkTitle(K.name, `${shop ? list.length : list.filter((x, i) => has(i)).length}개`));
+  // (debug items: never in the shop; in 내 장비 only in debug mode - has() - ringed in 적갈색 with a black aurora)
+  const sold = list.filter(q => !q.debug);
+  dkPut(d.head, dkTitle(K.name, `${shop ? sold.length : list.filter((x, i) => has(i)).length}개`));
   // the cards from the commonest to the rarest, an ivory rule where the rarity changes saying what it is and how many
   // of it are owned; 내 장비 shows only what is owned, the shop everything with its price
-  const order = list.map((q, i) => [q, i]).filter(([, i]) => shop || has(i)).sort((p, q) => (p[0].rarity || 0) - (q[0].rarity || 0) || p[1] - q[1]), cards = [];
+  const order = list.map((q, i) => [q, i]).filter(([q, i]) => shop ? !q.debug : has(i)).sort((p, q) => (p[0].rarity || 0) - (q[0].rarity || 0) || p[1] - q[1]), cards = [];
   for (let n = 0; n < order.length; n++) {
     const [q, i] = order[n], r = q.rarity || 0;
-    if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r);
+    if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r && (!list[k].debug || has(k)));
       cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
-    cards.push(el('button', { class: 'dk-card r' + r + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
+    cards.push(el('button', { class: 'dk-card r' + r + (q.debug ? ' dbg' : '') + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
       [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
   }
   const box = el('div', { class: 'dk-cards pc k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (printed cards, shop and gear alike: 74-shop-cards.css)
   if (aurIO) aurIO.disconnect();                                       // (the last shelf's cards: let go)
   for (const c of cards) if (c.classList.contains('dk-card')) aurSeen(c);
   dkPut(d.stage, box);
-  dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', shop ? `${K.name} · ${list.length}개` : `${K.name} · ${order.length} / ${list.length}`));   // (내 장비: what is owned of all there are)
+  dkPut(d.slate, dkH1(shop ? '상점' : '내 장비', shop ? `${K.name} · ${sold.length}개` : `${K.name} · ${order.length} / ${list.filter((q, k) => !q.debug || has(k)).length}`));   // (내 장비: what is owned of all there are)
   // (no explaining what explains itself - owner 11-10: it read as made by an AI; only that buying waits for the server)
   if (shop && !net.on) dkPut(d.slate, [dkHr(), dkTxt('서버가 열리면 살 수 있습니다.')]);
   dkPut(d.slate, dkActs(shop ? dkSec('내 장비로', () => deskGo('gear')) : null));

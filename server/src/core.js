@@ -91,6 +91,7 @@ export class VaultCore {
       const it = (KINDS[kind] || []).find(q => q.id === id);
       if (!it) return { ok: false, why: 'no such item' };
       if (it.reward) return { ok: false, why: 'a lesson reward, not for sale' };
+      if (it.debug) return { ok: false, why: 'a debug item, not for sale' };
       if (this.owns(kind, id)) return { ok: false, why: 'already owned' };
       const price = E.priceOf(it);
       if (this.get('coin', 0) < (price.coin || 0) || this.get('dia', 0) < (price.dia || 0)) return { ok: false, why: 'not enough' };
