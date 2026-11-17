@@ -6,7 +6,7 @@
    The moments: hello (the game begins), think (before its own shot, now and then), score (it scored), miss (it missed),
    nice (the player's good shot), oops (the player missed or fouled), win, lose (the game is over). */
 const BOT_LINES = {
-  daeun: { 0: {
+  sua: { 0: {
     hello: [['안녕하세요! 동아리 선배들 말고 다른 사람이랑은 처음이에요.']],
     think: [['브리지 단단히… 어깨 힘 빼고…'], ['이거 선배가 알려 준 건데…']],
     score: [['어, 들어갔다! 방금 거 봤어요?'], ['오늘 연습한 보람이 있네요!']],
@@ -114,15 +114,6 @@ const BOT_LINES = {
     oops: [['Tranquila, respira.', '진정해요, 숨 쉬어요.'], ['Gracias, la aprovecho.', '고마워요, 잘 쓸게요.']],
     win: [['Buen partido. Ha sido un placer.', '좋은 경기였어요. 즐거웠어요.']],
     lose: [['Enhorabuena. Bailaste mejor.', '축하해요. 당신이 더 잘 췄어요.']] } },
-  priya: { 0: {
-    hello: [['नमस्ते! चलो, शुरू करते हैं।', '안녕하세요! 자, 시작해요.']],
-    think: [['एक मिनट… सोचने दो।', '잠깐만… 생각 좀 할게요.'], ['अगर यह गेंद यहाँ जाए, तो…', '이 공이 여기로 가면, 그러면…']],
-    score: [['बिल्कुल सही।', '딱 맞았어요.'], ['जैसा सोचा था।', '생각한 대로예요.']],
-    miss: [['ओह, यह बग था।', '아, 이건 버그였어요.'], ['हिसाब थोड़ा गलत हो गया।', '계산이 조금 틀렸네요.']],
-    nice: [['वाह! बहुत बढ़िया!', '와! 정말 훌륭해요!'], ['यह तो कमाल था।', '이건 정말 대단했어요.']],
-    oops: [['कोई बात नहीं।', '괜찮아요.'], ['अब मेरी बारी।', '이제 제 차례예요.']],
-    win: [['अच्छा खेल था। धन्यवाद!', '좋은 경기였어요. 고마워요!']],
-    lose: [['आप जीत गए, बधाई हो!', '이겼네요, 축하해요!']] } },
   lea: { 0: {
     hello: [['Bonjour ! On joue un chapitre ensemble ?', '안녕! 우리 같이 한 장(章) 쳐 볼까?']],
     think: [['Une courbe, comme une phrase bien tournée…', '곡선, 잘 다듬은 문장처럼…'], ['Et si je la faisais tourner ?', '이걸 휘게 쳐 볼까?']],
