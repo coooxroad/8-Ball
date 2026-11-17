@@ -130,9 +130,16 @@
 .bot-card[aria-pressed="true"]{transform:translateY(-4px);box-shadow:0 0 0 3px var(--key-on,#3fbf7f),0 10px 18px rgba(0,0,0,.5)}
 .bot-card:active{transform:translateY(1px)}
 /* (locked: veiled, a lock over its face; beaten: a mark at the corner) */
-.bot-card.lock{filter:saturate(.35) brightness(.62)}
+.bot-card.lock{filter:saturate(.4)}
+.bot-card.lock::after{content:'';position:absolute;inset:0;z-index:1;border-radius:inherit;background:rgba(18,14,10,.45);pointer-events:none}
+.bot-card.lock .bot-pic{z-index:2}.bot-card.lock.beat::before{display:none}
 .bot-card.lock .bot-pic svg{filter:blur(2px) brightness(.7)}
-.bot-card.lock .bot-pic::before{content:'';position:absolute;inset:28%;z-index:1;background:url(ui/lock.webp) center/contain no-repeat}
+/* the lock (owner 11-17: not the emoji padlock - our own): a cue ball for its body, a keyhole through it, under a shackle,
+   cut out of the card's own metal (--f1 → --f2) on a soft shadow */
+.bot-card.lock .bot-pic::after{content:'';position:absolute;inset:22%;z-index:1;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0))}
+.bot-card.lock .bot-pic::before{content:'';position:absolute;inset:24%;z-index:2;background:linear-gradient(160deg,#fff,var(--f1) 30%,var(--f3) 55%,var(--f1) 80%);
+  -webkit-mask:var(--ico-lock) center/contain no-repeat;mask:var(--ico-lock) center/contain no-repeat}
+.bot-card{--ico-lock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M13.2 19.5V13a6.8 6.8 0 0 1 13.6 0v6.5' fill='none' stroke='%23000' stroke-width='4.2' stroke-linecap='round'/%3E%3Cpath fill-rule='evenodd' d='M8.6 26.6a11.4 11.4 0 1 0 22.8 0a11.4 11.4 0 1 0-22.8 0ZM20 21.6a2.7 2.7 0 0 0-1.35 5.04V30a1.35 1.35 0 0 0 2.7 0v-3.36A2.7 2.7 0 0 0 20 21.6Z'/%3E%3C/svg%3E")}
 .bot-card.beat::before{content:'✓';position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#3fbf7f;color:#fff;font:800 12px/20px var(--ui-font);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4);z-index:2}
 .bot-card.t-pro.beat::before{inset:8px 8px auto auto}
 #app.desk.compact .bot-cards,#app.desk.compact #dkStage .bot-tray.with-art .bot-cards{gap:7px}

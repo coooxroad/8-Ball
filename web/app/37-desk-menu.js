@@ -110,13 +110,14 @@ function menuPaint() {
     el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), the icon
-  // breathing; only a card in sight moves - 'mn-live' below - 84-menu.css. 11-17: the small tables, the bot standing in
+  // breathing, and (11-17 night) a soft light and shade flowing inside it; only a card in sight moves - 'mn-live' below -
+  // 84-menu.css. 11-17: the small tables, the bot standing in
   // 컴퓨터 대전's card and the strip shining were tried and taken out again - owner: too busy)
   const cards = MENU_CARDS.map((c, i) => {
     const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
     return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
-      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('i')]),
+      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('b'), el('i')]),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));

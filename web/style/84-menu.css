@@ -78,14 +78,19 @@
    sight (.mn-live, 37-desk-menu.js); none with reduced motion. */
 .mn-fx{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
 .mn-card.hero .mn-fx{inset:calc(3px*var(--u));border-radius:calc(15px*var(--u))}
+/* (owner 11-17 night: 'a soft gradient moving inside the card') a light and a shade, wide and soft, drifting slowly over the
+   card's face, each card on its own beat - one layer larger than the card, moved by transform only */
+.mn-fx b{position:absolute;inset:-50%;background:radial-gradient(28% 24% at 36% 38%,rgba(255,255,255,.2),rgba(255,255,255,0)),radial-gradient(30% 26% at 64% 64%,rgba(0,0,0,.24),rgba(0,0,0,0));will-change:transform}
 .mn-fx i{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-18deg)}
 @media (prefers-reduced-motion:no-preference){
   .mn-fx i{animation:mn-cross 11s ease-in-out infinite paused;animation-delay:calc(var(--i,0) * 1.3s)}
+  .mn-fx b{animation:mn-flow 16s ease-in-out infinite alternate paused;animation-delay:calc(var(--i,0) * -2.7s)}
   .mn-card .mn-ico svg{animation:mn-breathe 5.5s ease-in-out infinite paused;animation-delay:calc(var(--i,0) * -.7s)}
   .mn-live .mn-fx>*,.mn-live .mn-ico svg{animation-play-state:running}
 }
 .mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused}
 @keyframes mn-cross{0%,78%{opacity:0;transform:translateX(0) skewX(-18deg)}80%{opacity:1}96%{opacity:1;transform:translateX(380%) skewX(-18deg)}100%{opacity:0;transform:translateX(380%) skewX(-18deg)}}
+@keyframes mn-flow{0%{transform:translate(-10%,-8%) rotate(-10deg)}50%{transform:translate(7%,5%) rotate(8deg)}100%{transform:translate(10%,-6%) rotate(18deg)}}
 @keyframes mn-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(calc(-4px*var(--u))) scale(1.03)}}
 
 

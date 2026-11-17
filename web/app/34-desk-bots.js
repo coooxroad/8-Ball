@@ -20,7 +20,7 @@ const BOTS = [
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
     line: '一球一球、心を込めて。', ko: '한 공 한 공, 마음을 담아서.', bio: '도쿄 동네 당구장 사장님 딸. 매일 밀어치기만 연습한다.' },
-  { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'follow',
+  { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'follow', soon: true,
     line: 'Devagar, no ritmo da bossa nova.', ko: '천천히, 보사노바 리듬으로.', bio: '리우 해변 바에서 보사노바를 부른다. 공연 쉬는 시간마다 당구대 앞에 와 있다.' },
   { id: 'ploy', name: '플로이', from: 'th', lang: 'th', rating: 820, personality: 'playful', style: 'follow', pic: true,
     line: 'สนุกไว้ก่อน แล้วลูกจะลงเอง', ko: '일단 즐기면, 공은 알아서 들어가.', bio: '방콕의 디저트 카페 사장. 분홍 머리는 가게 마카롱 색.' },
@@ -52,7 +52,7 @@ const BOTS = [
     line: 'If you’re going to miss, miss beautifully.', ko: '놓칠 거면 멋지게 놓쳐.', bio: '런던 펍의 스누커 스타. 보는 사람이 있어야 잘 친다.' },
   { id: 'lena', name: '레나', from: 'de', lang: 'de', rating: 2200, personality: 'meticulous', style: 'banker', pic: true, was: 'max',
     line: 'Präzision ist keine Kunst, sondern Gewohnheit.', ko: '정확함은 재능이 아니라 습관이에요.', bio: '뮌헨의 시계 기술자. 빗나간 각도를 0.1도까지 기억한다.' },
-  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'playful', style: 'power', was: 'lukas',
+  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'playful', style: 'power', was: 'lukas', pic: true,
     line: 'Relax. I already saw the whole rack.', ko: '긴장 풀어. 난 벌써 판 전체를 다 봤거든.', bio: '켄터키 출신의 떠돌이 천재. 카우보이모자를 쓰고, 상대가 생각하는 동안 벌써 다음 세 수를 친다.' },
 ];
 /* Each bot's face on its card (owner 11-17: like chess.com's bot icons, simpler still - drawn here, not the painting): a
@@ -166,7 +166,9 @@ const botTier = b => TIERS[Math.min(TIERS.length - 1, tierOf(b.rating))];
 // open: the first two, one whose bot before it is beaten, or one at or under the player's own rating
 /* (owner 11-17: a beginner should meet a pretty opponent from the start) 브론즈 and 실버 all open; from 골드 to 프로 the
    lowest-rated of each tier open; the rest when the one before is beaten or the player's rating has reached it */
+/* (owner 11-17: a bot whose painting has not come yet - soon - stays locked for everyone until it has) */
 function botOpen(b) {
+  if (b.soon) return false;
   const i = BOTS.indexOf(b), mine = net.me && net.me.dama != null ? net.me.dama : 0, t = tierOf(b.rating);
   if (t <= 1 || BOTS.filter(x => tierOf(x.rating) === t).every(x => x.rating >= b.rating)) return true;
   return botWon(BOTS[i - 1]) || b.rating <= mine;
@@ -190,7 +192,7 @@ function botBeaten(id) {
   if (!id || (prefs.botBeat || {})[id]) return;
   prefs.botBeat = Object.assign({}, prefs.botBeat, { [id]: true }); savePrefs();
   const next = BOTS[BOTS.findIndex(b => b.id === id) + 1];
-  if (next) setTimeout(() => toast(`${next.name}에게 도전할 수 있습니다`, 'good', 2600), 1200);
+  if (next && botOpen(next)) setTimeout(() => toast(`${next.name}에게 도전할 수 있습니다`, 'good', 2600), 1200);
 }
 /* The tray: each group a row of cards, a card of its tier's metal - its picture, name, flag and rating; the one picked
    lifted and ringed, a locked one veiled, a beaten one marked. The metal catches the light now and then (85-train.css). */
@@ -198,7 +200,7 @@ function botTray(stage) {
   stage.dataset.win = '0';
   const cur = botNow();
   const pick = b => () => {
-    if (!botOpen(b)) { const i = BOTS.indexOf(b); return toast(`${BOTS[i - 1].name} 이기면 열림`, '', 2000); }
+    if (!botOpen(b)) { const i = BOTS.indexOf(b); return toast(b.soon ? `${b.name}, 곧 만나요` : `${BOTS[i - 1].name} 이기면 열림`, '', 2000); }
     if (prefs.bot === b.id) return; prefs.bot = b.id; savePrefs(); repaint();
   };
   let n = 0;
@@ -283,7 +285,7 @@ const BOT_FRAME = {
   ingrid: [0.36, 0.15, 0.15], jack: [0.43, 0.12, 0.14], lea: [0.48, 0.17, 0.14], lena: [0.4, 0.14, 0.13],
   marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14],
   ploy: [0.33, 0.16, 0.14], sua: [0.62, 0.26, 0.15], ana: [0.49, 0.25, 0.14], migo: [0.74, 0.18, 0.17], frederic: [0.47, 0.15, 0.17],
-  ole: [0.47, 0.14, 0.17], darya: [0.62, 0.18, 0.14], sean: [0.42, 0.15, 0.14], sofia: [0.42, 0.15, 0.13], yuki: [0.38, 0.15, 0.14],
+  ole: [0.47, 0.14, 0.17], elijah: [0.52, 0.17, 0.13], darya: [0.62, 0.18, 0.14], sean: [0.42, 0.15, 0.14], sofia: [0.42, 0.15, 0.13], yuki: [0.38, 0.15, 0.14],
 };
 /* (owner 11-17: shown on the desk as it leans back - 'like the old painters') The desk plane is tilted away from the eye
    (#deskPlane: perspective --pp, rotateX --tilt, about its bottom edge), so a picture lying on it is squashed and its top
