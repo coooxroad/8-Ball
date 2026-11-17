@@ -1,6 +1,6 @@
-# Nine character pictures for a billiards game
+# Five character pictures for a billiards game
 
-Draw the nine characters below, one picture each, **in exactly the same art style as the attached picture** (same painting
+Draw the five characters below, one picture each, **in exactly the same art style as the attached picture** (same painting
 technique, colours, light and face style - only the character changes).
 
 Rules for every picture:
@@ -21,19 +21,22 @@ Rules for every picture:
 - ★ = a heroine: strikingly beautiful, the kind of character who becomes everyone's favourite - a delicate, perfectly
   balanced face, big sparkling eyes with long lashes, a soft blush, silky hair catching the light. Still tasteful and fully
   clothed.
-- ☆ = quietly beautiful: not flashy - a calm, gentle, refined face that grows more beautiful the longer you look.
+- ☆ = quietly beautiful, pure and fresh: not flashy - natural light makeup, clear skin, a soft gentle gaze, a calm refined
+  face that grows more beautiful the longer you look.
+- ★★ = the most beautiful of all the characters, unrivalled - an Instagram-goddess beauty: a flawless glowing face, perfect
+  features, captivating eyes, effortlessly stylish. Still tasteful and fully clothed.
 
-When all nine are done: name each file exactly as its ID below (for example `bot-daeun.png`) and put all nine in one zip
+When all five are done: name each file exactly as its ID below (for example `bot-darya.png`) and put all five in one zip
 file named `CUE-batch-bots2.zip`.
 
 ## The characters
 
-**bot-daeun** — Korea. Korean woman, 21, a freshman in a university billiards club. A Korean face: fair warm skin, a soft
-oval face, gentle dark eyes, a small nose, a sweet closed-lip smile. Glossy black chin-length bob with a vivid cobalt-blue
-inner layer showing underneath, a small silver ear cuff. A navy Korean university department jacket (gwajam) with leather
-sleeves and embroidered patches without readable letters, over a white hoodie; a small red-and-blue norigae tassel charm
-and a phone strap with a tiny keyring hanging from the zip. Hugging the upright cue with both arms, her cheek leaning on
-it, eager and a little nervous.
+**bot-darya** ★★ — Russia. Russian woman, 23, a Russian pyramid billiards champion from Moscow. A Slavic face: fair porcelain
+skin, high cheekbones, a straight fine nose, large cool grey eyes, a composed closed-lip smile. Dark chestnut hair in a
+thick braid wound around her head like a crown, a few soft strands loose. A sleek modern long black coat with a dark fur
+collar, and over her shoulders a Russian Pavlovo Posad shawl - black with large red and gold roses - small pearl earrings,
+dark-red nails. Standing straight, the coat swept back, the cue held at an angle across her body, looking straight at the
+viewer.
 
 **bot-luiza** ★ — Brazil. Brazilian woman, 22, sings bossa nova at a beach bar in Rio. A Brazilian face: sun-kissed
 golden-tan skin, light freckles across the nose, striking green eyes, full brows, a warm closed-lip smile. Long caramel-brown
@@ -41,15 +44,8 @@ beach waves with sun-lightened ends, sunglasses pushed up on her head. A loose w
 over a lime-green top, colourful Senhor do Bonfim ribbons tied around one wrist, a thin gold necklace with a tiny shell.
 Leaning lightly on the cue held at her side, head tilted, relaxed as if a song is playing.
 
-**bot-darya** ★ — Russia. Russian woman, 24, a Russian pyramid billiards champion from Moscow. A Slavic face: fair porcelain
-skin, high cheekbones, a straight fine nose, large cool grey eyes, a composed closed-lip smile. Dark chestnut hair in a
-thick braid wound around her head like a crown, a few soft strands loose. A sleek modern long black coat with a dark fur
-collar, and over her shoulders a Russian Pavlovo Posad shawl - black with large red and gold roses - small pearl earrings,
-dark-red nails. Standing straight, the coat swept back, the cue held at an angle across her body, looking straight at the
-viewer.
-
-**bot-ana** ★ — Spain. Spanish woman, 25, a flamenco dancer from Seville. An Andalusian face: warm olive skin, large dark
-brown eyes with long lashes, elegant arched brows, a gentle closed-lip smile. Glossy dark-brown hair in a low sleek bun with
+**bot-ana** ☆ — Spain. Spanish woman, 25, a flamenco dancer from Seville. An Andalusian face: warm olive skin, large dark
+brown eyes with long lashes, elegant arched brows, a soft, shy closed-lip smile, natural light makeup. Glossy dark-brown hair in a low sleek bun with
 a red carnation tucked at the side. A modern cropped black blazer with ruffled red flamenco sleeves over a black top, small
 gold hoop earrings. One arm raised in a graceful flamenco line, the other hand holding the cue upright beside her.
 
@@ -64,21 +60,3 @@ puzzle.
 cheeks, bright mischievous dark eyes, a cheeky closed-mouth grin. Short black hair, messy and spiky. A loose blue basketball
 jersey with no lettering over a white T-shirt, red gaming headphones around his neck, a woven bracelet. Hugging a cue that
 is taller than he is, standing proud and confident.
-
-**bot-ole** — Norway. Norwegian man, 46, a fisherman from Bergen. A Nordic face: weathered fair skin, ruddy cheeks, pale
-blue eyes with sun crinkles, a strong nose, a calm closed mouth. Long copper-red hair tied back, a full copper-red beard. A
-traditional Norwegian Selbu knitted sweater - black and white with the eight-pointed star pattern - under an open modern
-yellow rain jacket. Standing with the cue planted upright beside him like a ship's mast, one hand high on it, gazing calmly
-into the distance.
-
-**bot-frederic** — Belgium. Belgian man, 52, a three-cushion grand master. A Western European face: light skin, a long
-refined face, deep-set calm grey eyes, a neatly trimmed greying moustache, an unreadable closed mouth. Dark hair greying at
-the temples, combed back. Tournament dress in a slim modern cut: crisp white shirt, black waistcoat, black bow tie, a white
-billiard glove on his bridge hand, a tiny black-yellow-red enamel pin on the waistcoat, a thin steel watch. Holding the cue
-upright in front of him with both hands like a sword at rest, chin slightly raised.
-
-**bot-elijah** — USA. African-American man, 34, a wandering pool prodigy from Kentucky - laid-back, cocky, a genius who
-plays fast. A face of his people: rich dark-brown skin, a strong jaw, a thin moustache, sharp amused eyes, a lopsided
-closed-mouth smirk. Short hair under a black flat-brimmed cowboy hat. A worn brown leather duster coat over a dark shirt, a
-western bolo tie with a turquoise stone, a leather wristband, one wireless earbud in. Slouched easily against the cue held
-loosely at his side, one thumb hooked in his belt, looking at the viewer as if he already knows how the game ends.
