@@ -33,7 +33,7 @@ const reviewIcon = (id, cls = '') => { const i = el('i', { class: `rv-ico i-${id
 const REVIEW_PERF = {
   pool: [[1.45, 100], [1.3, 300], [1.05, 700], [0.8, 1100], [0.55, 1500], [0.35, 1900], [0.15, 2300], [0, 2600]],
   four: [[1.45, 100], [1.3, 300], [1.2, 700], [0.95, 1100], [0.5, 1500], [0.25, 1900], [0.12, 2300], [0, 2600]],
-  three: [[1.2, 100], [0.95, 300], [0.75, 700], [0.55, 1100], [0.4, 1500], [0.25, 1900], [0.1, 2300], [-0.05, 2600]],
+  three: [[1.0, 100], [0.94, 300], [0.85, 700], [0.65, 1100], [0.32, 1500], [0.12, 1900], [0.05, 2300], [-0.1, 2600]],
 }
 function reviewPerf(mode, losses) {
   if (losses.length < 3) return null;
@@ -103,7 +103,10 @@ const review = {
     const all = review.list, got = review.judged(); box.textContent = '';
     box.hidden = !all.length; $('#reviewBtn').hidden = !all.length; if (!all.length) return;
     const wait = all.filter(q => !q.res).length;
-    box.append(el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), review.table(false));
+    // (a phone's short slate: one strip - each grade's mark, mine over the other's - in place of the table)
+    const [a, b] = [review.stats(0), review.stats(1)];
+    const strip = el('div', { class: 'rv-strip' }, REVIEW_GRADES.map((G, i) => el('span', { class: `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero') }, [reviewIcon(G.id), el('b', { text: String(a.n[i]) }), el('small', { text: String(b.n[i]) })])));
+    box.append(el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), review.table(false), strip);
   },
 
   /* ---- 게임 리뷰: the tray a table, the slate the review ---- */
@@ -169,7 +172,7 @@ const review = {
     const cv = $('#rvBoard canvas'), box = $('#rvBoard'); if (!cv || !box) return;
     // (the little table's frame is the highlights' - ui/mini-table.webp round the canvas, 50-result.css -; the canvas is the
     // cloth, sized to the table's own proportions in the room the tray gives it)
-    const P = game.P, fr = 26, bw = box.clientWidth - 12, bh = box.clientHeight - 12; if (bw < 50 || bh < 50) return;
+    const P = game.P, fr = $('#app').classList.contains('compact') ? 16 : 26, bw = box.clientWidth - 12, bh = box.clientHeight - 12; if (bw < 50 || bh < 50) return;
     const sc = Math.min((bw - 2 * fr) / (2 * P.HL), (bh - 2 * fr) / (2 * P.HW));
     cv.style.width = Math.round(2 * P.HL * sc + 2 * fr) + 'px'; cv.style.height = Math.round(2 * P.HW * sc + 2 * fr) + 'px';
     const dpr = Math.min(2, window.devicePixelRatio || 1), cw = Math.round(2 * P.HL * sc), ch = Math.round(2 * P.HW * sc);

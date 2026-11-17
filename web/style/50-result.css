@@ -167,7 +167,9 @@
 .rv-ico svg{width:72%;height:72%}
 .rv-ico.none{background:none;box-shadow:none}
 .rv-ico.wait{background:rgba(255,255,255,.12);box-shadow:none}
-#rRev{display:flex;flex-direction:column;gap:6px;padding:10px 2px 2px;border-top:1px solid rgba(255,255,255,.1)}
+#rRev{display:flex;flex-direction:column;gap:6px;padding:10px 2px 2px;border-top:1px solid rgba(255,255,255,.1);flex:0 1 auto;min-height:64px;overflow-y:auto;scrollbar-width:none}
+#rRev>*{flex:none}
+#app.desk .r-btns,#app.desk .r-side>h2{flex:none}
 #rRev[hidden]{display:none}
 .rv-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;color:#f3eee3}
 .rv-h b{font:800 17px var(--ui-font)}
@@ -197,7 +199,7 @@
 #rvBoard[hidden]{display:none}
 #rvBoard canvas{display:block;box-sizing:border-box;border:26px solid transparent;border-image:url(ui/mini-table.webp) 40/26px stretch;filter:drop-shadow(-8px 12px 12px rgba(0,0,0,.45))}
 #app.desk #result.rv .r-side>:not(#rvPanel){display:none}
-#rvPanel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;color:#f3eee3}
+#rvPanel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;color:#f3eee3;overflow-y:auto;scrollbar-width:none}
 #rvPanel[hidden]{display:none}
 .rv-top{display:flex;align-items:center;gap:10px;padding-bottom:4px}
 .rv-top b{font:800 24px var(--ui-font)}
@@ -233,3 +235,34 @@
 #app.compact .rv-tr{font-size:12px;grid-template-columns:minmax(0,1fr) 44px 24px 44px}
 #app.compact .rv-tr .rv-a,#app.compact .rv-tr .rv-b{font-size:14px}
 #app.compact .rv-tr .rv-ico{width:19px;height:19px}
+/* (a phone: the slate is short - the review's counts scroll between the title and the keys, the bot's last word gives way
+   to them; the review's panel tighter) */
+#app.desk.compact .r-side:has(#rRev:not([hidden])) .bot-said{display:none}
+#app.desk.compact #reviewBtn{height:44px;font-size:15px}
+#app.desk.compact .rv-h b{font-size:14px}
+#app.desk.compact .rv-table.big .rv-tr{grid-template-columns:minmax(0,1fr) 44px 24px 44px;padding:3px 0;font-size:12.5px}
+#app.desk.compact .rv-table.big .rv-tr .rv-a,#app.desk.compact .rv-table.big .rv-tr .rv-b{font-size:14px}
+#app.desk.compact .rv-table.big .rv-tr .rv-ico{width:19px;height:19px}
+#app.desk.compact .rv-top b{font-size:18px}#app.desk.compact .rv-back{width:32px;height:32px}
+#app.desk.compact #rvPanel{gap:7px}
+#app.desk.compact #rvPanel .rv-start{flex:none;height:46px;font-size:16px}
+#app.desk.compact .rv-coach{padding:9px 10px;gap:6px}
+#app.desk.compact .rv-say b{font-size:15px}#app.desk.compact .rv-say .rv-ico{width:24px;height:24px}
+#app.desk.compact .rv-why{font-size:12.5px;line-height:1.45}
+#app.desk.compact .rv-act{min-height:30px;padding:0 10px;font-size:12px}
+#app.desk.compact .rv-shots{flex:none;overflow:visible}
+#app.desk.compact .rv-shot{min-height:34px;font-size:12px}
+#app.desk.compact #rvBoard canvas{border-width:16px;border-image-width:16px}
+.rv-strip{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.rv-strip span{display:flex;align-items:center;justify-content:center;gap:3px}
+.rv-strip .rv-ico{width:18px;height:18px}
+.rv-strip b{font:800 14px Outfit,var(--ui-font);color:var(--gc)}
+.rv-strip small{font:700 11px Outfit,var(--ui-font);color:#8a99ab}
+.rv-strip span.zero{opacity:.45}
+#app.desk.compact #rRev .rv-table{display:none}
+#app.desk.compact #rRev .rv-strip{display:grid}
+#app.desk.compact #rRev{min-height:0;gap:4px;padding-top:6px}
+#app.desk.compact .r-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#app.desk.compact .r-btns #reviewBtn{grid-column:1/-1}
+#app.desk.compact #againBtn{padding:10px 0 calc(10px + 6px);font-size:17px}
+#app.desk.compact #homeBtn{height:auto;font-size:14px}
