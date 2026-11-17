@@ -14,20 +14,20 @@
 // (owner 11-17: one more for each tier - 21; more women than men but not a dating game: the men in 다이아 and 프로; two
 // Koreans only. Each group is a tier of the ranked ladder: TIERS, 33-desk-play.js)
 const BOTS = [
-  { id: 'haneul', name: '하늘', from: 'kr', lang: 'ko', rating: 300, personality: 'playful', style: 'natural', pic: true,
-    line: '공이 어디로 갈지 모르니까 재밌는 거잖아요!', bio: '당구장 아르바이트 3주째. 손님 없을 때 몰래 친다.' },
+  { id: 'aila', name: '아일라', from: 'fi', lang: 'fi', rating: 300, personality: 'nervous', style: 'natural', was: 'haneul',
+    line: 'Hiljaa hyvä tulee.', ko: '천천히 해야 잘 돼요.', bio: '헬싱키의 도서관 사서. 조용한 당구장을 좋아하고, 공이 부딪히는 소리에 매번 놀란다.' },
   { id: 'marco', name: '마르코', from: 'it', lang: 'it', rating: 450, personality: 'nervous', style: 'balanced', pic: true,
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
     line: '一球一球、心を込めて。', ko: '한 공 한 공, 마음을 담아서.', bio: '도쿄 동네 당구장 사장님 딸. 매일 밀어치기만 연습한다.' },
-  { id: 'carlos', name: '카를로스', from: 'co', lang: 'es', rating: 700, personality: 'impatient', style: 'power', was: 'camila',
-    line: '¡Si no entra, que por lo menos suene!', ko: '안 들어가면 소리라도 크게 나야지!', bio: '메데인의 오토바이 정비공. 힘 조절은 아직 공부 중.' },
+  { id: 'tane', name: '타네', from: 'nz', lang: 'en', rating: 700, personality: 'playful', style: 'power', was: 'carlos',
+    line: 'Kia kaha - stay strong, hit straight.', ko: '키아 카하 - 굳세게, 똑바로 쳐.', bio: '오클랜드의 럭비 선수. 시즌이 끝나면 당구장에서 산다.' },
   { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'showman', pic: true,
     line: 'Quem joga com alegria nunca perde de verdade.', ko: '즐겁게 치는 사람은 진짜로 지는 법이 없어.', bio: '리우데자네이루의 삼바 강사. 샷마다 스텝을 밟는다.' },
   { id: 'ploy', name: '플로이', from: 'th', lang: 'th', rating: 820, personality: 'playful', style: 'follow', pic: true,
     line: 'สนุกไว้ก่อน แล้วลูกจะลงเอง', ko: '일단 즐기면, 공은 알아서 들어가.', bio: '방콕의 디저트 카페 사장. 분홍 머리는 가게 마카롱 색.' },
-  { id: 'linh', name: '린', from: 'vn', lang: 'vi', rating: 900, personality: 'fidgety', style: 'spinner', pic: true,
-    line: 'Đường thẳng thì ai cũng đi được.', ko: '곧은 길은 누구나 갈 수 있죠.', bio: '하노이의 대학생. 회전 거는 게 제일 신난다.' },
+  { id: 'amara', name: '아마라', from: 'ng', lang: 'en', rating: 900, personality: 'impatient', style: 'spinner', was: 'linh',
+    line: 'No shaking. The table knows who is boss.', ko: '떨지 마. 누가 대장인지 당구대도 알아.', bio: '라고스의 패션 디자이너. 옷만큼 화려한 회전을 건다.' },
   { id: 'sofia', name: '소피아', from: 'gr', lang: 'el', rating: 980, personality: 'calm', style: 'balanced', pic: true,
     line: 'Η θάλασσα δεν βιάζεται ποτέ.', ko: '바다는 절대 서두르지 않아.', bio: '아테네의 해양생물학자. 파도 소리를 들으며 연습한다.' },
   { id: 'sean', name: '숀', from: 'ie', lang: 'en', rating: 1050, personality: 'calm', style: 'defensive', pic: true,
@@ -36,8 +36,8 @@ const BOTS = [
     line: '心静，球自然就稳了。', ko: '마음이 고요하면, 공도 저절로 안정돼요.', bio: '상하이의 고전무용 강사. 큐를 들면 춤추듯 움직인다.' },
   { id: 'emre', name: '엠레', from: 'tr', lang: 'tr', rating: 1180, personality: 'calm', style: 'gather', pic: true,
     line: 'Toplar bir araya gelirse oyun kendiliğinden akar.', ko: '공이 모이면 경기는 저절로 흘러가요.', bio: '이스탄불 찻집 겸 당구장 주인. 차 한 잔 마시고 친다.' },
-  { id: 'nour', name: '누르', from: 'eg', lang: 'ar', rating: 1250, personality: 'meticulous', style: 'banker', pic: true,
-    line: 'الكوشة الصح بتوصلك لأي مكان.', ko: '맞는 쿠션 하나면 어디든 갈 수 있어.', bio: '카이로의 쓰리쿠션 선수. 할아버지에게 배운 시스템을 외운다.' },
+  { id: 'ximena', name: '시메나', from: 'mx', lang: 'es', rating: 1250, personality: 'meticulous', style: 'banker', was: 'nour',
+    line: 'Cada banda cuenta una historia.', ko: '쿠션 하나하나가 이야기를 들려줘요.', bio: '오악사카의 벽화 화가. 쿠션 경로를 붓질처럼 그린다.' },
   { id: 'femke', name: '펨케', from: 'nl', lang: 'nl', rating: 1350, personality: 'impatient', style: 'power', pic: true, was: 'willem',
     line: 'Via de band is altijd korter.', ko: '쿠션을 돌아가는 게 언제나 더 빨라.', bio: '로테르담 항구의 크레인 기사. 기다리는 걸 제일 싫어한다.' },
   { id: 'ana', name: '아나', from: 'es', lang: 'es', rating: 1450, personality: 'meticulous', style: 'position', pic: true,
@@ -50,33 +50,33 @@ const BOTS = [
     line: 'Huwag magmadali. Marunong maghintay ang bola.', ko: '서두르지 마요. 공은 기다릴 줄 알아요.', bio: '마닐라 거리 당구에서 자랐다. 끌어치기 하나로 이름을 알렸다.' },
   { id: 'ingrid', name: '잉그리드', from: 'se', lang: 'sv', rating: 1850, personality: 'playful', style: 'spinner', pic: true,
     line: 'Det enkla är det svåra.', ko: '쉬운 게 제일 어려운 거야.', bio: '스톡홀름의 엔지니어. 껌을 씹으며 표정 하나 안 바꾸고 회전을 건다.' },
-  { id: 'hangyeol', name: '한결', from: 'kr', lang: 'ko', rating: 1950, personality: 'meticulous', style: 'defensive', pic: true,
-    line: '급할수록 돌아가라. 당구대 위에서는 더 그렇습니다.', bio: '35년째 동네 당구장 관장. 말이 적다.' },
+  { id: 'ole', name: '올레', from: 'no', lang: 'no', rating: 1950, personality: 'calm', style: 'defensive', was: 'hangyeol',
+    line: 'Havet lærer deg tålmodighet.', ko: '바다가 인내를 가르쳐 줘요.', bio: '베르겐의 어부. 폭풍이 오는 날엔 배 대신 당구대 앞에 선다.' },
   { id: 'frederic', name: '프레데릭', from: 'be', lang: 'fr', rating: 2000, personality: 'calm', style: 'position',
     line: 'Trois bandes, une seule pensée : la suivante.', ko: '쓰리쿠션, 생각은 하나뿐. 다음 공.', bio: '벨기에 쓰리쿠션 리그 출신. 표정이 변하지 않는다.' },
   { id: 'jack', name: '잭', from: 'gb', lang: 'en', rating: 2100, personality: 'impatient', style: 'showman', pic: true,
     line: 'If you’re going to miss, miss beautifully.', ko: '놓칠 거면 멋지게 놓쳐.', bio: '런던 펍의 스누커 스타. 보는 사람이 있어야 잘 친다.' },
   { id: 'lena', name: '레나', from: 'de', lang: 'de', rating: 2200, personality: 'meticulous', style: 'banker', pic: true, was: 'max',
     line: 'Präzision ist keine Kunst, sondern Gewohnheit.', ko: '정확함은 재능이 아니라 습관이에요.', bio: '뮌헨의 시계 기술자. 빗나간 각도를 0.1도까지 기억한다.' },
-  { id: 'lukas', name: '루카스', from: 'at', lang: 'de', rating: 2300, personality: 'calm', style: 'power', pic: true,
-    line: 'Wer zögert, hat schon verloren.', ko: '망설이는 사람은 이미 진 거야.', bio: '빈의 프로 포켓볼 선수. 브레이크 한 번에 경기를 끝낸 적이 있다.' },
+  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'calm', style: 'power', was: 'lukas',
+    line: 'Pressure is a privilege.', ko: '압박감은 특권이야.', bio: '시카고의 프로 포켓볼 선수. 큰 판일수록 더 조용해진다.' },
 ];
 /* Each bot's face on its card (owner 11-17: like chess.com's bot icons, simpler still - drawn here, not the painting): a
    square of its colour, its shoulders in its clothes, a round face, its hair as one shape, two dots for eyes; a few have a
    thing of their own (glasses, a beard, a cap...). [background, skin, hair colour, hair, clothes, extra] */
 const BOT_FACE = {
-  haneul: ['#7cc6a8', '#f3c9a8', '#8a6a52', 'wavy', '#3b5d40', 'clip'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
-  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], carlos: ['#f2c14e', '#b97d55', '#1e1612', 'curly', '#3f5f8c', 'bandana tache'],
+  aila: ['#9fd3e6', '#f7dccb', '#f1ead2', 'blunt', '#c96a4a', 'beanie'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
+  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], tane: ['#f2c14e', '#a8714a', '#1a1412', 'knot', '#1f3b5a', ''],
   ploy: ['#f6b3cf', '#f1c9a5', '#f08cb8', 'long', '#fbf3f6', 'bow2'], meilin: ['#e7a0a0', '#f4d3bd', '#1d2a4a', 'bun', '#b8242c', ''],
-  luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], linh: ['#f2a6b8', '#f1c8a6', '#141216', 'pony', '#efe4cc', ''],
+  luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], amara: ['#f2a6b8', '#6b4026', '#1a1412', 'braids', '#e0542a', ''],
   sofia: ['#8ec5e8', '#e2b38e', '#2a1d16', 'crown', '#2c3e5c', ''], sean: ['#8fbf6a', '#f2c6a5', '#b5562a', 'short', '#7a5a3a', 'cap beard'],
-  emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], nour: ['#e7b26a', '#c88f68', '#1e1612', 'long', '#5b6234', ''],
+  emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], ximena: ['#e7b26a', '#d3a07a', '#7a1f36', 'wavy', '#f4efe2', 'hoops'],
   femke: ['#7fb2d8', '#f4cdb0', '#d0784a', 'pixie', '#e86a1c', ''], ana: ['#e28a7a', '#ecc09c', '#3a2418', 'low', '#3a3a40', ''],
   priya: ['#c9a0e8', '#b9805a', '#121014', 'bun', '#222222', ''], lea: ['#e6c38a', '#f0c8aa', '#6b3e26', 'wavy', '#8a3a2a', 'beret'],
   jose: ['#f2b65e', '#b07a52', '#151214', 'short', '#2f8f8a', ''], ingrid: ['#9ab0c8', '#f5d6c2', '#dcdde2', 'pony', '#9e2a2a', ''],
-  hangyeol: ['#c9b28a', '#dcae8a', '#a9a7a2', 'combed', '#6b4a32', 'glasses'], frederic: ['#b8c4d6', '#e8bc98', '#2a2624', 'slick', '#1f2a44', 'tie'],
+  ole: ['#c9b28a', '#f0c8aa', '#c2522a', 'messy', '#2e4a6b', 'beard'], frederic: ['#b8c4d6', '#e8bc98', '#2a2624', 'slick', '#1f2a44', 'tie'],
   jack: ['#e0a65a', '#f0c7a6', '#c9a35a', 'messy', '#222222', 'bow'], lena: ['#a8d0c0', '#f3cfb6', '#e2c47a', 'bun', '#1e1e1e', 'glasses'],
-  lukas: ['#8a9bb8', '#edc4a3', '#3a2a1e', 'slick', '#1a1a1a', ''],
+  elijah: ['#8a9bb8', '#5a3622', '#e9c46a', 'fade', '#141414', 'beard'],
 };
 const BOT_HAIR = {
   short: 'M14.6 22.5Q14 12 24 11.6Q34 12 33.4 22.5Q31 16.5 24 16.8Q17 16.5 14.6 22.5Z',
@@ -91,6 +91,9 @@ const BOT_HAIR = {
   pony: 'M14 24Q13 12 24 11Q35 12 34 24Q32.4 17 24 16.8Q15.6 17 14 24ZM31 12Q37 9 38.6 14Q40 20 36.4 27Q35.4 20 33 15Z',
   bun: 'M14.4 23Q14 12 24 11.4Q34 12 33.6 23Q31.4 16.6 24 16.8Q16.6 16.6 14.4 23ZM24 4.6A4.6 4.6 0 1 1 23.99 4.6Z',
   pixie: 'M14 23Q12.8 12.4 21 11.2Q27 10 31.6 12.8Q35 16 34 23Q32.6 18 27 16.2Q22 17.6 18 16.6Q15.6 19 14 23Z',
+  knot: 'M15 21Q15 13 24 12.6Q33 13 33 21Q30.6 16.8 24 17Q17.4 16.8 15 21ZM24 5A4.4 4.4 0 1 1 23.99 5Z',
+  braids: 'M12.4 38Q10.8 22 13.8 15Q17 10 24 10Q31 10 34.2 15Q37.2 22 35.6 38L31.8 38Q32.6 21 24 17.4Q15.4 21 16.2 38ZM12.4 38h3.8v3h-3.8zM31.8 38h3.8v3h-3.8z',
+  fade: 'M15.4 19Q15.6 12.6 24 12.4Q32.4 12.6 32.6 19Q30 15.6 24 15.8Q18 15.6 15.4 19Z',
   crown: 'M14.2 22Q14 12 24 11.4Q34 12 33.8 22Q31.6 16.4 24 16.6Q16.4 16.4 14.2 22ZM13.6 15.4Q16 9.4 24 9Q32 9.4 34.4 15.4Q31 11.4 24 11.6Q17 11.4 13.6 15.4Z',
 };
 function botAvatar(b) {
@@ -107,6 +110,8 @@ function botAvatar(b) {
     + (has('cap') ? `<path d="M13.6 18.6Q14 10.4 24 10.2Q34 10.4 34.4 18.6Q24 15.8 13.6 18.6Z" fill="#5a4a38"/><path d="M13 18.8Q24 15.6 35 18.8L34.6 20Q24 17.6 13.4 20Z" fill="#3e3226"/>` : '')
     + (has('beret') ? '<ellipse cx="22.4" cy="12.6" rx="11" ry="4.6" fill="#2a2430" transform="rotate(-10 22.4 12.6)"/><circle cx="21" cy="8" r="1.2" fill="#2a2430"/>' : '')
     + (has('bow2') ? '<path d="M28.4 12.2l3.4-2.6.4 4.4zm3.8 1.8l3.8 1.8-3.8 1.8z" fill="#ff6aa2"/>' : '')
+    + (has('beanie') ? '<path d="M13.6 17Q14 8 24 8Q34 8 34.4 17Z" fill="#6b8f5a"/><rect x="13" y="15.6" width="22" height="3" rx="1.4" fill="#557548"/><circle cx="24" cy="7.4" r="2" fill="#6b8f5a"/>' : '')
+    + (has('hoops') ? '<g fill="none" stroke="#e2b23a" stroke-width="1.1"><circle cx="14.8" cy="27" r="1.9"/><circle cx="33.2" cy="27" r="1.9"/></g>' : '')
     + (has('clip') ? '<rect x="27.4" y="13.4" width="5" height="1.8" rx=".9" fill="#ffd166" transform="rotate(-24 29.9 14.3)"/>' : '')
     + '<circle cx="20.4" cy="23.6" r="1.35" fill="#231d19"/><circle cx="27.6" cy="23.6" r="1.35" fill="#231d19"/>'
     + (has('glasses') ? '<g fill="none" stroke="#2a2420" stroke-width="1"><circle cx="20.4" cy="23.6" r="2.9"/><circle cx="27.6" cy="23.6" r="2.9"/><path d="M23.3 23.4h1.4"/></g>' : '')
@@ -142,12 +147,18 @@ const BOT_FLAGS = (() => {
     at: bars('h', ['#c8102e', '#fff', '#c8102e']),
     cn: `<rect width="60" height="40" fill="#de2910"/><path d="M10 6l1.8 5.5h5.8l-4.7 3.4 1.8 5.5-4.7-3.4-4.7 3.4 1.8-5.5-4.7-3.4h5.8z" fill="#ffde00"/>${[[20, 4], [24, 8], [24, 14], [20, 18]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#ffde00"/>`).join('')}`,
     th: bars('h', ['#a51931', '#f4f5f8', '#2d2a4a', '#2d2a4a', '#f4f5f8', '#a51931']),
+    fi: `<rect width="60" height="40" fill="#fff"/><rect x="16" width="10" height="40" fill="#003580"/><rect y="15" width="60" height="10" fill="#003580"/>`,
+    nz: `<rect width="60" height="40" fill="#012169"/><path d="M0 0l30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M15 0v20M0 10h30" stroke="#fff" stroke-width="6"/><path d="M15 0v20M0 10h30" stroke="#c8102e" stroke-width="3"/>${[[45, 10], [40, 20], [50, 18], [45, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="#c8102e" stroke="#fff" stroke-width=".7"/>`).join('')}`,
+    ng: bars('v', ['#008751', '#fff', '#008751']),
+    mx: `${bars('v', ['#006847', '#fff', '#ce1126'])}<circle cx="30" cy="20" r="3.4" fill="#8c5a2b"/>`,
+    no: `<rect width="60" height="40" fill="#ba0c2f"/><rect x="16" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="18.5" width="5" height="40" fill="#00205b"/><rect y="17.5" width="60" height="5" fill="#00205b"/>`,
+    us: `${bars('h', ['#b22234', '#fff', '#b22234', '#fff', '#b22234', '#fff', '#b22234', '#fff', '#b22234', '#fff', '#b22234', '#fff', '#b22234'])}<rect width="26" height="21.5" fill="#3c3b6e"/>`,
     gb: `<rect width="60" height="40" fill="#012169"/><path d="M0 0L60 40M60 0L0 40" stroke="#fff" stroke-width="8"/><path d="M0 0L60 40M60 0L0 40" stroke="#c8102e" stroke-width="2.6"/><path d="M30 0v40M0 20h60" stroke="#fff" stroke-width="12"/><path d="M30 0v40M0 20h60" stroke="#c8102e" stroke-width="7"/>`,
   };
   const out = {}; for (const k in F) out[k] = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">${F[k]}</svg>`);
   return out;
 })();
-const BOT_COUNTRY = { cn: '중국', th: '태국', br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
+const BOT_COUNTRY = { fi: '핀란드', nz: '뉴질랜드', ng: '나이지리아', mx: '멕시코', no: '노르웨이', us: '미국', cn: '중국', th: '태국', br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
 const botFlag = b => el('img', { class: 'flag', src: BOT_FLAGS[b.from], alt: BOT_COUNTRY[b.from] || '', title: BOT_COUNTRY[b.from] || '' });
 const botById = id => BOTS.find(b => b.id === id);
 const botTier = b => TIERS[Math.min(TIERS.length - 1, tierOf(b.rating))];
@@ -267,9 +278,9 @@ const botTalk = {
    parts of the picture's width and height - read off the pictures (owner 11-17: Priya looked far smaller than Ingrid). A new
    picture without a line here is taken as the prompts ask for it (tasks/CUE-prompts-bots-art.md): [0.5, 0.15, 0.14]. */
 const BOT_FRAME = {
-  ana: [0.62, 0.15, 0.14], emre: [0.47, 0.11, 0.15], femke: [0.53, 0.12, 0.13], haneul: [0.48, 0.13, 0.14], hangyeol: [0.54, 0.13, 0.15],
-  ingrid: [0.36, 0.15, 0.15], jack: [0.43, 0.12, 0.14], lea: [0.48, 0.17, 0.14], lena: [0.4, 0.14, 0.13], linh: [0.42, 0.16, 0.15],
-  luiza: [0.4, 0.14, 0.14], lukas: [0.4, 0.12, 0.14], marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14], nour: [0.43, 0.18, 0.13],
+  ana: [0.62, 0.15, 0.14], emre: [0.47, 0.11, 0.15], femke: [0.53, 0.12, 0.13],
+  ingrid: [0.36, 0.15, 0.15], jack: [0.43, 0.12, 0.14], lea: [0.48, 0.17, 0.14], lena: [0.4, 0.14, 0.13],
+  luiza: [0.4, 0.14, 0.14], marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14],
   ploy: [0.33, 0.16, 0.14], priya: [0.5, 0.12, 0.11], sean: [0.42, 0.15, 0.14], sofia: [0.42, 0.15, 0.13], yuki: [0.38, 0.15, 0.14],
 };
 /* (owner 11-17: shown on the desk as it leans back - 'like the old painters') The desk plane is tilted away from the eye

@@ -90,26 +90,30 @@
 .bot-row h3{margin:0 0 8px 2px;font:800 15px var(--ui-font);letter-spacing:.04em;color:rgba(255,255,255,.72)}
 .bot-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 /* (owner 11-17) the painting of the bot picked on the tray's left, behind the cards; the cards keep to the right of it */
-#dkStage .bot-art{position:absolute;left:0;top:0;width:56%;height:100%;z-index:0;pointer-events:none;border-radius:inherit;
-  -webkit-mask-image:linear-gradient(90deg,#000 66%,transparent 92%);mask-image:linear-gradient(90deg,#000 66%,transparent 92%)}
+/* (owner 11-17: cut off at the top, left and bottom - now it fades into the felt on every side, as a painting's edge would) */
+#dkStage .bot-art{position:absolute;left:0;top:0;width:56%;height:100%;z-index:0;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 64%,transparent 92%),linear-gradient(transparent,#000 8%,#000 84%,transparent);
+  -webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 9%,#000 64%,transparent 92%),linear-gradient(transparent,#000 8%,#000 84%,transparent);mask-composite:intersect}
 #dkStage .bot-tray{z-index:1}
 #dkStage .bot-tray.with-art{padding-left:41%}   /* (the painting keeps the left two fifths to itself - owner 11-17) */
 #dkStage .bot-tray.with-art .bot-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
-/* a card of its tier's metal (owner 11-17: lines drawn on a colour are not metal) - a plate rendered with three.js
-   (tools/bot-plates.cjs: brushed, bevelled, the light sweeping across it), the bot's face, its name, flag and rating; a little
-   taller than wide. The light runs across it now and then (each card on its own beat, --i), with the motion on. */
-.bot-card{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;aspect-ratio:300/410;border:0;border-radius:12px;
-  color:#3a2414;background:url(ui/bot-plate-bronze.webp) center/100% 100% no-repeat;box-shadow:0 6px 12px rgba(0,0,0,.42);transition:transform .18s ease,box-shadow .18s ease}
-.bot-card.t-silver{background-image:url(ui/bot-plate-silver.webp);color:#2b3036}
-.bot-card.t-gold{background-image:url(ui/bot-plate-gold.webp);color:#3d2a06}
-.bot-card.t-platinum{background-image:url(ui/bot-plate-platinum.webp);color:#173f3b}
-.bot-card.t-diamond{background-image:url(ui/bot-plate-diamond.webp);color:#173252}
-.bot-card.t-pro{background-image:url(ui/bot-plate-pro.webp);color:#f2e2b8}
-.bot-card.t-pro::before{content:'';position:absolute;inset:7px;border-radius:8px;box-shadow:inset 0 0 0 1.5px #d8b04a;pointer-events:none;z-index:-1}
-.bot-card .bot-pic{width:62%;height:auto;aspect-ratio:1;border-radius:14%;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,.35),0 0 0 2px rgba(255,255,255,.55)}
-.bot-card.t-pro .bot-pic{box-shadow:0 2px 5px rgba(0,0,0,.5),0 0 0 2px #d8b04a}
-.bot-card .nm{font:800 17px var(--ui-font);line-height:1.1;text-shadow:0 1px 0 rgba(255,255,255,.35)}
-.bot-card.t-pro .nm{text-shadow:none}
+/* a card of its tier's metal, printed as the menu's and the shop's cards are (owner 11-17: the rendered plates did not belong
+   to the UI): a face in the metal's own deep tones with the dot print, a frame of the metal bright and dark, the light
+   running across it now and then (each card on its own beat, --i); the bot's face, its name, flag and rating; a little
+   taller than wide. */
+.bot-card{--c1:#b9774a;--c2:#5e3519;--f1:#f3c79d;--f2:#8a4f26;--f3:#d59a66;
+  position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;aspect-ratio:300/410;
+  border:3px solid transparent;border-radius:14px;color:#fff8ee;text-shadow:0 1px 2px rgba(0,0,0,.45);
+  background:linear-gradient(200deg,rgba(255,255,255,.2),rgba(255,255,255,0) 40%) padding-box,radial-gradient(circle,rgba(255,255,255,.08) 1.2px,transparent 1.7px) 0 0/14px 14px padding-box,
+    linear-gradient(165deg,var(--c1),var(--c2)) padding-box,linear-gradient(135deg,var(--f1),var(--f2) 38%,var(--f3) 62%,var(--f2)) border-box;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 6px 12px rgba(0,0,0,.42);transition:transform .18s ease,box-shadow .18s ease}
+.bot-card.t-silver{--c1:#9aa5b3;--c2:#48525f;--f1:#ffffff;--f2:#8c96a3;--f3:#d7dde5}
+.bot-card.t-gold{--c1:#d7a73a;--c2:#7a5310;--f1:#fff1b8;--f2:#a87818;--f3:#f3d277}
+.bot-card.t-platinum{--c1:#5fb0a7;--c2:#1f5753;--f1:#e6fffb;--f2:#5aa39c;--f3:#b8ece6}
+.bot-card.t-diamond{--c1:#6aa3e0;--c2:#1d3f78;--f1:#f0f8ff;--f2:#6fa3dd;--f3:#c6e3ff}
+.bot-card.t-pro{--c1:#3a322a;--c2:#0f0c0a;--f1:#f6dc8e;--f2:#8a6418;--f3:#e0b553;color:#f6e3b0}
+.bot-card .bot-pic{width:62%;height:auto;aspect-ratio:1;border-radius:14%;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,.35),0 0 0 2px var(--f3)}
+.bot-card .nm{font:800 17px var(--ui-font);line-height:1.1}
 .bot-card .rt{display:flex;align-items:center;gap:6px;font:700 13.5px var(--ui-font);opacity:.88}
 .bot-card .flag{width:20px;height:13px}
 .bot-card .sheen{position:absolute;inset:-20% -60%;z-index:1;pointer-events:none;opacity:0;mix-blend-mode:soft-light;

@@ -10,56 +10,58 @@ Rules for every picture:
 - Holding a billiard cue as described. Fully clothed, modest, nothing suggestive. Every character is an adult.
 - No text, no logo, no watermark, no frame.
 - Square, 1024 × 1024, PNG with transparency.
-- Each character must look clearly different from the others (face shape, eyes, skin, hair) as described.
+- Each character must look clearly different from the others - face shape, skin, eyes, and above all the hair colour and
+  style - exactly as described.
+- Mouth closed: a closed-lip smile or a calm closed mouth, never an open-mouthed grin or laugh.
 
 When all ten are done: name each file exactly as its ID below (for example `bot-haneul.png`) and put all ten in one zip
 file named `CUE-batch-bots2.zip`.
 
 ## The characters
 
-**bot-haneul** — Korean woman, 21, a part-timer at a neighbourhood billiard hall. Soft round face, gentle narrow eyes,
-bright grin. Chestnut-brown straight bob to the chin with see-through bangs and a yellow hair clip. Cream-and-green
-striped shirt, sleeves pushed up, dark-green work apron with a small name tag. Both hands stacked on the top of the
-upright cue, chin resting on them, head tilted, peeking playfully.
+**bot-aila** — Finnish woman, 24, a librarian from Helsinki. Very fair skin with light freckles across the nose, pale
+blue-grey eyes, a shy closed-lip smile. Platinum white-blonde hair cut in a straight bob with blunt bangs, under a moss-green
+knitted beanie. Oversized rust-orange cable-knit sweater. Holding the cue upright against her shoulder with both hands,
+slightly hunched and bashful, glancing at the viewer.
 
-**bot-carlos** — Colombian man, 28, a motorbike mechanic. Tanned skin, strong jaw, thick eyebrows, light stubble, cocky
-grin. Thick black curls held back by a red bandana. Faded denim work shirt, sleeves rolled up, a smudge of grease on one
-cheek. Cue across his shoulders behind his neck, wrists hooked over it, leaning back laughing.
+**bot-tane** — Māori man from New Zealand, 27, a rugby player. Warm brown skin, broad shoulders, strong brow, dark eyes, a
+confident closed-mouth smile. Thick black curly hair tied up in a top knot, short beard. Navy rugby jersey with white
+collar. Cue held across his chest in both hands like he is about to pass a ball, standing square and strong.
 
-**bot-luiza** — Afro-Brazilian woman, 26, a samba teacher. Warm deep-brown skin, big bright eyes, joyful open laugh. Big
-voluminous black curls with golden-brown tips, a small yellow flower in her hair. Green-and-yellow track jacket zipped up
-over a white top, gold hoop earrings. Mid-dance, holding the cue level in both hands at chest height, hair swinging.
+**bot-amara** — Nigerian woman, 26, a fashion designer from Lagos. Deep dark-brown skin, high cheekbones, large dark eyes
+with long lashes, a proud closed-lip smile. Long black box braids with small gold cuffs, gathered over one shoulder. A
+bold orange-and-teal ankara-print jacket over a black top, gold earrings. One hand on her hip, the cue held upright in the
+other, chin up.
 
-**bot-linh** — Vietnamese woman, 21, a university student. Slim oval face, gentle almond eyes, soft shy smile. Very long
-straight black hair, half-up with a small jade hairpin, the rest over one shoulder. Pastel-lavender áo dài-style top
-with a high mandarin collar and fine embroidery. Chalking the cue's tip with a blue chalk cube, cue held diagonally,
-eyes lifted to the viewer.
+**bot-ximena** — Mexican woman, 28, a muralist from Oaxaca. Warm tan skin, dark brown eyes, defined brows, a calm
+closed-lip smile. Long wavy hair dyed deep wine-burgundy, a few small braids woven in. A white blouse with bright red,
+pink and green floral embroidery at the neckline, gold hoop earrings, a fleck of paint on one hand. Chalking the cue's tip,
+looking thoughtfully along the cue.
 
-**bot-nour** — Egyptian woman, 27, a three-cushion billiards player. Warm olive-brown skin, strong dark eyebrows, large
-dark eyes with long lashes, calm knowing smile. Thick wavy black hair in a low loose bun, a few strands free. Cream linen
-shirt under an olive-green waistcoat, thin gold bracelet. Bent forward in a shooting stance, the cue level under her
-chin, eyes looking up at the viewer.
+**bot-luiza** — Afro-Brazilian woman, 26, a samba teacher from Rio. Warm deep-brown skin, big bright eyes, a joyful
+closed-lip smile. Big voluminous natural curls dyed golden-honey at the ends, a small yellow flower in her hair.
+Green-and-yellow track jacket zipped up over a white top, gold hoop earrings. Mid-dance, holding the cue level in both
+hands at chest height, hair swinging.
 
-**bot-priya** — Indian woman, 29, a software engineer. Warm medium-brown skin, large dark eyes, thick dark eyebrows,
-small gold nose stud, small bindi, thoughtful smile. Thick long black hair in one loose side braid. Deep-teal kurta-style
-tunic with gold embroidery at the neckline, a light cardigan over it, thin gold bangles. Cue tucked under one arm,
-tapping her chin with a chalk cube, looking up and to the side as if solving a puzzle.
+**bot-priya** — Indian woman, 29, a software engineer from Bengaluru. Warm medium-brown skin, large dark eyes, thick dark
+eyebrows, small gold nose stud, small bindi, a thoughtful closed-lip smile. Thick long black hair in one loose side braid.
+Deep-teal kurta-style tunic with gold embroidery at the neckline, a light cardigan over it, thin gold bangles. Cue tucked
+under one arm, tapping her chin with a chalk cube, looking up and to the side as if solving a puzzle.
 
-**bot-jose** — Filipino man, 38, a street-pool legend. Tan skin, broad friendly face, short moustache, easy grin. Short
-black hair, a little spiky on top. Short-sleeved teal-and-white patterned polo shirt, silver watch. Leaning on the
-upright cue with one elbow, other hand in his pocket, relaxed.
+**bot-jose** — Filipino man, 38, a street-pool legend from Manila. Tan skin, broad friendly face, short moustache, an easy
+closed-mouth smile. Short black hair, a little spiky on top. Short-sleeved teal-and-white patterned polo shirt, silver
+watch. Leaning on the upright cue with one elbow, other hand in his pocket, relaxed.
 
-**bot-hangyeol** — Korean man, 62, owner of a neighbourhood billiard hall for 35 years. Lean lined face, narrow eyes
-behind thin round glasses, neat grey goatee, small smile. Short silver-grey hair combed back. Brown knitted wool vest over
-a white collared shirt, sleeves rolled once, dark slacks, a small hand towel over one shoulder. Standing straight,
-carefully chalking the cue's tip, the cue resting against his shoulder.
+**bot-ole** — Norwegian man, 46, a fisherman from Bergen. Weathered fair skin with ruddy cheeks, pale blue eyes with
+crinkles, a calm closed mouth. Long copper-red hair tied back and a full copper-red beard. A cream fisherman's cable
+sweater. Standing with the cue planted upright beside him like a mast, one hand high on it, steady and calm.
 
-**bot-frederic** — Belgian man, 52, a three-cushion professional. Long refined European face, calm grey eyes, neat
-greying moustache, unreadable expression. Dark hair greying at the temples, slicked back. Crisp white shirt, black
-waistcoat, black bow tie, a white billiard glove on one hand. Holding the cue upright in front of him with both hands,
-chin slightly raised.
+**bot-frederic** — Belgian man, 52, a three-cushion professional. Long refined European face, calm grey eyes, neat greying
+moustache, an unreadable closed mouth. Dark hair greying at the temples, slicked back. Crisp white shirt, black waistcoat,
+black bow tie, a white billiard glove on one hand. Holding the cue upright in front of him with both hands, chin slightly
+raised.
 
-**bot-lukas** — Austrian man, 33, a professional pool player. Fair skin, angular face, light grey-blue eyes, light
-stubble, confident half-smile. Light ash-brown hair, short at the sides, swept back on top. Black waistcoat over a white
-shirt, sleeves rolled to the elbow, loosened dark tie. Half-sitting back against a table edge, cue loosely upright in one
-hand.
+**bot-elijah** — African-American man, 35, a professional pool player from Chicago. Rich dark-brown skin, a strong jaw, a
+neat short beard, focused dark eyes, a cool closed-mouth half-smile. Short hair, a fade at the sides with the top dyed
+bleach-blond. A black silk shirt with the top button open, a thin gold chain. Holding the cue behind his back with both
+hands, standing tall and composed.
