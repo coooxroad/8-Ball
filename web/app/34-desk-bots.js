@@ -20,14 +20,10 @@ const BOTS = [
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
     line: '一球一球、心を込めて。', ko: '한 공 한 공, 마음을 담아서.', bio: '도쿄 동네 당구장 사장님 딸. 매일 밀어치기만 연습한다.' },
-  { id: 'tane', name: '타네', from: 'nz', lang: 'en', rating: 700, personality: 'playful', style: 'power', was: 'carlos',
-    line: 'Kia kaha - stay strong, hit straight.', ko: '키아 카하 - 굳세게, 똑바로 쳐.', bio: '오클랜드의 럭비 선수. 시즌이 끝나면 당구장에서 산다.' },
-  { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'showman', pic: true,
-    line: 'Quem joga com alegria nunca perde de verdade.', ko: '즐겁게 치는 사람은 진짜로 지는 법이 없어.', bio: '리우데자네이루의 삼바 강사. 샷마다 스텝을 밟는다.' },
+  { id: 'luiza', name: '루이자', from: 'br', lang: 'pt', rating: 780, personality: 'playful', style: 'follow',
+    line: 'Devagar, no ritmo da bossa nova.', ko: '천천히, 보사노바 리듬으로.', bio: '리우 해변 바에서 보사노바를 부른다. 공연 쉬는 시간마다 당구대 앞에 와 있다.' },
   { id: 'ploy', name: '플로이', from: 'th', lang: 'th', rating: 820, personality: 'playful', style: 'follow', pic: true,
     line: 'สนุกไว้ก่อน แล้วลูกจะลงเอง', ko: '일단 즐기면, 공은 알아서 들어가.', bio: '방콕의 디저트 카페 사장. 분홍 머리는 가게 마카롱 색.' },
-  { id: 'amara', name: '아마라', from: 'ng', lang: 'en', rating: 900, personality: 'impatient', style: 'spinner', was: 'linh',
-    line: 'No shaking. The table knows who is boss.', ko: '떨지 마. 누가 대장인지 당구대도 알아.', bio: '라고스의 패션 디자이너. 옷만큼 화려한 회전을 건다.' },
   { id: 'sofia', name: '소피아', from: 'gr', lang: 'el', rating: 980, personality: 'calm', style: 'balanced', pic: true,
     line: 'Η θάλασσα δεν βιάζεται ποτέ.', ko: '바다는 절대 서두르지 않아.', bio: '아테네의 해양생물학자. 파도 소리를 들으며 연습한다.' },
   { id: 'sean', name: '숀', from: 'ie', lang: 'en', rating: 1050, personality: 'calm', style: 'defensive', pic: true,
@@ -40,14 +36,14 @@ const BOTS = [
     line: 'Сила без точности - ничто.', ko: '정확하지 않은 힘은 아무것도 아니에요.', bio: '모스크바의 러시안 피라미드 챔피언. 공만 한 포켓에 넣던 손이라 쿠션 경로가 한 치도 안 틀린다.' },
   { id: 'femke', name: '펨케', from: 'nl', lang: 'nl', rating: 1350, personality: 'impatient', style: 'power', pic: true, was: 'willem',
     line: 'Via de band is altijd korter.', ko: '쿠션을 돌아가는 게 언제나 더 빨라.', bio: '로테르담 항구의 크레인 기사. 기다리는 걸 제일 싫어한다.' },
-  { id: 'ana', name: '아나', from: 'es', lang: 'es', rating: 1450, personality: 'meticulous', style: 'position', pic: true,
-    line: 'La bola de hoy prepara la de mañana.', ko: '지금 치는 공이 다음 공을 준비해요.', bio: '발렌시아의 건축가. 당구대를 도면처럼 본다.' },
+  { id: 'ana', name: '아나', from: 'es', lang: 'es', rating: 1450, personality: 'meticulous', style: 'position',
+    line: 'El billar es como el flamenco: todo es compás.', ko: '당구는 플라멩코 같아요. 전부 박자예요.', bio: '세비야의 플라멩코 무용수. 다음 공까지 박자를 세며 자리를 만든다.' },
   { id: 'priya', name: '프리야', from: 'in', lang: 'hi', rating: 1550, personality: 'meticulous', style: 'defensive', pic: true,
     line: 'हर गेंद एक सवाल है, और हर शॉट उसका जवाब।', ko: '모든 공은 질문이고, 모든 샷은 그 대답이에요.', bio: '벵갈루루의 소프트웨어 엔지니어. 샷 전에 머릿속으로 시뮬레이션을 돌린다.' },
   { id: 'lea', name: '레아', from: 'fr', lang: 'fr', rating: 1650, personality: 'playful', style: 'masse', pic: true,
     line: 'Le billard, c’est de la géométrie qui danse.', ko: '당구는 춤추는 기하학이에요.', bio: '파리의 문학도. 공이 휘어 가는 걸 시처럼 좋아한다.' },
-  { id: 'jose', name: '호세', from: 'ph', lang: 'tl', rating: 1750, personality: 'calm', style: 'draw',
-    line: 'Huwag magmadali. Marunong maghintay ang bola.', ko: '서두르지 마요. 공은 기다릴 줄 알아요.', bio: '마닐라 거리 당구에서 자랐다. 끌어치기 하나로 이름을 알렸다.' },
+  { id: 'migo', name: '미고', from: 'ph', lang: 'tl', rating: 1750, personality: 'playful', style: 'draw', was: 'jose',
+    line: 'Mas matangkad pa sa akin ang tako ko. Pero ako ang panalo!', ko: '큐가 나보다 커요. 그래도 이기는 건 나예요!', bio: '세부의 열두 살 신동. 아빠 당구장에서 큐가 자기 키보다 클 때부터 쳤다.' },
   { id: 'ingrid', name: '잉그리드', from: 'se', lang: 'sv', rating: 1850, personality: 'playful', style: 'spinner', pic: true,
     line: 'Det enkla är det svåra.', ko: '쉬운 게 제일 어려운 거야.', bio: '스톡홀름의 엔지니어. 껌을 씹으며 표정 하나 안 바꾸고 회전을 건다.' },
   { id: 'ole', name: '올레', from: 'no', lang: 'no', rating: 1950, personality: 'calm', style: 'defensive', was: 'hangyeol',
@@ -66,14 +62,14 @@ const BOTS = [
    thing of their own (glasses, a beard, a cap...). [background, skin, hair colour, hair, clothes, extra] */
 const BOT_FACE = {
   daeun: ['#9fd3e6', '#f5d3b8', '#16161c', 'blunt', '#8ec1ea', 'inner'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
-  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], tane: ['#f2c14e', '#a8714a', '#1a1412', 'knot', '#1f3b5a', ''],
+  yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''],
   ploy: ['#f6b3cf', '#f1c9a5', '#f08cb8', 'long', '#fbf3f6', 'bow2'], meilin: ['#e7a0a0', '#f4d3bd', '#1d2a4a', 'bun', '#b8242c', ''],
-  luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], amara: ['#f2a6b8', '#6b4026', '#1a1412', 'braids', '#e0542a', ''],
+  luiza: ['#7fd0a0', '#d9a074', '#a8703c', 'wavy', '#f4f1ea', ''],
   sofia: ['#8ec5e8', '#e2b38e', '#2a1d16', 'crown', '#2c3e5c', ''], sean: ['#8fbf6a', '#f2c6a5', '#b5562a', 'short', '#7a5a3a', 'cap beard'],
   emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], darya: ['#e7b26a', '#f6e2d6', '#5a2e1c', 'crown', '#141414', ''],
-  femke: ['#7fb2d8', '#f4cdb0', '#d0784a', 'pixie', '#e86a1c', ''], ana: ['#e28a7a', '#ecc09c', '#3a2418', 'low', '#3a3a40', ''],
+  femke: ['#7fb2d8', '#f4cdb0', '#d0784a', 'pixie', '#e86a1c', ''], ana: ['#e28a7a', '#e8b896', '#2a1a14', 'bun', '#141414', 'flower'],
   priya: ['#c9a0e8', '#b9805a', '#121014', 'bun', '#222222', ''], lea: ['#e6c38a', '#f0c8aa', '#6b3e26', 'wavy', '#8a3a2a', 'beret'],
-  jose: ['#f2b65e', '#b07a52', '#151214', 'short', '#2f8f8a', ''], ingrid: ['#9ab0c8', '#f5d6c2', '#dcdde2', 'pony', '#9e2a2a', ''],
+  migo: ['#f2b65e', '#b07a52', '#151214', 'messy', '#1f4fb0', 'phones'], ingrid: ['#9ab0c8', '#f5d6c2', '#dcdde2', 'pony', '#9e2a2a', ''],
   ole: ['#c9b28a', '#f0c8aa', '#c2522a', 'messy', '#2e4a6b', 'beard'], frederic: ['#b8c4d6', '#e8bc98', '#2a2624', 'slick', '#1f2a44', 'tie'],
   jack: ['#e0a65a', '#f0c7a6', '#c9a35a', 'messy', '#222222', 'bow'], lena: ['#a8d0c0', '#f3cfb6', '#e2c47a', 'bun', '#1e1e1e', 'glasses'],
   elijah: ['#8a9bb8', '#5a3622', '#1a1412', 'fade', '#4a2e1c', 'hat tache'],
@@ -115,6 +111,8 @@ function botAvatar(b) {
     + (has('inner') ? '<path d="M15.4 27q.6-6 2.8-8.6M32.6 27q-.6-6-2.8-8.6" stroke="#2f6fd6" stroke-width="2" fill="none"/>' : '')
     + (has('band') ? '<path d="M14.6 17.4Q24 11 33.4 17.4" stroke="#111" stroke-width="2.2" fill="none"/>' : '')
     + (has('hat') ? '<path d="M8.6 15.6Q24 11 39.4 15.6Q38 17.6 24 16.4Q10 17.6 8.6 15.6Z" fill="#111"/><path d="M15.4 15Q15 6.6 24 6.4Q33 6.6 32.6 15Q24 13.2 15.4 15Z" fill="#1b1b1b"/><path d="M15.6 13.6Q24 11.8 32.4 13.6" stroke="#6b4a2a" stroke-width="1.2" fill="none"/>' : '')
+    + (has('flower') ? '<circle cx="31.6" cy="12.6" r="2.6" fill="#d7263d"/><circle cx="31.6" cy="12.6" r="1" fill="#8a1020"/>' : '')
+    + (has('phones') ? '<path d="M14 35q-1-7 4-8M34 35q1-7-4-8" stroke="#222" stroke-width="2.2" fill="none"/><rect x="11.6" y="33" width="4.4" height="5" rx="1.6" fill="#ff4d6d"/><rect x="32" y="33" width="4.4" height="5" rx="1.6" fill="#ff4d6d"/>' : '')
     + (has('clip') ? '<rect x="27.4" y="13.4" width="5" height="1.8" rx=".9" fill="#ffd166" transform="rotate(-24 29.9 14.3)"/>' : '')
     + '<circle cx="20.4" cy="23.6" r="1.35" fill="#231d19"/><circle cx="27.6" cy="23.6" r="1.35" fill="#231d19"/>'
     + (has('glasses') ? '<g fill="none" stroke="#2a2420" stroke-width="1"><circle cx="20.4" cy="23.6" r="2.9"/><circle cx="27.6" cy="23.6" r="2.9"/><path d="M23.3 23.4h1.4"/></g>' : '')
@@ -282,9 +280,9 @@ const botTalk = {
    parts of the picture's width and height - read off the pictures (owner 11-17: Priya looked far smaller than Ingrid). A new
    picture without a line here is taken as the prompts ask for it (tasks/CUE-prompts-bots-art.md): [0.5, 0.15, 0.14]. */
 const BOT_FRAME = {
-  ana: [0.62, 0.15, 0.14], emre: [0.47, 0.11, 0.15], femke: [0.53, 0.12, 0.13],
+  emre: [0.47, 0.11, 0.15], femke: [0.53, 0.12, 0.13],
   ingrid: [0.36, 0.15, 0.15], jack: [0.43, 0.12, 0.14], lea: [0.48, 0.17, 0.14], lena: [0.4, 0.14, 0.13],
-  luiza: [0.4, 0.14, 0.14], marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14],
+  marco: [0.42, 0.1, 0.12], meilin: [0.47, 0.16, 0.14],
   ploy: [0.33, 0.16, 0.14], priya: [0.5, 0.12, 0.11], sean: [0.42, 0.15, 0.14], sofia: [0.42, 0.15, 0.13], yuki: [0.38, 0.15, 0.14],
 };
 /* (owner 11-17: shown on the desk as it leans back - 'like the old painters') The desk plane is tilted away from the eye
