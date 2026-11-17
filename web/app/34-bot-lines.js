@@ -273,3 +273,28 @@ const BOT_REACT = {
     gift: [['Thanks, partner. I’ll take it from here.', '고마워, 친구. 여기서부턴 내가 할게.'], ['That one was a gimme.', '그건 거저먹는 공이었는데.']] },
 };
 for (const id in BOT_REACT) if (BOT_LINES[id]) Object.assign(BOT_LINES[id][0], BOT_REACT[id]);
+/* (11-18 night: one more line each for the moments a game hears most - its own shot coming, made, missed - so that game
+   after game a bot is not heard saying the same two things) */
+const BOT_MORE = {
+  sua: { think: [['오늘은 꼭 한 번은 두 개 연속 넣어 볼래요.']], score: [['저 방금 좀 멋있었죠?']], miss: [['아, 각도를 잘못 봤어요.']] },
+  marco: { think: [['Come la nonna: con pazienza.', '할머니처럼, 인내심을 갖고.']], score: [['Perfetto, come un risotto al dente.', '완벽해요, 알덴테 리소토처럼.']], miss: [['Accidenti!', '이런!']] },
+  yuki: { think: [['呼吸を整えて…', '숨을 고르고…']], score: [['ふう、入りました。', '휴, 들어갔어요.']], miss: [['集中、集中。', '집중, 집중.']] },
+  luiza: { think: [['Devagar se vai ao longe.', '천천히 가면 멀리 가.']], score: [['Isso! Bateu no ritmo.', '바로 그거! 리듬이 맞았어.']], miss: [['Faltou swing.', '스윙이 모자랐네.']] },
+  ploy: { think: [['ใจเย็น ๆ นะพลอย', '침착해, 플로이.']], score: [['หวานกว่าเค้กอีก', '케이크보다 달콤하다.']], miss: [['โอ๊ย แรงไปหน่อย', '아이고, 좀 셌네.']] },
+  sofia: { think: [['Υπομονή, όπως στη θάλασσα.', '바다에서처럼, 인내.']], score: [['Σαν δελφίνι στο κύμα.', '파도 위 돌고래처럼.']], miss: [['Λίγο πιο λεπτά ήθελε.', '조금 더 얇게 쳤어야 했어요.']] },
+  sean: { think: [['Nice and easy now.', '자, 살살.']], score: [['Grand job, so.', '잘했어, 그래.']], miss: [['Ah, that one got away from me.', '아, 그건 빠져나갔네.']] },
+  meilin: { think: [['气要沉，手要稳。', '기운은 가라앉히고, 손은 안정되게.']], score: [['恰到好处。', '딱 알맞게.']], miss: [['力道差了一点。', '힘이 조금 모자랐어요.']] },
+  emre: { think: [['Bir yudum çay, sonra vuruş.', '차 한 모금, 그다음 샷.']], score: [['Afiyet olsun!', '맛있게 드세요!']], miss: [['Bu sefer olmadı.', '이번엔 안 됐네요.']] },
+  darya: { think: [['Траектория ясна.', '궤적은 분명해요.']], score: [['Ожидаемо.', '예상대로예요.']], miss: [['Досадно.', '분하네요.']] },
+  femke: { think: [['Kom op, Femke.', '자, 펨케.']], score: [['Hup, erin!', '자, 들어가!']], miss: [['Pff, net niet.', '흠, 아깝게 안 됐네.']] },
+  ana: { think: [['Respira… y baila.', '숨 쉬고… 춤추듯이.']], score: [['Como un zapateado.', '사파테아도처럼.']], miss: [['Me salió de compás.', '박자를 놓쳤어요.']] },
+  lea: { think: [['Laisse-moi lire la table.', '테이블을 읽어 볼게요.']], score: [['Comme une rime parfaite.', '완벽한 운율처럼.']], miss: [['Un vers raté.', '빗나간 시구네요.']] },
+  migo: { think: [['Kaya ko ’to!', '나 할 수 있어!']], score: [['Isa pa! Isa pa!', '하나 더! 하나 더!']], miss: [['Uy, muntik na!', '앗, 아깝다!']] },
+  ingrid: { think: [['Skruv åt vänster. Kanske.', '왼쪽 회전. 아마도.']], score: [['Precis som planerat.', '계획대로야.']], miss: [['För mycket skruv.', '회전이 너무 많았어.']] },
+  ole: { think: [['Rolig hånd.', '차분한 손.']], score: [['Godt fiske.', '어획 좋네요.']], miss: [['Neste gang.', '다음엔.']] },
+  frederic: { think: [['Trois bandes. Pas une de plus.', '쿠션 셋. 하나도 더 말고.']], score: [['Propre.', '깔끔하군요.']], miss: [['Trop d’effet.', '회전이 너무 많았군요.']] },
+  jack: { think: [['Drum roll, please.', '북 좀 쳐 줄래?']], score: [['And the crowd goes wild!', '관중이 열광합니다!']], miss: [['That was for the cameras.', '그건 카메라용이었어.']] },
+  lena: { think: [['Erst denken, dann stoßen.', '먼저 생각하고, 그다음 친다.']], score: [['Wie berechnet.', '계산대로예요.']], miss: [['Unpräzise.', '부정확했어요.']] },
+  elijah: { think: [['Let me show you how it’s done.', '어떻게 하는 건지 보여 줄게.']], score: [['Like taking candy from a baby.', '식은 죽 먹기지.']], miss: [['Table’s a little crooked, partner.', '테이블이 좀 삐뚤어졌나 봐, 친구.']] },
+};
+for (const id in BOT_MORE) if (BOT_LINES[id]) for (const m in BOT_MORE[id]) BOT_LINES[id][0][m] = (BOT_LINES[id][0][m] || []).concat(BOT_MORE[id][m]);
