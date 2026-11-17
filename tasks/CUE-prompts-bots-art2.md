@@ -19,10 +19,10 @@ file named `CUE-batch-bots2.zip`.
 
 ## The characters
 
-**bot-aila** — Finnish woman, 24, a librarian from Helsinki. Very fair skin with light freckles across the nose, pale
-blue-grey eyes, a shy closed-lip smile. Platinum white-blonde hair cut in a straight bob with blunt bangs, under a moss-green
-knitted beanie. Oversized rust-orange cable-knit sweater. Holding the cue upright against her shoulder with both hands,
-slightly hunched and bashful, glancing at the viewer.
+**bot-daeun** — Korean woman, 21, a freshman in a university billiards club. Light warm skin, bright round dark eyes, a
+cheerful closed-lip smile. Glossy black chin-length bob with a vivid cobalt-blue inner layer showing underneath, a small
+silver ear cuff. An oversized sky-blue hoodie with the sleeves over her hands. Holding the cue upright and hugging it
+close with both arms, leaning her cheek against it, eager and a little nervous.
 
 **bot-tane** — Māori man from New Zealand, 27, a rugby player. Warm brown skin, broad shoulders, strong brow, dark eyes, a
 confident closed-mouth smile. Thick black curly hair tied up in a top knot, short beard. Navy rugby jersey with white
@@ -33,10 +33,10 @@ with long lashes, a proud closed-lip smile. Long black box braids with small gol
 bold orange-and-teal ankara-print jacket over a black top, gold earrings. One hand on her hip, the cue held upright in the
 other, chin up.
 
-**bot-ximena** — Mexican woman, 28, a muralist from Oaxaca. Warm tan skin, dark brown eyes, defined brows, a calm
-closed-lip smile. Long wavy hair dyed deep wine-burgundy, a few small braids woven in. A white blouse with bright red,
-pink and green floral embroidery at the neckline, gold hoop earrings, a fleck of paint on one hand. Chalking the cue's tip,
-looking thoughtfully along the cue.
+**bot-darya** — Russian woman, 27, a former figure skater from St. Petersburg. Pale porcelain skin, cool ice-grey eyes,
+high cheekbones, a composed closed-lip smile. Long straight ash-platinum hair held back by a black velvet headband. A
+dark navy high-neck knit dress with long sleeves, small pearl earrings. Standing with perfect posture, the cue held
+lightly in one hand like a skater's arm line, the other hand graceful at her side.
 
 **bot-luiza** — Afro-Brazilian woman, 26, a samba teacher from Rio. Warm deep-brown skin, big bright eyes, a joyful
 closed-lip smile. Big voluminous natural curls dyed golden-honey at the ends, a small yellow flower in her hair.
@@ -61,7 +61,8 @@ moustache, an unreadable closed mouth. Dark hair greying at the temples, slicked
 black bow tie, a white billiard glove on one hand. Holding the cue upright in front of him with both hands, chin slightly
 raised.
 
-**bot-elijah** — African-American man, 35, a professional pool player from Chicago. Rich dark-brown skin, a strong jaw, a
-neat short beard, focused dark eyes, a cool closed-mouth half-smile. Short hair, a fade at the sides with the top dyed
-bleach-blond. A black silk shirt with the top button open, a thin gold chain. Holding the cue behind his back with both
-hands, standing tall and composed.
+**bot-elijah** — African-American man, 34, a wandering pool prodigy originally from Kentucky - laid-back, cocky, a
+genius who plays fast. Rich dark-brown skin, a thin moustache, sharp amused eyes, a lopsided closed-mouth smirk. Short
+hair under a black flat-brimmed cowboy hat. A worn brown leather duster coat over a dark shirt open at the collar, a
+leather wristband. Slouched easily against the cue held loosely at his side, one thumb hooked in his belt, looking at the
+viewer as if he already knows how the game ends.

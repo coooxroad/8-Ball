@@ -14,8 +14,8 @@
 // (owner 11-17: one more for each tier - 21; more women than men but not a dating game: the men in 다이아 and 프로; two
 // Koreans only. Each group is a tier of the ranked ladder: TIERS, 33-desk-play.js)
 const BOTS = [
-  { id: 'aila', name: '아일라', from: 'fi', lang: 'fi', rating: 300, personality: 'nervous', style: 'natural', was: 'haneul',
-    line: 'Hiljaa hyvä tulee.', ko: '천천히 해야 잘 돼요.', bio: '헬싱키의 도서관 사서. 조용한 당구장을 좋아하고, 공이 부딪히는 소리에 매번 놀란다.' },
+  { id: 'daeun', name: '다은', from: 'kr', lang: 'ko', rating: 300, personality: 'nervous', style: 'natural', was: 'haneul',
+    line: '못 넣어도 괜찮아요. 오늘은 큐 잡는 법부터!', bio: '대학 당구 동아리 신입. 파란 속머리는 동아리 들어간 기념으로 했다.' },
   { id: 'marco', name: '마르코', from: 'it', lang: 'it', rating: 450, personality: 'nervous', style: 'balanced', pic: true,
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
@@ -36,8 +36,8 @@ const BOTS = [
     line: '心静，球自然就稳了。', ko: '마음이 고요하면, 공도 저절로 안정돼요.', bio: '상하이의 고전무용 강사. 큐를 들면 춤추듯 움직인다.' },
   { id: 'emre', name: '엠레', from: 'tr', lang: 'tr', rating: 1180, personality: 'calm', style: 'gather', pic: true,
     line: 'Toplar bir araya gelirse oyun kendiliğinden akar.', ko: '공이 모이면 경기는 저절로 흘러가요.', bio: '이스탄불 찻집 겸 당구장 주인. 차 한 잔 마시고 친다.' },
-  { id: 'ximena', name: '시메나', from: 'mx', lang: 'es', rating: 1250, personality: 'meticulous', style: 'banker', was: 'nour',
-    line: 'Cada banda cuenta una historia.', ko: '쿠션 하나하나가 이야기를 들려줘요.', bio: '오악사카의 벽화 화가. 쿠션 경로를 붓질처럼 그린다.' },
+  { id: 'darya', name: '다리야', from: 'ru', lang: 'ru', rating: 1250, personality: 'meticulous', style: 'banker', was: 'nour',
+    line: 'Точность - это тоже красота.', ko: '정확함도 아름다움이에요.', bio: '상트페테르부르크의 전직 피겨 선수. 쿠션 경로를 안무처럼 외운다.' },
   { id: 'femke', name: '펨케', from: 'nl', lang: 'nl', rating: 1350, personality: 'impatient', style: 'power', pic: true, was: 'willem',
     line: 'Via de band is altijd korter.', ko: '쿠션을 돌아가는 게 언제나 더 빨라.', bio: '로테르담 항구의 크레인 기사. 기다리는 걸 제일 싫어한다.' },
   { id: 'ana', name: '아나', from: 'es', lang: 'es', rating: 1450, personality: 'meticulous', style: 'position', pic: true,
@@ -58,25 +58,25 @@ const BOTS = [
     line: 'If you’re going to miss, miss beautifully.', ko: '놓칠 거면 멋지게 놓쳐.', bio: '런던 펍의 스누커 스타. 보는 사람이 있어야 잘 친다.' },
   { id: 'lena', name: '레나', from: 'de', lang: 'de', rating: 2200, personality: 'meticulous', style: 'banker', pic: true, was: 'max',
     line: 'Präzision ist keine Kunst, sondern Gewohnheit.', ko: '정확함은 재능이 아니라 습관이에요.', bio: '뮌헨의 시계 기술자. 빗나간 각도를 0.1도까지 기억한다.' },
-  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'calm', style: 'power', was: 'lukas',
-    line: 'Pressure is a privilege.', ko: '압박감은 특권이야.', bio: '시카고의 프로 포켓볼 선수. 큰 판일수록 더 조용해진다.' },
+  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'playful', style: 'power', was: 'lukas',
+    line: 'Relax. I already saw the whole rack.', ko: '긴장 풀어. 난 벌써 판 전체를 다 봤거든.', bio: '켄터키 출신의 떠돌이 천재. 카우보이모자를 쓰고, 상대가 생각하는 동안 벌써 다음 세 수를 친다.' },
 ];
 /* Each bot's face on its card (owner 11-17: like chess.com's bot icons, simpler still - drawn here, not the painting): a
    square of its colour, its shoulders in its clothes, a round face, its hair as one shape, two dots for eyes; a few have a
    thing of their own (glasses, a beard, a cap...). [background, skin, hair colour, hair, clothes, extra] */
 const BOT_FACE = {
-  aila: ['#9fd3e6', '#f7dccb', '#f1ead2', 'blunt', '#c96a4a', 'beanie'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
+  daeun: ['#9fd3e6', '#f5d3b8', '#16161c', 'blunt', '#8ec1ea', 'inner'], marco: ['#f0a37c', '#e8b48f', '#1e1a18', 'curly', '#f4f1ea', ''],
   yuki: ['#b9b4f0', '#f6d2b8', '#15131a', 'blunt', '#2b3a66', ''], tane: ['#f2c14e', '#a8714a', '#1a1412', 'knot', '#1f3b5a', ''],
   ploy: ['#f6b3cf', '#f1c9a5', '#f08cb8', 'long', '#fbf3f6', 'bow2'], meilin: ['#e7a0a0', '#f4d3bd', '#1d2a4a', 'bun', '#b8242c', ''],
   luiza: ['#7fd0a0', '#c98d62', '#9a6a3a', 'long', '#e3b320', ''], amara: ['#f2a6b8', '#6b4026', '#1a1412', 'braids', '#e0542a', ''],
   sofia: ['#8ec5e8', '#e2b38e', '#2a1d16', 'crown', '#2c3e5c', ''], sean: ['#8fbf6a', '#f2c6a5', '#b5562a', 'short', '#7a5a3a', 'cap beard'],
-  emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], ximena: ['#e7b26a', '#d3a07a', '#7a1f36', 'wavy', '#f4efe2', 'hoops'],
+  emre: ['#f0c38a', '#d9a27a', '#8f8a86', 'short', '#7a2430', 'tache'], darya: ['#e7b26a', '#f6e2d6', '#d8d2c4', 'long', '#1d2a44', 'band'],
   femke: ['#7fb2d8', '#f4cdb0', '#d0784a', 'pixie', '#e86a1c', ''], ana: ['#e28a7a', '#ecc09c', '#3a2418', 'low', '#3a3a40', ''],
   priya: ['#c9a0e8', '#b9805a', '#121014', 'bun', '#222222', ''], lea: ['#e6c38a', '#f0c8aa', '#6b3e26', 'wavy', '#8a3a2a', 'beret'],
   jose: ['#f2b65e', '#b07a52', '#151214', 'short', '#2f8f8a', ''], ingrid: ['#9ab0c8', '#f5d6c2', '#dcdde2', 'pony', '#9e2a2a', ''],
   ole: ['#c9b28a', '#f0c8aa', '#c2522a', 'messy', '#2e4a6b', 'beard'], frederic: ['#b8c4d6', '#e8bc98', '#2a2624', 'slick', '#1f2a44', 'tie'],
   jack: ['#e0a65a', '#f0c7a6', '#c9a35a', 'messy', '#222222', 'bow'], lena: ['#a8d0c0', '#f3cfb6', '#e2c47a', 'bun', '#1e1e1e', 'glasses'],
-  elijah: ['#8a9bb8', '#5a3622', '#e9c46a', 'fade', '#141414', 'beard'],
+  elijah: ['#8a9bb8', '#5a3622', '#1a1412', 'fade', '#4a2e1c', 'hat tache'],
 };
 const BOT_HAIR = {
   short: 'M14.6 22.5Q14 12 24 11.6Q34 12 33.4 22.5Q31 16.5 24 16.8Q17 16.5 14.6 22.5Z',
@@ -112,6 +112,9 @@ function botAvatar(b) {
     + (has('bow2') ? '<path d="M28.4 12.2l3.4-2.6.4 4.4zm3.8 1.8l3.8 1.8-3.8 1.8z" fill="#ff6aa2"/>' : '')
     + (has('beanie') ? '<path d="M13.6 17Q14 8 24 8Q34 8 34.4 17Z" fill="#6b8f5a"/><rect x="13" y="15.6" width="22" height="3" rx="1.4" fill="#557548"/><circle cx="24" cy="7.4" r="2" fill="#6b8f5a"/>' : '')
     + (has('hoops') ? '<g fill="none" stroke="#e2b23a" stroke-width="1.1"><circle cx="14.8" cy="27" r="1.9"/><circle cx="33.2" cy="27" r="1.9"/></g>' : '')
+    + (has('inner') ? '<path d="M15.4 27q.6-6 2.8-8.6M32.6 27q-.6-6-2.8-8.6" stroke="#2f6fd6" stroke-width="2" fill="none"/>' : '')
+    + (has('band') ? '<path d="M14.6 17.4Q24 11 33.4 17.4" stroke="#111" stroke-width="2.2" fill="none"/>' : '')
+    + (has('hat') ? '<path d="M8.6 15.6Q24 11 39.4 15.6Q38 17.6 24 16.4Q10 17.6 8.6 15.6Z" fill="#111"/><path d="M15.4 15Q15 6.6 24 6.4Q33 6.6 32.6 15Q24 13.2 15.4 15Z" fill="#1b1b1b"/><path d="M15.6 13.6Q24 11.8 32.4 13.6" stroke="#6b4a2a" stroke-width="1.2" fill="none"/>' : '')
     + (has('clip') ? '<rect x="27.4" y="13.4" width="5" height="1.8" rx=".9" fill="#ffd166" transform="rotate(-24 29.9 14.3)"/>' : '')
     + '<circle cx="20.4" cy="23.6" r="1.35" fill="#231d19"/><circle cx="27.6" cy="23.6" r="1.35" fill="#231d19"/>'
     + (has('glasses') ? '<g fill="none" stroke="#2a2420" stroke-width="1"><circle cx="20.4" cy="23.6" r="2.9"/><circle cx="27.6" cy="23.6" r="2.9"/><path d="M23.3 23.4h1.4"/></g>' : '')
@@ -147,6 +150,7 @@ const BOT_FLAGS = (() => {
     at: bars('h', ['#c8102e', '#fff', '#c8102e']),
     cn: `<rect width="60" height="40" fill="#de2910"/><path d="M10 6l1.8 5.5h5.8l-4.7 3.4 1.8 5.5-4.7-3.4-4.7 3.4 1.8-5.5-4.7-3.4h5.8z" fill="#ffde00"/>${[[20, 4], [24, 8], [24, 14], [20, 18]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#ffde00"/>`).join('')}`,
     th: bars('h', ['#a51931', '#f4f5f8', '#2d2a4a', '#2d2a4a', '#f4f5f8', '#a51931']),
+    ru: bars('h', ['#fff', '#0039a6', '#d52b1e']),
     fi: `<rect width="60" height="40" fill="#fff"/><rect x="16" width="10" height="40" fill="#003580"/><rect y="15" width="60" height="10" fill="#003580"/>`,
     nz: `<rect width="60" height="40" fill="#012169"/><path d="M0 0l30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M15 0v20M0 10h30" stroke="#fff" stroke-width="6"/><path d="M15 0v20M0 10h30" stroke="#c8102e" stroke-width="3"/>${[[45, 10], [40, 20], [50, 18], [45, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2" fill="#c8102e" stroke="#fff" stroke-width=".7"/>`).join('')}`,
     ng: bars('v', ['#008751', '#fff', '#008751']),
@@ -158,7 +162,7 @@ const BOT_FLAGS = (() => {
   const out = {}; for (const k in F) out[k] = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">${F[k]}</svg>`);
   return out;
 })();
-const BOT_COUNTRY = { fi: '핀란드', nz: '뉴질랜드', ng: '나이지리아', mx: '멕시코', no: '노르웨이', us: '미국', cn: '중국', th: '태국', br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
+const BOT_COUNTRY = { ru: '러시아', fi: '핀란드', nz: '뉴질랜드', ng: '나이지리아', mx: '멕시코', no: '노르웨이', us: '미국', cn: '중국', th: '태국', br: '브라질', gr: '그리스', ie: '아일랜드', eg: '이집트', in: '인도', se: '스웨덴', at: '오스트리아', kr: '대한민국', it: '이탈리아', jp: '일본', co: '콜롬비아', vn: '베트남', tr: '튀르키예', nl: '네덜란드', es: '스페인', fr: '프랑스', ph: '필리핀', be: '벨기에', gb: '영국', de: '독일' };
 const botFlag = b => el('img', { class: 'flag', src: BOT_FLAGS[b.from], alt: BOT_COUNTRY[b.from] || '', title: BOT_COUNTRY[b.from] || '' });
 const botById = id => BOTS.find(b => b.id === id);
 const botTier = b => TIERS[Math.min(TIERS.length - 1, tierOf(b.rating))];
