@@ -1,5 +1,7 @@
   /* Person-like planning is independent of the deterministic training levels. See 51-people.js for its three axes.
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
+  // (the most tables a plan plays out, whatever else it adds - a phone's worth of time; web/test/ai-human.js holds it to 150)
+  const SIM_CAP = 145;
   function humanPlan(persona) {
     const person = humanPerson(persona), skill = person.skill, practice = person.practice, turn = humanTurn(person), P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
@@ -7,7 +9,7 @@
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
     // (ranked: room for weighing how sure each scoring line is - see sure() below)
-    let budget = ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill); let sims = 0;   // (a pool simulation costs more)
+    let budget = Math.min(SIM_CAP, ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill)); let sims = 0;   // (a pool simulation costs more)
     /* (owner 11-16: the bots never played a massé, scored off kisses, never drew the ball back hard, and hardly fouled.
        A person: massé grows with skill - a beginner hardly tries it, from gold on a blocked ball or a curve is part of
        the game, the style only tilts it; a kiss (쫑) is luck, nobody plays for it - only a pro now and then; a weak
@@ -220,7 +222,7 @@
       const masseOk = rand() < raiseWill || exploreMasse, jumpOk = pool && rand() < jumpWill;
       if (masseOk || jumpOk) {
         const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, skill, cap: style.masse > 0.5 ? 16 : 10, all: !pool && (g.modeId !== 'three' || style.masse > 0.5) });
-        budget += tries.length + 5;
+        budget = Math.min(SIM_CAP, budget + tries.length + 5);
         for (const k of tries) consider(k);
         const r0 = best && (best.shot.kind === 'masse' || best.shot.kind === 'jump') && (!best.made || best.sure != null && best.sure < 0.75) ? best.shot : null;
         if (r0) for (const da of [0.006, -0.006, 0.014, -0.014]) consider({ ...r0, angle: r0.angle + da });
@@ -248,7 +250,7 @@
       // (the habit stays only when the line still scores with it, or by a weak player's lapse - set on after the line was
       // found, it had been turning made lines into misses)
       const tipped = { ...chosen, ...humanHabitTip(person, chosen, best.made) };
-      if (tipped.stroke && best.made && sims < budget + 4) { sims++; const keep = simulate(tipped).made || rand() < (1 - skill) * 0.25; if (keep) chosen = tipped; }
+      if (tipped.stroke && best.made && sims < budget + 4) { const keep = simulate(tipped).made || rand() < (1 - skill) * 0.25; if (keep) chosen = tipped; }
       else chosen = tipped;
     }
     if (turn.throwing) {

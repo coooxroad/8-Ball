@@ -70,7 +70,8 @@
       const c = w.balls[w.cue], x0 = -P.HL + P.R + 0.03, y0 = P.HW - P.R - 0.03; c.x = c.px = x0; c.y = c.py = y0; c.on = true;
       P.strike(w, 0, g.vOf(pw), a, 0, el);
       const pts = [0, 0, Math.hypot(c.vx, c.vy)];
-      for (let t = 0; t < 14 && !P.rest(w) && !w.ev.cushions && !w.ev.rail; t += 1 / 120) { P.step(w, 1 / 120); pts.push(c.x - x0, y0 - c.y, Math.hypot(c.vx, c.vy)); }
+      // (followed while it is still worth meeting a ball with: masseAims wants 0.3 m/s at least)
+      for (let t = 0; t < 6 && !P.rest(w) && !w.ev.cushions && !w.ev.rail && Math.hypot(c.vx, c.vy) > 0.28; t += 1 / 120) { P.step(w, 1 / 120); pts.push(c.x - x0, y0 - c.y, Math.hypot(c.vx, c.vy)); }
       curves.push({ el, a, pw, V: g.vOf(pw), pts });
     }
     return (masseCurveCache[key] = curves);

@@ -76,6 +76,26 @@ for (const mode of ['eight', 'nine', 'four', 'three']) {
   assert(samples.some(p => p.preShot.kind === 'taunt'), 'no cue-shaking timeline');
   const taunt = samples.find(p => p.preShot.kind === 'taunt'); assert(taunt.preShot.keyframes.some(k => Math.abs(k.angle - taunt.angle) > 0.2));
 }
+// The massé style plays massés, and they come off (owner 11-19 night: '레아가 맛세이를 안 쳐' - its massés were aimed a fixed
+// few degrees off the ball and never scored, so the plain line always won; now aimed by their curve, 53-raised.js). 레아's
+// persona on random 4구 layouts: a fair share of massés, most scoring; the 정석 player at the same rating hardly any.
+{
+  const count = style => {
+    const g = fresh(); g.start('four', ['A', 'B'], true, { rnd: seeded(31) }); const rnd = seeded(77); let n = 0, made = 0;
+    for (let k = 0; k < 24; k++) {
+      for (const b of g.world.balls) { do { b.x = (rnd() * 2 - 1) * (g.P.HL - 0.08); b.y = (rnd() * 2 - 1) * (g.P.HW - 0.08); } while (g.world.balls.some(o => o !== b && o.id < b.id && Math.hypot(o.x - b.x, o.y - b.y) < 2.4 * g.P.R)); }
+      g.isBreak = false; g.aiRnd = seeded(k + 1);
+      g.personas = [g.aiPersona(1650, seeded(5), { personality: 'playful', style, quirk: style === 'masse' ? 'curve' : undefined }), null];
+      const before = g.serialize(), p = measured(g);
+      if (p.decision === 'masse') { n++; made += strike(g, p).pts > 0 ? 1 : 0; }
+      g.restore(before);
+    }
+    return { n, made };
+  };
+  const m = count('masse'), b = count('balanced');
+  assert(m.n >= 3 && m.made >= m.n / 2 && b.n <= 1, `massé style: ${JSON.stringify(m)}, balanced: ${JSON.stringify(b)}`);
+  console.log(`massé style, 24 random 4구 layouts: ${m.n} massés, ${m.made} scored (정석: ${b.n})`);
+}
 // Disabling raised cues overrides every style, including its visual pose.
 {
   const g = fresh();
