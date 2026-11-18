@@ -1,0 +1,31 @@
+# The carom leave network trained on the labels of one or more Label runs (web/tools/net/train.js), and its weights
+# (web/ai/55-leave-net-w.js) put straight onto main. Run by hand: Actions → Train → the game and the Label runs' ids.
+name: Train
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: 'four or three', required: true, default: 'four' }
+      runs: { description: 'Label run ids, space between', required: true }
+      epochs: { description: 'epochs', required: true, default: '60' }
+permissions:
+  contents: write
+  actions: read
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: The labels
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: for r in ${{ inputs.runs }}; do gh run download "$r" -R "${{ github.repository }}" -D "labels/$r" -p "labels-${{ inputs.mode }}-*"; done; find labels -name '*.jsonl' | xargs cat | wc -l
+      - name: Train
+        run: node web/tools/net/train.js ${{ inputs.mode }} labels ${{ inputs.epochs }}
+      - name: The weights onto main
+        run: |
+          git config user.name "cue-train"; git config user.email "cue-train@users.noreply.github.com"
+          git add web/ai/55-leave-net-w.js
+          git commit -m "캐롬 자리 가치 신경망 (${{ inputs.mode }}): Label ${{ inputs.runs }}로 학습" || exit 0
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

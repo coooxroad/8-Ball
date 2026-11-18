@@ -173,6 +173,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   식, `test/judge.js`가 대조), 캐롬은 조준을 쓸어 창을 찾음. 자리 가치 = 다음 샷 상위 3개(1 : 0.33 : 0.15). 등급은 최선의 기대값 B와
   실제 결과 A의 차(B − A); 예술 = 어려운 길(`JUDGE.HARD`)을 노린 대로 넣고 다음 자리가 좋을 때. 의도 = 친 것에서 가장 가까운 성공(조준 →
   세기 → 당점 순), 빗나간 이유(얇게·두껍게·약하게·세게·당점). 등급 분포·경기력 표는 `node web/tools/judge-games.js <종목> <레이팅들>`.
+  11-18: 킥·콤비(`potExtras`)·3쿠션 빈쿠션(`cushionFirst`), 포켓은 2수 깊이 자리 가치(`leaveDeep`), 샷마다 잃은 곳(`parts`).
+- 캐롬 자리 가치 신경망(`ai/56-leave-net.js`, 가중치 `ai/55-leave-net-w.js`): 느리고 꼼꼼한 쓸기(`leaveTeach`)를 선생님으로 배운 작은
+  망(64·64). 라벨은 GitHub Actions 'Label'(`.github/workflows/label.yml`, 16대, `web/tools/net/label.js`), 학습은
+  `node web/tools/net/train.js <four|three> <라벨 폴더>`(라이브러리 없음, 몇 분). 가중치가 없는 종목은 예전처럼 쓸어서 잰다.
 - 이모티콘: 칸은 6개 그대로, 같은 순간이라도 가끔(약 1/6) 같은 분위기의 다른 얼굴(`EMOTE_ALT`; 서버 `ranked.js` `EMOTES`도 같은 id).
 - 책상은 무엇이 바뀌든 통째로 다시 칠한다(`deskPaint`). 대신 레일·머리·발·슬레이트에서 **전과 똑같이 칠해진 부분은 예전 노드를
   그대로 둔다**(`deskReuse`: 다시 그릴 게 없어 폰에서 책상 일부가 끊겨 보이던 것 — 11-16). 그래서 버튼 처리기는 `el()`의 `onclick`
