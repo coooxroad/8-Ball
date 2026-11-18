@@ -67,6 +67,25 @@ function potAim(id, near, V, b = 0, k = null) {
   if (shot) { const r = judge(shot); check(r.foul && r.cause === 'scratch' && r.grade === 4, `scratch: ${say(r)}`); }
   else fail('no scratch found to judge');
 }
+{
+  // snookered behind a wall of stripes: no plain pot, but a kick off the cushion - the judge must see it and name it
+  eight({ 1: [0.55, 0.25], 9: [0.0, 0.05], 10: [0.0, 0.12], 11: [0.0, -0.02], 12: [0.0, 0.19], 13: [0.0, -0.09], 8: [-0.7, -0.4] }, [-0.5, 0.1]);
+  const v = K().judgeView(g.world, 0), ex = K().potExtras(g.world, 0, v);
+  check(!K().potLines(g.world, 0, v, false).length && ex.some(l => l.kind === 'kick'), 'snookered: no plain pot, a kick found');
+  check(ex.some(l => K().judgeAim(g.world, 0, { pos: null, angle: l.angle, V: 3, a: 0, b: 0, el: 0 }, v) != null), 'a kick\'s aim that really goes in, found on the physics');
+  const whack = judge({ angle: 0, V: 3 });
+  check(whack.better && whack.better.kind === 'kick', `a blind whack: the kick shown as the better shot (${whack.better && whack.better.kind})`);
+}
+{
+  // a combination: ball 1 (legal) into ball 9's... no - 9볼: the lowest ball into the 9, the 9 in the corner
+  g.start('nine', ['A', 'B'], true, { level: 3 });
+  const w = g.world; for (const b of w.balls) { b.on = false; b.x = 9 + b.id; b.y = 9; }
+  const pk = P.POCKETS[2], B9 = [pk.ax - 0.3, pk.ay - 0.15], u = [(pk.ax - B9[0]) / Math.hypot(pk.ax - B9[0], pk.ay - B9[1]), (pk.ay - B9[1]) / Math.hypot(pk.ax - B9[0], pk.ay - B9[1])];
+  P.place(w, 9, B9[0], B9[1]); P.place(w, 1, B9[0] - u[0] * 0.2, B9[1] - u[1] * 0.2); P.place(w, 0, B9[0] - u[0] * 0.55, B9[1] - u[1] * 0.55 - 0.05); P.place(w, 2, -0.6, -0.3);
+  g.isBreak = false; g.placing = null; g.turn = 0;
+  const ex = K().potExtras(w, 0, K().judgeView(w, 0));
+  check(ex.some(l => l.kind === 'combo' && l.via === 9), `9볼: the combination on the 9 found (${ex.map(l => l.kind + (l.via || '')).join(' ')})`);
+}
 // ---- the pot sums against the physics: random tables, one ball, every pocket - the chance worked out, and the window
 // found by playing it (the best of three paces)
 {
@@ -106,6 +125,7 @@ for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
     check(wide.made || wide.grade >= 2, `${mode}: the same played wide: ${say(wide)}`);
   }
   check(found > 0, `${mode}: a scoring line found on ${tried} tables`);
+  if (mode === 'three') { const t0 = Date.now(), cf = K().cushionFirst(g.world, 0, K().judgeView(g.world, 0)); check(Array.isArray(cf) && cf.every(l => l.p >= 0 && l.p <= 1) && Date.now() - t0 < 8000, `3쿠션: cushion-first lines swept (${cf.length}, ${Date.now() - t0} ms)`); }
 }
 const avg = L => L.length ? Math.round(L.reduce((s, v) => s + v, 0) / L.length) : 0;
 console.log(`judging: pool ${avg(times.pool)} ms, carom ${avg(times.carom)} ms on average`);

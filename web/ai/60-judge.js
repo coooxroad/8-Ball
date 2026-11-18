@@ -147,6 +147,71 @@
     return out.sort((a, b) => b.p - a.p);
   }
 
+  /* ---- pool: the lines players reach for when no plain pot is there (11-18: the judge had none of them, so it took a
+     table with only a kick or a combination on as having nothing - and graded too kindly) ----
+       kick   the cue ball off one cushion into the ghost ball (the ghost seen in the cushion), at 40% of the chance the
+              same pot would have from the bounce: a cushion's angle is never quite a mirror's
+       combo  the cue ball sends a legal ball into another ball that goes in: each part's chance as a pot, the first
+              into a 'pocket' as wide as the second ball's window allows, multiplied, at 70%
+     Each is only a guess at its aim (the cushion bends it, throw bends a combination): bestShots looks round it on the
+     physics for the aim that really goes in (judgeAim) before judging it. Not used for leaves - those stay quick. */
+  function potExtras(world, who, view) {
+    const P = g.P, R = P.R, c = world.balls[0], out = [];
+    if (g.placing) return out;
+    const ids = g.mode.legal(view, who).filter(id => world.balls[id] && world.balls[id].on), mouth = k => judgeMouth(k);
+    const rails = [['x', P.HL - R], ['x', -P.HL + R], ['y', P.HW - R], ['y', -P.HW + R]];
+    const ghost = (T, k) => { const pk = P.POCKETS[k], L = Math.hypot(pk.ax - T.x, pk.ay - T.y), ux = (pk.ax - T.x) / L, uy = (pk.ay - T.y) / L; return { gx: T.x - ux * 2 * R, gy: T.y - uy * 2 * R, ux, uy, L }; };
+    // (a pot's half-window seen from where the cue ball - or the ball that does its work - comes from: s, the run to the
+    // contact; cos, the cut)
+    const potHalf = (k, L, s, cos) => 2.06 * mouth(k) / (L ** 1.074 * (1 + s / (2 * R * Math.max(0.17, cos))) ** 1.15);
+    for (const id of ids) {
+      const T = world.balls[id];
+      P.POCKETS.forEach((pk, k) => {
+        const G = ghost(T, k); if (!P.pathClear(world, T.x, T.y, pk.ax, pk.ay, [0, id])) return;
+        if ((G.ux * pk.nx + G.uy * pk.ny) / Math.hypot(pk.nx, pk.ny) < (pk.corner ? 0.64 : 0.3)) return;
+        // kicks: off each cushion to the ghost ball
+        for (const [axis, edge] of rails) {
+          const mx = axis === 'x' ? 2 * edge - G.gx : G.gx, my = axis === 'y' ? 2 * edge - G.gy : G.gy;
+          const t = axis === 'x' ? (edge - c.x) / (mx - c.x) : (edge - c.y) / (my - c.y); if (!(t > 0.02 && t < 0.98)) continue;
+          const bx = c.x + t * (mx - c.x), by = c.y + t * (my - c.y);
+          if (axis === 'x' ? Math.abs(by) > P.HW - 0.1 : Math.abs(bx) > P.HL - 0.1 || Math.abs(bx) < 0.1) continue;
+          if (!P.pathClear(world, c.x, c.y, bx, by, [0]) || !P.pathClear(world, bx, by, G.gx, G.gy, [0, id])) continue;
+          const s2 = Math.hypot(G.gx - bx, G.gy - by), cos = ((G.gx - bx) * G.ux + (G.gy - by) * G.uy) / s2; if (cos < 0.2) continue;
+          out.push({ id, pocket: k, kind: 'kick', angle: Math.atan2(my - c.y, mx - c.x), p: 0.4 * winChance(potHalf(k, G.L, Math.hypot(bx - c.x, by - c.y) + s2, cos)), s: Math.hypot(bx - c.x, by - c.y) + s2, L: G.L, cut: Math.acos(Math.min(1, cos)), pos: null });
+        }
+      });
+    }
+    // combinations: a legal ball A into a ball B that goes in (9볼: any ball; 8볼 and the rest: B legal too)
+    const pottable = g.modeId === 'nine' ? world.balls.filter(b => b.on && b.id !== 0).map(b => b.id) : ids;
+    for (const a of ids) for (const bId of pottable) {
+      if (bId === a) continue;
+      const A = world.balls[a], B = world.balls[bId], dAB = Math.hypot(B.x - A.x, B.y - A.y); if (dAB > 0.9) continue;
+      P.POCKETS.forEach((pk, k) => {
+        const GB = ghost(B, k); if (!P.pathClear(world, B.x, B.y, pk.ax, pk.ay, [0, a, bId])) return;
+        if ((GB.ux * pk.nx + GB.uy * pk.ny) / Math.hypot(pk.nx, pk.ny) < (pk.corner ? 0.64 : 0.3)) return;
+        const vx = GB.gx - A.x, vy = GB.gy - A.y, v = Math.hypot(vx, vy); if (v < 1e-6) return;
+        const cosB = (vx * GB.ux + vy * GB.uy) / v; if (cosB < 0.5) return;
+        const gx = A.x - vx / v * 2 * R, gy = A.y - vy / v * 2 * R, s = Math.hypot(gx - c.x, gy - c.y), cosA = ((gx - c.x) * vx + (gy - c.y) * vy) / (s * v);
+        if (cosA < 0.3 || !P.pathClear(world, c.x, c.y, gx, gy, [0, a]) || !P.pathClear(world, A.x, A.y, GB.gx, GB.gy, [0, a, bId])) return;
+        const pB = winChance(potHalf(k, GB.L, v, cosB)), hB = potHalf(k, GB.L, v, cosB) * v;   // (B's window as a width where A must arrive)
+        const pA = winChance(Math.min(0.2, 2.06 * Math.max(R * 0.15, hB) / (v ** 1.074 * (1 + s / (2 * R * cosA)) ** 1.15)));
+        out.push({ id: a, pocket: k, kind: 'combo', via: bId, angle: Math.atan2(gy - c.y, gx - c.x), p: 0.7 * pA * pB, s, L: v + GB.L, cut: Math.acos(Math.min(1, cosA)), pos: null });
+      });
+    }
+    return out.sort((x, y) => y.p - x.p);
+  }
+  // the aim near a line's guess that really comes off on the physics (the middle of the first run of aims that do), or null
+  function judgeAim(world, who, shot, view, span = 0.035) {
+    const made = a => judgeSim(world, who, { ...shot, angle: a }, view).made;
+    if (made(shot.angle)) return shot.angle;
+    for (let d = 0.0015; d <= span; d *= 1.35) for (const sg of [1, -1]) {
+      const a = shot.angle + sg * d; if (!made(a)) continue;
+      let lo = a, hi = a; const step = 0.0006 * sg; for (let i = 0; i < 12 && made(hi + step); i++) hi += step;
+      return (lo + hi) / 2;
+    }
+    return null;
+  }
+
   /* ---- carom: the lines a table offers, found by playing them ----
      For each ball that may be met first, the aim is swept across it (thin one side to thin the other) with the game's
      usual strokes; each run of aims that scores is a line, its window refined at both ends, its chance the reference
@@ -181,6 +246,28 @@
       }
     }
     return out.sort((a, b) => b.p - a.p);
+  }
+
+  /* 3쿠션's cushion-first lines (빈쿠션): the aim swept all the way round, away from the balls, with a firm stroke and
+     running side either way; each run that scores a line, its window refined as caromLines does. Costly (some 600 copies)
+     - only when the ball-first lines are poor. */
+  function cushionFirst(world, who, view) {
+    const P = g.P, c = world.balls[who], out = [], N = 300; if (!c || !c.on) return out;
+    const balls = world.balls.filter(b => b.on && b.id !== who), cone = a => balls.some(b => { const d = Math.hypot(b.x - c.x, b.y - c.y), d0 = Math.atan2(b.y - c.y, b.x - c.x); return Math.abs(Math.atan2(Math.sin(a - d0), Math.cos(a - d0))) < Math.asin(Math.min(0.99, 2 * P.R / d)) + 0.01; });
+    const scores = shot => judgeSim(world, who, shot, view).made;
+    for (const st of [{ V: 5.4 * PACE.carom, a: 0.45, b: 0.15 }, { V: 5.4 * PACE.carom, a: -0.45, b: 0.15 }]) {
+      const at = i => -Math.PI + 2 * Math.PI * i / N, hit = [];
+      for (let i = 0; i < N; i++) hit.push(!cone(at(i)) && scores({ angle: at(i), ...st }));
+      for (let i = 0; i < N; i++) {
+        if (!hit[i] || i && hit[i - 1]) continue;
+        let j = i; while (j < N - 1 && hit[j + 1]) j++;
+        const edge = (inside, outside) => { let a = inside, b = outside; for (let n = 0; n < 4; n++) { const m = (a + b) / 2; if (scores({ angle: m, ...st })) a = m; else b = m; } return a; };
+        const lo = edge(at(i), at(i - 1)), hi = edge(at(j), at(j + 1)), mid = (lo + hi) / 2;
+        out.push({ id: -1, p: winChance((hi - lo) / 2) * 0.8, angle: mid, ...st, width: hi - lo, kind: 'kick' });
+        i = j;
+      }
+    }
+    return out;
   }
 
   // what the table offers whoever shoots next: its best three lines, one per ball (pool) or per ball and stroke (carom)
@@ -222,6 +309,11 @@
     const P = g.P, cands = [];
     if (P.POCKETED) {
       const lines = potLines(world, who, view, !!g.placing).slice(0, 8);
+      // (the kicks and combinations, looked for when the plain pots are poor - as a player would)
+      if (!lines.length || lines[0].p < 0.5) for (const l of potExtras(world, who, view).slice(0, 4)) {
+        const V = Math.min(g.vOf(1) * 0.95, (1.1 + 1.4 * Math.sqrt(l.s + l.L)) * PACE.pool), angle = judgeAim(world, who, { pos: null, angle: l.angle, V, a: 0, b: 0, el: 0 }, view);
+        if (angle != null) lines.push(Object.assign({}, l, { angle }));
+      }
       for (const l of lines) {
         const need = 0.9 + 1.4 * Math.sqrt(l.s + l.L * (l.kind === 'bank' ? 1.6 : 1) / Math.max(0.35, Math.cos(l.cut)));
         for (const k of [0.75, 1, 1.35]) for (const b of [0.35, 0, -0.35]) cands.push({ line: l, shot: { pos: l.pos, angle: l.angle, V: Math.min(g.vOf(1) * 0.95, need * k * PACE.pool), a: 0, b, el: 0 } });
@@ -234,7 +326,10 @@
         for (const f of [-0.75, 0, 0.75]) for (const V of [0.9, 1.6]) cands.push({ line: { id, kind: 'safety', p: 0 }, shot: { pos: null, angle: base + half * f, V: V * PACE.pool * (1 + d), a: 0, b: 0, el: 0 } });
       }
     } else {
-      for (const l of caromLines(world, who, view, true).slice(0, 10)) cands.push({ line: l, shot: { pos: null, angle: l.angle, V: l.V, a: l.a, b: l.b, el: 0 } });
+      const lines = caromLines(world, who, view, true);
+      // (3쿠션: when no ball-first line is a fair chance, the cushion-first ones - 빈쿠션 - too, as a player turns to them)
+      if (g.modeId === 'three' && (g.cushions || 0) >= 3 && (!lines.length || lines[0].p < 0.2)) lines.push(...cushionFirst(world, who, view)), lines.sort((a, b) => b.p - a.p);
+      for (const l of lines.slice(0, 10)) cands.push({ line: l, shot: { pos: null, angle: l.angle, V: l.V, a: l.a, b: l.b, el: 0 } });
     }
     // each stroke as aimed (one copy each); the likeliest looked at more closely - its worth, then the reference hand's
     // wobble on the best few
