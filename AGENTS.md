@@ -185,6 +185,11 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   의도·근거(`ai/62-intent.js`): 캐롬 길(`routeOf` — 물리의 `ev.seq`: 맞힌 공과 장/단 쿠션 순서, 이름은 확실할 때만: 원/투/쓰리뱅크·대회전;
   앞·뒤·옆돌리기는 아직 안 붙임), 포지션(`shapeOf` — 같은 조준·당점에 세기만 바꿔 쳐서 수구가 노린 자리와 짧음/김, JPool의 포지션 존),
   근거(`factsOf` — 컷·거리·가로막는 공·스크래치 위험·뭉친 공 풀기, CueTip식), 다른 길이 나은 이유(`whyBetter`). 해설은 이 값만 말한다.
+- 봇·대역의 성향 4층(11-19 밤, chess.com·Chessmaster·NBA 2K에서): **보는 길**(후보 — 맛세이는 `ai/53-raised.js` `masseAims`: 빈 천에서
+  친 수구 곡선 36개를 돌려 맞힐 자리를 지나게), **바라는 것**(`ai/51-people.js` `FLAIR`·`humanFlair` — 좋아하는 샷은 득점할 때만 가산,
+  못 넣는 큐 세운 샷은 감점; `50-human.js` `missCost` — 빗나감의 값이 성향·종목별, 수비파는 불확실한 공 대신 수비),
+  **경향**(스타일 수치, 봇 대전으로 확인: `node web/tools/bots.js <종목> [판 수] [봇 id들]`), **버릇**(`HUMAN_QUIRKS`, 봇마다
+  `quirk` — 두꺼운 공만·세게·쿠션 고집·잠금·보여 주기·깊게 끌기·휘는 공). 초보와 3쿠션은 대개 수비보다 시도. 한 계획 시뮬레이션 상한 `SIM_CAP` 145.
 - 캐롬 자리 가치 신경망(`ai/56-leave-net.js`, 가중치 `ai/55-leave-net-w.js`): 느리고 꼼꼼한 쓸기(`leaveTeach`)를 선생님으로 배운 작은
   망(64·64). 라벨은 GitHub Actions 'Label'(`.github/workflows/label.yml`, 16대, `web/tools/net/label.js`), 학습은
   `node web/tools/net/train.js <four|three> <라벨 폴더>`(라이브러리 없음, 몇 분). 가중치가 없는 종목은 예전처럼 쓸어서 잰다.
