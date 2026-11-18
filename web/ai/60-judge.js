@@ -283,8 +283,8 @@
   }
   // what the table offers whoever shoots next: its best three lines, one per ball (pool) or per ball and stroke (carom)
   function leaveOf(world, who, r, inHand) {
+    if (!g.P.POCKETED) { const c = world.balls[who]; if (!c || !c.on) return 0; const n = leaveNet(world, who); if (n != null) return n; }   // (carom: the network, when it has learnt this game - 56-leave-net.js)
     const view = judgeView(world, who, r, inHand);
-    if (!g.P.POCKETED) { const c = world.balls[who]; if (!c || !c.on) return 0; }
     const lines = g.P.POCKETED ? potLines(world, who, view, inHand) : caromLines(world, who, view, false), seen = new Set(), ps = [];
     for (const l of lines) { const key = g.P.POCKETED ? l.id : l.id + ':' + Math.round(l.a * 10) + ':' + Math.round(l.b * 10); if (seen.has(key)) continue; seen.add(key); ps.push(l.p); if (ps.length === 3) break; }
     return ps.reduce((s, p, i) => s + p * JUDGE.TOP[i], 0) / (JUDGE.TOP[0] + JUDGE.TOP[1] + JUDGE.TOP[2]);
