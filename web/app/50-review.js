@@ -132,7 +132,7 @@ const review = {
     const head = el('div', { class: 'rv-top' }, [el('button', { class: 'rv-back', 'aria-label': '돌아가기', onclick: onTap(() => review.close()) }), el('b', { text: '게임 리뷰' })]);
     if (review.stage === 'stats') {
       const wait = review.list.filter(q => !q.res).length;
-      box.append(...[head, review.table(true), wait ? el('p', { class: 'rv-wait', text: `샷을 분석하는 중이에요 · ${review.list.length - wait}/${review.list.length}` }) : null,
+      box.append(...[head, review.table(true), review.lost(), wait ? el('p', { class: 'rv-wait', text: `샷을 분석하는 중이에요 · ${review.list.length - wait}/${review.list.length}` }) : null,
         el('button', { class: 'btn rv-start', text: '리뷰 시작', onclick: onTap(() => { review.stage = 'shots'; review.select(review.firstPick()); }) })].filter(Boolean));
       return;
     }
@@ -149,6 +149,16 @@ const review = {
           G ? reviewIcon(G.id) : el('i', { class: 'rv-ico wait' }), el('b', { text: G ? G.name : r ? '-' : '분석 중' }), r && r.fluke ? reviewIcon('fluke', 'tag') : null]);
       })));
     const on = box.querySelector('.rv-shot.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+  },
+  /* where each player lost (as golf's Strokes Gained is split): the way chosen, the striking, the next shot, fouls - two
+     bars a row, the longest the longest of all, no numbers (owner 11-17: the scores stay inside) */
+  lost() {
+    const K = [['choice', '길 선택'], ['strike', '조준 · 세기'], ['next', '다음 자리'], ['foul', '파울']];
+    const sum = turn => { const t = { choice: 0, strike: 0, next: 0, foul: 0 }; for (const q of review.judged()) if (q.turn === turn && q.res.parts) for (const k in t) t[k] += q.res.parts[k] || 0; return t; };
+    const [a, b] = [sum(0), sum(1)], top = Math.max(0.01, ...K.map(([k]) => Math.max(a[k], b[k])));
+    if (top <= 0.01) return null;
+    const bar = (v, side) => el('i', { class: 'rv-bar ' + side }, [el('b', { style: `width:${Math.round(100 * v / top)}%` })]);
+    return el('div', { class: 'rv-lost' }, [el('div', { class: 'rv-lh', text: '잃은 곳' }), ...K.map(([k, name]) => el('div', { class: 'rv-lr' }, [bar(a[k], 'l'), el('span', { text: name }), bar(b[k], 'r')]))]);
   },
   firstPick() { const i = review.list.findIndex(q => q.turn === review.seat()); return i < 0 ? 0 : i; },
   // the coach's card for one shot: its mark, its word, why - and the better shot to see, when there was one

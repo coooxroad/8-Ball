@@ -265,3 +265,11 @@
 #app.desk.compact .r-btns #reviewBtn{grid-column:1/-1}
 #app.desk.compact #againBtn{padding:10px 0 calc(10px + 6px);font-size:17px}
 #app.desk.compact #homeBtn{height:auto;font-size:14px}
+/* where each player lost: two bars a row - mine growing left from the middle, the other's right */
+.rv-lost{display:flex;flex-direction:column;gap:5px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)}
+.rv-lh{font:800 13px var(--ui-font);color:#9fb0c3}
+.rv-lr{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;gap:8px;font:700 12.5px var(--ui-font);color:#d9dfe7;text-align:center}
+.rv-bar{display:flex;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.rv-bar.l{justify-content:flex-end}.rv-bar b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#e8b84a,#e5584f)}
+.rv-bar.l b{background:linear-gradient(270deg,#e8b84a,#e5584f)}
+#app.desk.compact .rv-lr{grid-template-columns:1fr 64px 1fr;font-size:11px}

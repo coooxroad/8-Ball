@@ -278,12 +278,32 @@
     for (const l of lines) { const key = g.P.POCKETED ? l.id : l.id + ':' + Math.round(l.a * 10) + ':' + Math.round(l.b * 10); if (seen.has(key)) continue; seen.add(key); ps.push(l.p); if (ps.length === 3) break; }
     return ps.reduce((s, p, i) => s + p * JUDGE.TOP[i], 0) / (JUDGE.TOP[0] + JUDGE.TOP[1] + JUDGE.TOP[2]);
   }
-  // a result's worth for the one who played it, and the two leaves in it
-  function worthOf(res, who) {
+  /* A leave looked at two shots deep (pool; 11-18 - PickPocket and CueCard look two shots ahead): its two best lines, each
+     played as aimed with three strokes (follow, stun, draw), and what the best of them leaves after it - a pot that leaves
+     the next one too counts more than a pot that ends the run. In the same 0..1 as leaveOf. Carom: as leaveOf (a carom
+     leave is found by sweeping, and a second sweep inside each would cost too much). */
+  function leaveDeep(world, who, r, inHand) {
+    if (!g.P.POCKETED) return leaveOf(world, who, r, inHand);
+    const view = judgeView(world, who, r, inHand), seen = new Set(), vals = [];
+    for (const l of potLines(world, who, view, inHand)) {
+      if (seen.has(l.id)) continue; seen.add(l.id);
+      const need = 0.9 + 1.4 * Math.sqrt(l.s + l.L / Math.max(0.35, Math.cos(l.cut)));
+      let after = 0;
+      for (const b of [0.35, 0, -0.35]) {
+        const res = judgeSim(world, who, { pos: l.pos, angle: l.angle, V: Math.min(g.vOf(1) * 0.95, need * PACE.pool), a: 0, b, el: 0 }, view);
+        if (res.won) { after = 1; break; } if (res.made) after = Math.max(after, leaveOf(res.world, who, res.r, false));
+      }
+      vals.push(l.p * (0.6 + 0.4 * after)); if (vals.length === 2) break;
+    }
+    return vals.reduce((t, v, i) => t + v * JUDGE.TOP[i], 0) / (JUDGE.TOP[0] + JUDGE.TOP[1]);
+  }
+  // a result's worth for the one who played it, and the two leaves in it (deep: leaveDeep - for the final comparisons)
+  function worthOf(res, who, deep) {
+    const L = deep ? leaveDeep : leaveOf;
     if (res.won) return { v: JUDGE.WIN, mine: 1, theirs: 0 };
     if (res.lost) return { v: -JUDGE.WIN, mine: 0, theirs: 1 };
-    if (res.made) { const mine = leaveOf(res.world, who, res.r, false); return { v: 1 + JUDGE.GAMMA * mine, mine, theirs: 0 }; }
-    const inHand = res.foul && g.mode.ballInHand, theirs = leaveOf(res.world, 1 - who, res.r, inHand);
+    if (res.made) { const mine = L(res.world, who, res.r, false); return { v: 1 + JUDGE.GAMMA * mine, mine, theirs: 0 }; }
+    const inHand = res.foul && g.mode.ballInHand, theirs = L(res.world, 1 - who, res.r, inHand);
     // a foul that gives points (스누커, 4구's -1) costs them besides
     const give = res.r.give ? Math.min(1, res.r.give / 4) : res.r.pts < 0 ? 1 : 0;
     return { v: -JUDGE.GAMMA * theirs - give, mine: 0, theirs };
@@ -291,13 +311,13 @@
   // a shot's expected worth for the reference hand: played with its wobble, JUDGE.SAMPLES times. (The worth of a result is
   // read once per kind - won, lost, made, fouled, missed - from the first of its kind, or given: the leaves are the costly
   // part, and results of a kind lie close together.)
-  function expectOf(world, who, shot, view, n = JUDGE.SAMPLES, known) {
+  function expectOf(world, who, shot, view, n = JUDGE.SAMPLES, known, deep) {
     let sum = 0, made = 0; const ws = new Map(known || []);
     for (let i = 0; i < n; i++) {
       const [ea, ev, es] = JUDGE_WOBBLE[i];
       const res = judgeSim(world, who, { ...shot, angle: shot.angle + ea * JUDGE.SIG_A, V: shot.V * (1 + ev * JUDGE.SIG_V), a: (shot.a || 0) + es * JUDGE.SIG_S }, view);
       const kind = res.won ? 'w' : res.lost ? 'l' : res.made ? 'm' : res.foul ? 'f' : 'x';
-      if (!ws.has(kind)) ws.set(kind, worthOf(res, who).v);
+      if (!ws.has(kind)) ws.set(kind, worthOf(res, who, deep).v);
       sum += ws.get(kind); if (res.made) made++;
     }
     return { e: sum / n, p: made / n };
@@ -342,7 +362,8 @@
     }
     near.sort((a, b) => b.guess - a.guess);
     const top = near.slice(0, P.POCKETED ? 5 : 2);
-    for (const k of top) { const x = expectOf(world, who, k.shot, view, JUDGE.SAMPLES, [[kindOf(k.nominal), k.worth.v]]); k.e = x.e; k.p = x.p; }
+    // (the few left judged with the deeper leave, as the shot played is)
+    for (const k of top) { k.worth = worthOf(k.nominal, who, true); const x = expectOf(world, who, k.shot, view, JUDGE.SAMPLES, [[kindOf(k.nominal), k.worth.v]], true); k.e = x.e; k.p = x.p; }
     top.sort((a, b) => b.e - a.e);
     return top;
   }
@@ -373,13 +394,13 @@
     const who = g.turn, world = g.world, view = judgeView(world, who, null, !!g.placing);
     const game = !g.P.POCKETED ? g.modeId : g.mode.table === 'snooker' ? 'snooker' : 'pool';
     const shot = { pos: played.pos || null, angle: played.angle, V: played.V, a: played.a || 0, b: played.b || 0, el: played.el || 0 };
-    const s0 = JUDGE.sims, res = judgeSim(world, who, shot, view), got = worthOf(res, who), s1 = JUDGE.sims, best = bestShots(world, who, view), top = best[0] || null, s2 = JUDGE.sims;
+    const s0 = JUDGE.sims, res = judgeSim(world, who, shot, view), got = worthOf(res, who, true), s1 = JUDGE.sims, best = bestShots(world, who, view), top = best[0] || null, s2 = JUDGE.sims;
     // the line meant, and how hard it was (for a shot made: its own; missed: the nearest that comes off), and what it was
     // worth as meant - the best is at least that (a way the candidates missed)
     const meant = res.made ? { da: 0, V: shot.V, a: shot.a, res, why: null } : intentOf(world, who, shot, view);
     const aimed = meant ? { ...shot, angle: shot.angle + meant.da, V: meant.V, a: meant.a } : null;
     const line = aimed ? windowOf(world, who, aimed, view) : null;
-    const s3 = JUDGE.sims, asMeant = line ? expectOf(world, who, { ...aimed, angle: line.centre }, view, JUDGE.SAMPLES, [[kindOf(res), got.v]]).e : -Infinity;
+    const s3 = JUDGE.sims, asMeant = line ? expectOf(world, who, { ...aimed, angle: line.centre }, view, JUDGE.SAMPLES, [[kindOf(res), got.v]], true).e : -Infinity;
     const B = Math.max(top ? top.e : got.v, asMeant), A = got.v, loss = B - A;
     // a fluke: made through something no one plays for - a kiss, a ball other than the one met first - and the shot as
     // played is no line (nudge the aim and it is gone)
@@ -408,7 +429,15 @@
       }
     }
     const better = top && top.e - Math.max(asMeant, res.made ? A : -Infinity) > 0.3 ? top : null;
+    /* where the shot lost what it lost (as golf's Strokes Gained is split by kind of shot, 11-18): the way chosen (the best
+       expected against the one meant), the striking (meant against what came, a miss), the next shot (a ball made, the
+       leave against the best one), a foul. Inside only: the review draws them as bars, never as numbers. */
+    const parts = res.foul ? { choice: 0, strike: 0, next: 0, foul: Math.max(0, loss) } : {
+      choice: asMeant > -Infinity ? Math.max(0, B - asMeant) : Math.max(0, loss), strike: !res.made && asMeant > -Infinity ? Math.max(0, asMeant - A) : 0,
+      next: res.made ? Math.max(0, JUDGE.GAMMA * (bestLeave - got.mine)) : 0, foul: 0 };
+    for (const k in parts) parts[k] = Math.round(parts[k] * 100) / 100;
     return {
+      parts,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
       grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
