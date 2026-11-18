@@ -36,6 +36,10 @@ function potAim(id, near, V, b = 0, k = null) {
   // what the coach is told: the ball met, potted where, the stroke; and the other ways, one easiest
   check(made.d && made.d.first === 1 && made.d.potted.some(([id, k]) => id === 1 && k === 2) && Math.abs(made.d.cut) < 6 && made.d.pace > 0, `the shot described: ${JSON.stringify(made.d)}`);
   const ways = (made.alts || []).map(a => a.way);
+  // what it meant: the ball and pocket, and where the stroke sent the cue ball (the best of its paces at least its own)
+  const it = made.intent || {};
+  check(it.kind === 'score' && it.target && it.target.id === 1 && it.target.pocket === 2 && it.shape && it.shape.best.v >= (it.shape.own ? it.shape.own.v : 0), `the intent read: ${JSON.stringify(it)}`);
+  check(made.facts && Math.abs(made.facts.cut) < 6 && made.facts.scratch >= 0 && made.facts.tight === false, `the facts of the shot: ${JSON.stringify(made.facts)}`);
   check(ways.length >= 2 && new Set(ways).size === ways.length && made.alts.filter(a => a.easiest).length === 1 && made.alts.every(a => a.d && a.shot), `other ways to play it: ${ways.join(', ')}`);
   const missed = judge({ angle: aim + 0.03, V: 2.2 });
   check(!missed.made && missed.grade === 4 && /thin|thick/.test(missed.cause), `easy straight missed by a mile: ${say(missed)}`);
@@ -62,6 +66,7 @@ function potAim(id, near, V, b = 0, k = null) {
   // (a miss: the first aim off the line that goes in nowhere - one a little off can go in by a kiss, a 요행)
   let off = null; for (const d of [0.012, -0.012, 0.018, -0.018, 0.025]) { const w = P.clone(g.world); P.strike(w, line.angle + d, 2.6, 0, 0); const ev = P.run(w, 20); if (!ev.pocketed.length) { off = d; break; } }
   const miss = line && off != null && judge({ angle: line.angle + off, V: 2.6 });
+  check(miss && miss.alts.some(a => a.best && a.why && a.why.length), `the better way's reasons: ${miss && JSON.stringify(miss.alts.map(a => [a.way, a.id, a.why]))}`);
   check(miss && !miss.made && miss.grade >= 3 && miss.better && miss.better.easier, `the hard cut missed with an easy ball on: ${miss && say(miss)} better ${JSON.stringify(miss && miss.better && { id: miss.better.id, easier: miss.better.easier })}`);
 }
 {
@@ -117,6 +122,13 @@ function potAim(id, near, V, b = 0, k = null) {
   }
   check(n > 60 && sum / n < 0.09, `the worked-out pot chances agree with the physics: ${n} pots, mean error ${(sum / n).toFixed(3)}`);
 }
+// ---- the chance to win (59-win.js): a race, the shooter first at the leave's chance
+{
+  const r = K().winRace(0.5);
+  check(r.W(5, 5, 0.9) > r.W(5, 5, 0.1) && r.W(1, 5, 0.5) > r.W(5, 5, 0.5) && r.W(5, 1, 0.5) < r.W(5, 5, 0.5) && Math.abs(r.V[7][7] + r.V[7][7] - 1) < 0.2, 'the race: a better leave, fewer to go - more chance');
+  const k = K().routeOf({ seq: ['L', 2, 'L', 'S', 'L', 3] }), b = K().routeOf({ seq: [2, 'L', 'S', 'L', 'S', 3] });
+  check(k.pre === 1 && k.name === '원뱅크' && k.rails === '장-단-장' && b.name === '대회전', `routes named: ${JSON.stringify([k, b])}`);
+}
 // ---- 4구 and 3쿠션: a line the judge itself finds, played as found and played wide
 for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
   let seed = 11; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -127,6 +139,7 @@ for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
     const l = lines.find(x => x.p > (mode === 'four' ? 0.5 : 0.2)); if (!l) continue; found++;
     const made = judge({ angle: l.angle, V: l.V, a: l.a, b: l.b });
     check(made.made && made.grade <= 2, `${mode}: a line played as found: ${say(made)}`);
+    check(made.intent && made.intent.route && made.d.route && (mode === 'four' || made.d.cushions < 3 || made.d.route.rails.split('-').length + made.d.route.pre >= 3), `${mode}: the route read: ${JSON.stringify(made.d.route)}`);
     const wide = judge({ angle: l.angle + 0.08, V: l.V, a: l.a, b: l.b });
     check(wide.made || wide.grade >= 2, `${mode}: the same played wide: ${say(wide)}`);
   }

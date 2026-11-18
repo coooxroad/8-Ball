@@ -305,3 +305,15 @@
 #app.desk.compact .rv-si{padding:4px 2px}
 #app.desk.compact .rv-tip,#app.desk.compact .rv-cue,#app.desk.compact .rv-thick{transform:scale(.8);margin:-3px 0}
 #app.desk.compact .rv-why.alt{font-size:12px;padding:6px 8px}
+/* the coach's lines (의도 · 결과 · 원인 · 한마디 · 추천) and an other way's reasons */
+.rv-lines{display:flex;flex-direction:column;gap:5px}
+.rv-line{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;margin:0;font:600 14px/1.45 var(--ui-font);color:#dfe5ec}
+.rv-line b{font:800 11.5px var(--ui-font);color:#9fb0c3;padding:2px 0;min-width:3.6em;text-align:center;border-radius:99px;background:rgba(255,255,255,.07);white-space:nowrap}
+.rv-line.rec b{color:#d9c8ff;background:rgba(138,111,208,.22)}
+.rv-why.alt p{margin:0}
+.rv-whys{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.rv-whys li{font:700 13px var(--ui-font);color:#cfe9d6}
+.rv-whys li::before{content:'✓ ';color:#5fbf7a}
+#app.desk.compact .rv-line{font-size:12.5px;gap:6px}
+#app.desk.compact .rv-line b{font-size:10px;padding:1px 6px}
+#app.desk.compact .rv-whys li{font-size:11.5px}

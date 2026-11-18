@@ -92,7 +92,8 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, seq: [] }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+    // seq: what the cue ball met, in order, up to 10 (a ball's id; 'L' a long cushion, 'S' a short one) - the route the review names (ai/62-intent.js);
     // pre: cushions the cue ball met before any ball;   // kiss: two balls other than the cue ball met (쫑) after the cue ball's first contact - the computer player reads it (ai/50-human.js);   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
@@ -449,6 +450,7 @@ function createPhysics(cfg) {
     if (w.ev.firstHit != null) w.ev.rail = true;
     if (w.ev.railed.indexOf(b.id) < 0) w.ev.railed.push(b.id);
     if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
+    if (b.id === w.cue && -vn > 0.05 && w.ev.seq.length < 10) w.ev.seq.push(Math.abs(b.x) > HL - 2 * R ? 'S' : 'L');
     if (b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
     if (b.id === w.cue && !w.ev.at) w.ev.at = [b.x, b.y, b.z, -1];
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
@@ -470,7 +472,7 @@ function createPhysics(cfg) {
       const jn = -(1 + E_BALL) / 2 * rel;
       a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
       for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
-      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); }
+      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
       else if (w.ev.firstHit != null) w.ev.kiss++;
       if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
     }
@@ -552,7 +554,7 @@ function createPhysics(cfg) {
       if (met.length) {
         const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, 0, met[0]];
         if (w.ev.firstHit == null) w.ev.firstHit = met[0];
-        for (const o of met) if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o);
+        for (const o of met) { if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
       }
       if (w.snd) for (const c of group) if (-c.rel0 > 0.03 && c.lam > 0) { const a = bs[c.i], b = bs[c.j]; w.snd.push({ t: 'ball', v: -c.rel0, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id }); }
       // and on from that instant with the new speeds
