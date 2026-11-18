@@ -216,13 +216,17 @@
      For each ball that may be met first, the aim is swept across it (thin one side to thin the other) with the game's
      usual strokes; each run of aims that scores is a line, its window refined at both ends, its chance the reference
      hand's - and a little less if a firmer or softer stroke would lose it. */
+  // (full: true - a shot's own lines; false - a leave, quickly; 'teach' - a leave as the teacher of the leave network sees
+  // it, many strokes and fine steps, offline only: web/tools/net)
   const caromStrokes = full => {
     const three = g.modeId === 'three' && (g.cushions || 0) >= 3, V = x => x * (three ? 5.0 : 3.3) * PACE.carom;
+    if (full === 'teach') return (three ? [[1, 0.45, 0.15], [1, -0.45, 0.15], [1.25, 0.45, -0.25], [1.25, -0.45, -0.25], [0.85, 0, 0.3], [1.1, 0.25, 0], [1.1, -0.25, 0]]
+      : [[0.8, 0, 0], [1, 0, 0.3], [1, 0, -0.3], [1.25, 0.35, 0], [1.25, -0.35, 0], [0.9, 0, 0.15]]).map(([v, a, b]) => ({ V: V(v), a, b }));
     if (three) return (full ? [[1, 0.45, 0.15], [1, -0.45, 0.15], [1.25, 0.45, -0.25], [1.25, -0.45, -0.25], [0.85, 0, 0.3]] : [[1.1, 0.4, 0.1], [1.1, -0.4, 0.1]]).map(([v, a, b]) => ({ V: V(v), a, b }));
     return (full ? [[0.85, 0, 0], [1.1, 0, 0.3], [1.1, 0, -0.3], [1.25, 0.35, 0]] : [[1, 0, 0.15]]).map(([v, a, b]) => ({ V: V(v), a, b }));
   };
   function caromLines(world, who, view, full) {
-    const P = g.P, c = world.balls[who], out = [], steps = full ? 26 : (g.modeId === 'three' ? 11 : 14);
+    const P = g.P, c = world.balls[who], out = [], steps = full === 'teach' ? 40 : full ? 26 : (g.modeId === 'three' ? 11 : 14);
     if (!c || !c.on) return out;
     const ids = g.mode.legal(view, who).filter(id => world.balls[id] && world.balls[id].on);
     const scores = shot => judgeSim(world, who, shot, view).made;
@@ -270,6 +274,13 @@
     return out;
   }
 
+  // the leave as the leave network's teacher sees it (carom, offline: web/tools/net/label.js)
+  function leaveTeach(world, who) {
+    const view = judgeView(world, who, null, false), c = world.balls[who]; if (!c || !c.on) return 0;
+    const seen = new Set(), ps = [];
+    for (const l of caromLines(world, who, view, 'teach')) { const key = l.id + ':' + Math.round(l.a * 10) + ':' + Math.round(l.b * 10); if (seen.has(key)) continue; seen.add(key); ps.push(l.p); if (ps.length === 3) break; }
+    return ps.reduce((t, p, i) => t + p * JUDGE.TOP[i], 0) / (JUDGE.TOP[0] + JUDGE.TOP[1] + JUDGE.TOP[2]);
+  }
   // what the table offers whoever shoots next: its best three lines, one per ball (pool) or per ball and stroke (carom)
   function leaveOf(world, who, r, inHand) {
     const view = judgeView(world, who, r, inHand);

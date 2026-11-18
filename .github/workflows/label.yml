@@ -1,0 +1,28 @@
+# Teacher labels for the carom leave network (web/tools/net/label.js; docs/ai-roadmap.md step 5): sixteen machines at once,
+# each labelling its own share with its own seed. Run by hand (Actions → Label → Run workflow); the labels come back as
+# one artifact a machine, read by web/tools/net/train.js.
+name: Label
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: 'four or three', required: true, default: 'four' }
+      n: { description: 'tables a machine', required: true, default: '6000' }
+      seed: { description: 'seed (a new one for new tables)', required: true, default: '1' }
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix: { shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Label
+        run: node web/tools/net/label.js ${{ inputs.mode }} ${{ inputs.n }} $(( ${{ inputs.seed }} * 100 + ${{ matrix.shard }} )) labels-${{ inputs.mode }}-${{ matrix.shard }}.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: labels-${{ inputs.mode }}-${{ inputs.seed }}-${{ matrix.shard }}
+          path: labels-${{ inputs.mode }}-${{ matrix.shard }}.jsonl
+          retention-days: 30
