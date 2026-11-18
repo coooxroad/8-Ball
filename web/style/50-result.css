@@ -171,11 +171,12 @@
 #rRev>*{flex:none}
 #app.desk .r-btns,#app.desk .r-side>h2{flex:none}
 #rRev[hidden]{display:none}
+#rRev.more{-webkit-mask-image:linear-gradient(#000 calc(100% - 36px),transparent);mask-image:linear-gradient(#000 calc(100% - 36px),transparent)}
 .rv-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;color:#f3eee3}
 .rv-h b{font:800 17px var(--ui-font)}
 .rv-h span{font:600 12.5px var(--ui-font);color:#9fb0c3}
 .rv-table{display:flex;flex-direction:column}
-.rv-tr{display:grid;grid-template-columns:minmax(0,1fr) 56px 28px 56px;align-items:center;gap:6px;padding:3px 0;font:700 13.5px var(--ui-font);color:#d9dfe7}
+.rv-tr{display:grid;grid-template-columns:minmax(0,1fr) 56px 28px 56px;align-items:center;gap:6px;padding:2px 0;font:700 13.5px var(--ui-font);color:#d9dfe7}
 .rv-tr .rv-k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rv-tr .rv-a,.rv-tr .rv-b{text-align:center;font:800 16px Outfit,var(--ui-font);color:var(--gc,#f3eee3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rv-tr .rv-ico{justify-self:center;width:22px;height:22px}
@@ -206,7 +207,6 @@
 .rv-back{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3eee3' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center/20px no-repeat;cursor:pointer}
 .rv-back:active{background-color:rgba(255,255,255,.16)}
 .rv-wait{margin:0;font:600 13px var(--ui-font);color:#9fb0c3}
-#rvPanel .rv-start{margin-top:auto;height:58px;color:#fff;font:800 20px var(--ui-font);--s:.42;border:0 solid transparent;background:none;border-image:url(ui/main-green.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s)) stretch}
 .rv-coach{flex:none;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 4px 0 0 var(--gc,transparent)}
 .rv-say{display:flex;align-items:center;gap:10px}
 .rv-say .rv-ico{width:30px;height:30px}
@@ -217,8 +217,6 @@
 .rv-acts{display:flex;gap:8px;flex-wrap:wrap}
 .rv-act{min-height:36px;padding:0 14px;border:0;border-radius:99px;background:rgba(255,255,255,.08);color:#d9dfe7;font:700 13.5px var(--ui-font);cursor:pointer}
 .rv-act.on{background:rgba(255,255,255,.2);color:#fff}
-.rv-act.better{color:#d9c8ff;box-shadow:inset 0 0 0 1.5px rgba(185,156,240,.55)}
-.rv-act.better.on{background:#8a6fd0;color:#fff;box-shadow:none}
 .rv-nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;font:700 13px var(--ui-font);color:#9fb0c3}
 .rv-step{width:44px;height:36px;border:0;border-radius:10px;background:rgba(255,255,255,.08) center/18px no-repeat;cursor:pointer}
 .rv-step.prev{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3eee3' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E")}
@@ -245,7 +243,6 @@
 #app.desk.compact .rv-table.big .rv-tr .rv-ico{width:19px;height:19px}
 #app.desk.compact .rv-top b{font-size:18px}#app.desk.compact .rv-back{width:32px;height:32px}
 #app.desk.compact #rvPanel{gap:7px}
-#app.desk.compact #rvPanel .rv-start{flex:none;height:46px;font-size:16px}
 #app.desk.compact .rv-coach{padding:9px 10px;gap:6px}
 #app.desk.compact .rv-say b{font-size:15px}#app.desk.compact .rv-say .rv-ico{width:24px;height:24px}
 #app.desk.compact .rv-why{font-size:12.5px;line-height:1.45}
@@ -266,10 +263,45 @@
 #app.desk.compact #againBtn{padding:10px 0 calc(10px + 6px);font-size:17px}
 #app.desk.compact #homeBtn{height:auto;font-size:14px}
 /* where each player lost: two bars a row - mine growing left from the middle, the other's right */
-.rv-lost{display:flex;flex-direction:column;gap:5px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)}
+.rv-lost{display:flex;flex-direction:column;gap:4px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)}
 .rv-lh{font:800 13px var(--ui-font);color:#9fb0c3}
 .rv-lr{display:grid;grid-template-columns:1fr 84px 1fr;align-items:center;gap:8px;font:700 12.5px var(--ui-font);color:#d9dfe7;text-align:center}
 .rv-bar{display:flex;height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
 .rv-bar.l{justify-content:flex-end}.rv-bar b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#e8b84a,#e5584f)}
 .rv-bar.l b{background:linear-gradient(270deg,#e8b84a,#e5584f)}
 #app.desk.compact .rv-lr{grid-template-columns:1fr 64px 1fr;font-size:11px}
+
+/* the other ways to play it (chips: 내 샷, then the judge's alts - 추천 the best, 가장 쉬움 the likeliest) and how a stroke
+   was struck (당점 on the cue ball, 세기 a bar, 큐 각도 a cue raised over the cloth, 두께 / 깎기 two balls overlapping) */
+.rv-alts{display:flex;gap:6px;flex-wrap:wrap}
+.rv-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:99px;background:rgba(255,255,255,.07);color:#d9dfe7;font:700 13px var(--ui-font);cursor:pointer;box-shadow:inset 0 0 0 1.5px rgba(185,156,240,.35)}
+.rv-chip.mine{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
+.rv-chip.on{background:#8a6fd0;color:#fff;box-shadow:none}
+.rv-chip.mine.on{background:rgba(255,255,255,.22)}
+.rv-chip{white-space:nowrap;max-width:100%;min-width:0}.rv-chip b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rv-tags{display:inline-flex;gap:4px;flex:none}
+.rv-tags em{font:800 10.5px var(--ui-font);font-style:normal;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,.28)}
+.rv-tags em.best{color:#d9c8ff}.rv-tags em.easy{color:#9fe0b0}
+.rv-chip.on .rv-tags em{background:rgba(0,0,0,.22);color:#fff}
+.rv-why.alt{padding:8px 10px;border-radius:10px;background:rgba(138,111,208,.14);color:#e6ddff;font-size:13.5px}
+.rv-stroke{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rv-si{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border-radius:10px;background:rgba(0,0,0,.18);text-align:center;min-width:0}
+.rv-si>span{font:700 11px var(--ui-font);color:#8a99ab}
+.rv-si>b{font:800 12.5px var(--ui-font);color:#f3eee3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rv-tip{width:34px;height:34px;display:block}.rv-tip svg{width:100%;height:100%;display:block}
+.rv-pace{display:block;width:80%;height:8px;margin:13px 0;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.rv-pace b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#5fbf7a,#e8b84a,#e5584f)}
+.rv-cue{position:relative;display:block;width:44px;height:34px}
+.rv-cue::before{content:'';position:absolute;left:0;right:0;bottom:6px;height:2px;border-radius:2px;background:rgba(255,255,255,.25)}
+.rv-cue::after{content:'';position:absolute;right:4px;bottom:9px;width:38px;height:4px;border-radius:3px;background:linear-gradient(90deg,#6b4a2e 0 70%,#e9dcc0 70% 92%,#4a83c8 92%);transform-origin:100% 50%;transform:rotate(var(--el,0deg))}
+.rv-cue i{display:none}
+.rv-thick{position:relative;display:block;width:44px;height:34px}
+.rv-thick::before,.rv-thick::after{content:'';position:absolute;top:5px;width:24px;height:24px;border-radius:50%}
+.rv-thick::before{left:10px;background:#e5584f}
+.rv-thick::after{left:calc(10px + (1 - var(--t,1)) * 24px);top:5px;background:rgba(244,241,234,.55);box-shadow:inset 0 0 0 2px #f4f1ea}
+#app.desk.compact .rv-chip{min-height:28px;padding:0 9px;font-size:11.5px;gap:4px}
+#app.desk.compact .rv-tags em{font-size:9.5px;padding:1px 5px}
+#app.desk.compact .rv-stroke{gap:4px}
+#app.desk.compact .rv-si{padding:4px 2px}
+#app.desk.compact .rv-tip,#app.desk.compact .rv-cue,#app.desk.compact .rv-thick{transform:scale(.8);margin:-3px 0}
+#app.desk.compact .rv-why.alt{font-size:12px;padding:6px 8px}

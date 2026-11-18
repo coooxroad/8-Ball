@@ -5,9 +5,11 @@
    luck, and what a coach would say (50-review-words.js); the numbers behind it stay inside (owner: never shown).
      the result's slate - each player's count of each grade, their share of shots made (샷 성공률) and the game's rating
                      (경기력: the rating whose players lose as much per shot - REVIEW_PERF), then 게임 리뷰 over 한 판 더
-     게임 리뷰       - the tray turns into a table, the slate into the review: the counts again with 리뷰 시작, then the
-                     shots - each one played again on the table when chosen, the coach's words over the list, and the
-                     better shot played as a ghost (더 좋은 샷 보기) when there was one
+                     and where each lost it (잃은 곳), then 게임 리뷰 over 한 판 더
+     게임 리뷰       - the tray turns into a table, the slate into the shots straight away (owner 11-18: the counts are on
+                     the slate already) - each one played again on the table when chosen, the coach's words over the list,
+                     how it was struck (당점 · 세기 · 큐 각도), and the other good ways to play it, each to see played as a
+                     ghost, the easiest and the best marked (owner 11-18: 원쿠션, 회전 이용 - 여러 개 골라서)
    Split so that a later 당구 에듀케이션 membership can hold the review itself (open) and leave the counts (paint) to all. */
 const REVIEW_GRADES = [
   { id: 'art', name: '예술', say: '아름답습니다' },
@@ -58,7 +60,7 @@ function reviewWorker() {
   return rvw.w;
 }
 const review = {
-  list: [], on: false, stage: 'stats', pick: -1, ghost: false,
+  list: [], on: false, pick: -1, alt: -1,
   reset() { review.list = []; review.close(true); },
   // (match.beforeShot: the shot about to be played, and the game as it is before it) - every shot but a pool break
   shot(p) {
@@ -106,17 +108,20 @@ const review = {
     // (a phone's short slate: one strip - each grade's mark, mine over the other's - in place of the table)
     const [a, b] = [review.stats(0), review.stats(1)];
     const strip = el('div', { class: 'rv-strip' }, REVIEW_GRADES.map((G, i) => el('span', { class: `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero') }, [reviewIcon(G.id), el('b', { text: String(a.n[i]) }), el('small', { text: String(b.n[i]) })])));
-    box.append(el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), review.table(false), strip);
+    // (more below than the slate shows - the bars of 잃은 곳 on a short screen -: the box fades out at its foot until scrolled)
+    const fade = () => box.classList.toggle('more', box.scrollHeight - box.scrollTop - box.clientHeight > 4);
+    box.onscroll = fade; requestAnimationFrame(fade);
+    box.append(...[el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), review.table(false), strip, review.lost()].filter(Boolean));
   },
 
   /* ---- 게임 리뷰: the tray a table, the slate the review ---- */
   open() {
     if (!review.list.length) return;
-    review.on = true; review.stage = 'stats'; review.pick = -1; review.ghost = false;
+    review.on = true; review.pick = -1; review.alt = -1;
     $('#result').classList.add('rv'); $('#rvBoard').hidden = false; $('#rvPanel').hidden = false;
     // (the game's table as the game ended is kept, to be put back when the review closes)
     review.keep = highlights.snapshot(game.world); st.phase = 'rvplay';
-    review.panel(); review.board(null); layout();
+    review.select(review.firstPick()); layout();
   },
   close(quiet) {
     if (!review.on && quiet) return;
@@ -130,12 +135,6 @@ const review = {
   panel() {
     const box = $('#rvPanel'); if (!box) return; box.textContent = '';
     const head = el('div', { class: 'rv-top' }, [el('button', { class: 'rv-back', 'aria-label': '돌아가기', onclick: onTap(() => review.close()) }), el('b', { text: '게임 리뷰' })]);
-    if (review.stage === 'stats') {
-      const wait = review.list.filter(q => !q.res).length;
-      box.append(...[head, review.table(true), review.lost(), wait ? el('p', { class: 'rv-wait', text: `샷을 분석하는 중이에요 · ${review.list.length - wait}/${review.list.length}` }) : null,
-        el('button', { class: 'btn rv-start', text: '리뷰 시작', onclick: onTap(() => { review.stage = 'shots'; review.select(review.firstPick()); }) })].filter(Boolean));
-      return;
-    }
     const L = review.list, q = L[review.pick];
     box.append(head, q ? review.coach(q) : el('div', { class: 'rv-coach' }),
       el('div', { class: 'rv-nav' }, [
@@ -148,7 +147,9 @@ const review = {
           el('span', { class: 'rv-n', text: String(i + 1) }), el('span', { class: 'rv-who', text: review.names()[s.turn] }),
           G ? reviewIcon(G.id) : el('i', { class: 'rv-ico wait' }), el('b', { text: G ? G.name : r ? '-' : '분석 중' }), r && r.fluke ? reviewIcon('fluke', 'tag') : null]);
       })));
-    const on = box.querySelector('.rv-shot.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+    // (the chosen shot brought into view in the list; a phone's panel scrolls as one, so it goes back to the coach instead)
+    if (app.classList.contains('compact')) box.scrollTop = 0;
+    else { const on = box.querySelector('.rv-shot.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
   },
   /* where each player lost (as golf's Strokes Gained is split): the way chosen, the striking, the next shot, fouls - two
      bars a row, the longest the longest of all, no numbers (owner 11-17: the scores stay inside) */
@@ -158,24 +159,46 @@ const review = {
     const [a, b] = [sum(0), sum(1)], top = Math.max(0.01, ...K.map(([k]) => Math.max(a[k], b[k])));
     if (top <= 0.01) return null;
     const bar = (v, side) => el('i', { class: 'rv-bar ' + side }, [el('b', { style: `width:${Math.round(100 * v / top)}%` })]);
-    return el('div', { class: 'rv-lost' }, [el('div', { class: 'rv-lh', text: '잃은 곳' }), ...K.map(([k, name]) => el('div', { class: 'rv-lr' }, [bar(a[k], 'l'), el('span', { text: name }), bar(b[k], 'r')]))]);
+    // (a kind where neither lost anything left out: the slate is short)
+    return el('div', { class: 'rv-lost' }, [el('div', { class: 'rv-lh', text: '잃은 곳' }), ...K.filter(([k]) => a[k] > 0.01 || b[k] > 0.01).map(([k, name]) => el('div', { class: 'rv-lr' }, [bar(a[k], 'l'), el('span', { text: name }), bar(b[k], 'r')]))]);
   },
   firstPick() { const i = review.list.findIndex(q => q.turn === review.seat()); return i < 0 ? 0 : i; },
-  // the coach's card for one shot: its mark, its word, why - and the better shot to see, when there was one
+  /* the coach's card for one shot: its mark and word, what it did and why, how it was struck - then the ways to see it:
+     the shot played (내 샷) and the other good ways (judge's alts), each a chip naming how it is played, the easiest and
+     the judge's best marked; a chip chosen plays that way on the table, its own story and stroke shown */
   coach(q) {
     const r = q.res, G = r && r.grade != null ? REVIEW_GRADES[r.grade] : null;
     if (!G) return el('div', { class: 'rv-coach' }, [el('p', { class: 'rv-why', text: r ? '이 샷은 평가하지 못했어요.' : '분석하는 중이에요…' })]);
-    const w = reviewWords(q);
-    return el('div', { class: `rv-coach g-${G.id}` }, [
+    const w = reviewWords(q), alts = r.alts || [], A = alts[review.alt] || null;
+    const pick = i => onTap(() => { review.alt = i; review.board(q); review.panel(); });
+    const chips = alts.length ? el('div', { class: 'rv-alts' }, [
+      el('button', { class: 'rv-chip mine' + (A ? '' : ' on'), onclick: pick(-1) }, [el('b', { text: '내 샷' })]),
+      ...alts.map((a, i) => el('button', { class: 'rv-chip' + (i === review.alt ? ' on' : ''), onclick: pick(i) }, [el('b', { text: rvAltName(a, true) }),
+        a.easiest || a.best ? el('span', { class: 'rv-tags' }, [a.best ? el('em', { class: 'best', text: '추천' }) : null, a.easiest ? el('em', { class: 'easy', text: '가장 쉬움' }) : null]) : null]))]) : null;
+    return el('div', { class: `rv-coach g-${G.id}` + (A ? ' alt' : '') }, [
       el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('b', { text: w.title }), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('요행')]) : null]),
       el('p', { class: 'rv-why', text: w.text }),
-      el('div', { class: 'rv-acts' }, [
-        el('button', { class: 'rv-act' + (review.ghost ? '' : ' on'), text: '다시 보기', onclick: onTap(() => { review.ghost = false; review.board(q); review.panel(); }) }),
-        r.better ? el('button', { class: 'rv-act better' + (review.ghost ? ' on' : ''), text: '더 좋은 샷 보기', onclick: onTap(() => { review.ghost = true; review.board(q); review.panel(); }) }) : null])]);
+      chips,
+      A ? el('p', { class: 'rv-why alt', text: rvAltStory(A) }) : null,
+      review.stroke(A ? A.d : r.d),
+      el('button', { class: 'rv-act', text: '다시 보기', onclick: onTap(() => { review.board(q); }) })]);
+  },
+  /* how a stroke was struck (owner 11-18: 큐 각도, 당점): the cue ball with the tip's mark on it, the pace as a bar, the cue
+     raised in degrees, and how the first ball was met */
+  stroke(d) {
+    if (!d) return null;
+    const x = 50 + Math.max(-1, Math.min(1, d.a / 0.5)) * 34, y = 50 - Math.max(-1, Math.min(1, d.b / 0.5)) * 34;
+    const tip = el('i', { class: 'rv-tip', 'aria-hidden': 'true' }); tip.innerHTML = `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#f4f1ea" stroke="rgba(0,0,0,.35)" stroke-width="3"/><path d="M50 12v76M12 50h76" stroke="rgba(0,0,0,.14)" stroke-width="2"/><circle cx="${x}" cy="${y}" r="10" fill="#e5584f" stroke="#fff" stroke-width="3"/></svg>`;
+    const met = rvMet(d);
+    return el('div', { class: 'rv-stroke' }, [
+      el('div', { class: 'rv-si' }, [tip, el('span', { text: '당점' }), el('b', { text: rvStroke(d) })]),
+      el('div', { class: 'rv-si' }, [el('i', { class: 'rv-pace' }, [el('b', { style: `width:${Math.round(100 * Math.max(0.04, d.pace || 0))}%` })]), el('span', { text: '세기' }), el('b', { text: `${Math.round(100 * (d.pace || 0))}%` })]),
+      el('div', { class: 'rv-si' }, [el('i', { class: 'rv-cue', style: `--el:${-Math.min(60, d.el || 0)}deg` }), el('span', { text: '큐 각도' }), el('b', { text: `${d.el || 0}°` })]),
+      met ? el('div', { class: 'rv-si' }, [el('i', { class: 'rv-thick', style: `--t:${d.thick == null ? 0 : d.thick}` }), el('span', { text: game.mode.table === 'carom' ? '두께' : '깎기' }), el('b', { text: rvMetShort(d) })]) : null]);
   },
   select(i) {
     if (i < 0 || i >= review.list.length) return;
-    review.pick = i; review.ghost = false; review.panel(); review.board(review.list[i]);
+    review.pick = i; review.alt = -1; review.panel(); review.board(review.list[i]);
   },
 
   /* ---- the table on the tray: the game's own table (owner 11-18: '인게임 당구대로') ----
@@ -192,8 +215,9 @@ const review = {
     review.stop(); scene.clearFalls();
     const base = q || review.list[0]; if (!base) return;
     let shot;
-    if (q && review.ghost && q.res && q.res.better) {
-      const b = q.res.better.shot, snap = JSON.parse(JSON.stringify(q.snap));
+    const alt = q && q.res && q.res.alts && q.res.alts[review.alt];
+    if (alt) {
+      const b = alt.shot, snap = JSON.parse(JSON.stringify(q.snap));
       if (b.pos) { snap.balls[snap.cue][0] = b.pos[0]; snap.balls[snap.cue][1] = b.pos[1]; }
       shot = { snap, aim: b.angle, V: b.V, a: b.a || 0, b: b.b || 0, el: b.el || 0, key: -1 };
     } else shot = Object.assign({}, base, { key: -1 });
@@ -202,7 +226,7 @@ const review = {
     if (!q) { scene.invalidate(); return; }
     try { review.tp = highlights.record(game.P, shot.snap.balls.length, shot); } catch (e) { review.tp = null; }
     if (!review.tp) return;
-    review.run = shot; review.ghostOn = !!(review.ghost && q.res && q.res.better); review.T = -0.45; review.playing = true;
+    review.run = shot; review.ghostOn = !!alt; review.T = -0.45; review.playing = true;
     const ids = [shot.snap.cue, ...shot.snap.balls.map((_, i) => i).filter(i => i !== shot.snap.cue)];
     review.paths = ids.map(id => [id, highlights.path(review.tp, id)]).filter(x => x[1]).slice(0, 4);
     scene.invalidate();

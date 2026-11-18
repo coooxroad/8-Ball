@@ -335,6 +335,37 @@
   }
   const kindOf = res => res.won ? 'w' : res.lost ? 'l' : res.made ? 'm' : res.foul ? 'f' : 'x';
 
+  /* ---- what kind of shot a stroke is, and what it did - for the coach's words (50-review-words.js) ----
+     styleOf: the way of playing it - safety, kick (pool: off a cushion first; carom: 빈쿠션), bank, combination, side (left
+     or right english), follow (밀어치기), draw (끌어치기), stun (센터·스톱) - with the first ball, for telling them apart */
+  function styleOf(k) {
+    const l = k.line, s = k.shot, first = k.nominal && k.nominal.ev.firstHit;
+    const way = l.kind === 'safety' ? 'safety' : l.kind === 'kick' ? 'kick' : l.kind === 'bank' ? 'bank' : l.kind === 'combo' ? 'combo'
+      : Math.abs(s.a || 0) >= 0.25 ? 'side' : (s.b || 0) >= 0.25 ? 'follow' : (s.b || 0) <= -0.25 ? 'draw' : 'stun';
+    return { way, key: g.P.POCKETED ? way : way + ':' + first };
+  }
+  /* describe: what a stroke did, from its copy - the first ball and how thick it was met (1 full, 0 a graze), the cut
+     (pool, degrees), the balls potted and where, the cushions the cue ball met before the second ball (carom) and before
+     any ball, a kiss; and the stroke itself: tip (a: left-right, b: up-down), pace (0..1 of the cue's range), the cue
+     raised (degrees) */
+  function describe(world, who, shot, res) {
+    const P = g.P, c = shot.pos ? { x: shot.pos[0], y: shot.pos[1] } : world.balls[P.POCKETED ? 0 : who], ev = res.ev, first = ev.firstHit;
+    let thick = null, cut = null;
+    if (first != null && world.balls[first]) {
+      const T = world.balls[first], d = Math.hypot(T.x - c.x, T.y - c.y), off = Math.atan2(Math.sin(shot.angle - Math.atan2(T.y - c.y, T.x - c.x)), Math.cos(shot.angle - Math.atan2(T.y - c.y, T.x - c.x)));
+      const imp = Math.min(2 * P.R, Math.abs(d * Math.sin(off))); thick = Math.round((1 - imp / (2 * P.R)) * 100) / 100; cut = Math.round(Math.asin(imp / (2 * P.R)) * 180 / Math.PI);
+      if (off < 0) cut = -cut;   // (the side: + the ball's right as the cue ball sees it, - its left)
+    }
+    return { first, second: ev.hits.length > 1 ? ev.hits[1] : null, hits: ev.hits.slice(0, 4), thick, cut, potted: (ev.pocketed || []).filter(q => q.id !== 0 || P.POCKETED).map(q => [q.id, q.pocket]),
+      cushions: ev.cushions, pre: ev.pre, kiss: ev.kiss, a: Math.round((shot.a || 0) * 100) / 100, b: Math.round((shot.b || 0) * 100) / 100,
+      pace: Math.round(Math.min(1, g.powerOf ? g.powerOf(shot.V) : shot.V / g.vOf(1)) * 100) / 100, el: Math.round((shot.el || 0) * 180 / Math.PI) };
+  }
+  // the ball the next shot would go for (pool: the best line on the table the stroke left), or null
+  function nextBall(res, who) {
+    if (!g.P.POCKETED || !res.made || res.won) return null;
+    const l = potLines(res.world, who, judgeView(res.world, who, res.r, false), false)[0]; return l ? { id: l.id, pocket: l.pocket, p: Math.round(l.p * 100) / 100 } : null;
+  }
+
   /* ---- the best a shot here could bring: candidate strokes, each judged by its expected worth ---- */
   function bestShots(world, who, view) {
     const P = g.P, cands = [];
@@ -348,6 +379,8 @@
       for (const l of lines) {
         const need = 0.9 + 1.4 * Math.sqrt(l.s + l.L * (l.kind === 'bank' ? 1.6 : 1) / Math.max(0.35, Math.cos(l.cut)));
         for (const k of [0.75, 1, 1.35]) for (const b of [0.35, 0, -0.35]) cands.push({ line: l, shot: { pos: l.pos, angle: l.angle, V: Math.min(g.vOf(1) * 0.95, need * k * PACE.pool), a: 0, b, el: 0 } });
+        // (and with side - left or right english - for the ways a player turns the cue ball off a cushion)
+        for (const a of [0.35, -0.35]) cands.push({ line: l, shot: { pos: l.pos, angle: l.angle, V: Math.min(g.vOf(1) * 0.95, need * PACE.pool), a, b: 0, el: 0 } });
       }
       // a safety: the first legal ball met softly, a few ways, for when nothing is on
       const c = world.balls[0];
@@ -366,13 +399,17 @@
     // wobble on the best few
     for (const k of cands) { k.nominal = judgeSim(world, who, k.shot, view); k.guess = k.nominal.made ? k.line.p : k.line.kind === 'safety' && !k.nominal.foul ? 0.05 : -1; }
     cands.sort((a, b) => b.guess - a.guess);
-    const near = cands.slice(0, P.POCKETED ? 12 : 4).filter(k => k.guess > -1);
+    const near = cands.slice(0, P.POCKETED ? 16 : 8).filter(k => k.guess > -1);
     for (const k of near) {
-      k.worth = worthOf(k.nominal, who);
+      k.worth = worthOf(k.nominal, who); k.style = styleOf(k);
       k.guess = k.nominal.made ? k.line.p * k.worth.v - (1 - k.line.p) * JUDGE.GAMMA * 0.5 : k.worth.v;
     }
     near.sort((a, b) => b.guess - a.guess);
-    const top = near.slice(0, P.POCKETED ? 5 : 2);
+    /* the few judged closely: the likeliest, and the likeliest of each way of playing it (owner 11-18: '더 좋은 샷 보기 -
+       원쿠션, 회전 이용, 여러 개 골라서') - a straight pot, follow, draw, side, a kick or a bank, a combination, a safety;
+       carom: each of those with either first ball */
+    const top = near.slice(0, P.POCKETED ? 5 : 3), seen = new Set(top.map(k => k.style.key));
+    for (const k of near) if (!seen.has(k.style.key) && top.length < (P.POCKETED ? 9 : 6)) { seen.add(k.style.key); top.push(k); }
     // (the few left judged with the deeper leave, as the shot played is)
     for (const k of top) { k.worth = worthOf(k.nominal, who, true); const x = expectOf(world, who, k.shot, view, JUDGE.SAMPLES, [[kindOf(k.nominal), k.worth.v]], true); k.e = x.e; k.p = x.p; }
     top.sort((a, b) => b.e - a.e);
@@ -420,11 +457,13 @@
     const fluke = !!(res.made && odd && (!line || line.p < 0.3));
     const cuts = JUDGE.CUTS[g.P.POCKETED ? 'pool' : 'carom'], hard = JUDGE.HARD[game] || 0.4;
     const bestLeave = best.filter(k => k.nominal.made && k.worth).reduce((m, k) => Math.max(m, k.worth.mine), 0);
-    const art = res.made && !fluke && !res.won && line && line.p <= hard && loss <= 0.05 && got.mine >= Math.max(0.4, 0.7 * bestLeave)
-      || res.won && !fluke && line && line.p <= hard;
-    let grade = art ? 0 : loss <= cuts[0] ? 1 : loss <= cuts[1] ? 2 : loss <= cuts[2] ? 3 : 4;
-    // a pot (or a point) tried and missed is at best 무난, however little it cost: only a shot that came off - or a safety
-    // meant as one, nowhere near a line that scores - is 좋음
+    /* (owner 11-18) A shot that came off is graded by what it left: the next shot set (실용성 high) - 좋음; and the line
+       hard besides (예술 점수 high) - 예술; the next shot left poor - 무난, however well the ball went in. The frame won is
+       the best leave there is. A miss by what it cost (B - A): a pot or a point tried and missed is at best 무난; only a
+       safety meant as one, nowhere near a line that scores, can be 좋음. */
+    const practical = res.won || res.made && got.mine >= Math.max(0.4, 0.7 * bestLeave);
+    const art = res.made && !fluke && practical && !!line && line.p <= hard;
+    let grade = res.made && !res.foul ? (art ? 0 : practical ? 1 : 2) : loss <= cuts[0] ? 1 : loss <= cuts[1] ? 2 : loss <= cuts[2] ? 3 : 4;
     if (!res.made && meant && grade < 2) grade = 2;
     // why it missed, for the words: the aim (thick or thin), the pace (soft or hard), the tip - or a better way
     let cause = null;
@@ -447,8 +486,20 @@
       choice: asMeant > -Infinity ? Math.max(0, B - asMeant) : Math.max(0, loss), strike: !res.made && asMeant > -Infinity ? Math.max(0, asMeant - A) : 0,
       next: res.made ? Math.max(0, JUDGE.GAMMA * (bestLeave - got.mine)) : 0, foul: 0 };
     for (const k in parts) parts[k] = Math.round(parts[k] * 100) / 100;
+    /* the other ways (owner 11-18: several to pick from, the easiest marked): the best few judged closely, one of each way
+       of playing it, the ones near the best (or a safety when that is the best there is), best first */
+    const alts = [], used = new Set();
+    for (const k of best.slice().sort((x, y) => y.e - x.e)) {
+      if (alts.length >= 4 || used.has(k.style.key) || !(k.nominal.made || k.line.kind === 'safety') || top && k.e < top.e - 0.6) continue;
+      used.add(k.style.key);
+      alts.push({ way: k.style.way, kind: k.line.kind, id: k.line.id, via: k.line.via, pocket: k.line.pocket, p: Math.round(k.p * 100) / 100, shot: k.shot,
+        d: describe(world, who, k.shot, k.nominal), next: nextBall(k.nominal, who), best: k === top });
+    }
+    if (alts.length) { const e = alts.reduce((m, a) => a.p > m.p ? a : m, alts[0]); e.easiest = true; }
     return {
-      parts,
+      parts, alts, practical,
+      d: describe(world, who, shot, res), next: nextBall(res, who),
+      md: meant && !res.made && line ? describe(world, who, { ...aimed, angle: line.centre }, judgeSim(world, who, { ...aimed, angle: line.centre }, view)) : null,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
       grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)

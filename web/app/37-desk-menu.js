@@ -109,8 +109,8 @@ function menuPaint() {
     el('span', { class: 'em' }, el('b', { text: t.name })),
     el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
-  // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), the icon
-  // breathing, and (11-17 night) a soft light and shade flowing inside it; only a card in sight moves - 'mn-live' below -
+  // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), (the icon
+  // still since 11-18), and (11-17 night) a soft light and shade flowing inside it; only a card in sight moves - 'mn-live' below -
   // 84-menu.css. 11-17: the small tables, the bot standing in
   // 컴퓨터 대전's card and the strip shining were tried and taken out again - owner: too busy)
   const cards = MENU_CARDS.map((c, i) => {

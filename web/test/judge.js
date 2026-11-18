@@ -33,6 +33,10 @@ function potAim(id, near, V, b = 0, k = null) {
   const aim = potAim(1, ghostAim(cue, T, 2), 2.2, 0, 2);
   const made = judge({ angle: aim, V: 2.2 });
   check(made.made && made.grade <= 2 && !made.fluke, `easy straight made: ${say(made)}`);
+  // what the coach is told: the ball met, potted where, the stroke; and the other ways, one easiest
+  check(made.d && made.d.first === 1 && made.d.potted.some(([id, k]) => id === 1 && k === 2) && Math.abs(made.d.cut) < 6 && made.d.pace > 0, `the shot described: ${JSON.stringify(made.d)}`);
+  const ways = (made.alts || []).map(a => a.way);
+  check(ways.length >= 2 && new Set(ways).size === ways.length && made.alts.filter(a => a.easiest).length === 1 && made.alts.every(a => a.d && a.shot), `other ways to play it: ${ways.join(', ')}`);
   const missed = judge({ angle: aim + 0.03, V: 2.2 });
   check(!missed.made && missed.grade === 4 && /thin|thick/.test(missed.cause), `easy straight missed by a mile: ${say(missed)}`);
   const soft = judge({ angle: aim, V: 0.5 });
@@ -52,7 +56,9 @@ function potAim(id, near, V, b = 0, k = null) {
   const made = got.filter(r => r.made && !r.fluke);
   check(made.some(r => r.grade === 0), `the hard cut made with a good leave is 예술: ${made.map(say).join(' / ')}`);
   check(made.every(r => r.grade !== 0 || r.leave >= Math.max(0.4, 0.7 * r.bestLeave)), 'no 예술 with a poor leave');
-  check(made.some(r => r.grade !== 0), `not every way of making it is 예술: ${made.map(say).join(' / ')}`);
+  // (owner 11-18: a made shot is graded by its leave - set, 좋음 or, the line hard, 예술; left poor, 무난. The line here is
+  // hard, so every way of making it is 예술 or 무난)
+  check(made.every(r => r.grade === 0 || r.grade === 2), `the hard cut made is 예술 or 무난, by its leave: ${made.map(say).join(' / ')}`);
   // (a miss: the first aim off the line that goes in nowhere - one a little off can go in by a kiss, a 요행)
   let off = null; for (const d of [0.012, -0.012, 0.018, -0.018, 0.025]) { const w = P.clone(g.world); P.strike(w, line.angle + d, 2.6, 0, 0); const ev = P.run(w, 20); if (!ev.pocketed.length) { off = d; break; } }
   const miss = line && off != null && judge({ angle: line.angle + off, V: 2.6 });
