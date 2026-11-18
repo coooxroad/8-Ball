@@ -41,7 +41,7 @@
   const segGap = (px, py, ax, ay, bx, by) => { const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L)); return Math.hypot(px - ax - t * dx, py - ay - t * dy); };
   function factsOf(world, who, shot, res, view, shape) {
     const P = g.P, R = P.R, cue = P.POCKETED ? 0 : who, c = shot.pos ? { x: shot.pos[0], y: shot.pos[1] } : world.balls[cue];
-    const f = { shape: shape || null };
+    const f = { shape: shape || null, raised: raisedOf(shot, res.ev) };
     const first = res.ev.firstHit, T = first != null ? world.balls[first] : null;
     if (!T || !c) return f;
     f.dist = r2(Math.hypot(T.x - c.x, T.y - c.y));
@@ -51,7 +51,7 @@
         f.run = r2(Math.hypot(pk.ax - T.x, pk.ay - T.y));
         const L = Math.hypot(pk.ax - T.x, pk.ay - T.y) || 1, gx = T.x - (pk.ax - T.x) / L * 2 * R, gy = T.y - (pk.ay - T.y) / L * 2 * R;
         // (the cut as struck - the aim against the line of centres -, so a bank's is its own and not the pocket's)
-        f.cut = Math.abs(describe(world, who, shot, res).cut || 0); f.bank = pot.id === first && (res.ev.railed || []).includes(first);
+        const dc = describe(world, who, shot, res).cut; f.cut = dc == null ? null : Math.abs(dc); f.bank = pot.id === first && (res.ev.railed || []).includes(first);
         // a ball close to either path: the cue ball's to the contact, the object ball's to the pocket
         let near = Infinity;
         for (const b of world.balls) if (b.on && b.id !== cue && b.id !== first) near = Math.min(near, segGap(b.x, b.y, c.x, c.y, gx, gy) - 2 * R, segGap(b.x, b.y, T.x, T.y, pk.ax, pk.ay) - 2 * R);
@@ -75,6 +75,7 @@
   function whyBetter(a, me) {
     const out = [], A = a.facts || {}, M = (me && me.facts) || {};
     if (a.kind === 'safety') out.push({ k: 'safety' });
+    if (a.kind === 'masse' || a.kind === 'jump') out.push({ k: a.kind === 'jump' ? 'over' : 'around' });
     if (me && A.cut != null && M.cut != null && M.cut - A.cut >= 12) out.push({ k: 'cut', by: M.cut - A.cut });
     if (me && A.dist != null && M.dist != null && (M.dist + (M.run || 0)) - (A.dist + (A.run || 0)) >= 0.35) out.push({ k: 'near' });
     if (M.tight && !A.tight) out.push({ k: 'clear' });

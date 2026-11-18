@@ -44,7 +44,7 @@ const match = {
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (game.over) { toast(out.msg, out.kind, out.dur); return match.finish(); } if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,
-  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? (botTalk.say('think', 0.22, 0.3), { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }) : null,
+  auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? (botTalk.say('think', 0.22, 0.3), { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; botTalk.plan = p.decision || null; if ((p.el || 0) > 0.3) botTalk.say('trick', 0.85, 0.1); return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }) : null,
   beforeShot(V, a, b, el) {
     if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing, t: game.turn });
     if (match.ctx.online) ranked.struck(JSON.parse(JSON.stringify(highlights.snapshot(game.world))), V, a, b, el);

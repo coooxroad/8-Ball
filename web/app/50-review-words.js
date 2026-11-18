@@ -5,7 +5,7 @@
    the next shot would go for), the line meant when it missed (md) and why it missed, a foul and which, a fluke; and the
    other ways (alts), each told the same way. Degrees, thickness, tip and pace are told; the judge's scores never are
    (owner 11-17). A pocket is named by its kind only (코너 / 사이드): the board shows which, turned as the screen is. */
-const RV_WAY = { stun: '스톱', follow: '밀어치기', draw: '끌어치기', side: '회전 이용', kick: '원쿠션', bank: '뱅크샷', combo: '콤비', safety: '수비' };
+const RV_WAY = { masse: '맛세이', jump: '점프샷', stun: '스톱', follow: '밀어치기', draw: '끌어치기', side: '회전 이용', kick: '원쿠션', bank: '뱅크샷', combo: '콤비', safety: '수비' };
 // a ball's name as the table shows it (four-ball's two reds told apart by which was nearer the cue ball before the shot -
 // rvAt, the shot's table, set by reviewWords)
 let rvAt = null;
@@ -33,8 +33,10 @@ function rvMet(d) {
 }
 // the stroke: the tip (up for follow, down for draw, left or right), the cue raised
 function rvStroke(d) {
-  const parts = [];
-  if (d.el >= 15) parts.push('찍어치기');
+  // (the raised cue's own names first, as the aim line gives them: 점프샷, 맛세이, 커브샷 - 11-19)
+  if (d.raised === 'masse' || d.raised === 'curve') return d.raised === 'masse' ? '맛세이' : '커브샷';
+  const parts = d.raised === 'jump' ? ['점프샷'] : [];
+  if (d.el >= 15 && !d.raised) parts.push('찍어치기');
   if (d.b >= 0.25) parts.push('밀어치기'); else if (d.b <= -0.25) parts.push('끌어치기');
   if (d.a >= 0.2) parts.push('오른쪽 회전'); else if (d.a <= -0.2) parts.push('왼쪽 회전');
   return parts.join(' + ') || (game.mode.table === 'carom' ? '무회전' : '스톱');
@@ -51,9 +53,9 @@ function rvStory(d, missed) {
     const short = game.modeId === 'three' && d.second != null && d.cushions < 3 ? ` 쿠션이 ${d.cushions ? d.cushions + '번뿐이라' : '하나도 없어'} 득점이 되지 않았어요.` : '';
     return `${lead}${pre}${rvJ(first, '을', '를')} ${rvMet(d)} 맞히고 ${second}.${short}`;
   }
-  const pot = d.potted.find(([id]) => id !== 0), scratch = d.potted.some(([id]) => id === 0), met = rvMet(d), hit = met === '정면으로' ? '정면으로 맞혀' : met;
+  const pot = d.potted.find(([id]) => id !== 0), scratch = d.potted.some(([id]) => id === 0), met = rvMet(d), hit = met === '정면으로' ? '정면으로 맞혀' : met || '맞혀';
   const went = pot ? (pot[0] === d.first ? `${hit} ${rvPocket(pot[1])}에 넣었어요` : `${hit} ${rvJ(rvBall(pot[0]), '이', '가')} ${rvPocket(pot[1])}에 들어갔어요`)
-    : missed ? `${met === '정면으로' ? '정면으로 맞혔지만' : met + ' 쳤지만'} 포켓을 벗어났어요` : `${met === '정면으로' ? '정면으로' : met} 맞혔어요`;
+    : missed ? `${met === '정면으로' ? '정면으로 맞혔지만' : met ? met + ' 쳤지만' : '맞혔지만'} 포켓을 벗어났어요` : `${met ? met + ' ' : ''}맞혔어요`;
   return `${lead}${rvJ(first, '을', '를')} ${went}${scratch ? ' — 수구도 빠졌어요' : ''}.`;
 }
 // (the card's short form of the same: 8°, 정면, 3/4)
@@ -125,6 +127,11 @@ function reviewWords(q) {
     if (r.meant && md && md.first != null && md.first !== d.first) {
       add('결과', rvStory(d, true));
       add('원인', `조준을 조금만 옮겼으면 ${rvJ(rvBall(md.first), '을', '를')} ${rvMet(md)} ${carom ? '맞혀 득점할' : '넣을'} 수 있었어요.`);
+    } else if (r.meant && md && (d.raised === 'masse' || d.raised === 'curve') && r.offDeg != null) {
+      // (a massé's miss: its curve met the ball wrong - said by where the aim had to be, which is how it is corrected)
+      add('결과', rvStory(d, true));
+      add('원인', `휘는 길이 조금 어긋났어요 — 조준을 ${Math.abs(r.offDeg) < 0.2 ? '아주 조금' : Math.abs(r.offDeg).toFixed(1) + '°'} ${r.offDeg > 0 ? '왼쪽' : '오른쪽'}으로 옮기면 맞는 길이었어요.`);
+      if (r.p != null && r.p < 0.35) add('한마디', '맛세이는 기준 손도 열에 서넛이면 잘하는 샷이에요.');
     } else if (r.meant && md && md.first != null) {
       const mc = Math.abs(md.cut || 0), pc = Math.abs(d.cut || 0), w = r.cause === 'thin' ? '얇게' : '두껍게';
       add('결과', carom ? `${rvJ(rvBall(d.first), '을', '를')} ${rvMet(d)} 맞혀 ${d.second != null ? `${rvJ(rvBall(d.second), '을', '를')} 맞혔지만 득점이 되지 않았어요` : '둘째 공을 비켜 갔어요'}.`
@@ -149,6 +156,7 @@ function reviewWords(q) {
 const rvCm = cm => cm >= 100 ? `${(cm / 100).toFixed(1)}m` : `${Math.max(5, Math.round(cm / 5) * 5)}cm`;
 // how hard a line was, by its facts: '70° 컷, 1.7m' (pool) / '1/8 두께' (carom)
 function rvHard(F) {
+  if (F.raised === 'masse' || F.raised === 'jump') return F.raised === 'masse' ? '맛세이' : '점프샷';
   if (F.cut != null) { const parts = []; if (F.cut >= 25) parts.push(`${F.cut}° 컷`); if ((F.dist || 0) + (F.run || 0) >= 1.6) parts.push(`${((F.dist || 0) + (F.run || 0)).toFixed(1)}m 거리`); if (F.bank) parts.push('뱅크'); if (F.tight) parts.push('붙어 있는 공'); return parts.length ? parts.join(', ') : '그 공'; }
   return F.route && F.route.rails ? `${F.route.rails} 길` : '그 길';
 }
@@ -158,7 +166,8 @@ function rvWhy(w, a) {
   return { safety: '상대에게 칠 공을 남기지 않아요', cut: `깎는 각이 ${w.by}° 작아요`, near: '공 사이 거리가 짧아요', clear: '길을 가로막는 공이 없어요', scratch: '스크래치 위험이 없어요',
     breaks: `뭉친 ${(w.ids || []).map(id => rvBall(id).replace(/ 공$/, '')).join('·')} 공을 함께 풀어요`,
     pos: carom ? '다음 배치가 좋아요' : w.next ? `수구가 ${rvJ(rvBall(w.next.id), '을', '를')} 넣기 좋은 자리로 와요` : '다음 자리가 좋아요',
-    room: '세기 여유가 넓어요 — 조금 세거나 약해도 자리가 나와요', likelier: '성공 확률이 더 높아요' }[w.k] || '';
+    room: '세기 여유가 넓어요 — 조금 세거나 약해도 자리가 나와요', likelier: '성공 확률이 더 높아요',
+    over: '가로막는 공을 넘어가요', around: carom ? '휘어 들어가 두 공을 이어요' : '가로막는 공을 돌아 들어가요' }[w.k] || '';
 }
 // an other way's name: how it is played, on which ball (short: a chip's - 가까운 빨강 · 스톱)
 function rvAltName(a, short) {

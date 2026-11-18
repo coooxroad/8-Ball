@@ -28,6 +28,7 @@
     SIG_A: 0.0028,      // the reference hand's aim, radians (one sigma)
     SIG_V: 0.05,        // its pace, a share of the speed
     SIG_S: 0.05,        // its tip, in the -1..1 of a, b
+    RAISED: 2.2,        // its aim and tip with the cue raised past 17 degrees (a massé, a jump): so much the less sure (11-19)
     TOP: [1, 0.33, 0.15],
     // the grade from B - A (chances to win lost), by game: [좋음, 무난, 아쉬움] upper bounds (above the last: 실수) - set
     // (11-18) so that bots' misses grade as they did in the old units (tools/judge-games.js, 60-odd misses a game)
@@ -327,10 +328,10 @@
   // read once per kind - won, lost, made, fouled, missed - from the first of its kind, or given: the leaves are the costly
   // part, and results of a kind lie close together.)
   function expectOf(world, who, shot, view, n = JUDGE.SAMPLES, known, deep) {
-    let sum = 0, made = 0; const ws = new Map(known || []);
+    let sum = 0, made = 0; const ws = new Map(known || []), k = raisedK(shot);
     for (let i = 0; i < n; i++) {
       const [ea, ev, es] = JUDGE_WOBBLE[i];
-      const res = judgeSim(world, who, { ...shot, angle: shot.angle + ea * JUDGE.SIG_A, V: shot.V * (1 + ev * JUDGE.SIG_V), a: (shot.a || 0) + es * JUDGE.SIG_S }, view);
+      const res = judgeSim(world, who, { ...shot, angle: shot.angle + ea * JUDGE.SIG_A * k, V: shot.V * (1 + ev * JUDGE.SIG_V), a: (shot.a || 0) + es * JUDGE.SIG_S * k }, view);
       const kind = res.won ? 'w' : res.lost ? 'l' : res.made ? 'm' : res.foul ? 'f' : 'x';
       if (!ws.has(kind)) ws.set(kind, worthOf(res, who, deep).v);
       sum += ws.get(kind); if (res.made) made++;
@@ -338,13 +339,17 @@
     return { e: sum / n, p: made / n };
   }
   const kindOf = res => res.won ? 'w' : res.lost ? 'l' : res.made ? 'm' : res.foul ? 'f' : 'x';
+  const raisedK = shot => (shot.el || 0) > 0.3 ? JUDGE.RAISED : 1;
+  // what the raised cue made of a stroke: 'jump' (the cue ball left the cloth over a ball's height), 'masse' (raised past
+  // 34 degrees with side - it bends), 'curve' (a little raised with side), else null - as the aim line names them (80-input.js)
+  const raisedOf = (shot, ev) => ev && ev.air > g.P.R * 1.2 ? 'jump' : (shot.el || 0) >= 0.6 && Math.abs(shot.a || 0) >= 0.15 ? 'masse' : (shot.el || 0) >= 0.2 && Math.abs(shot.a || 0) >= 0.15 ? 'curve' : null;
 
   /* ---- what kind of shot a stroke is, and what it did - for the coach's words (50-review-words.js) ----
      styleOf: the way of playing it - safety, kick (pool: off a cushion first; carom: 빈쿠션), bank, combination, side (left
      or right english), follow (밀어치기), draw (끌어치기), stun (센터·스톱) - with the first ball, for telling them apart */
   function styleOf(k) {
     const l = k.line, s = k.shot, first = k.nominal && k.nominal.ev.firstHit;
-    const way = l.kind === 'safety' ? 'safety' : l.kind === 'kick' ? 'kick' : l.kind === 'bank' ? 'bank' : l.kind === 'combo' ? 'combo'
+    const way = l.kind === 'safety' ? 'safety' : l.kind === 'masse' || l.kind === 'jump' ? l.kind : l.kind === 'kick' ? 'kick' : l.kind === 'bank' ? 'bank' : l.kind === 'combo' ? 'combo'
       : Math.abs(s.a || 0) >= 0.25 ? 'side' : (s.b || 0) >= 0.25 ? 'follow' : (s.b || 0) <= -0.25 ? 'draw' : 'stun';
     return { way, key: g.P.POCKETED ? way : way + ':' + first };
   }
@@ -354,15 +359,16 @@
      raised (degrees) */
   function describe(world, who, shot, res) {
     const P = g.P, c = shot.pos ? { x: shot.pos[0], y: shot.pos[1] } : world.balls[P.POCKETED ? 0 : who], ev = res.ev, first = ev.firstHit;
-    let thick = null, cut = null;
-    if (first != null && world.balls[first]) {
+    let thick = null, cut = null; const raised = raisedOf(shot, ev);
+    // (a massé meets its ball off a curve: the straight line's thickness would be wrong, so none is said)
+    if (first != null && world.balls[first] && raised !== 'masse') {
       const T = world.balls[first], d = Math.hypot(T.x - c.x, T.y - c.y), off = Math.atan2(Math.sin(shot.angle - Math.atan2(T.y - c.y, T.x - c.x)), Math.cos(shot.angle - Math.atan2(T.y - c.y, T.x - c.x)));
       const imp = Math.min(2 * P.R, Math.abs(d * Math.sin(off))); thick = Math.round((1 - imp / (2 * P.R)) * 100) / 100; cut = Math.round(Math.asin(imp / (2 * P.R)) * 180 / Math.PI);
       if (off < 0) cut = -cut;   // (the side: + the ball's right as the cue ball sees it, - its left)
     }
     return { first, second: ev.hits.length > 1 ? ev.hits[1] : null, hits: ev.hits.slice(0, 4), thick, cut, potted: (ev.pocketed || []).filter(q => q.id !== 0 || P.POCKETED).map(q => [q.id, q.pocket]),
       cushions: ev.cushions, pre: ev.pre, kiss: ev.kiss, route: P.POCKETED ? null : routeOf(ev), a: Math.round((shot.a || 0) * 100) / 100, b: Math.round((shot.b || 0) * 100) / 100,
-      pace: Math.round(Math.min(1, g.powerOf ? g.powerOf(shot.V) : shot.V / g.vOf(1)) * 100) / 100, el: Math.round((shot.el || 0) * 180 / Math.PI) };
+      pace: Math.round(Math.min(1, g.powerOf ? g.powerOf(shot.V) : shot.V / g.vOf(1)) * 100) / 100, el: Math.round((shot.el || 0) * 180 / Math.PI), raised };
   }
   // the ball the next shot would go for (pool: the best line on the table the stroke left), or null
   function nextBall(res, who) {
@@ -399,6 +405,10 @@
       if (g.modeId === 'three' && (g.cushions || 0) >= 3 && (!lines.length || lines[0].p < 0.2)) lines.push(...cushionFirst(world, who, view)), lines.sort((a, b) => b.p - a.p);
       for (const l of lines.slice(0, 10)) cands.push({ line: l, shot: { pos: null, angle: l.angle, V: l.V, a: l.a, b: l.b, el: 0 } });
     }
+    // the raised cue (11-19, 53-raised.js): a massé round the ball in the way (or, carom, for the point), a jump over it -
+    // looked for when no plain line is a fair chance, as a player turns to them; how sure they are, by a raised hand
+    if (g.masse && !cands.some(k => k.line.kind !== 'safety' && (k.line.p || 0) >= 0.35))
+      for (const s of raisedShots(world, who, view, { masse: true, jump: true, skill: 0.8, cap: 14, all: !P.POCKETED })) cands.push({ line: { id: s.target, pocket: s.pocket, kind: s.kind, p: 0.25 }, shot: s });
     // each stroke as aimed (one copy each); the likeliest looked at more closely - its worth, then the reference hand's
     // wobble on the best few
     const missed = 1 - winOf(world, 1 - who, null, 0.45);   // (a miss, near enough, for the first sorting)
@@ -447,7 +457,7 @@
     const ok = da => judgeSim(world, who, { ...shot, angle: shot.angle + da }, view).made;
     const end = s => { let lo = 0, hi = 0.004; while (hi < 0.08 && ok(s * hi)) { lo = hi; hi *= 2; } for (let n = 0; n < 5; n++) { const m = (lo + hi) / 2; if (ok(s * m)) lo = m; else hi = m; } return lo; };
     const up = end(1), down = end(-1), half = (up + down) / 2, centre = shot.angle + (up - down) / 2;
-    let p = winChance(half);
+    let p = winChance(half / raisedK(shot));
     if (p > 0.05) { const keep = [0.88, 1.12].filter(k => judgeSim(world, who, { ...shot, angle: centre, V: shot.V * k }, view).made).length; p *= [0.55, 0.8, 1][keep]; }
     return { p, half, centre };
   }
@@ -537,7 +547,7 @@
       grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
       loss: Math.round(loss * 100) / 100, B: Math.round(B * 100) / 100, A: Math.round(A * 100) / 100,
-      p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, cause,
+      p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, offDeg: line ? Math.round((line.centre - shot.angle) * 1800 / Math.PI) / 10 : null, cause,
       leave: Math.round((res.made ? got.mine : got.theirs) * 100) / 100, bestLeave: Math.round(bestLeave * 100) / 100,
       better: better ? { shot: better.shot, kind: better.line.kind, id: better.line.id, pocket: better.line.pocket, p: Math.round(better.p * 100) / 100, safety: better.line.kind === 'safety',
         same: !!meant && better.line.id === meant.res.ev.firstHit && (!g.P.POCKETED || (meant.res.ev.pocketed || []).some(q => q.id === better.line.id && q.pocket === better.line.pocket)),

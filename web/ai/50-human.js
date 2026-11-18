@@ -7,7 +7,7 @@
     const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), candidates = [], ctx = g.mode.ctx(g), me = g.turn;
     const ranked = person.version === 3, ordinaryFour = ranked && g.modeId === 'four' && !ctx.last;
     // (ranked: room for weighing how sure each scoring line is - see sure() below)
-    const budget = ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill); let sims = 0;   // (a pool simulation costs more)
+    let budget = ranked ? Math.round(pool ? 44 + 100 * skill : 56 + 150 * skill) : Math.round(36 + 64 * skill * skill); let sims = 0;   // (a pool simulation costs more)
     /* (owner 11-16: the bots never played a massé, scored off kisses, never drew the ball back hard, and hardly fouled.
        A person: massé grows with skill - a beginner hardly tries it, from gold on a blocked ball or a curve is part of
        the game, the style only tilts it; a kiss (쫑) is luck, nobody plays for it - only a pro now and then; a weak
@@ -51,7 +51,7 @@
       let value = r.win === me && safe ? 100 : made ? 10 : safe ? 0 : -12;
       if (made) value += (1 + 4 * practice.position + (style.position || 0) * 2 + (style.gather || 0) * 3) * nextChance(copy, me, r) * (ranked ? skill : 1);
       if (!made && safe && skill > 0.5) value -= 4 * (style.safety + (1 - character.aggression)) * nextChance(copy, 1 - me, r);
-      value += (shot.kind === 'bank' ? style.bank : shot.kind === 'masse' ? style.masse : shot.kind === 'spin' ? style.spin : 0) * 1.8;
+      value += (shot.kind === 'bank' ? style.bank : shot.kind === 'masse' || shot.kind === 'jump' ? style.masse : shot.kind === 'spin' ? style.spin : 0) * 1.8;
       value += (shot.preference || 0) * 0.65;
       if (made && !pool && style.gather && (!ranked || skill >= 0.52)) {
         const balls = [copy.balls[copy.cue], ...targets.map(id => copy.balls[id])];
@@ -201,6 +201,22 @@
       const seed = best.shot;
       for (const mult of [0.78, 1.18, 0.55]) for (const da of skill > 0.6 ? [0, 0.002, -0.002] : [0]) {
         if (sims < budget - 9) consider({ ...seed, angle: seed.angle + da, V: speed(seed.V * mult) });
+      }
+    }
+    /* The raised cue (owner 11-19, 53-raised.js): with no point in the plain lines, a player who can lifts the cue - a
+       massé round the ball in the way or off the red it nearly touches, a jump over it in pool - and in carom a massé
+       for the point when the plain line is a long shot for this hand (sure under 55%), or by the 맛세이 style; the will to, by skill
+       (a beginner hardly, gold on readily), the 맛세이 style more so. Played out like any other line, then the best of
+       them nudged a hair either way, as a player re-aims a curve. */
+    if (g.masse && !turn.throwing && !g.placing && (!best || !best.made || best.sure != null && best.sure < 0.55 || style.masse > 0.5 && rand() < 0.5)) {
+      const raiseWill = clamp((skill - 0.25) * 1.5, 0, 0.95) * (0.55 + style.masse * 0.45), jumpWill = clamp((skill - 0.4) * 1.6, 0, 0.9) * (0.5 + style.power * 0.3 + style.masse * 0.2);
+      const masseOk = rand() < raiseWill, jumpOk = pool && rand() < jumpWill;
+      if (masseOk || jumpOk) {
+        const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, skill, cap: 12, all: !pool });
+        budget += tries.length + 5;
+        for (const k of tries) consider(k);
+        const r0 = best && (best.shot.kind === 'masse' || best.shot.kind === 'jump') && (!best.made || best.sure != null && best.sure < 0.75) ? best.shot : null;
+        if (r0) for (const da of [0.03, -0.03, 0.06, -0.06]) consider({ ...r0, angle: r0.angle + da });
       }
     }
     // A difficult position has recognizable responses: a deliberate safety, or a thick hit with a full-power release.

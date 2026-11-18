@@ -240,7 +240,7 @@ function botLines(b, moment, stage = 0) {
   return [];
 }
 const botTalk = {
-  at: 0, said: '',
+  at: 0, said: '', plan: null,
   bot() { const c = match.ctx; return flow === match && c && c.bot && !c.online ? botById(c.bot.bot) : null; },
   chat() { const c = match.ctx, p = c && c.bot && c.bot.personality || {}; return 0.3 + (p.taunt || 0) * 0.45 + (p.tempo || 0) * 0.15 - (p.hesitation || 0) * 0.1; },
   // (owner 11-17: 'it keeps saying the same things' - a line said once is not said again in the same game: a bot with
@@ -250,11 +250,35 @@ const botTalk = {
     const L = botLines(b, moment).filter(x => !botTalk.used.has(x[0])), pick = L[Math.floor(Math.random() * L.length)];
     if (pick) { botTalk.said = pick[0]; botTalk.used.add(pick[0]); } return pick || null;
   },
+  /* (owner 11-19 night: 'all too alike') The line that fits more of the game wins over a plain one - Valve's dynamic
+     dialog (the most specific rule that matches the world's state, falling back to the general; Ruskin, GDC 2012): a
+     third in a row, one from winning, well behind or ahead, now and then a word about its own life (BOT_CONTEXT). What
+     each still needs: carom, the points to its goal; 8볼, its balls and the 8 (none before the groups); else unknown. */
+  need(i) {
+    const g = game;
+    if (g.mode.table === 'carom') return Math.max(0, (g.targets ? g.targets[i] : g.target) - g.players[i].score);
+    if (g.modeId !== 'eight' || !g.players[i].group) return null;
+    let n = 1; for (const b of g.world.balls) if (b.on && b.id !== 8 && b.id > 0 && b.id < 16 && (g.players[i].group === 'solid') === (b.id < 8)) n++;
+    return n;
+  },
+  context(moment) {
+    const g = game, mine = botTalk.need(1), theirs = botTalk.need(0), gap = g.mode.table === 'carom' ? Math.max(3, Math.ceil((g.targets ? g.targets[1] : 10) * 0.3)) : 3, out = [];
+    if ((moment === 'score' || moment === 'think') && mine === 1) out.push('close');
+    if (moment === 'score' && g.players[1].run >= 3) out.push('streak');
+    if (mine != null && theirs != null) {
+      if ((moment === 'miss' || moment === 'think') && mine - theirs >= gap) out.push('behind');
+      if ((moment === 'score' || moment === 'think') && theirs - mine >= gap) out.push('ahead');
+    }
+    if (moment === 'think' && Math.random() < 0.35) out.push('banter');
+    return out;
+  },
   // moment: as BOT_LINES; chance: of speaking at all, before its personality; delay: after the moment, seconds
   say(moment, chance = 1, delay = 0.5) {
     const b = botTalk.bot(); if (!b || Math.random() > chance * (chance >= 1 ? 1 : botTalk.chat())) return;
     const now = Date.now(); if (now - botTalk.at < 3200) return;
-    const ln = botTalk.line(b, moment); if (!ln) return;
+    let ln = null;
+    for (const m of botTalk.context(moment)) if (!ln && Math.random() < 0.8) ln = botTalk.line(b, m);
+    ln = ln || botTalk.line(b, moment); if (!ln) return;
     botTalk.at = now + delay * 1000;
     setTimeout(() => { if (botTalk.bot() === b) botTalk.show(b, ln); }, delay * 1000);
   },
@@ -272,7 +296,8 @@ const botTalk = {
   shot(by, r, score) {
     if (!botTalk.bot() || game.over) return;
     const good = !!(r && !r.foul && (r.keep || r.pts > 0));
-    if (by === 1) botTalk.say(good ? 'score' : 'miss', good ? 0.5 : 0.6);
+    // (its own safety, played as one - the plan said so - and no foul: said as such)
+    if (by === 1) { if (!good && botTalk.plan === 'safety' && !(r && r.foul)) botTalk.say('safety', 0.7); else botTalk.say(good ? 'score' : 'miss', good ? 0.5 : 0.6); }
     // (the player's shot: answered by its grade when the review's verdict comes - graded, below; without a review, by
     // what happened)
     else if (reviewWorker()) return;

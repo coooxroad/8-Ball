@@ -122,6 +122,19 @@ function potAim(id, near, V, b = 0, k = null) {
   }
   check(n > 60 && sum / n < 0.09, `the worked-out pot chances agree with the physics: ${n} pots, mean error ${(sum / n).toFixed(3)}`);
 }
+// ---- the raised cue (11-19, 53-raised.js): 1 hidden behind the 9 - the other ways include a jump or a massé, and a
+// raised stroke played is told as one
+{
+  eight({ 1: [0.55, 0.09], 9: [-0.15, 0], 13: [0.2, -0.35], 8: [-0.7, 0.35] }, [-0.4, 0]);
+  const tries = K().raisedShots(g.world, 0, { ...g, isBreak: false }, { masse: true, jump: true, skill: 0.8, cap: 20 });
+  check(tries.some(t => t.kind === 'jump') && tries.some(t => t.kind === 'masse'), `raised strokes offered: ${tries.map(t => t.kind).join(',')}`);
+  const jump = tries.find(t => t.kind === 'jump' && t.el >= 0.8 && t.V < g.vOf(0.9)) || tries.find(t => t.kind === 'jump');
+  const r = judge(jump);
+  check(r && r.d && r.d.raised === 'jump', `a jump told as one: ${r && JSON.stringify(r.d)}`);
+  const m = judge(tries.find(t => t.kind === 'masse'));
+  check(m && m.d && m.d.raised === 'masse' && m.d.thick == null, `a massé told as one (no straight-line thickness): ${m && JSON.stringify(m.d)}`);
+  check(r && r.alts.some(a => a.way === 'jump' || a.way === 'masse'), `the raised ways among the others: ${r && r.alts.map(a => a.way).join(',')}`);
+}
 // ---- the chance to win (59-win.js): a race, the shooter first at the leave's chance
 {
   const r = K().winRace(0.5);

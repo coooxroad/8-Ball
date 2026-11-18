@@ -48,7 +48,7 @@ node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·
 | `site/` | 웹 버전: APK 릴리스 성공 후 같은 커밋의 페이지를 Cloudflare에 배포(`.github/workflows/site.yml`). `split.cjs`가 웹용으로 페이지를 내용 해시 파일(`h/`, 1년 캐시)로 나누고, `version.cjs`가 배포 버전을 기록·확인 | — |
 | `web/physics.js` | 공의 움직임. 결정적: 같은 입력이면 어느 기기든 같은 결과(`DMath`만, `Math.exp` 등 금지) | 모름 |
 | `web/game.js` | 규칙, 차례, 점수 | 모름 |
-| `web/ai/` | 컴퓨터 플레이어: 수준별(0~3), 사람 같은 상대(`50-human.js`). 계획 형식은 `00-kit.js` 맨 위 (한 범위, 아래 4절) | 모름 |
+| `web/ai/` | 컴퓨터 플레이어: 수준별(0~3), 사람 같은 상대(`50-human.js`; 큐 세운 샷 — 맛세이·점프 — 는 `53-raised.js`, 11-19). 계획 형식은 `00-kit.js` 맨 위 (한 범위, 아래 4절) | 모름 |
 | `web/ai-worker.js` | 컴퓨터 플레이어를 Worker에서: 저장한 판으로 게임을 다시 만들어 같은 계획(`aiServe`). 앱은 `app/40-shot.js` `aiAsk`로 묻고, 안 되면 예전처럼 화면 스레드에서 | 모름 |
 | `web/drills.js` | 레슨(종목 교본 속 교본)과 자유 연습. 레슨 형식은 파일 맨 위 | 모름 |
 | `web/puzzles.js` | 4구 퍼즐 (지금 비어 있다. 새 생성기가 채운다) | 모름 |
@@ -172,6 +172,9 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   다른 길은 어떻게 치는지 + 왜 나은지(✓ 줄) + 다른 좋은 길 칩(`judgeShot().alts`: 끌어치기·밀어치기·회전 이용·원쿠션·뱅크·콤비·수비,
   추천·가장 쉬움 표시, 누르면 그 길을 재생) + 스트로크 줄(당점·세기·큐 각도·두께/깎기) + 샷 목록.
   봇은 내 샷의 등급에 대사로 답한다(`botTalk.graded`, `BOT_REACT`: wow·lucky·gift), 한 판에 같은 말은 한 번만.
+  11-19: 봇마다 시작 인사 3개(무작위)와 판의 상황에 맞는 대사(`BOT_CONTEXT`: streak 3연속·close 한 개 남음·behind·ahead·
+  trick 맛세이/점프 직전·safety 수비 뒤·banter 자기 얘기) — 맞는 상황이면 일반 대사보다 먼저(`botTalk.context`, Valve의 dynamic dialog처럼
+  더 구체적인 규칙이 이김). 봇끼리 같은 한국어 대사가 겹치지 않게(검사는 이 파일을 읽어 중복을 셈).
 - 샷 심판(`ai/60-judge.js`): 고정된 기준 손(`JUDGE.SIG_*`, 초보 보정 없음)으로 샷이 될 확률을 잰다 — 포켓은 기하로 계산(물리에 맞춘
   식, `test/judge.js`가 대조), 캐롬은 조준을 쓸어 창을 찾음. 자리 가치 = 다음 샷 상위 3개(1 : 0.33 : 0.15). 등급은 최선의 기대값 B와
   실제 결과 A의 차(B − A); 넣은 샷은 다음 자리로 매김(11-18): 다음 자리 나쁨 = 무난, 좋음(실용성) = 좋음, 거기에 어려운 길(`JUDGE.HARD`)이면 예술. 의도 = 친 것에서 가장 가까운 성공(조준 →
