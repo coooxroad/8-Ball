@@ -9,7 +9,7 @@
       { a: 0, b: -0.32, stroke: 'draw', preference: 0.08 + (s.draw || 0) * 0.7 },
       // (owner 11-16: players draw the ball back hard - 극끌어치기 - all the time; the bots hardly ever did. Low on the ball and
       // struck through, by anyone who can hold a cue: more the more skilled, most by the draw players)
-      { a: 0, b: -0.66, V: Math.min(g.vOf(1), shot.V * 1.3), stroke: 'deep-draw', preference: 0.03 + person.skill * 0.2 + (s.draw || 0) * 0.55 },
+      { a: 0, b: -0.66, V: Math.min(g.vOf(1), shot.V * 1.3), stroke: 'deep-draw', preference: 0.03 + person.skill * 0.2 + (s.draw || 0) * 0.55 + (person.quirk === 'deep' ? 0.6 : 0) },
       { a: side, b: 0.12, stroke: 'right', preference: s.spin * 0.3 + (shot.kind === 'bank' ? s.bank * 0.2 : 0) },
       { a: -side, b: 0.12, stroke: 'left', preference: s.spin * 0.3 + (shot.kind === 'bank' ? s.bank * 0.2 : 0) },
     ];

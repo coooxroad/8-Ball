@@ -51,7 +51,10 @@
       let value = r.win === me && safe ? 100 : made ? 10 : safe ? 0 : -12;
       if (made) value += (1 + 4 * practice.position + (style.position || 0) * 2 + (style.gather || 0) * 3) * nextChance(copy, me, r) * (ranked ? skill : 1);
       if (!made && safe && skill > 0.5) value -= 4 * (style.safety + (1 - character.aggression)) * nextChance(copy, 1 - me, r);
-      value += (shot.kind === 'bank' ? style.bank : shot.kind === 'masse' || shot.kind === 'jump' ? style.masse : shot.kind === 'spin' ? style.spin : 0) * 1.8;
+      // (what the player likes to play, by the style: worth a good deal when it scores, next to nothing when it does not - a
+      // liking for massés is a liking for massés that come off, not for hopeless ones - owner 11-19 night; FLAIR, 51-people.js)
+      // (and a raised cue that does not score is a poor try for anyone - the massé-minded a little less so)
+      value += made ? humanFlair(person, shot) : shot.kind === 'masse' || shot.kind === 'jump' ? -1.5 * (1 - 0.5 * style.masse) : 0;
       value += (shot.preference || 0) * 0.65;
       if (made && !pool && style.gather && (!ranked || skill >= 0.52)) {
         const balls = [copy.balls[copy.cue], ...targets.map(id => copy.balls[id])];
@@ -96,11 +99,10 @@
         }
         for (const pos of spots) {
           const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, l = Math.hypot(gx - x, gy - y), cos = ((gx - x) * dx + (gy - y) * dy) / Math.max(l, 1e-9);
-          if (cos < (ranked ? 0.6 - skill * 0.37 : 0.25)) continue;
+          if (cos < (ranked ? 0.6 - skill * 0.37 : 0.25) || person.quirk === 'thick' && cos < 0.8) continue;
           const V = speed(PACE.pool * ((1 + 1.5 * Math.sqrt(dTP)) / Math.max(0.4, cos) + 0.9 * Math.sqrt(l))), angle = Math.atan2(gy - y, gx - x), clear = P.pathClear(w, x, y, gx, gy, [w.cue, T.id]);
           const rank = (l * 0.6 + 0.3) * (dTP + 0.25) / (cos * cos);
           if (clear) add(angle, V, T.id, { pos, cut: Math.acos(cos), difficulty: l * 0.35 + (1 - cos) * 1.5, rank, kind: 'pot' });
-          if (!clear && exploreMasse && l > 0.4) add(angle - 0.12, g.vOf(0.65), T.id, { pos, a: 0.55, el: 1.15, rank: rank + 0.5, kind: 'masse', difficulty: 1.7 });
           if (!g.placing && seeBank) for (const [axis, edge] of rails) {
             const mx = axis === 'x' ? 2 * edge - gx : gx, my = axis === 'y' ? 2 * edge - gy : gy;
             const t = axis === 'x' ? (edge - c.x) / (mx - c.x) : (edge - c.y) / (my - c.y);
@@ -136,6 +138,7 @@
           const h = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); if (h.type !== 'ball' || h.ball !== T.id) continue;
           // Geometric tangent ranking finds plausible caroms before any costly simulation.
           const other = ordered.find(b => b.id !== T.id) || w.balls.find(b => b.on && b.id !== w.cue && b.id !== T.id); // In a 3-cushion opening only the red can be hit first.
+          if (person.quirk === 'thick' && Math.abs(f) > 0.55) continue;
           let rank = humanCaromRank(h, angle, other, need);
           if (ordinaryFour) rank += (1 - skill) * (d * 0.14 + f * f * 0.16);
           // (4구: firm enough that the cue ball carries on to the second red when the first is not quite as meant - a soft
@@ -149,7 +152,6 @@
           const x = 2 * L * ix + (ix % 2 ? -T.x : T.x), y = 2 * W * iy + (iy % 2 ? -T.y : T.y);
           add(Math.atan2(y - c.y, x - c.x), (need >= 3 ? 5 : 3.8) * PACE.carom, T.id, { rank: 0.7 + n * 0.1 - (need ? 0.5 : 0), kind: 'bank', difficulty: 0.8 + n * 0.3 });
         }
-        if (exploreMasse) for (const side of [-0.6, 0.6]) for (const da of [0.12, 0.25]) add(base - Math.sign(side) * da, 3.2 * PACE.carom, T.id, { a: side, el: 1.25, rank: 0.8, kind: 'masse', difficulty: 1.8 });
       }
     }
     /* How sure a scoring line is, for this person (owner 11-10: the stand-in played lines it could not make - one red,
@@ -177,10 +179,15 @@
     }
     candidates.sort((a, b) => ranked ? a.notice - b.notice : salience(a) - salience(b));
     let best = null, alternative = null;
+    // what a miss costs, as this player weighs it: the careful one (the defensive style, an unhurried temper) counts the
+    // table it leaves, the bold one hardly (owner 11-19 night: 수비파 숀 played safe less than 정석 소피아)
+    // (what the other player is left matters most in pool, less in 4구, little in 3쿠션 - where a miss seldom leaves a point)
+    const leaves = pool ? 1 : g.modeId === 'three' ? 0.35 : 0.7;
+    const missCost = 11 * (1 + (style.safety * 1.3 * (1 - character.aggression) + (person.quirk === 'lock' ? 0.5 : 0)) * leaves);
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
-      if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.legs); r.value -= (1 - r.sure) * 11; }
+      if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.legs); r.value -= (1 - r.sure) * missCost; }
       if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
@@ -208,21 +215,25 @@
        for the point when the plain line is a long shot for this hand (sure under 55%), or by the 맛세이 style; the will to, by skill
        (a beginner hardly, gold on readily), the 맛세이 style more so. Played out like any other line, then the best of
        them nudged a hair either way, as a player re-aims a curve. */
-    if (g.masse && !turn.throwing && !g.placing && (!best || !best.made || best.sure != null && best.sure < 0.55 || style.masse > 0.5 && rand() < 0.5)) {
+    if (g.masse && !turn.throwing && !g.placing && (!best || !best.made || best.sure != null && best.sure < 0.55 || style.masse > 0.5 || exploreMasse)) {
       const raiseWill = clamp((skill - 0.25) * 1.5, 0, 0.95) * (0.55 + style.masse * 0.45), jumpWill = clamp((skill - 0.4) * 1.6, 0, 0.9) * (0.5 + style.power * 0.3 + style.masse * 0.2);
-      const masseOk = rand() < raiseWill, jumpOk = pool && rand() < jumpWill;
+      const masseOk = rand() < raiseWill || exploreMasse, jumpOk = pool && rand() < jumpWill;
       if (masseOk || jumpOk) {
-        const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, skill, cap: 12, all: !pool });
+        const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, skill, cap: style.masse > 0.5 ? 16 : 10, all: !pool && (g.modeId !== 'three' || style.masse > 0.5) });
         budget += tries.length + 5;
         for (const k of tries) consider(k);
         const r0 = best && (best.shot.kind === 'masse' || best.shot.kind === 'jump') && (!best.made || best.sure != null && best.sure < 0.75) ? best.shot : null;
-        if (r0) for (const da of [0.03, -0.03, 0.06, -0.06]) consider({ ...r0, angle: r0.angle + da });
+        if (r0) for (const da of [0.006, -0.006, 0.014, -0.014]) consider({ ...r0, angle: r0.angle + da });
       }
     }
     // A difficult position has recognizable responses: a deliberate safety, or a thick hit with a full-power release.
     // (an ordinary 4구 player with a fair attempt at the points goes for them; the soft touch-and-stay is a good player's
     // choice, not a weak one's - it was the stand-in's 'one red, the pace dying' shot)
-    if (!best || !best.made && !(ordinaryFour && best.safe && skill < 0.6)) {
+    // (a beginner does not play safe - they try, and miss: owner 11-19 night, 수아 played 61% of 3쿠션 shots as soft safeties;
+    // a careful player turns to one when the best pot is a gamble - the miss it would cost, missCost above, decides)
+    const tryInstead = ranked && best && !best.made && person.quirk !== 'lock' && (skill < 0.4 || g.modeId === 'three' && rand() < 0.75 * (1 - style.safety * 0.6));
+    const unsure = ranked && best && best.made && best.sure != null && best.sure < 0.45 + style.safety * 0.3 && skill > 0.35;
+    if (!tryInstead && (!best || unsure || !best.made && !(ordinaryFour && best.safe && skill < 0.6))) {
       const T = ordered.find(t => { const angle = Math.atan2(t.y - c.y, t.x - c.x), hit = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); return hit.type === 'ball' && hit.ball === t.id; }) || ordered[0], pos = g.placing ? P.findFree(w, Math.min(T.x - 0.3, g.placing === 'kitchen' ? -P.HL / 2 : P.HL - P.R), T.y, w.cue) : null;
       const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, base = Math.atan2(T.y - y, T.x - x), desperate = rand() < style.desperation * (0.35 + (1 - skill) * 0.65);
       for (const power of desperate ? [1, 0.35, 0.22] : [0.22, 0.35, 0.52]) for (const da of [0, 0.02, -0.02]) {
@@ -252,7 +263,7 @@
     const legs = ranked ? (best && best.shot === chosen ? best.legs || 0 : legsOf(null, chosen)) : 0;
     const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake * legsFactor(legs);
     const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28) * (1 + legs * 0.12);
-    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)), 0, 1);
+    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)) + (person.quirk === 'heavy' && chosen.kind !== 'masse' ? (pool ? 0.05 : 0.03) * (1 - skill * 0.6) : 0), 0, 1);
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
     const thicknessError = practice.thicknessBias * (1 - practice.aim) * (pool ? 0.003 : 0.0005);
     const spinError = (1 - practice.spin) * 0.045, a = chosen.a * (1 + noise() * spinError), b = chosen.b * (1 + noise() * spinError), spinScale = Math.min(1, 0.79 / Math.max(0.001, Math.hypot(a, b)));

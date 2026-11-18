@@ -23,6 +23,31 @@
     { id: 'position', name: '포지션파', power: 0.35, spin: 0.6, bank: 0.4, masse: 0.05, safety: 0.65, desperation: 0.1, position: 1 },
     { id: 'showman', name: '묘기파', power: 0.7, spin: 0.9, bank: 0.8, masse: 0.8, safety: 0.1, desperation: 0.7 },
   ];
+  /* (owner 11-19 night, after chess.com's bots - Komodo's personalities change what the engine counts as good - Chessmaster's
+     quirks people learnt to play against, and NBA 2K's tendencies, how often a player wants to do a thing, kept apart from how
+     well. Four layers: what a player sees (the candidates: 50-human.js, 53-raised.js), what they want (the worth of a line -
+     the flair of the shots they like when those score, the cost of a miss to a careful player), how often (the style's
+     numbers, checked by web/tools/bots.js) and one quirk of their own, the same every game.)
+     FLAIR: what a liked shot is worth when it scores, at a style's liking of 1 (a scored pot or point is 10). */
+  const FLAIR = { bank: 2.2, masse: 2.6, jump: 3, spin: 1.8 };
+  // a quirk: one habit a player keeps (a bot's, 34-desk-bots.js), the same every game - something to notice and play against
+  const HUMAN_QUIRKS = {
+    thick: '두꺼운 공만 본다',        // thin cuts unseen (pool: a cut past about 37 degrees; carom: past a third of a ball off)
+    heavy: '늘 세게 친다',            // a stroke a little harder than it needs, every time
+    cushion: '쿠션을 고집한다',        // a cushion line worth half as much again to them
+    lock: '불리하면 잠근다',           // a miss costs them half as much again: a safety sooner
+    show: '보여 주는 샷을 좋아한다',    // massé and cushion lines worth a third as much again
+    deep: '늘 깊게 끈다',             // the deep draw first among the strokes
+    curve: '휘는 공을 좋아한다',        // a massé worth a third as much again
+  };
+  function humanFlair(person, shot) {
+    const s = person.style, q = person.quirk, show = q === 'show' ? 1.33 : 1;
+    if (shot.kind === 'bank') return s.bank * FLAIR.bank * (q === 'cushion' ? 1.5 : 1) * show;
+    if (shot.kind === 'masse') return s.masse * FLAIR.masse * (q === 'curve' ? 1.33 : 1) * show;
+    if (shot.kind === 'jump') return s.masse * FLAIR.jump * show;
+    return shot.kind === 'spin' ? s.spin * FLAIR.spin : 0;
+  }
+  plan.quirks = HUMAN_QUIRKS;
   function humanSkill(dama) {
     const x = Math.max(10, Math.min(80, Number.isFinite(dama) ? dama : 30));
     const knots = [[10, 0.05], [30, 0.4], [60, 0.8], [80, 0.95]];
@@ -53,7 +78,7 @@
     const rating = ranked ? dama : Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
     const skill = ranked ? rankedSkill(rating) : humanSkill(rating);
     const level = ranked ? (rating < 800 ? 0 : rating < 1400 ? 1 : 2) : (rating < 22 ? 0 : rating < 40 ? 1 : 2);
-    const person = { version: ranked ? 3 : 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill, level, personality: { ...personality }, style: { ...style } };
+    const person = { version: ranked ? 3 : 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill, level, personality: { ...personality }, style: { ...style }, ...(HUMAN_QUIRKS[overrides.quirk] ? { quirk: overrides.quirk } : {}) };
     return { ...person, practice: humanPractice(person) };
   }
   function humanPerson(persona) {

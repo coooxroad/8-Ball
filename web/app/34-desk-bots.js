@@ -10,13 +10,14 @@
    A bot's picture: ui/bot-<id>.webp once it is drawn (HANDOFF.md 이미지 에셋) and pic: true on its line; until then its
    initial on its tier's metal. Its country: a code of BOT_FLAGS. lang: the language of its line (lang= on the text, and
    the language it will speak at the table); ko: the line in Korean, when the line is not.
+   quirk: one habit of its own, the same every game (ai/51-people.js HUMAN_QUIRKS) - something to notice and play against.
    To add one: a line here (an id is never used again - prefs.botBeat keeps it). */
 // (owner 11-17: one more for each tier - 21; more women than men but not a dating game: the men in 다이아 and 프로; two
 // Koreans only. Each group is a tier of the ranked ladder: TIERS, 33-desk-play.js)
 const BOTS = [
-  { id: 'sua', name: '수아', from: 'kr', lang: 'ko', rating: 300, personality: 'nervous', style: 'natural', was: 'haneul', pic: true,
+  { id: 'sua', name: '수아', from: 'kr', lang: 'ko', rating: 300, personality: 'nervous', style: 'natural', quirk: 'thick', was: 'haneul', pic: true,
     line: '못 넣어도 괜찮아요. 오늘은 큐 잡는 법부터!', bio: '대학 당구 동아리 신입. 파란 속머리는 동아리 들어간 기념으로 했다.' },
-  { id: 'marco', name: '마르코', from: 'it', lang: 'it', rating: 450, personality: 'nervous', style: 'balanced', pic: true,
+  { id: 'marco', name: '마르코', from: 'it', lang: 'it', rating: 450, personality: 'nervous', style: 'balanced', quirk: 'thick', pic: true,
     line: 'Piano piano si va lontano.', ko: '천천히 가야 멀리 가요.', bio: '나폴리에서 온 요리 유학생. 큐를 잡으면 손이 떨린다.' },
   { id: 'yuki', name: '유키', from: 'jp', lang: 'ja', rating: 600, personality: 'calm', style: 'follow', pic: true,
     line: '一球一球、心を込めて。', ko: '한 공 한 공, 마음을 담아서.', bio: '도쿄 동네 당구장 사장님 딸. 매일 밀어치기만 연습한다.' },
@@ -26,33 +27,33 @@ const BOTS = [
     line: 'สนุกไว้ก่อน แล้วลูกจะลงเอง', ko: '일단 즐기면, 공은 알아서 들어가.', bio: '방콕의 디저트 카페 사장. 분홍 머리는 가게 마카롱 색.' },
   { id: 'sofia', name: '소피아', from: 'gr', lang: 'el', rating: 980, personality: 'calm', style: 'balanced', pic: true,
     line: 'Η θάλασσα δεν βιάζεται ποτέ.', ko: '바다는 절대 서두르지 않아.', bio: '아테네의 해양생물학자. 파도 소리를 들으며 연습한다.' },
-  { id: 'sean', name: '숀', from: 'ie', lang: 'en', rating: 1050, personality: 'calm', style: 'defensive', pic: true,
+  { id: 'sean', name: '숀', from: 'ie', lang: 'en', rating: 1050, personality: 'calm', style: 'defensive', quirk: 'lock', pic: true,
     line: 'The man who leaves nothing wins the night.', ko: '아무것도 안 남기는 사람이 그날 밤을 이기지.', bio: '더블린 펍의 단골. 상대에게 쉬운 공을 남긴 적이 없다.' },
   { id: 'meilin', name: '메이린', from: 'cn', lang: 'zh', rating: 1120, personality: 'calm', style: 'position', pic: true,
     line: '心静，球自然就稳了。', ko: '마음이 고요하면, 공도 저절로 안정돼요.', bio: '상하이의 고전무용 강사. 큐를 들면 춤추듯 움직인다.' },
   { id: 'emre', name: '엠레', from: 'tr', lang: 'tr', rating: 1180, personality: 'calm', style: 'gather', pic: true,
     line: 'Toplar bir araya gelirse oyun kendiliğinden akar.', ko: '공이 모이면 경기는 저절로 흘러가요.', bio: '이스탄불 찻집 겸 당구장 주인. 차 한 잔 마시고 친다.' },
-  { id: 'darya', name: '다리야', from: 'ru', lang: 'ru', rating: 1250, personality: 'meticulous', style: 'banker', was: 'nour', pic: true,
+  { id: 'darya', name: '다리야', from: 'ru', lang: 'ru', rating: 1250, personality: 'meticulous', style: 'banker', quirk: 'cushion', was: 'nour', pic: true,
     line: 'Сила без точности - ничто.', ko: '정확하지 않은 힘은 아무것도 아니에요.', bio: '모스크바의 러시안 피라미드 챔피언. 공만 한 포켓에 넣던 손이라 쿠션 경로가 한 치도 안 틀린다.' },
-  { id: 'femke', name: '펨케', from: 'nl', lang: 'nl', rating: 1350, personality: 'impatient', style: 'power', pic: true, was: 'willem',
+  { id: 'femke', name: '펨케', from: 'nl', lang: 'nl', rating: 1350, personality: 'impatient', style: 'power', quirk: 'heavy', pic: true, was: 'willem',
     line: 'Via de band is altijd korter.', ko: '쿠션을 돌아가는 게 언제나 더 빨라.', bio: '로테르담 항구의 크레인 기사. 기다리는 걸 제일 싫어한다.' },
   { id: 'ana', name: '아나', from: 'es', lang: 'es', rating: 1450, personality: 'meticulous', style: 'position', pic: true,
     line: 'El billar es como el flamenco: todo es compás.', ko: '당구는 플라멩코 같아요. 전부 박자예요.', bio: '세비야의 플라멩코 무용수. 다음 공까지 박자를 세며 자리를 만든다.' },
-  { id: 'lea', name: '레아', from: 'fr', lang: 'fr', rating: 1650, personality: 'playful', style: 'masse', pic: true,
+  { id: 'lea', name: '레아', from: 'fr', lang: 'fr', rating: 1650, personality: 'playful', style: 'masse', quirk: 'curve', pic: true,
     line: 'Le billard, c’est de la géométrie qui danse.', ko: '당구는 춤추는 기하학이에요.', bio: '파리의 문학도. 공이 휘어 가는 걸 시처럼 좋아한다.' },
-  { id: 'migo', name: '미고', from: 'ph', lang: 'tl', rating: 1750, personality: 'playful', style: 'draw', was: 'jose', pic: true,
+  { id: 'migo', name: '미고', from: 'ph', lang: 'tl', rating: 1750, personality: 'playful', style: 'draw', quirk: 'deep', was: 'jose', pic: true,
     line: 'Mas matangkad pa sa akin ang tako ko. Pero ako ang panalo!', ko: '큐가 나보다 커요. 그래도 이기는 건 나예요!', bio: '세부의 열두 살 신동. 아빠 당구장에서 큐가 자기 키보다 클 때부터 쳤다.' },
   { id: 'ingrid', name: '잉그리드', from: 'se', lang: 'sv', rating: 1850, personality: 'playful', style: 'spinner', pic: true,
     line: 'Det enkla är det svåra.', ko: '쉬운 게 제일 어려운 거야.', bio: '스톡홀름의 엔지니어. 껌을 씹으며 표정 하나 안 바꾸고 회전을 건다.' },
-  { id: 'ole', name: '올레', from: 'no', lang: 'no', rating: 1950, personality: 'calm', style: 'defensive', was: 'hangyeol', pic: true,
+  { id: 'ole', name: '올레', from: 'no', lang: 'no', rating: 1950, personality: 'calm', style: 'defensive', quirk: 'lock', was: 'hangyeol', pic: true,
     line: 'Havet lærer deg tålmodighet.', ko: '바다가 인내를 가르쳐 줘요.', bio: '베르겐의 어부. 폭풍이 오는 날엔 배 대신 당구대 앞에 선다.' },
   { id: 'frederic', name: '프레데릭', from: 'be', lang: 'fr', rating: 2000, personality: 'calm', style: 'position', pic: true,
     line: 'Trois bandes, une seule pensée : la suivante.', ko: '쓰리쿠션, 생각은 하나뿐. 다음 공.', bio: '벨기에 쓰리쿠션 리그 출신. 표정이 변하지 않는다.' },
-  { id: 'jack', name: '잭', from: 'gb', lang: 'en', rating: 2100, personality: 'impatient', style: 'showman', pic: true,
+  { id: 'jack', name: '잭', from: 'gb', lang: 'en', rating: 2100, personality: 'impatient', style: 'showman', quirk: 'show', pic: true,
     line: 'If you’re going to miss, miss beautifully.', ko: '놓칠 거면 멋지게 놓쳐.', bio: '런던 펍의 스누커 스타. 보는 사람이 있어야 잘 친다.' },
-  { id: 'lena', name: '레나', from: 'de', lang: 'de', rating: 2200, personality: 'meticulous', style: 'banker', pic: true, was: 'max',
+  { id: 'lena', name: '레나', from: 'de', lang: 'de', rating: 2200, personality: 'meticulous', style: 'banker', quirk: 'cushion', pic: true, was: 'max',
     line: 'Präzision ist keine Kunst, sondern Gewohnheit.', ko: '정확함은 재능이 아니라 습관이에요.', bio: '뮌헨의 시계 기술자. 빗나간 각도를 0.1도까지 기억한다.' },
-  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'playful', style: 'power', was: 'lukas', pic: true,
+  { id: 'elijah', name: '일라이자', from: 'us', lang: 'en', rating: 2300, personality: 'playful', style: 'power', quirk: 'heavy', was: 'lukas', pic: true,
     line: 'Relax. I already saw the whole rack.', ko: '긴장 풀어. 난 벌써 판 전체를 다 봤거든.', bio: '켄터키 출신의 떠돌이 천재. 카우보이모자를 쓰고, 상대가 생각하는 동안 벌써 다음 세 수를 친다.' },
 ];
 /* Each bot's face on its card (owner 11-17: like chess.com's bot icons, simpler still - drawn here, not the painting): a
@@ -179,7 +180,7 @@ const botNow = () => { const b = botById(prefs.bot); return b && botOpen(b) ? b 
 // the bot as the AI plays it: a person at its rating, of its personality and style (the same every game: drawn from its id)
 function botPersona(b) {
   let h = 2166136261; for (const ch of b.id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-  const p = game.aiPersona ? game.aiPersona(b.rating, seededRandom(h), { personality: b.personality, style: b.style }) : null;
+  const p = game.aiPersona ? game.aiPersona(b.rating, seededRandom(h), { personality: b.personality, style: b.style, quirk: b.quirk }) : null;
   return p ? Object.assign(p, { name: b.name, bot: b.id, lang: b.lang }) : null;
 }
 // its face: the flat drawing (BOT_FACE), on its card and on the slate
