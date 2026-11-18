@@ -2,6 +2,7 @@
    lobby.js and room.js are the Durable Objects that hold them. */
 import { E, Replay } from './check.js';
 import { shotError } from './match-log.js';
+import { datasetRow } from './dataset-core.js';
 
 /* The ranked lobby: one Durable Object per game (8볼, 9볼, 4구, 3구). Players waiting for a ranked game ask it every couple
    of seconds; it pairs two whose DAMA is close, the range widening the longer they wait. Nobody close enough after a
@@ -551,6 +552,12 @@ export class RoomCore {
       for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : rated ? 'ranked' : r.kind, r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
     }
     this.set('result', res); this.set('status', 'done'); this.set('cp', null);
+    // (the game for the shot dataset, before its shots go: the seats' ratings, a person or not - room.js passes it on)
+    if (n === 2) {
+      const shots = this.shots(), row = shots.length ? datasetRow(r.standIn ? 'standin' : r.kind || 'ranked', Object.assign(this.log(), { shots, winner, points }),
+        seats.map((q, i) => ({ rating: q.dama, human: !!q.acct && !q.bot && !(r.standIn && i === 1) }))) : null;
+      if (row) { row.key = r.room; this.set('dataset', row); }
+    }
     this.sql.exec(`DELETE FROM shots`);
     for (let s = 0; s < n; s++) this.send(s, Object.assign({ t: 'result' }, res, { seat: s }));
     this.send('w', Object.assign({ t: 'result' }, res, { seat: -1 }));

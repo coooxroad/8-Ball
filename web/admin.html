@@ -82,6 +82,12 @@
       <p class="muted" style="font-size:12px;margin:8px 0 0">비워 두고 검색하면 최근 접속 순 30명. 접속하거나 이름을 바꾼 계정부터 목록에 올라옵니다.</p>
       <ul id="people"></ul>
     </div>
+    <div class="card" style="margin-top:14px">
+      <h2>샷 데이터 (AI 학습용)</h2>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">모든 경기의 샷이 한 달 단위로 쌓입니다(계정·이름 없이 레이팅과 사람/봇만). 받은 파일(.jsonl)은 학습에 씁니다.</p>
+      <form class="row" id="dsForm"><input id="dsMonth" placeholder="shots-2026-11" style="max-width:150px"><button class="go" data-act="stats">현황</button><button data-act="get">내려받기</button></form>
+      <div id="dsOut" class="small" style="margin-top:8px"></div>
+    </div>
   </div>
 
   <div id="detail" hidden>
@@ -212,6 +218,20 @@ async function find(q) {
   }
 }
 $('#findForm').onsubmit = e => { e.preventDefault(); find($('#q').value); };
+// the shot dataset (server/src/dataset.js): a month's counts, or all its rows as one .jsonl file, read a page at a time
+const GAME_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강' }, KIND_DS = { cpu: '봇', friend: '친구', ranked: '랭크', invite: '초대', standin: '대리' };
+$('#dsForm').onsubmit = async e => {
+  e.preventDefault(); const month = $('#dsMonth').value.trim() || undefined, out = $('#dsOut'), act = e.submitter && e.submitter.dataset.act;
+  if (act !== 'get') {
+    const r = await api('dataset', { month, stats: true }); if (!r.ok) return toast(r.why || '실패', 'bad');
+    out.innerHTML = `<b>${esc(r.month)}</b> · ` + (r.by.length ? r.by.map(b => `${KIND_DS[b.kind] || b.kind} ${GAME_KO[b.mode] || b.mode} ${num(b.matches)}판 ${num(b.shots)}샷`).join(' · ') + ` · ${(r.by.reduce((t, b) => t + b.bytes, 0) / 1e6).toFixed(1)}MB` : '아직 없음');
+    return;
+  }
+  const lines = []; let after = 0, m = month, more = true;
+  while (more) { const r = await api('dataset', { month, after, limit: 200 }); if (!r.ok) return toast(r.why || '실패', 'bad'); m = r.month; for (const row of r.rows) lines.push(JSON.stringify(row)); after = r.next; more = r.more; out.textContent = `${num(lines.length)}판 받는 중…`; }
+  const url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson' })), a = document.createElement('a');
+  a.href = url; a.download = `${m}.jsonl`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); out.textContent = `${num(lines.length)}판 내려받음`;
+};
 
 async function open(acct) {
   cur = acct; document.querySelectorAll('#people li').forEach(li => li.classList.toggle('on', li.dataset.acct === acct));

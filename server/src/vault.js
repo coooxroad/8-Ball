@@ -2,6 +2,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import { VaultCore } from './core.js';
 import { E } from './check.js';
+import { datasetRow, toDataset } from './dataset-core.js';
+import { matchKey } from './match-log.js';
 
 const hashOf = async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
@@ -57,7 +59,16 @@ export class Vault extends DurableObject {
     if (path === '/v1/nick') { const r = this.core.nick(body); if (r.ok) this.listed(true); return json(r); }
     if (path === '/v1/tutorial') return json(this.core.tutorial(body));
     if (path === '/v1/save') return json(this.core.save(body));
-    if (path === '/v1/match') { const r = this.core.match(body); if (r.pending) await this.wake(); return json(r); }
+    if (path === '/v1/match') {
+      const fresh = !this.core.seen(body.req), r = this.core.match(body); if (r.pending) await this.wake();
+      // (a match taken, the first time it is sent: its shots to the dataset, with the seats' ratings and nothing of the account)
+      if (r.ok && fresh) {
+        const log = body.log, me = this.core.me(), f = E.familyOf(log.mode), bot = log.bot && typeof log.bot === 'object' ? log.bot : null;
+        const row = datasetRow(body.kind, log, [{ rating: me.damas ? me.damas[f] : me.dama, human: true }, body.kind === 'cpu' ? { rating: bot && +bot.rating, human: false, bot: bot && String(bot.id || '') } : { rating: null, human: true }]);
+        if (row) { row.key = matchKey(log); this.ctx.waitUntil(toDataset(this.env, row)); }
+      }
+      return json(r);
+    }
     // the account deleted (core.js erase): the vault emptied, then its Google account and its directory line let go
     if (path === '/v1/erase') {
       const r = this.core.erase(body); if (!r.ok) return json(r);

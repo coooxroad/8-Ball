@@ -1,5 +1,6 @@
 /* A ranked game's Durable Object: one for each game being played. The rules are RoomCore (ranked.js). */
 import { DurableObject } from 'cloudflare:workers';
+import { toDataset } from './dataset-core.js';
 import { RoomCore, RETURN_WITHIN, JOIN_WITHIN, WATCH_MAX } from './ranked.js';
 
 const SLICE = 150;
@@ -76,6 +77,9 @@ export class Room extends DurableObject {
       const r = await this.env.VAULT.get(this.env.VAULT.idFromName(p.acct)).fetch('https://vault/room/result', { method: 'POST', body: JSON.stringify(p.body) }).catch(() => null);
       if (r && r.ok) this.core.paid(p.seat); else left = true;
     }
+    // the game's shots to the dataset (dataset.js), again later if it did not answer
+    const ds = this.core.get('dataset', null);
+    if (ds) { const r = await toDataset(this.env, ds); if (r && r.ok) this.core.set('dataset', null); else left = true; }
     // a friend's game ended: it leaves the list of games to watch (once; again later if the lobby did not answer)
     const room = this.core.get('room');
     if (this.core.get('result') && room && room.watch && !this.core.get('unlisted')) {

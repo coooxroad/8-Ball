@@ -232,6 +232,9 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   요청 하나), `core.js`(금고 규칙: 구매, 퍼즐 보상, 경기 보상, 같은 요청 번호는 한 번만), `check.js`(샷을 다시 쳐서 확인).
   `server/tools/pack.cjs`가 `web/`의 content·tables·economy·physics·game·puzzles·highlights를 그대로 묶어 서버에 넣는다 —
   앱과 서버가 **같은 코드로** 공을 친다. 물리가 결정적이라 같은 입력이면 같은 결과다.
+- 샷 데이터(`server/src/dataset-core.js`, DO는 `dataset.js`, 11-18): 금고가 받은 경기(봇·친구)와 방의 경기(랭크·초대·대리)의 샷을
+  계정·이름 없이 월별 DO('shots-2026-11')에 한 번씩 쌓는다 — seats(레이팅, 사람/봇), 샷 [자리, aim, V, a, b, el, 손에 든 공, 수구, x, y, on…].
+  관리자 콘솔 '샷 데이터'(현황·.jsonl 내려받기). 쓰임과 순서: `docs/ai-roadmap.md`.
 - 돈의 규칙은 `web/economy.js` 한 곳: 종목별 1점당 코인, 랭킹전 ×2/×½, 친구 ¼(둘 합), 컴퓨터 ¼(내 점수), 투어 수수료 10%,
   퍼즐 150(처음 한 번), 희귀도별 가격, DAMA(ELO를 대신하는 랭킹 점수, '다마'는 당구장 은어. 30 시작, 비슷한 상대면 ±3, 최대 ±6, 최저 10). 숫자를 바꾸면 앱과 서버가 같이 따른다.
 - 해킹 방지: 앱은 "한 일"(퍼즐을 이 샷으로 풀었다, 이 경기를 이렇게 쳤다)만 보낸다. 서버가 다시 쳐 보고 지급한다.

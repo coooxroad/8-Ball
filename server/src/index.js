@@ -33,11 +33,13 @@ import { googleWhoAny as googleWho } from './google.js';
 import * as E from './gen/engine.js';
 import { PHYS_V } from './version.js';
 import { originOk } from './origins.js';
+import { monthOf } from './dataset-core.js';
 // (a device on other physics - version.js - is told to update rather than matched: queue and invites)
 const samePhysics = body => (body && Number.isInteger(body.phys) ? body.phys : 1) === PHYS_V;
 export { Vault } from './vault.js';
 export { Lobby } from './lobby.js';
 export { Room } from './room.js';
+export { Dataset } from './dataset.js';
 
 const MODES = ['eight', 'nine', 'four', 'three', 'snooker'];
 // (the lobbies: those, and 아케이드's 증강 당구 - not for friends' rooms)
@@ -100,6 +102,12 @@ async function adminRoute(what, request, env) {
   if (what === 'find') {
     const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
     return json(await r.json());
+  }
+  // the shot dataset (dataset.js): a month's counts, or its rows after n - { month: 'shots-2026-11', after, limit, stats }
+  if (what === 'dataset') {
+    const month = /^shots-\d{4}-\d{2}$/.test(body.month || '') ? body.month : monthOf(Date.now()), d = env.DATASET.get(env.DATASET.idFromName(month));
+    const r = await d.fetch('https://dataset/' + (body.stats ? 'stats' : 'export'), { method: 'POST', body: JSON.stringify({ after: body.after | 0, limit: body.limit | 0 }) });
+    return json(Object.assign({ month }, await r.json()));
   }
   const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
   const vault = env.VAULT.get(env.VAULT.idFromName(acct));
@@ -176,7 +184,7 @@ async function frontDoor(request, env) {
     if (!url.pathname.startsWith('/v1/')) return json({ ok: false, why: 'no such thing' }, 404);
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
-    const adm = /^\/v1\/admin\/(find|view|grant|catalog)$/.exec(url.pathname);
+    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset)$/.exec(url.pathname);
     if (adm) return adminRoute(adm[1], request, env);
     const link = /^\/v1\/link\/(google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);

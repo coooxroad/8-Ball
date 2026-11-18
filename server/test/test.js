@@ -7,6 +7,7 @@ import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore } from '../src/link.js';
 import { originOk } from '../src/origins.js';
 import { PHYS_V } from '../src/version.js';
+import { datasetRow, DatasetCore, monthOf } from '../src/dataset-core.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
@@ -715,6 +716,22 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(D.find('%').people.length === 0, 'directory: no wildcards from outside');
   ok(D.fails(false, 1000).n === 0 && D.fails(true, 1000).n === 1 && D.fails(true, 2000).n === 2 && D.fails(false, 1000 + 15 * 60000 + 1).n === 1, 'directory: wrong admin passwords counted for 15 minutes');
   console.log('admin: checked');
+}
+// the shot dataset (dataset-core.js): a match cut down to its shots and the seats' ratings, kept once, read out in order
+{
+  const shot = (x, t) => ({ s: { cue: 0, balls: [[x, 0.1234567, 1, 0, 0, [1, 0, 0, 0]], [0.5, -0.2, 0, 0, 0, [1, 0, 0, 0]], [0.3, 0.3, 1, 0, 0, [1, 0, 0, 0]]] }, aim: 1.23456789, V: 2.5, a: 0.1, b: -0.2, el: 0, inHand: false, t });
+  const log = { v: 1, mode: 'three', table: 'bar', opts: { cushions: 3 }, shots: [shot(-0.5, 0), { timeout: true }, shot(-0.4, 1)], winner: 0, points: [3, 1], bot: { id: 'sua', rating: 300 } };
+  const row = datasetRow('cpu', log, [{ rating: 1210.4, human: true }, { rating: 300, human: false, bot: 'sua' }], 1763400000000);
+  ok(row && row.shots.length === 3 && row.shots[1][0] === -2 && row.shots[0].length === 8 + 9 && row.shots[0][1] === 1.23457 && row.shots[0][9] === 0.12346 && row.shots[2][0] === 1, 'dataset: a shot as [seat, aim, V, a, b, el, in hand, cue, x, y, on...], to 1/100 mm');
+  ok(row.seats[0].rating === 1210 && row.seats[0].human && !row.seats[1].human && row.seats[1].bot === 'sua' && !('acct' in row) && !JSON.stringify(row).includes('name'), 'dataset: the seats\' ratings, no one named');
+  ok(datasetRow('cpu', { mode: 'golf', shots: [shot(0, 0)] }, []) === null && datasetRow('nope', log, []) === null, 'dataset: no unknown game or kind');
+  ok(monthOf(Date.UTC(2026, 10, 18)) === 'shots-2026-11', 'dataset: a month an object');
+  const D = new DatasetCore(sqlOf().sql);
+  ok(D.put(Object.assign({ key: 'k1' }, row)).kept && !D.put(Object.assign({ key: 'k1' }, row)).kept && D.put(Object.assign({ key: 'k2' }, row)).kept, 'dataset: a match kept once by its key');
+  const st = D.stats(); ok(st.by.length === 1 && st.by[0].matches === 2 && st.by[0].shots === 6, 'dataset: counted by kind and game');
+  const ex = D.export(0, 1); ok(ex.rows.length === 1 && ex.more && D.export(ex.next, 5).rows.length === 1 && !D.export(ex.next, 5).more, 'dataset: read out after n, a page at a time');
+  ok(!D.put({ v: 1, mode: 'three', kind: 'cpu' }).ok, 'dataset: a row with no shots refused');
+  console.log('dataset: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);

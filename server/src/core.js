@@ -73,6 +73,8 @@ export class VaultCore {
   }
 
   // a change the app asked for: once per request number
+  // (a request number already answered - the vault passes a match on to the dataset only the first time: vault.js)
+  seen(req) { return typeof req === 'string' && this.sql.exec(`SELECT 1 FROM reqs WHERE req = ?`, req).toArray().length > 0; }
   once(req, fn) {
     if (typeof req !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(req)) return { ok: false, why: 'no request number' };
     return this.tx(() => {

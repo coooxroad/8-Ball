@@ -31,6 +31,11 @@ class_name = "Lobby"
 name = "ROOM"
 class_name = "Room"
 
+# the shot dataset (src/dataset.js): a month a Durable Object, every match's shots kept with no account in them
+[[durable_objects.bindings]]
+name = "DATASET"
+class_name = "Dataset"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Vault"]
@@ -39,3 +44,8 @@ new_sqlite_classes = ["Vault"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["Lobby", "Room"]
+
+# the shot dataset, a month an object (11-18)
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["Dataset"]

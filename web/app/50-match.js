@@ -25,7 +25,9 @@ const match = {
     match.best = null; match.worst = null; match.shots = []; match.count = 0; match.before = null; match.ult = [0, 0];
     st.aim = 0; match.innings = [0, 0]; match.innings[game.turn] = 1; match.t0 = Date.now(); paintUlt();
     // the log the server plays again before it pays (server/src/check.js): the rules it was played under and every shot
-    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}), ...(c.minus === false ? { minus: false } : {}), ...(c.hugu ? { hugu: true } : {}) }, shots: [], points: [0, 0] };
+    match.log = o ? null : { v: 1, mode: c.mode, table: prefs.table, opts: { first: first || 0, target: c.target, cushions: prefs.rule3, targets: c.targets, tens: !!c.targets, finish: c.finish, ice: !!c.ice, ...(c.real ? { real: c.real } : {}), ...(c.minus === false ? { minus: false } : {}), ...(c.hugu ? { hugu: true } : {}) }, shots: [], points: [0, 0],
+      // (the bot played, for the shot dataset: its rating then - server/src/dataset.js)
+      ...(match.ctx.bot ? { bot: { id: match.ctx.bot.bot, rating: match.ctx.bot.dama } } : {}) };
     match.enter();
     // 4구: the balls are rolled out first, then the yellow ball's player begins
     // (watching: at once, as the room's replay does it - the shots after it are played in a moment, catchUp)
@@ -44,7 +46,7 @@ const match = {
   guide: () => GUIDE_STD,
   auto: () => match.ctx.online ? ranked.auto(match.ctx.online) : game.players[game.turn].ai ? (botTalk.say('think', 0.22, 0.3), { think: 0.5, showSpin: true, ai: true, plan(a) { const p = aiAsk(a); if (!p) return null; return { angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos }; } }) : null,
   beforeShot(V, a, b, el) {
-    if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing });
+    if (match.log) match.log.shots.push({ s: JSON.parse(JSON.stringify(highlights.snapshot(game.world))), aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing, t: game.turn });
     if (match.ctx.online) ranked.struck(JSON.parse(JSON.stringify(highlights.snapshot(game.world))), V, a, b, el);
     match.pending = { snap: highlights.snapshot(game.world), aim: st.aim, V, a, b, el, turn: game.turn, isBreak: game.isBreak, who: game.players[game.turn].name, inn: match.innings ? Math.max(match.innings[0], match.innings[1]) : 0 };
     review.shot(match.pending); },
