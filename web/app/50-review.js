@@ -68,7 +68,9 @@ const review = {
     const o = match.ctx && match.ctx.online;
     if (!p || o && o.watch || p.isBreak && game.P.POCKETED) return;
     const w = reviewWorker(); if (!w) return;
-    const item = Object.assign({}, p, { n: match.count + 1, res: null, t: Date.now(), mode: game.modeId });
+    // (the score before it, and - 4구 with a finish - whether this was the finishing shot: the coach reads the game, 50-review-words.js)
+    const fin = game.modeId === 'four' && !!game.finish && game.players[game.turn].score >= (game.targets || [])[game.turn];
+    const item = Object.assign({}, p, { n: match.count + 1, res: null, t: Date.now(), mode: game.modeId, sc: game.players.map(x => x.score), tg: game.targets ? game.targets.slice() : null, last: fin });
     review.list.push(item);
     const id = ++rvw.n;
     rvw.wait.set(id, r => { item.res = r && r.review || { none: true }; review.heard(item); });
@@ -135,7 +137,11 @@ const review = {
   },
   panel() {
     const box = $('#rvPanel'); if (!box) return;
-    const keepY = box.dataset.pick === String(review.pick) ? box.scrollTop : null; box.dataset.pick = review.pick; box.textContent = '';
+    // (the same shot drawn again - another way picked, the analysis come in - stays where it was scrolled: the panel and
+    // whatever holds it, as a phone's screen scrolls as one - owner 11-19: 추천 샷 보기 sent the review to its top)
+    const same = box.dataset.pick === String(review.pick), keep = [];
+    for (let e = box; e && e !== document.body; e = e.parentElement) if (e.scrollTop) keep.push([e, e.scrollTop]);
+    const keepY = same ? box.scrollTop : null; box.dataset.pick = review.pick; box.style.minHeight = same ? box.offsetHeight + 'px' : ''; box.textContent = '';
     const head = el('div', { class: 'rv-top' }, [el('button', { class: 'rv-back', 'aria-label': '돌아가기', onclick: onTap(() => review.close()) }), el('b', { text: '게임 리뷰' })]);
     const L = review.list, q = L[review.pick];
     box.append(head, q ? review.coach(q) : el('div', { class: 'rv-coach' }),
@@ -151,6 +157,7 @@ const review = {
       })));
     // (the chosen shot brought into view in the list; a phone's panel scrolls as one, so it goes back to the coach instead)
     // (the same shot drawn again - an other way picked, the analysis come in - stays where it was scrolled)
+    if (same) { for (const [e, y] of keep) e.scrollTop = y; box.style.minHeight = ''; }
     if (keepY != null) box.scrollTop = keepY;
     else if (app.classList.contains('compact')) box.scrollTop = 0;
     else { const on = box.querySelector('.rv-shot.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
@@ -173,18 +180,20 @@ const review = {
   coach(q) {
     const r = q.res, G = r && r.grade != null ? REVIEW_GRADES[r.grade] : null;
     if (!G) return el('div', { class: 'rv-coach' }, [el('p', { class: 'rv-why', text: r ? '이 샷은 평가하지 못했어요.' : '분석하는 중이에요…' })]);
-    const w = reviewWords(q), alts = r.alts || [], A = alts[review.alt] || null;
-    const pick = i => onTap(() => { review.alt = i; review.board(q); review.panel(); });
+    const w = reviewWords(q), alts = r.alts || [], fix = review.alt === 'fix' && r.fix ? { d: r.md, shot: r.fix, fix: true } : null, A = fix || alts[review.alt] || null;
+    const pick = i => onTap(() => { review.alt = review.alt === i ? -1 : i; review.board(q); review.panel(); });
     const chips = alts.length ? el('div', { class: 'rv-alts' }, [
-      el('button', { class: 'rv-chip mine' + (A ? '' : ' on'), onclick: pick(-1) }, [el('b', { text: '내 샷' })]),
+      el('button', { class: 'rv-chip mine' + (A ? '' : ' on'), onclick: onTap(() => { review.alt = -1; review.board(q); review.panel(); }) }, [el('b', { text: '내 샷' })]),
       ...alts.map((a, i) => el('button', { class: 'rv-chip' + (i === review.alt ? ' on' : ''), onclick: pick(i) }, [el('b', { text: rvAltName(a, true) }),
         a.easiest || a.best ? el('span', { class: 'rv-tags' }, [a.best ? el('em', { class: 'best', text: '추천' }) : null, a.easiest ? el('em', { class: 'easy', text: '가장 쉬움' }) : null]) : null]))]) : null;
+    // (the button to the shot most worth seeing: 교정한 샷 · 쉬운 샷 · 추천 샷 - pressed again, back to the shot played)
+    const act = w.act ? el('button', { class: 'rv-go' + (review.alt === w.act.alt ? ' on' : ''), onclick: pick(w.act.alt) }, [el('span', { text: review.alt === w.act.alt ? '내 샷 보기' : w.act.label })]) : null;
     return el('div', { class: `rv-coach g-${G.id}` + (A ? ' alt' : '') }, [
-      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('b', { text: w.title }), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('요행')]) : null]),
-      // (의도 · 결과 · 원인 · 한마디 · 추천, each a labelled line - a commentator's call, not one paragraph)
-      el('div', { class: 'rv-lines' }, w.lines.map(l => el('p', { class: 'rv-line' + (l.k === '추천' ? ' rec' : '') }, [el('b', { text: l.k }), el('span', { text: l.t })]))),
+      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.word + '.' }), document.createTextNode(' ' + w.head)]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('요행')]) : null]),
+      w.body.length ? el('p', { class: 'rv-body', text: w.body.join(' ') }) : null,
+      act,
+      A ? (() => { const st = A.fix ? { how: rvLine(A.d, game.mode.table === 'carom') || '이렇게 쳤으면 들어갔어요.', why: [] } : rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: (A.fix ? '교정한 샷 — ' : '') + st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,
       chips,
-      A ? (() => { const st = rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,
       review.stroke(A ? A.d : r.d),
       el('button', { class: 'rv-act', text: '다시 보기', onclick: onTap(() => { review.board(q); }) })]);
   },
@@ -220,7 +229,7 @@ const review = {
     review.stop(); scene.clearFalls();
     const base = q || review.list[0]; if (!base) return;
     let shot;
-    const alt = q && q.res && q.res.alts && q.res.alts[review.alt];
+    const alt = q && q.res && (review.alt === 'fix' ? q.res.fix && { shot: q.res.fix } : q.res.alts && q.res.alts[review.alt]);
     if (alt) {
       const b = alt.shot, snap = JSON.parse(JSON.stringify(q.snap));
       if (b.pos) { snap.balls[snap.cue][0] = b.pos[0]; snap.balls[snap.cue][1] = b.pos[1]; }

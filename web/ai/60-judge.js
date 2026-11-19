@@ -342,7 +342,10 @@
   const raisedK = shot => (shot.el || 0) > 0.3 ? JUDGE.RAISED : 1;
   // what the raised cue made of a stroke: 'jump' (the cue ball left the cloth over a ball's height), 'masse' (raised past
   // 34 degrees with side - it bends), 'curve' (a little raised with side), else null - as the aim line names them (80-input.js)
-  const raisedOf = (shot, ev) => ev && ev.air > g.P.R * 1.2 ? 'jump' : (shot.el || 0) >= 0.6 && Math.abs(shot.a || 0) >= 0.15 ? 'masse' : (shot.el || 0) >= 0.2 && Math.abs(shot.a || 0) >= 0.15 ? 'curve' : null;
+  // (a steep massé lifts the ball a little as it bites - owner 11-19: 레아's massé was called a jump: past 52 degrees with side
+  // it is a massé whatever it does in the air)
+  const raisedOf = (shot, ev) => { const el = shot.el || 0, side = Math.abs(shot.a || 0) >= 0.15;
+    return el >= 0.9 && side ? 'masse' : ev && ev.air > g.P.R * 1.2 ? 'jump' : el >= 0.6 && side ? 'masse' : el >= 0.2 && side ? 'curve' : null; };
 
   /* ---- what kind of shot a stroke is, and what it did - for the coach's words (50-review-words.js) ----
      styleOf: the way of playing it - safety, kick (pool: off a cushion first; carom: 빈쿠션), bank, combination, side (left
@@ -543,6 +546,9 @@
       parts, alts, practical, intent, facts,
       d: describe(world, who, shot, res), next: nextBall(res, who),
       md: meant && !res.made && line ? describe(world, who, { ...aimed, angle: line.centre }, judgeSim(world, who, { ...aimed, angle: line.centre }, view)) : null,
+      // (the shot as it should have been played - the review's 교정한 샷 보기: the meant line at its window's middle when that
+      // comes off, else the nearest success found)
+      fix: meant && !res.made ? (cRes && cRes.made ? aimC : aimed) : null,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
       grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)

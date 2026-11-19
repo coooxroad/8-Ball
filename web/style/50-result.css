@@ -211,6 +211,11 @@
 .rv-say{display:flex;align-items:center;gap:10px}
 .rv-say .rv-ico{width:30px;height:30px}
 .rv-say b{font:800 19px var(--ui-font);color:var(--gc,#f3eee3)}
+.rv-say p{margin:0;font:700 16px/1.4 var(--ui-font);color:#f3eee3}.rv-say p b{font-size:inherit;margin-right:2px}
+.rv-body{margin:0;font:600 14px/1.55 var(--ui-font);color:#c9d2dc}
+.rv-go{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 16px 0 14px;border:0;border-radius:99px;background:#8a6fd0;color:#fff;font:800 13.5px var(--ui-font);cursor:pointer}
+.rv-go::after{content:'';width:7px;height:7px;border:solid #fff;border-width:2px 2px 0 0;transform:rotate(45deg);margin-left:2px}
+.rv-go.on{background:rgba(255,255,255,.16)}
 .rv-fluke{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 4px;border-radius:99px;background:rgba(140,198,63,.16);font:800 12.5px var(--ui-font);color:#b8e07c}
 .rv-fluke .rv-ico{width:20px;height:20px}
 .rv-why{margin:0;font:600 14.5px/1.55 var(--ui-font);color:#d9dfe7}
@@ -244,7 +249,7 @@
 #app.desk.compact .rv-top b{font-size:18px}#app.desk.compact .rv-back{width:32px;height:32px}
 #app.desk.compact #rvPanel{gap:7px}
 #app.desk.compact .rv-coach{padding:9px 10px;gap:6px}
-#app.desk.compact .rv-say b{font-size:15px}#app.desk.compact .rv-say .rv-ico{width:24px;height:24px}
+#app.desk.compact .rv-say b{font-size:15px}#app.desk.compact .rv-say p{font-size:14px}#app.desk.compact .rv-body{font-size:12.5px;line-height:1.45}#app.desk.compact .rv-go{min-height:30px;font-size:12px;padding:0 12px 0 10px}#app.desk.compact .rv-say .rv-ico{width:24px;height:24px}
 #app.desk.compact .rv-why{font-size:12.5px;line-height:1.45}
 #app.desk.compact .rv-act{min-height:30px;padding:0 10px;font-size:12px}
 #app.desk.compact .rv-shots{flex:none;overflow:visible}
