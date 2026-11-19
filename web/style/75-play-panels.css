@@ -98,7 +98,10 @@
 #dkBoards .bd-snooker{grid-area:snooker;--cl:#8a2a2a}
 #dkBoards .game .in{justify-content:flex-end}
 #dkBoards .game .bd-tt b{font-size:calc(var(--u)*12)}
-#dkBoards .rack{position:absolute;--d:calc(var(--u)*8);right:calc(var(--u)*7);top:50%;width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d));transform:translateY(-62%);filter:drop-shadow(-3px 5px 3px rgba(0,0,0,.45))}
+#dkBoards .rack{position:absolute;--d:calc(var(--u)*8);right:calc(var(--u)*7);top:50%;width:calc(var(--cw)*var(--d));height:calc(var(--ch)*var(--d));transform:translateY(-62%)}
+/* (each ball's shadow its own round shadow, not a filter over the rack - filters in the leaning desk were drawn again on every
+   resize, and things in them went missing on the tablet: owner 11-19) */
+#dkBoards .bd .rack img{border-radius:50%;box-shadow:-3px 5px 4px rgba(0,0,0,.4)}
 #dkBoards .rack.pool{--d:calc(var(--u)*6.2)}
 #dkBoards .rack img{position:absolute;width:var(--d);height:var(--d)}
 #app.desk.compact #dkBoards .bd-head .tt h2{font-size:20px}
@@ -148,7 +151,13 @@
 #dkBoards .bd.card.bd-friend{--c1:#458554;--c2:#1b552c;--sl:#679270;--sd:#062911}
 #dkBoards .bd.card.bd-train{--c1:#b05551;--c2:#772b2a;--sl:#b3726d;--sd:#3e1010}
 #dkBoards .bd.card.bd-arcade{--c1:#8265a3;--c2:#533a6e;--sl:#907ca8;--sd:#281938}
-#dkBoards .bd.card .sk{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25)}
+/* (11-19: the dots gone for the menu's drifting signs - .mn-sym, 84-menu.css - and a faint glow of the card's own colour,
+   as the menu's cards have; owner) */
+#dkBoards .bd.card .sk{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25),0 0 calc(30px*var(--mu,1)) calc(3px*var(--mu,1)) color-mix(in srgb,var(--c1) 30%,transparent)}
+#dkBoards .bd .sk-fx{position:absolute;inset:0;border-radius:13px;overflow:hidden;pointer-events:none;transform-origin:var(--fx) var(--fy);transition:transform .08s}
+#dkBoards .bd:active .sk-fx{transform:scale(var(--kp))}
+@media (prefers-reduced-motion:no-preference){#dkBoards .bd .mn-sym{animation:mn-drift 12s linear infinite;animation-delay:calc(var(--si,0) * -2.3s);will-change:transform}}
+#dkBoards .bd.card.soon .sk{box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25)}
 #dkBoards .bd.card .sk::before{display:none}
 #dkBoards .bd.card .bd-tt{text-align:left}
 #dkBoards .bd.card .bd-tt b{font:800 calc(var(--u)*9.5)/1.12 var(--ui-font);letter-spacing:-.02em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}

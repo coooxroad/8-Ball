@@ -54,10 +54,12 @@ function playEnter(wrap) {
     b.classList.add(fx);
   });
 }
+// (their shadows drawn in, as the menu's icons: 10-ui.js icoLift - no filter)
+const wayIco = d => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" overflow="visible">${icoLift(d, 3, 2)}</svg>`;
 const WAY_ICO = {
-  local: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="5" width="30" height="38" rx="5"/><path d="M20 37h8"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="20" r="4"/></svg>',
-  make: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M24 18v12M18 24h12"/></svg>',
-  join: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="38" height="24" rx="4"/><path d="M17 24h14M25 18l6 6-6 6"/></svg>' };
+  local: wayIco('<rect x="9" y="5" width="30" height="38" rx="5"/><path d="M20 37h8"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="20" r="4"/>'),
+  make: wayIco('<rect x="5" y="12" width="38" height="24" rx="4"/><path d="M24 18v12M18 24h12"/>'),
+  join: wayIco('<rect x="5" y="12" width="38" height="24" rx="4"/><path d="M17 24h14M25 18l6 6-6 6"/>') };
 /* Add-ons for a game with a friend (owner 11-10): each a long card on its own, on or off, with its parts below it.
    The first: 현실 당구 - throw, squirt, and the cue only at angles it could take (physics.js). Kept in prefs.addons;
    a room carries them in its rules (55-invite.js rulesOf), a game on one device in its own (50-match.js). */
@@ -93,7 +95,10 @@ function deskPlay(d) {
   d.stage.dataset.win = '0';
   $('#desk').classList.add('boards');
   const fit = el('div', { class: 'bd-fit' }), wrap = el('div', { id: 'dkBoards', class: playStep });
-  const panel = (id, label, fn, kids, cls) => { const b = el('button', { class: 'bd bd-' + id + (cls ? ' ' + cls : ''), 'data-b': id, 'aria-label': label }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, kids)]); b.onclick = () => { if (!playBusy) { SND.init(); SND.tap(); fn(b); } }; return b; };
+  // (a printed card's ground: its small signs drifting, as the menu's cards have - 32-desk.js symLayer; owner 11-19 - laid over
+  // what is written on it, faint, so the words and pictures need no layer of their own above a moving one: 84-menu.css .mn-fx)
+  let nSym = 0;
+  const panel = (id, label, fn, kids, cls) => { const card = / card /.test(` ${cls} `); const b = el('button', { class: 'bd bd-' + id + (cls ? ' ' + cls : ''), 'data-b': id, 'aria-label': label }, [el('i', { class: 'sk' }), el('span', { class: 'in' }, kids), card ? el('i', { class: 'sk-fx' }, symLayer(id, nSym++)) : null]); b.onclick = () => { if (!playBusy) { SND.init(); SND.tap(); fn(b); } }; return b; };
   const tt = (t, sub, tag) => el('span', { class: 'bd-tt' }, [tag ? el('em', { text: tag }) : null, el('b', { text: t }), sub ? el('small', { text: sub }) : null]);
   const head = (title, sub, back, kids) => el('div', { class: 'bd-head' }, [el('button', { class: 'dk-x', 'aria-label': '뒤로', onclick: () => { if (playBusy) return; SND.tap(); back(); } }, el('i')), dkTitle(title, sub), kids ? el('span', { class: 'bd-tools' }, kids) : null]);
   const toBoards = () => { playStep = 'boards'; playFx = 'fan'; invite.stopRooms(); paintHome(); };

@@ -11,6 +11,11 @@ function el(tag, attrs, kids) {
   return n;
 }
 const hex = n => '#' + n.toString(16).padStart(6, '0');
+/* A line icon's soft shadow drawn into the icon itself - the same strokes again, a little lower and wider, faint - instead
+   of a CSS drop-shadow: a filter on an icon inside the menu's leaning, scrolling layer was drawn again on every resize and
+   scroll, and on the tablet some icons went missing (owner 11-19). inner: the strokes; sw: their width; s: viewBox units per 24. */
+const icoLift = (inner, sw, s = 1) => [[1.3, 3, .07], [1.2, 1.8, .09], [1.05, .7, .12]].map(([y, w, a]) =>
+  `<g transform="translate(0 ${(y * s).toFixed(2)})" stroke="rgba(0,0,0,${a})" stroke-width="${(sw + w * s).toFixed(2)}">${inner}</g>`).join('') + `<g>${inner}</g>`;
 // every button press: wake the audio (browsers only allow that inside a tap), click, then act
 const onTap = fn => () => { SND.init(); SND.tap(); fn(); };
 const press = (id, fn) => $(id).addEventListener('click', onTap(fn));
@@ -129,6 +134,9 @@ function checkLayout() {
   if (app.classList.contains('resizing')) {
     if (performance.now() - sizedAt < 100) { clearTimeout(layoutT); layoutT = setTimeout(() => { layoutPending = true; }, 120); return; }
     app.classList.remove('resizing'); back = true;
+    /* (and the cards' moving layers come back a moment after the desk: the frame the desk returns in has all of it to draw
+       again at its new size, and on the tablet parts of it came up missing - owner 11-19; 84-menu.css #app.settle) */
+    app.classList.add('settle'); clearTimeout(checkLayout.settle); checkLayout.settle = setTimeout(() => app.classList.remove('settle'), 600);
   }
   if (back || dprChanged || app.clientWidth !== layoutW || app.clientHeight !== layoutH) {
     const start = performance.now();

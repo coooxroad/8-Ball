@@ -28,9 +28,12 @@
 .mn-track{display:flex;align-items:center;gap:calc(14px*var(--u));width:max-content;height:100%;box-sizing:border-box;
   padding:0 calc(var(--edge) + 60px*var(--u)) 0 calc(var(--edge) + 30px*var(--u))}
 
-/* a card: the desk's printed card - its colour (--c1 light, --c2 dark), a dot print, a white line inside, a black strip on top */
-.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),radial-gradient(circle,rgba(255,255,255,.06) 1.2px,transparent 1.7px) 0 0/18px 18px,linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
-  background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s}
+/* a card: the desk's printed card - its colour (--c1 light, --c2 dark), its small signs drifting (.mn-sym, below - the dot
+   print until 11-19), a white line inside, a black strip on top; round it a faint glow of its own colour (owner 11-19:
+   every card but 랭킹전, whose rim is lit, and the 선수증) */
+.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
+  background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 calc(30px*var(--u)) calc(3px*var(--u)) var(--glow,transparent),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s;
+  --glow:color-mix(in srgb,var(--c1) 30%,transparent)}
 .mn-card:active{transform:translateY(3px)}
 /* every card (and the 선수증) a layer of its own, always: a press (12-press.js - the sink, the ripple) makes the pressed card
    one, and then all drawn after it - the cards to its right - were gathered into one new layer and drawn again, blinking
@@ -40,10 +43,12 @@
 .mn-card .strip{position:absolute;left:0;right:0;top:0;height:calc(38px*var(--u));display:flex;align-items:center;justify-content:center;padding:0 calc(8px*var(--u));background:#111;color:rgba(255,255,255,.9);
   font:800 calc(13.5px*var(--u)) var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mn-card .mn-ico{position:absolute;left:0;right:0;top:calc(108px*var(--u));display:grid;place-items:center;height:calc(130px*var(--u))}
-.mn-card .mn-ico svg{width:calc(118px*var(--u));height:calc(118px*var(--u));color:rgba(255,255,255,.93);filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))}
+.mn-card .mn-ico svg{width:calc(118px*var(--u));height:calc(118px*var(--u));color:rgba(255,255,255,.93);overflow:visible}   /* (its shadow is in the drawing: 10-ui.js icoLift - no filter) */
 .mn-card b{position:absolute;left:0;right:0;bottom:calc(76px*var(--u));font:900 calc(24px*var(--u)) var(--ui-font);letter-spacing:-.01em;white-space:nowrap;text-shadow:0 2px 3px rgba(0,0,0,.45)}
 .mn-card small{position:absolute;left:calc(6px*var(--u));right:calc(6px*var(--u));bottom:calc(50px*var(--u));font:700 calc(14.5px*var(--u)) var(--ui-font);color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mn-card.soon{filter:saturate(.35) brightness(.78)}
+/* (준비 중: its colours greyed in its own face - not a filter over the whole card, which is drawn apart every frame it moves) */
+.mn-card.soon{--face:linear-gradient(200deg,rgba(255,255,255,.1),rgba(255,255,255,0) 38%),linear-gradient(165deg,color-mix(in srgb,var(--c1) 40%,#4a4a4a),color-mix(in srgb,var(--c2) 40%,#262626));--glow:transparent;color:rgba(255,255,255,.72)}
+.mn-card.soon .mn-ico svg{color:rgba(255,255,255,.66)}
 .mn-card.k-rank{--c1:#4176c4;--c2:#1d4688}
 .mn-card.k-friend{--c1:#43915e;--c2:#1f5735}
 .mn-card.k-lesson{--c1:#bb5a52;--c2:#7c2d29}
@@ -54,7 +59,7 @@
 .mn-card.k-cpu{--c1:#56708f;--c2:#25354b}
 .mn-card.k-free{--c1:#6f7f45;--c2:#353f1a}
 /* 랭킹전: larger, its sign larger, its rim alight - a gold line round it with a glint running along, and a slow glow */
-.mn-card.hero{width:calc(272px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
+.mn-card.hero{--glow:transparent;width:calc(272px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
 .mn-card.hero .mn-ico{top:calc(110px*var(--u));height:calc(170px*var(--u))}.mn-card.hero .mn-ico svg{width:calc(160px*var(--u));height:calc(160px*var(--u))}
 .mn-card.hero b{bottom:calc(92px*var(--u));font-size:calc(42px*var(--u))}.mn-card.hero small{bottom:calc(62px*var(--u));font-size:calc(16px*var(--u))}
 .mn-card.hero .strip{left:calc(3px*var(--u));right:calc(3px*var(--u));top:calc(3px*var(--u));border-radius:calc(15px*var(--u)) calc(15px*var(--u)) 0 0;color:#f0d488}
@@ -67,29 +72,48 @@
    laid over it 3u smaller - so the glint shows only round the edge (no mask) */
 .mn-rim{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
 .mn-face{position:absolute;inset:calc(3px*var(--u));pointer-events:none}
-.mn-rim i,.mn-sheen i{position:absolute;top:-30%;bottom:-30%;left:-50%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translateX(0) skewX(-18deg);animation:mn-glint 3.6s ease-in-out infinite;will-change:transform}
-@keyframes mn-glint{0%,45%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
+/* (one speed all the way round - owner 11-19: the shine seemed to move in jerks, easing in and out along a thin rim) */
+.mn-rim i,.mn-sheen i{position:absolute;top:-30%;bottom:-30%;left:-50%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translate3d(0,0,0) skewX(-18deg);animation:mn-glint 3.6s linear infinite;will-change:transform}
+@keyframes mn-glint{0%,45%{transform:translate3d(0,0,0) skewX(-18deg)}100%{transform:translate3d(420%,0,0) skewX(-18deg)}}
 .mn-sheen{position:absolute;inset:calc(3px*var(--u));border-radius:calc(17px*var(--u));overflow:hidden;pointer-events:none;opacity:var(--sheen,0)}
 .mn-sheen i{width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
 
 /* the cards alive, calmly (owner 11-16 - 8 Ball Pool's, 당구의 신's menus move and shine and are liked by every age; ours keep
-   their calm and only gain some finish): a light crossing each card now and then on its own beat (--i); the icons stand still (owner 11-18).
-   (11-17: the dot print drifting is gone - the print stands still again.) All by transform and opacity, and only on a card in
-   sight (.mn-live, 37-desk-menu.js); none with reduced motion. */
-.mn-fx{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
-.mn-card.hero .mn-fx{inset:calc(3px*var(--u));border-radius:calc(15px*var(--u))}
-/* (owner 11-17 night: 'a soft gradient moving inside the card') a light and a shade, wide and soft, drifting slowly over the
-   card's face, each card on its own beat - one layer larger than the card, moved by transform only */
-.mn-fx b{position:absolute;inset:-50%;background:radial-gradient(28% 24% at 36% 38%,rgba(255,255,255,.2),rgba(255,255,255,0)),radial-gradient(30% 26% at 64% 64%,rgba(0,0,0,.24),rgba(0,0,0,0));will-change:transform}
-.mn-fx i{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);transform:skewX(-18deg)}
+   their calm and only gain some finish): a light crossing each card now and then on its own beat (--i), a soft light and
+   shade drifting over its face (11-17 night), and its small signs drifting on the diagonal (11-19); the icons stand still
+   (owner 11-18). All by transform and opacity, and only on a card in sight (.mn-live, 37-desk-menu.js) - a card out of
+   sight has none of these moving layers at all (owner 11-19: parts of the screen and icons went missing on the tablet
+   when the menu scrolled or the screen changed size - every card's moving layers, four times its size each, had been
+   kept even out of sight). None move with reduced motion. */
+/* (over everything the card prints, under its black strip's foot: what moves is the card's top layer, so nothing printed
+   on the card has to be drawn on a layer of its own above it - the icons and words, each lifted onto their own small layer
+   over the moving ones, were what went missing on the tablet) */
+.mn-fx{position:absolute;z-index:1;inset:calc(38px*var(--u)) 0 0;border-radius:0 0 calc(16px*var(--u)) calc(16px*var(--u));overflow:hidden;pointer-events:none}
+.mn-card.hero .mn-fx{inset:calc(41px*var(--u)) calc(3px*var(--u)) calc(3px*var(--u));border-radius:0 0 calc(15px*var(--u)) calc(15px*var(--u))}
+/* the signs: a tile of two (32-desk.js symLayer) over a layer 1½ the card's width and 1¼ its height, its right and top
+   edges on the card's - so moving one tile (a third of its width, a fifth of its height) up and right it still covers the
+   card, and looks as it began */
+.mn-sym{position:absolute;top:0;right:0;width:150%;height:125%;background:var(--sym) 0 0/33.3333% 20% repeat;opacity:.085;pointer-events:none}
+/* (owner 11-17 night: 'a soft gradient moving inside the card') a light and a shade, each a soft round patch on a box just
+   its size (it fades to nothing at the box's edge, so the box may move without its edge showing) */
+.mn-fx .lt,.mn-fx .dk{position:absolute;border-radius:50%}
+.mn-fx .lt{left:-24%;top:-20%;width:92%;height:78%;background:radial-gradient(closest-side,rgba(255,255,255,.17),rgba(255,255,255,.06) 55%,rgba(255,255,255,0))}
+.mn-fx .dk{left:28%;top:34%;width:96%;height:82%;background:radial-gradient(closest-side,rgba(0,0,0,.2),rgba(0,0,0,.07) 55%,rgba(0,0,0,0))}
+/* the light crossing: one soft band; (owner 11-19: it looked to move in jerks) it keeps one speed all the way across and
+   fades in and out while moving, never standing still while lit, on a layer of its own from the start */
+.mn-fx .x{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.07) 30%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 70%,rgba(255,255,255,0));transform:translate3d(0,0,0) skewX(-18deg)}
 @media (prefers-reduced-motion:no-preference){
-  .mn-fx i{animation:mn-cross 11s ease-in-out infinite paused;animation-delay:calc(var(--i,0) * 1.3s)}
-  .mn-fx b{animation:mn-flow 16s ease-in-out infinite alternate paused;animation-delay:calc(var(--i,0) * -2.7s)}
-  .mn-live .mn-fx>*{animation-play-state:running}
+  .mn-live .mn-sym{animation:mn-drift 12s linear infinite;animation-delay:calc(var(--si,0) * -1.9s);will-change:transform}
+  .mn-live .mn-fx .x{animation:mn-cross 11s linear infinite;animation-delay:calc(var(--i,0) * 1.3s);will-change:transform,opacity}
+  .mn-live .mn-fx .lt{animation:mn-flow 16s ease-in-out infinite alternate;animation-delay:calc(var(--i,0) * -2.7s);will-change:transform}
+  .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
 }
 .mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused}
-@keyframes mn-cross{0%,78%{opacity:0;transform:translateX(0) skewX(-18deg)}80%{opacity:1}96%{opacity:1;transform:translateX(380%) skewX(-18deg)}100%{opacity:0;transform:translateX(380%) skewX(-18deg)}}
-@keyframes mn-flow{0%{transform:translate(-10%,-8%) rotate(-10deg)}50%{transform:translate(7%,5%) rotate(8deg)}100%{transform:translate(10%,-6%) rotate(18deg)}}
+/* (none of them while the window changes size, nor just after, while the desk is drawn again at its new size: 10-ui.js checkLayout) */
+#app.resizing .mn-fx,#app.settle .mn-fx,#app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
+@keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(33.3333%,-20%,0)}}
+@keyframes mn-cross{0%,74%{opacity:0;transform:translate3d(0,0,0) skewX(-18deg)}78%{opacity:1}94%{opacity:1}98%,100%{opacity:0;transform:translate3d(400%,0,0) skewX(-18deg)}}
+@keyframes mn-flow{0%{transform:translate3d(-9%,-7%,0)}50%{transform:translate3d(6%,5%,0)}100%{transform:translate3d(10%,-6%,0)}}
 
 
 /* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */

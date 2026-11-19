@@ -25,7 +25,7 @@ const MENU_ICO = {
   cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
   free: '<circle cx="15.5" cy="15.5" r="4.5"/><path d="M3 3l9 9"/>' };   // (each sign under its card's id)
 let menuIO = null;                                                     // (the cards in sight: menuPaint)
-const menuIco = k => { const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' }); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${MENU_ICO[k]}</svg>`; return s; };
+const menuIco = k => { const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' }); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${icoLift(MENU_ICO[k], 1.9)}</svg>`; return s; };   // (its shadow drawn in: 10-ui.js icoLift)
 // my rating and tier (economy.js TIER_AT; 33-desk-play.js TIERS)
 function myTier() {
   const dama = net.me && net.me.dama != null ? net.me.dama : ECONOMY.DAMA_START, T = ECONOMY.TIER_AT;
@@ -110,23 +110,27 @@ function menuPaint() {
     el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), (the icon
-  // still since 11-18), and (11-17 night) a soft light and shade flowing inside it; only a card in sight moves - 'mn-live' below -
+  // still since 11-18), (11-17 night) a soft light and shade flowing inside it, and (11-19) its small signs drifting on the
+  // diagonal in place of the dots (32-desk.js symLayer); only a card in sight moves - 'mn-live' below -
   // 84-menu.css. 11-17: the small tables, the bot standing in
   // 컴퓨터 대전's card and the strip shining were tried and taken out again - owner: too busy)
   const cards = MENU_CARDS.map((c, i) => {
     const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
     return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
-      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [el('b'), el('i')]),
+      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [symLayer(c.id, i), el('b', { class: 'lt' }), el('b', { class: 'dk' }), el('i', { class: 'x' })]),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
   layer.textContent = ''; layer.appendChild(row);
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
-  // (a card moves only while it is in sight: the rest wait, their animations paused)
+  // (a card moves only while it is in sight, or nearly: the rest wait without their moving layers - 84-menu.css gives
+  // those only to .mn-live, so the cards out of sight hold no memory on the graphics chip; owner 11-19, parts of the screen
+  // and some icons went missing on the tablet as the menu scrolled or the screen changed size. The margin: a card coming in
+  // gets its layers a little before it shows, not while the row is under the finger)
   if (menuIO) menuIO.disconnect();
-  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); }, { root: row, threshold: 0.05 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
+  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); }, { root: row, rootMargin: '0px 25%', threshold: 0 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
   else for (const c of [pc, ...cards]) c.classList.add('mn-live');
   menuFit(); row.scrollLeft = menuScroll;
   requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; });
