@@ -30,6 +30,9 @@
    the layer at the scale it first had - after the page is zoomed or resized, its text stayed blurred) */
 #deskPlane::before{content:'';position:absolute;inset:0;background:var(--desk-base,#6b4527) var(--desk-img,url(ui/desk.webp)) calc(0px - var(--ovw)) calc(0px - var(--ovh))/var(--desk-tile) repeat;will-change:opacity}
 #deskPlane>#desk{will-change:opacity}
+/* The menu scrolls in a sibling of the desk. Its stationary wood and felt can share
+   the plane's backing instead of reserving two fullscreen surfaces while cards scroll. */
+#app.mnon #deskPlane::before,#app.mnon #deskPlane>#desk{will-change:auto}
 #app.desk.tilt{background:#0b0806}
 #app.glhide #gl{visibility:hidden}   /* (the live table under the desk when nothing shows it: not drawn, not sized - 10-ui.js layout) */
 /* narrow: the rail turns into a row, the tray takes the middle, the slate the foot; nothing scrolls the table away.
@@ -68,8 +71,8 @@
 #app.desk.compact:not(.portrait) #desk>.dk-prop{display:none}
 /* light from the window at the upper right: soft beams falling across the desk to the lower left, over everything */
 #dkBeams{position:absolute;inset:var(--bar) 0 0 0;z-index:5;pointer-events:none;overflow:hidden}
-/* (put away while the window changes size on the home screen - 10-ui.js layoutSoon) */
-#app.resizing #deskPlane,#app.resizing #dkBeams{display:none}#app.resizing #dkCards{visibility:hidden}
+/* Keep the painted desk, light canvas and native scroller on screen throughout the
+   resize debounce. CSS stretches the existing light canvas until layout refits it. */
 /* (drawn once into a canvas at half size when the screen's size changes - 36-desk-paint.js deskBeams: four blurred, masked,
    turned beams were drawn again by the GPU every frame over the whole screen, and with the desk scrolling under them the
    tablet fell behind and flickered, owner 11-15) */

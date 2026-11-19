@@ -12,6 +12,50 @@ const { open } = require('./harness.js');
     try {
       const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const tap = async locator => { const b = await locator.first().boundingBox(); assert(b); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await settle(); };
+      if (w === 1280 && dpr === 2) {
+        // Observe the tap itself. Waiting for fullscreenchange alone misses the
+        // all-black interval between the request and the browser's acknowledgement.
+        await page.locator('#dkFull').evaluate(button => {
+          button.addEventListener('click', () => {
+            window.menuVisibleAtTap = ['deskPlane', 'dkCards', 'dkProps', 'dkBeams'].every(id => {
+              const el = document.getElementById(id);
+              return el.offsetWidth > 0 && getComputedStyle(el).visibility === 'visible';
+            });
+          }, { once: true });
+        });
+        await page.locator('#dkFull').tap();
+        assert(await page.evaluate(() => window.menuVisibleAtTap), 'the menu must remain painted during the fullscreen request');
+        await page.waitForFunction(() => document.fullscreenElement && !document.getElementById('app').classList.contains('resizing'));
+        const row = page.locator('.mn-row');
+        // Compare the stationary wood just under the bar on the side that went
+        // black in the tablet recording, while the independently scrolling row moves.
+        const bar = await page.locator('#deskBar').boundingBox();
+        const wood = { x: 24, y: Math.ceil(bar.y + bar.height) + 2, width: 160, height: 5 };
+        const reference = await page.screenshot({ clip: wood });
+        for (const end of [true, false, true]) {
+          await row.evaluate((r, end) => { r.scrollLeft = end ? r.scrollWidth : 0; }, end);
+          await settle();
+          const card = page.locator(end ? '.mn-card.k-free' : '.mn-pc');
+          assert(await card.evaluate(c => {
+            const b = c.getBoundingClientRect();
+            return c.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2));
+          }), 'the edge card must remain under the finger');
+          assert(reference.equals(await page.screenshot({ clip: wood })), 'scrolling changed the stationary wood');
+        }
+        const boundedRipple = await page.locator('.mn-card.k-free').evaluate(c => {
+          const b = c.getBoundingClientRect();
+          c.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.x + b.width / 2, clientY: b.y + 8, pointerType: 'touch' }));
+          const ink = c.querySelector('.fx-rip');
+          window.dispatchEvent(new PointerEvent('pointercancel'));
+          return ink && ink.offsetWidth === c.clientWidth && ink.offsetHeight === c.clientHeight;
+        });
+        assert(boundedRipple, 'the swipe ripple raster must fit inside its card');
+        await page.locator('#dkSet').tap();
+        assert.equal(await page.locator('#sheetTitle').innerText(), '설정');
+        await page.locator('#sheetX').click();
+        await page.locator('#dkFull').tap();
+        await page.waitForFunction(() => !document.fullscreenElement && !document.getElementById('app').classList.contains('resizing'));
+      }
       // Compare the table opening with the native-density layout, including the ranked-search strip.
       // (the cards open: the three ways come out of the middle and settle before one is tapped)
       // (플레이's menu: the card row on a wide screen - the card brought into view first; the desk's boards when upright)

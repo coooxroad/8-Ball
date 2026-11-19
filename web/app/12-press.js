@@ -20,7 +20,14 @@ function fxRipple(el, x, y) {
   let clip = host.querySelector(':scope > .fx-clip'); if (!clip) { clip = document.createElement('i'); clip.className = 'fx-clip'; host.appendChild(clip); }
   const w = host.offsetWidth, h = host.offsetHeight, px = (x - r.left) / r.width * w, py = (y - r.top) / r.height * h;
   const d = 2 * Math.hypot(Math.max(px, w - px), Math.max(py, h - py)), dot = document.createElement('i');
-  dot.className = 'fx-rip'; Object.assign(dot.style, { left: px - d / 2 + 'px', top: py - d / 2 + 'px', width: d + 'px', height: d + 'px', background: fxOf(el) });
+  dot.className = 'fx-rip'; dot.style.background = fxOf(el);
+  if (el.classList.contains('mn-card')) {
+    // A swipe starts as a press. Clip the same expanding circle inside the card,
+    // so its painted box never spans twice the diagonal of a fullscreen card.
+    dot.classList.add('mn-ripple');
+    dot.style.setProperty('--rip-x', px + 'px'); dot.style.setProperty('--rip-y', py + 'px');
+    dot.style.setProperty('--rip-r', d / 2 + 'px');
+  } else Object.assign(dot.style, { left: px - d / 2 + 'px', top: py - d / 2 + 'px', width: d + 'px', height: d + 'px' });
   clip.appendChild(dot); setTimeout(() => dot.remove(), 700);
 }
 document.addEventListener('pointerdown', e => {
