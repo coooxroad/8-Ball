@@ -71,8 +71,16 @@ const deskTableShown = () => $('#dkStage').dataset.win === '1';
 /* the window's light over the desk: four soft beams from the upper right falling to the lower left (each: from the right
    edge, its width, its strength), drawn once into a canvas at half size, blurred and faded along their length */
 const BEAMS = [[0, 190, .20], [.16, 90, .16], [.25, 240, .12], [.45, 110, .09]];
-let beamsAt = '';
+let beamsAt = '', beamsFrame = 0;
 function deskBeams() {
+  // Keep the existing canvas stretched over the desk for the first resized frame.
+  // Four blurred draws for the new size can follow once the menu is presented.
+  if (!beamsAt || !app.classList.contains('settle')) return paintDeskBeams();
+  if (!beamsFrame) beamsFrame = requestAnimationFrame(() => {
+    beamsFrame = 0; paintDeskBeams();
+  });
+}
+function paintDeskBeams() {
   const c = $('#dkBeams canvas'), box = $('#dkBeams'); if (!c) return;
   const W = box.clientWidth, H = box.clientHeight, k = 0.5, key = W + 'x' + H; if (!W || !H || key === beamsAt) return; beamsAt = key;
   c.width = Math.round(W * k); c.height = Math.round(H * k);

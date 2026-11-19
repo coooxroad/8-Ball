@@ -35,10 +35,17 @@
   background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 calc(30px*var(--u)) calc(3px*var(--u)) var(--glow,transparent),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s;
   --glow:color-mix(in srgb,var(--c1) 30%,transparent)}
 .mn-card:active{transform:translateY(3px)}
-/* every card (and the 선수증) a layer of its own, always: a press (12-press.js - the sink, the ripple) makes the pressed card
+.mn-card .mn-ripple{inset:0;border-radius:0;transform:none;clip-path:circle(0px at var(--rip-x) var(--rip-y))}
+@media (prefers-reduced-motion:no-preference){.mn-card .mn-ripple{animation-name:mn-ripple}}
+@keyframes mn-ripple{
+  from{clip-path:circle(0px at var(--rip-x) var(--rip-y))}
+  70%{opacity:.35}
+  to{clip-path:circle(var(--rip-r) at var(--rip-x) var(--rip-y));opacity:0}
+}
+/* Keep cards in and near view on their own layers: a press (12-press.js - the sink, the ripple) makes the pressed card
    one, and then all drawn after it - the cards to its right - were gathered into one new layer and drawn again, blinking
    while a finger rested on a card (owner 11-15; the layer tree before and after a press showed it). Kept, nothing moves. */
-.mn-card,.mn-pc{will-change:transform}
+.mn-live:is(.mn-card,.mn-pc){will-change:transform}
 .mn-card::after{content:"";position:absolute;inset:calc(8px*var(--u));top:calc(46px*var(--u));border-radius:calc(9px*var(--u));border:calc(2px*var(--u)) solid rgba(255,255,255,.85);pointer-events:none}
 .mn-card .strip{position:absolute;left:0;right:0;top:0;height:calc(38px*var(--u));display:flex;align-items:center;justify-content:center;padding:0 calc(8px*var(--u));background:#111;color:rgba(255,255,255,.9);
   font:800 calc(13.5px*var(--u)) var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -108,9 +115,9 @@
   .mn-live .mn-fx .lt{animation:mn-flow 16s ease-in-out infinite alternate;animation-delay:calc(var(--i,0) * -2.7s);will-change:transform}
   .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
 }
-.mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused}
+.mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused;will-change:auto}
 /* (none of them while the window changes size, nor just after, while the desk is drawn again at its new size: 10-ui.js checkLayout) */
-#app.resizing .mn-fx,#app.settle .mn-fx,#app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
+#app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
 @keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(25%,-14.2857%,0)}}
 @keyframes mn-cross{0%,74%{opacity:0;transform:translate3d(0,0,0) skewX(-18deg)}78%{opacity:1}94%{opacity:1}98%,100%{opacity:0;transform:translate3d(400%,0,0) skewX(-18deg)}}
 @keyframes mn-flow{0%{transform:translate3d(-9%,-7%,0)}50%{transform:translate3d(6%,5%,0)}100%{transform:translate3d(10%,-6%,0)}}
@@ -169,7 +176,7 @@
    own over the desk and under the cards (#dkProps, as #dkCards) - drawn at the screen's own sharpness, the plant hung
    from past the right edge under the bar, the towel draped past the left and bottom edges, so no picture edge shows. */
 #dkProps{display:none;position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
-#app.desk.mnon:not(.resizing) #deskPlane:not([hidden])~#dkProps{display:block}   /* (under the cards: #dkCards goes in after it - 37-desk-menu.js) */
+#app.desk.mnon #deskPlane:not([hidden])~#dkProps{display:block}   /* (under the cards: #dkCards goes in after it - 37-desk-menu.js) */
 #app.mnon #desk>.dk-prop.towel,#app.mnon #desk>.dk-prop.plant{display:none}
 #dkProps i{position:absolute;background-position:center;background-size:contain;background-repeat:no-repeat}
 #dkProps .plant{right:-8px;top:calc(var(--bar) - 34px);width:220px;height:220px;background-image:url(ui/plant.webp);filter:drop-shadow(-6px 10px 8px rgba(0,0,0,.35))}
