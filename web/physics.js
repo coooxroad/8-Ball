@@ -699,6 +699,15 @@ function createPhysics(cfg) {
     if (c && c.on && ev.hits.length < (POCKETED ? 1 : 2)) ev.run += DMath.hypot(c.x - c.px, c.y - c.py);
     const f = ev.firstHit != null ? w.balls[ev.firstHit] : null;
     if (f && f.px != null && (f.on || ev.pocketed.some(q => q.id === f.id))) ev.orun += DMath.hypot(f.x - f.px, f.y - f.py);
+    /* (a watch, only when something asked for one - the review's 'how near it came': w.watch = [{ a, b | x, y, after, d }]:
+       the least distance from ball a - -1, the ball met first - to ball b or the point x, y, once the cue ball has met
+       'after' balls. It only watches: nothing here changes how a shot runs) */
+    if (w.watch) for (const q of w.watch) {
+      const id = q.a === -1 ? ev.firstHit : q.a, A = id != null ? w.balls[id] : null; if (!A || q.after && ev.hits.length < q.after) continue;
+      if (!A.on && !ev.pocketed.some(p => p.id === id)) continue;
+      const B = q.b != null ? w.balls[q.b] : null, tx = B ? B.x : q.x, ty = B ? B.y : q.y, d = DMath.hypot(A.x - tx, A.y - ty);
+      if (!(d >= q.d)) q.d = d;
+    }
   }
 
   /* A shot is over when nothing is travelling. A ball can still be turning on the spot then (side dies last), but on a level

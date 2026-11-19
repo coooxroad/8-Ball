@@ -163,7 +163,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     같은 크기로 그리고, 기울어진 책상(`#deskPlane` 기울기)을 거꾸로 펴서(`botAnamorph`) 보는 사람에게 바로 서 보이게. 다른 봇 자리를 이어받은 봇은 `was`(옛 id의 승리를 그대로 셈 — `botWon`).
     경기 중 봇은 말풍선으로 말한다(`botTalk`, 이모티콘 대신): 대사는 `app/34-bot-lines.js` `BOT_LINES[id][관계 단계][순간]`에
     미리 써 둠(원어 + 한국어, 단계 0만 있음 — 단계를 더하면 없는 순간은 0으로 돌아감). 순간: hello·think·score·miss·nice·oops·win·lose.
-- 게임 리뷰(`app/50-review.js`, 말은 `app/50-review-words.js`): 두 사람의 모든 샷(관전·풀 브레이크 빼고)을 리뷰 전용 Worker에서
+- 게임 리뷰(`app/50-review.js`, 말은 `app/50-review-words.js`가 고르고 문장 은행 `app/50-review-lines.js`에서 꺼냄 — 문장을 늘리거나 고칠 땐 은행만 고치면 된다): 두 사람의 모든 샷(관전·풀 브레이크 빼고)을 리뷰 전용 Worker에서
   샷 심판(`ai/60-judge.js` `judgeShot`, 아래)이 매김 — 5등급(예술·좋음·무난·아쉬움·실수, 예술은 연보라)과 요행 딱지. 점수(예술·실용성)는
   안에서만 쓰고 숫자로 내보이지 않는다(소유자 11-17). 결과 슬레이트: 등급별 개수(나 · 상대)·샷 성공률·경기력(`REVIEW_PERF`)·잃은 곳 막대, '게임 리뷰'
   버튼(한 판 더 위) → 트레이에 인게임 3D 당구대(결과 화면 밑의 실제 테이블을 위에서 비추고 샷 테이프대로 굴려, 그린 프레임을 트레이

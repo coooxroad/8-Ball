@@ -175,6 +175,10 @@ for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
     g.hugu = true; g.chance = 0; g.turn = 1; g.world.cue = 1; g.players[1].score = 4;
     const l2 = K().caromLines(g.world, 1, K().judgeView(g.world, 1), true).find(x => x.p > 0.3);
     if (l2) { const t = judge({ angle: l2.angle, V: l2.V, a: l2.a, b: l2.b }); check(t.made ? t.tie && !t.won : t.lost, `4구 후구, caught up: a draw, not a win; missed: the game: ${say(t)}`); }
+    // (owner 11-19: '후구 상태라서 득점 못 하면 지는데 수비해서 좋습니다가 나옴' - in the 후구, a miss is the game: never good,
+    // never a safety)
+    const gone = judge({ angle: (l2 || l).angle + 1.2, V: 1.2 });
+    check(!gone.made && gone.lost && gone.grade >= 3 && gone.intent.kind !== 'safety' && gone.rule && gone.rule.chase, `4구 후구, missed: lost, never a good safety: ${say(gone)}`);
     break;
   }
 }

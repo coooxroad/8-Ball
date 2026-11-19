@@ -95,6 +95,8 @@
     const tie = won && hv.hugu && hv.chance != null && who !== hv.chance;
     if (tie) won = false;
     if (hv.hugu && hv.chance != null && who !== hv.chance && !made && !won && !tie) lost = true;
+    // (9볼, WPA: a third foul in a row loses - game.js resolve counts them)
+    if (g.modeId === 'nine' && r.foul && !won && (((hv.players || [])[who] || {}).foulRun || 0) >= 2) lost = true;
     return { ev, r, world: w, made, won, lost, pass, tie, foul: !!r.foul || !!off };
   }
 
@@ -355,6 +357,50 @@
     const give = res.r.give ? Math.min(0.05, res.r.give / 100) : 0;
     return { v: 1 - winOf(res.world, 1 - who, res.r, theirs) - give, mine: 0, theirs };
   }
+  /* ---- the rules as they stand at this shot (owner 11-19: '이제 8볼, 9볼, 3구도 규칙을 보는 거야') ----
+     what a commentator keeps in mind: 8볼 - the groups, the balls left to each, who is on the 8; 9볼 - the ball on, the fouls
+     in a row; carom - the points still wanted, the cushions a point asks for, a finish, 4구's 후구 */
+  function ruleOf(v, who, res) {
+    const m = g.mode, id = g.modeId, R = { mode: id, bih: !!m.ballInHand }, pl = v.players || [], me = pl[who] || {}, op = pl[1 - who] || {};
+    if (id === 'eight') {
+      const ids = grp => grp === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15], left = (grp, w) => grp ? ids(grp).filter(i => w.balls[i].on).length : null;
+      const mg = me.group || (res.r && res.r.assign) || null, og = op.group || (res.r && res.r.assign ? (res.r.assign === 'solid' ? 'stripe' : 'solid') : null);
+      R.open = !me.group; R.assign = res.r && res.r.assign || null; R.group = mg;
+      R.mine = left(me.group, v.world); R.theirs = left(op.group, v.world);
+      R.on8 = R.mine === 0; R.opp8 = R.theirs === 0;
+      R.mineAfter = left(mg, res.world); R.theirsAfter = left(og, res.world);
+      R.cleared = !!(res.made && !res.won && mg && R.mineAfter === 0);           // (the group done: the next is the 8)
+      R.eightIn = (res.ev.pocketed || []).some(q => q.id === 8);
+    } else if (id === 'nine') {
+      R.lowest = m.lowest(v); R.fouls = me.foulRun || 0; R.oppFouls = op.foulRun || 0;
+      R.left = v.world.balls.filter(b => b.on && b.id > 0).length;
+      R.early9 = !!(res.won && R.lowest !== 9);                                   // (the 9 down early: a combination or a carom)
+    } else if (!g.P.POCKETED) {
+      const c = m.ctx(v);
+      R.need = c.need || 0; R.finish = !!c.last; R.opening = !!c.opening;
+      const tg = v.targets || [], sc = [pl[0] && pl[0].score || 0, pl[1] && pl[1].score || 0];
+      R.left = tg[who] != null ? Math.max(0, tg[who] - sc[who]) : null; R.oppLeft = tg[1 - who] != null ? Math.max(0, tg[1 - who] - sc[1 - who]) : null;
+      R.chase = !!(v.hugu && v.chance != null && who !== v.chance); R.hugu = !!v.hugu; R.first = v.first === who;
+      // (both balls met, too few cushions: the point the rule did not count)
+      R.short = !res.made && !res.foul && (res.ev.hits || []).filter(i => i !== who).length >= 2 && (res.ev.cushions || 0) < R.need;
+    }
+    return R;
+  }
+  // how near a miss came, as a player sees it: carom - the cue ball's least gap to the ball it wanted second; pool - the ball
+  // met first, to the pocket meant (one more run, watched)
+  function nearOf(world, who, shot, meantRes) {
+    if (!meantRes || !meantRes.made) return null;
+    const P = g.P, w = P.clone(world); w.cue = P.POCKETED ? 0 : who;
+    let q;
+    if (P.POCKETED) { const pot = (meantRes.ev.pocketed || []).find(x => x.id !== 0); if (!pot) return null; const pk = P.POCKETS[pot.pocket]; q = { a: pot.id, x: pk.x, y: pk.y, d: Infinity, pk }; }
+    else { const second = meantRes.ev.hits[1]; if (second == null) return null; q = { a: w.cue, b: second, after: 1, d: Infinity }; }
+    w.watch = [q];
+    if (shot.pos) P.place(w, w.cue, shot.pos[0], shot.pos[1]);
+    P.strike(w, shot.angle, shot.V, shot.a || 0, shot.b || 0, shot.el || 0); P.run(w, 20); JUDGE.sims++;
+    if (!isFinite(q.d)) return null;
+    // (in ball widths: carom, the gap between the two; pool, how far the ball's centre stayed from the hole's mouth)
+    return P.POCKETED ? Math.round(Math.max(0, q.d - q.pk.r) / (2 * P.R) * 10) / 10 : Math.round(Math.max(0, q.d - 2 * P.R) / (2 * P.R) * 10) / 10;
+  }
   // (후구: after the last point, has the other no direct line - must they go to a cushion first? 4구's 빈쿠션)
   function forcedOf(res, who) {
     if (g.P.POCKETED) return null;
@@ -544,6 +590,10 @@
     const art = res.made && !fluke && practical && !!line && line.p <= hard && blocked;
     let grade = res.made && !res.foul ? (art ? 0 : practical ? 1 : 2) : loss <= cuts[0] ? 1 : loss <= cuts[1] ? 2 : loss <= cuts[2] ? 3 : 4;
     if (!res.made && meant && grade < 2) grade = 2;
+    // (a miss that ends the game - the 후구 not caught up, a third foul in 9볼 - is never good, whatever the table offered)
+    if (!res.made && res.lost && grade < 3) grade = 3;
+    // (a foul that costs - a ball in hand, a point - is never good: only 4구 played without the minus treats it as a miss)
+    if (res.foul && grade < 3 && !(g.modeId === 'four' && !g.minus)) grade = 3;
     // why it missed, for the words: the aim (thick or thin), the pace (soft or hard), the tip - or a better way
     let cause = null;
     const fr = res.r || {}, legal = g.mode.legal(view, who);
@@ -556,6 +606,9 @@
         if (T && c) { const centre = Math.atan2(T.y - c.y, T.x - c.x), off = x => Math.abs(Math.atan2(Math.sin(x - centre), Math.cos(x - centre))); cause = off(shot.angle) > off(shot.angle + meant.da) ? 'thin' : 'thick'; }
         else cause = 'aim';
       }
+      // (a kiss on the way - the shot as played was the line, near enough: the kiss took it - owner 11-19 '키스 때문에 다 된
+      // 공을 놓쳤습니다')
+      if (res.ev.kissPre > 0 && meant.why === 'aim' && Math.abs(meant.da) <= 0.012) cause = 'kiss';
     }
     const swing = swingOf(world, who), better = top && top.e - Math.max(asMeant, res.made ? A : -Infinity) > JUDGE.BETTER * swing ? top : null;
     /* where the shot lost what it lost (as golf's Strokes Gained is split by kind of shot, 11-18): the way chosen (the best
@@ -577,7 +630,7 @@
     const facts = factsOf(world, who, asShot || shot, meantRes && meantRes.made ? meantRes : res, view, shape);
     // (the ball potted and where; through another - a combination or a kiss - that other, the ball met first, as via)
     const potOf = rr => { const f = rr.ev.firstHit, q = (rr.ev.pocketed || []).find(x => x.id === f) || (rr.ev.pocketed || []).find(x => x.id !== 0); return q ? { id: q.id, pocket: q.pocket, via: q.id !== f ? f : null } : null; };
-    const intent = { kind: meant ? 'score' : !res.foul && !res.made && got.theirs < 0.25 ? 'safety' : 'none',
+    const intent = { kind: meant ? 'score' : !res.foul && !res.made && !res.lost && got.theirs < 0.25 ? 'safety' : 'none',
       target: meantRes && meantRes.made ? (g.P.POCKETED ? potOf(meantRes) : { first: meantRes.ev.firstHit, second: meantRes.ev.hits[1] }) : null,
       route: !g.P.POCKETED && meantRes && meantRes.made ? routeOf(meantRes.ev) : null, shape };
     const base = meant ? { facts, p: line ? line.p : null, leave: res.made ? got.mine : shape && shape.own ? shape.own.v : 0 } : null;
@@ -603,7 +656,11 @@
       // comes off, else the nearest success found)
       fix: meant && !res.made ? (cRes && cRes.made ? aimC : aimed) : null,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
-      blocked, forced: res.pass ? forcedOf(res, who) : null,
+      blocked, forced: res.pass ? forcedOf(res, who) : null, rule: ruleOf(view, who, res),
+      near: !res.made && !res.foul && meantRes && meantRes.made ? nearOf(world, who, shot, meantRes) : null,
+      // (pool: how far the cue ball sat from the nearest cushion before the shot and after - '쿠션에서 떼어', '쿠션에 붙었습니다')
+      rail: g.P.POCKETED && res.made ? (() => { const c0 = shot.pos ? { x: shot.pos[0], y: shot.pos[1] } : world.balls[0], c1 = res.world.balls[0], to = b => b && b.on !== false ? r2(Math.min(g.P.HL - Math.abs(b.x), g.P.HW - Math.abs(b.y)) - g.P.R) : null;
+        return { before: to(c0), after: to(c1) }; })() : null,
       grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, pass: !!res.pass, tie: !!res.tie, theirs: res.made && got.theirs != null ? r2(got.theirs) : null, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
       loss: Math.round(loss * 100) / 100, B: Math.round(B * 100) / 100, A: Math.round(A * 100) / 100,
