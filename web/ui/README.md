@@ -54,7 +54,7 @@ hand its own images to WebGL. Each replaces a drawn stand-in in scene.js once lo
 | wood-mahogany, wood-walnut | W1, W2 1024×512 | rails and apron, chosen by the cloth (look.js `grain`) |
 | wood-end | W3 512 | a carom table's pedestals (grain up and down) |
 | sight | T3 128 | the mother-of-pearl sights |
-| carpet-checker, carpet-geo | F1, F2 (768) | the floor under a pool / a carom table (2 m a repeat) |
+| carpet-checker, carpet-carom | F1, F3 (768) | the floor under a pool / a carom table (2 m a repeat; carpet-carom to come — till then a drawn one) |
 | diffuser | L1 512×256 | the underside of the hall's light box |
 | badge | B1 256×128 | the maker's plate on the apron |
 

@@ -184,10 +184,11 @@
     g.putImageData(id, 0, 0); return tex(c, 9);
   })();
   const floorMat = new THREE.MeshLambertMaterial({ map: carpet });
-  // the made carpets: grey checks under a pool table, the big triangles under a carom one (each a 2m square of tiles)
-  const floorOf = () => made[cur.POCKETED ? 'carpet-checker' : 'carpet-geo'] || carpet;
+  // the made carpets (each a 2m square of tiles): grey checks under a pool table; under a carom one a Korean hall's checks
+  // (tex/carpet-carom.webp, to come - owner 11-19: the big triangles there are gone; till it comes, the drawn one above)
+  const floorOf = () => made[cur.POCKETED ? 'carpet-checker' : 'carpet-carom'] || carpet;
   const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 1.05); floorMat.needsUpdate = true; } };
-  loadTex('carpet-checker', 9, putFloor); loadTex('carpet-geo', 9, putFloor);
+  loadTex('carpet-checker', 9, putFloor); loadTex('carpet-carom', 9, putFloor);
   let tableShadow = null;
   (function backdrop() {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), floorMat); m.position.z = -0.8; m.receiveShadow = true; m.layers.set(1); sScene.add(m);
