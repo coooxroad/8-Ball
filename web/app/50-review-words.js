@@ -293,8 +293,8 @@ function rvMade(q, kind, f) {
       if (f.bank) acks.push('okAck.bank');
       if (f.combo) acks.push('okAck.combo');
       if (!carom && f.cut >= 55) acks.push('okAck.cut');
-      acks.push('okAck.plain');
-      const ack = rvPick(q, 'okAck', acks.length > 1 ? acks.slice(0, -1).concat(acks.length === 2 ? [] : []) : acks, v) || rvLine(q, 'okAck.plain', v);
+      const plainAck = carom ? 'okAck.plain' : 'okAck.plain.pool';
+      const ack = acks.length ? rvPick(q, 'okAck', acks.concat([plainAck]), v) : rvLine(q, plainAck, v);
       const issue = rvLine(q, R.cleared ? 'okIssue.eight.cleared' : R.opp8 ? 'okIssue.eight.opp8' : carom ? (f.far ? 'okIssue.carom.far' : 'okIssue.carom') : r.rail && r.rail.after != null && r.rail.after < 0.04 ? 'okIssue.pool.rail' : v.next && rvSeq(q, 'okIssue') % 2 ? 'okIssue.pool.next' : 'okIssue.pool', v);
       rvUse(q, 'okIssue');
       const fix = !carom && f.sh && f.sh.dir ? rvLine(q, f.sh.dir === 'short' ? 'okFix.pool.short' : 'okFix.pool.long', v) : null;
