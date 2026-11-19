@@ -42,11 +42,15 @@ new MutationObserver(ms => {
     if (recent && k.textContent.trim() === L.text) { k.classList.add('fx-sel'); setTimeout(() => k.classList.remove('fx-sel'), 700); }
   }
   if (pressFx.enter) {
-    pressFx.enter = false; let i = 0;
-    for (const n of fresh) for (const k of [n, ...n.querySelectorAll('.bd, .dk-card, .dk-rb, .dk-main, .dk-sec')]) {
-      if (!(k.matches && k.matches('.bd, .dk-card, .dk-rb, .dk-main, .dk-sec'))) continue;
-      k.style.setProperty('--fx-i', Math.min(i++, 14)); k.classList.add('fx-in'); setTimeout(() => k.classList.remove('fx-in'), 900);
-    }
+    /* (in the order they stand on the page, each once, and only those still on it - owner 11-19: going between 상점 and
+       내 장비, some of the rail's keys came in late. The desk keeps a key painted as before (36-desk-paint.js deskReuse): the
+       new one is added, then taken out for the old, which goes back - so the records hold the new keys, gone again, and
+       then the old ones, counted after everything else and given the longest waits.) */
+    pressFx.enter = false; const S = '.bd, .dk-card, .dk-rb, .dk-main, .dk-sec', ks = new Set();
+    for (const n of fresh) if (n.isConnected) for (const k of [n, ...n.querySelectorAll(S)]) if (k.matches && k.matches(S)) ks.add(k);
+    [...ks].sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1).forEach((k, i) => {
+      k.style.setProperty('--fx-i', Math.min(i, 14)); k.classList.add('fx-in'); setTimeout(() => k.classList.remove('fx-in'), 900);
+    });
   }
   for (const n of fresh) for (const k of [n, ...n.querySelectorAll('.dk-main:not([disabled]), .bd-rank')]) {
     if (!(k.matches && k.matches('.dk-main:not([disabled]), .bd-rank')) || k.querySelector(':scope .fx-shine')) continue;
