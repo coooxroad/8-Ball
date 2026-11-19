@@ -10,4 +10,4 @@
   const review = played => judgeShot(played);
   // The lobby opts into v3 using the rating it will display and settle the match against.
   // (judgeKit: the judge's parts, for the tests and the tuning tools - web/test/judge.js)
-  return { plan, review, judgeKit: { JUDGE, potLines, potExtras, caromLines, cushionFirst, judgeAim, leaveOf, leaveTeach, judgeView, judgeSim, winChance, winOf, winRace, routeOf, shapeOf, whyBetter, raisedShots }, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };
+  return { plan, review, judgeKit: { JUDGE, potLines, potExtras, caromLines, cushionFirst, judgeAim, leaveOf, leaveTeach, judgeView, judgeSim, winChance, winOf, winRace, routeOf, shapeOf, whyBetter, raisedShots, STROKE_SET, PACE, strokeFeatures, strokeGuess }, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };
