@@ -1,76 +1,66 @@
-# CUE image prompts — main menu card props, v2 (owner 11-20)
+# Brief for the image generator — CUE main menu card props (7 images)
 
-v1 asked for "a real product photograph" — wrong for our UI (the 다이아·코인 pictures show the same problem: flat, real
-textures, no volume). What worked is the 선수증's tier ball: **a clean 3D render** — one chunky simple form, smooth
-material, big soft studio reflections, no fine texture, light from the upper right. v2 asks for exactly that, and uses the
-tier ball itself as the style reference.
+You are making 7 icon images for **CUE**, a premium billiards mobile game. Each image is a 3D prop that sits large in the
+middle of one main-menu card (the cards are printed colour cards: blue, green, red, amber, purple, slate, olive).
+The attached image `style-ref-tier-ball-gold.png` (a gold metallic 8 ball) is the **style reference**: it is the one
+picture in the game that fits the UI perfectly. Every prop must look like it was rendered by the same artist, in the same
+studio, with the same light.
 
-## 사용법 (소유자)
+## How to work
 
-1. ChatGPT 새 채팅에 `style-ref-tier-ball-gold.png`(같이 보낸 파일)를 붙이고, 아래 **STYLE** 블록 + **menu-rank** 블록을 그대로 붙여 넣는다.
-2. 마음에 들 때까지 **한 번에 한 가지만** 고쳐 달라고 한다(예: "더 단순하게, 표면 결 없이", "더 통통하게"). 여러 개를 한꺼번에 바꾸면 무엇이 효과였는지 모른다.
-3. 하나가 맞으면 **같은 채팅에서** 그 그림을 다시 붙이고 다음 블록을 넣는다: "Image 1 is the approved style. Same render style, light, angle and size. Do not change the style." (STYLE 블록은 매번 같이 넣는다.)
-4. 받은 PNG가 **진짜 투명**인지 본다 — 회색·흰 체크무늬가 그림에 그려져 있으면 투명이 아니다. 그러면 "transparent background, real alpha, no drawn checkerboard"로 다시.
-5. 7장을 나란히 놓고 크기·빛·각도가 같은지, 작게(64px) 줄여도 무엇인지 보이는지 본다.
+1. Make **one image per reply**, in the order below, starting with `menu-rank`. Never put several props in one image, never
+   make a sheet or a grid.
+2. Each image is a **separate PNG file with a real transparent background** (real alpha). Do not draw a grey-and-white
+   checkerboard — a drawn checkerboard is not transparency.
+3. After each image, stop and wait. I will say "OK" or ask for one change. When I ask for a change, change only that and
+   keep everything else (style, light, angle, size).
+4. From the second image on, use **both** the style reference and the approved images so far as references: same render
+   style, light, camera angle and size in frame. Do not change the style.
+5. Name each file as its ID (`menu-rank.png`, `menu-friend.png`, …).
 
-너무 현실적으로 나오면: "less realistic — simpler shapes, smooth surfaces, no texture, no wear, like a polished game icon render".
-너무 귀엽게 나오면: "not cute, not cartoon, no clay look, no pastel — premium, grown-up".
+## STYLE (applies to every image)
 
----
+- **Medium:** stylized 3D game UI icon, a clean CG render — NOT a photograph, NOT a product photo, NOT a drawing or
+  illustration.
+- **Match the reference:** simple chunky volume, smooth flawless surfaces, polished metal and glossy enamel with large soft
+  studio-softbox reflections, rich but natural colour, crisp edges.
+- **Forms:** one object (or a tight small group), simplified and slightly chunky — fewer, bigger parts, bevelled edges.
+  No fine texture, no grain, no scratches, no wear, no tiny details.
+- **Mood:** premium and grown-up — the players are of every age, many over 40. Not cute, not cartoon, no faces, no clay
+  look, no pastel, no glitter, no sparkles.
+- **Camera:** three-quarter view from the front, a little from above (about 20°). The same for all seven.
+- **Light:** one large soft light from the upper right, a gentle fill from the left, a soft semi-transparent contact shadow
+  under the object falling to the lower left (part of the image).
+- **Composition:** 1024 × 1024, the object centred, filling about 75% of the width, a clear empty margin all round, a strong
+  silhouette that still reads when shrunk to 64 px.
+- **Background:** transparent. No floor, no backdrop, no scene.
+- **Never:** text, letters, numbers, logos, brand marks, watermarks, frames, borders.
 
-## STYLE (paste with every prompt)
+If a result looks too realistic: make it simpler — smoother surfaces, no texture, no wear, like a polished game icon render.
+If it looks too cute: make it more premium and grown-up — no clay, no pastel, no cartoon proportions.
 
-```
-Use: a large icon in the middle of a main-menu card of a premium billiards mobile game (the card is a printed colour card; the icon sits on it).
-Medium: stylized 3D game UI icon, a clean CG render — NOT a photograph, NOT a product photo, NOT a drawing.
-Style reference: Image 1 (the metallic 8 ball) — match its render: simple chunky volume, smooth flawless surfaces, polished metal and glossy enamel with large soft studio-softbox reflections, rich but natural colour, crisp edges.
-Forms: one object (or a tight group), simplified and slightly chunky — fewer, bigger parts; bevelled edges; no fine texture, no grain, no scratches, no wear, no small details.
-Mood: premium and grown-up (players of every age, many over 40). Not cute, not cartoon, no faces, no clay, no pastel, no glitter, no sparkles.
-Camera: three-quarter view from the front, a little from above (about 20°).
-Light: one large soft light from the upper right, a gentle fill from the left, a soft contact shadow under the object falling to the lower left (semi-transparent, part of the image).
-Composition: 1024×1024, the object centred, filling about 75% of the width, clear empty margin all round, strong silhouette that still reads at 64 px.
-Background: transparent (real alpha). No floor, no backdrop, no scene.
-Never: text, letters, numbers, logos, brand marks, watermarks, frames, borders.
-```
+## The seven props, in order
 
-## The seven (paste one at a time, after STYLE)
+1. **menu-rank** (on a royal blue card) — a championship trophy cup in polished gold metal (the same gold as the reference
+   ball): a wide bowl with two simple rounded handles on a short stem, standing on a thick square base of glossy black
+   enamel. Plain — no engraving, no plate, no figure on top.
+2. **menu-friend** (on a billiard green card) — two billiard balls touching side by side as a pair: a glossy white cue ball
+   and a glossy red ball, the red one slightly behind and to the right. Plain balls, no numbers, no stripes.
+3. **menu-lesson** (on a deep red card) — a closed thick book with a soft black leather cover and rounded corners, lying flat,
+   turned a little; on top of it a chunky cube of blue billiard chalk with a slightly dished top. No writing, no ribbon.
+4. **menu-puzzle** (on an amber card) — a billiard pocket as one object: a round polished chrome ring set on a black leather
+   cup, with a glossy red ball resting on the very edge of the ring, about to drop in. Nothing else.
+5. **menu-arcade** (on a purple card) — three thick game cards fanned out and standing at an angle, their faces deep navy
+   enamel with one simple raised shape each (a circle, a triangle, a diamond), their edges glowing softly cyan and violet
+   (the only glowing prop in the set); a glossy black billiard ball in front of them, no number.
+6. **menu-cpu** (on a slate blue card) — a sleek robotic gripper: a polished silver metal arm end with two smooth rounded
+   fingers and dark grey joints, holding a glossy white cue ball. Industrial and precise — not a toy, no face, no eyes,
+   no lights.
+7. **menu-free** (on an olive green card) — a billiard triangle rack in glossy dark walnut with gold-metal corner caps,
+   lying flat, with three glossy plain balls inside it (yellow, blue, red) and a white cue ball just outside it. No numbers.
 
-**menu-rank** (card: royal blue)
-```
-Subject: a championship trophy cup in polished gold metal (like Image 1's gold), a wide bowl with two simple rounded handles on a short stem, standing on a thick square base of glossy black enamel. Plain — no engraving, no plate, no figures on top.
-```
+Before finishing, check: all seven share the same light, angle and size in frame; each is a separate transparent PNG;
+none has text or looks like a photograph or a toy.
 
-**menu-friend** (card: billiard green)
-```
-Subject: two billiard balls touching side by side as a pair — a glossy white cue ball and a glossy red ball, the red one slightly behind and to the right. Plain balls, no numbers, no stripes.
-```
-
-**menu-lesson** (card: deep red)
-```
-Subject: a closed thick book with a soft black leather cover and rounded corners, lying flat, turned a little; on top of it a chunky cube of blue billiard chalk with a slightly dished top. No writing on the book, no bookmark ribbon.
-```
-
-**menu-puzzle** (card: amber)
-```
-Subject: a billiard pocket seen as one object — a round polished chrome ring set on a black leather cup — with a glossy red ball resting on the very edge of the ring, about to drop in. Nothing else.
-```
-
-**menu-arcade** (card: purple)
-```
-Subject: three thick game cards fanned out and standing at an angle, their faces deep navy enamel with one simple raised geometric shape each (a circle, a triangle, a diamond), their edges glowing softly in cyan and violet — the only glowing icon in the set; a glossy black billiard ball in front of them, no number.
-```
-
-**menu-cpu** (card: slate blue)
-```
-Subject: a sleek robotic gripper — a polished silver metal arm end with two smooth rounded fingers and dark grey joints — holding a glossy white cue ball. Industrial and precise, not a toy, no face, no eyes, no lights.
-```
-
-**menu-free** (card: olive green)
-```
-Subject: a billiard triangle rack in glossy dark walnut with gold-metal corner caps, lying flat, with three glossy plain balls inside it (yellow, blue, red) and a white cue ball just outside it. No numbers on the balls.
-```
-
----
-
-When they are in: name them `menu-rank.png` … `menu-free.png` (or zip `CUE-batch-menu-props.zip`). Claude makes them
-512 × 512 WebP `web/ui/menu-<id>.webp`; they show with 디버그 · 메인 카드 그림 · 3D 소품.
+<!-- For Claude, not the generator: the PNGs become 512 × 512 WebP web/ui/menu-<id>.webp, shown with
+     디버그 · 메인 카드 그림 · 3D 소품 (app/37-desk-menu.js menuIco). -->
