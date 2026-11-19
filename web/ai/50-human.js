@@ -2,6 +2,8 @@
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
   // (the most tables a plan plays out, whatever else it adds - a phone's worth of time; web/test/ai-human.js holds it to 150)
   const SIM_CAP = 145;
+  // (the aim's scatter, tuned against the ratings' scoring rates after the way's share came in - web/tools/bots.js)
+  const AIM_K = { base: 1, diff: 1 };
   function humanPlan(persona) {
     const person = humanPerson(persona), skill = person.skill, practice = person.practice, turn = humanTurn(person), P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
@@ -71,7 +73,7 @@
         value -= (1 - skill) * (Math.min(ev.cushions, 3) * 2.2 + Math.hypot(shot.a, shot.b) * 2);
         if (!made && safe && ev.hits.length) value += 1;
       }
-      return { shot, safe, made, value, ev, r, world: copy, legs: legsOf(ev, shot) };
+      return { shot, safe, made, value, ev, r, world: copy, legs: legsOf(ev, shot), pf: pathFactor(ev, shot) };
     };
     // how far round the cushions the line goes before it is made, past what the game asks for anyway (3쿠션's three)
     function legsOf(ev, shot) {
@@ -79,7 +81,17 @@
       const n = pool ? (ev.pre || 0) + (shot.kind === 'bank' && shot.route === 'object-bank' ? 1 : 0) : (ev.cushions || 0) - Math.max(0, (g.modeId === 'three' ? g.cushions : ctx.need || 0) - 1);
       return Math.max(0, Math.min(6, n));
     }
-    const legsFactor = legs => 1 + legs * (0.14 + 0.4 * (1 - skill) ** 1.5);
+    /* How far astray the way itself takes an ordinary hand (owner 11-19 noon: '봇의 성공률은 길의 공이 이동한 거리, 쿠션 수에
+       따라 정하고 복합적으로 회전, 맛세이'): the length of the way (the cue ball to its second ball; in pool to the ball and
+       that ball to its pocket - physics.js ev.run, ev.orun), each cushion past what the game asks, the tip off the centre,
+       the cue raised - each costs a weaker hand more. A factor on the aim's scatter (the scatter itself already grows with
+       the distance at the far end: this is what a long way adds to it - the cloth, the pace held over it, the rails). */
+    function pathFactor(ev, shot) {
+      const L = ev ? (pool ? (ev.run || 0) + (ev.orun || 0) : ev.run || 0) : (shot.distance || 0.8) * (pool ? 1.6 : 1.3), weak = 1 - skill;
+      const spin = Math.hypot(shot.a || 0, shot.b || 0), el = shot.el || 0, raised = el > 0.5 ? 1 : el > 0.15 ? 0.4 : 0;
+      return (1 + Math.max(0, L - (pool ? 1.1 : 1.4)) * (0.08 + 0.32 * weak)) * (1 + legsOf(ev, shot) * (0.12 + 0.4 * weak ** 1.5))
+        * (1 + spin * (0.12 + 0.45 * weak)) * (1 + raised * (0.25 + 1.1 * weak));
+    }
     if (g.isBreak && pool) {
       const y = (rand() - 0.5) * P.HW * 0.7, pos = [-P.HL / 2 - 0.04, y];
       const apex = targets.map(id => w.balls[id]).sort((a, b) => a.x - b.x)[0], angle = Math.atan2(apex.y - y, apex.x - pos[0]);
@@ -161,13 +173,12 @@
        they shoot with (below) - is tried both ways; the share that still scores is how sure the line is. A thin cut or a
        long one is a gamble for an unsure hand and nothing to a sure one, so a weak player takes the thick, plain shot and
        a strong one the line that leaves the next. Deterministic: no random numbers. */
-    const aimSigma = shot => {
-      const diff = clamp(shot.difficulty + Math.hypot(shot.a, shot.b) * 0.65 + g.powerOf(shot.V) * 0.25 + shot.el * 0.4, 0, 2.5);
-      return (pool ? 1 : 0.20) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7);
-    };
+    // (the scatter of the aim, before the way's own share - pathFactor: the shot's own difficulty and its pace)
+    const aimDiff = shot => clamp(shot.difficulty * AIM_K.diff + g.powerOf(shot.V) * 0.25, 0, 2.5);
+    const aimSigma = shot => (pool ? 1 : 0.20) * AIM_K.base * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + aimDiff(shot) * 1.7);
     const paceSigma = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
-    const sure = (shot, legs = 0) => {
-      const sa = aimSigma(shot) * 1.4 * legsFactor(legs), sp = paceSigma * 1.2 * (1 + legs * 0.12); let n = 0, k = 0;
+    const sure = (shot, pf = 1, legs = 0) => {
+      const sa = aimSigma(shot) * 1.4 * pf, sp = paceSigma * 1.2 * (1 + legs * 0.12); let n = 0, k = 0;
       for (const [da, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (sims >= budget) break;
         const s = simulate({ ...shot, angle: shot.angle + da * sa, V: speed(shot.V * (1 + dv * sp)) }); n++; k += s.made ? 1 : 0;
@@ -189,7 +200,7 @@
     const consider = shot => {
       if (sims >= budget) return;
       const r = simulate(shot);
-      if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.legs); r.value -= (1 - r.sure) * missCost; }
+      if (ranked && r.made && r.value < 100) { r.sure = sure(shot, r.pf, r.legs); r.value -= (1 - r.sure) * missCost; }
       if (ranked) r.value += (rand() - 0.5) * (0.35 + (1 - skill) ** 2 * 3.1) + (shot.kind === 'safety' ? style.safety * 0.8 : 0);
       if (!best || r.value > best.value) { alternative = best; best = r; }
       else if (!alternative || r.value > alternative.value) alternative = r;
@@ -262,8 +273,8 @@
     // Carom's scoring window is much narrower than a pocket; motor scatter is scaled separately from shot reading.
     // (nerves: the shot that matters shakes a nervous player's hand a little, less so one with grit)
     const pressure = humanPressure(), shake = 1 + pressure * (character.nerves * 0.9 + (1 - practice.grit) * 0.3) * (1 - skill * 0.5);
-    const legs = ranked ? (best && best.shot === chosen ? best.legs || 0 : legsOf(null, chosen)) : 0;
-    const angleError = (pool ? 1 : ranked ? 0.20 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake * legsFactor(legs);
+    const legs = ranked ? (best && best.shot === chosen ? best.legs || 0 : legsOf(null, chosen)) : 0, pf = ranked ? (best && best.shot === chosen && best.pf ? best.pf : pathFactor(null, chosen)) : 1;
+    const angleError = (ranked ? aimSigma(chosen) * pf : (pool ? 1 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7)) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake;
     const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28) * (1 + legs * 0.12);
     const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)) + (person.quirk === 'heavy' && chosen.kind !== 'masse' ? (pool ? 0.05 : 0.03) * (1 - skill * 0.6) : 0), 0, 1);
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;

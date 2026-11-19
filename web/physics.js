@@ -92,7 +92,10 @@ function createPhysics(cfg) {
     }
   })();
 
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, seq: [] }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+  // (run: how far the cue ball went before its second ball - carom - or its first - pool; orun: how far the ball it met first
+  // went after (to a pocket, or till it stopped): the length of a shot's way, which the person-like players miss by -
+  // ai/50-human.js pathFactor)
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, seq: [], run: 0, orun: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
     // seq: what the cue ball met, in order, up to 10 (a ball's id; 'L' a long cushion, 'S' a short one) - the route the review names (ai/62-intent.js);
     // pre: cushions the cue ball met before any ball;   // kiss: two balls other than the cue ball met (쫑) after the cue ball's first contact - the computer player reads it (ai/50-human.js);   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
@@ -689,6 +692,10 @@ function createPhysics(cfg) {
     const n = Math.max(1, Math.ceil(vmax * dt / (R * 0.3)));
     const h = dt / n;
     for (let i = 0; i < n; i++) sub(w, h);
+    const ev = w.ev, c = w.balls[w.cue]; if (!ev) return;
+    if (c && c.on && ev.hits.length < (POCKETED ? 1 : 2)) ev.run += DMath.hypot(c.x - c.px, c.y - c.py);
+    const f = ev.firstHit != null ? w.balls[ev.firstHit] : null;
+    if (f && f.px != null && (f.on || ev.pocketed.some(q => q.id === f.id))) ev.orun += DMath.hypot(f.x - f.px, f.y - f.py);
   }
 
   /* A shot is over when nothing is travelling. A ball can still be turning on the spot then (side dies last), but on a level
