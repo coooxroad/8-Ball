@@ -54,7 +54,7 @@ const prefs = (() => {
     theme: 'dark',                     // 화면 모드 (owner 11-15): 'dark' - walnut desk, green tray, green keys (the default); 'light' - oak and blue
     deskWoodTry: null, deskTrayTry: null, // 디버그: a wood and a tray to try over the mode's (DESK_LOOK; null: the mode's own)
     oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-menu.js)
-    menuProps: false,                  // 디버그: the menu cards' signs - false the line icons, '2d' drawn flat, '3d' (or true, as first saved) rendered props (37-desk-menu.js menuIco)
+    menuProps: false,                  // 디버그: the menu cards' signs - false the line icons, '3d' (or true, as first saved) rendered icons (37-desk-menu.js menuIco)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
