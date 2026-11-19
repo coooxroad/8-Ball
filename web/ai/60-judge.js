@@ -39,6 +39,7 @@
     // a line this hard or harder for the reference hand is a hard one (예술 asks for it)
     HARD: { pool: 0.35, snooker: 0.35, four: 0.25, three: 0.12 },
     SAMPLES: 16,
+    NET_STROKES: 3,     // the strokes the stroke network adds to a shot's own carom sweep (58-stroke-net.js, 11-19)
     sims: 0,            // (copies played so far: the cost, read by the tests)
   };
   const erf = x => { const s = Math.sign(x), a = Math.abs(x), t = 1 / (1 + 0.3275911 * a); return s * (1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a)); };
@@ -228,6 +229,20 @@
     if (three) return (full ? [[1, 0.45, 0.15], [1, -0.45, 0.15], [1.25, 0.45, -0.25], [1.25, -0.45, -0.25], [0.85, 0, 0.3]] : [[1.1, 0.4, 0.1], [1.1, -0.4, 0.1]]).map(([v, a, b]) => ({ V: V(v), a, b }));
     return (full ? [[0.85, 0, 0], [1.1, 0, 0.3], [1.1, 0, -0.3], [1.25, 0.35, 0]] : [[1, 0, 0.15]]).map(([v, a, b]) => ({ V: V(v), a, b }));
   };
+  // the strokes swept off one ball: the usual few, and for a shot's own lines the ones the stroke network (58-stroke-net.js)
+  // sees most likely to score off that ball on this table - the line a fixed few would miss (none without its weights)
+  function caromStrokesFor(world, who, id, full) {
+    const base = caromStrokes(full); if (full !== true) return base;
+    const three = g.modeId === 'three' && (g.cushions || 0) >= 3; if (!three && g.modeId !== 'four') return base;
+    const guess = strokeGuess(three ? 'three' : 'four', world, who, id, 6); if (!guess) return base;
+    const V = x => x * (three ? 5.0 : 3.3) * PACE.carom, set = STROKE_SET[three ? 'three' : 'four'], out = base.slice();
+    for (const { i, p } of guess) {
+      if (out.length >= base.length + JUDGE.NET_STROKES || p < 0.08) break;
+      const [v, a, b] = set[i], st = { V: V(v), a, b };
+      if (!out.some(o => Math.abs(o.V - st.V) < 0.08 * st.V && Math.abs(o.a - a) < 0.1 && Math.abs(o.b - b) < 0.1)) out.push(st);
+    }
+    return out;
+  }
   function caromLines(world, who, view, full) {
     const P = g.P, c = world.balls[who], out = [], steps = full === 'teach' ? 40 : full ? 26 : (g.modeId === 'three' ? 11 : 14);
     if (!c || !c.on) return out;
@@ -236,7 +251,7 @@
     for (const id of ids) {
       const T = world.balls[id], d = Math.hypot(T.x - c.x, T.y - c.y); if (d < 2 * P.R * 1.01) continue;
       const base = Math.atan2(T.y - c.y, T.x - c.x), half = Math.asin(Math.min(0.99, 2 * P.R / d)) * 0.985;
-      for (const st of caromStrokes(full)) {
+      for (const st of caromStrokesFor(world, who, id, full)) {
         const at = i => base - half + 2 * half * i / steps, hit = [];
         for (let i = 0; i <= steps; i++) hit.push(scores({ angle: at(i), ...st }));
         for (let i = 0; i <= steps; i++) {

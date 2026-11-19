@@ -190,6 +190,12 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   못 넣는 큐 세운 샷은 감점; `50-human.js` `missCost` — 빗나감의 값이 성향·종목별, 수비파는 불확실한 공 대신 수비),
   **경향**(스타일 수치, 봇 대전으로 확인: `node web/tools/bots.js <종목> [판 수] [봇 id들]`), **버릇**(`HUMAN_QUIRKS`, 봇마다
   `quirk` — 두꺼운 공만·세게·쿠션 고집·잠금·보여 주기·깊게 끌기·휘는 공). 초보와 3쿠션은 대개 수비보다 시도. 한 계획 시뮬레이션 상한 `SIM_CAP` 145.
+  11-19 낮: 봇의 조준 오차는 길로(`pathFactor` — 수구가 둘째 공까지, 포켓은 수구+목적구 간 거리 `ev.run`·`ev.orun`, 쿠션 수, 회전, 큐 세움;
+  약한 손일수록 더), 커브샷(큐 20~35°, `masseCurves`의 curve 12개 — 맛세이·스핀 성향은 열린 공에도), 랭킹전 대역의 버릇은 이름에서
+  (`standInQuirk`, 셋 중 둘).
+- 스트로크 신경망(`ai/58-stroke-net.js`, 가중치 `ai/57-stroke-net-w.js`, 11-19): 공 하나를 먼저 맞힐 때 어느 세기·당점(`STROKE_SET` 28개)이
+  득점 길을 내는지 판마다 예측 — 심판의 캐롬 쓸기(`caromStrokesFor`)가 고정 몇 개에 더해 망이 고른 `JUDGE.NET_STROKES`개를 더 쓸어
+  최선샷을 놓치지 않게. 라벨 `web/tools/net/strokes.js`(GitHub Actions 'Label strokes'), 학습 `web/tools/net/train-strokes.js`.
 - 캐롬 자리 가치 신경망(`ai/56-leave-net.js`, 가중치 `ai/55-leave-net-w.js`): 느리고 꼼꼼한 쓸기(`leaveTeach`)를 선생님으로 배운 작은
   망(64·64). 라벨은 GitHub Actions 'Label'(`.github/workflows/label.yml`, 16대, `web/tools/net/label.js`), 학습은
   `node web/tools/net/train.js <four|three> <라벨 폴더>`(라이브러리 없음, 몇 분). 가중치가 없는 종목은 예전처럼 쓸어서 잰다.
