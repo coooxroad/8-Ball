@@ -29,7 +29,7 @@
      the flair of the shots they like when those score, the cost of a miss to a careful player), how often (the style's
      numbers, checked by web/tools/bots.js) and one quirk of their own, the same every game.)
      FLAIR: what a liked shot is worth when it scores, at a style's liking of 1 (a scored pot or point is 10). */
-  const FLAIR = { bank: 2.2, masse: 2.6, jump: 3, spin: 1.8 };
+  const FLAIR = { bank: 2.2, masse: 6.5, curve: 0.9, jump: 3, spin: 1.8 };
   // a quirk: one habit a player keeps (a bot's, 34-desk-bots.js), the same every game - something to notice and play against
   const HUMAN_QUIRKS = {
     thick: '두꺼운 공만 본다',        // thin cuts unseen (pool: a cut past about 37 degrees; carom: past a third of a ball off)
@@ -40,11 +40,21 @@
     deep: '늘 깊게 끈다',             // the deep draw first among the strokes
     curve: '휘는 공을 좋아한다',        // a massé worth a third as much again
   };
+  /* A stand-in's habit (owner 11-19 noon: '대역도 좀 건드려'): two in three have one, read from the name - the same stand-in
+     keeps it - and one that suits the style (a massé lover's curve, a banker's cushions, a careful player's lock). */
+  function standInQuirk(name, style) {
+    let h = 17; for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    if (h % 3 === 0) return {};
+    const fits = { masse: ['curve', 'show'], banker: ['cushion', 'show'], defensive: ['lock'], power: ['heavy'], draw: ['deep'], natural: ['thick'],
+      showman: ['show', 'curve'], spinner: ['curve', 'show'] }[style] || ['thick', 'heavy', 'lock', 'deep', 'show'];
+    return { quirk: fits[(h >>> 4) % fits.length] };
+  }
   function humanFlair(person, shot) {
     const s = person.style, q = person.quirk, show = q === 'show' ? 1.33 : 1;
     if (shot.kind === 'bank') return s.bank * FLAIR.bank * (q === 'cushion' ? 1.5 : 1) * show;
     if (shot.kind === 'masse') return s.masse * FLAIR.masse * (q === 'curve' ? 1.33 : 1) * show;
     if (shot.kind === 'jump') return s.masse * FLAIR.jump * show;
+    if (shot.kind === 'curve') return (s.masse * 0.7 + s.spin * 0.5) * FLAIR.curve * (q === 'curve' ? 1.33 : 1) * show;
     return shot.kind === 'spin' ? s.spin * FLAIR.spin : 0;
   }
   plan.quirks = HUMAN_QUIRKS;
@@ -78,7 +88,7 @@
     const rating = ranked ? dama : Math.round(Math.max(10, Math.min(120, Number.isFinite(dama) ? dama : 30)));
     const skill = ranked ? rankedSkill(rating) : humanSkill(rating);
     const level = ranked ? (rating < 800 ? 0 : rating < 1400 ? 1 : 2) : (rating < 22 ? 0 : rating < 40 ? 1 : 2);
-    const person = { version: ranked ? 3 : 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill, level, personality: { ...personality }, style: { ...style }, ...(HUMAN_QUIRKS[overrides.quirk] ? { quirk: overrides.quirk } : {}) };
+    const person = { version: ranked ? 3 : 2, name, icon: Math.min(7, Math.max(0, Math.floor(random() * 8))), dama: rating, skill, level, personality: { ...personality }, style: { ...style }, ...(HUMAN_QUIRKS[overrides.quirk] ? { quirk: overrides.quirk } : ranked && !('quirk' in overrides) ? standInQuirk(name, style.id) : {}) };
     return { ...person, practice: humanPractice(person) };
   }
   function humanPerson(persona) {

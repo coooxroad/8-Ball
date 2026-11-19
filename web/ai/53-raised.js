@@ -40,12 +40,13 @@
         }
       }
       const shut = raisedShut(world, c, gx, gy, [T.id]), touching = !P.POCKETED && d < 2 * P.R + 0.05;
-      if (!shut && !touching && !opt.all) continue;
+      // (an open ball: only the gentle curve, and only for a player who reaches for it - opt.curve)
+      const open = !shut && !touching && !opt.all; if (open && !opt.curve) continue;
       const base = Math.atan2(gy - c.y, gx - c.x);
       // a jump: over the ball in the way, not too close to lift off nor at the target's own side
       if (opt.jump && P.POCKETED && shut && shut.d > 0.1 && shut.d < Math.hypot(gx - c.x, gy - c.y) - 0.12)
         for (const el of [0.6, 0.8]) for (const pw of [0.78, 0.95]) out.push({ pos: null, angle: base, V: g.vOf(pw), a: 0, b: 0, el, target: T.id, pocket, kind: 'jump', difficulty: 1.4 + el * 0.4 });
-      if (opt.masse) out.push(...masseAims(world, c, T, gx, gy, pocket, opt));
+      if (opt.masse) out.push(...masseAims(world, c, T, gx, gy, pocket, open ? { ...opt, only: 'curve' } : opt));
     }
     return opt.masse ? masseOrder(out, cap) : out.slice(0, cap);
   }
@@ -63,7 +64,12 @@
     const P = g.P, key = P.KIND + (world.ice ? ':ice' : '') + (world.real ? ':' + JSON.stringify(world.real) : '');
     if (masseCurveCache[key]) return masseCurveCache[key];
     const curves = [];
-    for (const el of [0.95, 1.1, 1.25]) for (const a of [0.35, 0.55, 0.75]) for (const pw of [0.2, 0.3, 0.42, 0.56]) {
+    // (and the curve - 커브샷: the cue raised 20-35 degrees, a gentle bend, far more often played than a full massé - owner 11-19
+    // noon: '맛세이 빈도 더 높았으면')
+    const strokes = [];
+    for (const el of [0.95, 1.1, 1.25]) for (const a of [0.35, 0.55, 0.75]) for (const pw of [0.2, 0.3, 0.42, 0.56]) strokes.push([el, a, pw, 'masse']);
+    for (const el of [0.35, 0.55]) for (const a of [0.4, 0.6]) for (const pw of [0.3, 0.45, 0.6]) strokes.push([el, a, pw, 'curve']);
+    for (const [el, a, pw, kind] of strokes) {
       const w = P.clone(world); w.walls = P.makeWorld(0).walls; w.shape = null;
       for (const b of w.balls) if (b.id !== w.cue) b.on = false;
       // (struck +a it bends to the right of its aim: started by the left cushion and aimed along it, the whole cloth to bend over)
@@ -72,7 +78,7 @@
       const pts = [0, 0, Math.hypot(c.vx, c.vy)];
       // (followed while it is still worth meeting a ball with: masseAims wants 0.3 m/s at least)
       for (let t = 0; t < 6 && !P.rest(w) && !w.ev.cushions && !w.ev.rail && Math.hypot(c.vx, c.vy) > 0.28; t += 1 / 120) { P.step(w, 1 / 120); pts.push(c.x - x0, y0 - c.y, Math.hypot(c.vx, c.vy)); }
-      curves.push({ el, a, pw, V: g.vOf(pw), pts });
+      curves.push({ el, a, pw, V: g.vOf(pw), pts, kind });
     }
     return (masseCurveCache[key] = curves);
   }
@@ -106,7 +112,8 @@
     const P = g.P, out = [], carom = !P.POCKETED;
     const others = carom ? world.balls.filter(b => b.on && b.id !== world.cue && b.id !== T.id) : [];
     for (const C of masseCurves(world)) for (const s of [1, -1]) {
-      if (C.el > 1.0 + (opt.skill == null ? 0.5 : opt.skill) * 0.3) continue;   // (the steepest only for a sure hand)
+      const sk = opt.skill == null ? 0.5 : opt.skill;
+      if (C.el > 1.0 + sk * 0.3 || C.kind === 'curve' && (sk < 0.45 || !opt.curve) || opt.only && C.kind !== opt.only) continue;   // (the steepest only for a sure hand; the curve from the middle up)
       for (const f of carom ? [-0.6, -0.3, 0, 0.3, 0.6] : [null]) {
         // (a carom's meeting point moves with the heading it arrives on: found by turning twice)
         let x = gx, y = gy, aim = curveAim(C, s, c, x, y);
@@ -121,19 +128,24 @@
           const off = aim.head + (f >= 0 ? -1 : 1) * (Math.PI / 2 - Math.asin(Math.abs(f))) + s * 0.25;
           after = Math.min(...others.map(o => { const d = Math.atan2(o.y - y, o.x - x) - off; return Math.abs(Math.atan2(Math.sin(d), Math.cos(d))); }));
         }
-        out.push({ pos: null, angle: aim.ang, V: C.V, a: s * C.a, b: 0, el: C.el, target: T.id, pocket, kind: 'masse',
-          difficulty: 1.4 + (C.el - 0.95) + C.a * 0.4, order: after + C.el * 0.3 + C.a * 0.3 + (f ? Math.abs(f) * 0.2 : 0) });
+        out.push({ pos: null, angle: aim.ang, V: C.V, a: s * C.a, b: 0, el: C.el, target: T.id, pocket, kind: C.kind,
+          difficulty: C.kind === 'curve' ? 0.9 + C.el * 0.5 + C.a * 0.3 : 1.4 + (C.el - 0.95) + C.a * 0.4, order: after + C.el * 0.3 + C.a * 0.3 + (f ? Math.abs(f) * 0.2 : 0) });
       }
     }
     return out;
   }
-  // the likeliest first, and not all of one stroke: the best of each ball and side in turn (the jumps keep a third)
+  // the likeliest first, and not all of one stroke: the best of each ball and side in turn (the jumps keep a third; the curves
+  // their own half again, so they never crowd the massés out)
   function masseOrder(list, cap) {
-    const jumps = list.filter(k => k.kind !== 'masse'), groups = new Map(), out = [];
-    for (const k of list.filter(k => k.kind === 'masse').sort((a, b) => a.order - b.order)) {
-      const key = k.target + ':' + Math.sign(k.a); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(k);
-    }
-    const lists = [...groups.values()];
-    for (let i = 0; out.length < cap && lists.some(l => l.length > i); i++) for (const l of lists) if (l[i] && out.length < cap) out.push(l[i]);
-    return [...jumps.slice(0, Math.ceil(cap / 3)), ...out].slice(0, cap);
+    const deal = (kind, n) => {
+      const groups = new Map(), out = [];
+      for (const k of list.filter(k => k.kind === kind).sort((a, b) => a.order - b.order)) {
+        const key = k.target + ':' + Math.sign(k.a); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(k);
+      }
+      const lists = [...groups.values()];
+      for (let i = 0; out.length < n && lists.some(l => l.length > i); i++) for (const l of lists) if (l[i] && out.length < n) out.push(l[i]);
+      return out;
+    };
+    return [...list.filter(k => k.kind === 'jump').slice(0, Math.ceil(cap / 3)), ...deal('masse', cap), ...deal('curve', Math.ceil(cap / 2))];
   }
+

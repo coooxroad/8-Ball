@@ -13,7 +13,7 @@ const BOTS = new Function(`return ${src.slice(at, src.indexOf('];', at) + 1)}`)(
 const mode = process.argv[2] || 'four', N = +process.argv[3] || 3, only = process.argv[4] ? process.argv[4].split(',') : null;
 for (const b of BOTS.filter(b => !only || only.includes(b.id))) {
   let seed = 11; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-  const s = { n: 0, keep: 0, masse: 0, masseIn: 0, jump: 0, bank: 0, safety: 0, stroke: {}, ms: 0, think: 0, best: 0 };
+  const s = { n: 0, keep: 0, masse: 0, masseIn: 0, curve: 0, jump: 0, bank: 0, safety: 0, stroke: {}, ms: 0, think: 0, best: 0 };
   for (let k = 0; k < N; k++) {
     g.start(mode, ['A', 'B'], true, { level: 3, target: mode === 'three' ? 8 : mode === 'four' ? 10 : 12, rnd, cushions: 3 }); g.aiRnd = rnd;
     const pr = g.aiPersona(b.rating, rnd, { personality: b.personality, style: b.style, quirk: b.quirk }); g.personas = [pr, pr];
@@ -24,7 +24,7 @@ for (const b of BOTS.filter(b => !only || only.includes(b.id))) {
       const turn = g.turn, counted = pl.decision !== 'break';
       if (counted) {
         s.n++; s.think += pl.think || 0; s.stroke[pl.stroke] = (s.stroke[pl.stroke] || 0) + 1;
-        if (pl.decision === 'masse') s.masse++; if (pl.decision === 'jump') s.jump++; if (pl.decision === 'bank') s.bank++; if (pl.decision === 'safety') s.safety++;
+        if (pl.decision === 'masse') s.masse++; if (pl.decision === 'curve') s.curve++; if (pl.decision === 'jump') s.jump++; if (pl.decision === 'bank') s.bank++; if (pl.decision === 'safety') s.safety++;
       }
       g.beginShot(); g.P.strike(g.world, pl.angle, pl.V, pl.a || 0, pl.b || 0, pl.el || null); g.P.run(g.world, 40); g.world.snd.length = 0; g.resolve();
       const kept = g.over ? g.winner === turn : g.turn === turn;
@@ -34,6 +34,6 @@ for (const b of BOTS.filter(b => !only || only.includes(b.id))) {
   const pc = x => `${Math.round(100 * x / Math.max(1, s.n))}%`;
   const top = Object.entries(s.stroke).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${pc(v)}`).join(', ');
   console.log([b.name.padEnd(5), b.rating, b.style.padEnd(9), (b.quirk || '-').padEnd(7), `샷 ${s.n}`, `득점 ${pc(s.keep)}`, `최장 ${s.best}`,
-    `맛세이 ${(s.masse / N).toFixed(1)}/판(${s.masseIn} 성공)`, `점프 ${s.jump}`, `쿠션 ${pc(s.bank)}`, `수비 ${pc(s.safety)}`, '|', top, '|',
+    `맛세이 ${(s.masse / N).toFixed(1)}/판(${s.masseIn} 성공)`, `커브 ${(s.curve / N).toFixed(1)}/판`, `점프 ${s.jump}`, `쿠션 ${pc(s.bank)}`, `수비 ${pc(s.safety)}`, '|', top, '|',
     `${Math.round(s.ms / Math.max(1, s.n))} ms`, `${(s.think / Math.max(1, s.n)).toFixed(1)} s`].join(' '));
 }

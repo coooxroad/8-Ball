@@ -58,7 +58,7 @@
       // (what the player likes to play, by the style: worth a good deal when it scores, next to nothing when it does not - a
       // liking for massés is a liking for massés that come off, not for hopeless ones - owner 11-19 night; FLAIR, 51-people.js)
       // (and a raised cue that does not score is a poor try for anyone - the massé-minded a little less so)
-      value += made ? humanFlair(person, shot) : shot.kind === 'masse' || shot.kind === 'jump' ? -1.5 * (1 - 0.5 * style.masse) : 0;
+      value += made ? humanFlair(person, shot) : shot.kind === 'masse' || shot.kind === 'jump' || shot.kind === 'curve' ? -1.5 * (1 - 0.5 * style.masse) : 0;
       value += (shot.preference || 0) * 0.65;
       if (made && !pool && style.gather && (!ranked || skill >= 0.52)) {
         const balls = [copy.balls[copy.cue], ...targets.map(id => copy.balls[id])];
@@ -232,10 +232,10 @@
       const raiseWill = clamp((skill - 0.25) * 1.5, 0, 0.95) * (0.55 + style.masse * 0.45), jumpWill = clamp((skill - 0.4) * 1.6, 0, 0.9) * (0.5 + style.power * 0.3 + style.masse * 0.2);
       const masseOk = rand() < raiseWill || exploreMasse, jumpOk = pool && rand() < jumpWill;
       if (masseOk || jumpOk) {
-        const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, skill, cap: style.masse > 0.5 ? 16 : 10, all: !pool && (g.modeId !== 'three' || style.masse > 0.5) });
+        const tries = raisedShots(w, me, { ...g, isBreak: false }, { masse: masseOk, jump: jumpOk, curve: style.masse > 0.3 || style.spin > 0.5 || person.quirk === 'curve', skill, cap: style.masse > 0.5 ? 18 : 10, all: !pool && (g.modeId !== 'three' || style.masse > 0.5) });
         budget = Math.min(SIM_CAP, budget + tries.length + 5);
         for (const k of tries) consider(k);
-        const r0 = best && (best.shot.kind === 'masse' || best.shot.kind === 'jump') && (!best.made || best.sure != null && best.sure < 0.75) ? best.shot : null;
+        const r0 = best && (best.shot.kind === 'masse' || best.shot.kind === 'curve' || best.shot.kind === 'jump') && (!best.made || best.sure != null && best.sure < 0.75) ? best.shot : null;
         if (r0) for (const da of [0.006, -0.006, 0.014, -0.014]) consider({ ...r0, angle: r0.angle + da });
       }
     }
@@ -276,7 +276,7 @@
     const legs = ranked ? (best && best.shot === chosen ? best.legs || 0 : legsOf(null, chosen)) : 0, pf = ranked ? (best && best.shot === chosen && best.pf ? best.pf : pathFactor(null, chosen)) : 1;
     const angleError = (ranked ? aimSigma(chosen) * pf : (pool ? 1 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7)) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake;
     const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28) * (1 + legs * 0.12);
-    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + (chosen.kind === 'masse' && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)) + (person.quirk === 'heavy' && chosen.kind !== 'masse' ? (pool ? 0.05 : 0.03) * (1 - skill * 0.6) : 0), 0, 1);
+    const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + ((chosen.kind === 'masse' || chosen.kind === 'curve') && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)) + (person.quirk === 'heavy' && chosen.kind !== 'masse' && chosen.kind !== 'curve' ? (pool ? 0.05 : 0.03) * (1 - skill * 0.6) : 0), 0, 1);
     const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
     const thicknessError = practice.thicknessBias * (1 - practice.aim) * (pool ? 0.003 : 0.0005);
     const spinError = (1 - practice.spin) * 0.045, a = chosen.a * (1 + noise() * spinError), b = chosen.b * (1 + noise() * spinError), spinScale = Math.min(1, 0.79 / Math.max(0.001, Math.hypot(a, b)));
