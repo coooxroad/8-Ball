@@ -12,6 +12,31 @@ const { open } = require('./harness.js');
     try {
       const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const tap = async locator => { const b = await locator.first().boundingBox(); assert(b); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await settle(); };
+      if (w === 1280 && dpr === 2) {
+        const row = page.locator('.mn-row');
+        await page.locator('#dkFull').tap();
+        await page.waitForFunction(() => document.fullscreenElement && !document.querySelector('#app').classList.contains('resizing'));
+        for (const end of [true, false, true]) {
+          await row.evaluate((r, end) => { r.scrollLeft = end ? r.scrollWidth : 0; }, end);
+          await settle();
+          const card = page.locator(end ? '.mn-card.k-free' : '.mn-pc');
+          assert(await card.evaluate(c => {
+            const b = c.getBoundingClientRect();
+            return c.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2));
+          }), 'edge card must be visible and tappable after scrolling');
+        }
+        await page.locator('#dkSet').tap();
+        await page.locator('#sheetTitle').waitFor({ state: 'visible' });
+        assert.equal(await page.locator('#sheetTitle').innerText(), '설정');
+        await page.locator('#sheetBody').evaluate(b => { b.scrollTop = b.scrollHeight; });
+        assert(await page.locator('#sheetX').evaluate(x => {
+          const b = x.getBoundingClientRect();
+          return x.contains(document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2));
+        }), 'settings header must stay reachable');
+        await page.locator('#sheetX').tap();
+        await page.locator('#dkFull').tap();
+        await page.waitForFunction(() => !document.fullscreenElement && !document.querySelector('#app').classList.contains('resizing'));
+      }
       // Compare the table opening with the native-density layout, including the ranked-search strip.
       // (the cards open: the three ways come out of the middle and settle before one is tapped)
       // (플레이's menu: the card row on a wide screen - the card brought into view first; the desk's boards when upright)

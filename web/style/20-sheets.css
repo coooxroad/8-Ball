@@ -22,6 +22,12 @@
 @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .sheet h2{margin:0;font-size:21px;font-weight:var(--w-title);letter-spacing:-.01em}
+/* Keep close and title in reach on short landscape viewports. Only the list scrolls. */
+#sheet:not(.see){grid-template-rows:minmax(0,1fr)}
+#sheet:not(.see) .sheet{box-sizing:border-box;max-height:100%;min-height:0}
+#sheet:not(.see) .sheet-h{flex:none}
+#sheet:not(.see) #sheetBody{min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px;margin:-10px}
+#sheet:not(.see) #sheetBody>*{flex-shrink:0}
 #sheetBody{display:flex;flex-direction:column;gap:12px}
 .field{display:flex;flex-direction:column;gap:8px}
 .opt{background:var(--opt);border:2px solid transparent;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .08s}

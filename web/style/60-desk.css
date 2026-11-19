@@ -90,6 +90,7 @@
 }
 /* (and, up to a wide monitor, the keys without their words and then without the player, so the last one is not pushed off the edge) */
 @media (min-width:900px) and (max-width:1440px){#app.desk .dk-top span{display:none}#app.desk .dk-top{padding:0 12px}}
+@media (min-width:1100px){#app.desk #dkSet span{display:inline}}
 /* (where the bar is short of room the player is its counter alone - never gone: it is the way to sign in, owner 11-10) */
 @media (max-width:1150px){#app.desk .dk-me small{display:none}#app.desk .dk-me b{max-width:110px}}   /* (the name stays beside its badge at every width, owner 11-15; only the line under it goes) */
 #app.desk .dk-tab:active{transform:translateY(2px)}

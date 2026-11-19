@@ -55,36 +55,25 @@ const MENU_CARDS = [
   { id: 'arcade', title: '아케이드', sub: '증강 당구', soon: () => !net.debug, strip: () => net.debug ? '디버그' : '준비 중', go: () => net.debug ? (playStep = 'arcade', playFx = 'fan', paintHome()) : soonToast('아케이드는')() },
   { id: 'cpu', title: '컴퓨터 대전', sub: '봇과 한 판', strip: () => `봇 ${typeof BOTS !== 'undefined' ? BOTS.length : 0}명`, go: () => trainGo('cpu') },
   { id: 'free', title: '자유 연습', sub: '마음대로 치기', strip: () => '4구 · 3구 · 8볼 · 9볼', go: () => trainGo('free') }];
-/* Where the row lives. The cloth is part of the desk (#dkFelt, in the leaning plane), but the row of cards that scrolls
-   on it is not: a scroller inside the plane's 3D lean was drawn again and again by the tablet as it scrolled - cards cut
-   off at one height, whole frames gone, the bar's buttons too (owner 11-15, GPT's reading of the video). So the row is
-   a layer of its own over the plane (#dkCards, laid exactly where the plane is, flat), the scroller in it flat too, and
-   only the strip of cards inside it leans: the scroller's own 'perspective' (from the point the plane leans about, its
-   bottom middle) and the strip's rotateX by the same angle about the same line make the plane's own projection - so the
-   cards sit on the cloth as before, while the scrolling itself is plain. menuFit places it and sizes the cards. */
+/* The felt stays on the leaning desk. Measure its projected bounds so the native scroll
+   surface can live entirely in screen coordinates, including during fullscreen changes. */
 let menuScroll = 0;                                                   // (where the row was scrolled to, kept while the desk is away)
 const MENU_W = { pad: 30, pc: 228, hero: 272, card: 204, gap: 14 };   // (the row's sizes in u: 84-menu.css uses the same)
 function menuFit() {
-  const felt = $('#dkFelt'), layer = $('#dkCards'), row = layer && layer.firstChild, pl = $('#deskPlane');
-  if (!felt || !row || !menuShown() || !pl.offsetWidth) return;
-  const dk = $('#desk'), density = parseFloat(app.style.getPropertyValue('--desk-density')) || 1;
-  const t = parseFloat(app.style.getPropertyValue('--tilt')) || 0.26, P = parseFloat(app.style.getPropertyValue('--pp')) || 2300;
-  const pw = pl.offsetWidth, ph = pl.offsetHeight;
-  // the cloth in the plane's own flat coordinates (as deskWindow finds the tray)
-  const fy = dk.offsetTop * density + felt.offsetTop, fh = felt.offsetHeight; if (!fh) return;
-  /* the card size: the 랭킹전 card (560u) at 88% of the cloth's height - but no larger than lets the 선수증 and four cards
-     show whole across the screen (the screen's width W shows W / k of the plane at a height h up it, k = P / (P + h sin t);
-     taken low on the cards, where they show widest), and then the cloth comes in to the cards rather than leaving them
-     small on it (owner 11-15: on a full screen only four showed) */
-  const W = app.clientWidth, h = ph - (fy + fh * 0.8), k = P / (P + h * Math.sin(t)), seen = W / k;
+  const felt = $('#dkFelt'), layer = $('#dkCards'), row = layer && layer.firstChild;
+  if (!felt || !row || !menuShown()) return;
+  const bounds = felt.getBoundingClientRect();
+  if (!bounds.height || !felt.offsetHeight) return;
   const need = MENU_W.pad + MENU_W.pc + MENU_W.hero + 3 * MENU_W.card + 4 * MENU_W.gap + 24;
-  const u = Math.max(0.3, Math.min(fh * 0.88 / 560, seen / need));
-  const clothH = Math.min(fh, 560 * u / 0.86);
-  felt.style.setProperty('--fi', ((fh - clothH) / 2).toFixed(1) + 'px');
-  // the row over the cloth, in the same coordinates (the layer is the plane's box, untransformed)
-  Object.assign(row.style, { top: fy + 'px', height: fh + 'px' });
-  row.style.setProperty('--u', u.toFixed(4)); app.style.setProperty('--mu', u.toFixed(4));   // (--mu: the screens after the menu size their cards by it)
-  row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
+  const u = Math.min(bounds.height * 0.88 / 560, layer.clientWidth / need);
+  // The hem inset and the panels opened from the menu still use the desk's local units.
+  const deskU = u * felt.offsetHeight / bounds.height;
+  const clothH = Math.min(felt.offsetHeight, 560 * deskU / 0.86);
+  felt.style.setProperty('--fi', ((felt.offsetHeight - clothH) / 2).toFixed(1) + 'px');
+  app.style.setProperty('--mu', deskU.toFixed(4));
+  row.style.setProperty('--u', u.toFixed(4));
+  row.style.top = (bounds.top - layer.getBoundingClientRect().top) + 'px';
+  row.style.height = bounds.height + 'px';
 }
 function menuPaint() {
   // the cloth on the desk, and the layer for the row over the plane (made once)

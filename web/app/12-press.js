@@ -25,6 +25,9 @@ function fxRipple(el, x, y) {
 }
 document.addEventListener('pointerdown', e => {
   const el = e.target.closest && e.target.closest(PRESS); if (!el || el.closest('[data-nofx]')) return;
+  // A touch on the horizontal menu can become a fling. Keep its CSS pressed state
+  // without allocating a ripple as large as the card's diagonal on every swipe.
+  if (e.pointerType === 'touch' && el.closest('.mn-row')) return;
   if (fxBlocked(el)) { el.classList.remove('fx-no'); void el.offsetWidth; el.classList.add('fx-no'); SND.init(); SND.nope(); setTimeout(() => el.classList.remove('fx-no'), 400); return; }
   el.classList.remove('fx-up'); el.classList.add('fx-down'); fxRipple(el, e.clientX, e.clientY);
   pressFx.last = { text: el.textContent.trim(), at: performance.now() };
