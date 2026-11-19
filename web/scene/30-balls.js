@@ -276,6 +276,13 @@
     const key = id + '/' + kind + '/' + n; if (shots[key]) return shots[key];
     const s = ballShot(id, kind, n), url = s.c.toDataURL('image/png'); if (s.done) shots[key] = url; return url;
   }
+  /* A ball's surface picture itself (the canvas its texture is made from: 1024 x 512, round the ball as longitude by
+     latitude), for the menu's balls, which the app draws as spheres itself (app/38-menu-balls.js) */
+  function ballSurface(id, kind, n) {
+    const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0];
+    const keep = skin; skin = k; const t = ballTexture(kind, n); skin = keep;
+    const c = t.image; t.dispose(); return c;
+  }
   function ballShot(id, kind, n) {
     const k = BALLSKINS.find(b => b.id === id) || BALLSKINS[0];
     if (!shotRT) {

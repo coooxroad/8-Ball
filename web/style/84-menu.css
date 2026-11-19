@@ -30,11 +30,13 @@
 
 /* a card: the desk's printed card - its colour (--c1 light, --c2 dark), its small signs drifting (.mn-sym, below - the dot
    print until 11-19), a white line inside, a black strip on top; round it a faint glow of its own colour (owner 11-19:
-   every card but 랭킹전, whose rim is lit, and the 선수증) */
-.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
-  background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 calc(30px*var(--u)) calc(3px*var(--u)) var(--glow,transparent),-3px 5px 0 rgba(0,0,0,.35),-7px 16px 24px rgba(0,0,0,.42);transition:transform .08s;
+   every card but 랭킹전, whose rim is lit, and the 선수증). (Owner 11-20: 'the panels don't assert themselves' - so their
+   colours full, the light on their upper part, an edge of their own colour under them: a thick tile, not a sheet - and
+   their names and signs larger and heavier: '확 게임다워졌다'.) */
+.mn-card{--c1:#43915e;--c2:#1f5735;--face:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.05) 34%,rgba(255,255,255,0) 50%),linear-gradient(165deg,var(--c1),var(--c2));position:relative;flex:none;width:calc(204px*var(--u));height:calc(492px*var(--u));padding:0;border:0;border-radius:calc(16px*var(--u));overflow:hidden;color:#fff;cursor:pointer;font:inherit;text-align:center;-webkit-tap-highlight-color:transparent;
+  background:var(--face);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),inset 0 calc(2px*var(--u)) 0 rgba(255,255,255,.35),0 calc(10px*var(--u)) 0 var(--edge-c,color-mix(in srgb,var(--c2) 55%,#000)),0 0 calc(30px*var(--u)) calc(3px*var(--u)) var(--glow,transparent),-6px calc(22px*var(--u)) 26px rgba(0,0,0,.55);transition:transform .08s;
   --glow:color-mix(in srgb,var(--c1) 30%,transparent)}
-.mn-card:active{transform:translateY(3px)}
+.mn-card:active{transform:translateY(calc(6px*var(--u)))}
 .mn-card .mn-ripple{inset:0;border-radius:0;transform:none;clip-path:circle(0px at var(--rip-x) var(--rip-y))}
 @media (prefers-reduced-motion:no-preference){.mn-card .mn-ripple{animation-name:mn-ripple}}
 @keyframes mn-ripple{
@@ -54,26 +56,27 @@
 .mn-card .mn-ico.pic{top:calc(78px*var(--u));height:calc(190px*var(--u))}
 .mn-card .mn-ico.pic img{width:calc(186px*var(--u));height:calc(186px*var(--u));object-fit:contain;-webkit-user-drag:none}
 .mn-card.hero .mn-ico.pic{top:calc(72px*var(--u));height:calc(240px*var(--u))}.mn-card.hero .mn-ico.pic img{width:calc(236px*var(--u));height:calc(236px*var(--u))}
-.mn-card .mn-ico svg{width:calc(118px*var(--u));height:calc(118px*var(--u));color:rgba(255,255,255,.93);overflow:visible}   /* (its shadow is in the drawing: 10-ui.js icoLift - no filter) */
-.mn-card b{position:absolute;left:0;right:0;bottom:calc(76px*var(--u));font:900 calc(24px*var(--u)) var(--ui-font);letter-spacing:-.01em;white-space:nowrap;text-shadow:0 2px 3px rgba(0,0,0,.45)}
-.mn-card small{position:absolute;left:calc(6px*var(--u));right:calc(6px*var(--u));bottom:calc(50px*var(--u));font:700 calc(14.5px*var(--u)) var(--ui-font);color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mn-card .mn-ico svg{width:calc(136px*var(--u));height:calc(136px*var(--u));color:#fff;overflow:visible}   /* (its shadow is in the drawing: 10-ui.js icoLift - no filter) */
+.mn-card b{position:absolute;left:0;right:0;bottom:calc(76px*var(--u));font:900 calc(28px*var(--u)) var(--ui-font);letter-spacing:-.03em;white-space:nowrap;text-shadow:0 calc(3px*var(--u)) 0 rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.35)}
+.mn-card small{position:absolute;left:calc(6px*var(--u));right:calc(6px*var(--u));bottom:calc(50px*var(--u));font:700 calc(15.5px*var(--u)) var(--ui-font);color:rgba(255,255,255,.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* (준비 중: its colours greyed in its own face - not a filter over the whole card, which is drawn apart every frame it moves) */
-.mn-card.soon{--face:linear-gradient(200deg,rgba(255,255,255,.1),rgba(255,255,255,0) 38%),linear-gradient(165deg,color-mix(in srgb,var(--c1) 40%,#4a4a4a),color-mix(in srgb,var(--c2) 40%,#262626));--glow:transparent;color:rgba(255,255,255,.72)}
+.mn-card.soon{--edge-c:#2c2a30;--face:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 40%),linear-gradient(165deg,color-mix(in srgb,var(--c1) 40%,#4a4a4a),color-mix(in srgb,var(--c2) 40%,#262626));--glow:transparent;color:rgba(255,255,255,.72)}
 .mn-card.soon .mn-ico svg{color:rgba(255,255,255,.66)}
 .mn-card.soon .mn-ico.pic img{opacity:.72}
-.mn-card.k-rank{--c1:#4176c4;--c2:#1d4688}
-.mn-card.k-friend{--c1:#43915e;--c2:#1f5735}
-.mn-card.k-lesson{--c1:#bb5a52;--c2:#7c2d29}
-.mn-card.k-puzzle{--c1:#b5813a;--c2:#68420f}
+/* (full billiard colours, owner 11-20; 컴퓨터 대전 teal, apart from 랭킹전's blue) */
+.mn-card.k-rank{--c1:#2f7cf2;--c2:#1443a6}
+.mn-card.k-friend{--c1:#2db866;--c2:#11713a}
+.mn-card.k-lesson{--c1:#ea544a;--c2:#a0231d}
+.mn-card.k-puzzle{--c1:#f2a433;--c2:#b45d0c}
 .mn-card.k-watch{--c1:#3d8a8a;--c2:#174646}
 .mn-card.k-tour{--c1:#a88a4a;--c2:#5a461c}
-.mn-card.k-arcade{--c1:#8062b1;--c2:#4c357a}
-.mn-card.k-cpu{--c1:#56708f;--c2:#25354b}
-.mn-card.k-free{--c1:#6f7f45;--c2:#353f1a}
+.mn-card.k-arcade{--c1:#9b62ea;--c2:#5a2aa9}
+.mn-card.k-cpu{--c1:#33a9c4;--c2:#165a74}
+.mn-card.k-free{--c1:#93b83b;--c2:#4c6c10}
 /* 랭킹전: larger, its sign larger, its rim alight - a gold line round it with a glint running along, and a slow glow */
-.mn-card.hero{--glow:transparent;width:calc(272px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
-.mn-card.hero .mn-ico{top:calc(110px*var(--u));height:calc(170px*var(--u))}.mn-card.hero .mn-ico svg{width:calc(160px*var(--u));height:calc(160px*var(--u))}
-.mn-card.hero b{bottom:calc(92px*var(--u));font-size:calc(42px*var(--u))}.mn-card.hero small{bottom:calc(62px*var(--u));font-size:calc(16px*var(--u))}
+.mn-card.hero{--glow:transparent;--edge-c:#7a5a22;width:calc(272px*var(--u));height:calc(560px*var(--u));border-radius:calc(18px*var(--u));overflow:visible;--rim:linear-gradient(135deg,#f6e2a6,#c39a45 45%,#fff3c8 55%,#b88d3c);background:var(--rim)}
+.mn-card.hero .mn-ico{top:calc(110px*var(--u));height:calc(170px*var(--u))}.mn-card.hero .mn-ico svg{width:calc(176px*var(--u));height:calc(176px*var(--u))}
+.mn-card.hero b{bottom:calc(92px*var(--u));font-size:calc(50px*var(--u))}.mn-card.hero small{bottom:calc(62px*var(--u));font-size:calc(16px*var(--u))}
 .mn-card.hero .strip{left:calc(3px*var(--u));right:calc(3px*var(--u));top:calc(3px*var(--u));border-radius:calc(15px*var(--u)) calc(15px*var(--u)) 0 0;color:#f0d488}
 .mn-card.hero::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 calc(22px*var(--u)) calc(3px*var(--u)) rgba(240,212,136,.65),0 0 calc(4px*var(--u)) calc(1px*var(--u)) rgba(255,240,200,.9);opacity:.3;animation:mn-glow 2.4s ease-in-out infinite;pointer-events:none;will-change:opacity}
 @keyframes mn-glow{50%{opacity:1}}
@@ -89,6 +92,13 @@
 @keyframes mn-glint{0%,45%{transform:translate3d(0,0,0) skewX(-18deg)}100%{transform:translate3d(420%,0,0) skewX(-18deg)}}
 .mn-sheen{position:absolute;inset:calc(3px*var(--u));border-radius:calc(17px*var(--u));overflow:hidden;pointer-events:none;opacity:var(--sheen,0)}
 .mn-sheen i{width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
+
+/* the balls on the cloth (38-menu-balls.js: drawn and rolled there), each with its shadow toward the lower left; not on a
+   phone held upright, where the cards fill the cloth */
+#dkFelt .mn-ball{position:absolute;left:0;top:0;z-index:1;pointer-events:auto;will-change:transform}
+#dkFelt .mn-ball canvas{position:relative;display:block;width:100%;height:100%}
+#dkFelt .mn-ball::before{content:"";position:absolute;left:-18%;top:20%;width:100%;height:100%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,.25) 60%,rgba(0,0,0,0))}
+#app.portrait #dkFelt .mn-ball,#desk:not(.menu)>#dkFelt .mn-ball{display:none}   /* (the menu's only: 랭킹전's and 친구와 플레이's cards lie on the same cloth) */
 
 /* the cards alive, calmly (owner 11-16 - 8 Ball Pool's, 당구의 신's menus move and shine and are liked by every age; ours keep
    their calm and only gain some finish): a light crossing each card now and then on its own beat (--i), a soft light and

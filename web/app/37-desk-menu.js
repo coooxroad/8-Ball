@@ -25,7 +25,7 @@ const MENU_ICO = {
   cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
   free: '<circle cx="15.5" cy="15.5" r="4.5"/><path d="M3 3l9 9"/>' };   // (each sign under its card's id)
 let menuIO = null;                                                     // (the cards in sight: menuPaint)
-const menuLine = (s, k) => { s.classList.remove('pic'); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${icoLift(MENU_ICO[k], 1.9)}</svg>`; };   // (its shadow drawn in: 10-ui.js icoLift)
+const menuLine = (s, k) => { s.classList.remove('pic'); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${icoLift(MENU_ICO[k], 2.5)}</svg>`; };   // (heavier since 11-20: the cards to assert themselves)   // (its shadow drawn in: 10-ui.js icoLift)
 /* 디버그 · 메인 카드 그림 (owner 11-20: the menu reads as a fine app, 8 Ball Pool's as a game): '3d' the card's sign as a
    rendered icon (ui/menu-<id>.webp, GPT - tasks/CUE-prompts-menu-icons.md: the same signs, made solid; a card whose picture
    is not in yet keeps its line icon). (Flat 2D props were tried the same night and dropped: they sat apart from the card.) */
@@ -96,15 +96,19 @@ function menuFit() {
   Object.assign(row.style, { top: fy + 'px', height: fh + 'px' });
   row.style.setProperty('--u', u.toFixed(4)); app.style.setProperty('--mu', u.toFixed(4));   // (--mu: the screens after the menu size their cards by it)
   row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
+  menuBalls.fit(u, fh, (fh - clothH) / 2, Math.max(0, (pw - seen) / 2));   // (the balls on the cloth: 38-menu-balls.js)
 }
 function menuPaint() {
   // the cloth on the desk, and the layer for the row over the plane (made once)
   if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' }));
+  menuBalls.mount($('#dkFelt'));
   let layer = $('#dkCards');
   if (!layer) {
     layer = el('div', { id: 'dkCards' }); ($('#dkProps') || $('#deskPlane')).after(layer);   // (over the menu's towel and plant)
     // (fitted again when the cloth changes size - not step by step while the window does: layout() fits it after)
     if (window.ResizeObserver) new ResizeObserver(() => { if (!app.classList.contains('resizing')) menuFit(); }).observe($('#dkFelt'));
+    // (a touch on a ball lying on the cloth between the cards sends it rolling - the row would take it otherwise)
+    layer.addEventListener('pointerdown', e => { if (menuBalls.touch(e)) e.stopPropagation(); }, true);
     // (a wheel turns the row sideways on a computer)
     layer.addEventListener('wheel', e => { const r = layer.firstChild; if (r && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { r.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
   }
