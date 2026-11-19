@@ -60,6 +60,7 @@
 /* (준비 중: its colours greyed in its own face - not a filter over the whole card, which is drawn apart every frame it moves) */
 .mn-card.soon{--face:linear-gradient(200deg,rgba(255,255,255,.1),rgba(255,255,255,0) 38%),linear-gradient(165deg,color-mix(in srgb,var(--c1) 40%,#4a4a4a),color-mix(in srgb,var(--c2) 40%,#262626));--glow:transparent;color:rgba(255,255,255,.72)}
 .mn-card.soon .mn-ico svg{color:rgba(255,255,255,.66)}
+.mn-card.soon .mn-ico.pic img{opacity:.72}
 .mn-card.k-rank{--c1:#4176c4;--c2:#1d4688}
 .mn-card.k-friend{--c1:#43915e;--c2:#1f5735}
 .mn-card.k-lesson{--c1:#bb5a52;--c2:#7c2d29}
