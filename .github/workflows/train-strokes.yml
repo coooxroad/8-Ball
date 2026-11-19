@@ -1,0 +1,31 @@
+# The stroke network trained on the labels of one or more 'Label strokes' runs (web/tools/net/train-strokes.js), and its
+# weights (web/ai/57-stroke-net-w.js) put straight onto main. Run by hand: Actions → Train strokes → the game and the runs' ids.
+name: Train strokes
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: 'four or three', required: true, default: 'four' }
+      runs: { description: 'Label strokes run ids, space between', required: true }
+      epochs: { description: 'epochs', required: true, default: '40' }
+permissions:
+  contents: write
+  actions: read
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: The labels
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: for r in ${{ inputs.runs }}; do gh run download "$r" -R "${{ github.repository }}" -D "labels/$r" -p "strokes-${{ inputs.mode }}-*"; done; find labels -name '*.jsonl' | xargs cat | wc -l
+      - name: Train
+        run: node web/tools/net/train-strokes.js ${{ inputs.mode }} labels ${{ inputs.epochs }}
+      - name: The weights onto main
+        run: |
+          git config user.name "cue-train"; git config user.email "cue-train@users.noreply.github.com"
+          git add web/ai/57-stroke-net-w.js
+          git commit -m "스트로크 신경망 (${{ inputs.mode }}): Label strokes ${{ inputs.runs }}로 학습" || exit 0
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
