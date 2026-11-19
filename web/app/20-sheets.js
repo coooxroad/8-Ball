@@ -45,6 +45,10 @@ function sheetDebug() {
     el('div', { class: 'lab', text: '메인 메뉴' }),
     el('div', { class: 'seg' }, [[false, '새 메뉴'], [true, '예전 메뉴']].map(([v, t]) =>
       el('button', { 'aria-pressed': String(!!prefs.oldMenu === v), text: t, onclick: () => { prefs.oldMenu = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
+    // (the menu cards' signs: the line icons, or 3D props to try - owner 11-20, the menu to read more as a game: 37-desk-menu.js menuIco)
+    el('div', { class: 'lab', text: '메인 카드 그림' }),
+    el('div', { class: 'seg' }, [[false, '선 아이콘'], [true, '3D 소품']].map(([v, t]) =>
+      el('button', { 'aria-pressed': String(!!prefs.menuProps === v), text: t, onclick: () => { prefs.menuProps = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

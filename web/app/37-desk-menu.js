@@ -25,7 +25,17 @@ const MENU_ICO = {
   cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
   free: '<circle cx="15.5" cy="15.5" r="4.5"/><path d="M3 3l9 9"/>' };   // (each sign under its card's id)
 let menuIO = null;                                                     // (the cards in sight: menuPaint)
-const menuIco = k => { const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' }); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${icoLift(MENU_ICO[k], 1.9)}</svg>`; return s; };   // (its shadow drawn in: 10-ui.js icoLift)
+const menuLine = (s, k) => { s.classList.remove('pic'); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${icoLift(MENU_ICO[k], 1.9)}</svg>`; };   // (its shadow drawn in: 10-ui.js icoLift)
+/* 디버그 · 메인 카드 그림 · 3D 소품 (owner 11-20: the menu reads as a fine app, 8 Ball Pool's as a game - a thing to pick up
+   on each card, not a sign): the card's prop, a photograph cut out (ui/menu-<id>.webp, tasks/CUE-prompts-menu-props.md), its
+   own shadow in it; a card whose picture is not in yet keeps its line icon */
+const menuIco = k => {
+  const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' });
+  let dbg = false; try { dbg = net.debug; } catch (e) {}
+  if (dbg && prefs.menuProps) { s.classList.add('pic'); s.appendChild(el('img', { src: `ui/menu-${k}.webp`, alt: '', draggable: 'false', onerror: () => menuLine(s, k) })); }
+  else menuLine(s, k);
+  return s;
+};
 // my rating and tier (economy.js TIER_AT; 33-desk-play.js TIERS)
 function myTier() {
   const dama = net.me && net.me.dama != null ? net.me.dama : ECONOMY.DAMA_START, T = ECONOMY.TIER_AT;
