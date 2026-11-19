@@ -152,7 +152,10 @@ for (const mode of ['eight', 'four']) for (const dama of [10, 30, 80]) {
 }
 /* (how long a plan takes, measured against how long this machine takes to play one stroke out - copy the table, strike,
    run it - so the bound holds on a fast machine and a slow one alike. 15 strokes: the 40 ms it was set at, on the machine
-   where a plan took 30 ms (about 11 strokes) - the same headroom. The yardstick is the middle of several runs, taken now that the machine is warm.) */
+   where a plan took 30 ms (about 11 strokes) - the same headroom. The yardstick is the middle of several runs, taken now that the machine is warm.
+   20 since 11-19: the massé and curve aims, and the second look with the stroke network when no point is found, put the
+   average at 15-17 strokes (35 ms on CI, well inside the seconds a bot is shown thinking) - the old 15 failed builds by
+   noise alone, so the bound keeps the same quarter of headroom over the new cost.) */
 const strokeMs = (() => {
   const g = fresh(), runs = [];
   for (let k = 0; k < 7; k++) {
@@ -164,6 +167,6 @@ const strokeMs = (() => {
 })();
 const planStrokes = metrics.time / metrics.plans / strokeMs;
 console.log(`plan cost: ${(metrics.time / metrics.plans).toFixed(1)} ms average = ${planStrokes.toFixed(1)} strokes played out (a stroke ${strokeMs.toFixed(2)} ms here)`);
-assert(planStrokes < 15, `average plan costs ${planStrokes.toFixed(1)} strokes, more than 15`);
+assert(planStrokes < 20, `average plan costs ${planStrokes.toFixed(1)} strokes, more than 20`);
 require('./ai-human-behavior');
 console.log(`human AI passed: ${metrics.plans} plans, ${(metrics.time / metrics.plans).toFixed(2)}ms average, ${metrics.worst.toFixed(2)}ms worst, ${metrics.sims} simulations max; ${names.size} distinct names; 72 personality/style combinations.`);
