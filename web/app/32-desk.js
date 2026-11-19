@@ -135,48 +135,39 @@ function railBtn(on, label, sub, fn, soon, icon) {
     icon ? [el('i', { class: 'mi', style: `background-image:url(ui/${icon}.webp)` }), el('span', { class: 'lb' }, kids)] : kids));
 }
 
-/* The printed cards' ground (owner 11-19: the faint dot print gone for small signs that suit each card, drifting slowly
-   on the diagonal, as quiet as the dots were). Each card's two signs in a tile (one high left, one low right, turned a
-   little), the tile repeated over a layer half a tile wider and taller than the card (style/84-menu.css .mn-sym): the
-   layer moves by exactly one tile, up and to the right, and starts again where it looks the same - so only transform
-   moves, on a layer not much bigger than the card. Line drawings in 24 units, white; the CSS sets how faint. */
+/* The printed cards' ground (owner 11-19: the faint dot print gone for small signs drifting slowly on the diagonal, as quiet
+   as the dots were - then, the same night: not cute, this is for players of every age, and closer together). So the signs
+   are a billiard table's own plain geometry, thin lines: a ball's ring, a rail's sight diamond, a cross of the aim, a
+   bank's angle, a rack's triangle - each card two of them, in a tile (one high left, one low right, turned a little),
+   repeated over a layer a third wider and a sixth taller than the card (style/84-menu.css .mn-sym): the layer moves by
+   exactly one tile, up and to the right, and starts again where it looks the same - so only transform moves, on a layer
+   not much bigger than the card. Line drawings in 24 units, white; the CSS sets how faint. */
 const SYM_D = {
-  star: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/>',
-  crown: '<path d="M4 17.5L3 8l5 4 4-7 4 7 5-4-1 9.5z"/><path d="M4.5 20.5h15"/>',
-  bubble: '<path d="M5 4.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"/>',
-  heart: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.3a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"/>',
-  bulb: '<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.4 10.9c.6.5.9 1.2.9 2.1h5c0-.9.3-1.6.9-2.1A6 6 0 0 0 12 3z"/>',
-  chalk: '<path d="M12 3.5l7.5 4.2v8.6L12 20.5l-7.5-4.2V7.7z"/><path d="M4.5 7.7L12 12l7.5-4.3M12 12v8.5"/>',
-  piece: '<path d="M9 4h3a2 2 0 1 1 4 0h3v5a2 2 0 1 1 0 4v6h-5a2 2 0 1 0-4 0H5v-6a2 2 0 1 0 0-4V4z"/>',
-  ask: '<path d="M8.5 9a3.5 3.5 0 1 1 5.2 3c-1 .6-1.7 1.3-1.7 2.5v.5"/><circle cx="12" cy="19" r=".4"/>',
-  bolt: '<path d="M13.5 2.5L5 13.5h6.5L10.5 21.5 19 10.5h-6.5z"/>',
-  spark: '<path d="M12 3q1 8 9 9-8 1-9 9-1-8-9-9 8-1 9-9z"/>',
-  chip: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3.5V7M14 3.5V7M10 17v3.5M14 17v3.5M3.5 10H7M3.5 14H7M17 10h3.5M17 14h3.5"/>',
-  gear: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2M5.3 5.3l2.2 2.2M16.5 16.5l2.2 2.2M5.3 18.7l2.2-2.2M16.5 7.5l2.2-2.2"/>',
-  ball: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
-  dot: '<circle cx="12" cy="12" r="8"/><path d="M8.5 8.5a5 5 0 0 1 3-1.8"/>',
-  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>',
-  rail: '<path d="M12 4l5.5 8L12 20l-5.5-8z"/>',
-  bank: '<path d="M3 17.5L8 6l5 11.5L18 6l3 6"/>',
-  rack: '<path d="M12 4l9 15.5H3z"/>',
-  stripe: '<circle cx="12" cy="12" r="8"/><path d="M5 9h14M5 15h14"/>',
-  half: '<path d="M8 4a8 8 0 0 1 0 16"/><path d="M8 2.5v19"/>',
-  phone: '<rect x="6.5" y="3" width="11" height="18" rx="2.2"/><path d="M11 17.5h2"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  door: '<path d="M4 11l8-7 8 7v9.5H4z"/><path d="M10 20.5V15h4v5.5"/>',
-  arrow: '<path d="M4 12h14M13 6.5l5.5 5.5-5.5 5.5"/>' };
+  ring: '<circle cx="12" cy="12" r="6"/>',
+  ball: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6"/>',
+  pair: '<circle cx="9.2" cy="12" r="4.6"/><circle cx="14.8" cy="12" r="4.6"/>',
+  sight: '<path d="M12 6.5l3.6 5.5-3.6 5.5-3.6-5.5z"/>',
+  aim: '<path d="M12 6v12M6 12h12"/>',
+  cross: '<path d="M7.8 7.8l8.4 8.4M16.2 7.8l-8.4 8.4"/>',
+  bank: '<path d="M5.5 16.5L12 8l6.5 8.5"/>',
+  rank: '<path d="M6.5 13.5L12 9l5.5 4.5M6.5 17.5L12 13l5.5 4.5"/>',
+  rack: '<path d="M12 7l6 10.4H6z"/>',
+  frame: '<rect x="7" y="7" width="10" height="10" rx="1"/>',
+  line: '<path d="M6 12h12"/>',
+  half: '<path d="M10 6.5a5.5 5.5 0 0 1 0 11"/><path d="M10 5v14"/>',
+  go: '<path d="M9.5 6.5L15 12l-5.5 5.5"/>' };
 // each card's two (by its id; the 플레이 panels by theirs - 33-desk-play.js)
-const PANEL_SYM = { rank: ['star', 'crown'], friend: ['bubble', 'heart'], lesson: ['bulb', 'chalk'], train: ['bulb', 'chalk'], puzzle: ['piece', 'ask'],
-  arcade: ['bolt', 'spark'], cpu: ['chip', 'gear'], free: ['dot', 'target'], four: ['ball', 'rail'], three: ['bank', 'rail'], eight: ['dot', 'rack'],
-  nine: ['stripe', 'rail'], snooker: ['ball', 'half'], 'way-local': ['phone', 'dot'], 'way-make': ['plus', 'door'], 'way-join': ['arrow', 'door'], 'arc-mode': ['bolt', 'spark'] };
+const PANEL_SYM = { rank: ['rank', 'sight'], friend: ['pair', 'sight'], lesson: ['bank', 'ball'], train: ['bank', 'ball'], puzzle: ['frame', 'aim'],
+  arcade: ['cross', 'sight'], cpu: ['frame', 'line'], free: ['ball', 'aim'], four: ['ring', 'sight'], three: ['bank', 'sight'], eight: ['ball', 'rack'],
+  nine: ['sight', 'ring'], snooker: ['ring', 'half'], 'way-local': ['pair', 'line'], 'way-make': ['aim', 'sight'], 'way-join': ['go', 'ring'], 'arc-mode': ['cross', 'sight'] };
 // the tiles as one style, made once: .sym-<id> { --sym: the tile }
 let symMade = false;
 function symLayer(id, i) {
   if (!symMade) {
     symMade = true;
-    const g = (k, x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(1.05) translate(-12 -12)">${SYM_D[k]}</g>`;
+    const g = (k, x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(1.45) translate(-12 -12)">${SYM_D[k]}</g>`;
     const css = Object.entries(PANEL_SYM).map(([id, [a, b]]) => {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${g(a, 25, 30, -14)}${g(b, 75, 90, 12)}</svg>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${g(a, 25, 30, -12)}${g(b, 75, 90, 10)}</svg>`;
       return `.sym-${id}{--sym:url("data:image/svg+xml,${encodeURIComponent(svg)}")}`;
     }).join('\n');
     document.head.appendChild(el('style', { id: 'symStyle', text: css }));

@@ -90,10 +90,10 @@
    over the moving ones, were what went missing on the tablet) */
 .mn-fx{position:absolute;z-index:1;inset:calc(38px*var(--u)) 0 0;border-radius:0 0 calc(16px*var(--u)) calc(16px*var(--u));overflow:hidden;pointer-events:none}
 .mn-card.hero .mn-fx{inset:calc(41px*var(--u)) calc(3px*var(--u)) calc(3px*var(--u));border-radius:0 0 calc(15px*var(--u)) calc(15px*var(--u))}
-/* the signs: a tile of two (32-desk.js symLayer) over a layer 1½ the card's width and 1¼ its height, its right and top
-   edges on the card's - so moving one tile (a third of its width, a fifth of its height) up and right it still covers the
-   card, and looks as it began */
-.mn-sym{position:absolute;top:0;right:0;width:150%;height:125%;background:var(--sym) 0 0/33.3333% 20% repeat;opacity:.085;pointer-events:none}
+/* the signs: a tile of two (32-desk.js symLayer) a third of the card wide and a sixth tall, over a layer 1⅓ the card's
+   width and 1⅙ its height, its right and top edges on the card's - so moving one tile (a quarter of its width, a seventh
+   of its height) up and right it still covers the card, and looks as it began */
+.mn-sym{position:absolute;top:0;right:0;width:133.3333%;height:116.6667%;background:var(--sym) 0 0/25% 14.2857% repeat;opacity:.09;pointer-events:none}
 /* (owner 11-17 night: 'a soft gradient moving inside the card') a light and a shade, each a soft round patch on a box just
    its size (it fades to nothing at the box's edge, so the box may move without its edge showing) */
 .mn-fx .lt,.mn-fx .dk{position:absolute;border-radius:50%}
@@ -103,7 +103,7 @@
    fades in and out while moving, never standing still while lit, on a layer of its own from the start */
 .mn-fx .x{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.07) 30%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 70%,rgba(255,255,255,0));transform:translate3d(0,0,0) skewX(-18deg)}
 @media (prefers-reduced-motion:no-preference){
-  .mn-live .mn-sym{animation:mn-drift 12s linear infinite;animation-delay:calc(var(--si,0) * -1.9s);will-change:transform}
+  .mn-live .mn-sym{animation:mn-drift 9s linear infinite;animation-delay:calc(var(--si,0) * -1.9s);will-change:transform}
   .mn-live .mn-fx .x{animation:mn-cross 11s linear infinite;animation-delay:calc(var(--i,0) * 1.3s);will-change:transform,opacity}
   .mn-live .mn-fx .lt{animation:mn-flow 16s ease-in-out infinite alternate;animation-delay:calc(var(--i,0) * -2.7s);will-change:transform}
   .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
@@ -111,7 +111,7 @@
 .mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused}
 /* (none of them while the window changes size, nor just after, while the desk is drawn again at its new size: 10-ui.js checkLayout) */
 #app.resizing .mn-fx,#app.settle .mn-fx,#app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
-@keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(33.3333%,-20%,0)}}
+@keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(25%,-14.2857%,0)}}
 @keyframes mn-cross{0%,74%{opacity:0;transform:translate3d(0,0,0) skewX(-18deg)}78%{opacity:1}94%{opacity:1}98%,100%{opacity:0;transform:translate3d(400%,0,0) skewX(-18deg)}}
 @keyframes mn-flow{0%{transform:translate3d(-9%,-7%,0)}50%{transform:translate3d(6%,5%,0)}100%{transform:translate3d(10%,-6%,0)}}
 

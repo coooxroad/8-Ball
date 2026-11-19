@@ -156,7 +156,7 @@
 #dkBoards .bd.card .sk{background:linear-gradient(200deg,rgba(255,255,255,.16),rgba(255,255,255,0) 38%),linear-gradient(165deg,var(--c1),var(--c2));box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25),0 0 calc(30px*var(--mu,1)) calc(3px*var(--mu,1)) color-mix(in srgb,var(--c1) 30%,transparent)}
 #dkBoards .bd .sk-fx{position:absolute;inset:0;border-radius:13px;overflow:hidden;pointer-events:none;transform-origin:var(--fx) var(--fy);transition:transform .08s}
 #dkBoards .bd:active .sk-fx{transform:scale(var(--kp))}
-@media (prefers-reduced-motion:no-preference){#dkBoards .bd .mn-sym{animation:mn-drift 12s linear infinite;animation-delay:calc(var(--si,0) * -2.3s);will-change:transform}}
+@media (prefers-reduced-motion:no-preference){#dkBoards .bd .mn-sym{animation:mn-drift 9s linear infinite;animation-delay:calc(var(--si,0) * -2.3s);will-change:transform}}
 #dkBoards .bd.card.soon .sk{box-shadow:inset -1.5px 1.5px 0 rgba(255,255,255,.35),inset 1px -1px 0 rgba(0,0,0,.25)}
 #dkBoards .bd.card .sk::before{display:none}
 #dkBoards .bd.card .bd-tt{text-align:left}
