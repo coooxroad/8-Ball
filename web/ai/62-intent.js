@@ -51,7 +51,11 @@
         f.run = r2(Math.hypot(pk.ax - T.x, pk.ay - T.y));
         const L = Math.hypot(pk.ax - T.x, pk.ay - T.y) || 1, gx = T.x - (pk.ax - T.x) / L * 2 * R, gy = T.y - (pk.ay - T.y) / L * 2 * R;
         // (the cut as struck - the aim against the line of centres -, so a bank's is its own and not the pocket's)
-        const dc = describe(world, who, shot, res).cut; f.cut = dc == null ? null : Math.abs(dc); f.bank = pot.id === first && (res.ev.railed || []).includes(first);
+        const dc = describe(world, who, shot, res).cut; f.cut = dc == null ? null : Math.abs(dc);
+        // (a bank: the ball met a cushion and was not sent at the pocket - a rattle in the jaws is no bank, 11-19: plain cuts
+        // were named 뱅크샷 - its first line, from the cue ball's contact, off the pocket's by more than about 12 degrees)
+        const at = res.ev.at, off = at ? Math.abs(Math.atan2(Math.sin(Math.atan2(T.y - at[1], T.x - at[0]) - Math.atan2(pk.ay - T.y, pk.ax - T.x)), Math.cos(Math.atan2(T.y - at[1], T.x - at[0]) - Math.atan2(pk.ay - T.y, pk.ax - T.x)))) : 0;
+        f.bank = pot.id === first && (res.ev.railed || []).includes(first) && off > 0.2;
         // a ball close to either path: the cue ball's to the contact, the object ball's to the pocket
         let near = Infinity;
         for (const b of world.balls) if (b.on && b.id !== cue && b.id !== first) near = Math.min(near, segGap(b.x, b.y, c.x, c.y, gx, gy) - 2 * R, segGap(b.x, b.y, T.x, T.y, pk.ax, pk.ay) - 2 * R);

@@ -189,10 +189,10 @@ const review = {
     // (the button to the shot most worth seeing: 교정한 샷 · 쉬운 샷 · 추천 샷 - pressed again, back to the shot played)
     const act = w.act ? el('button', { class: 'rv-go' + (review.alt === w.act.alt ? ' on' : ''), onclick: pick(w.act.alt) }, [el('span', { text: review.alt === w.act.alt ? '내 샷 보기' : w.act.label })]) : null;
     return el('div', { class: `rv-coach g-${G.id}` + (A ? ' alt' : '') }, [
-      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.word + '.' }), document.createTextNode(' ' + w.head)]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('행운')]) : null]),
+      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.title })]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('행운')]) : null]),
       w.body.length ? el('p', { class: 'rv-body', text: w.body.join(' ') }) : null,
       act,
-      A ? (() => { const st = A.fix ? { how: rvLine(A.d, game.mode.table === 'carom') || '이렇게 쳤으면 들어갔어요.', why: [] } : rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: (A.fix ? '교정한 샷 — ' : '') + st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,
+      A ? (() => { const st = A.fix ? { how: rvSay(rvDid(A.d, game.mode.table === 'carom'), 'pre') || '이렇게 쳤으면 들어갔습니다.', why: [] } : rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: (A.fix ? '교정한 샷 — ' : '') + st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,
       chips,
       review.stroke(A ? A.d : r.d),
       el('button', { class: 'rv-act', text: '다시 보기', onclick: onTap(() => { review.board(q); }) })]);

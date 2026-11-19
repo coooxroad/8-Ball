@@ -63,57 +63,45 @@ const rvMetShort = d => d.thick == null ? '' : game.mode.table !== 'carom' ? (Ma
   : d.thick >= 0.9 ? '정면' : d.thick >= 0.65 ? '3/4' : d.thick >= 0.4 ? '1/2' : d.thick >= 0.18 ? '1/4' : '1/8';
 // where the cue ball was left, told by the ball the next shot would go for
 function rvNext(next, good) {
-  if (!next) return good ? '' : '다음에 칠 공이 마땅치 않은 자리예요.';
-  return good ? `수구가 다음 ${rvJ(rvBall(next.id), '을', '를')} 넣기 좋은 자리에 섰어요.` : `다음 ${rvJ(rvBall(next.id), '이', '가')} 어려운 자리에 섰어요.`;
+  if (!next) return good ? '' : '다음에 칠 공이 마땅치 않은 자리입니다.';
+  return good ? `수구가 다음 ${rvJ(rvBall(next.id), '을', '를')} 넣기 좋은 자리에 섭니다.` : `다음 ${rvJ(rvBall(next.id), '이', '가')} 어려운 자리에 섰습니다.`;
 }
-/* The coach's card (owner 11-19 noon: '가독성' - not 의도 · 결과 · 원인 in rows): the grade and what the shot was, in one
-   line ("아쉽습니다. 길은 맞았는데 두껍게 맞았어요."), one or two sentences under it on how it went, and a button to the
-   shot worth seeing - the shot as it should have been played (교정한 샷), an easier way (쉬운 샷), the best one (추천 샷).
-   Read as a commentator reads a game - the rules too (owner): a shot that ends the game has no next ball to set; a miss
-   leaves the table to the other player, so what it left them is part of it. And not the same words twice over a game
-   (as Valve's dialogue - Left 4 Dead's: the most particular situation that fits speaks first, each with several ways of
-   saying it, and what has been said is remembered): each situation has a few lines, taken in turn through the game. */
+/* The coach's card (owner 11-19: '가독성', and the house style - docs: CUE 샷 리뷰 문장 예시): the shot named and graded in
+   one line ("끌어치기는 예술적입니다.", "빗겨치기에 행운이 따랐습니다."), a sentence under it on what it did - what it met,
+   what it left, what was off and what would have done it, joined as a person speaks (-고, -는데, -지만, -면서, -니) - and
+   now and then one more on why, the kind a player keeps (a thin hit turns the cue ball less). Then a button to the shot
+   worth seeing - the shot as it should have been played (교정한 샷), an easier way (쉬운 샷), the best one (추천 샷).
+   Read as a commentator reads a game - the rules too: a shot that ends the game has no next ball to set; a miss leaves the
+   table to the other player, so what it left them is part of it. And not the same words twice over a game (as Valve's
+   dialogue: the most particular situation that fits speaks first, each with several ways of saying it, taken in turn). */
 const RV_WORD = ['예술적입니다', '좋습니다', '무난합니다', '아쉽습니다', '실수입니다'];
-// the lines, by situation - {n} a count, {s} the stroke's name, {b} a ball
-const RV_HEAD = {
-  wonArt: ['어려운 공으로 판을 끝냈어요.', '마지막 한 점을 이렇게 가져가네요.', '끝내기에 이보다 멋진 샷은 없어요.'],
-  won: ['깔끔하게 마무리했어요.', '흔들림 없이 판을 끝냈어요.', '마지막 공을 놓치지 않았어요.', '끝내야 할 때 끝냈어요.'],
-  wonRaised: ['{s} 판을 끝냈어요.', '마지막 공을 {s} 가져갔어요.'],
-  masseArt: ['맛세이로 막힌 길을 열었어요.', '휘어 들어가는 그림 같은 샷이었어요.', '휘는 길을 끝까지 읽었어요.'],
-  masse: ['맛세이로 길을 만들었어요.', '휘는 공을 정확히 읽었어요.', '맛세이가 제대로 먹혔어요.'],
-  jump: ['점프샷으로 없는 길을 만들어냈어요.', '가로막은 공을 훌쩍 넘었어요.', '넘어가는 길을 봤어요.'],
-  curve: ['살짝 휘는 공으로 길을 열었어요.', '커브로 가로막은 공을 비켜 갔어요.'],
-  art: ['쉽지 않은 길을 뚫고 다음 공까지 세웠어요.', '어려운 공을 넣고 자리까지 잡았어요.', '이 배치에서 나올 수 있는 최고의 샷이에요.', '보는 사람이 감탄할 샷이에요.'],
-  artCarom: ['어려운 길로 득점하고 공까지 모았어요.', '쉽지 않은 길을 끝까지 그려 냈어요.', '이 배치에서 나올 수 있는 최고의 샷이에요.'],
-  streak: ['{n}연속 득점, 흐름을 탔어요.', '리듬이 좋아요. 벌써 {n}번째예요.', '멈추지 않네요. {n}연속이에요.', '손이 풀렸어요. {n}번 연속이에요.'],
-  chance: ['상대가 준 기회를 놓치지 않았어요.', '상대의 실수를 바로 점수로 바꿨어요.', '찾아온 기회를 단번에 잡았어요.', '틈을 놓치지 않았어요.'],
-  close: ['이제 한 점 남았어요.', '끝이 보여요. 한 점만 더.'],
-  comeback: ['따라붙었어요.', '추격의 한 점이에요.'],
-  good: ['넣고 다음 공까지 챙겼어요.', '득점도 자리도 모두 잡았어요.', '교과서 같은 샷이에요.', '다음 샷이 편해졌어요.', '군더더기 없는 샷이에요.'],
-  goodCarom: ['득점하고 다음 배치도 좋아요.', '점수도 내고 공도 모아 뒀어요.', '다음 공이 잘 보이는 자리예요.', '깔끔한 득점이에요.'],
-  okMade: ['넣었지만 수구가 원하는 곳에 서지 못했어요.', '넣긴 했는데 다음 공이 어려워졌어요.', '공은 들어갔는데 자리가 아쉬워요.'],
-  okMadeCarom: ['득점은 했지만 다음 배치가 꼬였어요.', '점수는 났는데 공이 흩어졌어요.', '득점했지만 다음이 어려워요.'],
-  fluke: ['운이 따랐어요.', '들어가긴 했는데, 노린 길은 아니었어요.'],
-  safetyGood: ['상대에게 칠 공을 남기지 않았어요.', '영리한 수비예요.', '공을 떼어 놓아 상대를 묶었어요.'],
-  safetyOk: ['수비는 됐지만 틈이 남았어요.', '막긴 했는데 상대에게 길이 하나 남았어요.'],
-  thick: ['길은 맞았는데 두껍게 맞았어요.', '조준이 살짝 두꺼웠어요.', '한 끗 두꺼웠어요.'],
-  thin: ['길은 맞았는데 얇게 맞았어요.', '조준이 살짝 얇았어요.', '한 끗 얇았어요.'],
-  soft: ['길은 맞았는데 세기가 모자랐어요.', '한 뼘이 모자랐어요.', '공이 끝까지 가지 못했어요.'],
-  hard: ['길은 맞았는데 세기가 넘쳤어요.', '조금만 살살 쳤으면 됐어요.'],
-  tip: ['회전이 공의 길을 틀었어요.', '당점이 길을 비틀었어요.'],
-  masseMore: ['맛세이가 덜 휘었어요.', '조금 더 휘었어야 했어요.'],
-  masseLess: ['맛세이가 너무 휘었어요.', '휘는 양이 넘쳤어요.'],
-  jumpMiss: ['점프는 좋았는데 길이 어긋났어요.', '넘기는 됐는데 맞는 자리가 빗나갔어요.'],
-  hardMiss: ['원래 어려운 공이었어요.', '쉽지 않은 공이었어요.', '누구에게나 어려운 공이에요.'],
-  easyMiss: ['넣어야 하는 공을 놓쳤어요.', '쉬운 공이었어요.', '놓치면 안 되는 공이었어요.'],
-  easyMissCarom: ['쳐야 하는 공을 놓쳤어요.', '쉬운 배치였어요.', '놓치면 안 되는 배치였어요.'],
-  chanceMiss: ['상대가 준 기회를 살리지 못했어요.', '모처럼 온 기회를 놓쳤어요.'],
-  choice: ['더 쉬운 길이 있었어요.', '길 선택이 어려웠어요.', '굳이 어려운 길을 골랐어요.'],
-  none: ['노린 길이 잘 보이지 않는 샷이었어요.', '득점과는 거리가 먼 샷이었어요.'],
-  scratch: ['수구가 포켓에 빠졌어요.'], wrong: ['먼저 맞혀야 할 공을 놓쳤어요.'], wrongCarom: ['상대 공에 닿았어요.', '수구가 상대 공을 건드렸어요.'], nohit: ['공을 하나도 맞히지 못했어요.'],
-  norail: ['맞힌 뒤 쿠션에 닿은 공이 없었어요.'], off: ['공이 테이블 밖으로 나갔어요.'], foul: ['파울이 났어요.'],
-  lostGame: ['이 샷으로 판이 끝났어요.'],
-};
+// the shot's name, as players say it (the guide's: 끌어치기, 빗겨치기, 투쿠션, 빈쿠션 쓰리쿠션, 얇은 커트, 콤비네이션 ...)
+function rvShotName(q) {
+  // (a miss is named by the line it meant - what the player was playing - when the judge found it)
+  const r = q.res, played = r.d || {}, d = !r.made && !r.foul && r.md ? { ...r.md, raised: played.raised } : played, carom = r.game === 'four' || r.game === 'three', pool = !carom;
+  if (d.raised === 'masse') return '맛세이'; if (d.raised === 'jump') return '점프샷'; if (d.raised === 'curve') return '커브샷';
+  if (r.intent && r.intent.kind === 'safety') return '수비 샷';
+  if (q.last || (r.won || r.lost) && pool) return carom && r.game === 'three' ? '쓰리쿠션 마무리' : '마무리 샷';
+  if (r.game === 'three' && q.n === 1) return '초구';
+  const draw = d.b <= -0.25, follow = d.b >= 0.25, side = Math.abs(d.a || 0) >= 0.2;
+  if (carom) {
+    const rt = d.route || {};
+    if (d.pre) return r.game === 'three' ? '빈쿠션 쓰리쿠션' : '빈쿠션';
+    if (rt.name === '대회전') return '대회전';
+    if (r.won && r.game === 'three') return '쓰리쿠션 마무리';
+    const c = d.cushions || 0, t = d.thick;
+    if (r.game === 'three') return c >= 3 ? (t != null && t < 0.3 ? '빗겨치기' : side && t != null && t >= 0.4 ? '옆돌리기' : '쓰리쿠션') : '쓰리쿠션';
+    if (c === 1) return '원쿠션'; if (c === 2) return '투쿠션'; if (c >= 3) return '쓰리쿠션';
+    return draw ? '끌어치기' : follow ? '밀어치기' : t != null && t < 0.3 ? '빗겨치기' : side ? '옆돌리기' : '직접 샷';
+  }
+  const pot = (d.potted || []).find(([id]) => id !== 0), F = r.facts || {}, tgt = r.intent && r.intent.target;
+  if (tgt && tgt.via != null || r.made && pot && d.first != null && pot[0] !== d.first) return '콤비네이션';
+  if (F.bank) return '뱅크샷';
+  const cut = Math.abs(d.cut || 0);
+  if (cut >= 55) return '얇은 커트';
+  if (cut >= 25 && (F.dist || 0) + (F.run || 0) > 1.6) return '긴 커트';
+  return draw ? '끌어치기' : follow ? '밀어치기' : d.pace != null && d.pace < 0.45 && !side ? '스톱 샷' : side ? '회전 샷' : '직접 샷';
+}
 // (a line's variants, taken in turn through the game: the n-th time a situation comes up, its n-th line)
 const rvHash = k => { let h = 7; for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 // the game's story up to a shot: this player's run of points before it, what the other's shot before left, the score
@@ -121,127 +109,183 @@ function rvContext(q) {
   const L = typeof review !== 'undefined' ? review.list : [q], i = L.indexOf(q), me = q.turn;
   let streak = 0; for (let k = i - 1; k >= 0 && L[k].turn === me; k--) { const r = L[k].res; if (r && r.made && !r.foul) streak++; else break; }
   const prev = i > 0 ? L[i - 1] : null, pr = prev && prev.turn !== me ? prev.res : null;
-  // (the other's shot before: a miss that left this one an easy table - a chance given)
   const given = !!(pr && pr.grade != null && pr.grade >= 3 && !pr.made && pr.leave >= 0.9);
   const sc = q.sc || null, tg = q.tg || null, left = sc && tg ? tg[me] - sc[me] : null, behind = sc ? sc[me] < sc[1 - me] : false;
-  return { L, i, streak, given, left, behind, last: !!q.last };
+  return { L, i: i < 0 ? 0 : i, streak, given, left, behind, last: !!q.last };
 }
-// which situation a shot is, most particular first (also how far the turn of its lines has gone: rvSay)
+// which situation a shot is, most particular first
 function rvKey(q) {
   const r = q.res || {}, d = r.d || {}, carom = r.game === 'four' || r.game === 'three', c = rvContext(q), raised = d.raised;
   if (r.foul) return r.lost ? 'lostGame' : r.cause === 'wrong' && carom ? 'wrongCarom' : r.cause || 'foul';
   if (r.made) {
     if (r.fluke) return 'fluke';
-    if (r.won) return raised ? 'wonRaised' : r.grade === 0 ? 'wonArt' : 'won';
-    if (raised === 'jump') return 'jump';
-    if (raised === 'masse') return r.grade === 0 ? 'masseArt' : r.grade === 1 ? 'masse' : carom ? 'okMadeCarom' : 'okMade';
-    if (raised === 'curve' && r.grade <= 1) return 'curve';
-    if (r.grade === 0) return carom ? 'artCarom' : 'art';
-    if (r.grade === 1) return c.given ? 'chance' : c.streak >= 2 ? 'streak' : c.left === 1 && !c.last ? 'close' : c.behind && c.left != null && c.left <= 3 ? 'comeback' : carom ? 'goodCarom' : 'good';
-    return carom ? 'okMadeCarom' : 'okMade';
+    if (r.won) return r.grade === 0 ? 'wonArt' : 'won';
+    if (raised === 'jump') return r.grade <= 1 ? 'jump' : 'okMade';
+    if (raised === 'masse' || raised === 'curve') return r.grade <= 1 ? 'masse' : 'okMade';
+    if (r.grade === 0) return 'art';
+    if (r.grade === 1) return c.given ? 'chance' : c.streak >= 2 ? 'streak' : c.left === 1 && !c.last ? 'close' : 'good';
+    return 'okMade';
   }
-  if (r.intent && r.intent.kind === 'safety' || !r.meant && r.grade <= 1) return r.grade <= 1 ? 'safetyGood' : 'safetyOk';
+  if (r.intent && r.intent.kind === 'safety' || !r.meant && r.grade <= 1) return r.grade <= 1 ? 'safetyGood' : r.grade === 2 ? 'safetyOk' : 'safetyBad';
   if (r.lost) return 'lostGame';
   const b = r.better, choiceBad = b && !b.same && b.easier && r.grade >= 3;
   if (choiceBad || !r.meant && b && r.grade >= 3) return r.meant || b ? 'choice' : 'none';
   if (!r.meant) return 'none';
   if (c.given && r.p != null && r.p >= 0.6) return 'chanceMiss';
-  if (r.p != null && r.p >= 0.8 && r.grade >= 3) return carom ? 'easyMissCarom' : 'easyMiss';
   if (raised === 'masse' || raised === 'curve') return r.offDeg == null ? 'hardMiss' : (r.offDeg > 0) === ((d.a || 0) > 0) ? 'masseLess' : 'masseMore';
   if (raised === 'jump') return 'jumpMiss';
-  if (r.p != null && r.p < 0.35 && r.grade <= 2) return 'hardMiss';
-  return r.cause && RV_HEAD[r.cause] ? r.cause : 'hardMiss';
+  if (r.p != null && r.p >= 0.8 && r.grade >= 3) return 'easyMiss';
+  if (r.cause && /^(thick|thin|soft|hard|tip|aim)$/.test(r.cause)) return r.cause;
+  return 'hardMiss';
 }
-function rvSay(q, key, vars) {
-  const c = rvContext(q); let n = 0;
-  for (let k = 0; k < c.i; k++) { const o = c.L[k]; if (o.res && o.res.grade != null && rvKey(o) === key) n++; }
-  const list = RV_HEAD[key] || RV_HEAD.none, t = list[(rvHash(key) + n) % list.length];
-  return t.replace(/\{(\w)\}/g, (m, k) => vars[k] != null ? vars[k] : '');
-}
-// a stroke's name with its particle (맛세이로 · 점프샷으로)
-const rvWith = s => rvJ(s, '으로', '로');
-/* How it went, short: the way the ball went (carom: the first ball, how thick, the cushions, the second; pool: the ball,
-   the cut, the pocket) - one sentence */
-function rvLine(d, carom) {
-  if (!d || d.first == null) return '';
-  const s = rvStroke(d), lead = s === '스톱' || s === '무회전' ? '' : rvWith(s) + ' ', met = rvMet(d), first = rvBall(d.first);
-  if (carom) {
-    const rt = d.route || {}, rails = rt.rails || (d.cushions ? `쿠션 ${['', '하나', '둘', '셋', '넷', '다섯'][d.cushions] || d.cushions + '개'}` : '');
-    if (d.second == null) return `${lead}${rvJ(first, '을', '를')}${met ? ' ' + met : ''} 맞혔지만 둘째 공에 닿지 못했어요.`;
-    return `${lead}${rvJ(first, '을', '를')}${met ? ' ' + met : ''} 맞히고 ${rails ? rails + '을 돌아' : '곧바로'} ${rvBall(d.second)}까지.`.replace(/\s+/g, ' ');
-  }
-  const pot = (d.potted || []).find(([id]) => id !== 0);
-  return pot ? `${lead}${rvJ(rvBall(pot[0]), '을', '를')}${met && met !== '정면으로' ? ' ' + met : ''} ${rvPocket(pot[1])}에.`.replace(/\s+/g, ' ')
-    : `${lead}${rvJ(first, '을', '를')}${met ? ' ' + met : ''} 맞혔어요.`.replace(/\s+/g, ' ');
-}
-// the sentences under the line: what went right, or what was off and by how much; then - the table being the other's
-// after a miss - what it left them
-function rvBody(q, key) {
-  const r = q.res, d = r.d || {}, md = r.md, carom = r.game === 'four' || r.game === 'three', sh = r.intent && r.intent.shape, out = [];
-  const nb = x => x && x.next ? rvBall(x.next.id) : null;
-  if (key === 'lostGame') {
-    const eight = !carom && (d.potted || []).some(([id]) => id === 8);
-    out.push(eight ? '8번 공이 들어가면서 판을 내줬어요.' : r.cause === 'scratch' ? '수구가 빠지면서 판을 내줬어요.' : '이 샷의 파울로 판을 내줬어요.');
-    return out;
-  }
-  if (r.foul) {
-    const pot = (d.potted || []).find(([id]) => id !== 0);
-    if (r.cause === 'scratch') out.push(pot ? `${rvJ(rvBall(pot[0]), '은', '는')} 들어갔지만 수구도 따라 빠졌어요.` : '수구만 포켓으로 들어갔어요.', r.facts && r.facts.scratch >= 0.25 ? '이 세기와 당점이면 수구가 포켓으로 가기 쉬운 길이었어요.' : '');
-    else if (r.cause === 'wrong' && !carom) { if (d.first != null) out.push(`${rvJ(rvBall(d.first), '이', '가')} 먼저 맞았어요.`); }
-    else if (r.cause === 'wrong' && carom) out.push(d.first != null && d.first < 2 ? `${rvJ(rvBall(d.first), '을', '를')} 먼저 맞혔어요.` : '빨간 공 다음에 상대 공이 맞았어요.');
-    else if (d.first != null) out.push(rvLine(d, carom));
-    if (r.leave >= 0.9) out.push(game.mode.ballInHand ? '상대는 수구를 원하는 곳에 놓고 쳐요.' : '상대에게 좋은 배치가 넘어갔어요.');
-    return out;
-  }
-  if (r.made) {
-    if (key === 'fluke') { out.push(`${carom ? '키스' : '다른 공'} 덕분이에요. 다시 치면 나오기 어려워요.`); return out; }
-    out.push(rvLine(d, carom));
-    // (the game won: nothing after it to set up)
-    if (r.won) return out;
-    if (!r.practical && sh) {
-      if (sh.dir && sh.best) out.push(`세기를 ${sh.dir === 'short' ? '조금 더' : '조금 덜'} 줬으면 ${nb(sh.best) ? rvJ(nb(sh.best), '을', '를') + ' 치기 좋은 자리' : '좋은 자리'}였어요.`);
-      else if (!carom) out.push('이 스트로크로는 세기를 바꿔도 좋은 자리가 나오지 않아요 — 당점이나 길을 바꿔야 했어요.');
-    } else if (!r.practical && carom) out.push('공들이 흩어져 다음 배치가 어려워요.');
-    else if (!carom && sh && sh.own && sh.own.next && r.grade <= 1) out.push(`수구는 ${rvJ(rvBall(sh.own.next.id), '을', '를')} 치기 좋은 자리에 섰어요.`);
-    return out;
-  }
-  // a miss
-  if (key === 'safetyGood' || key === 'safetyOk') { if (d.first != null) out.push(rvLine(d, carom)); return out; }
-  if (key === 'choice' || key === 'none') {
-    const e = (r.alts || []).find(a => a.easiest) || (r.alts || []).find(a => a.best);
-    if (r.meant) out.push(r.p != null && r.p < 0.35 ? '선택한 길은 성공 확률이 낮았어요.' : '선택한 길보다 확실한 길이 있었어요.');
-    if (e) out.push(`${rvJ(rvAltProse(e), '이', '가')} 훨씬 쉬웠어요.`);
-  } else if (md) {
-    const need = carom ? rvMetShort(md) : Math.abs(md.cut || 0) < 3 ? '정면' : `${Math.abs(md.cut)}°`, got = carom ? rvMetShort(d) : Math.abs(d.cut || 0) < 3 ? '정면' : `${Math.abs(d.cut || 0)}°`;
-    if (key === 'masseMore' || key === 'masseLess' || key === 'jumpMiss') {
-      const deg = r.offDeg == null ? null : Math.abs(r.offDeg);
-      out.push(key === 'masseMore' ? `큐를 조금 더 세우거나 당점을 바깥으로${deg != null ? `, 아니면 조준을 ${deg < 0.2 ? '아주 조금' : deg.toFixed(1) + '°'} ${r.offDeg > 0 ? '왼쪽' : '오른쪽'}으로` : ''}.`
-        : key === 'masseLess' ? `큐를 조금 눕히거나 당점을 안쪽으로${deg != null ? `, 아니면 조준을 ${deg < 0.2 ? '아주 조금' : deg.toFixed(1) + '°'} ${r.offDeg > 0 ? '왼쪽' : '오른쪽'}으로` : ''}.`
-        : `조준을 ${deg == null || deg < 0.2 ? '아주 조금' : deg.toFixed(1) + '°'} ${r.offDeg > 0 ? '왼쪽' : '오른쪽'}으로 옮기면 맞는 길이었어요.`);
-    } else if (r.cause === 'soft' || r.cause === 'hard') { const a = Math.round((md.pace || 0) * 100), b = Math.round((d.pace || 0) * 100);
-      out.push(pick2(q, [`세기 ${a}%쯤이 맞았어요 — 이번엔 ${b}%.`, `${b}%로 쳤는데 ${a}%는 필요했어요.`, `세기를 ${b}%에서 ${a}%로 ${a > b ? '올리면' : '내리면'} 들어가요.`])); }
-    else if (r.cause === 'tip') out.push('당점을 가운데로 두면 들어가는 공이었어요.');
-    else if (need && got && need !== got) out.push(need === '정면' ? `정면으로 맞혀야 했는데 ${rvJ(got, '으로', '로')} 맞았어요.` : `${carom ? '두께' : '각'} ${rvJ(need, '이', '가')} 필요했는데 ${got === '정면' ? '정면으로' : rvJ(got, '으로', '로')} 맞았어요.`);
-    else if (r.cause === 'thick' || r.cause === 'thin') out.push(`${carom ? '두께' : '각'}가 ${r.grade >= 4 ? '조금' : '아주 조금'} ${r.cause === 'thick' ? '두꺼웠어요' : '얇았어요'}.`);
-    else out.push(rvLine(d, carom));
-    // (the why of it - a thin hit turns the cue ball less - said the first time in a game, not every time)
-    if (carom && (r.cause === 'thick' || r.cause === 'thin') && !/masse|jump/.test(key) && !rvSaidBefore(q, o => o.res && o.res.cause === r.cause && !o.res.made)) out.push(r.cause === 'thin' ? '얇으면 수구가 덜 꺾여요.' : '두꺼우면 수구가 더 꺾여요.');
-  } else if (d.first != null) out.push(rvLine(d, carom));
-  // (the table is the other's now: what it was left - said when it matters)
-  // (an ordinary leave is high for the reference hand - what counts is one well below or near the top, by the game's own run)
-  const safeAt = r.game === 'three' ? 0.3 : 0.5;
-  if (r.leave != null && !r.lost) {
-    if (r.leave <= safeAt && key !== 'none') out.push(pick2(q, ['다행히 상대에게 남긴 공은 어려워요.', '그래도 상대에게 쉬운 공은 주지 않았어요.']));
-    else if (r.leave >= 0.9) out.push(pick2(q, ['게다가 상대에게 쉬운 공을 남겼어요.', '상대에게 좋은 배치를 넘겨줬어요.']));
-  }
-  return out;
-}
-const pick2 = (q, a) => a[(q.n || 0) % a.length];
 // (something said for an earlier shot of this game)
 const rvSaidBefore = (q, f) => { const c = rvContext(q); for (let k = 0; k < c.i; k++) if (f(c.L[k])) return true; return false; };
+function rvTurn(q, key, list) {
+  const c = rvContext(q); let n = 0;
+  for (let k = 0; k < c.i; k++) { const o = c.L[k]; if (o.res && o.res.grade != null && rvKey(o) === key) n++; }
+  return list[(rvHash(key) + n) % list.length];
+}
+/* What the shot did, as a clause: the verb left for the sentence to bend (-고, -면서, -니, -지만, -는데, -습니다).
+   carom: what it met first and how thick, the cushions, the second ball; pool: the ball, the cut, the pocket */
+const RV_VERB = { 잡: ['잡고', '잡으면서', '잡으니', '잡았'], 넣: ['넣고', '넣으면서', '넣으니', '넣었'], 맞히: ['맞히고', '맞히면서', '맞히니', '맞혔'], 닿: ['닿고', '닿으면서', '닿으니', '닿았'] };
+const rvV = (v, form) => { const f = RV_VERB[v]; return form === 'go' ? f[0] : form === 'ms' ? f[1] : form === 'ni' ? f[2] : form === 'jiman' ? f[3] + '지만' : form === 'nde' ? f[3] + '는데' : form === 'gu' ? f[3] + '고' : f[3] + '습니다.'; };
+function rvDid(d, carom) {
+  if (!d || d.first == null) return null;
+  const met = rvMet(d), first = rvBall(d.first);
+  if (carom) {
+    const rt = d.route || {}, rails = rt.rails ? `${rt.rails} 쿠션을 돌아` : d.cushions ? `쿠션 ${['', '하나', '둘', '셋', '넷', '다섯'][d.cushions] || d.cushions + '개'}를 돌아` : '곧바로';
+    // (a cushion first - 빈쿠션: said before the ball)
+    const pre = d.pre ? `쿠션을 ${d.pre === 1 ? '먼저' : ['', '', '두 번', '세 번'][d.pre] || d.pre + '번'} 맞고 ` : '';
+    if (d.second == null) return { text: `${pre}${rvJ(first, '을', '를')}${met ? ' ' + met : ''}`, v: '맞히', alone: true };
+    return { text: `${pre}${rvJ(first, '을', '를')}${met ? ' ' + met : ''} 맞혀 ${d.pre && !d.cushions ? '곧바로' : rails} ${rvBall(d.second)}까지`.replace(/\s+/g, ' '), v: '잡' };
+  }
+  const pot = (d.potted || []).find(([id]) => id !== 0);
+  if (!pot) return { text: `${rvJ(first, '을', '를')}${met && met !== '정면으로' ? ' ' + met.replace(/ 깎아$/, '로') : ''}`, v: '맞히', alone: true };
+  return { text: `${rvJ(rvBall(pot[0]), '을', '를')}${met && met !== '정면으로' ? ' ' + met : ''} ${rvPocket(pot[1])}에`.replace(/\s+/g, ' '), v: '넣' };
+}
+const rvSay = (did, form) => did ? `${did.text} ${rvV(did.v, form)}` : '';
+// the stroke's next ball, when the cue ball set it up
+const rvNextBall = r => { const sh = r.intent && r.intent.shape; return sh && sh.own && sh.own.next ? rvBall(sh.own.next.id) : null; };
+/* The sentence under the title */
+function rvBody(q, key) {
+  const r = q.res, d = r.d || {}, md = r.md, carom = r.game === 'four' || r.game === 'three', did = rvDid(d, carom), c = rvContext(q), sh = r.intent && r.intent.shape;
+  const T = list => rvTurn(q, key, list), nb = rvNextBall(r);
+  const leaveWord = !carom && nb ? `${rvJ(nb, '을', '를')} 치기 좋은 자리` : '다음 공이 잘 보이는 자리';
+  switch (key) {
+    case 'wonArt': return T([`${rvSay(did, 'go')} 판을 끝냈습니다. 마지막 한 점으로 더할 나위 없는 샷입니다.`, `어려운 길이었지만 ${rvSay(did, 'ms')} 경기를 마무리했습니다.`]);
+    case 'won': return T(['승리는 언제나 좋습니다.', `${rvSay(did, 'go')} 경기를 끝냈습니다.`, '끝내야 할 때 흔들리지 않았습니다.']);
+    case 'fluke': return carom ? T(['첫 공이 되돌아오며 수구 방향을 틀어 줘 둘째 공에 닿았습니다.', '키스로 방향이 바뀌어 둘째 공에 닿았습니다. 다시 치면 나오기 어려운 득점입니다.'])
+      : T(['다른 공에 맞고 방향이 바뀌어 들어갔습니다. 노린 길은 아니었습니다.', '빗나간 공이 다른 공을 건드려 대신 들어갔습니다.']);
+    case 'masse': return T([`정확한 곡선으로 ${rvSay(did, 'go')} ${r.practical ? '다음 샷 자리까지 만들었습니다.' : '득점했습니다.'}`, `수구를 휘어 보내 ${rvSay(did, 'pre')}`, `큐를 세워 길을 휘게 하니 막혀 있던 공에도 닿았습니다.`]);
+    case 'jump': return T(['없는 길을 만들어냈습니다!', `가린 공을 넘어 ${rvSay(did, 'pre')}`]);
+    case 'art': return T([
+      `${rvSay(did, 'go')} 수구는 ${leaveWord}에 세웠습니다.`,
+      `쉽지 않은 길이었는데 ${rvSay(did, 'ms')} 다음 자리까지 만들었습니다.`,
+      `${rvSay(did, 'pre')} 이 배치에서 나올 수 있는 가장 좋은 샷입니다.`]);
+    case 'chance': return T([`상대가 남긴 기회를 놓치지 않고 ${rvSay(did, 'pre')}`, `상대의 실수 뒤 ${rvSay(did, 'go')} 흐름을 가져왔습니다.`]);
+    case 'streak': return T([`${c.streak + 1}연속 득점입니다. ${rvSay(did, 'go')} 다음 공도 남겼습니다.`, `리듬이 좋습니다. ${rvSay(did, 'ms')} ${c.streak + 1}번째 점수를 냈습니다.`]);
+    case 'close': return T([`${rvSay(did, 'pre')} 이제 한 점 남았습니다.`, `${rvSay(did, 'go')} 끝을 눈앞에 뒀습니다.`]);
+    case 'good': return T([
+      `${rvSay(did, 'go')} 수구는 ${leaveWord}에 멈췄습니다.`,
+      `무리 없이 ${rvSay(did, 'ms')} 다음 샷까지 챙겼습니다.`,
+      `${rvSay(did, 'pre')} 다음 공도 바로 보입니다.`,
+      carom ? `${rvSay(did, 'go')} 공들을 가까이 남겼습니다.` : `${rvSay(did, 'go')} 수구를 쿠션에서 떼어 두었습니다.`]);
+    case 'okMade': {
+      const fix = sh && sh.dir ? `세기를 ${sh.dir === 'short' ? '조금 더' : '조금 덜'} 주면 ${nb ? rvJ(nb, '을', '를') + ' 치기 좋은 자리였습니다' : '다음 공이 보이는 자리였습니다'}.` : null;
+      return T([
+        `${rvSay(did, 'jiman')} 수구가 원하는 곳에 서지 못했습니다.${fix ? ' ' + fix : ''}`,
+        `${rvSay(did, 'nde')} 다음 공의 각이 까다로워졌습니다.${fix ? ' ' + fix : ''}`,
+        carom ? `득점은 했지만 공이 흩어져 연속 득점은 어려워졌습니다.` : `넣긴 했지만 다음 공까지 거리가 멀어졌습니다.${fix ? ' ' + fix : ''}`]);
+    }
+    case 'safetyGood': return T([carom ? '얇게 맞혀 공들을 벌려 놓으니 상대에게 쉬운 길이 남지 않았습니다.' : '수구를 숨겨 상대가 맞힐 공에 곧장 닿기 어렵게 했습니다.', '상대에게 칠 공을 남기지 않았습니다.']);
+    case 'safetyOk': return T(['한쪽 길을 막았지만 상대에게 다른 길이 남았습니다.', '수비는 됐지만 상대도 칠 만한 공이 있습니다.']);
+    case 'safetyBad': return T(['수비하려 했지만 상대에게 쉬운 공이 열렸습니다.', '공을 벌려 놓지 못해 상대가 바로 칠 수 있습니다.']);
+  }
+  // misses
+  const need = md ? (carom ? rvMetShort(md) : Math.abs(md.cut || 0) < 3 ? '정면' : `${Math.abs(md.cut)}°`) : null, got = carom ? rvMetShort(d) : Math.abs(d.cut || 0) < 3 ? '정면' : `${Math.abs(d.cut || 0)}°`;
+  const deg = r.offDeg == null ? null : Math.abs(r.offDeg), dir = r.offDeg > 0 ? '왼쪽' : '오른쪽', nudge = deg == null || deg < 0.2 ? '아주 조금' : `${deg.toFixed(1)}°`;
+  const pa = md ? Math.round((md.pace || 0) * 100) : null, pb = Math.round((d.pace || 0) * 100);
+  const thickness = carom ? '두께' : '각';
+  let s = '';
+  switch (key) {
+    case 'thick': case 'thin': {
+      const which = key === 'thick' ? '두껍게' : '얇게';
+      s = T([
+        carom && need && got && need !== got ? `길은 맞았는데 ${need === '정면' ? '정면이 필요한 공을' : `${need}가 필요한 공을`} ${got === '정면' ? '정면으로' : rvJ(got, '으로', '로')} 맞혔습니다.` : `길은 맞았는데 ${carom ? '첫 공을' : '목적구를'} ${which} 맞혔습니다.`,
+        `선택은 좋았고, ${carom ? '첫 공을' : '목적구를'} 조금 더 ${key === 'thick' ? '얇게' : '두껍게'} 맞히면 ${carom ? '둘째 공에 닿았습니다' : '들어갔습니다'}.`,
+        `같은 세기와 당점에서 조준을 ${nudge} ${dir}으로 옮기면 ${carom ? '득점하는 길이었습니다' : '포켓으로 가는 길이었습니다'}.`]);
+      break;
+    }
+    case 'soft': case 'hard': s = T([
+      `같은 조준과 당점에서 세기만 ${key === 'soft' ? '조금 올리면' : '조금 줄이면'} ${carom ? '둘째 공에 닿았습니다' : '들어갔습니다'}.`,
+      pa != null ? `${pb}%로 쳤는데 ${pa}%쯤이 맞는 세기였습니다.` : `세기가 ${key === 'soft' ? '모자랐습니다' : '넘쳤습니다'}.`,
+      `길은 맞았는데 ${key === 'soft' ? '공이 끝까지 가지 못했습니다' : '공이 너무 멀리 갔습니다'}.`]); break;
+    case 'tip': s = T(['당점이 길을 비틀었습니다. 같은 조준에 회전을 줄이면 들어가는 공이었습니다.', '회전 때문에 수구가 생각보다 덜 꺾였습니다. 당점을 가운데 가깝게 두면 맞는 길이었습니다.']); break;
+    case 'aim': s = T([`조준이 ${nudge} 어긋났습니다. ${dir}으로 옮기면 맞는 길이었습니다.`]); break;
+    case 'masseMore': s = T([`맞는 길을 골랐는데 덜 휘었습니다. 큐를 조금 더 세우거나 당점을 바깥으로 주면 닿았습니다.`, `곡선이 모자라 목적구 앞을 지나갔습니다. 조준을 ${nudge} ${dir}으로 옮겨도 됐습니다.`]); break;
+    case 'masseLess': s = T([`맛세이로 장애물은 피했지만 수구가 너무 일찍 휘었습니다. 큐를 조금 눕히면 맞는 곡선이었습니다.`, `곡선이 넘쳤습니다. 당점을 안쪽으로 조금 옮기면 닿았습니다.`]); break;
+    case 'jumpMiss': s = T(['점프는 좋았는데 착지 후 길이 어긋났습니다.', `넘기는 됐지만 조준이 ${nudge} 벗어났습니다.`]); break;
+    case 'easyMiss': {
+      const off = carom && need && got && need !== got ? `${thickness} ${rvJ(need, '이', '가')} 필요했는데 ${got === '정면' ? '정면으로' : rvJ(got, '으로', '로')} 맞았습니다.` : `조준이 ${nudge} ${dir}으로 어긋났습니다.`;
+      s = T([`넣어야 하는 공을 놓쳤습니다. ${off}`, `쉬운 배치였는데 ${off.replace(/습니다\.$/, '서 빗나갔습니다.').replace(/맞았서/, '맞아').replace(/났서/, '나')}`]); break;
+    }
+    case 'chanceMiss': s = T(['상대가 준 기회를 살리지 못했습니다.', '모처럼 온 기회를 놓쳤습니다.']); break;
+    case 'choice': case 'none': {
+      const e = (r.alts || []).find(a => a.easiest) || (r.alts || []).find(a => a.best);
+      s = e ? T([`쉬운 길을 두고 까다로운 길을 택했습니다. ${rvJ(rvAltProse(e), '이', '가')} 훨씬 쉬웠습니다.`, `${rvJ(rvAltProse(e), '이', '가')} 열려 있었는데 더 어려운 길을 골랐습니다.`, `선택한 길은 성공 확률이 낮았습니다. ${rvJ(rvAltProse(e), '을', '를')} 노렸다면 편했습니다.`])
+        : T(['득점과는 거리가 먼 샷이었습니다.', '노린 길이 잘 보이지 않는 샷이었습니다.']);
+      break;
+    }
+    case 'hardMiss': s = T(['원래 어려운 공이었습니다.', '누구에게나 쉽지 않은 길이었습니다.', did && !did.alone ? '길은 좋았지만 마지막에 조금 어긋났습니다.' : '쉽지 않은 공이었고, 첫 공을 맞힌 뒤 길이 어긋났습니다.']); break;
+    case 'lostGame': s = !carom && (d.potted || []).some(([id]) => id === 8) ? T(['8번이 먼저 들어가 경기를 내줬습니다.', '8번과 함께 경기를 내줬습니다. 당점을 낮췄다면 피할 수 있었습니다.']) : '이 샷의 파울로 경기를 내줬습니다.'; break;
+    case 'scratch': { const pot = (d.potted || []).find(([id]) => id !== 0); s = pot ? `${rvJ(rvBall(pot[0]), '과', '와')} 수구가 함께 빠졌습니다. 끌어치거나 세기를 줄이면 수구를 빼낼 수 있었습니다.` : '수구만 포켓에 빠졌습니다.'; break; }
+    case 'wrong': s = d.first != null ? `${rvJ(rvBall(d.first), '에', '에')} 먼저 닿았습니다.` : '맞혀야 할 공에 먼저 닿지 못했습니다.'; break;
+    case 'wrongCarom': s = d.first != null && d.first < 2 ? '상대 공에 먼저 닿아 파울이 났습니다.' : '첫 빨간 공을 맞힌 뒤 수구가 상대 공에 걸려 파울이 났습니다.'; break;
+    case 'nohit': s = '어느 공에도 닿지 못했습니다.'; break;
+    case 'norail': s = '공을 맞힌 뒤 어느 공도 쿠션에 닿거나 들어가지 않아 파울이 났습니다.'; break;
+    case 'off': s = '세기가 너무 강해 공이 테이블 밖으로 나갔습니다.'; break;
+    default: s = '파울이 났습니다.';
+  }
+  // (the table is the other's now: what it was left - said when it matters, joined to the sentence)
+  const safeAt = r.game === 'three' ? 0.3 : 0.5;
+  if (r.leave != null && !r.lost && !r.foul) {
+    if (r.leave <= safeAt && key !== 'none') s += ' ' + T(['다행히 상대에게 남긴 공은 까다롭습니다.', '그래도 상대에게 쉬운 공은 주지 않았습니다.', '수비는 괜찮았습니다.']);
+    else if (r.leave >= 0.9) s += ' ' + T(['게다가 상대에게 쉬운 공을 남겼습니다.', '상대에게 좋은 배치를 넘겨줬습니다.']);
+  }
+  return s;
+}
+/* One more sentence, now and then: the why of it - a thing a player keeps (once a game a kind; none for a plain good shot) */
+const RV_TIP = {
+  thin: ['얇게 맞을수록 수구는 덜 꺾이고 멀리 빠집니다.', '두께는 첫 공의 가장자리가 아니라 중심에서 얼마나 비켜 맞힐지로 잡아 보세요.'],
+  thick: ['두껍게 맞을수록 수구는 많이 꺾이고 힘을 잃습니다.', '두께가 두꺼우면 수구가 첫 공 쪽으로 덜 빠집니다. 조준점을 바깥으로 반 개만 옮겨 보세요.'],
+  thinPool: ['얇게 맞으면 목적구가 포켓 바깥쪽으로 갑니다. 목적구 뒤에 수구가 닿을 자리(고스트 볼)를 먼저 그려 보세요.'],
+  thickPool: ['두껍게 맞으면 목적구가 포켓 안쪽 턱으로 갑니다. 각이 클수록 조금 더 얇게 겨냥하세요.'],
+  soft: ['쿠션을 많이 도는 길일수록 쿠션마다 힘을 잃습니다. 한 단계 세게 치세요.', '세기가 모자라면 쿠션에서 각이 짧아집니다.'],
+  hard: ['세기가 넘치면 쿠션에서 덜 꺾여 길게 빠집니다.', '강하게 칠수록 회전이 늦게 먹힙니다.'],
+  tip: ['회전을 많이 줄수록 수구가 조준선에서 살짝 밀립니다. 회전을 줄 때는 조준을 조금 보정하세요.'],
+  masseMore: ['맛세이는 큐를 세울수록, 당점이 바깥일수록 더 크게 휩니다.'], masseLess: ['맛세이는 세기가 약할수록 일찍 휩니다. 휘는 지점은 세기로 조절합니다.'],
+  jumpMiss: ['점프는 큐를 세운 만큼 높이 뜨고, 세기가 강할수록 멀리 날아갑니다.'],
+  choice: ['쉬운 길이 있으면 먼저 그 길을 보세요. 화려한 길은 쉬운 길이 막혔을 때 꺼내는 카드입니다.', '어려운 길은 성공해도 다음 배치가 흔들리기 쉽습니다.'],
+  scratch: ['목적구와 수구가 같은 포켓 쪽으로 가는 각이면 끌어치기나 스톱으로 수구 길을 바꾸세요.'],
+  okMade: ['다음 공은 정면보다 살짝 각이 있는 자리가 이어 치기 좋습니다.', '넣는 것만큼 수구를 어디에 세울지가 중요합니다.'],
+  art: ['어려운 공일수록 세기를 줄이면 다음 배치를 조절하기 쉽습니다.'],
+  masse: ['맛세이는 큐를 세울수록, 당점이 바깥일수록 더 크게 휩니다.'],
+  safetyGood: ['넣기 어려울 땐 상대에게 남길 공을 먼저 생각하는 것도 실력입니다.'],
+};
+function rvTip(q, key) {
+  const r = q.res, carom = r.game === 'four' || r.game === 'three', k0 = key === 'easyMiss' || key === 'hardMiss' ? r.cause : key === 'none' ? 'choice' : key;
+  const tipKey = !carom && (k0 === 'thin' || k0 === 'thick') ? k0 + 'Pool' : k0;
+  const list = RV_TIP[tipKey]; if (!list) return '';
+  // (once a game for each kind, and not for every shot: about one in two of those that have one)
+  if (rvSaidBefore(q, o => o.res && o.res.grade != null && o !== q && (o._tip === tipKey))) return '';
+  if (((q.n || 0) + rvHash(tipKey)) % 2) return '';
+  q._tip = tipKey;
+  return list[(q.n || 0) % list.length];
+}
+const pick2 = (q, a) => a[(q.n || 0) % a.length];
 // an other way in a sentence: '노란 공을 먼저 맞히는 밀어치기', '빈쿠션으로 빨간 공부터 치는 길', '3번 공을 코너 포켓에 넣는 길'
 function rvAltProse(a) {
-  const carom = game.mode.table === 'carom', way = RV_WAY[a.way] || '길';
+  const carom = game.mode.table === 'carom', way = a.way === 'side' ? '회전 샷' : RV_WAY[a.way] || '길';
   if (a.way === 'safety') return `${rvJ(rvBall(carom ? a.d && a.d.first : a.id), '을', '를')} 얇게 맞히는 수비`;
   if (carom) return a.way === 'kick' ? `빈쿠션으로 ${rvBall(a.d && a.d.first)}부터 치는 길` : `${rvJ(rvBall(a.d && a.d.first), '을', '를')} 먼저 맞히는 ${way}`;
   if (a.way === 'combo') return `${rvJ(rvBall(a.via), '으로', '로')} ${rvJ(rvBall(a.id), '을', '를')} 넣는 콤비`;
@@ -252,16 +296,16 @@ function rvAction(q, key) {
   const r = q.res, alts = r.alts || [], idx = f => alts.findIndex(f), best = idx(a => a.best), easy = idx(a => a.easiest);
   if (!r.made && !r.foul && r.fix && /thick|thin|soft|hard|tip|aim|masse|jump|easyMiss|chanceMiss|hardMiss/.test(key)) return { label: '교정한 샷 보기', alt: 'fix' };
   if ((key === 'choice' || key === 'none') && easy >= 0) return { label: '쉬운 샷 보기', alt: easy };
-  if ((key === 'safetyOk' || r.foul || r.grade >= 2) && best >= 0) return { label: alts[best].kind === 'safety' ? '수비 보기' : '추천 샷 보기', alt: best };
+  if ((/^safety(Ok|Bad)$/.test(key) || r.foul || r.grade >= 2) && best >= 0) return { label: alts[best].kind === 'safety' ? '수비 보기' : '추천 샷 보기', alt: best };
   return null;
 }
-/* The card's words for one shot: the grade's word and the line (title), the sentences under it, the button */
+/* The card's words for one shot: the title (the shot named, graded), the sentence(s) under it, the button */
 function reviewWords(q) {
-  const r = q.res, d = r.d || {}; rvAt = q.snap || null;
-  const key = rvKey(q), c = rvContext(q), s = d.raised === 'masse' ? '맛세이' : d.raised === 'jump' ? '점프샷' : d.raised === 'curve' ? '커브샷' : '';
-  const head = rvSay(q, key, { n: c.streak + 1, s: s ? rvWith(s) : '' });
-  const word = RV_WORD[r.grade] || '';
-  return { word, head, title: `${word}. ${head}`, body: rvBody(q, key).filter(Boolean), act: rvAction(q, key), key };
+  const r = q.res; rvAt = q.snap || null;
+  const key = rvKey(q), name = rvShotName(q), word = RV_WORD[r.grade] || '';
+  const title = key === 'fluke' ? `${name}${/[가-힣]$/.test(name) && (name.charCodeAt(name.length - 1) - 0xac00) % 28 ? '에는' : '에'} 행운이 따랐습니다.` : `${rvJ(name, '은', '는')} ${word}.`;
+  const body = [rvBody(q, key), rvTip(q, key)].filter(Boolean);
+  return { word, name, head: title, title, body, act: rvAction(q, key), key };
 }
 const rvCm = cm => cm >= 100 ? `${(cm / 100).toFixed(1)}m` : `${Math.max(5, Math.round(cm / 5) * 5)}cm`;
 // how hard a line was, by its facts: '70° 컷, 1.7m' (pool) / '1/8 두께' (carom)
@@ -273,11 +317,11 @@ function rvHard(F) {
 // a reason another way was better, in words (62-intent.js whyBetter)
 function rvWhy(w, a) {
   const carom = game.mode.table === 'carom';
-  return { safety: '상대에게 칠 공을 남기지 않아요', cut: `깎는 각이 ${w.by}° 작아요`, near: '공 사이 거리가 짧아요', clear: '길을 가로막는 공이 없어요', scratch: '스크래치 위험이 없어요',
-    breaks: `뭉친 ${(w.ids || []).map(id => rvBall(id).replace(/ 공$/, '')).join('·')} 공을 함께 풀어요`,
-    pos: carom ? '다음 배치가 좋아요' : w.next ? `수구가 ${rvJ(rvBall(w.next.id), '을', '를')} 넣기 좋은 자리로 와요` : '다음 자리가 좋아요',
-    room: '세기 여유가 넓어요 — 조금 세거나 약해도 자리가 나와요', likelier: '성공 확률이 더 높아요',
-    over: '가로막는 공을 넘어가요', around: carom ? '휘어 들어가 두 공을 이어요' : '가로막는 공을 돌아 들어가요' }[w.k] || '';
+  return { safety: '상대에게 칠 공을 남기지 않습니다', cut: `깎는 각이 ${w.by}° 작습니다`, near: '공 사이 거리가 짧습니다', clear: '길을 가로막는 공이 없습니다', scratch: '스크래치 위험이 없습니다',
+    breaks: `뭉친 ${(w.ids || []).map(id => rvBall(id).replace(/ 공$/, '')).join('·')} 공을 함께 풉니다`,
+    pos: carom ? '다음 배치가 좋습니다' : w.next ? `수구가 ${rvJ(rvBall(w.next.id), '을', '를')} 넣기 좋은 자리로 옵니다` : '다음 자리가 좋습니다',
+    room: '세기 여유가 넓습니다 — 조금 세거나 약해도 자리가 나옵니다', likelier: '성공 확률이 더 높습니다',
+    over: '가로막는 공을 넘어갑니다', around: carom ? '휘어 들어가 두 공을 잇습니다' : '가로막는 공을 돌아 들어갑니다' }[w.k] || '';
 }
 // an other way's name: how it is played, on which ball (short: a chip's - 가까운 빨강 · 스톱)
 function rvAltName(a, short) {
@@ -291,5 +335,6 @@ function rvAltName(a, short) {
 // the shot played
 function rvAltStory(a) {
   const d = a.d || {}, why = (a.why || []).map(w => rvWhy(w, a)).filter(Boolean);
-  return { how: [rvStory(d), a.way === 'safety' ? '상대에게 칠 공을 남기지 않아요.' : game.mode.table === 'carom' ? '' : rvNext(a.next, true)].filter(Boolean).join(' '), why };
+  const carom = game.mode.table === 'carom', did = rvDid(d, carom);
+  return { how: [did ? rvSay(did, 'pre') : rvStory(d), a.way === 'safety' ? '상대에게 칠 공을 남기지 않습니다.' : carom ? '' : rvNext(a.next, true)].filter(Boolean).join(' '), why };
 }
