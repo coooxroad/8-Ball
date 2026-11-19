@@ -95,7 +95,7 @@ function createPhysics(cfg) {
   // (run: how far the cue ball went before its second ball - carom - or its first - pool; orun: how far the ball it met first
   // went after (to a pocket, or till it stopped): the length of a shot's way, which the person-like players miss by -
   // ai/50-human.js pathFactor)
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, seq: [], run: 0, orun: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, kissPre: 0, seq: [], run: 0, orun: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
     // seq: what the cue ball met, in order, up to 10 (a ball's id; 'L' a long cushion, 'S' a short one) - the route the review names (ai/62-intent.js);
     // pre: cushions the cue ball met before any ball;   // kiss: two balls other than the cue ball met (쫑) after the cue ball's first contact - the computer player reads it (ai/50-human.js);   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
@@ -475,8 +475,11 @@ function createPhysics(cfg) {
       const jn = -(1 + E_BALL) / 2 * rel;
       a.vx -= jn * nx; a.vy -= jn * ny; a.vz -= jn * nz; b.vx += jn * nx; b.vy += jn * ny; b.vz += jn * nz;
       for (const q of [a, b]) if (q.z <= 0 && q.vz < 0) q.vz = 0;
-      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
-      else if (w.ev.firstHit != null) w.ev.kiss++;
+      // (kissPre: a kiss before the shot was decided - carom: before the cue ball met its second ball, the cue ball meeting
+      // its first again counting too; pool: before the first ball potted - what can make a point no one played for)
+      const open = POCKETED ? !w.ev.pocketed.some(q => q.id !== w.cue) : w.ev.hits.length < 2;
+      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (open && w.ev.hits.indexOf(o) >= 0 && w.ev.seq[w.ev.seq.length - 1] === o && -rel > 0.02 && w.ev.hits.length === 1) w.ev.kissPre++; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
+      else if (w.ev.firstHit != null) { w.ev.kiss++; if (open) w.ev.kissPre++; }
       if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
     }
     for (const q of [a, b]) { q.x += q.vx * tau; q.y += q.vy * tau; q.z = Math.max(0, q.z + q.vz * tau); }

@@ -98,7 +98,7 @@ const review = {
     return el('div', { class: 'rv-table' + (big ? ' big' : '') }, [
       el('div', { class: 'rv-tr hd' }, [el('span'), el('b', { class: 'rv-a', text: na }), el('i', { class: 'rv-ico none' }), el('b', { class: 'rv-b', text: nb })]),
       ...REVIEW_GRADES.map((G, i) => row(G.name, String(a.n[i]), String(b.n[i]), reviewIcon(G.id), `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero'))),
-      a.fluke || b.fluke ? row('요행', String(a.fluke), String(b.fluke), reviewIcon('fluke'), 'g-fluke') : null,
+      a.fluke || b.fluke ? row('행운', String(a.fluke), String(b.fluke), reviewIcon('fluke'), 'g-fluke') : null,
       row('샷 성공률', a.made == null ? '-' : a.made + '%', b.made == null ? '-' : b.made + '%', null, 'sum'),
       row('경기력', a.perf == null ? '-' : String(a.perf), b.perf == null ? '-' : String(b.perf), null, 'sum perf')]);
   },
@@ -189,7 +189,7 @@ const review = {
     // (the button to the shot most worth seeing: 교정한 샷 · 쉬운 샷 · 추천 샷 - pressed again, back to the shot played)
     const act = w.act ? el('button', { class: 'rv-go' + (review.alt === w.act.alt ? ' on' : ''), onclick: pick(w.act.alt) }, [el('span', { text: review.alt === w.act.alt ? '내 샷 보기' : w.act.label })]) : null;
     return el('div', { class: `rv-coach g-${G.id}` + (A ? ' alt' : '') }, [
-      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.word + '.' }), document.createTextNode(' ' + w.head)]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('요행')]) : null]),
+      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.word + '.' }), document.createTextNode(' ' + w.head)]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('행운')]) : null]),
       w.body.length ? el('p', { class: 'rv-body', text: w.body.join(' ') }) : null,
       act,
       A ? (() => { const st = A.fix ? { how: rvLine(A.d, game.mode.table === 'carom') || '이렇게 쳤으면 들어갔어요.', why: [] } : rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: (A.fix ? '교정한 샷 — ' : '') + st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,

@@ -1,9 +1,10 @@
   /* Person-like planning is independent of the deterministic training levels. See 51-people.js for its three axes.
      Returned preShot keyframes are data for Claude's matching/autoTick integration; this file never touches the UI. */
-  // (the most tables a plan plays out, whatever else it adds - a phone's worth of time; web/test/ai-human.js holds it to 150)
+  // (the most tables a plan plays out, whatever else it adds - a phone's worth of time; 40 more for the second look; web/test/ai-human.js holds it to 190)
   const SIM_CAP = 145;
   // (the aim's scatter, tuned against the ratings' scoring rates after the way's share came in - web/tools/bots.js)
-  const AIM_K = { base: 1, diff: 1 };
+  // (carom's raised after the second look - a player who sees the point misses by hand, not by not seeing it: 11-19)
+  const AIM_K = { pool: 1, carom: 2.3, diff: 1 };
   function humanPlan(persona) {
     const person = humanPerson(persona), skill = person.skill, practice = person.practice, turn = humanTurn(person), P = g.P, w = g.world, c = w.balls[w.cue];
     const style = person.style, character = person.personality, pool = g.mode.table === 'pool', targets = g.mode.legal(g, g.turn).filter(id => w.balls[id] && w.balls[id].on);
@@ -67,7 +68,8 @@
       // Do not reward gratuitous force: a comfortable scoring stroke should usually leave the table under control.
       value -= g.powerOf(shot.V) * (0.25 + (1 - style.power) * 0.5);
       value -= shot.difficulty * (1 - skill) * 0.3;
-      if (made && !pool && ev.kiss && !kissOk) value -= 9;
+      // (a point by a kiss before it - nobody plays for that; a kiss after it only spoils the next shot a little)
+      if (made && !pool && ev.kissPre && !kissOk) value -= 9; else if (made && !pool && ev.kiss) value -= 0.8;
       if (ranked && pool && made) value -= shot.difficulty * (1.2 - 0.6 * skill);
       if (ordinaryFour) {
         value -= (1 - skill) * (Math.min(ev.cushions, 3) * 2.2 + Math.hypot(shot.a, shot.b) * 2);
@@ -175,7 +177,7 @@
        a strong one the line that leaves the next. Deterministic: no random numbers. */
     // (the scatter of the aim, before the way's own share - pathFactor: the shot's own difficulty and its pace)
     const aimDiff = shot => clamp(shot.difficulty * AIM_K.diff + g.powerOf(shot.V) * 0.25, 0, 2.5);
-    const aimSigma = shot => (pool ? 1 : 0.20) * AIM_K.base * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + aimDiff(shot) * 1.7);
+    const aimSigma = shot => (pool ? AIM_K.pool : 0.20 * AIM_K.carom) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + aimDiff(shot) * 1.7);
     const paceSigma = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28);
     const sure = (shot, pf = 1, legs = 0) => {
       const sa = aimSigma(shot) * 1.4 * pf, sp = paceSigma * 1.2 * (1 + legs * 0.12); let n = 0, k = 0;
@@ -195,7 +197,7 @@
     // what a miss costs, as this player weighs it: the careful one (the defensive style, an unhurried temper) counts the
     // table it leaves, the bold one hardly (owner 11-19 night: 수비파 숀 played safe less than 정석 소피아)
     // (what the other player is left matters most in pool, less in 4구, little in 3쿠션 - where a miss seldom leaves a point)
-    const leaves = pool ? 1 : g.modeId === 'three' ? 0.35 : 0.7;
+    const leaves = pool ? 1 : g.modeId === 'three' ? 0.35 : 0.3;
     const missCost = 11 * (1 + (style.safety * 1.3 * (1 - character.aggression) + (person.quirk === 'lock' ? 0.5 : 0)) * leaves);
     const consider = shot => {
       if (sims >= budget) return;
@@ -223,6 +225,31 @@
         if (sims < budget - 9) consider({ ...seed, angle: seed.angle + da, V: speed(seed.V * mult) });
       }
     }
+    /* Looking again, as a player does who sees no point yet (owner 11-19: 다리야, a gold player, played shots that could
+       not score - in two of five of her turns the lines she had looked at held no point, where a fine search finds one in
+       nearly every 4구 table): the strokes most likely to score off each ball on this table, as the stroke network reads
+       it (58-stroke-net.js - a seasoned eye's "this one is a soft follow"), swept across the ball. More strokes, the
+       better the hand; a beginner does not look again. */
+    if (ranked && !pool && !turn.throwing && (!best || !best.made) && skill >= 0.3) {
+      const three = g.modeId === 'three' && (g.cushions || 0) >= 3, mk = three ? 'three' : g.modeId === 'four' ? 'four' : null;
+      const K = skill < 0.55 ? 1 : skill < 0.8 ? 2 : 3, steps = 12;
+      if (mk) { budget = Math.min(SIM_CAP + 40, budget + K * 2 * (steps + 2)); for (const T of ordered.slice(0, 2)) {
+        const guess = strokeGuess(mk, w, me, T.id, K) || []; if (!guess.length) continue;
+        const d = Math.hypot(T.x - c.x, T.y - c.y); if (d < 2 * g.P.R * 1.01) continue;
+        const base = Math.atan2(T.y - c.y, T.x - c.x), half = Math.asin(Math.min(0.99, 2 * g.P.R / d)) * 0.97;
+        for (const { i, p } of guess) {
+          if (p < 0.05 || sims >= budget - 2) continue;
+          const [v, a, b] = STROKE_SET[mk][i], st = { pos: null, V: v * (three ? 5.0 : 3.3) * PACE.carom, a, b, el: 0, target: T.id, kind: 'carom', stroke: b > 0.1 ? 'follow' : b < -0.1 ? 'draw' : a ? (a > 0 ? 'right' : 'left') : 'plain', difficulty: 0.6 + (1 - p) * 0.8 };
+          const hits = [];
+          for (let k = 0; k <= steps && sims < budget - 2; k++) { const sh = { ...st, angle: base - half + 2 * half * k / steps }, r = simulate(sh); hits.push(r.made ? sh : null); }
+          // (the middle of the widest run of scoring aims)
+          let run = [], cur = [];
+          for (const h of hits) { if (h) cur.push(h); else { if (cur.length > run.length) run = cur; cur = []; } }
+          if (cur.length > run.length) run = cur;
+          if (run.length) consider(run[Math.floor(run.length / 2)]);
+        }
+      } }
+    }
     /* The raised cue (owner 11-19, 53-raised.js): with no point in the plain lines, a player who can lifts the cue - a
        massé round the ball in the way or off the red it nearly touches, a jump over it in pool - and in carom a massé
        for the point when the plain line is a long shot for this hand (sure under 55%), or by the 맛세이 style; the will to, by skill
@@ -244,8 +271,10 @@
     // choice, not a weak one's - it was the stand-in's 'one red, the pace dying' shot)
     // (a beginner does not play safe - they try, and miss: owner 11-19 night, 수아 played 61% of 3쿠션 shots as soft safeties;
     // a careful player turns to one when the best pot is a gamble - the miss it would cost, missCost above, decides)
-    const tryInstead = ranked && best && !best.made && person.quirk !== 'lock' && (skill < 0.4 || g.modeId === 'three' && rand() < 0.75 * (1 - style.safety * 0.6));
-    const unsure = ranked && best && best.made && best.sure != null && best.sure < 0.45 + style.safety * 0.3 && skill > 0.35;
+    // (4구 is a game of trying: a soft touch on one ball to leave nothing reads as giving up - owner 11-19: 다리야, a gold
+    // player, '놓아버림' - so a 4구 player tries, a careful one only now and then plays it safe)
+    const tryInstead = ranked && best && !best.made && person.quirk !== 'lock' && (skill < 0.4 || g.modeId === 'three' && rand() < 0.75 * (1 - style.safety * 0.6) || ordinaryFour && rand() < 1 - style.safety * 0.25);
+    const unsure = ranked && best && best.made && best.sure != null && best.sure < 0.45 + style.safety * 0.3 && skill > 0.35 && (pool || g.modeId === 'three' && style.safety > 0.6);
     if (!tryInstead && (!best || unsure || !best.made && !(ordinaryFour && best.safe && skill < 0.6))) {
       const T = ordered.find(t => { const angle = Math.atan2(t.y - c.y, t.x - c.x), hit = P.cast(w, c.x, c.y, Math.cos(angle), Math.sin(angle), w.cue); return hit.type === 'ball' && hit.ball === t.id; }) || ordered[0], pos = g.placing ? P.findFree(w, Math.min(T.x - 0.3, g.placing === 'kitchen' ? -P.HL / 2 : P.HL - P.R), T.y, w.cue) : null;
       const x = pos ? pos[0] : c.x, y = pos ? pos[1] : c.y, base = Math.atan2(T.y - y, T.x - x), desperate = rand() < style.desperation * (0.35 + (1 - skill) * 0.65);

@@ -430,7 +430,10 @@
     // each stroke as aimed (one copy each); the likeliest looked at more closely - its worth, then the reference hand's
     // wobble on the best few
     const missed = 1 - winOf(world, 1 - who, null, 0.45);   // (a miss, near enough, for the first sorting)
-    for (const k of cands) { k.nominal = judgeSim(world, who, k.shot, view); k.guess = k.nominal.made ? k.line.p : k.line.kind === 'safety' && !k.nominal.foul ? 0.05 : -1; }
+    // (a point that comes by a kiss is no line to play or show - owner 11-19: '가장 쉬운 샷이 2쿠션+키스+밀어치기': a line whose
+    // middle scores only through a kiss before the point - physics.js kissPre - is not offered; pool keeps its own rule, below)
+    const kissed = k => !g.P.POCKETED && k.nominal.made && k.nominal.ev.kissPre > 0;
+    for (const k of cands) { k.nominal = judgeSim(world, who, k.shot, view); k.guess = kissed(k) ? -1 : k.nominal.made ? k.line.p : k.line.kind === 'safety' && !k.nominal.foul ? 0.05 : -1; }
     cands.sort((a, b) => b.guess - a.guess);
     const near = cands.slice(0, P.POCKETED ? 16 : 8).filter(k => k.guess > -1);
     for (const k of near) {
@@ -498,7 +501,8 @@
     // a fluke: made through something no one plays for - a kiss, a ball other than the one met first - and the shot as
     // played is no line (nudge the aim and it is gone)
     const ev = res.ev, potted = (ev.pocketed || []).map(p => p.id).filter(id => id !== 0);
-    const odd = g.P.POCKETED ? potted.length && ev.firstHit != null && !potted.includes(ev.firstHit) || ev.kiss > 0 && line && line.p < 0.15 : ev.kiss > 0;
+    // (the kiss that made it - before the point: a kiss after it, or the shot played as a line, is no luck - owner 11-19)
+    const odd = g.P.POCKETED ? potted.length && ev.firstHit != null && !potted.includes(ev.firstHit) || ev.kissPre > 0 && line && line.p < 0.15 : ev.kissPre > 0;
     const fluke = !!(res.made && odd && (!line || line.p < 0.3));
     const cuts = JUDGE.CUTS[game] || JUDGE.CUTS.pool, hard = JUDGE.HARD[game] || 0.4;
     const bestLeave = best.filter(k => k.nominal.made && k.worth).reduce((m, k) => Math.max(m, k.worth.mine), 0);
