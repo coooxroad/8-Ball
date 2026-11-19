@@ -53,14 +53,15 @@
 /* (디버그 · 3D 소품: the prop larger than the sign it stands for, standing a little over the white line - 37-desk-menu.js menuIco) */
 .mn-card .mn-ico.pic{top:calc(78px*var(--u));height:calc(190px*var(--u))}
 .mn-card .mn-ico.pic img{width:calc(186px*var(--u));height:calc(186px*var(--u));object-fit:contain;-webkit-user-drag:none}
-.mn-card.hero .mn-ico.pic{top:calc(72px*var(--u));height:calc(240px*var(--u))}.mn-card.hero .mn-ico.pic img{width:calc(236px*var(--u));height:calc(236px*var(--u))}
+.mn-card .mn-ico.art svg{width:calc(180px*var(--u));height:calc(180px*var(--u));filter:none;overflow:visible}
+.mn-card.hero .mn-ico.pic{top:calc(72px*var(--u));height:calc(240px*var(--u))}.mn-card.hero .mn-ico.pic img,.mn-card.hero .mn-ico.art svg{width:calc(236px*var(--u));height:calc(236px*var(--u))}
 .mn-card .mn-ico svg{width:calc(118px*var(--u));height:calc(118px*var(--u));color:rgba(255,255,255,.93);overflow:visible}   /* (its shadow is in the drawing: 10-ui.js icoLift - no filter) */
 .mn-card b{position:absolute;left:0;right:0;bottom:calc(76px*var(--u));font:900 calc(24px*var(--u)) var(--ui-font);letter-spacing:-.01em;white-space:nowrap;text-shadow:0 2px 3px rgba(0,0,0,.45)}
 .mn-card small{position:absolute;left:calc(6px*var(--u));right:calc(6px*var(--u));bottom:calc(50px*var(--u));font:700 calc(14.5px*var(--u)) var(--ui-font);color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* (준비 중: its colours greyed in its own face - not a filter over the whole card, which is drawn apart every frame it moves) */
 .mn-card.soon{--face:linear-gradient(200deg,rgba(255,255,255,.1),rgba(255,255,255,0) 38%),linear-gradient(165deg,color-mix(in srgb,var(--c1) 40%,#4a4a4a),color-mix(in srgb,var(--c2) 40%,#262626));--glow:transparent;color:rgba(255,255,255,.72)}
 .mn-card.soon .mn-ico svg{color:rgba(255,255,255,.66)}
-.mn-card.soon .mn-ico.pic img{opacity:.72}
+.mn-card.soon .mn-ico.pic img,.mn-card.soon .mn-ico.art svg{opacity:.72}
 .mn-card.k-rank{--c1:#4176c4;--c2:#1d4688}
 .mn-card.k-friend{--c1:#43915e;--c2:#1f5735}
 .mn-card.k-lesson{--c1:#bb5a52;--c2:#7c2d29}
