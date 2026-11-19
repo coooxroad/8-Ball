@@ -53,8 +53,13 @@
       P.strike(copy, shot.angle, shot.V, shot.a, shot.b, shot.el); const ev = P.run(copy, 20); sims++;
       const r = g.mode.evaluate(ev, ctx, { ...g, world: copy }), unseen = r.foul && !ev.off.length && rand() < blindFoul;
       const safe = (!r.foul || unseen) && !ev.off.length && r.win !== 1 - me, made = safe && (r.keep || r.pts > 0 || r.win === me);
-      let value = r.win === me && safe ? 100 : made ? 10 : safe ? 0 : -12;
-      if (made) value += (1 + 4 * practice.position + (style.position || 0) * 2 + (style.gather || 0) * 3) * nextChance(copy, me, r) * (ranked ? skill : 1);
+      // (4구 후구: the last point of the one who began hands the other a visit - worth what it denies them; in that visit a
+      // miss loses - game.js resolve, owner 11-19)
+      // (a race to points: the point that reaches the target wins - game.js resolve)
+      const reach = made && g.mode.target && !(g.finish && g.mode.FINISH) && !g.ot && r.pts > 0 && g.players[me].score + r.pts >= g.targets[me];
+      const pass = (r.win === me || reach) && safe && g.hugu && g.chance == null && me === g.first && !g.ot, chased = g.hugu && g.chance != null && me !== g.chance;
+      let value = pass ? Math.max(15, 60 - 60 * nextChance(copy, 1 - me, r)) : (r.win === me || reach) && safe ? 100 : made ? 10 : chased ? -40 : safe ? 0 : -12;
+      if (made && !pass) value += (1 + 4 * practice.position + (style.position || 0) * 2 + (style.gather || 0) * 3) * nextChance(copy, me, r) * (ranked ? skill : 1);
       if (!made && safe && skill > 0.5) value -= 4 * (style.safety + (1 - character.aggression)) * nextChance(copy, 1 - me, r);
       // (what the player likes to play, by the style: worth a good deal when it scores, next to nothing when it does not - a
       // liking for massés is a liking for massés that come off, not for hopeless ones - owner 11-19 night; FLAIR, 51-people.js)

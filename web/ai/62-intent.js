@@ -72,7 +72,12 @@
         const a2 = res.world.balls[i], b2 = res.world.balls[j]; if (a2.on && b2.on && Math.hypot(a2.x - b2.x, a2.y - b2.y) > 6 * R) { broke.add(i); broke.add(j); }
       }
       f.breaks = [...broke].sort((x, y) => x - y);
-    } else f.route = routeOf(res.ev);
+    } else {
+      f.route = routeOf(res.ev);
+      // (carom, made: how close the three balls were left - gathered, the next point near)
+      if (res.made) { const ids = [P.POCKETED ? 0 : who, ...g.mode.legal(view, who)].filter(i => res.world.balls[i] && res.world.balls[i].on), bs = ids.map(i => res.world.balls[i]);
+        f.spread = r2(Math.max(0, ...bs.flatMap(a => bs.map(b => Math.hypot(a.x - b.x, a.y - b.y))))); }
+    }
     return f;
   }
   // why `a` was better than `me` (facts of each, and the two shots' own chances and leaves): the reasons, strongest first
@@ -86,7 +91,7 @@
     if ((M.scratch || 0) >= 0.25 && (A.scratch || 0) < 0.1) out.push({ k: 'scratch' });
     if (A.breaks && A.breaks.length && !(M.breaks && M.breaks.length)) out.push({ k: 'breaks', ids: A.breaks });
     const av = A.shape ? A.shape.best.v : a.leave, mv = M.shape ? (M.shape.own ? M.shape.own.v : 0) : me ? me.leave : 0;
-    if (a.kind !== 'safety' && av != null && av - (mv || 0) >= 0.15) out.push({ k: 'pos', next: a.next });
+    if (a.kind !== 'safety' && av != null && av - (mv || 0) >= 0.15) out.push(a.pass ? { k: 'deny' } : { k: 'pos', next: a.next });
     if (A.shape && M.shape && A.shape.room >= M.shape.room + 2) out.push({ k: 'room' });
     if (me && me.p != null && a.p - me.p >= 0.15) out.push({ k: 'likelier' });
     return out.slice(0, 2);

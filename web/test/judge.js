@@ -58,11 +58,13 @@ function potAim(id, near, V, b = 0, k = null) {
   const got = [];
   for (const V of [1.6, 2.6, 3.8]) for (const b of [-0.5, 0, 0.5]) { const a = line && potAim(1, line.angle, V, b); if (a != null) got.push(judge({ angle: a, V, b })); }
   const made = got.filter(r => r.made && !r.fluke);
-  check(made.some(r => r.grade === 0), `the hard cut made with a good leave is 예술: ${made.map(say).join(' / ')}`);
+  // (owner 11-19, the house style: 예술 only where the ordinary way was shut - ball 3 is an easy pot here, so the hard cut
+  // made is 좋음 or 무난 by its leave, never 예술)
+  check(made.length && made.every(r => r.grade !== 0) && made.some(r => r.grade === 1), `the hard cut made, an easy ball besides, is not 예술: ${made.map(say).join(' / ')}`);
   check(made.every(r => r.grade !== 0 || r.leave >= Math.max(0.4, 0.7 * r.bestLeave)), 'no 예술 with a poor leave');
   // (owner 11-18: a made shot is graded by its leave - set, 좋음 or, the line hard, 예술; left poor, 무난. The line here is
   // hard, so every way of making it is 예술 or 무난)
-  check(made.every(r => r.grade === 0 || r.grade === 2), `the hard cut made is 예술 or 무난, by its leave: ${made.map(say).join(' / ')}`);
+  check(made.every(r => r.grade === 1 || r.grade === 2), `the hard cut made is 좋음 or 무난, by its leave: ${made.map(say).join(' / ')}`);
   // (a miss: the first aim off the line that goes in nowhere - one a little off can go in by a kiss, a 요행)
   let off = null; for (const d of [0.012, -0.012, 0.018, -0.018, 0.025]) { const w = P.clone(g.world); P.strike(w, line.angle + d, 2.6, 0, 0); const ev = P.run(w, 20); if (!ev.pocketed.length) { off = d; break; } }
   const miss = line && off != null && judge({ angle: line.angle + off, V: 2.6 });
@@ -158,6 +160,23 @@ for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
   }
   check(found > 0, `${mode}: a scoring line found on ${tried} tables`);
   if (mode === 'three') { const t0 = Date.now(), cf = K().cushionFirst(g.world, 0, K().judgeView(g.world, 0)); check(Array.isArray(cf) && cf.every(l => l.p >= 0 && l.p <= 1) && Date.now() - t0 < 8000, `3쿠션: cushion-first lines swept (${cf.length}, ${Date.now() - t0} ms)`); }
+}
+// ---- 4구's 후구 (owner 11-19: '4구 마지막 샷일 때 성공하면 다음 배치가 안 좋을수록 좋은 건데'): the last point of the one
+// who began does not win - it hands the other a visit, and is worth what it denies them; without 후구, it wins
+{
+  let seed = 11; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  for (let i = 0; i < 12; i++) {
+    g.start('four', ['A', 'B'], true, { level: 3, rnd, hugu: true, target: 5 }); g.isBreak = false; g.turn = 0; g.first = 0; g.world.cue = 0; g.players[0].score = 4;
+    const l = K().caromLines(g.world, 0, K().judgeView(g.world, 0), true).find(x => x.p > 0.5); if (!l) continue;
+    const r = judge({ angle: l.angle, V: l.V, a: l.a, b: l.b });
+    check(r.made && r.pass && !r.won && r.theirs != null && r.grade <= 2 && (r.alts || []).every(a => !a.pass || !(a.why || []).some(w => w.k === 'pos')), `4구 후구: the last point passes, judged by what it leaves: ${say(r)} (theirs ${r.theirs})`);
+    g.hugu = false; const w = judge({ angle: l.angle, V: l.V, a: l.a, b: l.b });
+    check(w.won && !w.pass && w.grade <= 1, `4구 without 후구: the last point wins: ${say(w)}`);
+    g.hugu = true; g.chance = 0; g.turn = 1; g.world.cue = 1; g.players[1].score = 4;
+    const l2 = K().caromLines(g.world, 1, K().judgeView(g.world, 1), true).find(x => x.p > 0.3);
+    if (l2) { const t = judge({ angle: l2.angle, V: l2.V, a: l2.a, b: l2.b }); check(t.made ? t.tie && !t.won : t.lost, `4구 후구, caught up: a draw, not a win; missed: the game: ${say(t)}`); }
+    break;
+  }
 }
 const avg = L => L.length ? Math.round(L.reduce((s, v) => s + v, 0) / L.length) : 0;
 console.log(`judging: pool ${avg(times.pool)} ms, carom ${avg(times.carom)} ms on average`);

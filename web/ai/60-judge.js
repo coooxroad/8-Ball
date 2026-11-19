@@ -81,9 +81,21 @@
     if (shot.pos) P.place(w, w.cue, shot.pos[0], shot.pos[1]);
     P.strike(w, shot.angle, shot.V, shot.a || 0, shot.b || 0, shot.el || 0);
     const ev = P.run(w, 20), v = view || judgeView(world, who), r = g.mode.evaluate(ev, g.mode.ctx(v), { ...v, world: w });
-    const off = ev.off && ev.off.length, won = r.win === who && !off, lost = r.win === 1 - who || !!off && !r.foul;
+    const off = ev.off && ev.off.length; let won = r.win === who && !off, lost = r.win === 1 - who || !!off && !r.foul;
     const made = !off && !r.foul && (r.keep || r.pts > 0 || won);
-    return { ev, r, world: w, made, won, lost, foul: !!r.foul || !!off };
+    /* 후구 (4구, game.js resolve): the one who began, done first, has not won - the other gets a visit to catch up; so the
+       last point is not the end, and what it leaves is the other's (owner 11-19: '4구 마지막 샷일 때 성공하면 다음 배치가 안
+       좋을수록 좋은 건데'). In that visit, a miss ends the game. */
+    const hv = view || g;
+    // (a race to points: the game's own resolve ends it - the point that reaches the target wins, game.js)
+    if (!won && made && g.mode.target && !(hv.finish && g.mode.FINISH) && !hv.ot && r.pts > 0) { const pl = (hv.players || [])[who]; if (pl && pl.score + r.pts >= (hv.targets || [])[who]) won = true; }
+    const pass = won && hv.hugu && hv.chance == null && who === hv.first && !hv.ot;
+    if (pass) won = false;
+    // (and caught up in it: no win - a draw, or 연장)
+    const tie = won && hv.hugu && hv.chance != null && who !== hv.chance;
+    if (tie) won = false;
+    if (hv.hugu && hv.chance != null && who !== hv.chance && !made && !won && !tie) lost = true;
+    return { ev, r, world: w, made, won, lost, pass, tie, foul: !!r.foul || !!off };
   }
 
   /* ---- pool: the lines a table offers, from its geometry ----
@@ -330,12 +342,24 @@
   function worthOf(res, who, deep) {
     const L = deep ? leaveDeep : leaveOf;
     if (res.won) return { v: 1, mine: 1, theirs: 0 };
+    if (res.tie) return { v: 0.5, mine: 0.5, theirs: 0 };
+    // (the last point before the other's 후구: worth what it denies them - their visit must make every point they lack)
+    if (res.pass) {
+      const theirs = L(res.world, 1 - who, res.r, false), lack = Math.max(1, (g.targets || [1, 1])[1 - who] - ((g.players[1 - who] || {}).score || 0));
+      return { v: 1 - theirs * Math.pow(0.7, lack - 1), mine: 1 - theirs, theirs, pass: true };
+    }
     if (res.lost) return { v: 0, mine: 0, theirs: 1 };
     if (res.made) { const mine = L(res.world, who, res.r, false); return { v: winOf(res.world, who, res.r, mine), mine, theirs: 0 }; }
     const inHand = res.foul && g.mode.ballInHand, theirs = L(res.world, 1 - who, res.r, inHand);
     // (4구's -1 is in the points left; 스누커's points given, a little besides - its race is counted by balls)
     const give = res.r.give ? Math.min(0.05, res.r.give / 100) : 0;
     return { v: 1 - winOf(res.world, 1 - who, res.r, theirs) - give, mine: 0, theirs };
+  }
+  // (후구: after the last point, has the other no direct line - must they go to a cushion first? 4구's 빈쿠션)
+  function forcedOf(res, who) {
+    if (g.P.POCKETED) return null;
+    const v = judgeView(res.world, 1 - who, res.r, false);
+    return !caromLines(res.world, 1 - who, v, false).some(l => l.kind === 'carom' && l.p >= 0.2);
   }
   // what the table is worth to whoever is at it, here: the swing between me at it and the other at it (an ordinary leave)
   const swingOf = (world, who) => Math.max(0.02, winOf(world, who, null, 0.5) - (1 - winOf(world, 1 - who, null, 0.5)));
@@ -510,8 +534,14 @@
        hard besides (예술 점수 high) - 예술; the next shot left poor - 무난, however well the ball went in. The frame won is
        the best leave there is. A miss by what it cost (B - A): a pot or a point tried and missed is at best 무난; only a
        safety meant as one, nowhere near a line that scores, can be 좋음. */
-    const practical = res.won || res.made && got.mine >= Math.max(0.4, 0.7 * bestLeave);
-    const art = res.made && !fluke && practical && !!line && line.p <= hard;
+    // (the last point before the other's 후구: good when it denies about as much as the best way to make it would - a 4구
+    // table is rarely bare, so not by a floor)
+    const practical = res.won || res.tie || res.made && (res.pass ? got.mine >= bestLeave - 0.2 : got.mine >= Math.max(0.4, 0.7 * bestLeave));
+    /* (예술, as the house style has it - owner 11-19: '일반적인 샷으로는 득점할 길이 막혀 있었을 때': a hard line is art only
+       where no ordinary line - one without a raised cue - was a fair chance; a hard line played past an easy one is not) */
+    const open = best.filter(k => k.nominal.made && k.line.kind !== 'safety' && !/^(masse|jump|curve)$/.test(k.line.kind)).reduce((m, k) => Math.max(m, k.p || 0), 0);
+    const blocked = open < (g.P.POCKETED ? 0.5 : 0.45);
+    const art = res.made && !fluke && practical && !!line && line.p <= hard && blocked;
     let grade = res.made && !res.foul ? (art ? 0 : practical ? 1 : 2) : loss <= cuts[0] ? 1 : loss <= cuts[1] ? 2 : loss <= cuts[2] ? 3 : 4;
     if (!res.made && meant && grade < 2) grade = 2;
     // why it missed, for the words: the aim (thick or thin), the pace (soft or hard), the tip - or a better way
@@ -557,10 +587,14 @@
       used.add(k.style.key);
       const sh = g.P.POCKETED && k.nominal.made && !k.nominal.won ? shapeOf(world, who, k.shot, view) : null;
       const a = { way: k.style.way, kind: k.line.kind, id: k.line.id, via: k.line.via, pocket: k.line.pocket, p: Math.round(k.p * 100) / 100, shot: k.shot,
-        d: describe(world, who, k.shot, k.nominal), next: nextBall(k.nominal, who), best: k === top, leave: r2(k.worth.mine), facts: factsOf(world, who, k.shot, k.nominal, view, sh) };
+        d: describe(world, who, k.shot, k.nominal), next: nextBall(k.nominal, who), best: k === top, pass: !!k.nominal.pass, leave: r2(k.worth.mine), facts: factsOf(world, who, k.shot, k.nominal, view, sh) };
       a.why = whyBetter(a, base); alts.push(a);
     }
-    if (alts.length) { const e = alts.reduce((m, a) => a.p > m.p ? a : m, alts[0]); e.easiest = true; }
+    /* (the easiest, as a person sees it - owner 11-19: '쿠션이 적을수록, 회전이 예상 가능할수록' - the middle of the cue ball
+       goes where the aim line says, a cushion and a side tip each add a guess: the chance the reference hand has, worth less
+       by each cushion, side tip and raised cue; a safety only when no line scores) */
+    const ease = a => { const d = a.d || {}; return a.kind === 'safety' ? -1 : a.p * Math.pow(0.78, (d.cushions || 0) + (d.pre || 0)) * (1 - 0.4 * Math.abs(d.a || 0)) * (1 - 0.15 * Math.abs(d.b || 0)) * (d.el > 15 ? 0.5 : 1); };
+    if (alts.length) { const e = alts.reduce((m, a) => ease(a) > ease(m) ? a : m, alts[0]); e.easiest = true; }
     return {
       parts, alts, practical, intent, facts,
       d: describe(world, who, shot, res), next: nextBall(res, who),
@@ -569,7 +603,8 @@
       // comes off, else the nearest success found)
       fix: meant && !res.made ? (cRes && cRes.made ? aimC : aimed) : null,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
-      grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, game,
+      blocked, forced: res.pass ? forcedOf(res, who) : null,
+      grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, pass: !!res.pass, tie: !!res.tie, theirs: res.made && got.theirs != null ? r2(got.theirs) : null, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
       loss: Math.round(loss * 100) / 100, B: Math.round(B * 100) / 100, A: Math.round(A * 100) / 100,
       p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, offDeg: line ? Math.round((line.centre - shot.angle) * 1800 / Math.PI) / 10 : null, cause,
