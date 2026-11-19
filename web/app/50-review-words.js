@@ -187,6 +187,8 @@ function rvMadeLines(q, key) {
       if (key === 'wonArt') L.unshift(d.raised === 'jump' ? '없는 길을 만들어 경기를 끝냈습니다!' : d.raised ? '정확한 곡선으로 마지막 점수를 냈습니다.' : '막힌 배치에서 길을 찾아 경기를 끝냈습니다.');
       break;
     case 'passGood':
+      // (good by the best there was - but a table that gives the other a shot whatever is done is not called a defence)
+      if (r.theirs != null && r.theirs > 0.65) { L.push('어느 길로 끝내도 상대에게 공이 보이는 배치에서, 가장 덜 내주는 쪽으로 점수를 채웠습니다.', '후구를 막을 길이 마땅치 않은 배치에서 무리 없이 점수를 채웠습니다.'); break; }
       if (r.forced) L.push('득점한 뒤 수구로 길을 가로막아 상대에게 쿠션을 강제합니다.', '점수를 채우면서 공을 벌려 놓아, 상대는 후구를 빈쿠션부터 풀어야 합니다.');
       L.push('점수를 채우면서 상대의 후구에 쉬운 공을 남기지 않았습니다.', '마지막 점수와 함께 수비까지 해냈습니다. 상대는 어려운 공으로 후구를 시작합니다.');
       break;
