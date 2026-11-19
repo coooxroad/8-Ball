@@ -7,15 +7,19 @@ cards — blue, green, red, amber, purple, slate, olive — each with one big **
 work: each one is instantly what its card is (a trophy, two people, a book, a puzzle piece, two cards, a chip, a cue and
 a ball). What they lack is finish: they look like a fine app, not a game.
 
-Your job: **turn each white line icon into a polished game icon — the same symbol, the same silhouette, made solid,
-bright and high quality**, so it still sits naturally on its coloured card.
+Your job: **make the object each line icon stands for, as a polished game icon — the same symbol and the same overall
+silhouette, but a solid, filled object, bright and high quality**, so it still sits naturally on its coloured card.
+
+**The line icon is only a symbol. Never render the line strokes themselves** (no hollow outline, no tube-shaped
+lines, no shape made of a rim around an empty middle). A trophy icon becomes a solid trophy with a closed, full cup;
+a book icon becomes a solid book; a puzzle icon becomes a solid jigsaw piece.
 
 ## The attached images and their roles
 
 - **Image 1 — `ref-menu-icons.png` (shape reference).** The seven current icons on their cards, each labelled with its file
-  name below it. For each icon you make, keep **its exact symbol, outline and proportions**: it must pass a silhouette
-  test against the original (fill both solid black — the same shape). Do not swap it for a different object, do not
-  add scenery, do not turn it into a realistic object.
+  name below it. For each icon you make, keep **its symbol and overall silhouette and proportions** — filled solid,
+  both should give the same black shape. Do not swap it for a different object, do not add scenery, do not turn it
+  into a realistic object, and do not copy its strokes as an outline.
 - **Image 2 — `style-ref-tier-ball-gold.png` (quality reference).** A gold 8 ball from the game: match its render
   quality, its smooth flawless surfaces, its gold, and its soft large studio reflections.
 
@@ -35,10 +39,10 @@ bright and high quality**, so it still sits naturally on its coloured card.
 - **Medium:** a polished mobile game UI icon, softly three-dimensional (like a thick enamel badge or a porcelain
   token), a clean CG render. Not a photograph, not a realistic object, not flat vector, not a sticker.
 - **Seen from the front**, like the line icon (at most a very slight tilt), so the symbol reads exactly as it does now.
-- **Material — one for the whole set:** glossy **white enamel** body (warm white, like the line icons' white, made solid
-  and thick with soft rounded bevels), with **gold metal accents** (rims, edges, one or two key parts — the same gold as
-  Image 2). The white takes a faint cool tint in its shadows; no other colours, except where an icon below names one
-  small accent.
+- **Materials — the same two for the whole set:** glossy **white enamel** (warm white, like the line icons' white, made
+  solid and thick with soft rounded bevels) and polished **gold** (the same gold as Image 2). Each icon below says which
+  parts are which. The white takes a faint cool tint in its shadows; no other colours, except where an icon below names
+  one small accent.
 - **Bright and clean:** high-key, crisp, the white clearly lighter than any card colour behind it. Not dark, not
   muddy, not grey, no black parts.
 - **Light:** one large soft light from the upper right, a gentle fill from the left; one bright, smooth highlight along
@@ -51,20 +55,21 @@ bright and high quality**, so it still sits naturally on its coloured card.
 
 ## The seven icons, in order
 
-1. **menu-rank** (blue card) — the trophy cup with two handles and a small base, as in Image 1. White enamel cup; gold
-   rim, gold handles, gold base.
-2. **menu-friend** (green card) — the two people (head and shoulders), one in front on the left and one smaller behind on
-   the right, as in Image 1. White enamel; a thin gold edge around each.
-3. **menu-lesson** (red card) — the closed book standing upright with the two short lines on its cover, as in Image 1.
-   White enamel cover; gold page block and gold cover lines.
-4. **menu-puzzle** (amber card) — the single jigsaw piece, as in Image 1 (tabs on top and right, blanks on left and
-   bottom). White enamel with a gold bevelled edge.
-5. **menu-arcade** (purple card) — the two cards leaning against each other, as in Image 1. White enamel cards with gold
-   edges; on the front card one simple gold lightning bolt (the mode is a fast "blitz" mode).
-6. **menu-cpu** (slate card) — the chip with its pins and the small square in the middle, as in Image 1. White enamel
-   chip; gold pins; the inner square gold.
-7. **menu-free** (olive card) — the cue (a straight stick from the upper left) and the ball (a ring at the lower right),
-   as in Image 1. The ball a solid glossy white ball, the cue white with a gold ferrule and a small blue chalked tip.
+1. **menu-rank** (blue card) — a solid trophy: a full, closed cup with two handles on a short stem and a small base, as
+   in Image 1. All polished gold, like Image 2; the base may be white enamel.
+2. **menu-friend** (green card) — two solid figures (a round head on rounded shoulders, like chess pieces), one in front
+   on the left and one smaller behind on the right, as in Image 1. The front one white enamel, the back one gold.
+3. **menu-lesson** (red card) — a solid closed book standing upright, as in Image 1: a thick white enamel cover with two
+   short gold lines on it, a gold page block.
+4. **menu-puzzle** (amber card) — one solid, thick jigsaw piece, as in Image 1 (tabs on top and right, blanks on left
+   and bottom). White enamel face with a gold bevelled edge.
+5. **menu-arcade** (purple card) — two solid thick cards leaning against each other, as in Image 1. White enamel cards
+   with gold edges; on the front card one simple raised gold lightning bolt (the mode is a fast "blitz" mode).
+6. **menu-cpu** (slate card) — a solid chip with its pins and the small square in the middle, as in Image 1: a thick
+   white enamel chip, gold pins, the inner square raised gold.
+7. **menu-free** (olive card) — a cue (a straight stick from the upper left) touching a ball (lower right), as in
+   Image 1: a solid glossy white ball; the cue a solid rounded stick, white enamel with a gold band near the tip and a
+   small blue tip.
 
 Before finishing, check: put all seven next to Image 1 — each is the same symbol and silhouette, all seven share one
 material, light and size, and each is a separate transparent PNG with no text.
