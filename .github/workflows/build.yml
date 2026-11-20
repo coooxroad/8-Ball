@@ -64,6 +64,7 @@ jobs:
           node web/test/browser/pc-performance.js
           node web/test/browser/human-ai.js
           node web/test/browser/graphics.js
+          node web/test/browser/ui-budget.js
 
   # Only what lands on main becomes an APK and a release.
   apk:
