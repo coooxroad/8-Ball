@@ -170,19 +170,59 @@ const SYM_D = {
 const PANEL_SYM = { rank: ['rank', 'sight'], friend: ['pair', 'sight'], lesson: ['bank', 'ball'], train: ['bank', 'ball'], puzzle: ['frame', 'aim'],
   arcade: ['cross', 'sight'], cpu: ['frame', 'line'], free: ['ball', 'aim'], four: ['ring', 'sight'], three: ['bank', 'sight'], eight: ['ball', 'rack'],
   nine: ['sight', 'ring'], snooker: ['ring', 'half'], 'way-local': ['pair', 'line'], 'way-make': ['aim', 'sight'], 'way-join': ['go', 'ring'], 'arc-mode': ['cross', 'sight'] };
-// the tiles as one style, made once: .sym-<id> { --sym: the tile }
+// the tiles as one style, made once: .sym-<id> { --sym: the tile } (shown until its picture is made: fxBake below)
 let symMade = false;
+const symSvg = id => { const [a, b] = PANEL_SYM[id], g = (k, x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(1.45) translate(-12 -12)">${SYM_D[k]}</g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${g(a, 25, 30, -12)}${g(b, 75, 90, 10)}</svg>`; };
 function symLayer(id, i) {
   if (!symMade) {
     symMade = true;
-    const g = (k, x, y, r) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(1.45) translate(-12 -12)">${SYM_D[k]}</g>`;
-    const css = Object.entries(PANEL_SYM).map(([id, [a, b]]) => {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${g(a, 25, 30, -12)}${g(b, 75, 90, 10)}</svg>`;
-      return `.sym-${id}{--sym:url("data:image/svg+xml,${encodeURIComponent(svg)}")}`;
-    }).join('\n');
+    const css = Object.keys(PANEL_SYM).map(id => `.sym-${id}{--sym:url("data:image/svg+xml,${encodeURIComponent(symSvg(id))}")}`).join('\n');
     document.head.appendChild(el('style', { id: 'symStyle', text: css }));
   }
-  return el('i', { class: 'mn-sym sym-' + (PANEL_SYM[id] ? id : 'four'), style: `--si:${i || 0}`, 'aria-hidden': 'true' });
+  const k = PANEL_SYM[id] ? id : 'four';
+  return el('img', { class: 'mn-sym fxp sym-' + k, 'data-fx': 'sym:' + k, alt: '', style: `--si:${i || 0}`, 'aria-hidden': 'true' });
+}
+/* The cards' moving parts as small pictures (owner 11-20: the menu stuttered, blinked and lost parts on the tablet, the
+   look to stay as it is). A part that moves has a layer of its own, drawn by the graphics chip at the screen's sharpness
+   over its whole size: the light, the shade, the crossing band and the drifting signs were four layers each about the
+   card's size or more, for every card in sight - some 44 million pixels on a 1280 x 800 tablet, eleven screens' worth.
+   A picture (<img>) that moves is handed to the chip as the picture itself, at its own size: the soft light and shade
+   need a few dozen pixels a side, the band a few hundred, the signs about a third of the screen's sharpness at their
+   faint .09 - drawn here once, the same as the gradients and the tile they replace (84-menu.css keeps those under them
+   until the picture is in: .baked). */
+const FX_PIC = {};
+const fxCanvas = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c.toDataURL('image/png'); };
+// (the light and the shade: a round soft patch to the box's edge - CSS radial-gradient(closest-side, ...) on the box)
+const fxSoft = k => FX_PIC[k] || (FX_PIC[k] = fxCanvas(96, 96, (g, w) => {
+  const [rgb, a0, a1] = k === 'lt' ? ['255,255,255', 0.17, 0.06] : ['0,0,0', 0.2, 0.07], r = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  r.addColorStop(0, `rgba(${rgb},${a0})`); r.addColorStop(0.55, `rgba(${rgb},${a1})`); r.addColorStop(1, `rgba(${rgb},0)`); g.fillStyle = r; g.fillRect(0, 0, w, w);
+}));
+// (a band: linear-gradient(100deg, ...) across a box of this shape - the line through its middle as CSS draws it; the
+// crossing light's five stops, or a rim's glint: clear, white of strength a, clear)
+const fxBand = (asp, a) => { const k = 'x' + asp + '|' + (a || ''); return FX_PIC[k] || (FX_PIC[k] = fxCanvas(24, Math.max(24, Math.round(24 / asp)), (g, w, h) => {
+  const t = 100 * Math.PI / 180, dx = Math.sin(t), dy = -Math.cos(t), L = Math.abs(w * dx) + Math.abs(h * dy);
+  const r = g.createLinearGradient(w / 2 - dx * L / 2, h / 2 - dy * L / 2, w / 2 + dx * L / 2, h / 2 + dy * L / 2);
+  for (const [o, al] of a ? [[0, 0], [0.5, a], [1, 0]] : [[0, 0], [0.3, 0.07], [0.5, 0.2], [0.7, 0.07], [1, 0]]) r.addColorStop(o, `rgba(255,255,255,${al})`);
+  g.fillStyle = r; g.fillRect(0, 0, w, h);
+})); };
+// (the signs: the tile four across and seven down, as background-size 25% 14.2857% lays it - each fitted into its cell)
+const fxSym = (id, asp) => { const k = id + '|' + asp; if (FX_PIC[k]) return FX_PIC[k];
+  return (FX_PIC[k] = new Promise(done => { const im = new Image(); im.onload = () => done(fxCanvas(384, Math.round(384 / asp), (g, w, h) => {
+    const tw = w / 4, th = h / 7, s = Math.min(tw / 100, th / 120), dw = 100 * s, dh = 120 * s;
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 4; x++) g.drawImage(im, x * tw + (tw - dw) / 2, y * th + (th - dh) / 2, dw, dh);
+  })); im.onerror = () => done(null); im.src = 'data:image/svg+xml,' + encodeURIComponent(symSvg(id)); })); };
+// the parts laid out (their shape known) and still drawn as gradients: given their pictures
+function fxBake(root) {
+  const put = (im, url) => { if (url && im.isConnected) { im.src = url; im.classList.add('baked'); } };
+  for (const im of (root || document).querySelectorAll('img.fxp:not(.baked)')) {
+    const w = im.offsetWidth, h = im.offsetHeight, k = im.dataset.fx; if (!w || !h) continue;
+    const asp = Math.round(w / h * 40) / 40;
+    if (k === 'lt' || k === 'dk') put(im, fxSoft(k));
+    else if (k === 'x') put(im, fxBand(asp));
+    else if (k.startsWith('glint:')) put(im, fxBand(asp, +k.slice(6)));
+    else if (k.startsWith('sym:')) Promise.resolve(fxSym(k.slice(4), asp)).then(u => put(im, u));
+  }
 }
 
 /* Each place fills the same five parts of the desk, d = { rail, head, stage, foot, slate }, which deskPaint has emptied:

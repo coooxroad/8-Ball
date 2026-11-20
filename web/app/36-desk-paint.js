@@ -120,6 +120,7 @@ function walletPaint() {
 // not enough to buy it: the wallet's chip flashes red and shakes
 function walletShort(k) { const chip = $('#dkWallet .' + k); if (!chip) return; chip.classList.remove('short'); void chip.offsetWidth; chip.classList.add('short'); setTimeout(() => chip.classList.remove('short'), 700); }
 function deskPaint() {
+  requestAnimationFrame(() => requestAnimationFrame(() => fxBake()));   // (the cards' moving parts given their pictures once laid out: 32-desk.js)
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   const cardMenu = menuOn();
   app.classList.toggle('oldmenu', !cardMenu);                         // (the 훈련 tab only with the old menu: 37-desk-menu.js)

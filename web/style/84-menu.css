@@ -81,24 +81,28 @@
 .mn-card.hero::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 calc(22px*var(--u)) calc(3px*var(--u)) rgba(240,212,136,.65),0 0 calc(4px*var(--u)) calc(1px*var(--u)) rgba(255,240,200,.9);opacity:.3;animation:mn-glow 2.4s ease-in-out infinite;pointer-events:none;will-change:opacity}
 @keyframes mn-glow{50%{opacity:1}}
 .mn-card.hero .mn-face{border-radius:calc(15px*var(--u));background:var(--face)}
-.mn-card.hero .mn-rim i{animation-duration:2.6s;background:linear-gradient(100deg,transparent,rgba(255,255,255,1),transparent)}
+.mn-card.hero .mn-rim :is(i,img){animation-duration:2.6s;background:linear-gradient(100deg,transparent,rgba(255,255,255,1),transparent)}
 
 /* the rim (선수증, 랭킹전): the card's own background is the rim's colour; its glint runs across it under the face, which is
    laid over it 3u smaller - so the glint shows only round the edge (no mask) */
 .mn-rim{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
 .mn-face{position:absolute;inset:calc(3px*var(--u));pointer-events:none}
 /* (one speed all the way round - owner 11-19: the shine seemed to move in jerks, easing in and out along a thin rim) */
-.mn-rim i,.mn-sheen i{position:absolute;top:-30%;bottom:-30%;left:-50%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translate3d(0,0,0) skewX(-18deg);animation:mn-glint 3.6s linear infinite;will-change:transform}
+.mn-rim :is(i,img),.mn-sheen :is(i,img){position:absolute;top:-30%;bottom:-30%;left:-50%;width:40%;height:160%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.95),transparent);transform:translate3d(0,0,0) skewX(-18deg);animation:mn-glint 3.6s linear infinite;will-change:transform}
 @keyframes mn-glint{0%,45%{transform:translate3d(0,0,0) skewX(-18deg)}100%{transform:translate3d(420%,0,0) skewX(-18deg)}}
 .mn-sheen{position:absolute;inset:calc(3px*var(--u));border-radius:calc(17px*var(--u));overflow:hidden;pointer-events:none;opacity:var(--sheen,0)}
-.mn-sheen i{width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
+.mn-sheen :is(i,img){width:55%;animation-duration:5.2s;animation-delay:.8s;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent)}
 
 /* the balls on the cloth (38-menu-balls.js: drawn and rolled there), each with its shadow toward the lower left; not on a
    phone held upright, where the cards fill the cloth */
-#dkFelt .mn-ball{position:absolute;left:0;top:0;z-index:1;pointer-events:auto;will-change:transform}
-#dkFelt .mn-ball canvas{position:relative;display:block;width:100%;height:100%}
-#dkFelt .mn-ball::before{content:"";position:absolute;left:-18%;top:20%;width:100%;height:100%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,.25) 60%,rgba(0,0,0,0))}
-#app.portrait #dkFelt .mn-ball,#desk:not(.menu)>#dkFelt .mn-ball{display:none}   /* (the menu's only: 랭킹전's and 친구와 플레이's cards lie on the same cloth) */
+/* (their own layer over the desk's plane, leaning as it does - 38-menu-balls.js mount; the box in it where the cloth is) */
+#dkBalls{position:absolute;z-index:5;top:calc(var(--bar) - var(--ovh));left:calc(0px - var(--ovw));right:calc(0px - var(--ovw));bottom:0;pointer-events:none;transform:perspective(var(--pp)) rotateX(var(--tilt));transform-origin:50% 100%}
+#app:not(.mnon) #dkBalls,#deskPlane[hidden]~#dkBalls,#app.portrait #dkBalls,#app.resizing #dkBalls{display:none}
+#dkBalls .mn-balls{position:absolute;pointer-events:none}
+#dkBalls .mn-ball{position:absolute;left:0;top:0;z-index:1;pointer-events:auto;will-change:transform}
+#dkBalls .mn-ball canvas{position:relative;display:block;width:100%;height:100%}
+#dkBalls .mn-ball::before{content:"";position:absolute;left:-18%;top:20%;width:100%;height:100%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,.25) 60%,rgba(0,0,0,0))}
+   /* (the menu's only: 랭킹전's and 친구와 플레이's cards lie on the same cloth) */
 
 /* the cards alive, calmly (owner 11-16 - 8 Ball Pool's, 당구의 신's menus move and shine and are liked by every age; ours keep
    their calm and only gain some finish): a light crossing each card now and then on its own beat (--i), a soft light and
@@ -123,14 +127,14 @@
 .mn-fx .dk{left:28%;top:34%;width:96%;height:82%;background:radial-gradient(closest-side,rgba(0,0,0,.2),rgba(0,0,0,.07) 55%,rgba(0,0,0,0))}
 /* the light crossing: one soft band; (owner 11-19: it looked to move in jerks) it keeps one speed all the way across and
    fades in and out while moving, never standing still while lit, on a layer of its own from the start */
-.mn-fx .x{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;opacity:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.07) 30%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 70%,rgba(255,255,255,0));transform:translate3d(0,0,0) skewX(-18deg)}
+.mn-fx .x{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;height:160%;opacity:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.07) 30%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 70%,rgba(255,255,255,0));transform:translate3d(0,0,0) skewX(-18deg)}
 @media (prefers-reduced-motion:no-preference){
   .mn-live .mn-sym{animation:mn-drift 9s linear infinite;animation-delay:calc(var(--si,0) * -1.9s);will-change:transform}
   .mn-live .mn-fx .x{animation:mn-cross 11s linear infinite;animation-delay:calc(var(--i,0) * 1.3s);will-change:transform,opacity}
   .mn-live .mn-fx .lt{animation:mn-flow 16s ease-in-out infinite alternate;animation-delay:calc(var(--i,0) * -2.7s);will-change:transform}
   .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
 }
-.mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused;will-change:auto}
+.mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim :is(i,img),.mn-pc:not(.mn-live) .mn-sheen :is(i,img),.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused;will-change:auto}
 /* (and all of them stand still while a sheet is over the desk - 설정 and the rest: owner 11-20, on the tablet in full screen
    even the settings went in jerks while the cards behind kept every layer moving) */
 body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidden])) .mn-card::before,body:has(#sheet:not([hidden])) #dkBoards .mn-sym{animation-play-state:paused!important}
@@ -171,7 +175,7 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 .mn-pc.t-diamond{--pcBg:radial-gradient(80% 50% at 50% 30%,rgba(140,200,255,.25),rgba(0,0,0,0) 70%),linear-gradient(#1d3358,#0e1a30);--pcInk:#eaf3ff;--pcHd:linear-gradient(#7cc3ff,#2f6fd6);--pcCell:rgba(255,255,255,.08);--rim:linear-gradient(135deg,#e4f4ff,#4a8fe8 50%,#bfe3ff);--ring:hue-rotate(170deg) saturate(1.4) brightness(1.1);--sheen:.55}
 .mn-pc.t-pro{--pcBg:radial-gradient(80% 50% at 50% 30%,rgba(230,196,122,.18),rgba(0,0,0,0) 70%),linear-gradient(#262321,#0f0d0c);--pcInk:#f3e6c4;--pcHd:linear-gradient(#3a2e22,#1a140f);--pcCell:rgba(230,196,122,.1);--rim:linear-gradient(135deg,#fff3c8,#c39a45 45%,#7a5a1e 55%,#f0d488);--ring:saturate(1.3) brightness(1.1);--sheen:.4}
 .mn-pc.t-pro .hd{color:#f0d488}
-.mn-pc.t-bronze .mn-rim i{opacity:.55}
+.mn-pc.t-bronze .mn-rim :is(i,img){opacity:.55}
 .mn-pc.t-diamond .mn-face,.mn-pc.t-pro .mn-face{inset:calc(4px*var(--u))}
 /* sparkles: from 골드 up, a few stars blinking in turn (blue on 다이아몬드, gold on 프로) */
 .mn-sp{position:absolute;z-index:4;width:calc(22px*var(--u));height:calc(22px*var(--u));pointer-events:none;opacity:0;display:none;will-change:opacity,transform;
@@ -181,7 +185,7 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 .mn-pc.t-diamond{--spc:#bfe3ff}.mn-pc.t-pro{--spc:#f0d488}
 .mn-sp.s0{left:16%;top:30%}.mn-sp.s1{right:14%;top:44%;animation-delay:.7s}.mn-sp.s2{left:22%;top:62%;animation-delay:1.4s}.mn-sp.s3{right:20%;top:14%;animation-delay:2.1s}
 @keyframes mn-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}70%{opacity:0;transform:scale(.5) rotate(90deg)}}
-@media (prefers-reduced-motion:reduce){.mn-rim i,.mn-sheen i,.mn-sp,.mn-card.hero::before{animation:none}.mn-sp{display:none!important}}
+@media (prefers-reduced-motion:reduce){.mn-rim :is(i,img),.mn-sheen :is(i,img),.mn-sp,.mn-card.hero::before{animation:none}.mn-sp{display:none!important}}
 
 /* 훈련's way back to the menu: the rail's head (app/34-desk-train.js) */
 #app.desk .dk-back{flex:none;display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:2px 6px 10px;padding:0 12px 0 6px;border-radius:12px;
@@ -210,4 +214,9 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 #app.desk:not(.portrait) #desk.felt #dkBoards.rank .bd-fit{grid-template-columns:repeat(5,min(calc(214px*var(--mu,1)),18.4%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(18px*var(--mu,1))}
 #app.desk:not(.portrait) #desk.felt #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,min(calc(250px*var(--mu,1)),28%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(22px*var(--mu,1))}
 /* 디버그 · 메뉴 진단 (37-desk-menu.js menuDbg): the cards' moving layers, or the balls, put away */
-#app.dbg-nofx :is(.mn-fx,.mn-rim,.mn-sheen,.mn-sp),#app.dbg-nofx .mn-card.hero::before,#app.dbg-noballs #dkFelt .mn-ball{display:none!important}
+#app.dbg-nofx :is(.mn-fx,.mn-rim,.mn-sheen,.mn-sp),#app.dbg-nofx .mn-card.hero::before,#app.dbg-noballs #dkBalls .mn-ball{display:none!important}
+/* the moving parts once they are pictures (32-desk.js fxBake): the gradient or tile under them goes - the picture is the same */
+img.fxp{display:block;-webkit-user-drag:none;user-select:none}
+img.fxp.baked{background:none!important;border-radius:0}
+/* the menu cards' moving ground, drawn on one canvas per card (39-menu-fx.js): the signs, the light and the shade */
+.mn-fx canvas.mn-fxc{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;will-change:transform}

@@ -108,7 +108,7 @@ function menuPaint() {
   menuBalls.mount($('#dkFelt'));
   let layer = $('#dkCards');
   if (!layer) {
-    layer = el('div', { id: 'dkCards' }); ($('#dkProps') || $('#deskPlane')).after(layer);   // (over the menu's towel and plant)
+    layer = el('div', { id: 'dkCards' }); ($('#dkBalls') || $('#dkProps') || $('#deskPlane')).after(layer);   // (over the menu's towel and plant, and the balls' layer)
     // (fitted again when the cloth changes size - not step by step while the window does: layout() fits it after)
     if (window.ResizeObserver) new ResizeObserver(() => { if (!app.classList.contains('resizing')) menuFit(); }).observe($('#dkFelt'));
     // (a touch on a ball lying on the cloth between the cards sends it rolling - the row would take it otherwise)
@@ -120,7 +120,7 @@ function menuPaint() {
   const go = fn => () => { SND.init(); SND.tap(); fn(); };
   // my 선수증: the tier's look, its sheen and rim (84-menu.css .t-<tier>), a few sparkles from 골드 up
   const pc = el('div', { class: `mn-pc t-${t.id}`, role: 'group', 'aria-label': `선수증, ${t.name}, 레이팅 ${t.dama}` }, [
-    el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' }), el('span', { class: 'mn-sheen', 'aria-hidden': 'true' }, el('i')),
+    el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' })), el('span', { class: 'mn-face', 'aria-hidden': 'true' }), el('span', { class: 'mn-sheen', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.55', alt: '' })),
     ...[0, 1, 2, 3].map(k => el('i', { class: 'mn-sp s' + k, 'aria-hidden': 'true' })),
     el('div', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` })]),
     el('span', { class: 'av', text: $('#dkMe .av').textContent || '1' }),
@@ -136,8 +136,8 @@ function menuPaint() {
   const cards = MENU_CARDS.map((c, i) => {
     const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
     return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
-      ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('i')), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
-      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [symLayer(c.id, i), el('b', { class: 'lt' }), el('b', { class: 'dk' }), el('i', { class: 'x' })]),
+      ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:1', alt: '' })), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
+      el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [menuFx.canvas(c.id, i, i), el('img', { class: 'x fxp', 'data-fx': 'x', alt: '' })]),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
@@ -149,8 +149,8 @@ function menuPaint() {
   // and some icons went missing on the tablet as the menu scrolled or the screen changed size. The margin: a card coming in
   // gets its layers a little before it shows, not while the row is under the finger)
   if (menuIO) menuIO.disconnect();
-  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); }, { root: row, rootMargin: '0px 25%', threshold: 0 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
+  if (typeof IntersectionObserver === 'function') { menuIO = new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('mn-live', e.isIntersecting); menuFx.run(); }, { root: row, rootMargin: '0px 25%', threshold: 0 }); for (const c of [pc, ...cards]) menuIO.observe(c); }
   else for (const c of [pc, ...cards]) c.classList.add('mn-live');
   menuFit(); row.scrollLeft = menuScroll;
-  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; });
+  requestAnimationFrame(() => { menuFit(); row.scrollLeft = menuScroll; menuFx.run(); });
 }
