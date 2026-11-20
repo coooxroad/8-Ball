@@ -33,7 +33,7 @@ import { googleWhoAny as googleWho } from './google.js';
 import * as E from './gen/engine.js';
 import { PHYS_V } from './version.js';
 import { originOk } from './origins.js';
-import { monthOf } from './dataset-core.js';
+import { monthOf, partsOf } from './dataset-core.js';
 // (a device on other physics - version.js - is told to update rather than matched: queue and invites)
 const samePhysics = body => (body && Number.isInteger(body.phys) ? body.phys : 1) === PHYS_V;
 export { Vault } from './vault.js';
@@ -103,11 +103,29 @@ async function adminRoute(what, request, env) {
     const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
     return json(await r.json());
   }
-  // the shot dataset (dataset.js): a month's counts, or its rows after n - { month: 'shots-2026-11', after, limit, stats }
+  // the shot dataset (dataset.js): a month's counts, or its rows after a point - { month: 'shots-2026-11', after, limit, stats }.
+  // A month is its own object from before (up to 11-20) and then a day an object (dataset-core.js partsOf); 'after' is
+  // the part's place times 1e9 plus the row's n in it.
   if (what === 'dataset') {
-    const month = /^shots-\d{4}-\d{2}$/.test(body.month || '') ? body.month : monthOf(Date.now()), d = env.DATASET.get(env.DATASET.idFromName(month));
-    const r = await d.fetch('https://dataset/' + (body.stats ? 'stats' : 'export'), { method: 'POST', body: JSON.stringify({ after: body.after | 0, limit: body.limit | 0 }) });
-    return json(Object.assign({ month }, await r.json()));
+    const month = /^shots-\d{4}-\d{2}$/.test(body.month || '') ? body.month : monthOf(Date.now()), parts = partsOf(month);
+    const part = (name, path, b) => env.DATASET.get(env.DATASET.idFromName(name)).fetch('https://dataset/' + path, { method: 'POST', body: JSON.stringify(b || {}) }).then(r => r.json());
+    if (body.stats) {
+      const by = new Map(); let last = 0;
+      for (const st of await Promise.all(parts.map(p => part(p, 'stats')))) {
+        if (!st.ok) continue; last += st.last || 0;
+        for (const b of st.by) { const k = b.kind + '|' + b.mode, o = by.get(k) || { kind: b.kind, mode: b.mode, matches: 0, shots: 0, bytes: 0 }; o.matches += b.matches; o.shots += b.shots; o.bytes += b.bytes; by.set(k, o); }
+      }
+      return json({ ok: true, month, by: [...by.values()].sort((a, b) => (a.kind + a.mode).localeCompare(b.kind + b.mode)), last });
+    }
+    const limit = Math.max(1, Math.min(200, body.limit | 0 || 100)), rows = [];
+    let p = Math.floor((+body.after || 0) / 1e9), n = (+body.after || 0) % 1e9;
+    while (p < parts.length && rows.length < limit) {
+      const r = await part(parts[p], 'export', { after: n, limit: limit - rows.length });
+      for (const row of r.rows || []) rows.push(Object.assign(row, { part: parts[p] }));
+      if (r.more) { n = r.next; break; }
+      p++; n = 0;
+    }
+    return json({ ok: true, month, rows, next: p * 1e9 + n, more: p < parts.length });
   }
   const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
   const vault = env.VAULT.get(env.VAULT.idFromName(acct));

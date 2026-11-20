@@ -14,6 +14,12 @@ const MODES = ['eight', 'nine', 'four', 'three', 'snooker', 'arcade'];
 const KINDS = ['cpu', 'friend', 'ranked', 'invite', 'standin'];
 const r5 = x => Math.round(x * 1e5) / 1e5;
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+/* a day an object (11-20: a month in one filled its 10 GB limit at some 600 000 to 1 000 000 matches - before a game of
+   some thousands of players a day would reach it); a month is read out as its days in order (index.js), after the
+   month's own object from before (shots-2026-11 up to 11-20) */
+export const dayOf = t => { const d = new Date(t); return `shots-${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; };
+export const partsOf = month => { const [y, m] = month.slice(6).split('-').map(Number), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return [month, ...[...Array(days)].map((_, i) => `${month}-${String(i + 1).padStart(2, '0')}`)]; };
 export const monthOf = t => { const d = new Date(t); return `shots-${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 
 /* A match as the dataset keeps it. log: as the device or the room has it (match-log.js: { mode, table, opts, shots:
@@ -36,10 +42,10 @@ export function datasetRow(kind, log, seats, at) {
     opts: log.opts && typeof log.opts === 'object' ? JSON.parse(JSON.stringify(log.opts)) : {}, seats: [seat(seats && seats[0]), seat(seats && seats[1])],
     winner: log.winner === 0 || log.winner === 1 ? log.winner : null, points: Array.isArray(log.points) ? log.points.slice(0, 2) : null, shots };
 }
-// (from a vault or a room: put it in its month's dataset - never waited on by the player)
+// (from a vault or a room: put it in its day's dataset - never waited on by the player)
 export function toDataset(env, row) {
   if (!row || !env || !env.DATASET) return null;
-  return env.DATASET.get(env.DATASET.idFromName(monthOf(row.at))).fetch('https://dataset/put', { method: 'POST', body: JSON.stringify(row) }).catch(() => null);
+  return env.DATASET.get(env.DATASET.idFromName(dayOf(row.at))).fetch('https://dataset/put', { method: 'POST', body: JSON.stringify(row) }).catch(() => null);
 }
 
 export class DatasetCore {

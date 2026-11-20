@@ -7,7 +7,7 @@ import { logError, matchKey } from '../src/match-log.js';
 import { LinkCore } from '../src/link.js';
 import { originOk } from '../src/origins.js';
 import { PHYS_V } from '../src/version.js';
-import { datasetRow, DatasetCore, monthOf } from '../src/dataset-core.js';
+import { datasetRow, DatasetCore, monthOf, dayOf, partsOf } from '../src/dataset-core.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
@@ -729,6 +729,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(row.seats[0].rating === 1210 && row.seats[0].human && !row.seats[1].human && row.seats[1].bot === 'sua' && !('acct' in row) && !JSON.stringify(row).includes('name'), 'dataset: the seats\' ratings, no one named');
   ok(datasetRow('cpu', { mode: 'golf', shots: [shot(0, 0)] }, []) === null && datasetRow('nope', log, []) === null, 'dataset: no unknown game or kind');
   ok(monthOf(Date.UTC(2026, 10, 18)) === 'shots-2026-11', 'dataset: a month an object');
+  ok(dayOf(Date.UTC(2026, 10, 18, 23)) === 'shots-2026-11-18' && partsOf('shots-2026-02').length === 29 && partsOf('shots-2026-11')[0] === 'shots-2026-11' && partsOf('shots-2026-11')[30] === 'shots-2026-11-30', 'dataset: a day an object, a month read as its own object then its days');
   const D = new DatasetCore(sqlOf().sql);
   ok(D.put(Object.assign({ key: 'k1' }, row)).kept && !D.put(Object.assign({ key: 'k1' }, row)).kept && D.put(Object.assign({ key: 'k2' }, row)).kept, 'dataset: a match kept once by its key');
   const st = D.stats(); ok(st.by.length === 1 && st.by[0].matches === 2 && st.by[0].shots === 6, 'dataset: counted by kind and game');
