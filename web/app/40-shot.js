@@ -18,6 +18,9 @@ function beginTurn(first) {
 }
 function shoot(V, a, b, el) {
   el = el || 0;
+  // (the aim back within a turn before it is struck, sent or written down - the dial turned round and round piles it up,
+  // and past ±20 a room took it for a forged shot and gave the game away: QA 11-20 R03. Within a turn it stays as it is.)
+  if (Math.abs(st.aim) > Math.PI) st.aim = Math.atan2(Math.sin(st.aim), Math.cos(st.aim));
   { const L = lookNow(); if (L) scene.setTrail(L.trails[game.shooter()]); }      // (a ranked game: the trail of the player shooting)
   const seen = Math.max(el, shownEl());   // (the cue drawn as high as 현실 당구 raises it: the shot is struck with el, raised in physics.js)
   flow.beforeShot(V, a, b, el); game.beginShot();
