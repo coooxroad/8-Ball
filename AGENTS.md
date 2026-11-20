@@ -42,7 +42,7 @@ node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·
 
 | 위치 | 내용 | 화면(DOM)을 아는가 |
 |---|---|---|
-| `web/content/` | **가질 수 있는 것**: 희귀도, 테이블, 큐, 공, 트레일, 장갑. 데이터만. 파일마다 맨 위에 칸 설명 | 모름 |
+| `web/content/` | **가질 수 있는 것**: 희귀도, 테이블, 큐, 공, 트레일. 데이터만. 파일마다 맨 위에 칸 설명 | 모름 |
 | `web/economy.js`, `web/tables.js` | 돈·DAMA 규칙, 테이블 규격. 앱과 서버가 같이 쓴다 | 모름 |
 | `server/` | 서버(Cloudflare Workers). 6절 | — |
 | `site/` | 웹 버전: APK 릴리스 성공 후 같은 커밋의 페이지를 Cloudflare에 배포(`.github/workflows/site.yml`). `split.cjs`가 웹용으로 페이지를 내용 해시 파일(`h/`, 1년 캐시)로 나누고, `version.cjs`가 배포 버전을 기록·확인 | — |
@@ -91,11 +91,11 @@ node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·
 
 ## 5. 이렇게 고친다
 
-### 스킨(큐·공·테이블·트레일·장갑) 추가
+### 스킨(큐·공·테이블·트레일) 추가
 1. `web/content/`의 그 종류 파일에 항목 한 줄을 더한다. 칸은 파일 맨 위 주석에 있다. `id`는 소문자·숫자·`-`,
    `rarity`는 0(일반)~5(시크릿).
-2. 카드 그림을 넣는다: 큐 `web/ui/cue-<id>.webp`(2400×110, 팁이 왼쪽), 테이블 `web/ui/cloth-<id>.webp`,
-   장갑 `web/ui/glove-<id>.webp`. 공은 코드로 그리고, 표면 무늬가 있으면 `web/tex/ball-<mat>.webp`에 `mat: '<mat>'`.
+2. 카드 그림을 넣는다: 큐 `web/ui/cue-<id>.webp`(2400×110, 팁이 왼쪽), 테이블 `web/ui/cloth-<id>.webp`.
+   공은 코드로 그리고, 표면 무늬가 있으면 `web/tex/ball-<mat>.webp`에 `mat: '<mat>'`.
 3. 모양·재질·빛이 다른 스킨(울퉁불퉁한 공, 손가락 구멍, 직접 정한 큐 구간, 빛나는 날)은 코드 수정 없이 칸으로:
    공 `shape`·`holes`·`skin`·`mark`·`finish`, 큐 `profile`·`glow`. 설명과 예시는 `tasks/gpt-skins.md` 2-1절, 그리는 곳은
    `scene/30-balls.js`(모양은 세트마다 한 번 만들어 공유, 물리 구 안쪽에만)·`scene/40-cue.js`·`app/00-state.js`의 `drawCue`.
@@ -322,7 +322,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   쿠션은 파고드는 회전의 `RAIL_ROLL`(40%)을 남겨 굴러가던 공이 쿠션 뒤에 곡선을 그린다(물리 버전 6).
   조준선(`P.preview()`)과 실제 샷은 같은 엔진, 같은 입력이다. 동시 충돌은 공 번호와 상관없이 함께 푼다.
 - 큐 세우기는 각도 하나(0~90°). 맛세이·점프는 따로 나누지 않고 물리에서 나온다.
-- 희귀도는 색으로만(카드에는 그라데이션, 열면 이름). 희귀도 액자는 쓰지 않는다. 능력치는 큐와 장갑만(`content/00-rarity.js`: 큐 ±12%, 희귀도별 합계; 장갑은 세기·다이얼 단위).
+- 희귀도는 색으로만(카드에는 그라데이션, 열면 이름). 희귀도 액자는 쓰지 않는다. 능력치는 큐만(`content/00-rarity.js`: 큐 ±12%, 희귀도별 합계). 장갑은 없앴다(11-20, 조작 단위는 모두 같은 `HAND_STEP`).
 - 큐 특성(`content/20-cues.js` `TRAITS`)은 OVR 같은 수치가 아니라 할 수 있는 것을 바꾼다. 지금은 로즈우드 인레이의 `reach`(당점 제한 없음) 하나.
   특성이 서버 검증에 닿으면 `server/src/check.js`에도 넣는다(당점 상한 `STRIKE_MAX`).
 - 큐 저장은 id로(`prefs.cueIds`/`cueId`). 큐를 지우거나 순서를 바꿔도 저장이 깨지지 않는다.

@@ -214,15 +214,14 @@ const PLAY_STEPS = {
 // (owner 11-17: only 없음 and 쓰리쿠션 - the one-cushion finish is gone; one chosen before counts as 쓰리쿠션)
 const finishPref = () => prefs.finish ? 'three' : false;
 const finishSeg = () => dkSeg([[false, '없음'], ['three', '쓰리쿠션']], finishPref(), v => { prefs.finish = v; repaint(); });
-// on one device: the friend's cue and glove, from what this player owns (owner 11-10) - prefs.cues[1], prefs.glove2
+// on one device: the friend's cue, from what this player owns (owner 11-10) - prefs.cues[1]
 function friendGear() {
-  const cues = CUES.map((c, i) => i).filter(i => net.owns('cue', CUES[i].id)), gl = [null].concat(GLOVES.filter(g => net.owns('glove', g.id)).map(g => g.id));
-  const ci = cues.includes(prefs.cues[1]) ? prefs.cues[1] : prefs.cues[0], gi = gl.includes(prefs.glove2) ? prefs.glove2 : null;
+  const cues = CUES.map((c, i) => i).filter(i => net.owns('cue', CUES[i].id));
+  const ci = cues.includes(prefs.cues[1]) ? prefs.cues[1] : prefs.cues[0];
   // (a row each: what it is now, and a key that hands over the next one owned)
   const pick = (name, vals, cur, fmt, set) => dkRow(`${name} · ${fmt(cur)}`, '바꾸기', () => { set(vals[(vals.indexOf(cur) + 1) % vals.length]); savePrefs(); repaint(); });
   return [dkLab(`${oppName()}의 장비`),
-    pick('큐', cues, ci, i => CUES[i].name, v => { prefs.cues[1] = v; }),
-    pick('장갑', gl, gi, id => id ? GLOVES.find(g => g.id === id).name : '맨손', v => { prefs.glove2 = v; })];
+    pick('큐', cues, ci, i => CUES[i].name, v => { prefs.cues[1] = v; })];
 }
 // 빠른 진행, chosen with the game against the computer or a friend (owner 11-10: no longer a setting)
 const fastSeg = () => [dkLab('빠른 진행'), dkSeg([[true, '켬'], [false, '끔']], !!prefs.fast, v => { prefs.fast = v; repaint(); })];

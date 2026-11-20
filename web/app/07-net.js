@@ -88,8 +88,6 @@ const net = (() => {
     const k = KIND_OF;
     if (!owns('ball', prefs.ballSkin)) { prefs.ballSkin = BALLSKINS[0].id; useBalls(prefs.ballSkin); }
     if (!owns('trail', prefs.trail)) prefs.trail = TRAILS[0].id;
-    if (prefs.glove && !owns('glove', prefs.glove)) prefs.glove = null;
-    if (prefs.glove2 && !owns('glove', prefs.glove2)) prefs.glove2 = null;
     if (!owns('table', (CLOTHS[prefs.cloth] || {}).id)) prefs.cloth = 0;
     prefs.cues = prefs.cues.map(i => owns('cue', (CUES[i] || {}).id) ? i : k.cue.firstOwned());
     savePrefs(); if (st.screen === 'home') paintHome();
@@ -203,7 +201,7 @@ const net = (() => {
 // each kind of thing that can be owned: its list, and the first of it owned (for putting back what is no longer owned)
 const KIND_OF = {
   cue: { list: () => CUES, firstOwned: () => Math.max(0, CUES.findIndex(c => !(c.rarity > 0))) },
-  ball: { list: () => BALLSKINS }, table: { list: () => CLOTHS }, trail: { list: () => TRAILS }, glove: { list: () => GLOVES },
+  ball: { list: () => BALLSKINS }, table: { list: () => CLOTHS }, trail: { list: () => TRAILS },
 };
 const itemOf = it => (KIND_OF[it.kind] ? KIND_OF[it.kind].list() : []).find(x => x.id === it.id) || null;
 const itemName = it => { const q = itemOf(it); return q ? q.name : it.id; };

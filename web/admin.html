@@ -117,7 +117,7 @@
       <form class="card" id="itemForm">
         <h2>아이템 지급 · 회수</h2>
         <label class="small">종류</label>
-        <select id="fKind"><option value="cue">큐</option><option value="ball">공 스킨</option><option value="table">테이블</option><option value="trail">궤적</option><option value="glove">장갑</option></select>
+        <select id="fKind"><option value="cue">큐</option><option value="ball">공 스킨</option><option value="table">테이블</option><option value="trail">궤적</option></select>
         <label class="small">아이템</label><select id="fItem"></select>
         <label class="small">사유</label><input id="fWhy2" maxlength="80" placeholder="예: 이벤트 당첨">
         <div class="row" style="margin-top:10px"><button class="go" data-act="give">지급</button><button class="warn" data-act="take">회수</button></div>
@@ -147,7 +147,7 @@
 
 <script>
 const SERVER = 'https://api.danguuu.com';
-const KIND_KO = { cue: '큐', ball: '공', table: '테이블', trail: '궤적', glove: '장갑' };
+const KIND_KO = { cue: '큐', ball: '공', table: '테이블', trail: '궤적' };
 const RARITY_KO = ['일반', '고급', '희귀', '영웅', '전설', '시크릿'];
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

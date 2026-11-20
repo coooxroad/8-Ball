@@ -268,7 +268,7 @@
 #app.desk.compact .dk-rb.iconed{gap:4px}
 #app.desk.compact .dk-rb .mi{width:20px;height:20px}
 #app.desk.compact:not(.portrait) .dk-rb .mi{width:22px;height:22px}
-/* 내 장비: a ball set as three balls, a trail as its streak, a glove (picture to come) as its colour */
+/* 내 장비: a ball set as three balls, a trail as its streak */
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-slot{min-width:0;flex:1 1 0}
 /* (five keys: they share the row) */
 #app.desk.compact.portrait .dk-rail:has(.dk-slot:nth-child(5)) .dk-rb{font-size:14px}

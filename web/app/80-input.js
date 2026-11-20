@@ -96,8 +96,8 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
   // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
   const CANCEL = 0.04;
-  // the finger moves the power the same with any glove; the glove decides the step it lands on (a finer glove, finer steps)
-  const snap = p => { const k = gloveStep().power / 100; return Math.max(k, Math.round(p / k) * k); };
+  // the power lands on steps of HAND_STEP.power (content/00-rarity.js)
+  const snap = p => { const k = HAND_STEP.power / 100; return Math.max(k, Math.round(p / k) * k); };
   const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.min(1, snap(Math.max(0.002, (q - CANCEL) / (1 - CANCEL)))); };
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
   box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
@@ -112,14 +112,14 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
 })();
 (function fineCtl() {
-  // the dial turns the aim the same with any glove; the aim moves in the glove's steps (degrees) from where the turn began
+  // the aim moves in steps of HAND_STEP.dial (degrees) from where the turn began
   // (the drum turns along its length: upright in either orientation now, lying only if a layout lays it down)
   const box = $('#fine'); let id = null, last = 0, off = 0, from = 0, turned = 0;
   const lying = () => box.clientWidth > box.clientHeight, pos = e => lying() ? e.clientX : e.clientY;
   box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    const unit = gloveStep().dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
+    const unit = HAND_STEP.dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
     st.aim = from + Math.round(turned / unit) * unit; off += d;
     box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
@@ -135,7 +135,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     if (!dir || e.altKey || e.ctrlKey || e.metaKey || !humanAiming() || st.screen !== 'play') return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') || !$('#sheet').hidden) return;
     e.preventDefault();
-    st.aim += dir * (e.shiftKey ? 10 : 1) * gloveStep().dial * Math.PI / 180;
+    st.aim += dir * (e.shiftKey ? 10 : 1) * HAND_STEP.dial * Math.PI / 180;
     const d = dir * 8; off += d; box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); SND.dial(0.3); scene.invalidate();
   });
 })();

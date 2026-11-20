@@ -38,7 +38,7 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
   const C = {}; for (const f of fs.readdirSync(path.join(W, 'content')).sort()) Object.assign(C, require(path.join(W, 'content', f)));
   const has = p => fs.existsSync(path.join(W, p));
   const sounds = fs.existsSync(path.join(W, 'sound')) ? fs.readdirSync(path.join(W, 'sound')).map(f => f.replace(/\.[^.]+$/, '')) : [];
-  const kinds = { CUES: q => `ui/cue-${q.id}.webp`, BALLSKINS: null, CLOTHS: q => `ui/cloth-${q.id}.webp`, TRAILS: null, GLOVES: q => `ui/glove-${q.id}.webp` };
+  const kinds = { CUES: q => `ui/cue-${q.id}.webp`, BALLSKINS: null, CLOTHS: q => `ui/cloth-${q.id}.webp`, TRAILS: null };
   for (const [k, pic] of Object.entries(kinds)) {
     const list = C[k]; if (!Array.isArray(list) || !list.length) { fail(`content: ${k} is missing or empty`); continue; }
     const ids = new Set();
@@ -86,17 +86,11 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
     const f = k.finish; if (f && ((f.rough != null && !num(f.rough, 0, 1)) || (f.coat != null && !num(f.coat, 0, 1)) || (f.metal != null && !num(f.metal, 0, 1)))) fail(`${at}: finish rough, coat, metal are 0..1`);
     if (f && f.bump && !has(`tex/ball-${f.bump}.webp`)) fail(`${at}: its bump picture tex/ball-${f.bump}.webp is missing`);
   }
-  // how cues and gloves play (00-rarity.js): a cue's three within ±STAT_MAX adding up to its rarity's total; a glove's
-  // steps finer (or no coarser) the rarer it is, and never coarser than the bare hand
+  // how cues play (00-rarity.js): a cue's three within ±STAT_MAX adding up to its rarity's total
   for (const c of C.CUES || []) {
     const s = c.stat, at = `content CUES '${c.id}'`;
     if (!s || !['power', 'spin', 'guide'].every(k => Number.isInteger(s[k]) && Math.abs(s[k]) <= (k === 'power' && c.reward ? C.POWER_MAX : C.STAT_MAX))) { fail(`${at}: stat needs power, spin and guide, whole percents within ±${C.STAT_MAX} (a reward cue's power to ${C.POWER_MAX})`); continue; }
     if (s.power + s.spin + s.guide !== C.STAT_SUM[c.rarity]) fail(`${at}: stat adds up to ${s.power + s.spin + s.guide}, its rarity's total is ${C.STAT_SUM[c.rarity]}`);
-  }
-  for (const g of C.GLOVES || []) {
-    const s = g.stat, at = `content GLOVES '${g.id}'`;
-    if (!s || !(s.power > 0 && s.power <= C.BARE_HAND.power) || !(s.dial > 0 && s.dial <= C.BARE_HAND.dial)) { fail(`${at}: stat needs power and dial steps, no coarser than the bare hand (${C.BARE_HAND.power}, ${C.BARE_HAND.dial})`); continue; }
-    for (const h of C.GLOVES) if (h.stat && h.rarity < g.rarity && (h.stat.power < s.power || h.stat.dial < s.dial)) fail(`${at}: a glove of lower rarity ('${h.id}') has finer steps`);
   }
 }
 // 4. the markup's ids, and the pictures named by path

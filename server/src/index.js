@@ -98,7 +98,7 @@ async function adminRoute(what, request, env) {
   }
   const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
   if (what === 'catalog') { const it = L => L.map(q => ({ id: q.id, name: q.name, rarity: q.rarity || 0 }));
-    return json({ ok: true, me: who.email === 'password' ? '비밀번호' : who.email, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS), glove: it(E.GLOVES) } }); }
+    return json({ ok: true, me: who.email === 'password' ? '비밀번호' : who.email, items: { cue: it(E.CUES), ball: it(E.BALLSKINS), table: it(E.CLOTHS), trail: it(E.TRAILS) } }); }
   if (what === 'find') {
     const r = await env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/find', { method: 'POST', body: JSON.stringify({ q: String(body.q || '').slice(0, 40) }) });
     return json(await r.json());

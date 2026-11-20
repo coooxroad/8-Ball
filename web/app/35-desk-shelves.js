@@ -64,32 +64,19 @@ function cueShow(i) {
   if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(box); else requestAnimationFrame(fit);
   return box;
 }
-const gloveImg = g => el('img', { class: 'glove', src: `ui/glove-${g.id}.webp`, alt: g.name, draggable: 'false' });
 // (a table with a look has the whole of it on its card, not a swatch tiled)
 const clothPic = q => el('i', { class: 'clothcard', style: `--w:${hx6(q.wood)};background-color:${hx6(q.felt)};background-image:url(ui/cloth-${q.id}.webp)` + (q.look ? ';background-size:cover;background-position:center' : '') });
-/* How a cue or glove plays, as numbers and bars (content/00-rarity.js), set against what is worn now: the bar is blue up to
+/* How a cue plays, as numbers and bars (content/00-rarity.js), set against what is worn now: the bar is blue up to
    what the worn one gives, green where this one gives more, red where it gives less, and the change beside the number.
-   OVR is the one number for the whole: a cue's from its three (70 with nothing either way, up to 95), a glove's from how
-   fine its two steps are (60 bare-handed, up to 95). Each row: { k: label, v, w (worn), lo, hi (the bar's ends), t: text,
+   OVR is the one number for the whole: a cue's from its three (70 with nothing either way, up to 95). Each row: { k: label, v, w (worn), lo, hi (the bar's ends), t: text,
    d: the change as text, up: whether more is better }. */
 const cueOVR = c => { const s = (c && c.stat) || {}; return Math.round(70 + 1.25 * ((s.power || 0) + (s.spin || 0) + (s.guide || 0))); };
-const gloveFine = s => [(BARE_HAND.power - s.power) / (BARE_HAND.power - 0.25), (BARE_HAND.dial - s.dial) / (BARE_HAND.dial - 0.03)];
-const gloveOVR = g => { const f = gloveFine((g && g.stat) || BARE_HAND); return Math.round(60 + 35 * (f[0] + f[1]) / 2); };
 const sgn = (n, unit) => n > 0 ? `+${n}${unit}` : n < 0 ? `${n}${unit}` : '';
 function cueStats(c, worn) {
   const s = c.stat || {}, w = (worn && worn.stat) || {};
   const rows = [['최대 파워', 'power'], ['회전', 'spin'], ['조준선', 'guide']].map(([k, f]) => ({ k, v: 100 + (s[f] || 0), w: 100 + (w[f] || 0), lo: 100 - STAT_MAX, hi: 100 + STAT_MAX, up: true }));
   for (const r of rows) { r.t = r.v + '%'; r.d = sgn(r.v - r.w, ''); }
   const o = cueOVR(c), ow = cueOVR(worn);
-  return { ovr: o, ovrD: sgn(o - ow, ''), rows };
-}
-function gloveStats(g, worn) {
-  const s = g.stat || BARE_HAND, w = (worn && worn.stat) || BARE_HAND, round = x => Math.round(x * 1000) / 1000;
-  // (a finer step is better: the bar runs from the bare hand's step at its left to the finest at its right)
-  const rows = [{ k: '세기 단위', v: s.power, w: w.power, lo: BARE_HAND.power, hi: 0.25, t: String(s.power), d: sgn(round(s.power - w.power), '') },
-    { k: '다이얼 단위', v: s.dial, w: w.dial, lo: BARE_HAND.dial, hi: 0.03, t: s.dial + '°', d: sgn(round(s.dial - w.dial), '°') }];
-  for (const r of rows) r.up = false;
-  const o = gloveOVR(g), ow = gloveOVR(worn);
   return { ovr: o, ovrD: sgn(o - ow, ''), rows };
 }
 // one row: the bar's blue (what the worn one gives), then green (more) or red (less), and the number with its change
@@ -114,14 +101,8 @@ const SHELVES = {
     show: (q, stage) => { scene.setTrail(q.id); stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, streak(q, true))); },
     about: q => [q.note],
     wear: q => { prefs.trail = q.id; return `트레일: ${q.name}`; }, undo: () => scene.setTrail(prefs.trail) },
-  glove: { name: '장갑', list: () => GLOVES, worn: () => GLOVES.findIndex(g => g.id === prefs.glove), pic: gloveImg,
-    show: (g, stage) => { stage.dataset.win = '0'; dkPut(stage, el('div', { class: 'bigpic' }, gloveImg(g))); },
-    about: () => [...GLOVE_SPEC],
-    // (the finest a glove may go, for the bars: a quarter of a power step, three hundredths of a degree)
-    stats: g => gloveStats(g, GLOVES.find(x => x.id === prefs.glove)),
-    wear: g => { prefs.glove = g.id; return `${g.name} 장갑을 꼈습니다.`; } },
 };
-const SHELF_KEYS = ['cue', 'ball', 'table', 'trail', 'glove'];
+const SHELF_KEYS = ['cue', 'ball', 'table', 'trail'];
 /* The cards' auroras move only while the card is on the screen (PC menus stuttering, owner 11-13: a long shelf kept dozens
    of them drifting out of sight): a card gets 'aur-on' while any of it shows (74-shop-cards.css runs the curtains then). */
 const aurIO = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('aur-on', e.isIntersecting); }, { rootMargin: '40px' }) : null;
