@@ -68,8 +68,12 @@ const menuBalls = (() => {
       b.el.style.width = b.el.style.height = (2 * R).toFixed(1) + 'px';
       if (b.x == null) { b.x = z.x0 + (z.x1 - z.x0) * b.at; b.y = (z.y0 + z.y1) / 2; }
       else { b.x *= U / was; b.y *= U / was; b.vx *= U / was; b.vy *= U / was; }
-      b.R = R; b.x = Math.max(z.x0, Math.min(z.x1, b.x)); b.y = z.y1 < z.y0 ? (z.y0 + z.y1) / 2 : Math.max(z.y0, Math.min(z.y1, b.y));
-      draw(b); place(b);
+      // (a strip too low for a ball - a short landscape screen: that ball is put away, not squeezed; QA 11-20 U01)
+      b.el.hidden = z.y1 < z.y0 || z.x1 < z.x0; if (b.el.hidden) { b.vx = b.vy = 0; continue; }
+      b.R = R; b.x = Math.max(z.x0, Math.min(z.x1, b.x)); b.y = Math.max(z.y0, Math.min(z.y1, b.y));
+      // (drawn again only when its size changed - every fit drew all three, QA 11-20 U02)
+      if (b.drawn !== b.cv.width) { draw(b); b.drawn = b.cv.width; }
+      place(b);
     }
   }
   // on the cloth (once it is made; again when the player's set of balls has changed)
@@ -105,7 +109,7 @@ const menuBalls = (() => {
     }
     // the balls knocking each other (one strip's)
     for (let i = 0; i < balls.length; i++) for (let j = i + 1; j < balls.length; j++) {
-      const a = balls[i], b = balls[j]; if (a.zone !== b.zone) continue;
+      const a = balls[i], b = balls[j]; if (a.zone !== b.zone || a.el.hidden || b.el.hidden) continue;
       const dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy), min = a.R + b.R;
       if (dd >= min || dd < 1e-6) continue;
       const nx = dx / dd, ny = dy / dd, rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
@@ -130,7 +134,7 @@ const menuBalls = (() => {
     if (!balls.length || !zones) return false;
     const hit = document.elementsFromPoint(e.clientX, e.clientY);
     if (hit.length && hit[0].closest('.mn-card, .mn-pc')) return false;   // (a card over it: the card's touch)
-    const be = hit.find(h => h.classList && h.classList.contains('mn-ball')), b = be && balls.find(q => q.el === be);
+    const be = hit.find(h => h.classList && h.classList.contains('mn-ball')), b = be && balls.find(q => q.el === be && !q.el.hidden);
     if (!b) return false;
     const r = b.el.getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
     let dx = cx - e.clientX, dy = cy - e.clientY; const m = Math.hypot(dx, dy);

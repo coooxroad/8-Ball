@@ -131,6 +131,9 @@
   .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
 }
 .mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim i,.mn-pc:not(.mn-live) .mn-sheen i,.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused;will-change:auto}
+/* (and all of them stand still while a sheet is over the desk - 설정 and the rest: owner 11-20, on the tablet in full screen
+   even the settings went in jerks while the cards behind kept every layer moving) */
+body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidden])) .mn-card::before,body:has(#sheet:not([hidden])) #dkBoards .mn-sym{animation-play-state:paused!important}
 /* (none of them while the window changes size, nor just after, while the desk is drawn again at its new size: 10-ui.js checkLayout) */
 #app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
 @keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(25%,-14.2857%,0)}}
