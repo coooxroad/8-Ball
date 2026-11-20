@@ -65,11 +65,11 @@ function show(screen) {
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
-let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0;
+let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0, winW = 0, winH = 0;
 function layout() {
   layoutN++;
   const W = app.clientWidth, H = app.clientHeight; if (!W || !H) return;
-  layoutW = W; layoutH = H; layoutDpr = window.devicePixelRatio || 1;
+  layoutW = W; layoutH = H; layoutDpr = window.devicePixelRatio || 1; winW = innerWidth; winH = innerHeight;
   const portrait = H > W; wide = W >= 900 && H >= 560;
   if (st.screen === 'home' && deskTab && menuNow() !== menuShown()) return deskPaint();   // (turned upright or back: the card menu or the desk's boards - 37-desk-menu.js; deskPaint lays out again)
   app.classList.toggle('portrait', portrait); app.classList.toggle('compact', !wide);
@@ -111,12 +111,20 @@ let layoutT = 0, layoutPending = false;
    black for seconds, where a game (no desk up) took a full screen at once (owner 11-15). Away means not laid out at all
    (display:none), the row of cards only unseen (it keeps where it was scrolled to). Not while typing: the keyboard coming
    up changes the size too, and the desk stays under the sheet then. */
+/* (11-20, owner: on the web, full screen stayed black a long while.) While the window changes size the home screen is
+   also held at the size it was laid out at (pinned): the window grows step by step, and at each step every layer of the
+   leaning desk and the cards changed size and was drawn again by the graphics chip - the screen black until it caught up.
+   Held, the last picture stays up (the window's new strip is the room's dark) and the desk is drawn once, at the end. */
 let sizedAt = 0;
-function sizing() { if (st.screen === 'home') { app.classList.add('resizing'); sizedAt = performance.now(); } }
+const pin = on => {
+  if (on) { app.style.width = layoutW + 'px'; app.style.height = layoutH + 'px'; document.documentElement.style.background = getComputedStyle(app).backgroundColor; }
+  else { app.style.width = app.style.height = ''; document.documentElement.style.background = ''; }
+};
+function sizing() { if (st.screen === 'home') { if (!app.classList.contains('resizing') && layoutW) pin(true); app.classList.add('resizing'); sizedAt = performance.now(); } }
 function layoutSoon() {
   clearTimeout(layoutT);
   const a = document.activeElement, typing = a && a.tagName === 'INPUT';
-  if (!typing && (app.clientWidth !== layoutW || app.clientHeight !== layoutH)) sizing();
+  if (!typing && (innerWidth !== winW || innerHeight !== winH || app.clientWidth !== layoutW || app.clientHeight !== layoutH)) sizing();
   layoutT = setTimeout(() => {
     const a = document.activeElement;
     if (!a || a.tagName !== 'INPUT' || app.classList.contains('resizing')) layoutPending = true;
@@ -133,7 +141,7 @@ function checkLayout() {
   let back = false;
   if (app.classList.contains('resizing')) {
     if (performance.now() - sizedAt < 100) { clearTimeout(layoutT); layoutT = setTimeout(() => { layoutPending = true; }, 120); return; }
-    app.classList.remove('resizing'); back = true;
+    app.classList.remove('resizing'); pin(false); back = true;
     /* (and the cards' moving layers come back a moment after the desk: the frame the desk returns in has all of it to draw
        again at its new size, and on the tablet parts of it came up missing - owner 11-19; 84-menu.css #app.settle) */
     app.classList.add('settle'); clearTimeout(checkLayout.settle); checkLayout.settle = setTimeout(() => app.classList.remove('settle'), 600);
