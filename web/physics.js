@@ -556,11 +556,20 @@ function createPhysics(cfg) {
       }
       // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
       const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
-      if (w.ev.firstHit != null) for (const c of group) if (c.lam > 0 && c.i !== cue && c.j !== cue) w.ev.kiss++;
+      // (kissPre, as hitAir counts it: a kiss before the shot was decided - carom: before the cue ball met its second ball,
+      // the cue ball meeting its first again counting too; pool: before the first ball potted. Counted here too since 11-20 -
+      // till then only balls in the air counted it, and a carom point made by a red knocked into the cue ball was read as a
+      // line played: owner '키스로 된 공인데 행운이 아님')
+      const open = POCKETED ? !w.ev.pocketed.some(q => q.id !== cue) : w.ev.hits.length < 2;
+      if (w.ev.firstHit != null) for (const c of group) if (c.lam > 0 && c.i !== cue && c.j !== cue) { w.ev.kiss++; if (open) w.ev.kissPre++; }
       if (met.length) {
         const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, 0, met[0]];
         if (w.ev.firstHit == null) w.ev.firstHit = met[0];
-        for (const o of met) { if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
+        for (const o of met) {
+          const k = group.find(q => (q.i === cue || q.j === cue) && (q.i === o || q.j === o));
+          if (open && w.ev.hits.length === 1 && w.ev.hits[0] === o && w.ev.seq[w.ev.seq.length - 1] === o && k && -k.rel0 > 0.02) w.ev.kissPre++;
+          if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o);
+        }
       }
       if (w.snd) for (const c of group) if (-c.rel0 > 0.03 && c.lam > 0) { const a = bs[c.i], b = bs[c.j]; w.snd.push({ t: 'ball', v: -c.rel0, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id }); }
       // and on from that instant with the new speeds

@@ -527,12 +527,15 @@
   // (pool: a success through another ball - a combination, a kiss - is taken only when no plain pot of the ball met is
   // a little further on: a player means the plain pot far more often; 11-18)
   const plainPot = res => !g.P.POCKETED || (res.ev.pocketed || []).some(q => q.id === res.ev.firstHit);
+  // (carom: a point that comes only through a kiss before it - physics.js kissPre - is no line: not the line a missed shot
+  // meant, not its 교정한 샷, and it gives a line no width; owner 11-20 '교정한 샷 보기도 키스를 반동으로 씀')
+  const clean = res => res.made && (g.P.POCKETED || !(res.ev.kissPre > 0));
   function intentOf(world, who, shot, view) {
     const tries = (V, a) => {
       let odd = null;
       for (let i = 0; i < JUDGE_STEPS.length && !(odd && i > odd.i + 4); i++) for (const s of [1, -1]) {
         const d = JUDGE_STEPS[i], res = judgeSim(world, who, { ...shot, angle: shot.angle + s * d, V, a }, view);
-        if (!res.made) continue;
+        if (!clean(res)) continue;
         if (plainPot(res)) return { da: s * d, V, a, res };
         if (!odd) odd = { da: s * d, V, a, res, i };
       }
@@ -545,11 +548,11 @@
   }
   // a line's own window around an aim that makes it: its two ends (the aim moved each way until it no longer comes off)
   function windowOf(world, who, shot, view) {
-    const ok = da => judgeSim(world, who, { ...shot, angle: shot.angle + da }, view).made;
+    const ok = da => clean(judgeSim(world, who, { ...shot, angle: shot.angle + da }, view));
     const end = s => { let lo = 0, hi = 0.004; while (hi < 0.08 && ok(s * hi)) { lo = hi; hi *= 2; } for (let n = 0; n < 5; n++) { const m = (lo + hi) / 2; if (ok(s * m)) lo = m; else hi = m; } return lo; };
     const up = end(1), down = end(-1), half = (up + down) / 2, centre = shot.angle + (up - down) / 2;
     let p = winChance(half / raisedK(shot));
-    if (p > 0.05) { const keep = [0.88, 1.12].filter(k => judgeSim(world, who, { ...shot, angle: centre, V: shot.V * k }, view).made).length; p *= [0.55, 0.8, 1][keep]; }
+    if (p > 0.05) { const keep = [0.88, 1.12].filter(k => clean(judgeSim(world, who, { ...shot, angle: centre, V: shot.V * k }, view))).length; p *= [0.55, 0.8, 1][keep]; }
     return { p, half, centre };
   }
 
@@ -624,8 +627,8 @@
        middle of its window -, the ball and pocket or the route, and where its stroke was sending the cue ball (shape:
        the stroke at paces round its own); a safety when no line was near and it left the other little; the facts of it */
     // (the window's middle, or - when that misses, the window being lopsided - the success the search found)
-    const aimC = line ? { ...aimed, angle: line.centre } : null, cRes = !res.made && aimC ? judgeSim(world, who, aimC, view) : null;
-    const asShot = res.made ? shot : cRes && cRes.made ? aimC : aimed, meantRes = res.made ? res : cRes && cRes.made ? cRes : meant ? meant.res : null;
+    const aimC = line ? { ...aimed, angle: line.centre } : null, cRes = !res.made && aimC ? judgeSim(world, who, aimC, view) : null, cOk = !!cRes && clean(cRes);
+    const asShot = res.made ? shot : cOk ? aimC : aimed, meantRes = res.made ? res : cOk ? cRes : meant ? meant.res : null;
     const shape = asShot && meantRes && meantRes.made && !meantRes.won ? shapeOf(world, who, asShot, view) : null;
     const facts = factsOf(world, who, asShot || shot, meantRes && meantRes.made ? meantRes : res, view, shape);
     // (the ball potted and where; through another - a combination or a kiss - that other, the ball met first, as via)
@@ -654,7 +657,7 @@
       md: meant && !res.made && line ? describe(world, who, { ...aimed, angle: line.centre }, judgeSim(world, who, { ...aimed, angle: line.centre }, view)) : null,
       // (the shot as it should have been played - the review's 교정한 샷 보기: the meant line at its window's middle when that
       // comes off, else the nearest success found)
-      fix: meant && !res.made ? (cRes && cRes.made ? aimC : aimed) : null,
+      fix: meant && !res.made ? (cOk ? aimC : aimed) : null,
       cost: { shot: s1 - s0, best: s2 - s1, meant: s3 - s2, all: JUDGE.sims - s0 },
       blocked, forced: res.pass ? forcedOf(res, who) : null, rule: ruleOf(view, who, res),
       near: !res.made && !res.foul && meantRes && meantRes.made ? nearOf(world, who, shot, meantRes) : null,
