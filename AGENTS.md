@@ -33,6 +33,7 @@ node web/test/browser/desk-text.js     # 데스크톱 배율(1·1.25·2)과 폰�
 node web/test/browser/pc-performance.js  # 고주사율·픽셀 상한 정책
 node web/test/browser/human-ai.js      # 대역의 실제 Worker·조작·기권 연결
 node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·GPU 대체·컨텍스트 복구
+node web/test/browser/ui-budget.js     # 메뉴 레이어 예산(1280x800@2에서 28M픽셀 이하) — 넘으면 태블릿이 끊기고 점멸한다
 ```
 브라우저 검사는 playwright가 필요하다(`CHROME=<경로>`로 크롬을 고른다). 검사를 통과시키려고 검사를 지우거나 약하게 만들지 않는다.
 물리나 규칙을 바꿨으면 그 동작을 보는 검사를 `web/test/run.js`에 더한다. 전후 비교 도구(검사 아님)는 `web/tools/compare/`
@@ -43,7 +44,7 @@ node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·
 | 위치 | 내용 | 화면(DOM)을 아는가 |
 |---|---|---|
 | `web/content/` | **가질 수 있는 것**: 희귀도, 테이블, 큐, 공, 트레일. 데이터만. 파일마다 맨 위에 칸 설명 | 모름 |
-| `web/economy.js`, `web/tables.js` | 돈·DAMA 규칙, 테이블 규격. 앱과 서버가 같이 쓴다 | 모름 |
+| `web/economy.js`, `web/tables.js` | 돈·DAMA 규칙, 테이블 규격, 아직 안 연 종목(`SOON_MODES`: 스누커 — 디버그 계정만, 서버도 거절). 앱과 서버가 같이 쓴다 | 모름 |
 | `server/` | 서버(Cloudflare Workers). 6절 | — |
 | `site/` | 웹 버전: APK 릴리스 성공 후 같은 커밋의 페이지를 Cloudflare에 배포(`.github/workflows/site.yml`). `split.cjs`가 웹용으로 페이지를 내용 해시 파일(`h/`, 1년 캐시)로 나누고, `version.cjs`가 배포 버전을 기록·확인 | — |
 | `web/physics.js` | 공의 움직임. 결정적: 같은 입력이면 어느 기기든 같은 결과(`DMath`만, `Math.exp` 등 금지) | 모름 |
@@ -138,9 +139,13 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   **마스크 금지**(테두리는 카드 바탕 위에 3u 작은 앞면을 얹어 만든다), **필터 금지**(아이콘 그림자는 그림 안에 — `10-ui.js` `icoLift`).
   카드 바탕(11-19)은 점 대신 카드마다 작은 기호 둘이 대각선으로 흐름(`32-desk.js` `PANEL_SYM`·`symLayer`, 랭킹전 종목·친구와 플레이 패널도),
   랭킹전·선수증 말고는 카드 색의 희미한 빛. 움직이는 층(`.mn-fx`)은 카드 **맨 위**(아래 글자·아이콘이 따로 층이 되지 않게), 보일 때만 있음(`.mn-live`).
+  (11-20) 카드의 기호·빛·그림자는 카드마다 캔버스 하나에 그린다(`app/39-menu-fx.js` `menuFx`, 같은 움직임, 초당 30번, CSS 픽셀의 절반) —
+  움직이는 CSS 층을 카드마다 3장씩 두면 태블릿이 끊기고 점멸했다. 지나가는 빛·테두리 반짝임은 작은 그림(`32-desk.js` `fxBake`).
+  **메뉴에 움직이는 층을 더할 땐 `ui-budget.js`를 돌린다.**
   (11-20) 카드는 쨍한 당구 색 + 윗면 광 + 같은 색 옆면(두꺼운 판) + 큰 제목·굵은 아이콘 — 소유자: "확 게임다워졌다".
   천 위 공 3개(`app/38-menu-balls.js` `menuBalls`): 카드 위아래 빈 띠에서 손가락으로 치면 굴러가고 서로·벽에 부딪힘(게임 소리).
-  구는 공 세트의 표면 그림(`scene.ballSurface`)을 직접 픽셀로 돌려 그림(3D, 숫자가 굴러감). 터치는 `#dkCards`가 먼저 넘겨줌. 세로 화면은 아직 예전 책상 메뉴, 디버그 "메인 메뉴: 예전 메뉴"도.
+  구는 공 세트의 표면 그림(`scene.ballSurface`)을 직접 픽셀로 돌려 그림(3D, 숫자가 굴러감). 터치는 `#dkCards`가 먼저 넘겨줌.
+  공은 책상 평면 안이 아니라 평면과 똑같이 기운 자기 층 `#dkBalls`에 있다(평면 안에 두면 공이 구를 때 천 전체가 층으로 들렸다). 세로 화면은 아직 예전 책상 메뉴, 디버그 "메인 메뉴: 예전 메뉴"도.
 - 책상의 자리마다 파일 하나: `app/33-desk-play.js`, `34-desk-train.js`, `35-desk-shelves.js`(큐 카드를 열면 `cueShow`: 트레이 위에 큐 사진을 오른쪽 위 대각선으로 눕혀 둔다, 테이블 없이). 공통 부품은 `32-desk.js`.
   아케이드는 증강 당구 한 모드(온라인 매칭만, **준비 중 — 디버그로만 열림**). 규칙·카드는 코어 `game.js` `ARCADE`(36볼 `MODES.arcade`,
   한 차례 `SHOTS`번; 진행은 단계 `step(k)` — 0 테이블 투표, 그다음 증강(각자 고르기)·어려움(둘이 투표) 번갈아, 단계의 방식은 `KINDS`;

@@ -218,8 +218,7 @@ function fxBake(root) {
   for (const im of (root || document).querySelectorAll('img.fxp:not(.baked)')) {
     const w = im.offsetWidth, h = im.offsetHeight, k = im.dataset.fx; if (!w || !h) continue;
     const asp = Math.round(w / h * 40) / 40;
-    if (k === 'lt' || k === 'dk') put(im, fxSoft(k));
-    else if (k === 'x') put(im, fxBand(asp));
+    if (k === 'x') put(im, fxBand(asp));
     else if (k.startsWith('glint:')) put(im, fxBand(asp, +k.slice(6)));
     else if (k.startsWith('sym:')) Promise.resolve(fxSym(k.slice(4), asp)).then(u => put(im, u));
   }

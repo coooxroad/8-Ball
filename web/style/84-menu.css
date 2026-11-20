@@ -120,19 +120,13 @@
    width and 1⅙ its height, its right and top edges on the card's - so moving one tile (a quarter of its width, a seventh
    of its height) up and right it still covers the card, and looks as it began */
 .mn-sym{position:absolute;top:0;right:0;width:133.3333%;height:116.6667%;background:var(--sym) 0 0/25% 14.2857% repeat;opacity:.09;pointer-events:none}
-/* (owner 11-17 night: 'a soft gradient moving inside the card') a light and a shade, each a soft round patch on a box just
-   its size (it fades to nothing at the box's edge, so the box may move without its edge showing) */
-.mn-fx .lt,.mn-fx .dk{position:absolute;border-radius:50%}
-.mn-fx .lt{left:-24%;top:-20%;width:92%;height:78%;background:radial-gradient(closest-side,rgba(255,255,255,.17),rgba(255,255,255,.06) 55%,rgba(255,255,255,0))}
-.mn-fx .dk{left:28%;top:34%;width:96%;height:82%;background:radial-gradient(closest-side,rgba(0,0,0,.2),rgba(0,0,0,.07) 55%,rgba(0,0,0,0))}
+/* (the menu cards' signs, light and shade - owner 11-17 night to 11-19 - are drawn on their canvas since 11-20: 39-menu-fx.js;
+   the signs above stay for 랭킹전's and 친구와 플레이's cards) */
 /* the light crossing: one soft band; (owner 11-19: it looked to move in jerks) it keeps one speed all the way across and
    fades in and out while moving, never standing still while lit, on a layer of its own from the start */
 .mn-fx .x{position:absolute;top:-30%;bottom:-30%;left:-60%;width:45%;height:160%;opacity:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.07) 30%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 70%,rgba(255,255,255,0));transform:translate3d(0,0,0) skewX(-18deg)}
 @media (prefers-reduced-motion:no-preference){
-  .mn-live .mn-sym{animation:mn-drift 9s linear infinite;animation-delay:calc(var(--si,0) * -1.9s);will-change:transform}
   .mn-live .mn-fx .x{animation:mn-cross 11s linear infinite;animation-delay:calc(var(--i,0) * 1.3s);will-change:transform,opacity}
-  .mn-live .mn-fx .lt{animation:mn-flow 16s ease-in-out infinite alternate;animation-delay:calc(var(--i,0) * -2.7s);will-change:transform}
-  .mn-live .mn-fx .dk{animation:mn-flow 19s ease-in-out infinite alternate-reverse;animation-delay:calc(var(--i,0) * -3.1s);will-change:transform}
 }
 .mn-card:not(.mn-live)::before,:is(.mn-card,.mn-pc):not(.mn-live) .mn-rim :is(i,img),.mn-pc:not(.mn-live) .mn-sheen :is(i,img),.mn-pc:not(.mn-live) .mn-sp{animation-play-state:paused;will-change:auto}
 /* (and all of them stand still while a sheet is over the desk - 설정 and the rest: owner 11-20, on the tablet in full screen
@@ -142,7 +136,6 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 #app.resizing #dkBoards .sk-fx,#app.settle #dkBoards .sk-fx{display:none}
 @keyframes mn-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(25%,-14.2857%,0)}}
 @keyframes mn-cross{0%,74%{opacity:0;transform:translate3d(0,0,0) skewX(-18deg)}78%{opacity:1}94%{opacity:1}98%,100%{opacity:0;transform:translate3d(400%,0,0) skewX(-18deg)}}
-@keyframes mn-flow{0%{transform:translate3d(-9%,-7%,0)}50%{transform:translate3d(6%,5%,0)}100%{transform:translate3d(10%,-6%,0)}}
 
 
 /* my 선수증: by tier - its paper, its header, its rim, the ring's tint, how much it shines */
