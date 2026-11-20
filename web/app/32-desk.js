@@ -8,6 +8,12 @@ app.classList.add('desk');
 const GAME4 = ['three', 'four', 'eight', 'nine'];
 // with a friend on one device, also 스누커 (owner 11-11: only there, for now - no computer player, no room, no price)
 const FRIEND_GAMES = GAME4.concat('snooker');
+/* a game not open yet (economy.js SOON_MODES - 스누커, owner 11-20): open only on an account in debug mode, a lock and '곧 출시'
+   on its keys and cards for the rest (the server refuses its queue and rooms as well) */
+const soonGame = id => { let d = false; try { d = net.debug; } catch (e) {} return soonFor(id, d); };
+const soonTap = id => () => toast(`${MODE_KO[id]}는 곧 출시됩니다.`, '', 2200);
+const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10V7.5a5 5 0 0 1 10 0V10h.5A1.5 1.5 0 0 1 19 11.5v8a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19.5v-8A1.5 1.5 0 0 1 6.5 10zm2.5 0h5V7.5a2.5 2.5 0 0 0-5 0z"/></svg>';
+const lockIco = () => { const i = el('i', { class: 'bd-lock', 'aria-hidden': 'true' }); i.innerHTML = LOCK_SVG; return i; };
 // (copy audit 01-08: only what this game is played to - 랭킹전's rules - 8볼 and 9볼 by name alone)
 // a ranked game's line under its name: the rules at this player's tier (economy.js rankedRules - an opponent of a higher
 // tier plays theirs)

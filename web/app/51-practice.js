@@ -24,7 +24,7 @@ function lessonPrize(vol) {
   net.claim('lessons', { vol, proofs });
 }
 // 자유 연습's game (prefs.trainGame.free: 34-desk-train.js)
-const freeGame = () => FRIEND_GAMES.includes((prefs.trainGame || {}).free) ? prefs.trainGame.free : 'eight';
+const freeGame = () => FRIEND_GAMES.includes((prefs.trainGame || {}).free) && !soonGame(prefs.trainGame.free) ? prefs.trainGame.free : 'eight';
 const practice = {
   quiet: false, save: false,
   drill: null, level: 1, streak: 0, tries: 0, ok: 0, layout: null, before: null, beforeAim: 0, edit: false,

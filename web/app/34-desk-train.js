@@ -9,7 +9,7 @@ const volLessons = v => drills.list.filter(d => d.make && d.vol === v).map(d => 
 const TRAIN_HAS = { lesson: id => volLessons(id).length > 0, puzzle: id => id === 'four' && puzzles.list.length > 0, free: () => true, cpu: id => GAME4.includes(id) };
 function trainGameOf(t) {
   const G = prefs.trainGame || {};
-  if (t === 'lesson') return FRIEND_GAMES.includes(G.lesson) && TRAIN_HAS.lesson(G.lesson) ? G.lesson : 'eight';
+  if (t === 'lesson') return FRIEND_GAMES.includes(G.lesson) && !soonGame(G.lesson) && TRAIN_HAS.lesson(G.lesson) ? G.lesson : 'eight';
   if (t === 'puzzle') return 'four';
   if (t === 'free') return freeGame();
   return GAME4.includes(prefs.mode) ? prefs.mode : 'eight';
@@ -23,7 +23,7 @@ function deskTrain(d) {
     else prefs.trainGame = Object.assign({}, prefs.trainGame, { [t]: id });
     savePrefs(); repaintLive();
   };
-  dkPut(d.rail, FRIEND_GAMES.map(id => railBtn(id === on, MODE_KO[id], TRAIN_HAS[t](id) ? null : '준비 중', pick(id), !TRAIN_HAS[t](id), 'mode-' + id)));
+  dkPut(d.rail, FRIEND_GAMES.map(id => soonGame(id) ? railBtn(false, MODE_KO[id], '곧 출시', soonTap(id), true, 'mode-' + id) : railBtn(id === on, MODE_KO[id], TRAIN_HAS[t](id) ? null : '준비 중', pick(id), !TRAIN_HAS[t](id), 'mode-' + id)));
   if (t === 'puzzle') deskPuzzle(d); else if (t === 'lesson') deskLesson(d, on); else if (t === 'cpu') deskMatch(d, true, trainBack()); else deskFree(d, on);
   // (with the old menu - a screen held upright, or 디버그 - 훈련 is one tab: its four places picked at the slate's top)
   if (!menuOn()) d.slate.insertBefore(dkSeg(Object.entries(TRAIN_KO).map(([k, n]) => [k, k === 'cpu' ? '컴퓨터' : n]), t, k => { if (k !== t) { trainGo(k); repaintLive(); } }), d.slate.firstChild);

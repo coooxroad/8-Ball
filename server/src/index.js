@@ -197,6 +197,8 @@ async function frontDoor(request, env) {
       if ((inv[1] === 'open' || inv[1] === 'join' || inv[1] === 'watch') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Mode': String(body.mode || ''), 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
+      // (a game not open yet - economy.js SOON_MODES: only an account in debug mode opens a room of it)
+      if (inv[1] === 'open' && E.soonFor(body.mode, t.debug)) return json({ ok: false, why: 'soon' }, 403);
       // (a member plays under their own nickname, kept in their vault; a guest under the name the app gives)
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const r = await env.LOBBY.get(env.LOBBY.idFromName('invites')).fetch('https://lobby/invite/' + inv[1], { method: 'POST',
@@ -210,6 +212,8 @@ async function frontDoor(request, env) {
       if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Mode': body.mode, 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
+      // (a game not open yet - economy.js SOON_MODES: only an account in debug mode waits for it)
+      if (!url.pathname.endsWith('leave') && E.soonFor(body.mode, t.debug)) return json({ ok: false, why: 'soon' }, 403);
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const lobby = env.LOBBY.get(env.LOBBY.idFromName(body.mode));
       const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ near: nearOf(request), acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, seek: typeof body.seek === 'string' ? body.seek.slice(0, 32) : undefined }) });

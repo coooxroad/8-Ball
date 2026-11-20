@@ -48,6 +48,10 @@ const ECONOMY = {
   TUTORIAL_PRIZE: { coin: 500, kind: 'cue', id: 'maple' },
 };
 // a ranked game's rules, the same for everyone (the app plays them; the server's room plays them again)
+/* games not open yet (owner 11-20: 스누커 - debug accounts only, a lock and '곧 출시' for the rest): the app locks their
+   cards, the server refuses their queue and rooms to an account not in debug mode. Open one by taking it out of here. */
+const SOON_MODES = ['snooker'];
+const soonFor = (mode, debug) => !debug && SOON_MODES.includes(mode);
 const RANKED_RULES = { eight: {}, nine: {}, four: { target: 5 }, three: { target: 5, cushions: 3 }, snooker: {}, arcade: {} };   // (snooker: one frame - owner 11-16)   // (arcade: 증강 당구's room - game.js ARCADE)
 /* Ranked by tier (owner 11-15: a bronze player could hardly make 5, and at the top 5 went in one visit). The higher
    tier of the two decides (owner). 4구: 브론즈 3 · 실버 4 · 골드 5 · 플래티넘 7 · 다이아 7 and 프로 10, the two of them
@@ -105,4 +109,4 @@ const damaAfter = (a, b, aWon, rdA, rdB) => {
   const A = one(a, ra, b, rb, s), B = one(b, rb, a, ra, 1 - s);
   return [A[0], B[0], A[1], B[1]];
 };
-if (typeof module !== 'undefined') module.exports = { ECONOMY, RANKED_RULES, RANKED_TIERS, FAMILIES, familyOf, rankedRules, tierOf, inviteRules, matchCoins, tourPayout, priceOf, damaAfter, rdNow };
+if (typeof module !== 'undefined') module.exports = { ECONOMY, SOON_MODES, soonFor, RANKED_RULES, RANKED_TIERS, FAMILIES, familyOf, rankedRules, tierOf, inviteRules, matchCoins, tourPayout, priceOf, damaAfter, rdNow };

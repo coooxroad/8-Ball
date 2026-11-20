@@ -52,7 +52,7 @@ export class Vault extends DurableObject {
       const me = this.core.me(), mode = request.headers.get('X-Mode'), f = mode ? E.familyOf(mode) : null;
       // (in a 승급전, the tier played for: its rules, and opponents from it - economy.js PROMO_*)
       const p = f && me.promo[f], dama = f ? (p ? Math.max(me.damas[f], E.ECONOMY.TIER_AT[p.to]) : me.damas[f]) : me.dama;
-      return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null });
+      return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null, debug: me.debug });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     if (path === '/v1/lessons') return json(this.core.lessons(body));

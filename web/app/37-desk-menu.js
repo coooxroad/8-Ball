@@ -59,7 +59,7 @@ const soonToast = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
 const MENU_CARDS = [
   // (the strips: a number or a word, as a game's card shows it - not a sentence about it; owner 11-16: "레이팅 ****",
   // "온라인 1 : 1", "친구와 번갈아", "깼음" read as written by an AI)
-  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼 · 스누커', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
+  { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
   { id: 'friend', title: '친구와 플레이', sub: '한 기기 · 방 만들기', strip: () => '1 : 1 · 2 : 2', go: () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); } },
   { id: 'lesson', title: '레슨', sub: '기본기부터 차근차근', strip: () => { const ids = drills.list.filter(q => q.make && q.vol).map(q => q.id); return `${ids.filter(id => prefs.lessonProof[id]).length} / ${ids.length}`; }, go: () => trainGo('lesson') },
   { id: 'puzzle', title: '퍼즐', sub: '한 번에 끝내기', strip: () => { const L = puzzles.list; return L.length ? `${L.filter(q => prefs.pz.stars[q.id]).length} / ${puzzles.STAGES.length * PZ_SLOTS}` : '준비 중'; }, go: () => trainGo('puzzle') },

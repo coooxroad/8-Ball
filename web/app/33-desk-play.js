@@ -135,7 +135,9 @@ const PLAY_STEPS = {
       // (승급전 under way in a family: its count on its games' cards, in place of the rating - economy.js PROMO_*)
       const fam = id => famDama(id), promo = id => net.me && net.me.promo && net.me.promo[familyOf(id)];
       const sub = id => { const p = promo(id); return p ? `${TIERS[p.to][1]} 승급전 ${p.w}승 ${p.l}패` : `레이팅 ${fam(id)}`; };
-      dkPut(fit, ['four', 'three', 'eight', 'nine', 'snooker'].map(id => panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], [GAME_SUB[id], sub(id)].filter(Boolean).join(' · '))], 'card game unf' + (promo(id) ? ' promo' : ''))));
+      dkPut(fit, ['four', 'three', 'eight', 'nine', 'snooker'].map(id => soonGame(id)
+        ? panel(id, MODE_KO[id], soonTap(id), [rackOf(id), tt(MODE_KO[id], GAME_SUB[id], '곧 출시'), lockIco()], 'card game unf soon locked')   // (not open yet: 32-desk.js soonGame)
+        : panel(id, MODE_KO[id], go(id), [rackOf(id), tt(MODE_KO[id], [GAME_SUB[id], sub(id)].filter(Boolean).join(' · '))], 'card game unf' + (promo(id) ? ' promo' : ''))));
     }
   },
   friend({ wrap, fit, panel, tt, head, toBoards, dama }) {
@@ -250,9 +252,9 @@ function deskInvite(slate, _, m) {
 // a match to set up: against a friend (플레이, the game picked on its card or on the rail) or the computer (훈련 · 컴퓨터
 // 대전, picked on the slate); back, if given, puts an X on the tray's head
 function deskMatch({ rail, head, stage, foot, slate }, cpu, back) {
-  const m = (cpu ? GAME4 : FRIEND_GAMES).includes(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on && m !== 'snooker';
+  const m = (cpu ? GAME4 : FRIEND_GAMES).includes(prefs.mode) && !soonGame(prefs.mode) ? prefs.mode : 'eight', mm = game.MODES[m], inv = !cpu && prefs.friendWay === 'invite' && net.on && m !== 'snooker';
   const pick = id => () => { if (prefs.mode === id) return; prefs.mode = id; if (cpu) prefs.cpuMode = id; repaintLive(); };
-  if (!cpu) dkPut(rail, FRIEND_GAMES.map(id => railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
+  if (!cpu) dkPut(rail, FRIEND_GAMES.map(id => soonGame(id) ? railBtn(false, MODE_KO[id], '곧 출시', soonTap(id), true, 'mode-' + id) : railBtn(m === id, MODE_KO[id], null, pick(id), false, 'mode-' + id)));   // each with the balls it is played with
   if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': cpu ? '메뉴로' : '종목 카드로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(cpu ? '컴퓨터 대전' : '친구와 플레이'));   // (copy audit 01-10: the rules are told when the game begins)
   const plate = i => {

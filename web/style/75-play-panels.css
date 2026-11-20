@@ -209,3 +209,10 @@
 #dkBoards .bd.card.game.promo .bd-tt small{color:#ffe08a}
 @media (prefers-reduced-motion:no-preference){#dkBoards .bd.card.game.promo{animation:promoGlow 2.4s ease-in-out infinite}}
 @keyframes promoGlow{50%{box-shadow:0 0 0 3px #f6dc8e,0 0 34px rgba(246,220,142,.8),0 10px 20px rgba(0,0,0,.4)}}
+/* a game not open yet (32-desk.js soonGame - 스누커, owner 11-20): the card dimmed, a lock over its balls, '곧 출시' on its tag */
+#dkBoards .bd.card.locked.locked{position:relative;--c1:color-mix(in srgb,var(--cl,#8a2a2a) 30%,#55565c);--c2:color-mix(in srgb,var(--cl,#8a2a2a) 20%,#25262a);--sl:#77787e;--sd:#141518}
+#dkBoards .bd.card.locked .rack,#dkBoards .bd.card.locked .bd-tt small{opacity:.5}
+#dkBoards .bd.card.locked .bd-lock{position:absolute;z-index:2;left:50%;top:38%;width:calc(var(--u)*13);height:calc(var(--u)*13);margin:calc(var(--u)*-6.5) 0 0 calc(var(--u)*-6.5);
+  display:grid;place-items:center;border-radius:50%;color:#f4ecd8;background:rgba(0,0,0,.55);box-shadow:0 0 0 calc(var(--u)*.5) rgba(244,236,216,.35)}
+#dkBoards .bd.card.locked .bd-lock svg{width:56%;height:56%}
+#dkBoards .bd.card.locked .bd-tt{position:relative;z-index:2}
