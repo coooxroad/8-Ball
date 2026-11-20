@@ -11,8 +11,9 @@ const pause = page => page.waitForTimeout(650);
       for (const [width, height] of (process.env.SZ ? JSON.parse(process.env.SZ) : [[900, 600], [1024, 768], [1201, 768], [1280, 800], [1366, 768], [1920, 1080], [2560, 1440], [3840, 2160], [860, 412], [412, 860]])) {
         await page.setViewportSize({ width, height }); await pause(page);
         await page.waitForFunction(() => {
+          // (laid out at the new size: on the home screen the old size is held while the window changes - 10-ui.js pin)
           const a = document.querySelector('#app'), w = a.clientWidth, h = a.clientHeight;
-          return a.classList.contains('compact') === !(w >= 900 && h >= 560) && a.classList.contains('portrait') === (h > w);
+          return !a.classList.contains('resizing') && w === innerWidth && a.classList.contains('compact') === !(w >= 900 && h >= 560) && a.classList.contains('portrait') === (h > w);
         }).catch(async e => {   // (a rare stall in CI after the 4K step, QA D01: what the layout was waiting for)
           console.log('layout stalled', JSON.stringify(await page.evaluate(() => {
             const a = document.querySelector('#app');
