@@ -44,7 +44,7 @@ const menuBalls = (() => {
       let u = Math.atan2(lz, -lx) / 6.2832; if (u < 0) u += 1;
       const v = Math.acos(Math.max(-1, Math.min(1, ly))) / 3.1416;
       const t = ((Math.min(127, v * 128 | 0)) * 256 + (Math.min(255, u * 256 | 0))) * 4;
-      const dif = 0.34 + 0.74 * Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]), rim = 0.72 + 0.28 * nz;
+      const dif = 0.56 + 0.7 * Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]), rim = 0.84 + 0.16 * nz;   // (brighter, owner 11-20: the cloth is dark)
       const sp = Math.pow(Math.max(0, nx * H[0] + ny * H[1] + nz * H[2]), 70) * 235;
       const k = dif * rim;
       d[i] = Math.min(255, T[t] * k + sp); d[i + 1] = Math.min(255, T[t + 1] * k + sp); d[i + 2] = Math.min(255, T[t + 2] * k + sp);
