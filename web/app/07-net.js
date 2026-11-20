@@ -99,16 +99,21 @@ const net = (() => {
     if (busy || !SERVER) return; busy = true;
     try {
       if (!(await ensure())) return;
-      for (let q = queue(); q.length; q = queue()) {
+      /* (each reward goes to the account it was won on - claim() writes it on; one won on another account waits for that
+         one to be signed in again, and nothing is sent once the account has changed under way: QA 11-20 E01 - a guest's
+         rewards went to the account signed in after it, and an answer for the old one could fill in the new one's wallet) */
+      const who = account && account.id, mine = () => queue().filter(c => !c.acct || c.acct === who);
+      for (let q = mine(); q.length; q = mine()) {
         // (kept for later unless the server has decided: paid, or turned down for good. No answer, a 401 (the account
         // in doubt), 403, 408 or 429 (try later) leave it waiting - a reward is never lost to a passing fault)
         const c = q[0], r = await call('/v1/' + c.kind, c.body); if (!r || [401, 403, 408, 429].includes(r.status)) return;
+        if (!account || account.id !== who) return;
         if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.dia ? ` · 다이아 ${r.dia}` : '') + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);   // (다이아: a puzzle stage's 챌린지)
         if (r.me) setMe(r.me);
         if (r.pending) laterN = 0;
         store.set('claims', queue().filter(x => x.body.req !== c.body.req));
       }
-      const m = await call('/v1/me'); if (m && m.ok) { setMe(m.me, true); if (m.me.checking) later(); }
+      const m = await call('/v1/me'); if (!account || account.id !== who) return; if (m && m.ok) { setMe(m.me, true); if (m.me.checking) later(); }
       // a member's progress (lessons, puzzles, the tutorial seen), kept on the server for their other devices: taken in
       // (the further of the two, each thing), and sent back when this device's has moved on (57-account.js)
       if (m && m.ok && m.me.joined) { const pulled = progressMerge(m.me.save); const mine = progressOf();
@@ -132,7 +137,7 @@ const net = (() => {
     // this account is in debug mode (turned on in the admin console, web/admin.html): the 디버그 settings are shown
     get debug() { return !!(me && me.debug); },
     // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
-    claim(kind, body) { const q = queue(); q.push({ kind, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
+    claim(kind, body) { const q = queue(); q.push({ kind, acct: account ? account.id : null, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
     // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)
     // (seek: this one search's id - the lobby answers a room found only to it, so a new search never lands in an old room)
     async queue(mode, seek) { if (!(await ensure())) return null; return call('/v1/queue', Object.assign({ mode, seek }, seatOf()), 10000); },
@@ -161,6 +166,7 @@ const net = (() => {
     async erase() {
       if (!account) return false;
       const r = await call('/v1/erase', { sure: '삭제' }); if (!r || !r.ok) return false;
+      const gone = account.id; store.set('claims', queue().filter(c => c.acct !== gone));   // (its rewards waiting go with it)
       account = null; store.set('acct', null); me = null; store.set('me', null);
       await ensure(); flush(); return true;
     },
