@@ -13,6 +13,12 @@ const pause = page => page.waitForTimeout(650);
         await page.waitForFunction(() => {
           const a = document.querySelector('#app'), w = a.clientWidth, h = a.clientHeight;
           return a.classList.contains('compact') === !(w >= 900 && h >= 560) && a.classList.contains('portrait') === (h > w);
+        }).catch(async e => {   // (a rare stall in CI after the 4K step, QA D01: what the layout was waiting for)
+          console.log('layout stalled', JSON.stringify(await page.evaluate(() => {
+            const a = document.querySelector('#app');
+            return { w: a.clientWidth, h: a.clientHeight, cls: a.className, ...__dp8.lay, hidden: document.hidden };
+          }).catch(x => String(x))));
+          throw e;
         });
         const measure = await page.evaluate(() => {
           const canvas = document.querySelector('#gl'), bar = document.querySelector('#deskBar');
