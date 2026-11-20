@@ -46,8 +46,11 @@
 }
 /* Keep cards in and near view on their own layers: a press (12-press.js - the sink, the ripple) makes the pressed card
    one, and then all drawn after it - the cards to its right - were gathered into one new layer and drawn again, blinking
-   while a finger rested on a card (owner 11-15; the layer tree before and after a press showed it). Kept, nothing moves. */
-.mn-live:is(.mn-card,.mn-pc){will-change:transform}
+   while a finger rested on a card (owner 11-15; the layer tree before and after a press showed it). Kept, nothing moves.
+   (Every card, not only those in sight - 11-20: a card's layer made and unmade as it scrolled in and out of sight was
+   drawn again each time, and scrolled fast on the web the 선수증's ball was gone for a moment; a layer out of sight costs
+   nearly nothing - the browser draws only what is near the screen.) */
+:is(.mn-card,.mn-pc){will-change:transform}
 .mn-card::after{content:"";position:absolute;inset:calc(8px*var(--u));top:calc(46px*var(--u));border-radius:calc(9px*var(--u));border:calc(2px*var(--u)) solid rgba(255,255,255,.85);pointer-events:none}
 .mn-card .strip{position:absolute;left:0;right:0;top:0;height:calc(38px*var(--u));display:flex;align-items:center;justify-content:center;padding:0 calc(8px*var(--u));background:#111;color:rgba(255,255,255,.9);
   font:800 calc(13.5px*var(--u)) var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
