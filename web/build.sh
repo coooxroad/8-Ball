@@ -26,6 +26,7 @@ script() {
   # what the 3D's pictures of things depend on (the card pictures kept on the device are taken again when it changes)
   echo "const BUILD_ID = '$(cat content/*.js scene/*.js tex/*.webp three.min.js | sha1sum | cut -c1-12)';"
   # the table's material pictures (tex/), carried as data so WebGL may read them from a page opened as a file
+  echo "const BALL_PICS = $(node tools/ball-stamp.js);"   # (the ball sets drawn ahead, still up to date: tools/ball-pics.js)
   echo 'const TEXTURES = {'; for f in tex/*.webp; do printf "'%s': 'data:image/webp;base64,%s',\n" "$(basename "$f" .webp)" "$(base64 -w0 "$f")"; done; echo '};'
   # sounds an item names for itself (content/: sound.file), carried as data the same way
   echo 'const SOUNDS = {'; for f in sound/*.mp3 sound/*.ogg sound/*.wav; do [ -e "$f" ] || continue; printf "'%s': 'data:audio/%s;base64,%s',\n" "$(basename "${f%.*}")" "${f##*.}" "$(base64 -w0 "$f")"; done; echo '};'
@@ -77,6 +78,7 @@ cp fonts/*.woff2 "$A/fonts/"
 # the desk's materials and controls (images made to order, see ui/README.md)
 rm -rf "$A/ui"; mkdir -p "$A/ui"; cp ui/*.webp "$A/ui/"
 # (the emoji of the quick emotes: Microsoft Fluent Emoji, MIT - its license goes with them)
+mkdir -p "$A/ui/balls"; cp ui/balls/*.webp "$A/ui/balls/"
 mkdir -p "$A/ui/emoji"; cp ui/emoji/*.webp ui/emoji/LICENSE-fluentui-emoji.txt "$A/ui/emoji/"
 # (the textures live only inside the page as TEXTURES; 방 참가's carpet, the one the CSS used, is ui/carpet-hall.webp now)
 rm -rf "$A/tex"

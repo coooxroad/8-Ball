@@ -93,6 +93,15 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
     if (s.power + s.spin + s.guide !== C.STAT_SUM[c.rarity]) fail(`${at}: stat adds up to ${s.power + s.spin + s.guide}, its rarity's total is ${C.STAT_SUM[c.rarity]}`);
   }
 }
+// the ball sets' pictures drawn ahead (tools/ball-pics.js): every picture of a set listed as up to date is there; a set
+// not up to date is drawn on the device (slowly) - said here so it is made again
+{
+  const B = require('./ball-stamp.js'), ok = B.current(), dir = path.join(__dirname, '..', 'ui', 'balls');
+  for (const id of ok) for (const [kind, c] of [['pool', 16], ['carom', 4]]) for (let n = 0; n < c; n++)
+    if (!fs.existsSync(path.join(dir, `${id}-${kind}-${n}.webp`))) fail(`ui/balls/${id}-${kind}-${n}.webp is missing (node web/tools/ball-pics.js ${id})`);
+  const stale = B.SETS.map(k => k.id).filter(id => !ok.includes(id));
+  if (stale.length) console.log(`ball pictures out of date, drawn on the device until made: ${stale.join(', ')} (sh web/build.sh && node web/tools/ball-pics.js ${stale.join(' ')})`);
+}
 // 4. the markup's ids, and the pictures named by path
 {
   const html = fs.readFileSync(path.join(W, 'index.html'), 'utf8'), seen = new Set();

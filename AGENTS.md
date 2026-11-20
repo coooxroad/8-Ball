@@ -96,6 +96,8 @@ node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·
    `rarity`는 0(일반)~5(시크릿).
 2. 카드 그림을 넣는다: 큐 `web/ui/cue-<id>.webp`(2400×110, 팁이 왼쪽), 테이블 `web/ui/cloth-<id>.webp`.
    공은 코드로 그리고, 표면 무늬가 있으면 `web/tex/ball-<mat>.webp`에 `mat: '<mat>'`.
+   공 세트를 더하거나 바꾸면 `sh web/build.sh && node web/tools/ball-pics.js <id>`로 상점·랭킹전 카드의 공 그림(`web/ui/balls/`)을
+   다시 만든다(안 만들면 그 세트만 기기에서 느리게 그린다. `check.js`가 알려 준다).
 3. 모양·재질·빛이 다른 스킨(울퉁불퉁한 공, 손가락 구멍, 직접 정한 큐 구간, 빛나는 날)은 코드 수정 없이 칸으로:
    공 `shape`·`holes`·`skin`·`mark`·`finish`, 큐 `profile`·`glow`. 설명과 예시는 `tasks/gpt-skins.md` 2-1절, 그리는 곳은
    `scene/30-balls.js`(모양은 세트마다 한 번 만들어 공유, 물리 구 안쪽에만)·`scene/40-cue.js`·`app/00-state.js`의 `drawCue`.

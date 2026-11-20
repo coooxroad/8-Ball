@@ -111,7 +111,11 @@ function picsPump() {
     picsPump();
   });
 }
-const ballPic = (id, kind, n, attrs) => lazyPic(el('img', Object.assign({ alt: '' }, attrs)), `b/${id}/${kind}/${n}`, () => scene.ballShot(id, kind, n));
+/* a ball's picture: drawn ahead for every ball set (tools/ball-pics.js → ui/balls, owner 11-20: they came up one by one,
+   slowly, after every update); a set changed since is drawn on the device as before (BALL_PICS: the sets up to date) */
+const ballPic = (id, kind, n, attrs) => typeof BALL_PICS !== 'undefined' && BALL_PICS.includes(id) && (kind === 'pool' ? n < 16 : kind === 'carom' && n < 4)
+  ? el('img', Object.assign({ alt: '', decoding: 'async', src: `ui/balls/${id}-${kind}-${n}.webp` }, attrs))
+  : lazyPic(el('img', Object.assign({ alt: '' }, attrs)), `b/${id}/${kind}/${n}`, () => scene.ballShot(id, kind, n));
 const cueImg = (c, cls) => el('img', { class: cls || null, src: `ui/cue-${c.id}.webp`, alt: c.name, draggable: 'false' });
 const dkRow = (lab, val, fn) => el('div', { class: 'dk-row' }, [el('span', { class: 'dk-lab', text: lab }), el('button', { class: 'dk-chip', text: val, onclick: onTap(fn) })]);
 // the tray's head: a title over a small line, with arrows either side when there is a list to step through
