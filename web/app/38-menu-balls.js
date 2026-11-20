@@ -34,21 +34,37 @@ const menuBalls = (() => {
   /* the sphere, seen from above: each pixel of the disc is a point of the ball facing up (n); turned back into the ball's
      own frame it finds its place on the picture (three.js's sphere: u from atan2(z, -x), v from y); lit from the upper
      right with one soft highlight, its edge a little darker */
-  function draw(b) {
-    const g = b.g, S = b.cv.width, r = S / 2 - 0.5, im = b.im || (b.im = g.createImageData(S, S)), d = im.data, T = b.map, M = b.M;
+  // (what does not turn with the ball - each pixel's point on the sphere facing up, its light, its highlight, its edge -
+  // worked out once for a size: the frame only turns the points and looks up the picture; QA 11-20, the light's power
+  // of 70 was taken for every pixel of three balls every frame)
+  const grids = {};
+  function gridOf(S) {
+    if (grids[S]) return grids[S];
+    const r = S / 2 - 0.5, n = S * S, N = new Float32Array(n * 3), K = new Float32Array(n), SP = new Float32Array(n), A = new Uint8ClampedArray(n), IN = new Uint8Array(n);
     for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
-      const i = (py * S + px) * 4, dx = (px + 0.5 - S / 2) / r, dy = (py + 0.5 - S / 2) / r, q = dx * dx + dy * dy;
-      if (q > 1.06) { d[i + 3] = 0; continue; }
-      const nz = Math.sqrt(Math.max(0, 1 - q)), nx = dx, ny = dy;
+      const j = py * S + px, dx = (px + 0.5 - S / 2) / r, dy = (py + 0.5 - S / 2) / r, q = dx * dx + dy * dy;
+      if (q > 1.06) continue;
+      IN[j] = 1;
+      const nz = Math.sqrt(Math.max(0, 1 - q));
+      N[j * 3] = dx; N[j * 3 + 1] = dy; N[j * 3 + 2] = nz;
+      K[j] = (0.56 + 0.7 * Math.max(0, dx * L[0] + dy * L[1] + nz * L[2])) * (0.84 + 0.16 * nz);   // (brighter, owner 11-20: the cloth is dark)
+      SP[j] = Math.pow(Math.max(0, dx * H[0] + dy * H[1] + nz * H[2]), 70) * 235;
+      A[j] = Math.max(0, Math.min(255, (1.03 - Math.sqrt(q)) * r * 255));
+    }
+    return (grids[S] = { N, K, SP, A, IN });
+  }
+  function draw(b) {
+    const g = b.g, S = b.cv.width, im = b.im || (b.im = g.createImageData(S, S)), d = im.data, T = b.map, M = b.M, { N, K, SP, A, IN } = gridOf(S);
+    for (let j = 0, n = S * S; j < n; j++) {
+      const i = j * 4;
+      if (!IN[j]) { d[i + 3] = 0; continue; }
+      const nx = N[j * 3], ny = N[j * 3 + 1], nz = N[j * 3 + 2];
       const lx = M[0] * nx + M[3] * ny + M[6] * nz, ly = M[1] * nx + M[4] * ny + M[7] * nz, lz = M[2] * nx + M[5] * ny + M[8] * nz;
       let u = Math.atan2(lz, -lx) / 6.2832; if (u < 0) u += 1;
       const v = Math.acos(Math.max(-1, Math.min(1, ly))) / 3.1416;
-      const t = ((Math.min(127, v * 128 | 0)) * 256 + (Math.min(255, u * 256 | 0))) * 4;
-      const dif = 0.56 + 0.7 * Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]), rim = 0.84 + 0.16 * nz;   // (brighter, owner 11-20: the cloth is dark)
-      const sp = Math.pow(Math.max(0, nx * H[0] + ny * H[1] + nz * H[2]), 70) * 235;
-      const k = dif * rim;
+      const t = ((Math.min(127, v * 128 | 0)) * 256 + (Math.min(255, u * 256 | 0))) * 4, k = K[j], sp = SP[j];
       d[i] = Math.min(255, T[t] * k + sp); d[i + 1] = Math.min(255, T[t + 1] * k + sp); d[i + 2] = Math.min(255, T[t + 2] * k + sp);
-      d[i + 3] = Math.max(0, Math.min(255, (1.03 - Math.sqrt(q)) * r * 255));
+      d[i + 3] = A[j];
     }
     g.putImageData(im, 0, 0);
   }
@@ -59,6 +75,9 @@ const menuBalls = (() => {
   function fit(u, fh, fi, edge) {
     if (!felt) return;
     const was = U; U = u;
+    // (the box where the cloth lies in the plane: #dkBalls is laid as the plane is)
+    if (box) { let x = 0, y = 0, n = felt; while (n && n.id !== 'deskPlane') { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+      Object.assign(box.style, { left: x + 'px', top: y + 'px', width: felt.offsetWidth + 'px', height: felt.offsetHeight + 'px' }); }
     const R = D_U * U / 2, fw = felt.offsetWidth, card = 492 * U, cTop = (fh - card) / 2, cBot = (fh + card) / 2;
     zones = { hi: { x0: edge + R + 4, x1: fw - edge - R - 4, y0: fi + 16 + R, y1: cTop - R - 2 }, lo: { x0: edge + R + 4, x1: fw - edge - R - 4, y0: cBot + R + 2, y1: fh - fi - 16 - R } };
     const px = Math.max(48, Math.round(D_U * U * Math.min(2, window.devicePixelRatio || 1) * 1.15));
@@ -76,15 +95,27 @@ const menuBalls = (() => {
       place(b);
     }
   }
-  // on the cloth (once it is made; again when the player's set of balls has changed)
+  /* on the cloth (once it is made; again when the player's set of balls has changed). Not in the cloth itself, though: the
+     balls lie in a layer of their own over the desk's leaning plane, leaning as it does (#dkBalls, as the cards' #dkCards
+     - 84-menu.css), a box in it laid exactly where the cloth is (fit). Inside the plane, a ball - a moving layer - made the
+     browser lift the cloth's whole width onto a layer of its own (some 5 million pixels at a tablet's sharpness) and draw
+     the plane again around it as it rolled: the screen blinked when a ball was touched (owner 11-20). */
+  let box = null;
   function mount(f) {
     felt = f;
+    if (!box || !box.isConnected) {
+      let lay = $('#dkBalls');
+      if (!lay) { lay = el('div', { id: 'dkBalls', 'aria-hidden': 'true' }); { const c = $('#dkCards'); if (c) c.before(lay); else ($('#dkProps') || $('#deskPlane')).after(lay); }
+        lay.addEventListener('pointerdown', e => { if (touch(e)) e.stopPropagation(); }, true); }
+      box = el('div', { class: 'mn-balls' }); lay.textContent = ''; lay.appendChild(box);
+      for (const b of balls) b.el.remove(); balls = [];
+    }
     if (skin !== prefs.ballSkin) { for (const b of balls) b.el.remove(); balls = []; skin = prefs.ballSkin; }
-    if (balls.length && balls[0].el.parentNode === f) return;
+    if (balls.length && balls[0].el.parentNode === box) return;
     for (const b of balls) b.el.remove(); balls = [];
     for (const [n, zone, at] of SET) {
       const cv = document.createElement('canvas'), e = el('i', { class: 'mn-ball', 'aria-hidden': 'true' }, cv);
-      f.appendChild(e);
+      box.appendChild(e);
       let map = null; try { map = mapOf(n); } catch (er) { e.remove(); continue; }
       balls.push({ n, zone, at, el: e, cv, g: cv.getContext('2d'), map, M: randomM(), x: null, y: null, vx: 0, vy: 0, R: D_U / 2 });
     }
@@ -122,7 +153,7 @@ const menuBalls = (() => {
   }
   function loop(t) {
     raf = 0;
-    if (!felt || !felt.isConnected || !felt.offsetWidth) { SND.rolling(0); return; }
+    if (!felt || !felt.isConnected || !felt.offsetWidth || !box || !box.offsetWidth) { SND.rolling(0); return; }
     const dt = Math.min(1 / 30, last ? (t - last) / 1000 : 1 / 60); last = t;
     const moving = step(dt / 2) | step(dt / 2);
     for (const b of balls) { if (b.vx || b.vy || b.dirty) { draw(b); place(b); b.dirty = false; } }
