@@ -98,7 +98,11 @@ function menuFit() {
   row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
   menuBalls.fit(u, fh, (fh - clothH) / 2, Math.max(0, (pw - seen) / 2));   // (the balls on the cloth: 38-menu-balls.js)
 }
+/* 디버그 · 메뉴 진단 (owner 11-20: the screen blinks when a ball is touched, the menu stutters on the tablet): the cards'
+   moving layers, or the balls, put away - to see on the device which of them it comes from (20-sheets.js sheetDebug) */
+function menuDbg() { let d = false; try { d = net.debug; } catch (e) {} app.classList.toggle('dbg-nofx', !!(d && prefs.dbgNoFx)); app.classList.toggle('dbg-noballs', !!(d && prefs.dbgNoBalls)); }
 function menuPaint() {
+  menuDbg();
   // the cloth on the desk, and the layer for the row over the plane (made once)
   if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' }));
   menuBalls.mount($('#dkFelt'));

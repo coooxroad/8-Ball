@@ -209,3 +209,5 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 #desk.felt>#dkBoards{z-index:3}
 #app.desk:not(.portrait) #desk.felt #dkBoards.rank .bd-fit{grid-template-columns:repeat(5,min(calc(214px*var(--mu,1)),18.4%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(18px*var(--mu,1))}
 #app.desk:not(.portrait) #desk.felt #dkBoards.friend .bd-fit{grid-template-columns:repeat(3,min(calc(250px*var(--mu,1)),28%));grid-template-rows:min(calc(520px*var(--mu,1)),100%);justify-content:center;align-content:center;gap:calc(22px*var(--mu,1))}
+/* 디버그 · 메뉴 진단 (37-desk-menu.js menuDbg): the cards' moving layers, or the balls, put away */
+#app.dbg-nofx :is(.mn-fx,.mn-rim,.mn-sheen,.mn-sp),#app.dbg-nofx .mn-card.hero::before,#app.dbg-noballs #dkFelt .mn-ball{display:none!important}
