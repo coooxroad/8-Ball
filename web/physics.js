@@ -478,7 +478,7 @@ function createPhysics(cfg) {
       // (kissPre: a kiss before the shot was decided - carom: before the cue ball met its second ball, the cue ball meeting
       // its first again counting too; pool: before the first ball potted - what can make a point no one played for)
       const open = POCKETED ? !w.ev.pocketed.some(q => q.id !== w.cue) : w.ev.hits.length < 2;
-      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (open && w.ev.hits.indexOf(o) >= 0 && w.ev.seq[w.ev.seq.length - 1] === o && -rel > 0.02 && w.ev.hits.length === 1) w.ev.kissPre++; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
+      if (i === w.cue || j === w.cue) { const o = i === w.cue ? j : i, c = w.balls[w.cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, c.z, o]; if (w.ev.firstHit == null) w.ev.firstHit = o; if (open && w.ev.hits.indexOf(o) >= 0 && -rel > 0.02 && w.ev.hits.length === 1) w.ev.kissPre++; if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o); }
       else if (w.ev.firstHit != null) { w.ev.kiss++; if (open) w.ev.kissPre++; }
       if (w.snd && -rel > 0.03) w.snd.push({ t: 'ball', v: -rel, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ia: a.id, ib: b.id });
     }
@@ -557,17 +557,18 @@ function createPhysics(cfg) {
       // the record of the shot: what the cue ball met (two met at once: the lower number counts as the first, for the rules)
       const met = group.filter(c => (c.i === cue || c.j === cue) && c.lam > 0).map(c => c.i === cue ? c.j : c.i).sort((x, y) => x - y);
       // (kissPre, as hitAir counts it: a kiss before the shot was decided - carom: before the cue ball met its second ball,
-      // the cue ball meeting its first again counting too; pool: before the first ball potted. Counted here too since 11-20 -
+      // the cue ball meeting its first again (straight after or off cushions) counting too. Counted here too since 11-20 -
       // till then only balls in the air counted it, and a carom point made by a red knocked into the cue ball was read as a
       // line played: owner '키스로 된 공인데 행운이 아님')
-      const open = POCKETED ? !w.ev.pocketed.some(q => q.id !== cue) : w.ev.hits.length < 2;
+      // (carom only: a pool table's misses that brush other balls are not what its judge reads as a kiss - web/test/judge.js)
+      const open = !POCKETED && w.ev.hits.length < 2;
       if (w.ev.firstHit != null) for (const c of group) if (c.lam > 0 && c.i !== cue && c.j !== cue) { w.ev.kiss++; if (open) w.ev.kissPre++; }
       if (met.length) {
         const c = bs[cue]; if (!w.ev.at) w.ev.at = [c.x, c.y, 0, met[0]];
         if (w.ev.firstHit == null) w.ev.firstHit = met[0];
         for (const o of met) {
           const k = group.find(q => (q.i === cue || q.j === cue) && (q.i === o || q.j === o));
-          if (open && w.ev.hits.length === 1 && w.ev.hits[0] === o && w.ev.seq[w.ev.seq.length - 1] === o && k && -k.rel0 > 0.02) w.ev.kissPre++;
+          if (open && w.ev.hits.length === 1 && w.ev.hits[0] === o && k && -k.rel0 > 0.02) w.ev.kissPre++;   // (the first ball again, straight after or off cushions: 11-20, a red come back off the rails into the cue ball was no kiss to it)
           if (w.ev.hits.indexOf(o) < 0) w.ev.hits.push(o); if (w.ev.seq.length < 10 && w.ev.seq[w.ev.seq.length - 1] !== o) w.ev.seq.push(o);
         }
       }
