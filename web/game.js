@@ -610,6 +610,8 @@ function createGame(PH, makeAI) {
       // a ball over the rail is a foul; it comes back on its spot (the cue ball: wherever the other player likes, on a pool table)
       const cueOff = w.ev.off.includes(w.cue);
       r.foul = cueOff ? '큐볼이 테이블 밖으로 나갔습니다' : '공이 테이블 밖으로 나갔습니다'; r.keep = false; r.solved = false;
+      // (no win through it either - a finish made with a ball off the table is a foul, not the game: QA 11-20 R02)
+      if (r.win === me) { r.win = null; r.why = ''; r.plain = false; }
       if (m.table === 'carom') { r.pts = m.solo || !g.minus || (g._ctx && g._ctx.last) ? 0 : -1; for (const id of w.ev.off) { const [x, y] = P.findFree(w, id === 2 ? P.HL / 2 : id === 3 ? -P.HL / 2 : -P.HL * 0.78, id === 0 ? -0.17 : 0, id); P.place(w, id, x, y); } }
       else {
         if (cueOff) r.scratch = true;
