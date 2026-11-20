@@ -64,6 +64,10 @@ const CSP = [
 const GUARD = ['  Content-Security-Policy: ' + CSP, '  X-Frame-Options: DENY', '  X-Content-Type-Options: nosniff',
   '  Referrer-Policy: strict-origin-when-cross-origin', '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
   '  Cross-Origin-Opener-Policy: same-origin-allow-popups'].join('\n');
-fs.writeFileSync(path.join(dir, '_headers'), `/*\n${GUARD}\n\n/h/*\n  Cache-Control: public, max-age=31536000, immutable\n`);
+/* (and the pictures, fonts and music under their own names - ui/, fonts/, music/ - kept and shown at once from the browser's
+   cache, asked for again in the background: owner 11-20, on the web going between 홈, 내 장비 and 상점 broke the screen for an
+   instant - every picture was asked of the server again before it showed. A changed picture shows from the next visit.) */
+const KEPT = '  Cache-Control: public, max-age=3600, stale-while-revalidate=2592000';
+fs.writeFileSync(path.join(dir, '_headers'), `/*\n${GUARD}\n\n/h/*\n  Cache-Control: public, max-age=31536000, immutable\n\n/ui/*\n${KEPT}\n\n/fonts/*\n${KEPT}\n\n/music/*\n${KEPT}\n`);
 if (process.env.CSP_OUT) fs.writeFileSync(process.env.CSP_OUT, CSP);
 console.log(`split: index.html ${(html.length / 1024).toFixed(0)} KB, ${fs.readdirSync(H).length} files in h/ (${nt} pictures, ${ns} sounds)`);

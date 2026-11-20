@@ -119,7 +119,29 @@ function walletPaint() {
 }
 // not enough to buy it: the wallet's chip flashes red and shakes
 function walletShort(k) { const chip = $('#dkWallet .' + k); if (!chip) return; chip.classList.remove('short'); void chip.offsetWidth; chip.classList.add('short'); setTimeout(() => chip.classList.remove('short'), 700); }
+/* The desk's pictures fetched and decoded ahead, once, a moment after the desk first shows (owner 11-20: on the web the
+   screen broke for an instant going between 홈, 내 장비 and 상점 - each place's pictures were fetched, the first time, only
+   when it was painted, and on the web each is a trip to the server, where the app reads them from the device): every
+   picture the styles name under ui/ (not the bots' portraits), the cues' and tables' cards, and the worn ball set's balls -
+   a few at a time, when the page is idle. */
+let picsWarmed = false;
+function warmPics() {
+  if (picsWarmed) return; picsWarmed = true;
+  const urls = new Set(), keep = [];
+  const walk = (rules, base) => { for (const r of rules || []) { if (r.cssRules) walk(r.cssRules, base);
+    for (const m of (r.cssText || '').matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)) if (/(^|\/)ui\//.test(m[1]) && !/ui\/(bot-|emoji\/)/.test(m[1])) { try { urls.add(new URL(m[1], base).href); } catch (e) {} } } };
+  for (const sh of document.styleSheets) { try { walk(sh.cssRules, sh.href || location.href); } catch (e) {} }
+  for (const c of CUES) urls.add(new URL(`ui/cue-${c.id}.webp`, location.href).href);
+  for (const c of CLOTHS) urls.add(new URL(`ui/cloth-${c.id}.webp`, location.href).href);
+  if (typeof BALL_PICS !== 'undefined' && BALL_PICS.includes(prefs.ballSkin)) for (const [k, n] of [['pool', 16], ['carom', 4]]) for (let i = 0; i < n; i++) urls.add(new URL(`ui/balls/${prefs.ballSkin}-${k}-${i}.webp`, location.href).href);
+  const list = [...urls], idle = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 50));
+  const next = () => { const u = list.shift(); if (!u) return; const im = new Image(); im.decoding = 'async'; im.src = u; keep.push(im);
+    (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(() => idle(next)); };
+  idle(() => { for (let k = 0; k < 4; k++) next(); });
+  warmPics.kept = keep;
+}
 function deskPaint() {
+  if (!picsWarmed) setTimeout(warmPics, 1500);
   requestAnimationFrame(() => requestAnimationFrame(() => fxBake()));   // (the cards' moving parts given their pictures once laid out: 32-desk.js)
   if (!deskTab) deskTab = trainOf() ? 'train' : 'play';
   const cardMenu = menuOn();
