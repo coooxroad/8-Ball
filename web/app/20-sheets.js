@@ -6,23 +6,28 @@ $('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) close
 const optText = (t, d) => el('span', null, [el('span', { class: 't', text: t }), d ? el('span', { class: 'd', text: d }) : null]);
 const flatBtn = (text, fn) => el('button', { class: 'btn flat', text, onclick: () => { SND.tap(); fn(); } });
 // a row of choices; when the choices are just on and off, a switch
+/* a row of choices; when the choices are just on and off, a switch. A choice marks itself where it is (QA 11-20: every tap
+   built the whole sheet again - it blinked empty and its scroll jumped to the top): fn only does what the choice does. */
 const segRow = (label, opts, cur, fn) => {
-  if (opts.length === 2 && opts.every(([v]) => typeof v === 'boolean')) return el('div', { class: 'field tglrow' }, [el('div', { class: 'lab', text: label }),
-    el('button', { class: 'tgl', role: 'switch', 'aria-checked': String(!!cur), 'aria-label': label, onclick: () => { SND.tap(); fn(!cur); } }, el('i'))]);
-  return el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }),
-    el('div', { class: 'seg' }, opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === cur), text: t, onclick: () => { SND.tap(); fn(v); } })))]);
+  let now = cur;
+  if (opts.length === 2 && opts.every(([v]) => typeof v === 'boolean')) {
+    const b = el('button', { class: 'tgl', role: 'switch', 'aria-checked': String(!!now), 'aria-label': label, onclick: () => { SND.tap(); now = !now; b.setAttribute('aria-checked', String(!!now)); fn(now); } }, el('i'));
+    return el('div', { class: 'field tglrow' }, [el('div', { class: 'lab', text: label }), b]);
+  }
+  const bs = opts.map(([v, t]) => el('button', { 'aria-pressed': String(v === now), text: t, onclick: () => { SND.tap(); now = v; bs.forEach((x, i) => x.setAttribute('aria-pressed', String(opts[i][0] === v))); fn(v); } }));
+  return el('div', { class: 'field' }, [el('div', { class: 'lab', text: label }), el('div', { class: 'seg' }, bs)]);
 };
 const note = text => el('p', { class: 'note', text });
 
 function sheetSettings() {
   openSheet('설정', [
-    segRow('화면 모드', [['dark', '다크'], ['light', '라이트']], themeNow(), v => { prefs.theme = v; savePrefs(); applyBackdrop(); if (st.screen === 'home') paintHome(); sheetSettings(); }),
-    segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); sheetSettings(); }),
-    segRow('음악', [[true, '켬'], [false, '끔']], prefs.music !== false, v => { prefs.music = v; savePrefs(); MUSIC.setOn(v); sheetSettings(); }),
+    segRow('화면 모드', [['dark', '다크'], ['light', '라이트']], themeNow(), v => { prefs.theme = v; savePrefs(); applyBackdrop(); if (st.screen === 'home') paintHome(); }),
+    segRow('소리', [[true, '켬'], [false, '끔']], prefs.sound, v => { prefs.sound = v; savePrefs(); if (v) SND.init(); }),
+    segRow('음악', [[true, '켬'], [false, '끔']], prefs.music !== false, v => { prefs.music = v; savePrefs(); MUSIC.setOn(v); }),
     flatBtn('하이라이트 · ' + (reel.STYLES.find(x => x[0] === prefs.edit) || [0, '편집 랜덤'])[1] + ' · 노래 ' + SND.song.list.length + '곡', sheetSong),
-    segRow('샷 시간', [[0, '끔'], [30, '30초'], [40, '40초'], [60, '60초']], prefs.shotClock || 0, v => { prefs.shotClock = v; savePrefs(); sheetSettings(); }),
-    segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); sheetSettings(); }),
-    segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; sheetSettings(); }),
+    segRow('샷 시간', [[0, '끔'], [30, '30초'], [40, '40초'], [60, '60초']], prefs.shotClock || 0, v => { prefs.shotClock = v; savePrefs(); }),
+    segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); }),
+    segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; }),
     net.on ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '계정' }), el('div', { class: 'acct-id', text: acctLine() })]) : null,
     // (signing up or in with Google: 57-account.js - also from the name on the top bar, where it is shown)
     net.on ? flatBtn(net.me && net.me.joined ? `회원 · ${net.me.nick || prefs.names[0]}` : '게스트 · 구글로 가입하기', () => account.sheet()) : null,
@@ -49,6 +54,10 @@ function sheetDebug() {
     el('div', { class: 'lab', text: '메인 카드 그림' }),
     el('div', { class: 'seg' }, [[false, '선 아이콘'], ['3d', '그림 아이콘']].map(([v, t]) =>
       el('button', { 'aria-pressed': String((prefs.menuProps === true || prefs.menuProps === '3d' ? '3d' : false) === v), text: t, onclick: () => { prefs.menuProps = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
+    // (메뉴 진단, owner 11-20: what on the menu the blinking and the stutter come from - 37-desk-menu.js menuDbg)
+    el('div', { class: 'lab', text: '메뉴 진단' }),
+    flatBtn(`카드 효과: ${prefs.dbgNoFx ? '끔' : '켬'}`, () => { prefs.dbgNoFx = !prefs.dbgNoFx; savePrefs(); menuDbg(); sheetDebug(); }),
+    flatBtn(`메뉴 공: ${prefs.dbgNoBalls ? '끔' : '켬'}`, () => { prefs.dbgNoBalls = !prefs.dbgNoBalls; savePrefs(); menuDbg(); sheetDebug(); }),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>
