@@ -191,6 +191,9 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(!logError(hugu) && !logError(noMinus) && logError({ ...good, opts: { ...good.opts, hugu: 'yes' } }), '4구 rule switches checked');
   ok(new Set([matchKey(good), matchKey(hugu), matchKey(noMinus)]).size === 3, '4구 rule switches make games of their own');
   ok(!logError({ ...hugu, winner: null }) && logError({ ...good, winner: null }), 'a draw only with 후구');
+  // 스누커: its 22 balls are a shot's right shape (a ranked room took its first shot for a forged one - QA 11-20 R01)
+  { const snap = { cue: 0, balls: Array.from({ length: 22 }, () => [0, 0, 1, 0, 0, [0, 0, 0, 1]]) };
+    ok(!logError({ ...good, mode: 'snooker', opts: {}, shots: [{ aim: 0.1, V: 2, a: 0, b: 0, el: 0, s: snap }] }) && logError({ ...good, mode: 'snooker', opts: {}, shots: [{ aim: 0.1, V: 2, a: 0, b: 0, el: 0, s: { cue: 0, balls: snap.balls.slice(0, 16) } }] }), '스누커 shots: 22 balls'); }
   console.log('reward regressions: receipts, duplicate matches, corrupt queue and terminal checkpoints checked');
 }
 // ranked: the lobby pairs by DAMA (the range widening with the wait), and after a while seats a stand-in

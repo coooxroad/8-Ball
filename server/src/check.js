@@ -125,7 +125,9 @@ export class Replay {
       if (!P.rest(w) && this.t < 40) break;                                       // (out of steps for now, mid-shot)
       for (const b of w.balls) b.wz = 0;                                          // (as physics.run ends a shot)
       const potted = w.ev.pocketed.filter(p => p.id !== 0).length, r = g.resolve().r; this.fresh = !!r.rerack;
-      if (g.mode.table === 'carom') { if (r.pts > 0) this.points[this.me] += r.pts; } else if (!r.foul) this.points[this.me] += potted;
+      // (as the device counts them - app/50-match.js: a carom score; 스누커's own score, a foul's points to the other - QA R04;
+      // a pool table's legal pots)
+      if (g.mode.table === 'carom' || g.mode.scored) { if (r.pts > 0) this.points[this.me] += r.pts; if (g.mode.scored && r.give) this.points[1 - this.me] += r.give; } else if (!r.foul) this.points[this.me] += potted;
       this.running = false; this.i++;
       this.lastCp = this.checkpoint();                                          // (including a win at the last step of a slice)
     }

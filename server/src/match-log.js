@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto';
 import { TABLES } from './gen/engine.js';
 
-const BALLS = { eight: 16, nine: 10, four: 4, three: 3, arcade: 37 };   // (증강 당구: 36 and the cue ball - web/game.js MODES.arcade)
+const BALLS = { eight: 16, nine: 10, four: 4, three: 3, snooker: 22, arcade: 37 };   // (증강 당구: 36 and the cue ball - web/game.js MODES.arcade; 스누커: 15 reds, 6 colours, the cue ball - missing till 11-20: its first shot was 'bad', QA R01)
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const integer = (v, lo, hi) => Number.isInteger(v) && num(v, lo, hi);
