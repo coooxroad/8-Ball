@@ -101,12 +101,8 @@
    to the UI): a face in the metal's own deep tones with the dot print, a frame of the metal bright and dark, the light
    running across it now and then (each card on its own beat, --i); the bot's face, its name, flag and rating; a little
    taller than wide. */
-.bot-card{--c1:#b9774a;--c2:#5e3519;--f1:#f3c79d;--f2:#8a4f26;--f3:#d59a66;
-  position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;aspect-ratio:300/410;
-  border:3px solid transparent;border-radius:14px;color:#fff8ee;text-shadow:0 1px 2px rgba(0,0,0,.45);
-  background:linear-gradient(200deg,rgba(255,255,255,.2),rgba(255,255,255,0) 40%) padding-box,radial-gradient(circle,rgba(255,255,255,.08) 1.2px,transparent 1.7px) 0 0/14px 14px padding-box,
-    linear-gradient(165deg,var(--c1),var(--c2)) padding-box,linear-gradient(135deg,var(--f1),var(--f2) 38%,var(--f3) 62%,var(--f2)) border-box;
-  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 6px 12px rgba(0,0,0,.42);transition:transform .18s ease,box-shadow .18s ease}
+.bot-card{--c1:#b9774a;--c2:#5e3519;--f1:#f3c79d;--f2:#8a4f26;--f3:#d59a66;position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;aspect-ratio:300/410;border:3px solid transparent;border-radius:14px;color:#fff8ee;text-shadow:0 1px 2px rgba(0,0,0,.45);background:linear-gradient(200deg,rgba(255,255,255,.2),rgba(255,255,255,0) 40%) padding-box,radial-gradient(circle,rgba(255,255,255,.08) 1.2px,transparent 1.7px) 0 0/14px 14px padding-box,
+    linear-gradient(165deg,var(--c1),var(--c2)) padding-box,linear-gradient(135deg,var(--f1),var(--f2) 38%,var(--f3) 62%,var(--f2)) border-box;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22),0 6px 12px rgba(0,0,0,.42);transition:transform .18s ease,box-shadow .18s ease;--ico-lock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M13.2 19.5V13a6.8 6.8 0 0 1 13.6 0v6.5' fill='none' stroke='%23000' stroke-width='4.2' stroke-linecap='round'/%3E%3Cpath fill-rule='evenodd' d='M8.6 26.6a11.4 11.4 0 1 0 22.8 0a11.4 11.4 0 1 0-22.8 0ZM20 21.6a2.7 2.7 0 0 0-1.35 5.04V30a1.35 1.35 0 0 0 2.7 0v-3.36A2.7 2.7 0 0 0 20 21.6Z'/%3E%3C/svg%3E")}
 .bot-card.t-silver{--c1:#9aa5b3;--c2:#48525f;--f1:#ffffff;--f2:#8c96a3;--f3:#d7dde5}
 .bot-card.t-gold{--c1:#d7a73a;--c2:#7a5310;--f1:#fff1b8;--f2:#a87818;--f3:#f3d277}
 .bot-card.t-platinum{--c1:#5fb0a7;--c2:#1f5753;--f1:#e6fffb;--f2:#5aa39c;--f3:#b8ece6}
@@ -139,7 +135,6 @@
 .bot-card.lock .bot-pic::after{content:'';position:absolute;inset:22%;z-index:1;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0))}
 .bot-card.lock .bot-pic::before{content:'';position:absolute;inset:24%;z-index:2;background:linear-gradient(160deg,#fff,var(--f1) 30%,var(--f3) 55%,var(--f1) 80%);
   -webkit-mask:var(--ico-lock) center/contain no-repeat;mask:var(--ico-lock) center/contain no-repeat}
-.bot-card{--ico-lock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M13.2 19.5V13a6.8 6.8 0 0 1 13.6 0v6.5' fill='none' stroke='%23000' stroke-width='4.2' stroke-linecap='round'/%3E%3Cpath fill-rule='evenodd' d='M8.6 26.6a11.4 11.4 0 1 0 22.8 0a11.4 11.4 0 1 0-22.8 0ZM20 21.6a2.7 2.7 0 0 0-1.35 5.04V30a1.35 1.35 0 0 0 2.7 0v-3.36A2.7 2.7 0 0 0 20 21.6Z'/%3E%3C/svg%3E")}
 .bot-card.beat::before{content:'✓';position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#3fbf7f;color:#fff;font:800 12px/20px var(--ui-font);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.4);z-index:2}
 .bot-card.t-pro.beat::before{inset:8px 8px auto auto}
 #app.desk.compact .bot-cards,#app.desk.compact #dkStage .bot-tray.with-art .bot-cards{gap:7px}

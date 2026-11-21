@@ -15,8 +15,7 @@
 /* one thing in the middle of the picture: the skull of the freeze, or the running count of the combo */
 #reelBig{position:absolute;left:50%;top:50%;z-index:2;font-size:min(36vh,34vw);line-height:1;font-style:normal;white-space:nowrap;transform:translate(-50%,-50%) scale(0);opacity:0}
 #reelBig.skull,#reelBig.gone{top:31%;font-size:min(27vh,24vw)}
-#reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards;filter:drop-shadow(0 0 40px rgba(0,0,0,.8))}
-#reelBig.skull{animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards,wob .5s .45s ease-in-out infinite}
+#reelBig.skull{filter:drop-shadow(0 0 40px rgba(0,0,0,.8));animation:skull .45s cubic-bezier(.2,1.5,.4,1) forwards,wob .5s .45s ease-in-out infinite}
 @keyframes wob{0%,100%{transform:translate(-50%,-50%) rotate(-5deg) scale(1)}50%{transform:translate(-50%,-50%) rotate(5deg) scale(1.06)}}
 #reelBig.gone{animation:gone .22s ease-in forwards}
 #reelBig.num3{font:italic 800 min(36vh,32vw)/1 'Outfit',sans-serif;color:#fff;-webkit-text-stroke:14px #0b0d12;paint-order:stroke fill;text-shadow:8px 0 #ff2d55,-8px 0 #19e3ff;animation:num3 .42s cubic-bezier(.2,1.4,.4,1) forwards}
@@ -47,7 +46,7 @@
 .reeling.g2 #gl{filter:saturate(.62) contrast(1.38) brightness(.94)!important}
 .reeling.g3 #gl{filter:grayscale(1) contrast(1.7) brightness(1.08)!important}
 .reeling.frozen #gl{filter:grayscale(1) contrast(1.3) brightness(.55)!important}
-.reeling.rew #gl{animation:trk .16s steps(2) infinite}
+.reeling.rew #gl{animation:trk .16s steps(2) infinite;filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05)!important;transition:none}
 @keyframes trk{0%{transform:skewX(-.5deg) translateX(-4px)}100%{transform:skewX(.4deg) translateX(3px)}}
 /* a streak of light across the picture on the drop, a softer flash for cuts, the frame glowing in the ball's colour on each beat */
 #reelStreak{position:absolute;left:-10%;right:-10%;top:50%;height:10px;margin-top:-5px;z-index:2;opacity:0;border-radius:50%;background:radial-gradient(ellipse at center,#fff 0,rgba(255,255,255,.85) 18%,var(--kc,#fff) 45%,transparent 72%);filter:blur(1.5px);mix-blend-mode:screen}
@@ -60,7 +59,6 @@
 @keyframes glowE{0%{opacity:.75}100%{opacity:0}}
 .rfx.fall{animation:rfall 2.4s cubic-bezier(.4,0,.8,.6) forwards;font-size:44px}
 @keyframes rfall{0%{transform:translateY(-60px) rotate(0);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),105vh) rotate(calc(var(--rot)*8));opacity:0}}
-.reeling.rew #gl{filter:saturate(1.8) contrast(1.3) hue-rotate(-16deg) brightness(1.05)!important;transition:none}
 .reeling.impact #gl{filter:invert(1) contrast(1.5)!important;transition:none}
 /* ---------- the look of each edit (sk-<name> on the page while it plays) ---------- */
 #reelTint{position:absolute;inset:0;pointer-events:none;opacity:0}

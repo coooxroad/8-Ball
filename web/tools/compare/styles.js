@@ -1,6 +1,6 @@
 /* A tool, not a check: the computed styles of the page on the screens that most CSS touches - the desk (the menu, the
    three ways, a friend game's setup, the add-ons, 랭킹전's games, lessons, 내 장비, 상점) at five sizes and play (free
-   practice, a friend's 8볼 and 4구, the broadcast dress, a puzzle) at three - written to one JSON file, so that a CSS
+   practice, a friend's 8볼 and 4구, the broadcast dress, a puzzle, a lost game's result) at three - written to one JSON file, so that a CSS
    tidy (web/tools/cssmerge.py) can be shown to change nothing:
      node web/tools/compare/styles.js /tmp/before.json   (old CSS, built)
      node web/tools/compare/styles.js /tmp/after.json    (new CSS, built)
@@ -22,11 +22,13 @@ const dump = (page, P, inPlay) => page.evaluate(([P, inPlay]) => {
 function compare(fa, fb) {
   const a = JSON.parse(fs.readFileSync(fa, 'utf8')), b = JSON.parse(fs.readFileSync(fb, 'utf8'));
   let bad = 0;
+  // (an element with no id or class - a ripple, a spark - comes and goes with the moment: left out before the two are lined up)
+  const named = l => l.filter(x => !/^\.(::before|::after)? /.test(x));
   for (const k in a) {
-    const P = k.startsWith('play/') ? PLAY : DESK;
-    if (!b[k] || a[k].length !== b[k].length) { console.log('different elements:', k); bad++; continue; }
-    a[k].forEach((x, i) => {
-      const y = b[k][i], n = x.split(' ', 1)[0];
+    const P = k.startsWith('play/') ? PLAY : DESK, A = named(a[k]), B = b[k] && named(b[k]);
+    if (!B || A.length !== B.length) { console.log('different elements:', k); bad++; continue; }
+    A.forEach((x, i) => {
+      const y = B[i], n = x.split(' ', 1)[0];
       if (x === y || n === '.' || n === '.::after' || /^(#clock|#dkShade|\.fxb)/.test(n)) return;
       const X = x.split('|'), Y = y.split('|');
       const d = X.map((u, j) => u !== Y[j] && P[j] !== 'opacity' && P[j] !== 'transform' ? `${P[j]}: ${u.slice(-40)} -> ${Y[j].slice(-40)}` : null).filter(Boolean);
@@ -53,7 +55,11 @@ function compare(fa, fb) {
     await clk('.dk-addon'); out[`desk/${W}/addons`] = await dump(page, DESK);
     await clk('#dkBoards .dk-x'); await clk('#dkHead .dk-x'); await clk('#dkBoards .dk-x');
     await clk('[data-b="rank"]'); out[`desk/${W}/rank`] = await dump(page, DESK);
-    await tapT('훈련'); await tapT('레슨'); out[`desk/${W}/lessons`] = await dump(page, DESK);
+    // (레슨: its card on the card menu - no 훈련 tab there; the old boards' tab and key upright)
+    if (await page.locator('.mn-card[data-k="lesson"]').count()) { await page.evaluate(() => { const x = document.querySelector('#dkBoards .dk-x'); if (x) x.click(); }); await page.waitForTimeout(1500); }
+    if (await page.locator('.mn-card[data-k="lesson"]').count() && await page.locator('.mn-card[data-k="lesson"]').first().isVisible()) await clk('.mn-card[data-k="lesson"]');
+    else { await tapT('훈련'); await tapT('레슨'); }
+    out[`desk/${W}/lessons`] = await dump(page, DESK);
     await tapT('내 장비'); out[`desk/${W}/gear`] = await dump(page, DESK);
     await tapT('상점'); out[`desk/${W}/shop`] = await dump(page, DESK);
     if (W === 1280 || W === 390 || W === 915) {
@@ -63,6 +69,11 @@ function compare(fa, fb) {
       await page.evaluate(() => { document.getElementById('app').classList.add('bcast'); }); await settle(); out[`play/${W}/bcast`] = await dump(page, PLAY, true);
       await page.evaluate(() => { document.getElementById('app').classList.remove('bcast'); __dp8.goHome(); __dp8.prefs.mode = 'four'; __dp8.startMatch(0); }); await settle(); out[`play/${W}/four`] = await dump(page, PLAY, true);
       await page.evaluate(() => { __dp8.goHome(); __dp8.puzzle.start(); }); await settle(); out[`play/${W}/puzzle`] = await dump(page, PLAY, true);
+      // (the result: a 4구 against the computer, lost - no victory camera; the receipt sideways, the score sheet upright)
+      await page.evaluate(() => { __dp8.goHome(); __dp8.prefs.vsAI = true; __dp8.prefs.mode = 'four'; __dp8.startMatch(0); }); await settle();
+      await page.evaluate(() => { __dp8.game.over = { winner: 1 }; __dp8.match.finish(); });
+      await page.waitForFunction(() => __dp8.st.screen === 'result', null, { timeout: 60000 }); await page.waitForTimeout(4000); await frames();
+      out[`play/${W}/result`] = await dump(page, PLAY, true);
     }
     await browser.close();
   }

@@ -23,13 +23,12 @@
    whole list into a separate picture before leaning it with the desk, and the cards' names came out blurred. --rs is
    each rarity's colour screened over the glass, #114982) */
 #app.desk .dk-card.r0{--rs:#b3cbe0}#app.desk .dk-card.r1{--rs:#4cadff}#app.desk .dk-card.r2{--rs:#af8bff}
-#app.desk .dk-card.r3{--rs:#ff80b0}#app.desk .dk-card.r4{--rs:#ffca99}#app.desk .dk-card.r5{--rs:#ffffff}
+#app.desk .dk-card.r3{--rs:#ff80b0}#app.desk .dk-card.r4{--rs:#ffca99}#app.desk .dk-card.r5{--rs:#ffffff;box-shadow:inset 0 -5px 0 -1px #f06d9f}
 #app.desk .dk-card::before{content:"";position:absolute;inset:5px;z-index:1;border-radius:10px;pointer-events:none;
   background:linear-gradient(to top,color-mix(in srgb,var(--rs) 75%,transparent) 0%,color-mix(in srgb,var(--rs) 30%,transparent) 30%,transparent 62%)}
 #app.desk .dk-card.r0::before{opacity:.55}
 #app.desk .dk-card.r1::before{background:linear-gradient(to top,rgba(120,201,255,.85) 0%,rgba(120,201,255,.35) 30%,transparent 62%)}
 #app.desk .dk-card.r5::before{background:linear-gradient(to top,rgba(240,109,159,.75),rgba(255,248,250,.5) 20%,rgba(240,109,159,.3) 38%,transparent 62%)}
-#app.desk .dk-card.r5{box-shadow:inset 0 -5px 0 -1px #f06d9f}
 #app.desk .dk-card .nm{z-index:2;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:none;padding-bottom:1px}
 #app.desk:not(.compact) .dk-card .nm{font-size:17px}
 #app.desk .dk-card .price{z-index:2;font:700 11px var(--ui-font);color:#2b241c;background:#e9dcb8;border-radius:99px;padding:2px 8px}

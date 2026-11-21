@@ -4,10 +4,8 @@
    rarity's metal (일반 silver, 희귀 blue, 에픽 violet, 신화 red, 전설 gold, 궁극 a 스크류바's pink and white, moving - owner 11-21, it was 시크릿 in every colour), and its
    face is a printed card like the lobby's panels: the rarity's colour fading down from a lighter top, a white line inside (i.face,
    35-desk-shelves.js). */
-#app.desk .dk-cards.pc .dk-card{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#6d7884;--c2:#3c4550;border:3px solid transparent;border-image:none;border-radius:13px;padding:10px 6px 0;gap:4px;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 42%,var(--c2) 100%) padding-box,
-    linear-gradient(155deg,var(--f1),var(--f2) 38%,var(--f3) 58%,var(--f2) 80%,var(--f1)) border-box;
-  box-shadow:inset 0 5px 9px rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.14)}
+#app.desk .dk-cards.pc .dk-card{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#6d7884;--c2:#3c4550;border:3px solid transparent;border-image:none;border-radius:13px;padding:10px 6px 0;gap:4px;background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 42%,var(--c2) 100%) padding-box,
+    linear-gradient(155deg,var(--f1),var(--f2) 38%,var(--f3) 58%,var(--f2) 80%,var(--f1)) border-box;box-shadow:inset 0 5px 9px rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.14);isolation:isolate}
 #app.desk .dk-cards.pc .dk-card.r1{--f1:#cfe6ff;--f2:#2a6fe0;--f3:#7fb6ff;--c1:#4174bf;--c2:#194685}
 #app.desk .dk-cards.pc .dk-card.r2{--f1:#efdcff;--f2:#7c3be0;--f3:#c49bff;--c1:#8265a3;--c2:#533a6e}
 #app.desk .dk-cards.pc .dk-card.r3{--f1:#ffd5da;--f2:#c92f44;--f3:#ff8a97;--c1:#b05551;--c2:#772b2a}
@@ -22,11 +20,8 @@
 #app.desk .dk-card.r5,.rar.r5{--sw:#fff8fa;--sp:#f06d9f;animation:ultTone 7s ease-in-out infinite}
 @keyframes ultTone{0%,100%{--sw:#fff8fa;--sp:#f06d9f}30%{--sw:#ebe8ee;--sp:#f278aa}62%{--sw:#fdf6f9;--sp:#d873c6}}
 @keyframes ultMove{from{background-position:0 0,0 0}to{background-position:0 100%,100% 0}}
-#app.desk .dk-cards.pc .dk-card.r5{--c1:var(--sp);--c2:var(--sp);
-  background:linear-gradient(172deg,var(--sw) 0%,color-mix(in srgb,var(--sw) 55%,var(--sp)) 22%,var(--sp) 46%,color-mix(in srgb,var(--sp) 70%,var(--sw)) 66%,var(--sw) 84%,var(--sp) 100%),
-    linear-gradient(110deg,var(--sp),var(--sw) 22%,var(--sp) 44%,var(--sw) 66%,var(--sp) 88%,var(--sw));
-  background-clip:padding-box,border-box;background-origin:padding-box,border-box;background-size:100% 260%,300% 100%;
-  animation:ultTone 7s ease-in-out infinite,ultMove 5.5s ease-in-out infinite alternate}
+#app.desk .dk-cards.pc .dk-card.r5{--c1:var(--sp);--c2:var(--sp);background:linear-gradient(172deg,var(--sw) 0%,color-mix(in srgb,var(--sw) 55%,var(--sp)) 22%,var(--sp) 46%,color-mix(in srgb,var(--sp) 70%,var(--sw)) 66%,var(--sw) 84%,var(--sp) 100%),
+    linear-gradient(110deg,var(--sp),var(--sw) 22%,var(--sp) 44%,var(--sw) 66%,var(--sp) 88%,var(--sw));background-clip:padding-box,border-box;background-origin:padding-box,border-box;background-size:100% 260%,300% 100%;animation:ultTone 7s ease-in-out infinite,ultMove 5.5s ease-in-out infinite alternate}
 #app.desk .dk-cards.pc .dk-card.r5:not(.aur-on){animation-play-state:paused}
 /* (its words read on the white as on the pink: the name outlined in a deep pink, the SFX · VFX marks on a dark pink pill) */
 #app.desk .dk-cards.pc .dk-card.r5 .nm{text-shadow:0 1px 0 #8a2350,1px 0 0 #8a2350,-1px 0 0 #8a2350,0 -1px 0 #8a2350,0 2px 4px rgba(90,10,40,.45)}
@@ -71,7 +66,7 @@
    (11-13, PC menus stuttering: laid on normally, not as 'screen' - a blend mode made every card a surface of its own,
    blended again each frame; no mask over them - the curtains' own gradients fade them upwards; and only a card on the
    screen moves - 'aur-on', 35-desk-shelves.js aurSeen.) */
-#app.desk .dk-cards.pc .dk-card{isolation:isolate;--a1:#bfe9ff;--a2:#8fd3c9;--a3:#d9e4ef;--ao:.5}
+#app.desk .dk-cards.pc .dk-card{--a1:#bfe9ff;--a2:#8fd3c9;--a3:#d9e4ef;--ao:.5}
 #app.desk .dk-cards.pc .dk-card.r1{--a1:#4fd8ff;--a2:#3d7bff;--a3:#8ff0e0;--ao:.62}
 #app.desk .dk-cards.pc .dk-card.r2{--a1:#d06bff;--a2:#7a5cff;--a3:#ff8fe3;--ao:.72}
 #app.desk .dk-cards.pc .dk-card.r3{--a1:#ff4d6d;--a2:#ff9a3d;--a3:#ff7ad1;--ao:.8}

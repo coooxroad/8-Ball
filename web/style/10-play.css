@@ -47,7 +47,7 @@
 #fine::after{content:"";position:absolute;left:7px;right:7px;top:50%;height:3px;margin-top:-1.5px;background:var(--acc);border-radius:2px}
 #fineLab{position:absolute;left:0;right:0;top:0;padding:7px 0 5px;text-align:center;font-size:10.5px;color:var(--sub);background:var(--panel)}
 #spinBtn,#spinPad{background:radial-gradient(circle at 36% 30%,#ffffff 0,#f6f1e4 34%,#d9d2c0 72%,#aaa28f 100%)}
-#spinBtn{position:absolute;right:10px;bottom:14px;width:60px;height:60px;border-radius:50%;border:0;box-shadow:0 2px 4px rgba(0,0,0,.2),0 8px 18px rgba(0,0,0,.28),inset 0 -3px 6px rgba(0,0,0,.12)}
+#spinBtn{position:absolute;right:10px;bottom:14px;width:60px;height:60px;border-radius:50%;border:0;box-shadow:0 2px 4px rgba(0,0,0,.2),0 8px 18px rgba(0,0,0,.28),inset 0 -3px 6px rgba(0,0,0,.12);overflow:visible}
 #spinDot,.sdot{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#ff7a6e,#d8352c 55%,#a61f18);box-shadow:0 1px 2px rgba(0,0,0,.3)}
 #spinPop{position:absolute;right:82px;bottom:14px;background:var(--sheet);border:1px solid var(--bd);border-radius:22px;box-shadow:0 12px 32px rgba(0,0,0,.24);padding:14px;
   display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -98,7 +98,6 @@
 #kindBox .lab b{font-family:var(--num);font-size:17px;color:var(--fg)}
 #kindBox .lab span{margin-left:auto;font-size:12px;font-weight:700;color:#8a4dff}
 #elPad{width:190px;height:112px;border-radius:14px;background:var(--seg);touch-action:none;display:block}
-#spinBtn{overflow:visible}
 #spinTag{position:absolute;right:0;top:-13px;font-size:11px;font-weight:800;color:#fff;background:#8a4dff;border-radius:999px;padding:3px 8px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .portrait #spinTag{right:auto;left:0}
 @media (max-height:520px){#spinHint{display:none}#spinPop{padding:10px;gap:8px}#kindBox .seg button{height:30px}}

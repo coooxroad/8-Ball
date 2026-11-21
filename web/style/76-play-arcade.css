@@ -60,8 +60,7 @@
 #arcFx .fx-row.two{gap:clamp(24px,7vw,90px)}
 #arcFx .fx-pair{display:flex;flex-direction:column;align-items:center;gap:12px;transform-style:preserve-3d}
 
-#arcFx .ac{--rx:7deg;--ry:0deg;--rz:0deg;--tz:0px;position:relative;flex:none;height:var(--ch);width:calc(var(--ch) * .7);border:0;padding:0;background:none;color:#fff;font:inherit;cursor:pointer;
-  transform-style:preserve-3d;transition:transform .32s cubic-bezier(.3,.7,.3,1.1),opacity .35s ease,filter .3s ease;-webkit-tap-highlight-color:transparent}
+#arcFx .ac{--rx:7deg;--ry:0deg;--rz:0deg;--tz:0px;position:relative;flex:none;height:var(--ch);width:calc(var(--ch) * .7);border:0;padding:0;background:none;color:#fff;font:inherit;cursor:pointer;transform-style:preserve-3d;transition:transform .32s cubic-bezier(.3,.7,.3,1.1),opacity .35s ease,filter .3s ease;-webkit-tap-highlight-color:transparent;--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#5f6c7a;--c2:#2c343e;--glow:#cfe6ff;--e1:color-mix(in srgb,var(--f2) 75%,#000);--e2:color-mix(in srgb,var(--f2) 45%,#000)}
 #arcFx .fx-row:not(.two) .ac:nth-child(1){--ry:13deg;--rz:-3deg;--tz:-26px}
 #arcFx .fx-row:not(.two) .ac:nth-child(3){--ry:-13deg;--rz:3deg;--tz:-26px}
 /* two planes only - the face and the back - each drawn flat, so the card turns over without the browser cutting it up */
@@ -72,9 +71,8 @@
 #arcFx .ac-back i{position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:3px solid rgba(233,228,214,.85);
   background:radial-gradient(circle at 35% 30%,#fff 0 8%,transparent 9%),radial-gradient(circle,#f4efe2 0 30%,transparent 31%)}
 /* the card's edge: the frame's metal, darkening down its thickness towards the lower left (the light is upper right) */
-#arcFx .ac{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#5f6c7a;--c2:#2c343e;--glow:#cfe6ff;--e1:color-mix(in srgb,var(--f2) 75%,#000);--e2:color-mix(in srgb,var(--f2) 45%,#000)}
 #arcFx .ac.t1{--f1:#fff3c4;--f2:#c98a12;--f3:#ffd36b;--c1:#a77f3a;--c2:#5b3f12;--glow:#ffcf5a}
-#arcFx .ac.t2{--f1:#f4e8ff;--f2:#7d4fc4;--f3:#e4c9ff;--c1:#6c5f9c;--c2:#2b2552;--glow:#c89bff}
+#arcFx .ac.t2{--f1:#f4e8ff;--f2:#7d4fc4;--f3:#e4c9ff;--c1:#6c5f9c;--c2:#2b2552;--glow:#c89bff;--e1:#5a3a8c;--e2:#2e1d4a}
 #arcFx .ac.shape{--f1:#e4ffe9;--f2:#1f7a45;--f3:#9de8b6;--c1:#3fae6a;--c2:#145a33;--glow:#7dffaa}
 #arcFx .ac.hard{--f1:#ffe2e6;--f2:#a3192f;--f3:#ff9aa8;--c1:#c2455a;--c2:#4e1428;--glow:#ff8a9a}
 #arcFx .ac-face{--edge:-1px 1px 0 var(--e1),-2px 2px 0 var(--e1),-3px 3px 0 var(--e2),-4px 4px 0 var(--e2),-5px 5px 0 var(--e2),-6px 6px 0 color-mix(in srgb,var(--e2) 70%,#000);box-shadow:var(--edge);transition:box-shadow .3s ease}
@@ -83,7 +81,6 @@
   border:calc(var(--u)*1.4 + 2px) solid transparent;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:calc(var(--u)*2.4);padding:calc(var(--u)*8) calc(var(--u)*7);text-align:center;
   background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 40%,var(--c2) 100%) padding-box,linear-gradient(155deg,var(--f1),var(--f2) 38%,var(--f3) 58%,var(--f2) 80%,var(--f1)) border-box}
 #arcFx .ac.t2 .ac-print{background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 40%,var(--c2) 100%) padding-box,conic-gradient(from 200deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff,#ff5d6c) border-box}
-#arcFx .ac.t2{--e1:#5a3a8c;--e2:#2e1d4a}
 #arcFx .ac-print::after{content:"";position:absolute;inset:calc(var(--u)*2.2);border:2px solid rgba(255,255,255,.75);border-radius:9px;pointer-events:none}
 #arcFx .ac-print em{position:absolute;top:calc(var(--u)*6);left:50%;transform:translateX(-50%);padding:calc(var(--u)*1) calc(var(--u)*4);border-radius:999px;background:rgba(255,255,255,.92);color:#1d2a3a;font:800 max(10px,calc(var(--u)*4))/1.2 var(--ui-font);font-style:normal;letter-spacing:.08em;white-space:nowrap}
 #arcFx .ac-ico{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}

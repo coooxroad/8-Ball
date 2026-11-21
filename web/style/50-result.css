@@ -2,7 +2,7 @@
 /* ---------- result ---------- */
 #result{position:absolute;inset:0;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:clamp(14px,3vh,26px);padding:24px clamp(16px,5vw,60px)}
 .r-title{margin-top:auto;font-family:'Outfit',sans-serif;font-weight:500;font-size:13px;letter-spacing:.36em;color:var(--sub)}
-.r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);flex-wrap:wrap}
+.r-vs{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);flex-wrap:wrap;max-width:760px}
 .r-p{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 0;color:var(--sub)}
 .r-p.two{justify-content:flex-end;text-align:right}
 .r-p .av{flex:none;width:52px;height:52px;font-size:23px}
@@ -10,7 +10,7 @@
 .r-p .rc{font-size:14px;color:var(--sub);margin-top:4px}
 .r-p.won{color:var(--fg)}
 .r-p.won .av{background:var(--acc);border-color:transparent;color:#fff}
-.r-vs{width:100%;max-width:760px}
+.r-vs{width:100%}
 .r-score{flex:none;font-family:var(--num);font-weight:var(--num-w);font-size:clamp(46px,7vw,80px);line-height:1;white-space:nowrap;color:var(--sub)}
 .r-score b{font-weight:inherit;color:var(--win)}
 #rStats{width:100%;max-width:760px;padding:2px 22px}
@@ -114,16 +114,14 @@
 #app.desk .hcard.none .pic{background:var(--felt-base,#0e4c8e) var(--felt-img,url(ui/felt.webp)) 0 0/160px repeat;background-clip:padding-box;filter:saturate(.5) brightness(.8)}
 #app.desk .hcard.none .tag{color:#8a7f6e;font-weight:700}
 #app.desk .hcard.none .rib{filter:saturate(.4);opacity:.85}
-#app.desk .r-side{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;
-  border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:30px 28px 40px;box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
+#app.desk .r-side{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;color:var(--slate-ink);--s:.5;border:0 solid transparent;background:none;border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:30px 28px 40px;box-shadow:-14px 20px 28px rgba(0,0,0,.5)}
 #app.desk .r-side h2{margin:0 0 4px;font:800 28px var(--ui-font);color:#f3eee3}
 #app.desk #rSide .dk-spec{padding:10px 2px}
 #app.desk #rSide .dk-spec b{font-size:16px}
 #app.desk #rWhy{margin:4px 0 0;padding:12px 2px 0;border-top:1px solid rgba(255,255,255,.1);font:600 14.5px/1.5 var(--ui-font);color:#c9d3df;text-align:left;box-shadow:none;background:none;animation:none}
 #app.desk .r-btns{margin-top:auto;display:flex;flex-direction:column;gap:12px;max-width:none;position:static;animation:none;filter:none}
 #app.desk .r-btns .btn{flex:none;height:auto;border-radius:0;box-shadow:none}
-#app.desk #againBtn{position:relative;padding:16px 0 calc(16px + 9px);color:#fff;font:800 26px var(--ui-font);--s:.42;border:0 solid transparent;background:none;
-  border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s)) stretch;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+#app.desk #againBtn{position:relative;padding:16px 0 calc(16px + 9px);color:#fff;font:800 26px var(--ui-font);--s:.42;border:0 solid transparent;background:none;border-image:url(ui/main.webp) 72 60 80 60 fill/calc(72px*var(--s)) calc(60px*var(--s)) calc(80px*var(--s)) calc(60px*var(--s)) stretch;text-shadow:0 1px 2px rgba(0,0,0,.4);justify-content:center}
 #app.desk #againBtn:active{border-image-source:url(ui/main-press.webp)}
 #app.desk.theme-dark #againBtn{border-image-source:url(ui/main-green.webp)}
 #app.desk.theme-dark #againBtn:active{border-image-source:url(ui/main-press-green.webp)}
@@ -140,7 +138,6 @@
 #app.desk.compact #rStats .srow{grid-template-columns:44px minmax(0,1fr) 96px minmax(0,1fr) 44px;padding:6px 2px}
 #app.desk.compact .r-side{padding:18px 16px 30px}
 #app.desk.compact .r-side h2{font-size:20px}
-#app.desk.compact #againBtn{font-size:20px}
 /* ---------- after a match, held sideways (owner 11-21): no desk - the table as the match left it, without its controls,
    darkened at the edges, and over it the result: the hall's receipt beside its panel (#result.rc, below - 50-receipt.js;
    the score sheet, the review's counts and the three shots are not shown there). These rules are its base: the plane over
@@ -148,25 +145,20 @@
    slate before the receipt, 11-21: what only the slate showed is gone.) The game review (#result.rv) is the desk as before. ---------- */
 #app.desk:not(.portrait) #result:not(.rv){background:none;perspective:none;display:block;padding:0}
 #app.desk:not(.portrait) #result:not(.rv)::before{background:radial-gradient(ellipse 75% 70% at 50% 50%,rgba(6,8,12,.38),rgba(6,8,12,.72))}
-#app.desk:not(.portrait) #result:not(.rv) .r-plane{position:absolute;inset:clamp(6px,2vh,22px) 0;margin:0 auto;height:fit-content;max-height:calc(100% - 2*clamp(6px,2vh,22px));
-  width:min(480px,calc(100% - 20px));transform:none;display:flex;flex-direction:column;gap:8px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain;
-  border:0 solid transparent;border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:16px 22px 0;box-sizing:border-box;
-  filter:drop-shadow(0 18px 26px rgba(0,0,0,.6))}
+#app.desk:not(.portrait) #result:not(.rv) .r-plane{position:absolute;inset:clamp(6px,2vh,22px) 0;margin:0 auto;height:fit-content;max-height:calc(100% - 2*clamp(6px,2vh,22px));width:min(480px,calc(100% - 20px));transform:none;display:flex;flex-direction:column;gap:8px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain;border:0 solid transparent;border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:16px 22px 0;box-sizing:border-box;filter:drop-shadow(0 18px 26px rgba(0,0,0,.6));animation:rPopIn .45s cubic-bezier(.2,.9,.3,1.1) both}
 #app.desk:not(.portrait) #result:not(.rv) .r-plane::-webkit-scrollbar{display:none}
 #app.desk:not(.portrait) #result:not(.rv) :is(.r-tray,.r-side){display:contents}
 #app.desk:not(.portrait) #result:not(.rv) #rSide{order:3}
-#app.desk:not(.portrait) #result:not(.rv) .r-btns{order:7}
+#app.desk:not(.portrait) #result:not(.rv) .r-btns{order:7;position:sticky;bottom:0;z-index:2;flex-direction:row;align-items:stretch;gap:8px;margin:4px -12px 0;padding:10px 12px 18px;background:linear-gradient(rgba(22,27,31,0),rgba(22,27,31,.96) 14px)}
 #app.desk:not(.portrait) #result:not(.rv) :is(#rvBoard,#rvPanel){display:none}
 /* the keys: along the foot, staying in sight as the slate scrolls (the slate's own dark behind them) */
-#app.desk:not(.portrait) #result:not(.rv) .r-btns{position:sticky;bottom:0;z-index:2;display:flex;flex-direction:row;align-items:stretch;gap:8px;margin:4px -12px 0;padding:10px 12px 18px;
-  background:linear-gradient(rgba(22,27,31,0),rgba(22,27,31,.96) 14px)}
+#app.desk:not(.portrait) #result:not(.rv) .r-btns{display:flex}
 #app.desk:not(.portrait) #result:not(.rv) .r-btns .btn{flex:1 1 0;height:auto;min-height:44px;font-size:14px}
 #app.desk:not(.portrait) #result:not(.rv) #againBtn{order:3;flex:1.6 1 0;font-size:18px;padding:6px 0 calc(6px + 6px)}
 #app.desk:not(.portrait) #result:not(.rv) #againBtn small{display:none}
 #app.desk:not(.portrait) #result:not(.rv) #reviewBtn{order:2;height:auto;font-size:14px}
 #app.desk:not(.portrait) #result:not(.rv) #homeBtn{order:1;height:auto}
 /* comes in: the slate rises a little and settles */
-#app.desk:not(.portrait) #result:not(.rv) .r-plane{animation:rPopIn .45s cubic-bezier(.2,.9,.3,1.1) both}
 #app.desk:not(.portrait) #result:not(.rv) .r-plane>*,#app.desk:not(.portrait) #result:not(.rv) .r-side,#app.desk:not(.portrait) #result:not(.rv) .r-tray>*,#app.desk:not(.portrait) #result:not(.rv) .r-side>*{animation:none}
 @keyframes rPopIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
 #app.desk.portrait .r-plane{display:flex;flex-direction:column;overflow:hidden;transform:rotateX(6deg);top:-20px;padding:30px 10px 14px}
@@ -185,7 +177,7 @@
 #app.desk.portrait .r-p{flex-direction:column;gap:6px;text-align:center}
 #app.desk.portrait .r-p.two{flex-direction:column-reverse;text-align:center}
 #app.desk.portrait .r-p .nm{font-size:16px}
-#app.desk #againBtn{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#app.desk #againBtn{display:flex;flex-direction:column;align-items:center}
 #app.desk.portrait .r-sheet{padding:80px 26px 30px}
 #app.desk.portrait #rStats .srow{grid-template-columns:38px minmax(0,1fr) 80px minmax(0,1fr) 38px;gap:5px;padding:6px 0}
 #app.desk.portrait #rStats b,#app.desk.portrait #rStats span.n{font-size:15px}
@@ -290,11 +282,10 @@
 /* the other ways to play it (chips: 내 샷, then the judge's alts - 추천 the best, 가장 쉬움 the likeliest) and how a stroke
    was struck (당점 on the cue ball, 세기 a bar, 큐 각도 a cue raised over the cloth, 두께 / 깎기 two balls overlapping) */
 .rv-alts{display:flex;gap:6px;flex-wrap:wrap}
-.rv-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:99px;background:rgba(255,255,255,.07);color:#d9dfe7;font:700 13px var(--ui-font);cursor:pointer;box-shadow:inset 0 0 0 1.5px rgba(185,156,240,.35)}
+.rv-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:99px;background:rgba(255,255,255,.07);color:#d9dfe7;font:700 13px var(--ui-font);cursor:pointer;box-shadow:inset 0 0 0 1.5px rgba(185,156,240,.35);white-space:nowrap;max-width:100%;min-width:0}
 .rv-chip.mine{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
 .rv-chip.on{background:#8a6fd0;color:#fff;box-shadow:none}
-.rv-chip.mine.on{background:rgba(255,255,255,.22)}
-.rv-chip{white-space:nowrap;max-width:100%;min-width:0}.rv-chip b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rv-chip.mine.on{background:rgba(255,255,255,.22)}.rv-chip b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .rv-tags{display:inline-flex;gap:4px;flex:none}
 .rv-tags em{font:800 10.5px var(--ui-font);font-style:normal;padding:2px 6px;border-radius:99px;background:rgba(0,0,0,.28)}
 .rv-tags em.best{color:#d9c8ff}.rv-tags em.easy{color:#9fe0b0}
