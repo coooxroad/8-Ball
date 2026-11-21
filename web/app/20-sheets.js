@@ -58,6 +58,9 @@ function sheetDebug() {
     el('div', { class: 'lab', text: '메뉴 진단' }),
     flatBtn(`카드 효과: ${prefs.dbgNoFx ? '끔' : '켬'}`, () => { prefs.dbgNoFx = !prefs.dbgNoFx; savePrefs(); menuDbg(); sheetDebug(); }),
     flatBtn(`메뉴 공: ${prefs.dbgNoBalls ? '끔' : '켬'}`, () => { prefs.dbgNoBalls = !prefs.dbgNoBalls; savePrefs(); menuDbg(); sheetDebug(); }),
+    // (the 선수증 in a glass case - owner 11-21, tried here first: 37-desk-menu.js glassCase)
+    el('div', { class: 'lab', text: '선수증' }),
+    flatBtn(`유리 케이스: ${prefs.dbgGlass === false ? '끔' : '켬'}`, () => { prefs.dbgGlass = prefs.dbgGlass === false; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); }),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

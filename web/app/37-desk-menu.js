@@ -117,6 +117,17 @@ function playerCard(o) {
     o.bar === false ? null : el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, o.stats.map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
 }
+/* The glass case (owner 11-21, 디버그 모드 for now - glassOn): the card held in a thick, angular block of clear acrylic -
+   a front and a back pane with the card between them, four edge faces (its thickness, cyan-green as thick glass edges
+   are), the front's edges cut at 45° and lit as the light from the upper right lights them, a slot at the top for the
+   lanyard. Drawn in CSS 3D (84-menu.css .g3): on the menu seen from the front (the thickness a thin rim all round, by
+   perspective), on the match's opening swinging in about its slot and flung away (79-league.css). cw: the card's width in
+   u (the opening's cards are wider). Returns the case, the card inside it. */
+function glassOn() { return !!net.debug && prefs.dbgGlass !== false; }
+function glassCase(card, cw) {
+  const f = (cls, kids) => el('i', { class: 'f ' + cls, 'aria-hidden': 'true' }, kids);
+  return el('div', { class: 'g3', style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), card, f('front', el('i', { class: 'slot' }))]);
+}
 // a title open to this device's player: one without a need, or with its record met (content/50-cards.js need)
 function titleOpen(q) {
   const n = q.need; if (!n) return true;
@@ -175,7 +186,8 @@ function menuPaint() {
       el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [menuFx.canvas(c.id, i, i), el('img', { class: 'x fxp', 'data-fx': 'x', alt: '' })]),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
-  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [pc, ...cards]));
+  // (디버그 모드: the 선수증 in its glass case, seen from the front - glassCase)
+  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassOn() ? glassCase(pc) : pc, ...cards]));
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
   layer.textContent = ''; layer.appendChild(row);
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
