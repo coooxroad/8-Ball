@@ -163,6 +163,7 @@ function frame(now) {
   // (the table alone - a match's end or opening, 50-outro.js tableAlone, and under the result: no cue, no line)
   const nude = app.classList.contains('bare') || (st.screen === 'result' && !review.on);   // (and under the result's slate)
   const lined = !nude && (st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
+  winCam.tick();   // (a win's camera, moved before the frame is drawn - 50-outro.js)
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, honest: !!(game.world && game.world.real && game.world.real.cue), el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
@@ -250,5 +251,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, vsIntro, outro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { prof, game, st, prefs, winCam, receipt, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, vsIntro, outro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();

@@ -34,8 +34,8 @@ const receipt = {
     let g = $('#rcG'); if (!g) { g = el('div', { id: 'rcG' }); head.after(g); }
     receipt.grades(); receipt.money();
     if (!receipt.obs) { receipt.obs = new MutationObserver(() => receipt.money()); receipt.obs.observe($('#rSide'), { childList: true, subtree: true, characterData: true }); }
-    // the stamp's knock as it lands (the printing takes about a second - 50-result.css rcPrint)
-    clearTimeout(receipt.t); receipt.t = setTimeout(() => { if (st.screen === 'result' && res.classList.contains('rc')) SND.stamp(); }, 1500);
+    // the stamp's knock as it lands (the printing takes about 1.8 s - 50-result.css rcPrint, the stamp lands at 2.1 s)
+    clearTimeout(receipt.t); receipt.t = setTimeout(() => { if (st.screen === 'result' && res.classList.contains('rc')) SND.stamp(); }, 2130);
   },
   // what the game paid, as the slate has it (#rSide's lines: coins, the rating, 승급전 - 54-ranked.js paint)
   money() {

@@ -107,26 +107,37 @@ const confetti = {
   },
   stop() { cancelAnimationFrame(confetti.raf); if (confetti.cv) { confetti.cv.remove(); confetti.cv = null; } },
 };
-/* The camera at a win (owner 11-21: "뒤로 빠지게, 마인크래프트 시네마틱 카메라처럼"): from overhead it glides down and back
-   and round the table - slow, no start or stop to it (a smootherstep over 5.5 s, then held) - and stays there under the
-   result; leaving the result (a new game, home, the review) puts the player's own view back (70-buttons.js viewBack). */
+/* The camera at a win (owner 11-21: "뒤로 빠지게, 마인크래프트 시네마틱 카메라처럼" - and then: smooth, not in steps nor at an
+   even speed). Where it wants to be glides out from overhead - down, back and round the table, quickly at first and
+   settling, then drifting on round slowly - and the camera follows that on a critically damped spring, so it gathers
+   speed and loses it as a hand-held glide would, never starting, stopping or turning at once. Moved once a frame from
+   the game's own loop, before the frame is drawn (90-loop.js), so each frame shows the camera where that frame put it.
+   Leaving the result (a new game, home, the review) puts the player's own view back (70-buttons.js viewBack). */
 const winCam = {
-  on: false, raf: 0, watch: 0,
+  on: false, t: 0, watch: 0, pose: null, vel: null,
   start() {
     winCam.stop(true); if (!scene.setCam || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    winCam.on = true;
-    const t0 = performance.now(), T = 5500, sm = x => x * x * x * (x * (x * 6 - 15) + 10), turn = app.classList.contains('portrait') ? -Math.PI / 2 : 0;
-    const step = () => {
-      if (!winCam.on) return;
-      const p = Math.min(1, (performance.now() - t0) / T), e = sm(p);
-      scene.setCam({ az: turn + 0.5 * e, el: 1.42 - 0.66 * e, zoom: 1 + 0.16 * e, tx: 0, ty: 0 });
-      if (p < 1) winCam.raf = requestAnimationFrame(step);
-    };
-    winCam.raf = requestAnimationFrame(step);
+    winCam.on = true; winCam.t0 = performance.now(); winCam.last = winCam.t0; winCam.turn = app.classList.contains('portrait') ? -Math.PI / 2 : 0;
+    winCam.pose = { az: 0, el: 1.42, zoom: 1 }; winCam.vel = { az: 0, el: 0, zoom: 0 };
     winCam.watch = setInterval(() => { if (!(st.screen === 'play' || st.screen === 'result') || review.on || (st.screen === 'play' && !outro.on)) winCam.stop(); }, 250);
   },
+  // a frame (90-loop.js, before the scene is drawn): dt in seconds
+  tick() {
+    if (!winCam.on) return;
+    // (the clock's own time, not the frame's capped step: a slow frame does not slow the glide - the spring is stepped
+    // in small steps up to now, so it stays smooth whatever the frame rate)
+    const now = performance.now(), w = 2.4, p = winCam.pose, v = winCam.vel;
+    let left = Math.min(0.25, (now - winCam.last) / 1000); winCam.last = now;
+    while (left > 1e-4) {
+      const h = Math.min(1 / 120, left), t = (now - winCam.t0) / 1000 - (left - h), drift = Math.min(t, 24);   // (the slow drift round stops after a while)
+      const to = { az: 0.55 * (1 - Math.exp(-t / 1.7)) + 0.022 * drift, el: 1.42 - 0.68 * (1 - Math.exp(-t / 1.5)), zoom: 1 + 0.17 * (1 - Math.exp(-t / 1.9)) };
+      for (const k in p) { const a = w * w * (to[k] - p[k]) - 2 * w * v[k]; v[k] += a * h; p[k] += v[k] * h; }   // (critically damped: no overshoot)
+      left -= h;
+    }
+    scene.setCam({ az: winCam.turn + p.az, el: p.el, zoom: p.zoom, tx: 0, ty: 0 });
+  },
   stop(quiet) {
-    cancelAnimationFrame(winCam.raf); clearInterval(winCam.watch);
+    clearInterval(winCam.watch);
     if (!winCam.on) return; winCam.on = false;
     if (!quiet) viewBack();
   },
