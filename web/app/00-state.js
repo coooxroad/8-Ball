@@ -5,17 +5,24 @@
      - tools/check.js fails the build if two files declare the same name.
    00-state    what is shared, and what is worn      40-shot        the shot pipeline and the scoreboard
    05-music    the lobby's tune, win and lose songs   50-match       a game between two players (or one and the computer)
-   07-net      the server: wallet, rewards, ranked    54-ranked      랭킹전: finding an opponent, playing them online
-                                                      55-invite      친구 초대: a code, and a game on two devices
-   10-ui       small DOM helpers, screens, layout     51-practice    lessons and free practice
-   20-sheets   every sheet that slides up             52-puzzle      puzzles
-   30-home     what the desk and the flows share      53-demo        one given shot, played by the app
-   32-desk     the desk's parts, moving between places 56-league     the CUELEAGUE opening; 57-account, 58-tutorial
-                                                      59-emote       quick emotes in an online game
-   33-desk-play     플레이: the panels, the games    62-bolts       the lightning border while play runs fast
-   34-desk-train    훈련: lessons, puzzles, practice  70-buttons     what each button does
-   35-desk-shelves  내 장비 and 상점                    80-input       aiming, power, spin, cue angle
-   36-desk-paint    laying the desk out and leaning it 90-loop       the frame loop, saving, start
+   07-net      the server: wallet, rewards, ranked    50-outro       a game's end: 승리 / 패배 over the table
+   10-ui       small DOM helpers, screens, layout     50-celebrate   a win's confetti and camera
+   12-press    every key answering the hand
+   20-sheets   every sheet that slides up             50-rise        a ranked game's rating on its ring
+   30-home     what the desk and the flows share      50-receipt     the result held sideways: the hall's receipt
+   32-desk     the desk's parts, moving between places 50-review*    the game review (its lines and words)
+   33-desk-play     플레이: the panels, the games    51-practice    lessons and free practice; 52-puzzle puzzles
+   33-desk-arcade   아케이드's board (debug only)      55-arcade      아케이드 · 증강 당구 in play
+   34-bot-lines     what the bots say at the table
+   34-desk-train    훈련: lessons, puzzles, practice  53-demo        one given shot, played by the app
+   34-desk-bots     컴퓨터 대전's bots                 54-ranked      랭킹전: finding an opponent, playing them online
+   35-desk-shelves  내 장비 and 상점                    55-invite      친구 초대: a code, and a game on two devices
+   36-desk-paint    laying the desk out and leaning it 56-league     the CUELEAGUE opening; 57-account, 58-tutorial
+   37-desk-menu     플레이's card menu, 선수증, the glass case       59-emote       quick emotes in an online game
+   38-glass3d       the glass case in 3D               62-bolts       the lightning border while play runs fast
+   38-menu-balls    the menu's balls on the felt       70-buttons     what each button does
+   39-menu-fx       the menu cards' moving ground      80-input       aiming, power, spin, cue angle
+                                                      90-loop        the frame loop, saving, start
    Around a shot, what happens depends on what is being played; that part lives in "flows" (match, practice, puzzle, demo)
    with the same handful of methods, and the shot pipeline never asks which one is active.
    The rest of the game is outside this folder and knows nothing of the page: content/ (what can be owned), physics.js,

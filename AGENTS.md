@@ -59,12 +59,13 @@ node web/test/browser/ui-budget.js     # 메뉴 레이어 예산(1280x800@2에�
 | `web/audio.js`, `web/sounds.js` | 소리. 공·큐 소리는 녹음(`sounds.js`), 나머지는 합성 | 모름 |
 | `web/sound/` | 아이템이 자기 소리로 쓰는 녹음 파일(선택). 빌드가 페이지 안에 넣는다 | — |
 | `web/reel/` | 하이라이트 재생. 편집 하나당 파일 하나 (한 범위) | 앎 |
-| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 랭킹전은 `54-ranked.js`, 친구 초대 `55-invite.js` | 앎 |
+| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 랭킹전은 `54-ranked.js`, 친구 초대 `55-invite.js`, 플레이 카드 메뉴 `37-desk-menu.js`(선수증·유리 케이스), 유리 케이스 3D `38-glass3d.js`, 경기 끝 `50-match.js` `finish`(→ `50-outro.js` 승리/패배, `50-celebrate.js` 색종이·승리 카메라, `50-rise.js` 레이팅 단계, `50-receipt.js` 영수증) | 앎 |
 | `web/index.html` | 마크업만. `<!--STYLE-->` 자리에 빌드가 스타일을 넣는다 | — |
 | `web/style/` | 스타일. 무엇을 꾸미는지에 따라 파일이 나뉜다(아래 5절) | — |
 | `web/ui/`, `web/tex/` | 화면 재료 그림 / 3D 재질 그림(WebP). 쓰임과 9-slice 값은 `web/ui/README.md` | — |
 | `web/music/` | 로비·승리·패배 음악(MP3). 재생은 `web/app/05-music.js` | — |
 | `web/test/run.js`, `web/tools/check.js` | 검사 | — |
+| `web/tools/measure.js`, `web/tools/compare/` | 도구(검사 아님): 페이지 크기·메뉴까지 시간·가만히 있는 화면의 일·탭 전환·인게임 draw call을 재고 전후 비교(`--compare`), CSS·3D를 고친 뒤 전후 계산 스타일(`styles.js`)·프레임(`frames.js`) 비교 | — |
 | `tasks/` | 다른 AI(GPT 등)에게 맡기는 작업 지시서. 소유자가 통째로 붙여 넣는다 | — |
 | `app/` (최상위) | 안드로이드 껍데기(WebView). 릴리스·서명은 `.github/workflows/` | — |
 
@@ -90,6 +91,10 @@ node web/test/browser/ui-budget.js     # 메뉴 레이어 예산(1280x800@2에�
   주사율은 높음·자동이 기기 그대로(소유자 결정), 낮음은 최대 60FPS. 확인 가능한 소프트웨어 WebGL(SwiftShader 등)이면 30FPS·90만 픽셀·그림자 1024²로 시작한다. 3D 배율은 HTML 글자에 적용하지 않는다.
 - 측정: 설정 '초당 프레임 표시'(FPS·늦음·p95·최장 멈춤과 원인, AI·조준·물리·그리기·화면 각 최대 ms, WebGL 장치와 소프트웨어 표시).
   `prof.add(이름, ms)`(00-state.js)로 더한다. 고주사율·픽셀 상한 검사는 `web/test/browser/pc-performance.js`, 실제 그리기·GPU 복구는 `graphics.js`.
+- 가만히 있는 화면이 일하지 않게(11-22): 프레임마다 요소 크기(`clientWidth` 등)를 읽지 않는다 — CSS 애니메이션이 도는 화면에서는 읽을 때마다 스타일·배치를
+  다시 계산한다(크기는 `ResizeObserver`로 바뀔 때만, `39-menu-fx.js`). 화면 밖의 끝없는 애니메이션은 멈춘다(`IntersectionObserver`로 `live`·`aur-on`·`mn-live`).
+  카메라가 멈췄으면 3D를 다시 그리지 않는다(`winCam`). 유리 케이스의 재질은 dispose하지 않는다 — 셰이더가 렌더러에 남아 다음 케이스가 다시 컴파일하지 않는다(`38-glass3d.js` `free`).
+- 정리·최적화의 기준 수치와 진행: `tasks/CUE-refactor-plan.md`(재는 법은 `web/tools/measure.js`).
 
 ## 5. 이렇게 고친다
 
@@ -340,9 +345,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - 화면 모드(설정, `prefs.theme`): 다크(기본) = 월넛 책상 + 그린 트레이, 파랗던 키(탭·레일 키·주 버튼·토글·초크)는 `ui/*-green.webp`; 라이트 = 오크 + 블루. `00-state.js` `THEMES`, CSS는 `#app.theme-dark`.
 - 앱은 가로 고정(11-21, `AndroidManifest.xml` `sensorLandscape` — 두 방향 가로). 세로 UI는 나중 업데이트(웹은 아직 세로 배치가 남아 있음).
 - 경기 끝(11-21): 결과 화면이 바로 뜨지 않는다 — 테이블 위 승리/패배(`app/50-outro.js` `outro`; 승리는 흰 글자·색종이 `confetti`·뒤로 빠지는 카메라 `winCam`, 결과를 떠나면 `viewBack`). 가로 화면의 결과는 당구장 영수증(`app/50-receipt.js` `receipt`, `#result.rc`, 스타일 `50-result.css` 끝): 인쇄되어 올라오고 도장이 찍힌다. 코인·레이팅 줄은 `#rSide`의 줄(54-ranked.js)을 그대로 옮겨 적고(MutationObserver), 등급은 `review.paint`가 부를 때 센다. 세로(웹)는 예전 점수표. 랭킹전은 그 앞에 레이팅 단계(`app/50-rise.js` `rise`): 원형 게이지(체력바식 - 오르면 옅은 몫이 먼저, 내리면 빨간 몫이 남았다가 빠짐), 승급 직전 70%부터 다음 티어 색 그라데이션과 공이 다음 티어 공으로 일렁이며 칠해짐(이 화면만), 코인이 지갑으로 날아감. 디버그 → 레이팅 진척도 미리보기.
-  결과는 책상·점수표 종이가 아니라 **조작 UI 없는 경기 화면 가운데 세로로 긴 슬레이트 하나**(체스닷컴 게임 리뷰처럼, 가로 화면, `50-result.css`
-  `#result:not(.rv)`: 위에서부터 제목·점수, 통계 막대, 이번 경기, 리뷰 평가표(예전 표 그대로, 잃은 곳만 뺌), 샷 세 자리, 맨 아래 버튼 줄 — 길면 슬레이트
-  안에서 스크롤, 버튼은 늘 보임). 게임 리뷰(`.rv`)는 예전 책상 그대로. 세로(웹)는 예전 점수표.
+  가로 결과는 **조작 UI 없는 경기 화면 위**(책상·점수표 종이 아님, `50-result.css` `#result:not(.rv)`가 바탕 — 판을 테이블 위에, 트레이·옆칸을
+  한 줄로, 버튼 줄은 아래)에 영수증과 옆 패널(`#result.rc`)만 보인다. 예전의 세로로 긴 슬레이트(점수표·통계 막대·리뷰 표·샷 세 자리)는
+  영수증이 들어오며 가로에서 사라졌고 그 규칙도 지웠다(11-22). 게임 리뷰(`.rv`)는 예전 책상 그대로. 세로(웹)는 예전 점수표.
+  `finish()`는 단계로 나뉜다: `matchResult`(누가 이겼나·이 기기 자리·숫자) → `keepRecords` → `payMatch` → `paintResult`(+`paintReceipt`) → `revealResult`.
 - 웹 페이지(index.html, admin.html 등)에는 인라인 스크립트를 두지 않는다: 사이트의 CSP가 막는다(11-18~11-21 관리자 콘솔이 통째로 멈춘 원인). `site/split.cjs`가 다른 페이지의 스크립트도 `h/`의 파일로 옮기고, 남아 있으면 배포가 멈춘다.
 - 오발 방지(11-21, 설정 `prefs.safeShot` 기본 켬): 다이얼을 잡고 돌리는 중(마지막으로 조준이 움직인 지 0.2초 안)에 파워바를 놓으면 치지 않고 그 세기를 들고 있는다 — 파워바가 노랗게 빛나고 작은 알림(설정에서 끌 수 있음). 파워바를 탭하면 그 세기로 치고, 끌어서 다시 당기면 새로 정한다. 다음 차례에 풀린다(`80-input.js` `dialGuard`·`powerHold`, 검사 `test/browser/slip.js`).
 - 경기 시작(11-21): 리그 벽이 지나가며 흐린 인게임(조작 UI 없음)을 드러내고 그 위 좌우 선수증 VS, 블러는 가속하며 풀림(`app/56-league.js`
