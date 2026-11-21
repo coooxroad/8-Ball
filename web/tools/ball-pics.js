@@ -11,6 +11,25 @@ const fs = require('fs'), path = require('path');
 const { stampOf, SETS } = require('./ball-stamp.js');
 const OUT = path.join(__dirname, '..', 'ui', 'balls'), SIZE = 128;
 const KINDS = [['pool', 16], ['carom', 4]];
+/* The picture without its colour profile (R2 O2-c): Chromium writes each with an ICCP chunk of sRGB, 456 bytes - most of a
+   small ball's file in some sets - and a picture with no profile is read as sRGB anyway, so it shows the same. The chunk
+   goes, and the extended header's flag for it (VP8X, flags bit 0x20); the RIFF size is set again. */
+function noIcc(buf) {
+  if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WEBP') return buf;
+  const parts = [buf.subarray(0, 12)];
+  for (let o = 12; o + 8 <= buf.length;) {
+    const id = buf.toString('ascii', o, o + 4), n = buf.readUInt32LE(o + 4), end = o + 8 + n + (n & 1);
+    if (id !== 'ICCP') { const c = Buffer.from(buf.subarray(o, end)); if (id === 'VP8X') c[8] &= ~0x20; parts.push(c); }
+    o = end;
+  }
+  const out = Buffer.concat(parts); out.writeUInt32LE(out.length - 8, 4); return out;
+}
+// (node web/tools/ball-pics.js --strip-icc: the pictures already made, their profiles taken out - no browser needed)
+if (process.argv[2] === '--strip-icc') {
+  let saved = 0;
+  for (const f of fs.readdirSync(OUT).filter(f => f.endsWith('.webp'))) { const p = path.join(OUT, f), a = fs.readFileSync(p), b = noIcc(a); if (b.length < a.length) { fs.writeFileSync(p, b); saved += a.length - b.length; } }
+  console.log(`ball pictures: ${saved} bytes of colour profiles taken out`); process.exit(0);
+}
 
 (async () => {
   const { open } = require('../test/browser/harness.js');
@@ -37,7 +56,7 @@ const KINDS = [['pool', 16], ['carom', 4]];
         if (!url) await page.waitForTimeout(150);
       }
       if (!url || !url.startsWith('data:image/webp')) throw new Error(`${k.id} ${kind} ${n}: not drawn`);
-      fs.writeFileSync(path.join(OUT, `${k.id}-${kind}-${n}.webp`), Buffer.from(url.split(',')[1], 'base64'));
+      fs.writeFileSync(path.join(OUT, `${k.id}-${kind}-${n}.webp`), noIcc(Buffer.from(url.split(',')[1], 'base64')));
     }
     index[k.id] = stampOf(k);
     console.log(`ball pictures: ${k.id}`);
