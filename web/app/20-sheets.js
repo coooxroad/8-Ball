@@ -66,6 +66,10 @@ function sheetDebug() {
     // (the case's dressings, each tried on its own - owner 11-21: 37-desk-menu.js GZ)
     el('div', { class: 'seg gz' }, GZ.map(([k, , t]) => el('button', { 'aria-pressed': String(!!prefs[k]), text: t,
       onclick: () => { prefs[k] = !prefs[k]; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
+    // (the top rarity's look: 궁극, or 시크릿 to compare - owner 11-21: 35-desk-shelves.js secretLook)
+    el('div', { class: 'lab', text: '최고 등급' }),
+    el('div', { class: 'seg' }, [[false, '궁극 (스크류바)'], [true, '시크릿 (흑백 글리치)']].map(([v, t]) =>
+      el('button', { 'aria-pressed': String(!!prefs.dbgSecret === v), text: t, onclick: () => { prefs.dbgSecret = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

@@ -109,7 +109,12 @@ const aurIO = typeof IntersectionObserver === 'function' ? new IntersectionObser
 const aurSeen = c => { if (aurIO) aurIO.observe(c); else c.classList.add('aur-on'); };
 function shelfClose() { const k = SHELVES[deskTab === 'shop' ? shopSel : gearSel]; if (shelfOpen != null && k && k.undo) k.undo(); shelfOpen = null; }
 function gearOff() { shelfClose(); }                                  // (also called on leaving the place)
+/* The top rarity's look and name (owner 11-21): 궁극 - a 스크류바's pink and white - or, in debug mode to compare
+   (디버그 → 최고 등급), 시크릿 - black and white, glitching, as Steal a Brainrot's Secret. #app.r5-secret: 74-shop-cards.css. */
+const secretLook = () => { let d = false; try { d = net.debug; } catch (e) {} return !!(d && prefs.dbgSecret); };
+const rarName = r => r === 5 && secretLook() ? '시크릿' : RARITY[r][0];
 function shelfPage(d, shop) {
+  app.classList.toggle('r5-secret', secretLook());
   const kind = shop ? shopSel : gearSel, K = SHELVES[kind], list = K.list(), worn = K.worn();
   dkPut(d.rail, SHELF_KEYS.map(k => railBtn(kind === k, SHELVES[k].name, null, () => { shelfClose(); if (shop) shopSel = k; else gearSel = k; paintHome(); })));
   const close = () => { SND.tap(); shelfClose(); paintHome(); };
@@ -129,9 +134,9 @@ function shelfCards(d, shop, kind, K, list, worn, has) {
   for (let n = 0; n < order.length; n++) {
     const [q, i] = order[n], r = q.rarity || 0;
     if (!n || (order[n - 1][0].rarity || 0) !== r) { const of = list.map((x, k) => k).filter(k => (list[k].rarity || 0) === r && (!list[k].debug || has(k)));
-      cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${RARITY[r][0]} (${of.filter(has).length}/${of.length})` })])); }
+      cards.push(el('div', { class: 'dk-tier r' + r }, [el('span', { text: `${rarName(r)} (${of.filter(has).length}/${of.length})` })])); }
     cards.push(el('button', { class: 'dk-card r' + r + (q.debug ? ' dbg' : '') + (i === worn ? ' worn' : ''), 'aria-label': q.name, onclick: onTap(() => { shelfOpen = i; shelfFlash = i; paintHome(); }) },
-      [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
+      [el('span', { class: 'aur', 'aria-hidden': 'true' }, [el('span'), el('span')]), el('i', { class: 'face', 'aria-hidden': 'true' }), r >= 3 ? el('i', { class: 'rglow' }) : null, r === 5 ? el('i', { class: 'gli', 'aria-hidden': 'true' }) : null, i === worn ? el('span', { class: 'wtag', text: '장착' }) : null, K.stats ? el('span', { class: 'ovr', text: K.stats(q).ovr }) : null, traitMarks(q, true), fxBadges(q, true), K.pic(q), el('span', { class: 'nm', text: q.name }), shop ? el('span', { class: 'price', text: has(i) ? '보유' : priceText(q) }) : null]));
   }
   const box = el('div', { class: 'dk-cards pc k-' + kind + (shop ? ' shop' : '') }, cards); listBounce(box);   // (printed cards, shop and gear alike: 74-shop-cards.css)
   if (aurIO) aurIO.disconnect();                                       // (the last shelf's cards: let go)
@@ -152,7 +157,7 @@ function shelfCard(d, shop, kind, K, list, worn, has, close) {
   if (shelfFlash === i) { shelfFlash = null; dkPut(d.stage, el('i', { class: 'dk-flash r' + (q.rarity || 0), 'aria-hidden': 'true' })); if ((q.rarity || 0) >= 3) SND.burst(); }
   dkPut(d.slate, dkH1(q.name, K.name));
   const about = K.about(q);
-  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: RARITY[q.rarity || 0][0] })]), fxMarks(q).length ? el('div', { class: 'dk-spec fx' }, [el('span', { text: '효과' }), fxBadges(q)]) : null, dkHr()]);
+  dkPut(d.slate, [dkHr(), el('div', { class: 'dk-spec' }, [el('span', { text: '희귀도' }), el('b', { class: 'rar r' + (q.rarity || 0), text: rarName(q.rarity || 0) })]), fxMarks(q).length ? el('div', { class: 'dk-spec fx' }, [el('span', { text: '효과' }), fxBadges(q)]) : null, dkHr()]);
   // how it plays, first (it is what is looked for): OVR, then each number as a bar set against what is worn now
   if (K.stats) {
     const S = K.stats(q);

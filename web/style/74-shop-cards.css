@@ -31,6 +31,25 @@
 /* (its words read on the white as on the pink: the name outlined in a deep pink, the SFX · VFX marks on a dark pink pill) */
 #app.desk .dk-cards.pc .dk-card.r5 .nm{text-shadow:0 1px 0 #8a2350,1px 0 0 #8a2350,-1px 0 0 #8a2350,0 -1px 0 #8a2350,0 2px 4px rgba(90,10,40,.45)}
 #app.desk .dk-cards.pc .dk-card.r5 .fxb{background:rgba(92,18,52,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+/* 시크릿 (디버그 → 최고 등급, owner 11-21: as Steal a Brainrot's Secret - black and white, glitching): the face cut
+   across, a white wedge over black, the frame black and white in turn; every few seconds it glitches - bands of it
+   inverted and slipped sideways (.gli, 'difference' over the card), the name torn black and white. Its aurora white and grey. */
+#app.desk.r5-secret .dk-cards.pc .dk-card.r5{animation:none;--a1:#ffffff;--a2:#8c8c8c;--a3:#ffffff;--a4:#4d4d4d;--a5:#ffffff;--ao:.7;
+  background:linear-gradient(158deg,#f6f6f6 0%,#dedede 31%,#121212 31.6%,#040404 100%),linear-gradient(135deg,#fff,#111 24%,#fff 48%,#111 72%,#fff);
+  background-clip:padding-box,border-box;background-origin:padding-box,border-box;background-size:auto,auto}
+.dk-card .gli{display:none}
+#app.desk.r5-secret .dk-cards.pc .dk-card.r5 .gli{display:block;position:absolute;inset:3px;z-index:5;border-radius:10px;pointer-events:none;opacity:0;mix-blend-mode:difference;
+  background:linear-gradient(#fff,#fff) 0 36%/72% 4% no-repeat,linear-gradient(#fff,#fff) 100% 61%/58% 1.6% no-repeat,linear-gradient(#fff,#fff) 30% 81%/80% 1% no-repeat;animation:secGl 2.8s steps(1) infinite}
+#app.desk.r5-secret .dk-cards.pc .dk-card.r5 .nm{text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000;animation:secNm 2.8s steps(1) infinite}
+#app.desk.r5-secret .dk-cards.pc .dk-card.r5 .fxb{background:rgba(0,0,0,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+#app.desk.r5-secret .dk-cards.pc .dk-card.r5:not(.aur-on) :is(.gli,.nm){animation-play-state:paused}
+#app.desk.r5-secret .dk-card.r5 .rglow{box-shadow:0 0 0 1.5px #fff,0 0 16px 3px rgba(255,255,255,.45),0 0 2px 1px #000}
+#app.desk.r5-secret #dkStage .dk-flash.r5{--fc:#fff;background:conic-gradient(from 0deg,rgba(255,255,255,.6),rgba(0,0,0,.6),rgba(255,255,255,.6),rgba(0,0,0,.6),rgba(255,255,255,.6))}
+@keyframes secGl{0%,70%,100%{opacity:0}71%{opacity:1;background-position:0 36%,100% 61%,30% 81%}74%{opacity:1;background-position:100% 30%,0 66%,70% 84%}77%{opacity:0}
+  86%{opacity:1;background-position:40% 18%,60% 44%,0 72%}88%{opacity:0}}
+@keyframes secNm{0%,70%,100%{color:#fff;transform:none;text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
+  71%{color:#000;transform:translateX(3px);text-shadow:-2px 0 #fff,2px 0 #fff}74%{color:#fff;transform:translateX(-3px) skewX(-10deg);text-shadow:3px 0 #000,-3px 0 #888}77%{transform:none}86%{color:#000;text-shadow:0 0 0 #fff,-1px 0 #fff,1px 0 #fff}88%{color:#fff}}
+@media (prefers-reduced-motion:reduce){#app.r5-secret .dk-card.r5 :is(.gli,.nm){animation:none}}
 /* (the plain cards' glow from below and coloured foot are not part of this face) */
 #app.desk .dk-cards.pc .dk-card::before{content:none}
 #app.desk .dk-cards.pc .dk-card .face{position:absolute;inset:5px;z-index:0;flex:none;width:auto;height:auto;min-height:0;margin:0;border:2px solid rgba(255,255,255,.85);border-radius:8px;pointer-events:none;

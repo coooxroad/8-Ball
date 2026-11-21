@@ -72,6 +72,10 @@
 /* (궁극's caption: the card's own moving 스크류바 pink and white - 74-shop-cards.css) */
 .rar.r5{color:#5a1230;background:linear-gradient(90deg,var(--sw),var(--sp) 30%,var(--sw) 55%,var(--sp) 80%,var(--sw));background-size:300% 100%;animation:ultTone 7s ease-in-out infinite,ultCap 5.5s ease-in-out infinite alternate}
 #app.desk .dk-spec b.rar.r5{color:#6a1438;text-shadow:0 1px 0 rgba(255,255,255,.45)}   /* (over the slate's light words) */
+/* (시크릿's caption - debug: black with white words, glitching with the card: 74-shop-cards.css) */
+#app.r5-secret .rar.r5,#app.r5-secret.desk .dk-spec b.rar.r5{color:#fff;background:#060606;box-shadow:inset 0 0 0 1.5px #fff;text-shadow:none;letter-spacing:.06em;animation:secTag 2.8s steps(1) infinite}
+@keyframes secTag{0%,70%,100%{color:#fff;background:#060606;transform:none;text-shadow:none}71%{color:#000;background:#fff;transform:translateX(2px) skewX(-8deg)}
+  74%{color:#fff;background:#060606;transform:translateX(-2px);text-shadow:-2px 0 #fff,2px 0 #7a7a7a}77%{transform:none;text-shadow:none}86%{color:#000;background:#fff}88%{color:#fff;background:#060606}}
 @keyframes ultCap{from{background-position:0 0}to{background-position:100% 0}}
 
 /* a cue's stat (35-desk-shelves.js): OVR, and bars set against what is worn - blue up to it, green more, red less */
