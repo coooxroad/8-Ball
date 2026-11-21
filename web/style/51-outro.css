@@ -54,3 +54,5 @@
 @keyframes rPop{from{opacity:0;transform:translateX(40px) scale(.94)}to{opacity:1;transform:none}}
 #app.desk .r-title.held{visibility:hidden}
 @media (prefers-reduced-motion:reduce){#outro{display:none}}
+/* (sideways, into the receipt - 50-receipt.js: the word lifts away where it is; the receipt's stamp says it again) */
+#outro.away .word{opacity:0!important;transform:scale(1.12)!important;transition:opacity .35s ease-in,transform .35s ease-in}

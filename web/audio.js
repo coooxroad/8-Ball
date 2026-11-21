@@ -319,6 +319,8 @@ function createAudio(isOn) {
     nope() { uiHit('tick', 0.2, 900, 0, 0.55); uiHit('tick', 0.12, 900, 0.07, 0.5); },
     // the big moments' burst of light (a purchase): a bright rising shimmer
     burst() { [1.5, 2, 2.5, 3].forEach((r, i) => uiHit('note', 0.12, 9000, i * 0.045, r)); },
+    // a rubber stamp brought down on paper on a counter (the result's receipt: app/50-receipt.js)
+    stamp() { uiHit('tick', 0.42, 900, 0, 0.42); uiHit('tick', 0.24, 480, 0.014, 0.33); uiHit('chalk', 0.06, 3000, 0.02, 0.6); },
     win() { [1, 1.26, 1.5, 2].forEach((r, i) => uiHit('note', 0.24, 7000, i * 0.11, r)); uiHit('note', 0.18, 7000, 0.5, 1.5); },
   };
 }

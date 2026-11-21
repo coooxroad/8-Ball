@@ -47,8 +47,11 @@ const outro = {
     $('#result').classList.add('from-outro'); const title = $('#rTitle').parentNode; title.classList.add('held');
     outro.reveal();
     tableAlone(false); app.classList.remove('unbare');
+    // (sideways, the result is the receipt - 50-receipt.js: the word lifts away, the receipt's stamp says it again)
+    const rc = $('#result').classList.contains('rc') && !app.classList.contains('portrait') && app.classList.contains('desk');
+    if (rc) box.classList.add('away');
     const to = title.getBoundingClientRect(), fr = word.getBoundingClientRect();
-    if (to.width && fr.width) {
+    if (!rc && to.width && fr.width) {
       const k = to.height / fr.height, dx = (to.left + to.width / 2) - (fr.left + fr.width / 2), dy = (to.top + to.height / 2) - (fr.top + fr.height / 2);
       word.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px) scale(${k.toFixed(4)})`;
     }

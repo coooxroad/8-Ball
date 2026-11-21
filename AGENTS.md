@@ -339,7 +339,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - 큐 저장은 id로(`prefs.cueIds`/`cueId`). 큐를 지우거나 순서를 바꿔도 저장이 깨지지 않는다.
 - 화면 모드(설정, `prefs.theme`): 다크(기본) = 월넛 책상 + 그린 트레이, 파랗던 키(탭·레일 키·주 버튼·토글·초크)는 `ui/*-green.webp`; 라이트 = 오크 + 블루. `00-state.js` `THEMES`, CSS는 `#app.theme-dark`.
 - 앱은 가로 고정(11-21, `AndroidManifest.xml` `sensorLandscape` — 두 방향 가로). 세로 UI는 나중 업데이트(웹은 아직 세로 배치가 남아 있음).
-- 경기 끝(11-21): 결과 화면이 바로 뜨지 않는다 — 테이블 위 승리/패배(`app/50-outro.js` `outro`) 다음 그 글자가 결과 제목 자리로 내려앉는다.
+- 경기 끝(11-21): 결과 화면이 바로 뜨지 않는다 — 테이블 위 승리/패배(`app/50-outro.js` `outro`; 승리는 흰 글자·색종이 `confetti`·뒤로 빠지는 카메라 `winCam`, 결과를 떠나면 `viewBack`). 가로 화면의 결과는 당구장 영수증(`app/50-receipt.js` `receipt`, `#result.rc`, 스타일 `50-result.css` 끝): 인쇄되어 올라오고 도장이 찍힌다. 코인·레이팅 줄은 `#rSide`의 줄(54-ranked.js)을 그대로 옮겨 적고(MutationObserver), 등급은 `review.paint`가 부를 때 센다. 세로(웹)는 예전 점수표.
   결과는 책상·점수표 종이가 아니라 **조작 UI 없는 경기 화면 가운데 세로로 긴 슬레이트 하나**(체스닷컴 게임 리뷰처럼, 가로 화면, `50-result.css`
   `#result:not(.rv)`: 위에서부터 제목·점수, 통계 막대, 이번 경기, 리뷰 평가표(예전 표 그대로, 잃은 곳만 뺌), 샷 세 자리, 맨 아래 버튼 줄 — 길면 슬레이트
   안에서 스크롤, 버튼은 늘 보임). 게임 리뷰(`.rv`)는 예전 책상 그대로. 세로(웹)는 예전 점수표.

@@ -104,6 +104,7 @@ const review = {
   // the result's slate (match.finish, and as verdicts come in)
   paint() {
     const box = $('#rRev'); if (!box || st.screen !== 'result' && !review.finishing) return;
+    receipt.grades();   // (the receipt's panel counts them too - 50-receipt.js)
     const all = review.list, got = review.judged(); box.textContent = '';
     box.hidden = !all.length; $('#reviewBtn').hidden = !all.length; if (!all.length) return;
     const wait = all.filter(q => !q.res).length;

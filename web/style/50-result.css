@@ -380,3 +380,64 @@
 #app.desk.compact .rv-line{font-size:12.5px;gap:6px}
 #app.desk.compact .rv-line b{font-size:10px;padding:1px 6px}
 #app.desk.compact .rv-whys li{font-size:11.5px}
+
+/* ---------- held sideways: the hall's receipt and its panel (app/50-receipt.js, owner 11-21: 시안 2 계산서) ----------
+   --k: the whole scaled to the screen (set by the script: 1 on a tablet, about .64 on a phone held sideways). The receipt
+   is printed up out of its slot (rcPrint, in the printer's steps), then stamped (rcStamp, coming down hard), the paper
+   jolting under it (rcJolt); the panel slides in beside it. */
+#rcpt,#rcHead,#rcG{display:none}
+#app.desk:not(.portrait) #result.rc:not(.rv) .r-plane{inset:0;margin:auto;width:min(calc(1000px*var(--k,1)),calc(100% - 28px));height:fit-content;max-height:100%;overflow:visible;
+  display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1fr);column-gap:calc(44px*var(--k,1));row-gap:calc(14px*var(--k,1));align-content:center;align-items:start;
+  border:0;border-image:none;padding:0;filter:none;background:none}
+#app.desk:not(.portrait) #result.rc:not(.rv) :is(.r-top,.r-sheet,.r-side>h2,#rRev,#rHlBox,#rWhy,#rSide>.dk-spec){display:none}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rcpt{display:block;grid-column:1;grid-row:1/span 6;align-self:center;justify-self:end;position:relative;width:calc(380px*var(--k,1));
+  padding:calc(6px*var(--k,1)) calc(6px*var(--k,1)) calc(14px*var(--k,1));overflow:hidden;transform:rotate(-2deg)}
+#rcpt .paper{position:relative;background:#fbf8f1;color:#262019;padding:calc(24px*var(--k,1)) calc(26px*var(--k,1)) calc(30px*var(--k,1));font:600 calc(15px*var(--k,1))/1.5 ui-monospace,'Outfit',var(--ui-font);
+  box-shadow:-6px 12px 22px rgba(0,0,0,.5);
+  -webkit-mask:linear-gradient(#000,#000) top/100% calc(100% - 9px*var(--k,1)) no-repeat,conic-gradient(from 135deg at 50% 0,#000 90deg,transparent 0) bottom/calc(15px*var(--k,1)) calc(9px*var(--k,1)) repeat-x;
+  mask:linear-gradient(#000,#000) top/100% calc(100% - 9px*var(--k,1)) no-repeat,conic-gradient(from 135deg at 50% 0,#000 90deg,transparent 0) bottom/calc(15px*var(--k,1)) calc(9px*var(--k,1)) repeat-x;
+  animation:rcPrint 1.05s steps(16,end) .15s both,rcJolt .32s ease-out 1.47s}
+#rcpt .paper h3{margin:0;text-align:center;font:900 calc(21px*var(--k,1)) var(--ui-font);letter-spacing:.35em;margin-right:-.35em}
+#rcpt .paper .c{text-align:center;color:#7a6e5e;font-size:calc(11.5px*var(--k,1))}
+#rcpt .paper hr{border:0;border-top:calc(2px*var(--k,1)) dashed #cfc5b2;margin:calc(9px*var(--k,1)) 0}
+#rcpt .paper .r{display:flex;justify-content:space-between;gap:12px}
+#rcpt .paper .r b{font-weight:800;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rcpt .paper .r.tot{font:900 calc(19px*var(--k,1)) var(--ui-font);align-items:baseline}
+#rcpt .paper .r.tot b{font-family:'Outfit',var(--ui-font)}
+/* the printer's mouth at the foot: the paper comes up out of it */
+#rcpt .slot{position:absolute;left:0;right:0;bottom:0;height:calc(12px*var(--k,1));border-radius:calc(6px*var(--k,1));background:linear-gradient(#2a2e33,#14171a);box-shadow:inset 0 2px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.08)}
+@keyframes rcPrint{from{transform:translateY(102%)}to{transform:none}}
+@keyframes rcJolt{0%{transform:none}25%{transform:translate(1px,2px) rotate(.3deg)}55%{transform:translate(-1px,-1px)}100%{transform:none}}
+/* the stamp: over the money and the total, ink that soaks in unevenly */
+#rcpt .stamp{--ink:#c8302a;position:absolute;left:calc(128px*var(--k,1));bottom:calc(4px*var(--k,1));width:calc(108px*var(--k,1));height:calc(108px*var(--k,1));border-radius:50%;
+  border:calc(5px*var(--k,1)) double var(--ink);color:var(--ink);display:grid;place-items:center;align-content:center;gap:calc(2px*var(--k,1));transform:rotate(-16deg);mix-blend-mode:multiply;
+  -webkit-mask:radial-gradient(circle at 30% 35%,#000 0 40%,rgba(0,0,0,.82) 70%),repeating-conic-gradient(#000 0 7deg,rgba(0,0,0,.86) 7deg 11deg);-webkit-mask-composite:source-in;
+  animation:rcStamp .34s cubic-bezier(.55,0,.8,.3) 1.15s both}
+#rcpt .stamp b{font:900 calc(31px*var(--k,1))/1 var(--ui-font);letter-spacing:.08em;margin-right:-.08em}
+#rcpt .stamp small{font:800 calc(9.5px*var(--k,1))/1 'Outfit',var(--ui-font);letter-spacing:.2em;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rcpt.lose .stamp{--ink:#36598f}#rcpt.draw .stamp{--ink:#6b6f76}
+@keyframes rcStamp{0%{opacity:0;transform:scale(2.7) rotate(-30deg)}82%{opacity:1;transform:scale(.94) rotate(-15deg)}92%{transform:scale(1.03) rotate(-16deg)}100%{opacity:.88;transform:scale(1) rotate(-16deg)}}
+/* the panel */
+#app.desk:not(.portrait) #result.rc:not(.rv) :is(#rcHead,#rcG,#rSide,.r-btns){grid-column:2;animation:rcIn .5s cubic-bezier(.2,.9,.3,1.1) both}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rcHead{display:flex;order:1;align-items:center;gap:calc(12px*var(--k,1));animation-delay:.3s}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rcG{display:flex;order:2;gap:calc(8px*var(--k,1));flex-wrap:wrap;animation-delay:.4s}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rcG[hidden]{display:none}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rSide{order:3;animation-delay:.5s}
+#app.desk:not(.portrait) #result.rc:not(.rv) .r-btns{order:4;position:static;margin:0;padding:0;background:none;gap:calc(10px*var(--k,1));animation-delay:.6s}
+@keyframes rcIn{from{opacity:0;transform:translateX(calc(30px*var(--k,1)))}to{opacity:1;transform:none}}
+#rcHead .av{display:grid;place-items:center;flex:none;width:calc(52px*var(--k,1));height:calc(52px*var(--k,1));border-radius:50%;background:#1e5a3a;border:2px solid rgba(255,255,255,.4);font:900 calc(22px*var(--k,1)) var(--ui-font);color:#fff}
+#rcHead .nm{font:800 calc(20px*var(--k,1)) var(--ui-font);color:#f3eee3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rcHead .sc{margin-left:auto;font:800 calc(44px*var(--k,1))/1 'Outfit',var(--ui-font);color:#fff;white-space:nowrap;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+#app.desk #rcG>span{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:calc(4px*var(--k,1));padding:calc(9px*var(--k,1)) 0;border-radius:calc(12px*var(--k,1));background:rgba(10,14,18,.84);
+  font:700 calc(12px*var(--k,1)) var(--ui-font);color:rgba(255,255,255,.7)}
+#rcG>span b{font:700 calc(22px*var(--k,1))/1 'Outfit',var(--ui-font);color:var(--gc)}
+#rcG>span .rv-ico{width:calc(26px*var(--k,1));height:calc(26px*var(--k,1))}
+#rcG>em{flex-basis:100%;font:600 calc(11.5px*var(--k,1)) var(--ui-font);color:#9fb0c3;font-style:normal}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rSide .bot-said{margin:0;padding:calc(11px*var(--k,1)) calc(15px*var(--k,1));border-radius:calc(14px*var(--k,1))}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rSide .bot-said .who{font-size:calc(12px*var(--k,1))}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rSide .bot-said p{font-size:calc(15px*var(--k,1))}
+#app.desk:not(.portrait) #result.rc:not(.rv) #rSide .bot-said small{font-size:calc(12px*var(--k,1))}
+#app.desk:not(.portrait) #result.rc:not(.rv) .r-btns .btn,#app.desk:not(.portrait) #result.rc:not(.rv) :is(#reviewBtn,#homeBtn){min-height:calc(54px*var(--k,1));font-size:calc(17px*var(--k,1))}
+#app.desk:not(.portrait) #result.rc:not(.rv) .r-side .bot-said{display:block}   /* (a phone's slate hid it beside the review table: here there is room) */
+#app.desk:not(.portrait) #result.rc:not(.rv) #againBtn{font-size:calc(21px*var(--k,1))}
+@media (prefers-reduced-motion:reduce){#rcpt .paper,#rcpt .stamp,#app.desk #result.rc :is(#rcHead,#rcG,#rSide,.r-btns){animation:none}}

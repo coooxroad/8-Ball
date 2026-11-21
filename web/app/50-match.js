@@ -121,7 +121,7 @@ const match = {
     // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
     $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
     $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? (match.ctx.bot ? `${match.ctx.bot.name} ${match.ctx.bot.dama}` : '컴퓨터 ' + LEVELS[prefs.level]) : '친구와 플레이'}`;
-    resultStats(carom, inn);
+    const statRows = resultStats(carom, inn);
     // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
     // the innings, the time or the best run (copy audit 07-02, 07-03)
     const side = $('#rSide'); side.textContent = '';
@@ -143,6 +143,13 @@ const match = {
     // (컴퓨터 대전: the bot's last word, in its language with the Korean under it)
     { const said = match.ctx.bot && !on && !draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
       if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }   // (copy audit 07-08: only an end the score does not explain)
+    // (sideways: the hall's receipt and its panel - 50-receipt.js; it reads the slate's lines and the review as they come)
+    { const other = 1 - me, way = on ? onKo : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이';
+      const oppDama = match.ctx.bot ? match.ctx.bot.dama : on && on.opp && typeof on.opp.dama === 'number' ? on.opp.dama : null;
+      receipt.paint({ me, kind: draw ? 'draw' : mine ? 'win' : 'lose', stamp: draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : '승리', sub: solo || draw ? 'CUE · PAID' : pw.name,
+        mode: `${MODE_KO[game.modeId] || game.mode.name} · ${way}`, opp: game.players[other].name + (oppDama != null ? ` (${tierAt(oppDama).name})` : ''),
+        innings, time: `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, table: 1 + Math.floor((match.t0 || 0) / 1000) % 12,
+        stats: statRows.map(([k, a, b]) => [k, me === 0 ? a : b]), score: `${pts(me)} : ${pts(other)}`, name: game.players[me].name }); }
     review.close(true); review.finishing = true; review.paint(); review.finishing = false;
     SND.win(); MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
     // (owner 11-21: not the result at once - 승리 / 패배 over the table first, the word then settling into the score sheet
@@ -185,6 +192,7 @@ function resultStats(carom, inn) {
     box.appendChild(el('div', { class: 'srow' }, [el('b', { text: a }), el('span', { class: 'bar l' }, el('i', { style: `--w:${Math.round(na / sum * 100)}%` })), el('span', { class: 'k', text: k }),
       el('span', { class: 'bar r' }, el('i', { style: `--w:${Math.round(nb / sum * 100)}%` })), el('span', { class: 'n', text: b })]));
   }
+  return rows;   // (the receipt prints this player's column: 50-receipt.js)
 }
 
 // finish(): the highlights - three places, always (owner 11-21: kept as placeholders for now, to be worked on later):
