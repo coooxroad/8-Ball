@@ -13,7 +13,7 @@
 const glass3d = (() => {
   let R = null, env = null, tried = false, busy = false;   // (busy: an opening has the renderer's canvas on the screen)
   const METAL = { bronze: 0xa8653a, silver: 0xc8ced8, gold: 0xd9ae4f, platinum: 0x8ed3cc, diamond: 0x7fb4ff, pro: 0xd6ad58 };
-  const GLOW = { diamond: 0x6fb4ff, pro: 0xf0c060 };
+  const glowOf = tier => (TIER_TONE[tier] || {}).glow;   // (33-desk-play.js)
   const col = h => new THREE.Color(h).convertSRGBToLinear();
   function init() {
     if (tried) return R; tried = true;
@@ -73,7 +73,7 @@ const glass3d = (() => {
     // the block: front and back faces (caps) nearly clear, its edges thick cyan-green; only their outer sides drawn
     const slab = new THREE.ExtrudeGeometry(rr(W - 2 * bev, H - 2 * bev, 4 * u), { depth: D - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 6 });
     slab.translate(0, 0, -(D - 2 * bev) / 2);
-    const glow = cls.contains('gz-glow') && GLOW[tier] != null ? GLOW[tier] : 0x000000;
+    const glow = cls.contains('gz-glow') && glowOf(tier) != null ? glowOf(tier) : 0x000000;
     const cap = lit(new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.04, metalness: 0, envMap: env, envMapIntensity: 1.2, transparent: true, opacity: 0.02, depthWrite: false }), 1.0);
     const edge = lit(new THREE.MeshStandardMaterial({ color: col(0x3f9e90), roughness: 0.1, metalness: 0, envMap: env, envMapIntensity: 1.0, transparent: true, opacity: 0.4, emissive: col(glow || 0x2a8a7c), emissiveIntensity: glow ? 0.7 : 0.35 }), 0.6);
     const m = new THREE.Mesh(slab, [cap, edge]); m.renderOrder = 2; grp.add(m);
@@ -97,7 +97,7 @@ const glass3d = (() => {
     // the hologram seal (다이아·프로; any tier with 'gz-holo-all'): a silver foil seal, CUE and a ring of small letters
     // pressed in it, a band of rainbow passing over it as it turns or as time goes (owner 11-21: the rainbow swirl read
     // as nothing). Half over the frame's right edge, below the card's head.
-    if (cls.contains('gz-glow') && (GLOW[tier] != null || cls.contains('gz-holo-all'))) {
+    if (cls.contains('gz-glow') && (glowOf(tier) != null || cls.contains('gz-holo-all'))) {
       const hm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { t: { value: 0.3 }, map: { value: seal() } },
         vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vN = normalize(normalMatrix * normal); vec4 p = modelViewMatrix * vec4(position, 1.0); vV = normalize(-p.xyz); gl_Position = projectionMatrix * p; }',
         fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float t; uniform sampler2D map;
@@ -181,14 +181,14 @@ const glass3d = (() => {
       Object.assign(cv.style, { left: 0, top: 0, opacity: 0 }); layer.appendChild(cv);
       for (const c of set) R.compile(c.scene, c.cam);
       let t0 = 0, t1 = 0;
-      const ease = x => 1 - Math.pow(1 - x, 2.2), easeIn = x => Math.pow(x, 2.4);
+      const easeIn = x => Math.pow(x, 2.4);
       // the swing in, keyframes [p, rotateY, rotateZ, translateX (of 45vw)] - the left case's; the right one's mirrored
       const K = [[0, 80, 6, -1], [0.34, -26, -3, 0], [0.52, 13, 1.5, 0], [0.68, -6, -0.6, 0], [0.84, 2.5, 0, 0], [1, 0, 0, 0]];
       const pose = (now, side) => {
         const s = side === 'r' ? -1 : 1;
         if (t1) { const p = easeIn(Math.min(1, (now - t1) / 450)); return { tx: -s * 0.55 * innerWidth * p, ty: 0.1 * innerHeight * p, ry: s * 110 * p, rz: s * 14 * p, op: 1 - p }; }
-        const p = t0 ? Math.max(0, Math.min(1, (now - t0 - 100) / 1150)) : 0; let i = 0; while (i < K.length - 2 && p > K[i + 1][0]) i++;
-        const [a, b] = [K[i], K[i + 1]], q = ease((p - a[0]) / (b[0] - a[0])), L = (j) => a[j] + (b[j] - a[j]) * q;
+        const p = t0 ? clamp01((now - t0 - 100) / 1150) : 0; let i = 0; while (i < K.length - 2 && p > K[i + 1][0]) i++;
+        const [a, b] = [K[i], K[i + 1]], q = easeOut((p - a[0]) / (b[0] - a[0]), 2.2), L = (j) => a[j] + (b[j] - a[j]) * q;
         return { tx: s * L(3) * 0.45 * innerWidth, ty: 0, ry: s * L(1), rz: s * L(2), op: Math.min(1, p / 0.12) };
       };
       const end = () => { busy = false; cv.remove(); cv.removeAttribute('style'); cv.className = ''; };

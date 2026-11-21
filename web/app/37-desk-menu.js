@@ -42,8 +42,8 @@ function myTier() { return tierAt(net.me && net.me.dama != null ? net.me.dama : 
 function tierAt(dama) {
   const T = ECONOMY.TIER_AT;
   const i = Math.min(TIERS.length - 1, Math.max(0, T.filter(x => dama >= x).length - 1)), hi = T[i + 1];
-  return { dama, id: TIERS[i][0], name: TIERS[i][1], next: hi == null ? null : TIERS[i + 1][1], need: hi == null ? 0 : hi - dama,
-    part: hi == null ? 1 : Math.max(0, Math.min(1, (dama - T[i]) / (hi - T[i]))) };
+  return { dama, i, id: TIERS[i][0], name: TIERS[i][1], lo: T[i], hi, next: hi == null ? null : TIERS[i + 1][1], need: hi == null ? 0 : hi - dama,
+    part: hi == null ? 1 : clamp01((dama - T[i]) / (hi - T[i])) };
 }
 // 훈련's four parts, each its own card: the same choices its rail makes (34-desk-train.js), then 훈련's place
 function trainGo(t) {

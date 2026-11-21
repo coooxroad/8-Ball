@@ -29,7 +29,7 @@ const ranked = {
     bar.querySelector('.t').textContent = `${ranked.label(mode)} · 상대 찾는 중`; bar.hidden = false; app.classList.add('rk');
     // the clock goes on every second (owner 11-09: it went by two, with the asking), on the strip and on the turned-over
     // card (33-desk-play.js)
-    const tick = () => { if (ranked.finding !== f) return clearInterval(f.tick); const s = Math.floor((Date.now() - f.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const tick = () => { if (ranked.finding !== f) return clearInterval(f.tick); const s = Math.floor((Date.now() - f.t0) / 1000), tm = minSec(s);
       bar.querySelector('.tm').textContent = tm; for (const t of document.querySelectorAll('.rk-tm')) t.textContent = tm; };
     tick(); f.tick = setInterval(tick, 1000);
     const ask = async () => {

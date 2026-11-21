@@ -14,7 +14,7 @@ const receipt = {
     const res = $('#result'); res.classList.add('rc'); receipt.fit();
     let box = $('#rcpt');
     if (!box) { box = el('div', { id: 'rcpt' }); $('.r-plane').prepend(box); }
-    const now = new Date(), two = n => String(n).padStart(2, '0');
+    const now = new Date();
     const when = `${now.getFullYear()}.${two(now.getMonth() + 1)}.${two(now.getDate())} ${two(now.getHours())}:${two(now.getMinutes())}`;
     const row = (k, v, cls) => el('div', { class: 'r' + (cls ? ' ' + cls : '') }, [el('span', { text: k }), el('b', { text: v })]);
     let n = 0; const line = node => { node.style.setProperty('--i', n++); return node; };
@@ -53,7 +53,8 @@ const receipt = {
     if (wait) g.append(el('em', { text: `분석 중 ${all.length - wait}/${all.length}` }));
   },
   // its size to the screen: --k (1 on a tablet held sideways, about .64 on a phone)
-  fit() { const r = $('#result'); if (r) r.style.setProperty('--k', Math.max(0.6, Math.min(1, innerHeight / 640, innerWidth / 1060)).toFixed(3)); },
+  scale: () => Math.max(0.6, Math.min(1, innerHeight / 640, innerWidth / 1060)),   // (the rating's ring too - 50-rise.js)
+  fit() { const r = $('#result'); if (r) r.style.setProperty('--k', receipt.scale().toFixed(3)); },
   // a result that is not one: the receipt put away (the upright sheet, a watched game)
   clear() { const r = $('#result'); if (r) r.classList.remove('rc'); clearTimeout(receipt.t); },
 };

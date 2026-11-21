@@ -79,7 +79,7 @@ SwiftShader(CPU로 그림)라 절대값은 느리고, 같은 기계에서 전후
 
 - [ ] R1 S1-a 결과 흐름 나누기
 - [ ] R1 S1-b 죽은 코드 치우기
-- [ ] R1 P1-a 공용 도우미
+- [x] R1 P1-a 공용 도우미 — 11-22 · `two`·`minSec`·`clamp01`·`easeOut`(00-state), `tierAt`이 i·lo·hi도 줌(플레이 랭킹 패널·레이팅 단계가 같은 계산), 티어 색 `TIER_TONE`(33-desk-play, 레이팅 링·유리 케이스 빛), `receipt.scale()`. 결과 DOM 전후 동일
 - [ ] R1 P1-b 문서
 - [ ] R1 O1-a 가만히 있는 화면의 일
 - [ ] R1 O1-b 유리 케이스 렌더러

@@ -112,7 +112,7 @@ function walletPaint() {
     if (to > from) SND.clink();
     chip.classList.remove('up', 'down'); void chip.offsetWidth; chip.classList.add(to > from ? 'up' : 'down'); setTimeout(() => chip.classList.remove('up', 'down'), 900);
     const t0 = performance.now(), dur = 700, roll = b._roll = {};
-    const step = () => { if (b._roll !== roll) return; const p = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    const step = () => { if (b._roll !== roll) return; const p = Math.min(1, (performance.now() - t0) / dur), e = easeOut(p);
       b.textContent = n(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); else { b._roll = null; if (to > from) SND.clink(); } };
     requestAnimationFrame(step);
   }

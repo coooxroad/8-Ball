@@ -23,6 +23,10 @@
 const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#gl');
 const TICK = 1 / 120;
+// small helpers many files use: a number in two digits, seconds as m:ss, a value held to 0..1, an ease-out (fast, then
+// settling: p 3 cubic)
+const two = n => String(n).padStart(2, '0'), minSec = s => `${Math.floor(s / 60)}:${two(s % 60)}`;
+const clamp01 = x => Math.max(0, Math.min(1, x)), easeOut = (x, p = 3) => 1 - Math.pow(1 - clamp01(x), p);
 // the aiming guide's length, 0 (none) to 1 (every ball's whole way): what each stretch of the slider is called
 // the aim line's length in play, for everyone ('보통'); the cue in hand stretches or shortens it by its stat (90-loop.js)
 const GUIDE_STD = 0.5;

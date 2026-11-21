@@ -10,14 +10,14 @@
    and goes on. rise.run(o, done): o = { from, to, coins }; done() shows the receipt. */
 const rise = {
   box: null, raf: 0, t: 0, done: null,
-  TIER_COL: ['#c47b45', '#c9d0da', '#e6be55', '#78cfc6', '#7fb4ff', '#e8c06a'],
   run(o, done) {
     rise.stop(); rise.done = done;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || o.from == null || o.to == null) return done();
-    const T = ECONOMY.TIER_AT, ti = tierOf(o.from), lo = T[ti], hi = T[ti + 1], last = hi == null;
-    const part = v => last ? 1 : Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
-    const p0 = part(o.from), p1 = part(o.to), gain = o.to >= o.from, name = TIERS[ti][1], next = last ? null : TIERS[ti + 1][1];
-    const u = Math.max(0.6, Math.min(1, innerHeight / 640, innerWidth / 1060));
+    // (the ring is the way through the tier the game began in: a rating that left it shows as an empty or a full ring)
+    const tier = tierAt(o.from), ti = tier.i, { lo, hi } = tier, last = hi == null;
+    const part = v => last ? 1 : clamp01((v - lo) / (hi - lo));
+    const p0 = part(o.from), p1 = part(o.to), gain = o.to >= o.from, name = tier.name, next = tier.next;
+    const u = receipt.scale();
     const ring = el('canvas', { class: 'rs-ring' }), num = el('b', { class: 'rs-num' }), dv = el('span', { class: 'rs-dv' + (gain ? ' up' : ' down'), text: `${gain ? '▲' : '▼'}${Math.abs(o.to - o.from)}` });
     const left = el('div', { class: 'rs-next' }), purse = el('div', { class: 'rs-purse' }, [el('i'), el('b', { text: '+0' })]);
     const box = rise.box = el('div', { id: 'rise', style: `--u:${u.toFixed(3)}` }, [el('i', { class: 'shade' }),
@@ -28,8 +28,7 @@ const rise = {
     const S = Math.round(250 * u), dpr = Math.min(2, devicePixelRatio || 1); ring.width = ring.height = Math.round(S * dpr); ring.style.width = ring.style.height = S + 'px';
     const g = ring.getContext('2d'); g.scale(dpr, dpr);
     const ball = new Image(), nextBall = new Image(); ball.src = `ui/tier-ball-${TIERS[ti][0]}.webp`; if (!last) nextBall.src = `ui/tier-ball-${TIERS[ti + 1][0]}.webp`;
-    const c0 = rise.TIER_COL[ti], c1 = last ? c0 : rise.TIER_COL[ti + 1];
-    const ease = x => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+    const c0 = TIER_TONE[TIERS[ti][0]].flat, c1 = last ? c0 : TIER_TONE[TIERS[ti + 1][0]].flat;
     // the timeline (seconds): the ghost shown at .3; a gain's fill runs .55-1.55; a loss's red drains .95-1.75; the coins
     // fly from 1.9; on to the receipt at 3.4 (the coins' last at about 3.1)
     let t0 = performance.now(), coinsAt = 0;
@@ -37,7 +36,7 @@ const rise = {
     const frame = () => {
       if (!rise.box) return;
       const now = performance.now(); rise.t += (now - t0) / 1000; t0 = now; const t = rise.t;
-      const ghost = t > 0.3, run = gain ? ease((t - 0.55) / 1.0) : ease((t - 0.95) / 0.8);
+      const ghost = t > 0.3, run = gain ? easeOut((t - 0.55) / 1.0) : easeOut((t - 0.95) / 0.8);
       const fill = gain ? p0 + (p1 - p0) * run : p1, trail = gain ? p1 : p0 + (p1 - p0) * run;   // (a loss: the fill is already down; the red trails)
       const shown = Math.round(o.from + (o.to - o.from) * (gain ? run : Math.max(run, t > 0.3 ? 1 : 0)));
       num.textContent = shown.toLocaleString('ko-KR');
@@ -56,7 +55,7 @@ const rise = {
       // the ball, and near the next tier its next ball rising over it from below, the edge rippling
       const B = S * 0.66, bx = R - B / 2, by = R - B / 2;
       if (ball.complete && ball.naturalWidth) g.drawImage(ball, bx, by, B, B);
-      const paint = near ? Math.max(0, Math.min(1, (fill - 0.7) / 0.3)) : 0;
+      const paint = near ? clamp01((fill - 0.7) / 0.3) : 0;
       if (paint > 0 && nextBall.complete && nextBall.naturalWidth) {
         const level = by + B * (1 - (0.06 + 0.9 * paint)), amp = B * 0.035 * (1 - paint * 0.5);
         g.save(); g.beginPath(); g.moveTo(bx, by + B + 2);

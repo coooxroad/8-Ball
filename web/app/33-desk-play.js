@@ -6,6 +6,10 @@ let playStep = 'boards';                                              // 'boards
 let rankBarShown = null;                                              // the rating the 랭킹전 card's bar last filled to
 let playFor = 'friend';                                               // whose the four game panels are: 'friend' | 'rank' (54-ranked.js)
 const TIERS = [['bronze', '브론즈'], ['silver', '실버'], ['gold', '골드'], ['platinum', '플래티넘'], ['diamond', '다이아몬드'], ['pro', '프로']];   // (owner, 11-08: 마스터 and 레전드 are one, 프로; economy.js TIER_AT)
+// each tier's colours where no picture gives them: flat - the rating's ring (50-rise.js); glow - the lit edges of the
+// glass case in 3D, the top two tiers' (38-glass3d.js). (the case's 2D frame: the styles' --rim, 84-menu.css)
+const TIER_TONE = { bronze: { flat: '#c47b45' }, silver: { flat: '#c9d0da' }, gold: { flat: '#e6be55' }, platinum: { flat: '#78cfc6' },
+  diamond: { flat: '#7fb4ff', glow: 0x6fb4ff }, pro: { flat: '#e8c06a', glow: 0xf0c060 } };
 // a game's balls, as the table draws them, in its usual layout ([n, x, y] in ball widths)
 const RACK = {
   four: ['carom', [[0, 0, .55], [1, 1.25, -.2], [2, 2.3, .3], [3, 1.35, 1.1]]],
@@ -119,7 +123,7 @@ function seekPaint({ wrap, fit, head }, f, title) {
   dkPut(fit, el('div', { class: 'seek-card unf' + (playFx === 'flip' ? '' : ' flat') }, el('div', { class: 'fc' }, [
     el('div', { class: 'face front bd-g-' + f.mode }, [rackOf(f.mode), el('b', { text: MODE_KO[f.mode] })]),
     el('div', { class: 'face back' }, [el('em', { text: MODE_KO[f.mode] }), el('b', { text: '상대 찾는 중' }), el('span', { class: 'rk-dots', 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]),
-      el('span', { class: 'rk-tm', text: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }),
+      el('span', { class: 'rk-tm', text: minSec(s) }),
       el('button', { class: 'seek-x', text: '취소', onclick: onTap(() => { ranked.cancel(); playFx = 'fan'; paintHome(); }) })])])));
 }
 const PLAY_STEPS = {
@@ -195,11 +199,10 @@ const PLAY_STEPS = {
     // (5.0: plain blocks of the shop's two colours - ivory and charcoal - with only words on them for now; pictures come
     // back one by one, drawn to match. 투어 and the shop's window are gone: 챌린지 and 아케이드 in their places.)
     const soon = what => () => toast(`${what} 준비 중입니다.`, '', 2200);
-    const T = ECONOMY.TIER_AT, ti = Math.max(0, T.filter(x => dama >= x).length - 1), tier = TIERS[Math.min(TIERS.length - 1, ti)];
     // the way to the next tier, filling like a level bar: it fills from empty when the number has changed since it was
     // last shown, and sits still otherwise (the desk paints again often)
-    const lo = T[ti], hi = T[ti + 1], part = hi == null ? 1 : Math.max(0, Math.min(1, (dama - lo) / (hi - lo))), grow = rankBarShown !== dama; rankBarShown = dama;
-    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: hi == null ? '최고 티어' : `${TIERS[ti + 1][1]}까지 ${hi - dama}` })]);
+    const tier = tierAt(dama), grow = rankBarShown !== dama; rankBarShown = dama;
+    const bar = el('span', { class: 'bd-bar' + (grow ? ' grow' : ''), style: `--p:${tier.part.toFixed(3)}` }, [el('i', null, el('b', null, el('em'))), el('small', { text: tier.next == null ? '최고 티어' : `${tier.next}까지 ${tier.need}` })]);
     dkPut(fit, [
       panel('friend', '친구와 플레이', b => playLeave(b, () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); }), [tt('친구와 플레이')], 'card unf'),
       // (훈련 where 챌린지 was - owner 11-14: 챌린지 left the menu, to come back as each puzzle theme's last step)
@@ -208,7 +211,7 @@ const PLAY_STEPS = {
       net.debug ? panel('arcade', '아케이드', b => playLeave(b, () => { playStep = 'arcade'; playFx = 'fan'; paintHome(); }), [tt('아케이드', '증강 당구', '디버그')], 'card unf')
         : panel('arcade', '아케이드', soon('아케이드는'), [tt('아케이드', '증강 당구', '준비 중')], 'card soon unf'),
       panel('rank', '랭킹전', b => { if (!net.on) return ranked.pick(); playLeave(b, () => ranked.pick()); }, [tt('랭킹전', null, 'ONLINE'),
-        el('span', { class: 'bd-foot' }, [el('b', { text: tier[1] }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
+        el('span', { class: 'bd-foot' }, [el('b', { text: tier.name }), el('small', { text: `레이팅 ${dama}` }), bar])], 'card unf')]);   // (copy audit 01-04, 01-05: titles only)
   },
 };
 // inviting a friend: the code open on the server while this shows; the tray shows the two places and the code
