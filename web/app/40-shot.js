@@ -1,5 +1,6 @@
 /* ================= shot pipeline (the same for every flow) ================= */
 function beginTurn(first) {
+  powerHold.clear();   // (오발 방지's held power is the last turn's: 80-input.js)
   // (증강 당구: the table's vote or an augments' round comes first - the turn begins once it is done: 55-arcade.js)
   if (arcade.hold(first)) return;
   // (a turn begins clean: a 4구 roll-out left mid-roll by another flow is not this flow's - Codex B19)

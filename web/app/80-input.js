@@ -91,30 +91,51 @@ const endDrag = e => {
 };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
-/* (owner 11-21: the misfire that costs games - the power bar held with one hand while the other turns the dial, and the
-   bar's finger slips off: the shot went. As 8BitPool cancels a pull when another finger taps, and as chess.com asks to
-   confirm a move: a release of the bar within DIAL_GRACE ms of the dial turning the aim a step plays nothing - the power
-   falls back and a word says why. A thumb only resting on the dial does not count (it turns nothing): the dial set, then
-   the bar let go, plays as always.) */
-const dialGuard = { at: -1e9 }, DIAL_GRACE = 350;
+/* 오발 방지 (owner 11-21; prefs.safeShot, on unless turned off in 설정): the misfire that costs games is the power bar held with
+   one hand while the other turns the dial, and the bar's finger slipping off. A release of the bar while the dial is
+   still under a finger and turned the aim within DIAL_GRACE ms - turning, not set and left - is caught (the dial set and
+   then the bar let go plays as always). Caught, nothing is played and nothing is lost: the cue stays drawn at that power,
+   the bar glowing (#power.held), and a tap on the bar plays it (a drag sets a new power, as always); a small word says
+   so, and that 설정 can turn the guard off. (8BitPool cancels a pull with a second finger's tap; chess.com asks to confirm
+   a move - this asks only when the hands say it was a slip.) */
+const dialGuard = { down: false, at: -1e9 }, DIAL_GRACE = 200;
+const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-shot.js beginTurn)
 (function powerCtl() {
-  const box = $('#power'); let id = null;
+  const box = $('#power'); let id = null, held = 0, y0 = 0, t0 = 0, moved = false;
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
   // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
   const CANCEL = 0.04;
   // the power lands on steps of HAND_STEP.power (content/00-rarity.js)
   const snap = p => { const k = HAND_STEP.power / 100; return Math.max(k, Math.round(p / k) * k); };
   const read = e => { const r = box.getBoundingClientRect(), q = Math.max(0, Math.min(1, (e.clientY - r.top - 26) / (r.height - 52))); return q < CANCEL ? 0 : Math.min(1, snap(Math.max(0.002, (q - CANCEL) / (1 - CANCEL)))); };
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {} st.power = read(e); setPowerUI(st.power); scene.invalidate(); e.preventDefault(); });
-  box.addEventListener('pointermove', e => { if (id !== e.pointerId) return; st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate(); });
+  // the held power let go of (played, or the turn over)
+  const unhold = () => { if (!held) return; held = 0; box.classList.remove('held'); };
+  powerHold.clear = unhold;
+  box.addEventListener('pointerdown', e => {
+    SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {}
+    y0 = e.clientY; t0 = performance.now(); moved = false;
+    if (!held) { st.power = read(e); setPowerUI(st.power); }   // (held: a tap plays the held power - a drag will set a new one)
+    scene.invalidate(); e.preventDefault();
+  });
+  box.addEventListener('pointermove', e => {
+    if (id !== e.pointerId) return;
+    if (held && !moved && Math.abs(e.clientY - y0) < 10) return;
+    moved = true; unhold(); st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate();
+  });
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null; ctlUp();
-    const p = st.power;
     // (the cue in hand: its hardest stroke, and how far its strike point turns the ball)
-    const k = cueK();
-    const slipped = !cancel && p > 0 && performance.now() - dialGuard.at < DIAL_GRACE;
-    if (slipped) { SND.tap(); toast('다이얼을 돌리는 중이라 치지 않았어요', '', 1800); }
-    if (!cancel && !slipped && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); else { st.power = 0; setPowerUI(0); }
+    const k = cueK(), fire = p => shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el);
+    if (held && !moved) {                                  // a tap on the glowing bar: the held power, played
+      const p = held; unhold(); if (!cancel && humanAiming()) fire(p); else { st.power = 0; setPowerUI(0); }
+      return scene.invalidate();
+    }
+    const p = st.power;
+    const slipped = !cancel && p > 0 && prefs.safeShot !== false && dialGuard.down && performance.now() - dialGuard.at < DIAL_GRACE;
+    if (slipped && humanAiming()) {
+      held = p; box.classList.add('held'); SND.tap();
+      toast('오발 방지 · 파워바를 탭하면 이 세기로 쳐요 (설정에서 끌 수 있어요)', '', 2600);
+    } else if (!cancel && p > 0 && humanAiming()) fire(p); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -124,18 +145,18 @@ const dialGuard = { at: -1e9 }, DIAL_GRACE = 350;
   // (the drum turns along its length: upright in either orientation now, lying only if a layout lays it down)
   const box = $('#fine'); let id = null, last = 0, off = 0, from = 0, turned = 0;
   const lying = () => box.clientWidth > box.clientHeight, pos = e => lying() ? e.clientX : e.clientY;
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
+  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); dialGuard.down = true; last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     const unit = HAND_STEP.dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
     const was = st.aim; st.aim = from + Math.round(turned / unit) * unit; off += d;
-    if (st.aim !== was) dialGuard.at = performance.now();   // (the aim stepped: the bar's release just now would be a slip)
+    if (st.aim !== was) dialGuard.at = performance.now();   // (the aim stepped: the bar let go just now, with this finger still here, is a slip)
     box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
     const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
     if (n !== dialN) { dialN = n; SND.dial(Math.abs(d) / 20); }
   });
-  const up = e => { if (id === e.pointerId) { id = null; ctlUp(); } };
+  const up = e => { if (id === e.pointerId) { id = null; ctlUp(); dialGuard.down = false; } };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
   // on a computer: the arrow keys turn the dial a step at a time (left / up anticlockwise, right / down clockwise; with
   // Shift, ten steps), the drum rolling and clicking as if a finger had turned it

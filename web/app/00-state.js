@@ -56,6 +56,7 @@ const prefs = (() => {
     oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-menu.js)
     menuProps: false,                  // 디버그: the menu cards' signs - false the line icons, '3d' (or true, as first saved) rendered icons (37-desk-menu.js menuIco)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
+    safeShot: true,                    // 오발 방지 (owner 11-21): the power bar let go while the dial turns holds the shot (80-input.js)
     card: { bg: 'tier', title: 'none' }, // 선수증 꾸미기 (owner 11-21): the card's face and title, content/50-cards.js (37-desk-menu.js sheetCard)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
