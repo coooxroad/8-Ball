@@ -45,7 +45,8 @@ const GEAR_KINDS = { cue: 'CUES', ball: 'BALLSKINS', table: 'CLOTHS', trail: 'TR
 export function standInGear(rnd) {
   const g = {};
   for (const k in GEAR_KINDS) {
-    const list = (E[GEAR_KINDS[k]] || []).filter(q => (q.rarity || 0) <= 2 && !q.ice), pick = list.filter(q => (q.rarity || 0) > 0);
+    // (never a debug item - owner 11-21: a debug account's own things)
+    const list = (E[GEAR_KINDS[k]] || []).filter(q => (q.rarity || 0) <= 2 && !q.ice && !q.debug), pick = list.filter(q => (q.rarity || 0) > 0);
     g[k] = rnd() < 0.45 && pick.length ? pick[Math.floor(rnd() * pick.length)].id : null;
   }
   // (the player card's look - content/50-cards.js, everyone's for now: a face and a title other than the plain ones, often;

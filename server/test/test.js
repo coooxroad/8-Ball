@@ -10,7 +10,7 @@ import { PHYS_V } from '../src/version.js';
 import { datasetRow, DatasetCore, monthOf, dayOf, partsOf } from '../src/dataset-core.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
-import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
+import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInGear, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
 const sqlOf = () => {
@@ -721,6 +721,12 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(D.find('%').people.length === 0, 'directory: no wildcards from outside');
   ok(D.fails(false, 1000).n === 0 && D.fails(true, 1000).n === 1 && D.fails(true, 2000).n === 2 && D.fails(false, 1000 + 15 * 60000 + 1).n === 1, 'directory: wrong admin passwords counted for 15 minutes');
   console.log('admin: checked');
+{ // (owner 11-21) a stand-in never wears a debug item (a debug account's own things - content/: debug: true)
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, debugIds = new Set();
+  for (const k of ['CUES', 'BALLSKINS', 'CLOTHS', 'TRAILS']) for (const q of E[k] || []) if (q.debug) debugIds.add(q.id);
+  let worn = 0; for (let i = 0; i < 4000; i++) { const g = standInGear(rnd); for (const v of Object.values(g)) if (debugIds.has(v)) worn++; }
+  ok(debugIds.size > 0 && worn === 0, 'stand-ins: no debug item in 4000 dressings');
+}
 }
 // the shot dataset (dataset-core.js): a match cut down to its shots and the seats' ratings, kept once, read out in order
 {

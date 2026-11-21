@@ -28,7 +28,7 @@ const ECONOMY = {
   PUZZLE_CHALLENGE_DIA: 10,   // a puzzle stage's 챌린지 (every tenth: puzzles.js challenge), solved the first time - diamonds besides PUZZLE's coins (owner 11-16; the amount mine: as signing up's)
   // until the server plays every match again to check it (paid plan), matches it cannot check pay at most this a day
   UNCHECKED_DAILY: 3000, CHECK_SHARE: 1, CHECK_OVER: 600, CHECK_FIRST: 3,   // (CHECK_SHARE 1: every match - the paid plan, owner 11-16; it was 0.25 on the free one)
-  // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 시크릿
+  // price by rarity: coins for 일반..전설 (일반 is everyone's from the start), diamonds for 궁극
   PRICE: [{ coin: 0 }, { coin: 3000 }, { coin: 8000 }, { coin: 20000 }, { coin: 50000 }, { dia: 300 }],
   DAMA_START: 500, DAMA_FLOOR: 100, RD_START: 350, RD_MIN: 50, RD_MAX: 350, RD_GROW: 15,
   DAMA_STEP_MAX: 600,

@@ -1,7 +1,7 @@
 /* ---------- 상점 and 내 장비: cards in the lobby's printed-card language (owner 11-11: the foil was too loud for the desk;
    then the same on 내 장비, no dots, a fade from a lighter top) ----------
    Each card sits sunk into the felt as the shop's cards always did - shadowed inside, nothing standing out - framed in its
-   rarity's metal (일반 silver, 희귀 blue, 에픽 violet, 신화 red, 전설 gold, 시크릿 every colour: kept, owner 11-11), and its
+   rarity's metal (일반 silver, 희귀 blue, 에픽 violet, 신화 red, 전설 gold, 궁극 a 스크류바's pink and white, moving - owner 11-21, it was 시크릿 in every colour), and its
    face is a printed card like the lobby's panels: the rarity's colour fading down from a lighter top, a white line inside (i.face,
    35-desk-shelves.js). */
 #app.desk .dk-cards.pc .dk-card{--f1:#e9eef3;--f2:#7f8a96;--f3:#c6ced7;--c1:#6d7884;--c2:#3c4550;border:3px solid transparent;border-image:none;border-radius:13px;padding:10px 6px 0;gap:4px;
@@ -12,8 +12,25 @@
 #app.desk .dk-cards.pc .dk-card.r2{--f1:#efdcff;--f2:#7c3be0;--f3:#c49bff;--c1:#8265a3;--c2:#533a6e}
 #app.desk .dk-cards.pc .dk-card.r3{--f1:#ffd5da;--f2:#c92f44;--f3:#ff8a97;--c1:#b05551;--c2:#772b2a}
 #app.desk .dk-cards.pc .dk-card.r4{--f1:#fff3c4;--f2:#c98a12;--f3:#ffd36b;--c1:#b08a45;--c2:#6f511c}
-#app.desk .dk-cards.pc .dk-card.r5{--c1:#6c5f9c;--c2:#353060;background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 62%,#fff) 0%,var(--c1) 42%,var(--c2) 100%) padding-box,
-  conic-gradient(from 200deg,#ff5d6c,#ffc23a,#5fe08a,#4f9bff,#b072ff,#ff5d6c) border-box}
+/* 궁극 (owner 11-21; it was 시크릿, every colour): a 스크류바's colours and no other - its milk white and its strawberry pink.
+   Blue, violet, red and gold are a ladder everyone knows already, so a still gradient would not read above them: it
+   moves - the face's white-to-pink drifting up and down, the frame's sheen sliding round - and its two colours breathe,
+   the white now and then to the faintest grey and back, the pink to the pink nearest violet and back (--sw, --sp:
+   animated, inherited by the aurora and the caption below). Only a card on the screen moves (aur-on, as its aurora). */
+@property --sw{syntax:'<color>';inherits:true;initial-value:#fff8fa}
+@property --sp{syntax:'<color>';inherits:true;initial-value:#f06d9f}
+#app.desk .dk-card.r5,.rar.r5{--sw:#fff8fa;--sp:#f06d9f;animation:ultTone 7s ease-in-out infinite}
+@keyframes ultTone{0%,100%{--sw:#fff8fa;--sp:#f06d9f}30%{--sw:#ebe8ee;--sp:#f278aa}62%{--sw:#fdf6f9;--sp:#d873c6}}
+@keyframes ultMove{from{background-position:0 0,0 0}to{background-position:0 100%,100% 0}}
+#app.desk .dk-cards.pc .dk-card.r5{--c1:var(--sp);--c2:var(--sp);
+  background:linear-gradient(172deg,var(--sw) 0%,color-mix(in srgb,var(--sw) 55%,var(--sp)) 22%,var(--sp) 46%,color-mix(in srgb,var(--sp) 70%,var(--sw)) 66%,var(--sw) 84%,var(--sp) 100%),
+    linear-gradient(110deg,var(--sp),var(--sw) 22%,var(--sp) 44%,var(--sw) 66%,var(--sp) 88%,var(--sw));
+  background-clip:padding-box,border-box;background-origin:padding-box,border-box;background-size:100% 260%,300% 100%;
+  animation:ultTone 7s ease-in-out infinite,ultMove 5.5s ease-in-out infinite alternate}
+#app.desk .dk-cards.pc .dk-card.r5:not(.aur-on){animation-play-state:paused}
+/* (its words read on the white as on the pink: the name outlined in a deep pink, the SFX · VFX marks on a dark pink pill) */
+#app.desk .dk-cards.pc .dk-card.r5 .nm{text-shadow:0 1px 0 #8a2350,1px 0 0 #8a2350,-1px 0 0 #8a2350,0 -1px 0 #8a2350,0 2px 4px rgba(90,10,40,.45)}
+#app.desk .dk-cards.pc .dk-card.r5 .fxb{background:rgba(92,18,52,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 /* (the plain cards' glow from below and coloured foot are not part of this face) */
 #app.desk .dk-cards.pc .dk-card::before{content:none}
 #app.desk .dk-cards.pc .dk-card .face{position:absolute;inset:5px;z-index:0;flex:none;width:auto;height:auto;min-height:0;margin:0;border:2px solid rgba(255,255,255,.85);border-radius:8px;pointer-events:none;
@@ -27,7 +44,7 @@
 #app.desk .dk-cards.pc .dk-card.worn::after{inset:-3px;border-radius:13px}
 
 /* An aurora at the foot of every card (owner 11-11: the cards looked too still), in its rarity's colours and growing with
-   it - 일반 a faint cold light, 시크릿 every colour. It is the card's background: it lies under the white line, the picture and
+   it - 일반 a faint cold light, 궁극 a 스크류바's pink and white. It is the card's background: it lies under the white line, the picture and
    the name (the card is a stacking context of its own, the aurora below everything in it), inside the frame (the frame is
    the card's border; the aurora fills the padding box and is cut to it). Two curtains drift past each other by transform
    only, so the cards move without being painted again; a card's place in the row sets it off from its neighbours.
@@ -40,7 +57,7 @@
 #app.desk .dk-cards.pc .dk-card.r2{--a1:#d06bff;--a2:#7a5cff;--a3:#ff8fe3;--ao:.72}
 #app.desk .dk-cards.pc .dk-card.r3{--a1:#ff4d6d;--a2:#ff9a3d;--a3:#ff7ad1;--ao:.8}
 #app.desk .dk-cards.pc .dk-card.r4{--a1:#ffd34d;--a2:#ff9a1f;--a3:#fff1a8;--ao:.86}
-#app.desk .dk-cards.pc .dk-card.r5{--a1:#ff5d6c;--a2:#4f9bff;--a3:#5fe08a;--a4:#b072ff;--a5:#ffc23a;--ao:.95}
+#app.desk .dk-cards.pc .dk-card.r5{--a1:var(--sp);--a2:var(--sw);--a3:color-mix(in srgb,var(--sp) 55%,#fff);--a4:var(--sp);--a5:#ffffff;--ao:.95}
 #app.desk .dk-cards.pc .dk-card .aur{position:absolute;inset:0;z-index:-1;flex:none;width:auto;min-height:0;margin:0;border-radius:10px;overflow:hidden;pointer-events:none}
 #app.desk .dk-cards.pc .dk-card .aur>span{position:absolute;left:-60%;width:220%;bottom:-6%;height:72%;opacity:calc(var(--ao) * .8);
   transform-origin:50% 100%;animation:dkAur 6s ease-in-out infinite alternate;animation-play-state:paused}

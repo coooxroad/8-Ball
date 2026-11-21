@@ -206,8 +206,10 @@ function botTray(stage) {
   };
   let n = 0;
   // (owner 11-17: the bot picked, painted, on the tray's left behind the cards - painting itself in: botArt)
-  if (cur.pic) dkPut(stage, botArt(cur));
-  dkPut(stage, el('div', { class: 'bot-tray' + (cur.pic ? ' with-art' : '') }, TIERS.map(([, name], t) => {
+  // (owner 11-21: the pictures only in debug mode for now - net.debug)
+  const art = cur.pic && net.debug;
+  if (art) dkPut(stage, botArt(cur));
+  dkPut(stage, el('div', { class: 'bot-tray' + (art ? ' with-art' : '') }, TIERS.map(([, name], t) => {
     const L = BOTS.filter(b => Math.min(TIERS.length - 1, tierOf(b.rating)) === t);
     return el('section', { class: 'bot-row' }, [el('h3', { text: name }),
       el('div', { class: 'bot-cards' }, L.map(b => {
