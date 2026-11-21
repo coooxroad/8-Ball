@@ -187,9 +187,9 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
    are), the card held in the middle, the front's edges cut at 45° (each bevel lit as the light from the upper right would),
    no lid or slot band (owner 11-21: the case alone). The case is larger than the card by --m all round; --cw: the card's
    width in u. Turned by --rx/--ry/--rz about the middle of its top edge (the opening swings it - 79-league.css). ---- */
-.g3{--m:calc(14px*var(--u));margin:0 calc(6px*var(--u));--top:var(--m);--D:calc(34px*var(--u));--W:calc(var(--cw,244px)*var(--u) + 2*var(--m));--H:calc(560px*var(--u) + var(--top) + var(--m));
+.g3{--m:calc(14px*var(--u));--bot:var(--m);margin:0 calc(6px*var(--u));--top:var(--m);--D:calc(34px*var(--u));--W:calc(var(--cw,244px)*var(--u) + 2*var(--m));--H:calc(560px*var(--u) + var(--top) + var(--bot));
   position:relative;flex:none;width:var(--W);height:var(--H);transform-style:preserve-3d;transform-origin:50% 0;
-  transform:perspective(calc(1500px*var(--u))) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) rotateZ(var(--rz,0deg))}
+  --persp:perspective(calc(1500px*var(--u)));transform:var(--persp) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) rotateZ(var(--rz,0deg))}
 .g3>.mn-pc{position:absolute!important;left:var(--m);top:var(--top);margin:0;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .g3>.mn-pc:active{transform:none}
 .g3>.f{position:absolute;display:block;pointer-events:none;backface-visibility:visible}
@@ -210,6 +210,51 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 .g3>.side.b{left:0;bottom:0;height:var(--D);width:100%;transform-origin:50% 100%;transform:translateZ(calc(var(--D)/2)) rotateX(90deg);background:linear-gradient(180deg,rgba(120,180,175,.55),rgba(90,150,150,.4));filter:brightness(.7)}
 /* its shadow on whatever is under it (a flat smudge, down-left - the light is upper right) */
 .g3>.shade{left:calc(-10px*var(--u));right:calc(10px*var(--u));top:calc(18px*var(--u));bottom:calc(-14px*var(--u));transform:translateZ(calc(var(--D)/-2 - 2px));border-radius:calc(10px*var(--u));background:rgba(0,0,0,.35);filter:blur(calc(12px*var(--u)))}
+/* The case's dressings, each tried on its own (owner 11-21: 디버그 → 선수증, prefs.dbgGz* - 37-desk-menu.js glassCase).
+   The case carries the card's tier (.t-<tier>) for its metal. */
+.g3{--metal:linear-gradient(135deg,#e9c39a,#8a5a2e 45%,#5c3a1a 55%,#d9a571);--metalDot:radial-gradient(circle at 35% 30%,#f6dcbc,#b07a48 45%,#5c3a1a 80%);--glow:rgba(255,190,120,.0)}
+.g3.t-silver{--metal:linear-gradient(135deg,#fff,#aab2bd 45%,#6c7480 55%,#eef1f5);--metalDot:radial-gradient(circle at 35% 30%,#fff,#b4bcc6 45%,#5e6672 80%)}
+.g3.t-gold{--metal:linear-gradient(135deg,#fff2c4,#d2a84c 45%,#8a6418 55%,#f6e2a6);--metalDot:radial-gradient(circle at 35% 30%,#fff6d4,#d8ad4c 45%,#7a5512 80%)}
+.g3.t-platinum{--metal:linear-gradient(135deg,#f2fffe,#86c3be 45%,#3f7d78 55%,#d6f6f2);--metalDot:radial-gradient(circle at 35% 30%,#fff,#9ad2cd 45%,#2f6a65 80%)}
+.g3.t-diamond{--metal:linear-gradient(135deg,#eef8ff,#6aa6ee 45%,#2a5cb8 55%,#cfe9ff);--metalDot:radial-gradient(circle at 35% 30%,#fff,#8cc0ff 45%,#2350a8 80%);--glow:rgba(120,190,255,.75)}
+.g3.t-pro{--metal:linear-gradient(135deg,#fff3c8,#c39a45 45%,#6a4c14 55%,#f0d488);--metalDot:radial-gradient(circle at 35% 30%,#fff8de,#d4ad5a 45%,#5a400e 80%);--glow:rgba(240,200,110,.75)}
+/* 책상 시점 (gz-view): seen as a thing on the desk is - the eye toward the screen's middle and nearer the player (the
+   vanishing point right of and below the menu's card; toward the middle on the opening's), so only the edges near the
+   eye show and the far ones are faint through the glass (the far edges seen through the front read as the case jumping
+   out - owner 11-21), and its foot shadowed where it sits */
+.g3.gz-view{--vx:calc(var(--W)*1.1);--vy:calc(var(--H)*1.08);--persp:translate(var(--vx),var(--vy)) perspective(calc(1500px*var(--u))) translate(calc(-1*var(--vx)),calc(-1*var(--vy)))}
+.vs-card.r .g3.gz-view{--vx:calc(var(--W)*-1.1)}
+.g3.gz-view>.side.t,.g3.gz-view.vl>.side.r,.g3.gz-view:not(.vl)>.side.l{opacity:.16}
+.g3.gz-view>.back{box-shadow:inset 0 0 0 calc(2px*var(--u)) rgba(190,230,225,.35),0 0 0 calc(1px*var(--u)) rgba(0,0,0,.35),calc(-3px*var(--u)) calc(5px*var(--u)) calc(7px*var(--u)) rgba(0,0,0,.5)}
+.g3.gz-view>.shade{left:calc(-4px*var(--u));right:calc(4px*var(--u));top:calc(8px*var(--u));bottom:calc(-8px*var(--u));background:rgba(0,0,0,.42);filter:blur(calc(8px*var(--u)))}
+/* 등급 테두리 (gz-bezel): a frame of the tier's metal round the card inside the glass, as a graded card's insert */
+.g3>.bezel{display:none;left:calc(var(--m) - 7px*var(--u));top:calc(var(--top) - 7px*var(--u));width:calc(var(--cw,244px)*var(--u) + 14px*var(--u));height:calc(560px*var(--u) + 14px*var(--u));
+  border-radius:calc(25px*var(--u));background:var(--metal);transform:translateZ(-1px);box-shadow:0 0 0 calc(1px*var(--u)) rgba(0,0,0,.35),inset 0 0 0 calc(1px*var(--u)) rgba(255,255,255,.5)}
+.g3.gz-bezel>.bezel{display:block}
+/* 금속 나사 (gz-screw): a standoff screw at each corner of the front, in the tier's metal */
+.g3>.screw{display:none;width:calc(11px*var(--u));height:calc(11px*var(--u));border-radius:50%;background:var(--metalDot);transform:translateZ(calc(var(--D)/2 + 1px));
+  box-shadow:0 calc(1px*var(--u)) calc(2px*var(--u)) rgba(0,0,0,.55),inset 0 0 0 calc(.5px*var(--u)) rgba(0,0,0,.35)}
+.g3>.screw::after{content:"";position:absolute;left:18%;right:18%;top:calc(50% - .6px*var(--u));height:calc(1.2px*var(--u));background:rgba(0,0,0,.5);transform:rotate(-35deg)}
+.g3>.screw.a{left:calc(var(--m)/2 - 5.5px*var(--u));top:calc(var(--m)/2 - 5.5px*var(--u))}.g3>.screw.b{right:calc(var(--m)/2 - 5.5px*var(--u));top:calc(var(--m)/2 - 5.5px*var(--u))}
+.g3>.screw.c{left:calc(var(--m)/2 - 5.5px*var(--u));bottom:calc(var(--bot)/2 - 5.5px*var(--u))}.g3>.screw.d{right:calc(var(--m)/2 - 5.5px*var(--u));bottom:calc(var(--bot)/2 - 5.5px*var(--u))}
+.g3.gz-screw>.screw{display:block}
+/* 각인 (gz-mark): the case's foot made deeper and CUE and the player's number cut into it (frosted letters in the glass) */
+.g3.gz-mark{--bot:calc(34px*var(--u))}
+.g3>.mark{display:none;left:var(--m);right:var(--m);bottom:0;height:var(--bot);transform:translateZ(calc(var(--D)/2 + .5px));align-items:center;justify-content:space-between;padding:0 calc(10px*var(--u));box-sizing:border-box;
+  font:900 calc(11px*var(--u))/1 var(--ui-font);letter-spacing:.32em;color:rgba(255,255,255,.55);text-shadow:0 calc(-1px*var(--u)) 0 rgba(0,0,0,.35),0 calc(1px*var(--u)) 0 rgba(255,255,255,.35)}
+.g3>.mark b{font-weight:900;letter-spacing:.42em}.g3>.mark small{font:700 calc(9px*var(--u))/1 ui-monospace,monospace;letter-spacing:.18em}
+.g3.gz-mark>.mark{display:flex}
+/* 빛·홀로그램 (gz-glow): the edges lit in the tier's colour and a hologram seal - the top tiers' (다이아·프로), or any tier's
+   to see (gz-holo-all) */
+.g3.gz-glow>.side{box-shadow:inset 0 0 0 calc(1px*var(--u)) rgba(255,255,255,.6),inset 0 0 calc(14px*var(--u)) var(--glow)}
+.g3.gz-glow>.front{box-shadow:inset 0 0 0 calc(1px*var(--u)) rgba(255,255,255,.55),0 0 0 calc(1px*var(--u)) rgba(255,255,255,.35),0 0 calc(18px*var(--u)) var(--glow),inset 0 0 calc(10px*var(--u)) var(--glow)}
+.g3>.holo{display:none;right:calc(var(--m) - 9px*var(--u));top:calc(var(--top) + 50px*var(--u));width:calc(40px*var(--u));height:calc(40px*var(--u));border-radius:50%;transform:translateZ(calc(var(--D)/2 + 1px));
+  background:conic-gradient(from var(--ha,0deg),#ff8ad8,#ffe27a,#8affc1,#7ad7ff,#b48aff,#ff8ad8);mix-blend-mode:screen;opacity:.85;
+  -webkit-mask:radial-gradient(circle,#000 54%,transparent 56%,transparent 62%,#000 64%);mask:radial-gradient(circle,#000 54%,transparent 56%,transparent 62%,#000 64%);animation:gzHolo 4s linear infinite}
+.g3>.holo::after{content:"CUE";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 calc(10px*var(--u)) var(--ui-font);color:rgba(20,20,40,.75);letter-spacing:.08em}
+.g3.gz-glow:is(.t-diamond,.t-pro,.gz-holo-all)>.holo{display:block}
+@property --ha{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes gzHolo{to{--ha:360deg}}
 /* the title, in place of the line under the name: a small band */
 .mn-pc .who.ttl{opacity:1;padding:calc(2px*var(--u)) calc(10px*var(--u));border-radius:99px;background:var(--pcHd);color:#fff;font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,.25);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .mn-pc.t-pro .who.ttl{color:#f0d488}

@@ -123,9 +123,16 @@ function playerCard(o) {
    perspective), on the match's opening swinging in about its top and flung away (79-league.css). cw: the card's width in
    u (the opening's cards are wider). Returns the case, the card inside it. */
 function glassOn() { return !!net.debug && prefs.dbgGlass !== false; }
-function glassCase(card, cw) {
+const GZ = [['dbgGzView', 'gz-view', '책상 시점'], ['dbgGzBezel', 'gz-bezel', '등급 테두리'], ['dbgGzScrew', 'gz-screw', '금속 나사'], ['dbgGzMark', 'gz-mark', '각인'],
+  ['dbgGzGlow', 'gz-glow', '빛·홀로그램'], ['dbgGzHoloAll', 'gz-holo-all', '홀로그램 모든 등급']];
+function glassCase(card, cw, eye) {
   const f = (cls, kids) => el('i', { class: 'f ' + cls, 'aria-hidden': 'true' }, kids);
-  return el('div', { class: 'g3', style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), card, f('front')]);
+  // (its dressings, each on by its own switch - GZ; the tier for their metal; eye: 'l' when the eye is to the case's left)
+  const tier = (/\bt-(\w+)/.exec(card.className) || [])[1] || 'bronze', nm = (card.querySelector('.nm') || {}).textContent || '';
+  const no = String([...nm].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
+  const cls = ['g3', 't-' + tier, eye === 'l' ? 'vl' : '', ...GZ.filter(([k]) => prefs[k]).map(g => g[1])].filter(Boolean).join(' ');
+  return el('div', { class: cls, style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), f('bezel'), card, f('front'),
+    f('screw a'), f('screw b'), f('screw c'), f('screw d'), f('mark', [el('b', { text: 'CUE' }), el('small', { text: 'No.' + no })]), f('holo')]);
 }
 // a title open to this device's player: one without a need, or with its record met (content/50-cards.js need)
 function titleOpen(q) {

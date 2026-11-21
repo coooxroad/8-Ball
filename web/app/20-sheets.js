@@ -63,6 +63,9 @@ function sheetDebug() {
     // (the 선수증 in a glass case - owner 11-21, tried here first: 37-desk-menu.js glassCase)
     el('div', { class: 'lab', text: '선수증' }),
     flatBtn(`유리 케이스: ${prefs.dbgGlass === false ? '끔' : '켬'}`, () => { prefs.dbgGlass = prefs.dbgGlass === false; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); }),
+    // (the case's dressings, each tried on its own - owner 11-21: 37-desk-menu.js GZ)
+    el('div', { class: 'seg gz' }, GZ.map(([k, , t]) => el('button', { 'aria-pressed': String(!!prefs[k]), text: t,
+      onclick: () => { prefs[k] = !prefs[k]; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

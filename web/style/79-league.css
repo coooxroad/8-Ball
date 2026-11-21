@@ -48,13 +48,13 @@
 #league.open .vs.glass .vs-card.r .g3{animation:g3InR 1.15s cubic-bezier(.25,.6,.35,1) .1s both}
 #league.away .vs.glass .vs-card.l .g3{animation:g3OutL .45s cubic-bezier(.55,0,.85,.35) both}
 #league.away .vs.glass .vs-card.r .g3{animation:g3OutR .45s cubic-bezier(.55,0,.85,.35) both}
-@keyframes g3InL{0%{opacity:0;transform:perspective(calc(1500px*var(--u))) translateX(-45vw) rotateY(80deg) rotateZ(6deg)}12%{opacity:1}
-  34%{transform:perspective(calc(1500px*var(--u))) rotateY(-26deg) rotateZ(-3deg)}52%{transform:perspective(calc(1500px*var(--u))) rotateY(13deg) rotateZ(1.5deg)}
-  68%{transform:perspective(calc(1500px*var(--u))) rotateY(-6deg) rotateZ(-.6deg)}84%{transform:perspective(calc(1500px*var(--u))) rotateY(2.5deg)}100%{opacity:1;transform:perspective(calc(1500px*var(--u))) rotateY(0deg)}}
-@keyframes g3InR{0%{opacity:0;transform:perspective(calc(1500px*var(--u))) translateX(45vw) rotateY(-80deg) rotateZ(-6deg)}12%{opacity:1}
-  34%{transform:perspective(calc(1500px*var(--u))) rotateY(26deg) rotateZ(3deg)}52%{transform:perspective(calc(1500px*var(--u))) rotateY(-13deg) rotateZ(-1.5deg)}
-  68%{transform:perspective(calc(1500px*var(--u))) rotateY(6deg) rotateZ(.6deg)}84%{transform:perspective(calc(1500px*var(--u))) rotateY(-2.5deg)}100%{opacity:1;transform:perspective(calc(1500px*var(--u))) rotateY(0deg)}}
-@keyframes g3OutL{from{opacity:1;transform:perspective(calc(1500px*var(--u))) rotateY(0deg)}to{opacity:0;transform:perspective(calc(1500px*var(--u))) translate(-55vw,10vh) rotateY(110deg) rotateZ(14deg)}}
-@keyframes g3OutR{from{opacity:1;transform:perspective(calc(1500px*var(--u))) rotateY(0deg)}to{opacity:0;transform:perspective(calc(1500px*var(--u))) translate(55vw,10vh) rotateY(-110deg) rotateZ(-14deg)}}
+@keyframes g3InL{0%{opacity:0;transform:var(--persp) translateX(-45vw) rotateY(80deg) rotateZ(6deg)}12%{opacity:1}
+  34%{transform:var(--persp) rotateY(-26deg) rotateZ(-3deg)}52%{transform:var(--persp) rotateY(13deg) rotateZ(1.5deg)}
+  68%{transform:var(--persp) rotateY(-6deg) rotateZ(-.6deg)}84%{transform:var(--persp) rotateY(2.5deg)}100%{opacity:1;transform:var(--persp) rotateY(0deg)}}
+@keyframes g3InR{0%{opacity:0;transform:var(--persp) translateX(45vw) rotateY(-80deg) rotateZ(-6deg)}12%{opacity:1}
+  34%{transform:var(--persp) rotateY(26deg) rotateZ(3deg)}52%{transform:var(--persp) rotateY(-13deg) rotateZ(-1.5deg)}
+  68%{transform:var(--persp) rotateY(6deg) rotateZ(.6deg)}84%{transform:var(--persp) rotateY(-2.5deg)}100%{opacity:1;transform:var(--persp) rotateY(0deg)}}
+@keyframes g3OutL{from{opacity:1;transform:var(--persp) rotateY(0deg)}to{opacity:0;transform:var(--persp) translate(-55vw,10vh) rotateY(110deg) rotateZ(14deg)}}
+@keyframes g3OutR{from{opacity:1;transform:var(--persp) rotateY(0deg)}to{opacity:0;transform:var(--persp) translate(55vw,10vh) rotateY(-110deg) rotateZ(-14deg)}}
 /* the table under it (#gl: its blur and dimming set step by step by the script) */
 #app.vsblur #gl{will-change:filter}

@@ -63,3 +63,5 @@
 /* 디버그 (20-sheets.js sheetDebug): the table shows through - no dimming, the sheet docked to the right and scrolling */
 #sheet.see,#app.desk #sheet.see{background:none;place-items:stretch end;pointer-events:none}
 #sheet.see .sheet{pointer-events:auto;width:min(100%,330px);max-height:100%;overflow:auto;gap:10px}
+/* 디버그 → 선수증: the glass case's dressings, six switches in two rows (20-sheets.js) */
+.sheet .seg.gz{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}
