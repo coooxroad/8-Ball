@@ -131,7 +131,7 @@ function glassCase(card, cw, eye) {
   const tier = (/\bt-(\w+)/.exec(card.className) || [])[1] || 'bronze', nm = (card.querySelector('.nm') || {}).textContent || '';
   const no = String([...nm].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
   const cls = ['g3', 't-' + tier, eye === 'l' ? 'vl' : '', ...GZ.filter(([k]) => prefs[k]).map(g => g[1])].filter(Boolean).join(' ');
-  const g = el('div', { class: cls, style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), f('bezel'), card, f('front'),
+  const g = el('div', { class: cls, style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), f('tier', el('span', { class: 'mn-rim' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' }))), card, f('front'),
     f('screw a'), f('screw b'), f('screw c'), f('screw d'), f('mark', [el('b', { text: 'CUE' }), el('small', { text: 'No.' + no })]), f('holo')]);
   // (drawn in 3D once it is on the page - 38-glass3d.js; the opening's cases are played there by 56-league.js)
   if (!eye) { let n = 0; const go = () => { if (g.isConnected) glass3d.still(g); else if (++n < 30) requestAnimationFrame(go); }; requestAnimationFrame(go); }

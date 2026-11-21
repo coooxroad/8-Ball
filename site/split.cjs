@@ -70,4 +70,16 @@ const GUARD = ['  Content-Security-Policy: ' + CSP, '  X-Frame-Options: DENY', '
 const KEPT = '  Cache-Control: public, max-age=3600, stale-while-revalidate=2592000';
 fs.writeFileSync(path.join(dir, '_headers'), `/*\n${GUARD}\n\n/h/*\n  Cache-Control: public, max-age=31536000, immutable\n\n/ui/*\n${KEPT}\n\n/fonts/*\n${KEPT}\n\n/music/*\n${KEPT}\n`);
 if (process.env.CSP_OUT) fs.writeFileSync(process.env.CSP_OUT, CSP);
+/* The other pages' own scripts out to files too (owner 11-21: the admin console did nothing at all - its one inline
+   script was refused by the guard above since 11-18, so the sign-in form only reloaded the page). And none left inline
+   in any page served: the guard would refuse it on the web without a word. */
+for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.html') && f !== 'index.html')) {
+  let page = fs.readFileSync(path.join(dir, f), 'utf8'), n = 0;
+  page = page.replace(/<script>([\s\S]*?)<\/script>/g, (m, body) => { n++; return `<script src="${put(f.replace(/\.html$/, '') + (n > 1 ? n : ''), 'js', body)}"></script>`; });
+  if (n) fs.writeFileSync(path.join(dir, f), page);
+}
+for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.html'))) {
+  const page = fs.readFileSync(path.join(dir, f), 'utf8');
+  if (/<script(?![^>]*\bsrc=)[^>]*>/.test(page) || /\son[a-z]+\s*=\s*["']/i.test(page.replace(/<script[\s\S]*?<\/script>/g, ''))) throw new Error('split: an inline script left in ' + f + ' - the site\'s guard (CSP) would refuse it');
+}
 console.log(`split: index.html ${(html.length / 1024).toFixed(0)} KB, ${fs.readdirSync(H).length} files in h/ (${nt} pictures, ${ns} sounds)`);

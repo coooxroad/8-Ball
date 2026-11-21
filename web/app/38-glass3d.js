@@ -41,9 +41,21 @@ const glass3d = (() => {
     s.moveTo(a + r, b); s.lineTo(a + w - r, b); s.quadraticCurveTo(a + w, b, a + w, b + r); s.lineTo(a + w, b + h - r); s.quadraticCurveTo(a + w, b + h, a + w - r, b + h);
     s.lineTo(a + r, b + h); s.quadraticCurveTo(a, b + h, a, b + h - r); s.lineTo(a, b + r); s.quadraticCurveTo(a, b, a + r, b); return s; };
   const text = (no, w, h) => { const c = document.createElement('canvas'); c.width = 512; c.height = Math.max(16, Math.round(512 * h / w)); const g = c.getContext('2d');
-    g.fillStyle = 'rgba(255,255,255,.62)'; g.textBaseline = 'middle'; g.font = `900 ${Math.round(c.height * 0.42)}px ${getComputedStyle(document.body).fontFamily}`;
-    g.letterSpacing = '0.3em'; g.fillText('C U E', c.height * 0.6, c.height / 2); g.font = `700 ${Math.round(c.height * 0.34)}px ui-monospace,monospace`; g.textAlign = 'right'; g.fillText('No.' + no, c.width - c.height * 0.6, c.height / 2);
+    g.fillStyle = 'rgba(255,255,255,.85)'; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = -1; g.textBaseline = 'middle'; g.font = `900 ${Math.round(c.height * 0.62)}px ${getComputedStyle(document.body).fontFamily}`;
+    g.letterSpacing = '0.3em'; g.fillText('C U E', c.height * 0.6, c.height / 2); g.font = `800 ${Math.round(c.height * 0.5)}px ui-monospace,monospace`; g.textAlign = 'right'; g.fillText('No.' + no, c.width - c.height * 0.6, c.height / 2);
     const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; };
+  // the seal's face, drawn once: silver, a raised rim, CUE in the middle, small letters round it (its alpha: the round)
+  let sealTex = null;
+  const seal = () => { if (sealTex) return sealTex;
+    const c = document.createElement('canvas'), N = 256; c.width = c.height = N; const g = c.getContext('2d'), m = N / 2, font = getComputedStyle(document.body).fontFamily;
+    const base = g.createRadialGradient(m * 0.7, m * 0.6, 4, m, m, m); base.addColorStop(0, '#ffffff'); base.addColorStop(0.5, '#d8dde5'); base.addColorStop(1, '#9ea7b4');
+    g.fillStyle = base; g.beginPath(); g.arc(m, m, m - 2, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 6; g.beginPath(); g.arc(m, m, m - 6, 0, 7); g.stroke();
+    g.strokeStyle = 'rgba(50,56,70,.45)'; g.lineWidth = 2; for (const r of [m - 12, m * 0.62]) { g.beginPath(); g.arc(m, m, r, 0, 7); g.stroke(); }
+    g.fillStyle = 'rgba(40,46,60,.85)'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `900 ${N * 0.2}px ${font}`; g.fillText('CUE', m, m + 2);
+    g.font = `800 ${N * 0.075}px ${font}`; const ring = '· CUE LEAGUE · OFFICIAL ', step = Math.PI * 2 / ring.length;
+    for (let i = 0; i < ring.length; i++) { g.save(); g.translate(m, m); g.rotate(i * step - Math.PI / 2); g.fillText(ring[i], 0, -(m * 0.8)); g.restore(); }
+    sealTex = new THREE.CanvasTexture(c); sealTex.encoding = THREE.sRGBEncoding; return sealTex; };
   /* The case as the page has laid it out: g - its .g3; returns { W, H, u, card: {x, y, w, h} } in CSS px (y down). */
   function measure(g) {
     const u = parseFloat(getComputedStyle(g).getPropertyValue('--u')) || 1, c = g.querySelector('.mn-pc');
@@ -55,8 +67,8 @@ const glass3d = (() => {
     const { W, H, u, card } = o, cls = g.classList, tier = (/\bt-(\w+)/.exec(g.className) || [])[1] || 'bronze';
     const D = 34 * u, bev = 8 * u, grp = new THREE.Group();
     const cx = card.x + card.w / 2 - W / 2, cy = H / 2 - (card.y + card.h / 2);   // the card's middle, from the case's
-    // the card: depth only, first
-    const occ = new THREE.Mesh(new THREE.ShapeGeometry(rr(card.w, card.h, 20 * u, cx, cy), 6), new THREE.MeshBasicMaterial({ colorWrite: false }));
+    // the card and the tier's frame round it (the page's own - 84-menu.css .g3>.tier, its old border's look): depth only, first
+    const fw = 6 * u, occ = new THREE.Mesh(new THREE.ShapeGeometry(rr(card.w + 2 * fw, card.h + 2 * fw, 20 * u + fw, cx, cy), 6), new THREE.MeshBasicMaterial({ colorWrite: false }));
     occ.renderOrder = -10; grp.add(occ);
     // the block: front and back faces (caps) nearly clear, its edges thick cyan-green; only their outer sides drawn
     const slab = new THREE.ExtrudeGeometry(rr(W - 2 * bev, H - 2 * bev, 4 * u), { depth: D - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 6 });
@@ -65,12 +77,8 @@ const glass3d = (() => {
     const cap = lit(new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.04, metalness: 0, envMap: env, envMapIntensity: 1.2, transparent: true, opacity: 0.02, depthWrite: false }), 1.0);
     const edge = lit(new THREE.MeshStandardMaterial({ color: col(0x3f9e90), roughness: 0.1, metalness: 0, envMap: env, envMapIntensity: 1.0, transparent: true, opacity: 0.4, emissive: col(glow || 0x2a8a7c), emissiveIntensity: glow ? 0.7 : 0.35 }), 0.6);
     const m = new THREE.Mesh(slab, [cap, edge]); m.renderOrder = 2; grp.add(m);
-    // the tier's metal frame round the card, inside the glass
-    const fw = 7 * u, outer = rr(card.w + 2 * fw, card.h + 2 * fw, 25 * u, cx, cy);
-    outer.holes.push(rr(card.w, card.h, 20 * u, cx, cy));
+    // the screws' metal: the tier's
     const metal = new THREE.MeshStandardMaterial({ color: col(METAL[tier] || METAL.bronze), metalness: 1, roughness: tier === 'pro' ? 0.22 : 0.3, envMap: env, envMapIntensity: 1.3 });
-    const fr = new THREE.ExtrudeGeometry(outer, { depth: 8 * u, bevelEnabled: true, bevelThickness: 1.2 * u, bevelSize: 1.2 * u, bevelSegments: 2, curveSegments: 8 });
-    fr.translate(0, 0, -4 * u); const f = new THREE.Mesh(fr, metal); f.renderOrder = 1; grp.add(f);
     // the dressings, each on its switch (37-desk-menu.js GZ)
     const top = new THREE.Group(); top.position.z = D / 2; top.renderOrder = 3; grp.add(top);
     const m2 = card.y, bot = H - card.y - card.h;
@@ -82,21 +90,25 @@ const glass3d = (() => {
     }
     if (cls.contains('gz-mark')) {
       const no = String([...(g.querySelector('.nm') || {}).textContent || ''].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
-      const mw = W - 2 * m2 - 8 * u, mh = Math.min(bot * 0.7, 20 * u);
+      const mw = W - 2 * m2 - 8 * u, mh = Math.min(bot * 0.8, 24 * u);
       const k = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), new THREE.MeshBasicMaterial({ map: text(no, mw, mh), transparent: true, depthWrite: false }));
       k.position.set(0, -H / 2 + bot / 2, 0.3 * u); top.add(k);
     }
+    // the hologram seal (다이아·프로; any tier with 'gz-holo-all'): a silver foil seal, CUE and a ring of small letters
+    // pressed in it, a band of rainbow passing over it as it turns or as time goes (owner 11-21: the rainbow swirl read
+    // as nothing). Half over the frame's right edge, below the card's head.
     if (cls.contains('gz-glow') && (GLOW[tier] != null || cls.contains('gz-holo-all'))) {
-      const hm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { t: { value: 0 } },
+      const hm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { t: { value: 0.3 }, map: { value: seal() } },
         vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vN = normalize(normalMatrix * normal); vec4 p = modelViewMatrix * vec4(position, 1.0); vV = normalize(-p.xyz); gl_Position = projectionMatrix * p; }',
-        fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float t;
+        fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float t; uniform sampler2D map;
           vec3 hue(float h){ return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); }
-          void main(){ vec2 d = vUv - 0.5; float r = length(d); if (r > 0.5) discard;
-            float ring = smoothstep(0.5, 0.47, r) * (1.0 - smoothstep(0.30, 0.28, r) * smoothstep(0.24, 0.26, r));
-            float a = atan(d.y, d.x) / 6.2832 + dot(vN, vV) * 1.5 + t * 0.25 + r;
-            gl_FragColor = vec4(mix(hue(fract(a)), vec3(1.0), 0.25), 0.82 * ring); }` });
-      const h = new THREE.Mesh(new THREE.CircleGeometry(20 * u, 40), hm);
-      h.position.set(W / 2 - m2 - 3 * u, cy + card.h / 2 - 70 * u, 0.4 * u); top.add(h); grp.userData.holo = hm;
+          void main(){ vec4 s = texture2D(map, vUv); if (s.a < 0.01) discard;
+            float k = (vUv.x * 0.8 - vUv.y * 0.6) + vN.x * 1.5 + vN.y * 0.9 + sin(t * 0.9) * 0.45;   // one band, where it lies now
+            float band = exp(-pow(k - 0.1, 2.0) * 7.0);
+            vec3 foil = mix(s.rgb, s.rgb * (0.6 + 0.6 * hue(fract(k * 0.9 + 0.55))), 0.15 + 0.7 * band);
+            gl_FragColor = vec4(foil + vec3(0.12) * band, s.a); }` });
+      const h = new THREE.Mesh(new THREE.PlaneGeometry(44 * u, 44 * u), hm);
+      h.position.set(cx + card.w / 2 - 12 * u, cy + card.h / 2 - 74 * u, 0.4 * u); top.add(h); grp.userData.holo = hm;
     }
     return grp;
   }
@@ -119,7 +131,7 @@ const glass3d = (() => {
     for (const [scene, cam] of jobs) { R.clearDepth(); R.render(scene, cam); }
     const x = cv.getContext('2d'); x.clearRect(0, 0, pw, ph); x.drawImage(R.domElement, 0, 0, pw, ph);
   }
-  const free = scene => scene.traverse(m => { if (m.geometry) m.geometry.dispose(); for (const x of [].concat(m.material || [])) { if (x.map) x.map.dispose(); x.dispose(); } });
+  const free = scene => scene.traverse(m => { if (m.geometry) m.geometry.dispose(); for (const x of [].concat(m.material || [])) { if (x.map && x.map !== sealTex) x.map.dispose(); x.dispose(); } });
   const sun = () => { const g = new THREE.Group(), l = new THREE.DirectionalLight(0xffffff, 0.9); l.position.set(1, 1.2, 1.5); g.add(l, new THREE.HemisphereLight(0xffffff, 0x404040, 0.5)); return g; };
   const PAD = 60;
   return {
