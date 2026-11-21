@@ -174,26 +174,35 @@ function menuPaint() {
     // (a wheel turns the row sideways on a computer)
     layer.addEventListener('wheel', e => { const r = layer.firstChild; if (r && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { r.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
   }
-  const t = myTier(), r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
+  const r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
   const go = fn => () => { SND.init(); SND.tap(); fn(); };
+  /* The row is made again only when what it shows has changed (R2 S2-a): coming back to 플레이 from 내 장비 or 상점, or
+     any repaint while on it (the server's answers, the wallet), made every card and the glass case anew - and the case
+     is drawn in 3D, the most of what a return to the menu cost (CPU ×4: 350 ms, the plan of 11-20). What a card shows
+     is its strip and whether it is 준비 중; the 선수증 its player's numbers - the key below. The cards' taps do the same
+     whichever row holds them. */
+  const pcO = { dama: myTier().dama, name: prefs.names[0], sub: net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : '오프라인', av: $('#dkMe .av').textContent || '1',
+    bg: prefs.card.bg, title: prefs.card.title, stats: [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]] };
+  const soonOf = c => typeof c.soon === 'function' ? c.soon() : !!c.soon;
+  const key = JSON.stringify([pcO, MENU_CARDS.map(c => [soonOf(c), c.strip()])]);
+  const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
+  if (old && old._key === key) { menuFit(); old.scrollLeft = menuScroll; requestAnimationFrame(() => { menuFit(); old.scrollLeft = menuScroll; menuFx.run(); }); return; }
   // my 선수증 (tapped: 선수증 꾸미기 - its face and title, sheetCard)
-  const pc = playerCard({ dama: myTier().dama, name: prefs.names[0], sub: net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : '오프라인', av: $('#dkMe .av').textContent || '1',
-    bg: prefs.card.bg, title: prefs.card.title, stats: [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]], tap: go(sheetCard) });
+  const pc = playerCard(Object.assign({ tap: go(sheetCard) }, pcO));
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), (the icon
   // still since 11-18), (11-17 night) a soft light and shade flowing inside it, and (11-19) its small signs drifting on the
   // diagonal in place of the dots (32-desk.js symLayer); only a card in sight moves - 'mn-live' below -
   // 84-menu.css. 11-17: the small tables, the bot standing in
   // 컴퓨터 대전's card and the strip shining were tried and taken out again - owner: too busy)
   const cards = MENU_CARDS.map((c, i) => {
-    const soon = typeof c.soon === 'function' ? c.soon() : !!c.soon;
+    const soon = soonOf(c);
     return el('button', { class: `mn-card k-${c.id}${c.hero ? ' hero' : ''}${soon ? ' soon' : ''}`, 'data-k': c.id, style: `--i:${i}`, onclick: go(c.go) }, [
       ...(c.hero ? [el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:1', alt: '' })), el('span', { class: 'mn-face', 'aria-hidden': 'true' })] : []),
       el('span', { class: 'mn-fx', 'aria-hidden': 'true' }, [menuFx.canvas(c.id, i, i), el('img', { class: 'x fxp', 'data-fx': 'x', alt: '' })]),
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   // (디버그 모드: the 선수증 in its glass case, seen from the front - glassCase)
-  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassCase(pc), ...cards]));
-  const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
+  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassCase(pc), ...cards])); row._key = key;
   layer.textContent = ''; layer.appendChild(row);
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
   // (a card moves only while it is in sight, or nearly: the rest wait without their moving layers - 84-menu.css gives

@@ -107,8 +107,8 @@ const SHELF_KEYS = ['cue', 'ball', 'table', 'trail'];
    of them drifting out of sight): a card gets 'aur-on' while any of it shows (74-shop-cards.css runs the curtains then). */
 const aurIO = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => { for (const e of es) e.target.classList.toggle('aur-on', e.isIntersecting); }, { rootMargin: '40px' }) : null;
 const aurSeen = c => { if (aurIO) aurIO.observe(c); else c.classList.add('aur-on'); };
+// the opened card put back (its look tried on the live table undone) - also on leaving the place (32-desk.js deskGo)
 function shelfClose() { const k = SHELVES[deskTab === 'shop' ? shopSel : gearSel]; if (shelfOpen != null && k && k.undo) k.undo(); shelfOpen = null; }
-function gearOff() { shelfClose(); }                                  // (also called on leaving the place)
 /* The top rarity's look and name (owner 11-21): 궁극 - a 스크류바's pink and white - or, in debug mode to compare
    (디버그 → 최고 등급), 시크릿 - black and white, glitching, as Steal a Brainrot's Secret. #app.r5-secret: 74-shop-cards.css. */
 const secretLook = () => { let d = false; try { d = net.debug; } catch (e) {} return !!(d && prefs.dbgSecret); };

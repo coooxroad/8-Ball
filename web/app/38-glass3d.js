@@ -154,7 +154,10 @@ const glass3d = (() => {
         free(scene); rest();
       };
       paint();
-      if (!g._ro) { let last = ''; g._ro = new ResizeObserver(() => { const k = g.offsetWidth + 'x' + g.offsetHeight; if (k !== last) { last = k; paint(); } }); g._ro.observe(g); }
+      // (not again for the size it was just drawn at - the observer's first word; nor while the menu is away - display:
+      // none, no size: the picture is kept, and drawn again on coming back only at another size - 37-desk-menu.js keeps
+      // the row, R2 S2-a)
+      if (!g._ro) { let last = g.offsetWidth ? g.offsetWidth + 'x' + g.offsetHeight : ''; g._ro = new ResizeObserver(() => { if (!g.offsetWidth) return; const k = g.offsetWidth + 'x' + g.offsetHeight; if (k !== last) { last = k; paint(); } }); g._ro.observe(g); }
       return true;
     },
     /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
