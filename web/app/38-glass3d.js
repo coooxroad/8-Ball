@@ -11,7 +11,7 @@
    match's opening (56-league.js) the swing in and the fling away are played here, frame by frame, for the case and
    (through its CSS transform) the card alike. No WebGL: the CSS case (84-menu.css .g3) is left as it was. */
 const glass3d = (() => {
-  let R = null, env = null, tried = false;
+  let R = null, env = null, tried = false, busy = false;   // (busy: an opening has the renderer's canvas on the screen)
   const METAL = { bronze: 0xa8653a, silver: 0xc8ced8, gold: 0xd9ae4f, platinum: 0x8ed3cc, diamond: 0x7fb4ff, pro: 0xd6ad58 };
   const GLOW = { diamond: 0x6fb4ff, pro: 0xf0c060 };
   const col = h => new THREE.Color(h).convertSRGBToLinear();
@@ -127,7 +127,9 @@ const glass3d = (() => {
   function draw(cv, cw, ch, jobs) {
     const dpr = Math.min(2, devicePixelRatio || 1), pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
     if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
-    R.setPixelRatio(dpr); R.setSize(cw, ch, false); R.clear(true, true, true);
+    if (R.getPixelRatio() !== dpr) R.setPixelRatio(dpr);
+    const sz = R.getSize(new THREE.Vector2()); if (sz.x !== cw || sz.y !== ch) R.setSize(cw, ch, false);
+    R.clear(true, true, true);
     for (const [scene, cam] of jobs) { R.clearDepth(); R.render(scene, cam); }
     const x = cv.getContext('2d'); x.clearRect(0, 0, pw, ph); x.drawImage(R.domElement, 0, 0, pw, ph);
   }
@@ -139,6 +141,7 @@ const glass3d = (() => {
     /* A case on the menu, still: its canvas laid over it, drawn now and when its size changes. */
     still(g) {
       if (!init() || !g.isConnected) return false;
+      if (busy) { requestAnimationFrame(() => glass3d.still(g)); return true; }
       g.classList.add('gl');
       let cv = g.querySelector(':scope>canvas.gl3'); if (!cv) { cv = el('canvas', { class: 'gl3', 'aria-hidden': 'true' }); g.appendChild(cv); }
       const paint = () => {
@@ -156,46 +159,56 @@ const glass3d = (() => {
     },
     /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
        the .vs, box - the #league (its 'away' class says when). */
+    /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
+       the .vs, box - the #league ('open' and 'away' on it say when). Everything is made now, while the league's wall
+       still covers the screen - the cases measured, their models built and their shaders compiled - and the swing's clock
+       starts only when the wall opens, so no frame of it waits on any of that (owner 11-21: the cards stuttered as they
+       turned - a profile showed the drawing canvas re-sized and copied every frame, and the shaders made on the first).
+       The renderer's own canvas is laid over the layer, sized once (at most 1.25 px a px), and drawn straight into. */
     opening(layer, box) {
       if (!init()) return false;
       const cases = [...layer.querySelectorAll('.g3')]; if (!cases.length) return false;
       layer.classList.add('js'); for (const g of cases) g.classList.add('gl');
-      const cv = el('canvas', { class: 'gl3 vs-gl', 'aria-hidden': 'true' }); layer.appendChild(cv);
-      let set = null, t0 = performance.now(), t1 = 0;
+      const lr = layer.getBoundingClientRect(), W = lr.width, Hh = lr.height;
+      for (const g of cases) g.style.transform = 'none';   // (the cases where the layout puts them, before any turn)
+      const set = cases.map(g => { const r = g.getBoundingClientRect(), o = measure(g), side = g.closest('.vs-card.r') ? 'r' : 'l', grp = model(g, o), piv = new THREE.Group();
+        grp.position.y = -o.H / 2; piv.add(grp); const scene = new THREE.Scene(); scene.add(piv, sun());
+        const x = r.left - lr.left + o.W / 2, y = r.top - lr.top, e = eye(g, o), P = 1500 * o.u;
+        return { g, o, side, piv, scene, holo: grp.userData.holo, x, y, e, P, cam: camera({ x: x + e.x, y: y + e.y }, P, W, Hh) }; });
+      busy = true;
+      const cv = R.domElement; cv.className = 'gl3 vs-gl'; cv.setAttribute('aria-hidden', 'true');
+      R.setPixelRatio(Math.min(1.25, devicePixelRatio || 1)); R.setSize(W, Hh);
+      Object.assign(cv.style, { left: 0, top: 0, opacity: 0 }); layer.appendChild(cv);
+      for (const c of set) R.compile(c.scene, c.cam);
+      let t0 = 0, t1 = 0;
       const ease = x => 1 - Math.pow(1 - x, 2.2), easeIn = x => Math.pow(x, 2.4);
       // the swing in, keyframes [p, rotateY, rotateZ, translateX (of 45vw)] - the left case's; the right one's mirrored
       const K = [[0, 80, 6, -1], [0.34, -26, -3, 0], [0.52, 13, 1.5, 0], [0.68, -6, -0.6, 0], [0.84, 2.5, 0, 0], [1, 0, 0, 0]];
       const pose = (now, side) => {
         const s = side === 'r' ? -1 : 1;
         if (t1) { const p = easeIn(Math.min(1, (now - t1) / 450)); return { tx: -s * 0.55 * innerWidth * p, ty: 0.1 * innerHeight * p, ry: s * 110 * p, rz: s * 14 * p, op: 1 - p }; }
-        const p = Math.max(0, Math.min(1, (now - t0 - 100) / 1150)); let i = 0; while (i < K.length - 2 && p > K[i + 1][0]) i++;
+        const p = t0 ? Math.max(0, Math.min(1, (now - t0 - 100) / 1150)) : 0; let i = 0; while (i < K.length - 2 && p > K[i + 1][0]) i++;
         const [a, b] = [K[i], K[i + 1]], q = ease((p - a[0]) / (b[0] - a[0])), L = (j) => a[j] + (b[j] - a[j]) * q;
         return { tx: s * L(3) * 0.45 * innerWidth, ty: 0, ry: s * L(1), rz: s * L(2), op: Math.min(1, p / 0.12) };
       };
+      const end = () => { busy = false; cv.remove(); cv.removeAttribute('style'); cv.className = ''; };
       const frame = () => {
-        if (!layer.isConnected) return;
+        if (!layer.isConnected) return end();
         const now = performance.now();   // (the clock the opening's timers keep - not the frame's own stamp)
+        if (!t0 && box.classList.contains('open')) t0 = now;
         if (!t1 && box.classList.contains('away')) t1 = now;
-        if (!set) {   // (the cases where the layout put them, before any turn)
-          for (const g of cases) g.style.transform = 'none';
-          const lr = layer.getBoundingClientRect();
-          set = cases.map(g => { const r = g.getBoundingClientRect(), o = measure(g), side = g.closest('.vs-card.r') ? 'r' : 'l', grp = model(g, o), piv = new THREE.Group();
-            grp.position.y = -o.H / 2; piv.add(grp); const scene = new THREE.Scene(); scene.add(piv);
-            scene.add(sun());
-            return { g, o, side, piv, scene, holo: grp.userData.holo, x: r.left - lr.left + o.W / 2, y: r.top - lr.top, e: eye(g, o) }; });
-          Object.assign(cv.style, { left: 0, top: 0, width: lr.width + 'px', height: lr.height + 'px' }); set.w = lr.width; set.h = lr.height;
-        }
-        const jobs = []; let op = 1;
+        let op = 0; R.clear(true, true, true);
         for (const c of set) {
-          const k = pose(now, c.side), P = 1500 * c.o.u, ex = c.e.x, ey = c.e.y;
-          c.g.style.transform = `translate(${ex}px,${ey}px) perspective(${P}px) translate(${-ex}px,${-ey}px) translate(${k.tx.toFixed(1)}px,${k.ty.toFixed(1)}px) rotateY(${k.ry.toFixed(2)}deg) rotateZ(${k.rz.toFixed(2)}deg)`;
+          const k = pose(now, c.side), ex = c.e.x, ey = c.e.y; op = k.op;
+          c.g.style.transform = `translate(${ex}px,${ey}px) perspective(${c.P}px) translate(${-ex}px,${-ey}px) translate(${k.tx.toFixed(1)}px,${k.ty.toFixed(1)}px) rotateY(${k.ry.toFixed(2)}deg) rotateZ(${k.rz.toFixed(2)}deg)`;
           c.g.style.opacity = k.op.toFixed(3);
+          if (k.op <= 0.01) continue;
           c.piv.position.set(c.x + k.tx, -(c.y + k.ty), 0); c.piv.rotation.set(0, k.ry * Math.PI / 180, -k.rz * Math.PI / 180, 'XYZ');
           if (c.holo) c.holo.uniforms.t.value = now / 1000;
-          op = k.op; if (k.op > 0.01) jobs.push([c.scene, camera({ x: c.x + ex, y: c.y + ey }, P, set.w, set.h)]);
+          R.clearDepth(); R.render(c.scene, c.cam);
         }
         cv.style.opacity = op.toFixed(3);   // (both cases fade alike)
-        draw(cv, set.w, set.h, jobs);
+        if (t1 && now - t1 > 500) return end();
         requestAnimationFrame(frame);
       };
       requestAnimationFrame(frame);

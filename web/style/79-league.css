@@ -62,3 +62,4 @@
 /* the cases drawn in 3D (38-glass3d.js): their swing played there, frame by frame - the CSS one off; the glass on its canvas */
 #league .vs.glass.js .vs-card .g3{animation:none!important}
 #league .vs.glass .vs-gl{position:absolute;pointer-events:none;z-index:5}
+#vsHaze{position:fixed;pointer-events:none;z-index:0;image-rendering:auto}   /* (56-league.js haze: the blurred table, fading) */

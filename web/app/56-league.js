@@ -36,13 +36,33 @@ const vsIntro = {
       vsIntro.hold = true; tableAlone(true); app.classList.add('vsblur'); vsIntro.blur(1);
       play();
       const layer = cards(); if (layer) { box.appendChild(layer); if (layer.classList.contains('glass')) glass3d.opening(layer, box); }
-      SND.good(); box.classList.add('open');
-      // the blur: lifting over 2.6 s, slowly and then faster (1 - p²)
-      const t0 = performance.now(), T = 2600, tick = now => { const p = Math.min(1, (now - t0) / T); vsIntro.blur(1 - p * p); if (p < 1 && vsIntro.on) vsIntro.raf = requestAnimationFrame(tick); };
-      vsIntro.raf = requestAnimationFrame(tick);
-      later(2350, () => box.classList.add('away'));
-      later(2750, () => vsIntro.stop(true));
+      // (it opens only after the game's first frames have been drawn under the wall - the table's pictures and shaders made
+      // then, the slowest frames of all (owner 11-21: the cards stuttered as they came in) - so nothing in the open waits)
+      let k = 0; const open = () => {
+        if (!vsIntro.on) return; if (++k < 3) { vsIntro.raf = requestAnimationFrame(open); return; }
+        SND.good(); box.classList.add('open');
+        // the blur: lifting over 2.6 s, slowly and then faster (1 - p²). Laid on as a blurred picture of the table over it,
+        // faded out by the compositor (owner 11-21, the opening stuttered: the full-screen blur filter, its radius changed
+        // every frame, was blurred again every frame); where the table can't be read, the filter as before
+        const T = 2600, hz = vsIntro.haze();
+        if (hz) { vsIntro.blur(0); hz.animate(Array.from({ length: 11 }, (_, i) => ({ opacity: 1 - (i / 10) ** 2 })), { duration: T, fill: 'forwards' }); }
+        else { const t0 = performance.now(), tick = () => { const p = Math.min(1, (performance.now() - t0) / T); vsIntro.blur(1 - p * p); if (p < 1 && vsIntro.on) vsIntro.raf = requestAnimationFrame(tick); };
+          vsIntro.raf = requestAnimationFrame(tick); }
+        later(2350, () => box.classList.add('away'));
+        later(2750, () => vsIntro.stop(true));
+      };
+      vsIntro.raf = requestAnimationFrame(open);
     });
+  },
+  // the table under the opening, blurred and dimmed as the filter makes it, as a small picture over the live one (null: the
+  // 3D's picture could not be read - it is read in the frame it was drawn in, after the game's own frame)
+  haze() {
+    const gl = $('#gl'), r = gl.getBoundingClientRect(); if (!r.width || !gl.width) return null;
+    const c = el('canvas', { id: 'vsHaze', 'aria-hidden': 'true' }); c.width = Math.max(2, Math.round(r.width / 8)); c.height = Math.max(2, Math.round(r.height / 8));
+    const x = c.getContext('2d', { willReadFrequently: false }); x.filter = 'blur(1.75px) brightness(0.82)'; x.drawImage(gl, 0, 0, c.width, c.height);
+    const d = x.getImageData(c.width >> 1, c.height >> 1, 1, 1).data; if (d[0] + d[1] + d[2] === 0) return null;
+    Object.assign(c.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    gl.after(c); return c;
   },
   blur(k) { $('#gl').style.filter = k > 0.01 ? `blur(${(14 * k).toFixed(2)}px) brightness(${(1 - 0.18 * k).toFixed(3)})` : ''; },
   // what a card shows of the gear: the cue's and the ball set's names (none: the plain ones)
@@ -70,7 +90,7 @@ const vsIntro = {
     for (const t of vsIntro.timers) clearTimeout(t); vsIntro.timers = []; cancelAnimationFrame(vsIntro.raf);
     const was = vsIntro.on; vsIntro.on = false; vsIntro.hold = false;
     if (vsIntro.box) { const b = vsIntro.box; vsIntro.box = null; b.classList.add('out'); setTimeout(() => b.remove(), 400); }
-    app.classList.remove('vsblur'); vsIntro.blur(0);
+    app.classList.remove('vsblur'); vsIntro.blur(0); const hz = $('#vsHaze'); if (hz) hz.remove();
     if (was) tableAlone(false);
     // (the rule's reminder the game said at its start was under the cover: said again - 4구 says its own after rolling out)
     if (done && flow === match && st.screen === 'play' && game.modeId !== 'four' && !game.over) { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
