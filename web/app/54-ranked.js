@@ -51,8 +51,8 @@ const ranked = {
   // an opponent: whatever is going on here is left (a practice, a sheet, the shop) and the game begins
   found(r) {
     closeSheet(); if (flow && flow !== match && st.screen === 'play') { st.phase = 'idle'; st.auto = null; }
-    // (a ranked game opens under the league's wall and the two players' cards - 56-league.js; 아케이드 goes to its vote)
-    SND.tap(); if ((r.kind || 'ranked') === 'ranked') vsIntro.start(r, () => ranked.play(r)); else ranked.play(r);
+    // (a ranked or invited game opens under the league's wall and the two players' cards - 56-league.js; 아케이드 goes to its vote)
+    SND.tap(); if ((r.kind || 'ranked') !== 'arcade') vsIntro.start(r, () => ranked.play(r)); else ranked.play(r);
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)

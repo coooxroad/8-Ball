@@ -64,7 +64,9 @@ function show(screen) {
   if (screen === 'home') { if (outro.on) outro.stop(); if (vsIntro.on) vsIntro.stop(); }
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
-  app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)
+  // a match is shown as on television (style/80-broadcast.css); kept on its result, which is a slate over the same table
+  // (owner 11-21 - the table must not move under it)
+  app.classList.toggle('bcast', (screen === 'play' || screen === 'result') && flow === match);
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
 let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0, winW = 0, winH = 0;

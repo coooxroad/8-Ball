@@ -160,8 +160,8 @@ function frame(now) {
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   if ((game.world.shape || null) !== shapeShown) { shapeShown = game.world.shape || null; scene.setShape(shapeShown); }   // (a table of another shape)
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
-  // (the table alone - a match's end or opening, 50-outro.js tableAlone: no cue, no line)
-  const nude = app.classList.contains('bare');
+  // (the table alone - a match's end or opening, 50-outro.js tableAlone, and under the result: no cue, no line)
+  const nude = app.classList.contains('bare') || (st.screen === 'result' && !review.on);   // (and under the result's slate)
   const lined = !nude && (st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({

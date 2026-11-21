@@ -288,6 +288,7 @@ function deskMatch({ rail, head, stage, foot, slate }, cpu, back) {
   if (!cpu) dkPut(slate, friendGear());
   if (!cpu) dkPut(slate, [dkHr(), addonCard()]);
   const d = store.get('save', null), gm = d && d.v === 2 && d.game && MODE_KO[d.game.modeId] ? d.game : null;
-  dkPut(slate, dkActs(dkMain('시작', null, () => match.start(m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0)),   // (4구: the yellow ball, and so who breaks, drawn by lot)
+  // (4구: the yellow ball, and so who breaks, drawn by lot; the game opens with the two cards face to face - 56-league.js local)
+  dkPut(slate, dkActs(dkMain('시작', null, () => { const first = m === 'four' ? (Math.random() < 0.5 ? 0 : 1) : 0; vsIntro.local(() => match.start(first)); }),
     gm ? dkSec('이어서 하기', () => resume(d), `${MODE_KO[gm.modeId]} · ${gm.players[0].name} vs ${gm.players[1].name}`) : null));
 }

@@ -187,7 +187,20 @@
   // the made carpet under every table (a 2m square of it): one quiet dark pile that never takes the eye from the table
   // (owner 11-19: the grey checks and the big triangles are gone; the hall's checks are on 방 참가's floor only - 76-play-unfold.css)
   const floorOf = () => made['carpet-calm'] || carpet;
-  const putFloor = () => { const m = floorOf(); if (floorMat.map !== m) { floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 1.05); floorMat.needsUpdate = true; } };
+  /* (owner 11-21: round the 4구 table - the 중대 - the floor read as flat black. The lamps hang right over the table, so
+     the table's own shadow covers the floor round it and only the dim fill reaches it; turning the carpet's colour up did
+     nothing. So round 4구 the carpet glows a little of its own (its picture as its glow), and the room's dark begins
+     further out (darkFloor, the falloff to black, drawn larger). Called on every table change - setTable.) */
+  let darkFloor = null;
+  const FLOOR_4 = { glow: 0.5, reach: 1.8 };
+  const putFloor = () => {
+    const m = floorOf(), four = !!(cur && !cur.POCKETED && cur.HL < 1.35), g = four ? FLOOR_4.glow : 0;
+    if (floorMat.map !== m || floorMat.emissive.r !== g) {
+      floorMat.map = m; floorMat.color.setScalar(m === carpet ? 1 : 1.05);
+      floorMat.emissiveMap = g ? m : null; floorMat.emissive.setScalar(g); floorMat.needsUpdate = true; staticDirty = true;
+    }
+    if (darkFloor) darkFloor.scale.setScalar(four ? FLOOR_4.reach : 1);
+  };
   loadTex('carpet-calm', 9, putFloor);
   let tableShadow = null;
   (function backdrop() {
@@ -203,7 +216,7 @@
     gr.addColorStop(0, 'rgba(4,4,6,0)'); gr.addColorStop(0.16, 'rgba(4,4,6,0)'); gr.addColorStop(0.36, 'rgba(4,4,6,0.55)'); gr.addColorStop(0.6, 'rgba(4,4,6,0.95)'); gr.addColorStop(0.75, 'rgba(4,4,6,1)');
     vg.fillStyle = gr; vg.fillRect(0, 0, 256, 256);
     const dk = new THREE.Mesh(new THREE.PlaneGeometry(24, 18), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(v), transparent: true, depthWrite: false, toneMapped: false }));
-    dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk);
+    dk.position.z = -0.795; dk.layers.set(1); sScene.add(dk); darkFloor = dk;
   })();
   /* The table's own light, as in a billiard hall: a long box hung on two wires over the table, its underside a lit
      acrylic panel and its sides glowing through frosted panels, so it reads as a light from any side. It lights nothing

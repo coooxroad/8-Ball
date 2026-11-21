@@ -1,6 +1,7 @@
 /* ================= CUELEAGUE: the moment a ranked opponent is found =================
    As a league's broadcast opens (owner 11-09: "분데스리가처럼"): a wall of the league's mark - columns of it, blue and pale
-   in turn - comes over the screen, each column from above or below, and runs on. Owner 11-21: it no longer draws in to one
+   in turn - comes over the screen, each column from above or below, and runs on. (Ranked and invited games, and - owner
+   11-21 - 컴퓨터 대전 and 친구와 플레이 here: local().) Owner 11-21: it no longer draws in to one
    mark - the columns go on and off the screen as they came, uncovering the game behind them, set up while the screen was
    covered: the table alone (no score bar, no keys - 50-outro.js tableAlone), softly blurred. Over it the two players' cards
    (선수증, 37-desk-menu.js playerCard - their faces and titles, what they have on) slide in from the sides face to face, VS
@@ -9,7 +10,19 @@
 const vsIntro = {
   on: false, hold: false, box: null, raf: 0, timers: [],
   // r: the room the lobby found (ranked.found); play(): the game set up and shown (ranked.play)
-  start(r, play) {
+  start(r, play) { vsIntro.run(() => vsIntro.cards(ranked.on), r.mode, play); },
+  // a game here (owner 11-21: 컴퓨터 대전 and 친구와 플레이 open the same way - and so it can be tried without the lobby):
+  // this player and the computer as picked, or the friend at the same device
+  local(play) {
+    const mode = prefs.mode, mine = vsIntro.me(famDama(mode));
+    let theirs;
+    if (prefs.vsAI) {
+      const b = botNow(), pick = (list, plain, k) => { let h = 2166136261; for (const ch of b.id + k) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; const q = list.filter(x => x.id !== plain && !x.need); return q[h % q.length].id; };
+      theirs = { name: b.name, dama: b.rating, bg: pick(CARD_BGS, 'tier', 'bg'), title: pick(TITLES, 'none', 't'), ...vsIntro.gearOf(null) };
+    } else theirs = { name: oppName(), dama: ECONOMY.DAMA_START, rate: '-', bg: 'tier', title: 'none', ...vsIntro.gearOf(null) };
+    vsIntro.run(() => vsIntro.layer([mine, theirs], mode), mode, play);
+  },
+  run(cards, mode, play) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return play();
     vsIntro.stop(); vsIntro.on = true;
     const W = innerWidth, H = innerHeight, n = W > H ? 5 : 3, cw = W / n;
@@ -22,7 +35,7 @@ const vsIntro = {
     later(560 + n * 45, () => {
       vsIntro.hold = true; tableAlone(true); app.classList.add('vsblur'); vsIntro.blur(1);
       play();
-      const o = ranked.on; if (o) box.appendChild(vsIntro.cards(o));
+      const layer = cards(); if (layer) box.appendChild(layer);
       SND.good(); box.classList.add('open');
       // the blur: lifting over 2.6 s, slowly and then faster (1 - p²)
       const t0 = performance.now(), T = 2600, tick = now => { const p = Math.min(1, (now - t0) / T); vsIntro.blur(1 - p * p); if (p < 1 && vsIntro.on) vsIntro.raf = requestAnimationFrame(tick); };
@@ -32,16 +45,21 @@ const vsIntro = {
     });
   },
   blur(k) { $('#gl').style.filter = k > 0.01 ? `blur(${(14 * k).toFixed(2)}px) brightness(${(1 - 0.18 * k).toFixed(3)})` : ''; },
-  // the two cards: this player's on the left, the other's on the right, as their places at the score bar
+  // what a card shows of the gear: the cue's and the ball set's names (none: the plain ones)
+  gearOf(g) { return { cue: (CUES.find(c => c.id === (g && g.cue)) || CUES[0]).name, ball: (BALLSKINS.find(b => b.id === (g && g.ball)) || BALLSKINS[0]).name }; },
+  me(dama) { return { name: prefs.names[0], dama, bg: prefs.card.bg, title: prefs.card.title, ...vsIntro.gearOf(ranked.gear()) }; },
+  // a ranked (or invited) game's two cards: this player's on the left, the other's on the right, as their places at the score bar
   cards(o) {
-    const gearOf = g => ({ cue: (CUES.find(c => c.id === (g && g.cue)) || CUES[0]).name, ball: (BALLSKINS.find(b => b.id === (g && g.ball)) || BALLSKINS[0]).name });
-    const mine = { name: prefs.names[0], dama: o.dama, bg: prefs.card.bg, title: prefs.card.title, ...gearOf(ranked.gear()) };
-    const g = o.opp.gear || {}, theirs = { name: o.opp.name, dama: typeof o.opp.dama === 'number' ? o.opp.dama : ECONOMY.DAMA_START, bg: g.card, title: g.title, ...gearOf(g) };
-    const card = (p, side) => { const c = playerCard({ dama: p.dama, name: p.name, sub: side === 'l' ? '나' : '상대', bg: p.bg, title: p.title, bar: false, stats: [['레이팅', p.dama], ['큐', p.cue], ['공', p.ball]] });
+    if (!o) return null;
+    const g = o.opp.gear || {}, theirs = { name: o.opp.name, dama: typeof o.opp.dama === 'number' ? o.opp.dama : ECONOMY.DAMA_START, bg: g.card, title: g.title, ...vsIntro.gearOf(g) };
+    return vsIntro.layer(o.seat === 1 ? [theirs, vsIntro.me(o.dama)] : [vsIntro.me(o.dama), theirs], o.mode);
+  },
+  // the cards face to face, VS and the game between them; p: { name, dama, rate? (shown for the rating), bg, title, cue, ball }
+  layer(seats, mode) {
+    const card = (p, side) => { const c = playerCard({ dama: p.dama, name: p.name, sub: '', bg: p.bg, title: p.title, bar: false, stats: [['레이팅', p.rate || p.dama], ['큐', p.cue], ['공', p.ball]] });
       c.classList.add('mn-live'); return el('div', { class: 'vs-card ' + side }, c); };
-    const seats = o.seat === 1 ? [theirs, mine] : [mine, theirs];
     const k = Math.max(0.42, Math.min(1, innerHeight * 0.78 / 560, innerWidth * 0.3 / 228));
-    const layer = el('div', { class: 'vs', style: `--u:${k.toFixed(3)}` }, [card(seats[0], 'l'), el('div', { class: 'vs-mid' }, [el('b', { text: 'VS' }), el('small', { text: MODE_KO[o.mode] || '' })]), card(seats[1], 'r')]);
+    const layer = el('div', { class: 'vs', style: `--u:${k.toFixed(3)}` }, [card(seats[0], 'l'), el('div', { class: 'vs-mid' }, [el('b', { text: 'VS' }), el('small', { text: MODE_KO[mode] || '' })]), card(seats[1], 'r')]);
     requestAnimationFrame(() => fxBake(layer));
     return layer;
   },

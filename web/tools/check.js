@@ -5,7 +5,8 @@
    3. what can be owned (content/) is whole: every item has an id unique in its kind, a name, a rarity within RARITY, the
       picture its card needs, and a sound that names a recording only if web/sound/ has it; every texture and sound an
       item names exists;
-   4. every id the markup has is unique, and every picture the styles or scripts name as ui/<name>.webp exists. */
+   4. every id the markup has is unique, and every picture the styles or scripts name as ui/<name>.webp exists.
+   5. every stylesheet's braces balance. */
 const fs = require('fs'), path = require('path'), W = path.join(__dirname, '..');
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); };
 // (two scripts: the game's core - which the computer player's Worker is made from, so it must stand alone - then the app)
@@ -108,6 +109,14 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
   for (const [, id] of html.matchAll(/\bid="([^"]+)"/g)) { if (seen.has(id)) fail(`index.html: id "${id}" used twice`); seen.add(id); }
   const named = new Set(); for (const [, n] of page.matchAll(/ui\/([a-z0-9-]+)\.webp/g)) named.add(n);
   for (const n of named) if (!fs.existsSync(path.join(W, 'ui', n + '.webp'))) fail(`ui/${n}.webp is named but missing`);
+}
+// 5. each stylesheet's braces close as they open (owner 11-21: one stray } after a @media block silently dropped every rule
+//    after it - the result's whole new look - and nothing else noticed)
+for (const f of fs.readdirSync(path.join(W, 'style')).filter(f => f.endsWith('.css'))) {
+  const css = fs.readFileSync(path.join(W, 'style', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+  let d = 0, line = 1, bad = 0;
+  for (const ch of css) { if (ch === '\n') line++; else if (ch === '{') d++; else if (ch === '}' && --d < 0 && !bad) bad = line; }
+  if (bad) fail(`style/${f}: a } with nothing open, line ${bad} (counting without comments)`); else if (d) fail(`style/${f}: ${d} { left open`);
 }
 console.log(failed ? `${failed} check(s) failed` : 'page checks passed');
 process.exit(failed ? 1 : 0);
