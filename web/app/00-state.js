@@ -52,9 +52,6 @@ const prefs = (() => {
     addons: { real: false, throw: true, squirt: true, cue: true },
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
     theme: 'dark',                     // 화면 모드 (owner 11-15): 'dark' - walnut desk, green tray, green keys (the default); 'light' - oak and blue
-    deskWoodTry: null, deskTrayTry: null, // 디버그: a wood and a tray to try over the mode's (DESK_LOOK; null: the mode's own)
-    oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-menu.js)
-    menuProps: false,                  // 디버그: the menu cards' signs - false the line icons, '3d' (or true, as first saved) rendered icons (37-desk-menu.js menuIco)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
     safeShot: true,                    // 오발 방지 (owner 11-21): the power bar let go while the dial turns holds the shot (80-input.js)
     card: { bg: 'tier', title: 'none' }, // 선수증 꾸미기 (owner 11-21): the card's face and title, content/50-cards.js (37-desk-menu.js sheetCard)
@@ -172,9 +169,9 @@ const DESK_LOOK = {
 const THEMES = { dark: { wood: 'walnut', tray: 'green' }, light: { wood: 'oak', tray: 'blue' } };
 const themeNow = () => prefs.theme === 'light' ? 'light' : 'dark';
 const deskLook = () => {
-  let d = false; try { d = net.debug; } catch (e) {}                 // (the first call is before net is made: 07-net.js)
+  // (the wood and tray to try in debug mode are gone, owner 11-21: the theme's own)
   const T = THEMES[themeNow()];
-  return { wood: DESK_LOOK.wood[d && prefs.deskWoodTry] || DESK_LOOK.wood[T.wood], tray: DESK_LOOK.tray[d && prefs.deskTrayTry] || DESK_LOOK.tray[T.tray] };
+  return { wood: DESK_LOOK.wood[T.wood], tray: DESK_LOOK.tray[T.tray] };
 };
 // behind everything: the desk's wood on the home screen, the dark room in play
 function applyBackdrop() {

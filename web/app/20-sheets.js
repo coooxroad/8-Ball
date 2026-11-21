@@ -38,34 +38,12 @@ function sheetSettings() {
     note('CUE 4.0'),
   ]);
 }
-/* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). The desk's wood and
-   the tray to try (owner 11-13: DESK_LOOK, 00-state.js - kept on this device, used only in debug mode), and 아케이드's
-   ultimate gauge in any game. (The light's sliders are gone: the owner fixed its values as the game's own - LIGHT0.) */
+/* 디버그 (owner 11-11): shown only on an account the admin console has put in debug mode (net.debug). Owner 11-21: the
+   menu's tryouts (the desk's wood and tray, the old menu, the cards' pictures, the menu's diagnosis, the glass case and
+   its dressings) are settled and gone; what is left is what is still being tried - the top rarity's look, the tables of
+   other shapes, 아케이드's gauge (아케이드 itself is open to a debug account on the menu). */
 function sheetDebug() {
-  // (화면 모드대로: the mode's own wood and tray; the rest tried over it)
-  const seg = (what, key) => el('div', { class: 'seg' }, [[null, '화면 모드대로'], ...Object.entries(DESK_LOOK[what]).map(([id, o]) => [id, o.name])].map(([id, name]) =>
-    el('button', { 'aria-pressed': String((prefs[key] || null) === id), text: name, onclick: () => { prefs[key] = id; savePrefs(); applyBackdrop(); sheetDebug(); } })));
   openSheet('디버그', [
-    el('div', { class: 'lab', text: '책상 목재' }), seg('wood', 'deskWoodTry'),
-    el('div', { class: 'lab', text: '트레이' }), seg('tray', 'deskTrayTry'),
-    // (플레이's menu: the card row, or the desk's boards as they were - 37-desk-menu.js)
-    el('div', { class: 'lab', text: '메인 메뉴' }),
-    el('div', { class: 'seg' }, [[false, '새 메뉴'], [true, '예전 메뉴']].map(([v, t]) =>
-      el('button', { 'aria-pressed': String(!!prefs.oldMenu === v), text: t, onclick: () => { prefs.oldMenu = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
-    // (the menu cards' signs: the line icons, or 3D props to try - owner 11-20, the menu to read more as a game: 37-desk-menu.js menuIco)
-    el('div', { class: 'lab', text: '메인 카드 그림' }),
-    el('div', { class: 'seg' }, [[false, '선 아이콘'], ['3d', '그림 아이콘']].map(([v, t]) =>
-      el('button', { 'aria-pressed': String((prefs.menuProps === true || prefs.menuProps === '3d' ? '3d' : false) === v), text: t, onclick: () => { prefs.menuProps = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
-    // (메뉴 진단, owner 11-20: what on the menu the blinking and the stutter come from - 37-desk-menu.js menuDbg)
-    el('div', { class: 'lab', text: '메뉴 진단' }),
-    flatBtn(`카드 효과: ${prefs.dbgNoFx ? '끔' : '켬'}`, () => { prefs.dbgNoFx = !prefs.dbgNoFx; savePrefs(); menuDbg(); sheetDebug(); }),
-    flatBtn(`메뉴 공: ${prefs.dbgNoBalls ? '끔' : '켬'}`, () => { prefs.dbgNoBalls = !prefs.dbgNoBalls; savePrefs(); menuDbg(); sheetDebug(); }),
-    // (the 선수증 in a glass case - owner 11-21, tried here first: 37-desk-menu.js glassCase)
-    el('div', { class: 'lab', text: '선수증' }),
-    flatBtn(`유리 케이스: ${prefs.dbgGlass === false ? '끔' : '켬'}`, () => { prefs.dbgGlass = prefs.dbgGlass === false; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); }),
-    // (the case's dressings, each tried on its own - owner 11-21: 37-desk-menu.js GZ)
-    el('div', { class: 'seg gz' }, GZ.map(([k, , t]) => el('button', { 'aria-pressed': String(!!prefs[k]), text: t,
-      onclick: () => { prefs[k] = !prefs[k]; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
     // (the top rarity's look: 궁극, or 시크릿 to compare - owner 11-21: 35-desk-shelves.js secretLook)
     el('div', { class: 'lab', text: '최고 등급' }),
     el('div', { class: 'seg' }, [[false, '궁극 (스크류바)'], [true, '시크릿 (흑백 글리치)']].map(([v, t]) =>

@@ -79,7 +79,7 @@ const glass3d = (() => {
     const m = new THREE.Mesh(slab, [cap, edge]); m.renderOrder = 2; grp.add(m);
     // the screws' metal: the tier's
     const metal = new THREE.MeshStandardMaterial({ color: col(METAL[tier] || METAL.bronze), metalness: 1, roughness: tier === 'pro' ? 0.22 : 0.3, envMap: env, envMapIntensity: 1.3 });
-    // the dressings, each on its switch (37-desk-menu.js GZ)
+    // the dressings (37-desk-menu.js GZ_ON: the desk's eye, the lit edges and the seal, the cut foot)
     const top = new THREE.Group(); top.position.z = D / 2; top.renderOrder = 3; grp.add(top);
     const m2 = card.y, bot = H - card.y - card.h;
     if (cls.contains('gz-screw')) for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {

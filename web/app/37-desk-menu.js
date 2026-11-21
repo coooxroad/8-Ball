@@ -11,7 +11,7 @@
    디버그 · 메인 메뉴 예전: the desk's boards as they were (33-desk-play.js boards), with the 훈련 tab. A screen held upright
    keeps the boards for now (its own layout to come). */
 // (the card menu, unless the debug setting asks for the old boards, or the screen is held upright)
-function menuOn() { let d = false; try { d = net.debug; } catch (e) {} return !(d && prefs.oldMenu) && !(app.clientHeight > app.clientWidth); }
+function menuOn() { return !(app.clientHeight > app.clientWidth); }   // (the old menu to compare in debug mode: gone, owner 11-21)
 // is the card menu what the home screen shows now? and is it showing?
 function menuNow() { return st.screen === 'home' && deskTab === 'play' && playStep === 'boards' && menuOn(); }
 function menuShown() { return $('#desk').classList.contains('menu'); }
@@ -31,8 +31,7 @@ const menuLine = (s, k) => { s.classList.remove('pic'); s.innerHTML = `<svg view
    is not in yet keeps its line icon). (Flat 2D props were tried the same night and dropped: they sat apart from the card.) */
 const menuIco = k => {
   const s = el('i', { class: 'mn-ico', 'aria-hidden': 'true' });
-  let dbg = false; try { dbg = net.debug; } catch (e) {}
-  const how = dbg ? prefs.menuProps : false;
+  const how = false;   // (the pictured icons tried in debug mode: put away, owner 11-21 - kept for when they come back)
   if (how === true || how === '3d') { s.classList.add('pic'); s.appendChild(el('img', { src: `ui/menu-${k}.webp`, alt: '', draggable: 'false', onerror: () => menuLine(s, k) })); }
   else menuLine(s, k);
   return s;
@@ -122,15 +121,16 @@ function playerCard(o) {
    are), the front's edges cut at 45° and lit as the light from the upper right lights them - no lid (owner 11-21). Drawn in CSS 3D (84-menu.css .g3): on the menu seen from the front (the thickness a thin rim all round, by
    perspective), on the match's opening swinging in about its top and flung away (79-league.css). cw: the card's width in
    u (the opening's cards are wider). Returns the case, the card inside it. */
-function glassOn() { return !!net.debug && prefs.dbgGlass !== false; }
-const GZ = [['dbgGzView', 'gz-view', '책상 시점'], ['dbgGzScrew', 'gz-screw', '금속 나사'], ['dbgGzMark', 'gz-mark', '각인'],
-  ['dbgGzGlow', 'gz-glow', '빛·홀로그램'], ['dbgGzHoloAll', 'gz-holo-all', '홀로그램 모든 등급']];
+function glassOn() { return true; }   // (owner 11-21: everyone's - drawn in 3D where WebGL is, the CSS case where not)
+// its dressings (owner 11-21, chosen after trying each): the desk's eye, the edges lit with the hologram seal (다이아·프로),
+// CUE and the number cut in its foot - no screws
+const GZ_ON = 'gz-view gz-glow gz-mark';
 function glassCase(card, cw, eye) {
   const f = (cls, kids) => el('i', { class: 'f ' + cls, 'aria-hidden': 'true' }, kids);
-  // (its dressings, each on by its own switch - GZ; the tier for their metal; eye: 'l' when the eye is to the case's left)
+  // (its dressings - GZ_ON; the tier for their metal; eye: 'l' when the eye is to the case's left)
   const tier = (/\bt-(\w+)/.exec(card.className) || [])[1] || 'bronze', nm = (card.querySelector('.nm') || {}).textContent || '';
   const no = String([...nm].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
-  const cls = ['g3', 't-' + tier, eye === 'l' ? 'vl' : '', ...GZ.filter(([k]) => prefs[k]).map(g => g[1])].filter(Boolean).join(' ');
+  const cls = ['g3', 't-' + tier, eye === 'l' ? 'vl' : '', GZ_ON].filter(Boolean).join(' ');
   const g = el('div', { class: cls, style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), f('tier', el('span', { class: 'mn-rim' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' }))), card, f('front'),
     f('screw a'), f('screw b'), f('screw c'), f('screw d'), f('mark', [el('b', { text: 'CUE' }), el('small', { text: 'No.' + no })]), f('holo')]);
   // (drawn in 3D once it is on the page - 38-glass3d.js; the opening's cases are played there by 56-league.js)
@@ -162,7 +162,7 @@ function sheetCard() {
 }
 /* 디버그 · 메뉴 진단 (owner 11-20: the screen blinks when a ball is touched, the menu stutters on the tablet): the cards'
    moving layers, or the balls, put away - to see on the device which of them it comes from (20-sheets.js sheetDebug) */
-function menuDbg() { let d = false; try { d = net.debug; } catch (e) {} app.classList.toggle('dbg-nofx', !!(d && prefs.dbgNoFx)); app.classList.toggle('dbg-noballs', !!(d && prefs.dbgNoBalls)); }
+function menuDbg() { app.classList.remove('dbg-nofx', 'dbg-noballs'); }   // (the menu's diagnosis in debug mode: gone, owner 11-21)
 function menuPaint() {
   menuDbg();
   // the cloth on the desk, and the layer for the row over the plane (made once)
