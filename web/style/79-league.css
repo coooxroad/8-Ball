@@ -58,3 +58,7 @@
 @keyframes g3OutR{from{opacity:1;transform:var(--persp) rotateY(0deg)}to{opacity:0;transform:var(--persp) translate(55vw,10vh) rotateY(-110deg) rotateZ(-14deg)}}
 /* the table under it (#gl: its blur and dimming set step by step by the script) */
 #app.vsblur #gl{will-change:filter}
+
+/* the cases drawn in 3D (38-glass3d.js): their swing played there, frame by frame - the CSS one off; the glass on its canvas */
+#league .vs.glass.js .vs-card .g3{animation:none!important}
+#league .vs.glass .vs-gl{position:absolute;pointer-events:none;z-index:5}

@@ -35,7 +35,7 @@ const vsIntro = {
     later(560 + n * 45, () => {
       vsIntro.hold = true; tableAlone(true); app.classList.add('vsblur'); vsIntro.blur(1);
       play();
-      const layer = cards(); if (layer) box.appendChild(layer);
+      const layer = cards(); if (layer) { box.appendChild(layer); if (layer.classList.contains('glass')) glass3d.opening(layer, box); }
       SND.good(); box.classList.add('open');
       // the blur: lifting over 2.6 s, slowly and then faster (1 - p²)
       const t0 = performance.now(), T = 2600, tick = now => { const p = Math.min(1, (now - t0) / T); vsIntro.blur(1 - p * p); if (p < 1 && vsIntro.on) vsIntro.raf = requestAnimationFrame(tick); };
