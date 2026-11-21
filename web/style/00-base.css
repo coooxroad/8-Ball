@@ -2,6 +2,14 @@
 /* Layout: a live 3D table in the middle; quiet panels dock left and right of it on the home screen and
    leave during play, when only a slim scoreboard and the edge controls remain.
    One look: glass panels on near-black, one cyan (the light theme was removed; its variables were folded in here). */
+/* The layers over each other (z-index; R2 P2-a - most of #app's parts have none and stack in index.html's order: the table
+   #gl, the desk, the HUD, the toast, the sheet, the result):
+     0-6   the table and its controls, the desk and its layers (#deskPlane, #desk, #dkCards, #dkBalls 5; #deskBar 6)
+     15    .zap (a lightning flash in play)       18  #arcFx (the arcade's card effects)
+     20    .scrim - the sheets (#sheet)            25  the speech bubbles (.emo-bub, .bot-bub)
+     30    #emoteBox, #spinPop over the table      40  #coach, .fast-ask
+     60    #rkBar (랭킹전 looking for an opponent, under the bar)      200  .fx-burst (a purchase's sparks)
+     7900  #rise (the rating ring)   8000  #outro (승리 / 패배)   9000  #league (the match's opening, over everything) */
 /* Use the platform UI font for small screen labels; the bundled face remains an offline fallback. */
 :root{color-scheme:light;--hud-h:60px;--ui-font:system-ui,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Gothic A1',sans-serif}
 #app{position:relative;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-weight:var(--w-text);
@@ -64,8 +72,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 .txt:focus{border-color:var(--acc);outline:none}
 .row{display:flex;gap:10px}
 .row>*{flex:1}
-.lg-top{display:flex;align-items:center;gap:14px;max-width:860px;margin:0 auto 18px}
-.lg-top h1{margin:0;font-size:24px;font-weight:var(--w-title);letter-spacing:-.02em;flex:1}
 #nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-size:17px;line-height:1.6;background:#101216;color:#f3f5f7}
 @media (max-height:520px){:root{--hud-h:52px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

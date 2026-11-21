@@ -294,12 +294,9 @@
 #app.desk .dk-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 #app.desk .dk-tab .ti{flex:none;width:20px;height:20px;opacity:.9}
 #app.desk .dk-tab[aria-selected="true"] .ti{opacity:1}
-#app.desk .dk-top.dk-ico{border-image:none;background:none;box-shadow:none;padding:0 8px;color:#d9d3c6;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
-#app.desk .dk-top.dk-ico:active{transform:scale(.92);border-image:none}
 #app.desk.compact .dk-tab .ti{width:17px;height:17px}
 #app.desk.compact.portrait .dk-tab{gap:5px}
 
-#app.desk .dk-top.dk-ico::after,#app.desk .dk-top.dk-ico::before{display:none}
 /* ambient occlusion (owner, 11-08): where a thing meets the desk it is darkest - a tight dark contact under every piece,
    inside the wide soft shadow the light throws */
 #app.desk .dk-rail,#app.desk .dk-tray,#app.desk .dk-slate{box-shadow:0 0 2px 1px rgba(0,0,0,.4),0 0 10px 2px rgba(0,0,0,.25),-2px 3px 3px rgba(0,0,0,.5),-6px 9px 10px rgba(0,0,0,.3),-14px 20px 28px rgba(0,0,0,.42)}

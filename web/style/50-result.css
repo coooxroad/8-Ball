@@ -231,7 +231,6 @@
 .rv-top b{font:800 24px var(--ui-font)}
 .rv-back{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3eee3' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center/20px no-repeat;cursor:pointer}
 .rv-back:active{background-color:rgba(255,255,255,.16)}
-.rv-wait{margin:0;font:600 13px var(--ui-font);color:#9fb0c3}
 .rv-coach{flex:none;display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 4px 0 0 var(--gc,transparent)}
 .rv-say{display:flex;align-items:center;gap:10px}
 .rv-say .rv-ico{width:30px;height:30px}
@@ -244,7 +243,6 @@
 .rv-fluke{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 4px;border-radius:99px;background:rgba(140,198,63,.16);font:800 12.5px var(--ui-font);color:#b8e07c}
 .rv-fluke .rv-ico{width:20px;height:20px}
 .rv-why{margin:0;font:600 14.5px/1.55 var(--ui-font);color:#d9dfe7}
-.rv-acts{display:flex;gap:8px;flex-wrap:wrap}
 .rv-act{min-height:36px;padding:0 14px;border:0;border-radius:99px;background:rgba(255,255,255,.08);color:#d9dfe7;font:700 13.5px var(--ui-font);cursor:pointer}
 .rv-act.on{background:rgba(255,255,255,.2);color:#fff}
 .rv-nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;font:700 13px var(--ui-font);color:#9fb0c3}
@@ -312,17 +310,11 @@
 #app.desk.compact .rv-si{padding:4px 2px}
 #app.desk.compact .rv-tip,#app.desk.compact .rv-cue,#app.desk.compact .rv-thick{transform:scale(.8);margin:-3px 0}
 #app.desk.compact .rv-why.alt{font-size:12px;padding:6px 8px}
-/* the coach's lines (의도 · 결과 · 원인 · 한마디 · 추천) and an other way's reasons */
-.rv-lines{display:flex;flex-direction:column;gap:5px}
-.rv-line{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:baseline;margin:0;font:600 14px/1.45 var(--ui-font);color:#dfe5ec}
-.rv-line b{font:800 11.5px var(--ui-font);color:#9fb0c3;padding:2px 0;min-width:3.6em;text-align:center;border-radius:99px;background:rgba(255,255,255,.07);white-space:nowrap}
-.rv-line.rec b{color:#d9c8ff;background:rgba(138,111,208,.22)}
+/* an other way's reasons */
 .rv-why.alt p{margin:0}
 .rv-whys{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
 .rv-whys li{font:700 13px var(--ui-font);color:#cfe9d6}
 .rv-whys li::before{content:'✓ ';color:#5fbf7a}
-#app.desk.compact .rv-line{font-size:12.5px;gap:6px}
-#app.desk.compact .rv-line b{font-size:10px;padding:1px 6px}
 #app.desk.compact .rv-whys li{font-size:11.5px}
 
 /* ---------- held sideways: the hall's receipt and its panel (app/50-receipt.js, owner 11-21: 시안 2 계산서) ----------

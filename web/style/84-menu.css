@@ -71,8 +71,6 @@
 .mn-card.k-friend{--c1:#2db866;--c2:#11713a}
 .mn-card.k-lesson{--c1:#ea544a;--c2:#a0231d}
 .mn-card.k-puzzle{--c1:#f2a433;--c2:#b45d0c}
-.mn-card.k-watch{--c1:#3d8a8a;--c2:#174646}
-.mn-card.k-tour{--c1:#a88a4a;--c2:#5a461c}
 .mn-card.k-arcade{--c1:#9b62ea;--c2:#5a2aa9}
 .mn-card.k-cpu{--c1:#33a9c4;--c2:#165a74}
 .mn-card.k-free{--c1:#93b83b;--c2:#4c6c10}
@@ -183,7 +181,7 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
    no lid or slot band (owner 11-21: the case alone). The case is larger than the card by --m all round; --cw: the card's
    width in u. Turned by --rx/--ry/--rz about the middle of its top edge (the opening swings it - 79-league.css). ---- */
 .g3{--m:calc(14px*var(--u));--bot:var(--m);margin:0 calc(6px*var(--u));--top:var(--m);--D:calc(34px*var(--u));--W:calc(var(--cw,244px)*var(--u) + 2*var(--m));--H:calc(560px*var(--u) + var(--top) + var(--bot));position:relative;flex:none;width:var(--W);height:var(--H);transform-style:preserve-3d;transform-origin:50% 0;--persp:perspective(calc(1500px*var(--u)));transform:var(--persp) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) rotateZ(var(--rz,0deg));--glow:rgba(255,190,120,.0);--fw:calc(6px*var(--u));--rim:linear-gradient(135deg,#d9a571,#7a4a24 50%,#e9c39a)}
-.g3>.mn-pc{position:absolute!important;left:var(--m);top:var(--top);margin:0}
+.g3>.mn-pc{position:absolute;left:var(--m);top:var(--top);margin:0}
 .g3>.mn-pc:active{transform:none}
 .g3>.f{position:absolute;display:block;pointer-events:none;backface-visibility:visible}
 /* the panes */
@@ -282,12 +280,6 @@ button.mn-pc:active{filter:brightness(.96)}
 @keyframes mn-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}70%{opacity:0;transform:scale(.5) rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){.mn-rim :is(i,img),.mn-sheen :is(i,img),.mn-sp,.mn-card.hero::before{animation:none}.mn-sp{display:none!important}}
 
-/* 훈련's way back to the menu: the rail's head (app/34-desk-train.js) */
-#app.desk .dk-back{flex:none;display:flex;align-items:center;justify-content:center;gap:4px;min-height:48px;margin:2px 6px 10px;padding:0 12px 0 6px;border-radius:12px;
-  background:rgba(60,45,25,.1);box-shadow:inset 0 0 0 1.5px rgba(60,45,25,.22);color:#3a3026;font:800 18px var(--ui-font)}
-#app.desk .dk-back:active{background:rgba(60,45,25,.2)}
-#app.desk .dk-back svg{width:20px;height:20px}
-#app.desk.compact .dk-back{min-height:44px;margin:0 0 6px;font-size:16px}
 
 /* The towel and the plant on the menu (owner 11-16: cut off and blurred on the leaning desk): flat, in a layer of their
    own over the desk and under the cards (#dkProps, as #dkCards) - drawn at the screen's own sharpness, the plant hung
