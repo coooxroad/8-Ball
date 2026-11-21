@@ -48,6 +48,10 @@ function sheetDebug() {
     el('div', { class: 'lab', text: '최고 등급' }),
     el('div', { class: 'seg' }, [[false, '궁극 (스크류바)'], [true, '시크릿 (흑백 글리치)']].map(([v, t]) =>
       el('button', { 'aria-pressed': String(!!prefs.dbgSecret === v), text: t, onclick: () => { prefs.dbgSecret = v; savePrefs(); if (st.screen === 'home') deskPaint(); sheetDebug(); } }))),
+    // (a ranked game's rating stage, to see without one - owner 11-22: 50-rise.js)
+    el('div', { class: 'lab', text: '레이팅 진척도 미리보기' }),
+    el('div', { class: 'seg' }, [['오름', 1494, 1512, 40], ['승급 직전', 1640, 1668, 40], ['거의 승급', 1672, 1694, 40], ['내림', 1512, 1496, 0]].map(([t, a, b, c]) =>
+      el('button', { text: t, onclick: () => { closeSheet(); rise.run({ from: a, to: b, coins: c }, () => {}); } }))),
     // (a table of another shape, to see: free practice is played on it - physics.js shape, tables.js TABLE_SHAPES)
     el('div', { class: 'lab', text: '테이블 모양 (자유 연습)' }),
     el('div', { class: 'seg' }, [['', '기본'], ['circle', '원'], ['oval', '타원'], ['penta', '오각'], ['hexa', '육각'], ['bumpy', '울퉁불퉁']].map(([k, t]) =>

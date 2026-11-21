@@ -156,7 +156,9 @@ const match = {
     // as the slate comes in beside it: 50-outro.js. Already on the result - the room's word changing the winner -: at once)
     const reveal = () => { show('result'); for (const [cv, q] of pics) if (q) drawShot(cv, q); review.paint(); };
     if (st.screen === 'result') reveal();
-    else outro.start({ word: $('#rTitle').textContent, kind: draw ? 'draw' : mine ? 'win' : 'lose', score: `${pts(0)} : ${pts(1)}` }, reveal);
+    // (a ranked game: its rating risen or fallen, on its ring, before the receipt - 50-rise.js)
+    else outro.start({ word: $('#rTitle').textContent, kind: draw ? 'draw' : mine ? 'win' : 'lose', score: `${pts(0)} : ${pts(1)}` },
+      on && on.kind !== 'invite' && on.kind !== 'arcade' && !app.classList.contains('portrait') ? () => rise.wait(reveal) : reveal);
   },
 };
 
