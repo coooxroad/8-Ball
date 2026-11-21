@@ -76,12 +76,11 @@ const vsIntro = {
   },
   // the cards face to face, VS and the game between them; p: { name, dama, rate? (shown for the rating), bg, title, cue, ball }
   layer(seats, mode) {
-    // (디버그 모드: each card in its glass case, swinging in about its slot - 37-desk-menu.js glassCase, 79-league.css)
-    const glass = glassOn();
+    // (each card in its glass case, swinging in about its slot - 37-desk-menu.js glassCase, 38-glass3d.js, 79-league.css)
     const card = (p, side) => { const c = playerCard({ dama: p.dama, name: p.name, sub: '', bg: p.bg, title: p.title, bar: false, stats: [['레이팅', p.rate || p.dama], ['큐', p.cue], ['공', p.ball]] });
-      c.classList.add('mn-live'); return el('div', { class: 'vs-card ' + side }, glass ? glassCase(c, 266, side === 'r' ? 'l' : 'r') : c); };
+      c.classList.add('mn-live'); return el('div', { class: 'vs-card ' + side }, glassCase(c, 266, side === 'r' ? 'l' : 'r')); };
     const k = Math.max(0.42, Math.min(1, innerHeight * 0.78 / 560, innerWidth * 0.3 / 244));
-    const layer = el('div', { class: 'vs' + (glass ? ' glass' : ''), style: `--u:${(glass ? k * 0.86 : k).toFixed(3)}` }, [card(seats[0], 'l'), el('div', { class: 'vs-mid' }, [el('b', { text: 'VS' }), el('small', { text: MODE_KO[mode] || '' })]), card(seats[1], 'r')]);
+    const layer = el('div', { class: 'vs glass', style: `--u:${(k * 0.86).toFixed(3)}` }, [card(seats[0], 'l'), el('div', { class: 'vs-mid' }, [el('b', { text: 'VS' }), el('small', { text: MODE_KO[mode] || '' })]), card(seats[1], 'r')]);
     requestAnimationFrame(() => fxBake(layer));
     return layer;
   },

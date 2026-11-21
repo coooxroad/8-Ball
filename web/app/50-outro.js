@@ -22,15 +22,15 @@ const outro = {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return reveal();
     outro.on = true; tableAlone(true);
     const box = outro.box = el('div', { id: 'outro', 'aria-hidden': 'true' }, [el('i', { class: 'shade' }),
-      el('div', { class: 'word' }, [el('i', { class: 'lf l' }), el('span'), el('i', { class: 'lf r' })]), el('small', { class: 'sub' })]);
+      el('div', { class: 'word' }, el('span')), el('small', { class: 'sub' })]);
     box.addEventListener('pointerdown', e => { e.preventDefault(); outro.hand(); });
     document.body.appendChild(box); outro.paint();
     requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('go')));
     if (o.kind === 'win') { winCam.start(); setTimeout(() => { if (outro.on) confetti.start(); }, 180); }
     outro.t = setTimeout(() => outro.hand(), o.kind === 'win' ? 2600 : 1750);
   },
-  // the word, its look and size: as large as the screen allows - the laurels at most 38% of its height, the whole at most
-  // 64% of its width (--S: the sheet's own title is 28px, the laurels 48 × 64: all of it at --S times that)
+  // the word, its look and size: as large as the screen allows - at most 38% of its height for 64px of it, at most 64% of
+  // its width (--S: the sheet's own title is 28px - the word at --S times that)
   paint() {
     const o = outro.opts, box = outro.box; if (!box) return;
     box.className = (box.classList.contains('go') ? 'go ' : '') + o.kind;

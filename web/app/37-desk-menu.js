@@ -116,23 +116,23 @@ function playerCard(o) {
     o.bar === false ? null : el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
     el('span', { class: 'st' }, o.stats.map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
 }
-/* The glass case (owner 11-21, 디버그 모드 for now - glassOn): the card held in a thick, angular block of clear acrylic -
-   a front and a back pane with the card between them, four edge faces (its thickness, cyan-green as thick glass edges
-   are), the front's edges cut at 45° and lit as the light from the upper right lights them - no lid (owner 11-21). Drawn in CSS 3D (84-menu.css .g3): on the menu seen from the front (the thickness a thin rim all round, by
-   perspective), on the match's opening swinging in about its top and flung away (79-league.css). cw: the card's width in
-   u (the opening's cards are wider). Returns the case, the card inside it. */
-function glassOn() { return true; }   // (owner 11-21: everyone's - drawn in 3D where WebGL is, the CSS case where not)
+/* The glass case (owner 11-21, everyone's): the card held in a thick, angular block of clear acrylic - a front and a back
+   pane with the card between them, four edge faces (its thickness, cyan-green as thick glass edges are), the front's
+   edges cut at 45° and lit as the light from the upper right lights them - no lid; the tier's frame round the card.
+   Drawn in 3D where WebGL is (38-glass3d.js: still on the menu, swinging in and flung away on the match's opening -
+   56-league.js), in CSS 3D where not (84-menu.css .g3, 79-league.css). cw: the card's width in u (the opening's cards
+   are wider). Returns the case, the card inside it. */
 // its dressings (owner 11-21, chosen after trying each): the desk's eye, the edges lit with the hologram seal (다이아·프로),
 // CUE and the number cut in its foot - no screws
 const GZ_ON = 'gz-view gz-glow gz-mark';
 function glassCase(card, cw, eye) {
   const f = (cls, kids) => el('i', { class: 'f ' + cls, 'aria-hidden': 'true' }, kids);
-  // (its dressings - GZ_ON; the tier for their metal; eye: 'l' when the eye is to the case's left)
+  // (its dressings - GZ_ON; the tier for its frame and seal; eye: 'l' when the eye is to the case's left)
   const tier = (/\bt-(\w+)/.exec(card.className) || [])[1] || 'bronze', nm = (card.querySelector('.nm') || {}).textContent || '';
   const no = String([...nm].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
   const cls = ['g3', 't-' + tier, eye === 'l' ? 'vl' : '', GZ_ON].filter(Boolean).join(' ');
   const g = el('div', { class: cls, style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), f('tier', el('span', { class: 'mn-rim' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' }))), card, f('front'),
-    f('screw a'), f('screw b'), f('screw c'), f('screw d'), f('mark', [el('b', { text: 'CUE' }), el('small', { text: 'No.' + no })]), f('holo')]);
+    f('mark', [el('b', { text: 'CUE' }), el('small', { text: 'No.' + no })]), f('holo')]);
   // (drawn in 3D once it is on the page - 38-glass3d.js; the opening's cases are played there by 56-league.js)
   if (!eye) { let n = 0; const go = () => { if (g.isConnected) glass3d.still(g); else if (++n < 30) requestAnimationFrame(go); }; requestAnimationFrame(go); }
   return g;
@@ -160,11 +160,7 @@ function sheetCard() {
   openSheet('선수증 꾸미기', [el('div', { class: 'pc-edit' }, [view, el('div', { class: 'pc-opts' }, [el('h3', { text: '배경' }), bgs, el('h3', { text: '칭호' }), ttls, note('상대에게도 다음 경기부터 이렇게 보입니다. 도전과제로 여는 칭호와 배경은 곧 나옵니다.')])])]);
   paint();
 }
-/* 디버그 · 메뉴 진단 (owner 11-20: the screen blinks when a ball is touched, the menu stutters on the tablet): the cards'
-   moving layers, or the balls, put away - to see on the device which of them it comes from (20-sheets.js sheetDebug) */
-function menuDbg() { app.classList.remove('dbg-nofx', 'dbg-noballs'); }   // (the menu's diagnosis in debug mode: gone, owner 11-21)
 function menuPaint() {
-  menuDbg();
   // the cloth on the desk, and the layer for the row over the plane (made once)
   if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' }));
   menuBalls.mount($('#dkFelt'));
@@ -196,7 +192,7 @@ function menuPaint() {
       el('span', { class: 'strip', text: c.strip() }), menuIco(c.id), el('b', { text: c.title }), el('small', { text: c.sub })]);
   });
   // (디버그 모드: the 선수증 in its glass case, seen from the front - glassCase)
-  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassOn() ? glassCase(pc) : pc, ...cards]));
+  const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassCase(pc), ...cards]));
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
   layer.textContent = ''; layer.appendChild(row);
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });

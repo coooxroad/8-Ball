@@ -141,12 +141,11 @@
 #app.desk.compact .r-side{padding:18px 16px 30px}
 #app.desk.compact .r-side h2{font-size:20px}
 #app.desk.compact #againBtn{font-size:20px}
-/* ---------- after a match, held sideways (owner 11-21): no desk and no score sheet - the table as the match left it, without
-   its controls, and over it, in the middle, one tall slate (ui/slate.webp), as chess.com's game review: top to bottom the
-   game (승리 between gold laurels, the two players and the score), the numbers side by side, this match (coins, rating, what
-   the other said), the review's table, the three shots, and the keys along its foot, which stay in sight while the rest
-   scrolls (on a phone held sideways it is taller than the screen). The parts of the tray and the aside are laid on the
-   slate's own column (display:contents), in that order. The game review (#result.rv) is the desk as before. ---------- */
+/* ---------- after a match, held sideways (owner 11-21): no desk - the table as the match left it, without its controls,
+   darkened at the edges, and over it the result: the hall's receipt beside its panel (#result.rc, below - 50-receipt.js;
+   the score sheet, the review's counts and the three shots are not shown there). These rules are its base: the plane over
+   the table, the tray and the aside laid on one column (display:contents), the keys along the foot. (It was one tall
+   slate before the receipt, 11-21: what only the slate showed is gone.) The game review (#result.rv) is the desk as before. ---------- */
 #app.desk:not(.portrait) #result:not(.rv){background:none;perspective:none;display:block;padding:0}
 #app.desk:not(.portrait) #result:not(.rv)::before{background:radial-gradient(ellipse 75% 70% at 50% 50%,rgba(6,8,12,.38),rgba(6,8,12,.72))}
 #app.desk:not(.portrait) #result:not(.rv) .r-plane{position:absolute;inset:clamp(6px,2vh,22px) 0;margin:0 auto;height:fit-content;max-height:calc(100% - 2*clamp(6px,2vh,22px));
@@ -155,55 +154,9 @@
   filter:drop-shadow(0 18px 26px rgba(0,0,0,.6))}
 #app.desk:not(.portrait) #result:not(.rv) .r-plane::-webkit-scrollbar{display:none}
 #app.desk:not(.portrait) #result:not(.rv) :is(.r-tray,.r-side){display:contents}
-#app.desk:not(.portrait) #result:not(.rv) .r-top{order:0;justify-content:center;color:#9fb0c3;text-shadow:none}
-#app.desk:not(.portrait) #result:not(.rv) .r-top .r-logo{font-size:12px;color:#c9d3df;border-right-color:rgba(201,211,223,.35)}
-#app.desk:not(.portrait) #result:not(.rv) .r-top small{font-size:12px}
-#app.desk:not(.portrait) #result:not(.rv) .r-sheet{order:1;flex:none;border:0;border-image:none;filter:none;padding:0;color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) .r-side>h2{order:2}
 #app.desk:not(.portrait) #result:not(.rv) #rSide{order:3}
-#app.desk:not(.portrait) #result:not(.rv) #rRev{order:4}
-#app.desk:not(.portrait) #result:not(.rv) #rWhy{order:5}
-#app.desk:not(.portrait) #result:not(.rv) #rHlBox{order:6}
 #app.desk:not(.portrait) #result:not(.rv) .r-btns{order:7}
 #app.desk:not(.portrait) #result:not(.rv) :is(#rvBoard,#rvPanel){display:none}
-#app.desk:not(.portrait) #result:not(.rv) .r-title{font-size:24px;gap:8px;color:#e9c56a;text-shadow:0 2px 3px rgba(0,0,0,.5)}
-#app.desk:not(.portrait) #result:not(.rv) .r-title .lf{width:36px;height:48px}
-#app.desk:not(.portrait) #result:not(.rv) .r-title.lost{color:#aab6c8}
-#app.desk:not(.portrait) #result:not(.rv) .r-vs{margin:6px 0 0;gap:10px}
-#app.desk:not(.portrait) #result:not(.rv) .r-p{gap:8px;color:#9fb0c3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .ball{width:38px;height:38px}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .nm{font-size:18px;color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .rc{font-size:11.5px;color:#9fb0c3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .rc .me{background:rgba(255,255,255,.12);color:#f3eee3;padding:0 7px;margin-right:4px}
-#app.desk:not(.portrait) #result:not(.rv) .r-score{font-size:46px;gap:8px;padding:0}
-#app.desk:not(.portrait) #result:not(.rv) .r-score,#app.desk:not(.portrait) #result:not(.rv) .r-score b{color:#fff}
-#app.desk:not(.portrait) #result:not(.rv) .r-score .sep{color:#7d8a9c}
-#app.desk:not(.portrait) #result:not(.rv) .r-score .ot{color:#e9c56a}
-#app.desk:not(.portrait) #result:not(.rv) .r-meta{font-size:12px;color:#9fb0c3;padding:2px 0 8px;border-bottom-color:rgba(255,255,255,.1)}
-#app.desk:not(.portrait) #result:not(.rv) #rStats{padding:2px 0 0}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .srow{grid-template-columns:46px minmax(0,1fr) 92px minmax(0,1fr) 46px;padding:5px 0;gap:8px}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .srow+.srow{border-top-color:rgba(255,255,255,.07)}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .k{color:#9fb0c3;font-size:12px}
-#app.desk:not(.portrait) #result:not(.rv) #rStats b,#app.desk:not(.portrait) #result:not(.rv) #rStats span.n{color:#f3eee3;font-size:16px}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .bar{height:7px;background:rgba(255,255,255,.08)}
-/* this match, and the review */
-#app.desk:not(.portrait) #result:not(.rv) .r-side>h2{font-size:15px;margin:6px 0 0;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) #rSide .dk-spec{padding:5px 2px}
-#app.desk:not(.portrait) #result:not(.rv) #rSide .dk-spec b{font-size:14px}
-#app.desk:not(.portrait) #result:not(.rv) #rRev{padding-top:10px;gap:4px}
-#app.desk:not(.portrait) #result:not(.rv) #rWhy{margin:0;padding:6px 0 0;font-size:12.5px}
-#app.desk:not(.portrait) #result:not(.rv) #rWhy:empty{display:none}
-/* the three shots: small cards side by side, each a little table over its name */
-#app.desk:not(.portrait) #result:not(.rv) #rHlBox{padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}
-#app.desk:not(.portrait) #result:not(.rv) .hl-lab{display:none}
-#app.desk:not(.portrait) #result:not(.rv) #rHl{gap:8px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard{background:rgba(255,255,255,.06);color:#f3eee3;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);border-radius:8px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .pic{border-width:7px;border-image-width:7px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tx{padding:5px 7px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tag{color:#f3eee3;font-size:11.5px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard.none .tag{color:#7d8a9c}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .rib{top:4px;right:4px;font-size:9px;letter-spacing:.04em;padding:1px 5px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .go{left:50%;margin-left:-13px;top:calc(25% - 6px);bottom:auto;width:26px;height:26px;font-size:10px}
 /* the keys: along the foot, staying in sight as the slate scrolls (the slate's own dark behind them) */
 #app.desk:not(.portrait) #result:not(.rv) .r-btns{position:sticky;bottom:0;z-index:2;display:flex;flex-direction:row;align-items:stretch;gap:8px;margin:4px -12px 0;padding:10px 12px 18px;
   background:linear-gradient(rgba(22,27,31,0),rgba(22,27,31,.96) 14px)}

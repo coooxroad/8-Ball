@@ -78,7 +78,7 @@ SwiftShader(CPU로 그림)라 절대값은 느리고, 같은 기계에서 전후
 ## 진행 기록
 
 - [x] R1 S1-a 결과 흐름 나누기 — 11-22 · `finish()` 67줄 → 10줄 + `matchResult`·`keepRecords`·`payMatch`·`paintResult`·`paintReceipt`·`revealResult`, 색종이·승리 카메라는 `50-celebrate.js`로. 결과 DOM 전후 동일(승·패, 태블릿·폰)
-- [ ] R1 S1-b 죽은 코드 치우기
+- [x] R1 S1-b 죽은 코드 치우기 — 11-22 · 메뉴 진단(menuDbg·dbg-nofx/noballs), 유리 케이스 나사(DOM·CSS·3D)·`gz-holo-all`·안 쓰는 `--metal`, `glassOn()`(항상 켬)과 VS 카드의 옛 미끄럼 애니메이션, 승리 글자의 숨은 월계관, 영수증이 가리는 가로 슬레이트 규칙 44줄, 지운 설정의 prefs 키 8개(불러올 때 지움). 결과 화면 보이는 요소 87개 계산 스타일·위치 전후 동일, 메뉴 유리 케이스 3D 캔버스 md5 동일
 - [x] R1 P1-a 공용 도우미 — 11-22 · `two`·`minSec`·`clamp01`·`easeOut`(00-state), `tierAt`이 i·lo·hi도 줌(플레이 랭킹 패널·레이팅 단계가 같은 계산), 티어 색 `TIER_TONE`(33-desk-play, 레이팅 링·유리 케이스 빛), `receipt.scale()`. 결과 DOM 전후 동일
 - [ ] R1 P1-b 문서
 - [ ] R1 O1-a 가만히 있는 화면의 일

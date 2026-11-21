@@ -12,7 +12,6 @@
    (through its CSS transform) the card alike. No WebGL: the CSS case (84-menu.css .g3) is left as it was. */
 const glass3d = (() => {
   let R = null, env = null, tried = false, busy = false;   // (busy: an opening has the renderer's canvas on the screen)
-  const METAL = { bronze: 0xa8653a, silver: 0xc8ced8, gold: 0xd9ae4f, platinum: 0x8ed3cc, diamond: 0x7fb4ff, pro: 0xd6ad58 };
   const glowOf = tier => (TIER_TONE[tier] || {}).glow;   // (33-desk-play.js)
   const col = h => new THREE.Color(h).convertSRGBToLinear();
   function init() {
@@ -77,27 +76,19 @@ const glass3d = (() => {
     const cap = lit(new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.04, metalness: 0, envMap: env, envMapIntensity: 1.2, transparent: true, opacity: 0.02, depthWrite: false }), 1.0);
     const edge = lit(new THREE.MeshStandardMaterial({ color: col(0x3f9e90), roughness: 0.1, metalness: 0, envMap: env, envMapIntensity: 1.0, transparent: true, opacity: 0.4, emissive: col(glow || 0x2a8a7c), emissiveIntensity: glow ? 0.7 : 0.35 }), 0.6);
     const m = new THREE.Mesh(slab, [cap, edge]); m.renderOrder = 2; grp.add(m);
-    // the screws' metal: the tier's
-    const metal = new THREE.MeshStandardMaterial({ color: col(METAL[tier] || METAL.bronze), metalness: 1, roughness: tier === 'pro' ? 0.22 : 0.3, envMap: env, envMapIntensity: 1.3 });
     // the dressings (37-desk-menu.js GZ_ON: the desk's eye, the lit edges and the seal, the cut foot)
     const top = new THREE.Group(); top.position.z = D / 2; top.renderOrder = 3; grp.add(top);
     const m2 = card.y, bot = H - card.y - card.h;
-    if (cls.contains('gz-screw')) for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
-      const s = new THREE.Mesh(new THREE.CylinderGeometry(5.5 * u, 5.5 * u, 2.4 * u, 20), metal); s.rotation.x = Math.PI / 2;
-      s.position.set(sx * (W / 2 - m2 / 2), sy > 0 ? H / 2 - m2 / 2 : -H / 2 + bot / 2, 1.2 * u); top.add(s);
-      const slot = new THREE.Mesh(new THREE.BoxGeometry(8 * u, 1.3 * u, 1 * u), new THREE.MeshBasicMaterial({ color: col(0x1a1410) }));
-      slot.position.copy(s.position); slot.position.z += 1.3 * u; slot.rotation.z = -0.6; top.add(slot);
-    }
     if (cls.contains('gz-mark')) {
       const no = String([...(g.querySelector('.nm') || {}).textContent || ''].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7)).padStart(4, '0');
       const mw = W - 2 * m2 - 8 * u, mh = Math.min(bot * 0.8, 24 * u);
       const k = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), new THREE.MeshBasicMaterial({ map: text(no, mw, mh), transparent: true, depthWrite: false }));
       k.position.set(0, -H / 2 + bot / 2, 0.3 * u); top.add(k);
     }
-    // the hologram seal (다이아·프로; any tier with 'gz-holo-all'): a silver foil seal, CUE and a ring of small letters
+    // the hologram seal (다이아·프로): a silver foil seal, CUE and a ring of small letters
     // pressed in it, a band of rainbow passing over it as it turns or as time goes (owner 11-21: the rainbow swirl read
     // as nothing). Half over the frame's right edge, below the card's head.
-    if (cls.contains('gz-glow') && (glowOf(tier) != null || cls.contains('gz-holo-all'))) {
+    if (cls.contains('gz-glow') && glowOf(tier) != null) {
       const hm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { t: { value: 0.3 }, map: { value: seal() } },
         vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv = uv; vN = normalize(normalMatrix * normal); vec4 p = modelViewMatrix * vec4(position, 1.0); vV = normalize(-p.xyz); gl_Position = projectionMatrix * p; }',
         fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float t; uniform sampler2D map;

@@ -162,7 +162,7 @@ const menuBalls = (() => {
   }
   // a touch on a ball (the row of cards lies over the cloth: 37-desk-menu.js hands its touches here first)
   function touch(e) {
-    if (!balls.length || !zones || app.classList.contains('dbg-noballs')) return false;
+    if (!balls.length || !zones) return false;
     const hit = document.elementsFromPoint(e.clientX, e.clientY);
     if (hit.length && hit[0].closest('.mn-card, .mn-pc')) return false;   // (a card over it: the card's touch)
     const be = hit.find(h => h.classList && h.classList.contains('mn-ball')), b = be && balls.find(q => q.el === be && !q.el.hidden);

@@ -91,6 +91,9 @@ const prefs = (() => {
   if (!p.pz || typeof p.pz !== 'object' || !p.pz.stars) p.pz = { cur: 1, stars: {}, open: 0 };
   if (p.clk !== 2) { if (p.shotClock === 40) p.shotClock = 60; p.clk = 2; }   // 4.0: the shot clock's default went from 40 to 60 s
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
+  // (debug switches taken out 11-21: the desk's wood and tray to try, the old menu, the menu's signs and diagnosis, the
+  // glass case's dressings; the gloves - content/00-rarity.js)
+  for (const k of ['deskWoodTry', 'deskTrayTry', 'oldMenu', 'menuProps', 'dbgNoFx', 'dbgNoBalls', 'dbgGlass', 'glove']) delete p[k];
   delete p.light;                                                       // (the 디버그 light sliders: gone - LIGHT0 is the light, 11-13)
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
