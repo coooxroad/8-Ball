@@ -19,6 +19,8 @@ const confetti = {
     const t0 = performance.now(); let last = t0, rain = 0;
     const step = () => {
       if (!confetti.cv) return;
+      // (the result left - home, or the next game begun while it still falls: put away, as the camera is)
+      if (!(st.screen === 'play' || st.screen === 'result') || (st.screen === 'play' && !outro.on)) return confetti.stop();
       const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000), t = (now - t0) / 1000; last = now;
       if (t < 2.4) { rain += dt * 75; while (rain >= 1) { rain--; add(R() * W, -20, (R() - 0.5) * 90 * s, (60 + R() * 140) * s); } }
       g.clearRect(0, 0, W, H);
@@ -51,7 +53,7 @@ const winCam = {
   start() {
     winCam.stop(true); if (!scene.setCam || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     winCam.on = true; winCam.t0 = performance.now(); winCam.last = winCam.t0; winCam.turn = app.classList.contains('portrait') ? -Math.PI / 2 : 0;
-    winCam.pose = { az: 0, el: 1.42, zoom: 1 }; winCam.vel = { az: 0, el: 0, zoom: 0 };
+    winCam.pose = { az: 0, el: 1.42, zoom: 1 }; winCam.vel = { az: 0, el: 0, zoom: 0 }; winCam.shown = null;
     winCam.watch = setInterval(() => { if (!(st.screen === 'play' || st.screen === 'result') || review.on || (st.screen === 'play' && !outro.on)) winCam.stop(); }, 250);
   },
   // a frame (90-loop.js, before the scene is drawn): dt in seconds
@@ -67,6 +69,10 @@ const winCam = {
       for (const k in p) { const a = w * w * (to[k] - p[k]) - 2 * w * v[k]; v[k] += a * h; p[k] += v[k] * h; }   // (critically damped: no overshoot)
       left -= h;
     }
+    // (once the drift has stopped and the spring has come to rest the camera no longer moves: the table is not drawn again
+    // for nothing every frame behind the result - a change under 1e-5 is far under a pixel)
+    const s = winCam.shown; if (s && Math.abs(s.az - p.az) < 1e-5 && Math.abs(s.el - p.el) < 1e-5 && Math.abs(s.zoom - p.zoom) < 1e-5) return;
+    winCam.shown = { az: p.az, el: p.el, zoom: p.zoom };
     scene.setCam({ az: winCam.turn + p.az, el: p.el, zoom: p.zoom, tx: 0, ty: 0 });
   },
   stop(quiet) {

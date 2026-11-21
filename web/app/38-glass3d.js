@@ -124,7 +124,13 @@ const glass3d = (() => {
     for (const [scene, cam] of jobs) { R.clearDepth(); R.render(scene, cam); }
     const x = cv.getContext('2d'); x.clearRect(0, 0, pw, ph); x.drawImage(R.domElement, 0, 0, pw, ph);
   }
-  const free = scene => scene.traverse(m => { if (m.geometry) m.geometry.dispose(); for (const x of [].concat(m.material || [])) { if (x.map && x.map !== sealTex) x.map.dispose(); x.dispose(); } });
+  /* A drawing's things let go on the graphics chip: its shapes and pictures (not the seal's, drawn once). Its materials
+     are left for the collector, not disposed: a dispose made three.js throw their compiled shaders away, so every menu
+     repaint and every match's opening compiled the glass's shaders again (11-22, R1 O1-b); the same kinds of material
+     find them kept. And the renderer's own picture back to nothing: its buffers (several times the picture, with
+     antialiasing) are as large as the last thing drawn - a whole screen after an opening. */
+  const free = scene => scene.traverse(m => { if (m.geometry) m.geometry.dispose(); for (const x of [].concat(m.material || [])) if (x.map && x.map !== sealTex) x.map.dispose(); });
+  const rest = () => { if (!busy) R.setSize(1, 1, false); };
   const sun = () => { const g = new THREE.Group(), l = new THREE.DirectionalLight(0xffffff, 0.9); l.position.set(1, 1.2, 1.5); g.add(l, new THREE.HemisphereLight(0xffffff, 0x404040, 0.5)); return g; };
   const PAD = 60;
   return {
@@ -136,20 +142,19 @@ const glass3d = (() => {
       g.classList.add('gl');
       let cv = g.querySelector(':scope>canvas.gl3'); if (!cv) { cv = el('canvas', { class: 'gl3', 'aria-hidden': 'true' }); g.appendChild(cv); }
       const paint = () => {
+        if (busy) { requestAnimationFrame(paint); return; }   // (an opening has the renderer: after it)
         const o = measure(g); if (!o.W) return;
         const pad = Math.round(PAD * o.u), cw = o.W + 2 * pad, ch = o.H + 2 * pad, e = eye(g, o);
         Object.assign(cv.style, { left: -pad + 'px', top: -pad + 'px', width: cw + 'px', height: ch + 'px' });
         const scene = new THREE.Scene(), grp = model(g, o); grp.position.set(pad + o.W / 2, -(pad + o.H / 2), 0); scene.add(grp);
         scene.add(sun());
         draw(cv, cw, ch, [[scene, camera({ x: pad + o.W / 2 + e.x, y: pad + e.y }, 1500 * o.u, cw, ch)]]);
-        free(scene);
+        free(scene); rest();
       };
       paint();
       if (!g._ro) { let last = ''; g._ro = new ResizeObserver(() => { const k = g.offsetWidth + 'x' + g.offsetHeight; if (k !== last) { last = k; paint(); } }); g._ro.observe(g); }
       return true;
     },
-    /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
-       the .vs, box - the #league (its 'away' class says when). */
     /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
        the .vs, box - the #league ('open' and 'away' on it say when). Everything is made now, while the league's wall
        still covers the screen - the cases measured, their models built and their shaders compiled - and the swing's clock
@@ -182,7 +187,7 @@ const glass3d = (() => {
         const [a, b] = [K[i], K[i + 1]], q = easeOut((p - a[0]) / (b[0] - a[0]), 2.2), L = (j) => a[j] + (b[j] - a[j]) * q;
         return { tx: s * L(3) * 0.45 * innerWidth, ty: 0, ry: s * L(1), rz: s * L(2), op: Math.min(1, p / 0.12) };
       };
-      const end = () => { busy = false; cv.remove(); cv.removeAttribute('style'); cv.className = ''; };
+      const end = () => { busy = false; cv.remove(); cv.removeAttribute('style'); cv.className = ''; for (const c of set) free(c.scene); rest(); };
       const frame = () => {
         if (!layer.isConnected) return end();
         const now = performance.now();   // (the clock the opening's timers keep - not the frame's own stamp)

@@ -24,12 +24,20 @@ const menuFx = (() => {
     const s = f < 0.5 ? 0 : 1, u = ease(s ? (f - 0.5) / 0.5 : f / 0.5), a = FLOW[s], b = FLOW[s + 1];
     return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
   }
-  const still = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null, still = () => !!(motion && motion.matches);
+  /* Each canvas's size is read when it changes (a ResizeObserver forgets it), not every frame: a size read each frame made
+     the browser work the page's styles and layout out again first - the cards' CSS animations dirty them every frame - and
+     that was most of what an idle menu cost on a phone (11-22, R1 O1-a: clientWidth 85 ms in 5 s, styles 155 ms). */
+  const sized = typeof ResizeObserver === 'function' ? new ResizeObserver(es => { for (const e of es) e.target.box = null; }) : null, watched = new Set();
+  const boxOf = cv => {
+    if (!cv.box || !sized) { cv.box = [cv.clientWidth, cv.clientHeight]; if (sized && !watched.has(cv)) { watched.add(cv); sized.observe(cv); } }
+    return cv.box;
+  };
   let raf = 0, lastT = 0;
   const pics = {};   // the soft light, the shade (32-desk.js fxSoft) as images to draw
   const img = url => { if (!pics[url]) { const im = new Image(); im.src = url; pics[url] = im; } return pics[url]; };
   function draw(cv, t) {
-    const W = Math.round(cv.clientWidth * RES), H = Math.round(cv.clientHeight * RES); if (!W || !H) return;
+    const [cw, ch] = boxOf(cv), W = Math.round(cw * RES), H = Math.round(ch * RES); if (!W || !H) return;
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const g = cv.getContext('2d'), w = cv.width, h = cv.height, si = +cv.dataset.si || 0, i = +cv.dataset.i || 0;
     if (cv.started == null) cv.started = t;
@@ -60,8 +68,9 @@ const menuFx = (() => {
     for (const cv of list) draw(cv, t);
     if (still()) { cancelAnimationFrame(raf); raf = 0; }
   }
-  // (started by the menu whenever it is laid out; it stops by itself when no card of it is in sight)
-  const run = () => { if (!raf) raf = requestAnimationFrame(frame); };
+  // (started by the menu whenever it is laid out; it stops by itself when no card of it is in sight. The canvases of
+  // cards laid out again are let go here.)
+  const run = () => { for (const cv of watched) if (!cv.isConnected) { sized.unobserve(cv); watched.delete(cv); } if (!raf) raf = requestAnimationFrame(frame); };
   const canvas = (id, i, si) => el('canvas', { class: 'mn-fxc', 'data-sym': PANEL_SYM[id] ? id : 'four', 'data-i': String(i), 'data-si': String(si), 'aria-hidden': 'true' });
   // (the checks: every card drawn as at s seconds into its motions - 84-menu.css's animations paused there look the same)
   const at = s => { for (const cv of document.querySelectorAll('#dkCards canvas.mn-fxc')) { cv.started = 0; draw(cv, s); } };
