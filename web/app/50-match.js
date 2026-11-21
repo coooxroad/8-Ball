@@ -93,74 +93,108 @@ const match = {
     }
     paintBadge(m.name, m.badge(game)); setBusy();
   },
+  // the game is over: the records kept, what it paid sent, the result painted, then brought in (finish's helpers below).
+  // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
+  // records back as they were before and finishes again with the room's winner, so it is never counted twice)
   finish() {
     if (match.ctx.online && match.ctx.online.watch) return ranked.watchEnd(null);   // (watching: nobody's records)
-    // (a draw - 4구's 후구 caught up, game.js: w is null; nobody's win or loss on the records)
-    const w = game.over.winner, draw = w == null, l = draw ? null : 1 - w, pw = game.players[w];
-    // (an online game's result here is the device's own reading; the room's word may differ - 54-ranked.js result puts the
-    // records back as they were before and finishes again with the room's winner, so it is never counted twice)
+    const r = matchResult();
     arcade.close();
-    if (match.ctx.online && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
-    if (!draw) countResult(w, l);
-    if (match.ctx.bot && !match.ctx.online && w === 0) botBeaten(match.ctx.bot.bot);   // (a bot beaten: the next one opens)
-    store.set('save', null); st.phase = 'idle';
-    // Everything stays on the side it was on during the game: player 1 on the left, player 2 on the right, whoever won.
-    // The title is the one at the table's view: 승리 for whoever played on this device (or the winner between friends).
-    // (on a ranked game, this device's seat is the room's: 0 or 1)
-    const on = match.ctx.online, me = on ? (on.team ? on.seat % 2 : on.seat) : 0, solo = match.ctx.ai || !!on;
-    const mine = !solo || draw || w === me, carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
-    $('#rTitle').textContent = draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : `${pw.name} 승리`;
-    $('#rTitle').parentNode.classList.toggle('lost', !mine);
-    resultPlayers(w, me, solo, carom);
-    // the score: points on carom (as the hall counts them) and in 스누커 (the frame's), games won in the series on pool
-    const pts = i => carom ? game.players[i].score * (game.tens ? 10 : 1) : game.mode.scored ? game.players[i].score : series.s[i];
-    const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: pts(1) }));
-    const secs = Math.round((Date.now() - (match.t0 || Date.now())) / 1000), dur = `${Math.floor(secs / 60)}분 ${String(secs % 60).padStart(2, '0')}초`;
-    const innings = Math.max(inn[0], inn[1]);
-    const onKo = on && (on.kind === 'invite' ? '친구 초대' : on.kind === 'arcade' ? '아케이드' : '랭킹전');
-    // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
-    $('#rMeta').textContent = `${innings}이닝 · ${dur}`;
-    $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? onKo : match.ctx.ai ? (match.ctx.bot ? `${match.ctx.bot.name} ${match.ctx.bot.dama}` : '컴퓨터 ' + LEVELS[prefs.level]) : '친구와 플레이'}`;
-    const statRows = resultStats(carom, inn);
-    // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
-    // the innings, the time or the best run (copy audit 07-02, 07-03)
-    const side = $('#rSide'); side.textContent = '';
-    const line = (k, v) => side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: k }), el('b', { text: v })]));
-    const pics = resultHighlights();
-    // the coins it pays, sent to the server (which checks it and may hold back what is over the day's allowance)
-    if (match.log && !match.ctx.online) {
-      const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: w }), coins = matchCoins(kind, game.modeId, log.points, w === 0);
-      if (coins > 0) line('코인', `+${coins.toLocaleString('ko-KR')}`);
-      // (a game with no price yet - 스누커 - is not sent: the server does not know it)
-      if (ECONOMY.PER_POINT[game.modeId]) net.claim('match', { kind, log }); match.log = null;
-    }
-    // a ranked game: the room plays it again; its word (coins, DAMA) fills in the slate when it comes
-    if (on) { ranked.ended(); ranked.paint(); }
-    // (copy audit 07-07: online, the key looks for a new opponent)
-    $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
-    if (on && on.kind === 'invite') ranked.againPaint();
-    $('#rWhy').textContent = game.over.plain ? '' : game.over.why;
-    // (컴퓨터 대전: the bot's last word, in its language with the Korean under it)
-    { const said = match.ctx.bot && !on && !draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
-      if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }   // (copy audit 07-08: only an end the score does not explain)
-    // (sideways: the hall's receipt and its panel - 50-receipt.js; it reads the slate's lines and the review as they come)
-    { const other = 1 - me, way = on ? onKo : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이';
-      const oppDama = match.ctx.bot ? match.ctx.bot.dama : on && on.opp && typeof on.opp.dama === 'number' ? on.opp.dama : null;
-      receipt.paint({ me, kind: draw ? 'draw' : mine ? 'win' : 'lose', stamp: draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : '승리', sub: solo || draw ? 'CUE · PAID' : pw.name,
-        mode: `${MODE_KO[game.modeId] || game.mode.name} · ${way}`, opp: game.players[other].name + (oppDama != null ? ` (${tierAt(oppDama).name})` : ''),
-        innings, time: `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, table: 1 + Math.floor((match.t0 || 0) / 1000) % 12,
-        stats: statRows.map(([k, a, b]) => [k, me === 0 ? a : b]), score: `${pts(me)} : ${pts(other)}`, name: game.players[me].name }); }
+    keepRecords(r);
+    const coins = payMatch(r);
+    if (r.on) ranked.ended();
+    const pics = paintResult(r, coins);
     review.close(true); review.finishing = true; review.paint(); review.finishing = false;
-    SND.win(); MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
-    // (owner 11-21: not the result at once - 승리 / 패배 over the table first, the word then settling into the score sheet
-    // as the slate comes in beside it: 50-outro.js. Already on the result - the room's word changing the winner -: at once)
-    const reveal = () => { show('result'); for (const [cv, q] of pics) if (q) drawShot(cv, q); review.paint(); };
-    if (st.screen === 'result') reveal();
-    // (a ranked game: its rating risen or fallen, on its ring, before the receipt - 50-rise.js)
-    else outro.start({ word: $('#rTitle').textContent, kind: draw ? 'draw' : mine ? 'win' : 'lose', score: `${pts(0)} : ${pts(1)}` },
-      on && on.kind !== 'invite' && on.kind !== 'arcade' && !app.classList.contains('portrait') ? () => rise.wait(reveal) : reveal);
+    SND.win(); MUSIC.play(r.mine ? 'win' : 'lose');          // between friends it is always the winner's song
+    revealResult(r, pics);
   },
 };
+
+// finish(): the ended game read once - who won, the seat this device played (its title: 승리 or 패배; between friends the
+// winner's name), the numbers the result shows. (a draw - 4구's 후구 caught up, game.js: w is null; nobody's win or loss)
+function matchResult() {
+  const w = game.over.winner, draw = w == null, on = match.ctx.online;
+  // (on a ranked game, this device's seat is the room's: 0 or 1; on 2:2 its side)
+  const me = on ? (on.team ? on.seat % 2 : on.seat) : 0, solo = match.ctx.ai || !!on, mine = !solo || draw || w === me;
+  const carom = game.mode.table === 'carom', inn = match.innings || [1, 1];
+  return { w, l: draw ? null : 1 - w, draw, on, me, solo, mine, carom, inn, innings: Math.max(inn[0], inn[1]),
+    kind: draw ? 'draw' : mine ? 'win' : 'lose', secs: Math.round((Date.now() - (match.t0 || Date.now())) / 1000),
+    word: draw ? '무승부' : solo ? (w === me ? '승리' : '패배') : `${game.players[w].name} 승리`,
+    onKo: on && (on.kind === 'invite' ? '친구 초대' : on.kind === 'arcade' ? '아케이드' : '랭킹전'),
+    // the score: points on carom (as the hall counts them) and in 스누커 (the frame's), games won in the series on pool
+    // (read when painted - after keepRecords, so the series has this game)
+    pts: i => carom ? game.players[i].score * (game.tens ? 10 : 1) : game.mode.scored ? game.players[i].score : series.s[i] };
+}
+
+// finish(): the records - both players' (an online game's kept as they were first: the room's word may change the winner),
+// a bot beaten (the next one opens), the saved game gone
+function keepRecords(r) {
+  if (r.on && !match.before) match.before = { rec: JSON.parse(JSON.stringify([recOf(game.players[0].name), recOf(game.players[1].name)])), series: series.s.slice() };
+  if (!r.draw) countResult(r.w, r.l);
+  if (match.ctx.bot && !r.on && r.w === 0) botBeaten(match.ctx.bot.bot);
+  store.set('save', null); st.phase = 'idle';
+}
+
+// finish(): the coins a game on this device pays, sent to the server (which checks it and may hold back what is over the
+// day's allowance); the coins to show. (an online game is paid by the room: its word fills in the slate - 54-ranked.js)
+function payMatch(r) {
+  if (!match.log || r.on) return 0;
+  const kind = match.ctx.ai ? 'cpu' : 'friend', log = Object.assign({}, match.log, { winner: r.w }), coins = matchCoins(kind, game.modeId, log.points, r.w === 0);
+  if (ECONOMY.PER_POINT[game.modeId]) net.claim('match', { kind, log });   // (a game with no price yet - 스누커 - is not sent: the server does not know it)
+  match.log = null;
+  return coins;
+}
+
+// finish(): the result painted - the score sheet (title, players, score, the game, stats, highlights), the slate (what the
+// game paid - coins; a ranked game's rating, 54-ranked.js paint -, the keys, why it ended, the bot's last word) and,
+// sideways, the receipt (50-receipt.js). Returns the highlights' canvases with their shots, drawn once it is showing.
+function paintResult(r, coins) {
+  const { on, w } = r, bot = match.ctx.bot;
+  $('#rTitle').textContent = r.word;
+  $('#rTitle').parentNode.classList.toggle('lost', !r.mine);
+  resultPlayers(w, r.me, r.solo, r.carom);
+  const sc = $('#rScore'); sc.textContent = ''; sc.append(el(w === 0 ? 'b' : 'span', { class: w === 0 ? '' : 'ot', text: r.pts(0) }), el('span', { class: 'sep', text: ':' }), el(w === 1 ? 'b' : 'span', { class: w === 1 ? '' : 'ot', text: r.pts(1) }));
+  // (copy audit 07-01, 07-02: the game and the way it was played once, at the top; the innings and the time once, here)
+  $('#rMeta').textContent = `${r.innings}이닝 · ${Math.floor(r.secs / 60)}분 ${two(r.secs % 60)}초`;
+  $('#rSub').textContent = `${MODE_KO[game.modeId] || game.mode.name} · ${on ? r.onKo : match.ctx.ai ? (bot ? `${bot.name} ${bot.dama}` : '컴퓨터 ' + LEVELS[prefs.level]) : '친구와 플레이'}`;
+  const stats = resultStats(r.carom, r.inn);
+  // the slate: what the match paid (coins; a ranked game's rating: 54-ranked.js paint) - it no longer repeats the result,
+  // the innings, the time or the best run (copy audit 07-02, 07-03)
+  const side = $('#rSide'); side.textContent = '';
+  const pics = resultHighlights();
+  if (coins > 0) side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: '코인' }), el('b', { text: `+${coins.toLocaleString('ko-KR')}` })]));
+  if (on) ranked.paint();   // (a ranked game: the room plays it again; its word - coins, DAMA - fills in the slate when it comes)
+  // (copy audit 07-07: online, the key looks for a new opponent)
+  $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
+  if (on && on.kind === 'invite') ranked.againPaint();
+  $('#rWhy').textContent = game.over.plain ? '' : game.over.why;
+  // (컴퓨터 대전: the bot's last word, in its language with the Korean under it - copy audit 07-08: only an end the score
+  // does not explain)
+  { const said = bot && !on && !r.draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
+    if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }
+  paintReceipt(r, stats);
+  return pics;
+}
+
+// finish(), sideways: the hall's receipt and its panel (50-receipt.js) - it reads the slate's lines and the review as they come
+function paintReceipt(r, stats) {
+  const { on, me } = r, other = 1 - me, way = on ? r.onKo : match.ctx.ai ? '컴퓨터 대전' : '친구와 플레이';
+  const oppDama = match.ctx.bot ? match.ctx.bot.dama : on && on.opp && typeof on.opp.dama === 'number' ? on.opp.dama : null;
+  receipt.paint({ me, kind: r.kind, stamp: r.draw ? '무승부' : r.solo ? (r.w === me ? '승리' : '패배') : '승리', sub: r.solo || r.draw ? 'CUE · PAID' : game.players[r.w].name,
+    mode: `${MODE_KO[game.modeId] || game.mode.name} · ${way}`, opp: game.players[other].name + (oppDama != null ? ` (${tierAt(oppDama).name})` : ''),
+    innings: r.innings, time: minSec(r.secs), table: 1 + Math.floor((match.t0 || 0) / 1000) % 12,
+    stats: stats.map(([k, a, b]) => [k, me === 0 ? a : b]), score: `${r.pts(me)} : ${r.pts(other)}`, name: game.players[me].name });
+}
+
+// finish(): the result brought in - not at once (owner 11-21): 승리 / 패배 over the table first (50-outro.js), the word then
+// settling into the score sheet as the slate comes in beside it; a ranked game's rating risen or fallen on its ring before
+// the receipt (50-rise.js). Already on the result (the room's word changing the winner): at once.
+function revealResult(r, pics) {
+  const reveal = () => { show('result'); for (const [cv, q] of pics) if (q) drawShot(cv, q); review.paint(); };
+  if (st.screen === 'result') return reveal();
+  const rated = r.on && r.on.kind !== 'invite' && r.on.kind !== 'arcade' && !app.classList.contains('portrait');
+  outro.start({ word: r.word, kind: r.kind, score: `${r.pts(0)} : ${r.pts(1)}` }, rated ? () => rise.wait(reveal) : reveal);
+}
 
 // finish(), a decided game: both players' records (wins, losses, streak, form) and the series
 function countResult(w, l) {

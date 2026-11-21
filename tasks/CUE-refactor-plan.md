@@ -77,7 +77,7 @@ SwiftShader(CPU로 그림)라 절대값은 느리고, 같은 기계에서 전후
 
 ## 진행 기록
 
-- [ ] R1 S1-a 결과 흐름 나누기
+- [x] R1 S1-a 결과 흐름 나누기 — 11-22 · `finish()` 67줄 → 10줄 + `matchResult`·`keepRecords`·`payMatch`·`paintResult`·`paintReceipt`·`revealResult`, 색종이·승리 카메라는 `50-celebrate.js`로. 결과 DOM 전후 동일(승·패, 태블릿·폰)
 - [ ] R1 S1-b 죽은 코드 치우기
 - [x] R1 P1-a 공용 도우미 — 11-22 · `two`·`minSec`·`clamp01`·`easeOut`(00-state), `tierAt`이 i·lo·hi도 줌(플레이 랭킹 패널·레이팅 단계가 같은 계산), 티어 색 `TIER_TONE`(33-desk-play, 레이팅 링·유리 케이스 빛), `receipt.scale()`. 결과 DOM 전후 동일
 - [ ] R1 P1-b 문서
