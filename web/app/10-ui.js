@@ -61,7 +61,7 @@ function show(screen) {
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'result' && typeof review !== 'undefined') review.close(true);
   // (leaving for home while a match's end or opening is on screen: it goes - 50-outro.js, 56-league.js)
-  if (screen === 'home') { if (outro.on) outro.stop(); if (vsIntro.on) vsIntro.stop(); }
+  if (screen === 'home') { if (outro.on) outro.stop(); if (vsIntro.on) vsIntro.stop(); confetti.stop(); }
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   // a match is shown as on television (style/80-broadcast.css); kept on its result, which is a slate over the same table

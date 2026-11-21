@@ -17,6 +17,8 @@ function setView(m) {
   paintViews();
 }
 const setView3D = on => setView(on ? 'free' : 'top');
+// the player's own view put back after the camera was moved for them (a win - 50-outro.js winCam)
+function viewBack() { const m = viewMode || 'top'; viewMode = null; setView(m); }
 let eyeKey = '';
 // called every frame: the eye view keeps behind the cue ball as the aim turns (not while the balls run)
 function eyeTick() {

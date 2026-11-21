@@ -10,18 +10,10 @@
 #outro.lose>.shade{background:radial-gradient(ellipse 70% 60% at 50% 46%,rgba(10,16,30,.5),rgba(4,7,14,.88))}
 #outro.draw>.shade{background:radial-gradient(ellipse 70% 60% at 50% 46%,rgba(14,14,16,.45),rgba(6,6,8,.85))}
 #outro.go>.shade{opacity:1}
-/* rays turning slowly behind 승리 */
-#outro>.rays{position:absolute;left:50%;top:46%;width:180vmax;height:180vmax;margin:-90vmax 0 0 -90vmax;opacity:0;pointer-events:none;
-  background:repeating-conic-gradient(from 0deg,rgba(255,214,120,.16) 0deg 7deg,rgba(255,214,120,0) 7deg 20deg);
-  -webkit-mask-image:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 30%,transparent 60%);mask-image:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.5) 30%,transparent 60%);
-  will-change:transform,opacity;transition:opacity .6s ease-out .15s}
-#outro.win.go>.rays{opacity:1;animation:owSpin 14s linear infinite}
-@keyframes owSpin{to{transform:rotate(360deg)}}
-/* sparks bursting from the word */
-#outro>.burst{position:absolute;left:50%;top:46%;width:0;height:0}
-#outro>.burst i{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#fff7d6 0 30%,#f0c35a 60%,rgba(240,195,90,0) 72%);opacity:0}
-#outro.win.go>.burst i{animation:owSpark .9s cubic-bezier(.15,.7,.3,1) calc(.22s + var(--d)) both}
-@keyframes owSpark{0%{opacity:0;transform:translate(0,0) scale(.4)}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.3)}}
+/* 승리 (owner 11-21: no rays, sparks or laurels - the word in heavy white over the table, which stays in sight as the
+   camera draws back and the confetti falls: only a light shade at the edges) */
+#outro.win>.shade{background:radial-gradient(ellipse 75% 65% at 50% 46%,rgba(0,0,0,0),rgba(0,0,0,.35))}
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}   /* (no z-index: under the result, which comes after it) */
 /* the word: the score sheet's title at --S times its size (50-result.css .r-title: 28px, laurels 48 × 64, 10px apart) */
 #outro .word{position:relative;display:flex;align-items:center;justify-content:center;gap:calc(10px*var(--S));transform-origin:50% 50%;will-change:transform,opacity;opacity:0;
   transition:transform .6s cubic-bezier(.55,0,.2,1),opacity .25s ease-out}
@@ -30,16 +22,13 @@
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 calc(2px*var(--S)) calc(3px*var(--S)) rgba(0,0,0,.5))}
 #outro .word .lf{flex:none;width:calc(48px*var(--S));height:calc(64px*var(--S));background:url(ui/laurel.webp) 0 50%/auto 100% no-repeat;opacity:0}
 #outro .word .lf.r{background-position:100% 50%}
-#outro.win.go .word{animation:owWin .7s cubic-bezier(.2,.8,.3,1.1) .08s both}
-@keyframes owWin{0%{opacity:0;transform:scale(1.9);filter:blur(12px)}55%{opacity:1;transform:scale(.95);filter:blur(0)}78%{transform:scale(1.03)}100%{opacity:1;transform:scale(1);filter:none}}
-#outro.win.go .word span{animation:owShine 1s ease-in-out .7s both}
-@keyframes owShine{from{background-position:120% 0,0 0}to{background-position:-20% 0,0 0}}
-#outro.win.go .lf{animation:owLeafL .55s cubic-bezier(.2,.9,.3,1.2) .3s both}
-#outro.win.go .lf.r{animation-name:owLeafR}
-@keyframes owLeafL{from{opacity:0;transform:translateX(40%) rotate(25deg) scale(.5)}to{opacity:1;transform:none}}
-@keyframes owLeafR{from{opacity:0;transform:translateX(-40%) rotate(-25deg) scale(.5)}to{opacity:1;transform:none}}
+#outro.win .word .lf{display:none}
+#outro.win .word span{letter-spacing:.12em;margin-right:-.12em;font-size:calc(34px*var(--S));color:#fff;background:none;-webkit-text-fill-color:#fff;
+  text-shadow:0 calc(1px*var(--S)) 0 rgba(0,0,0,.25);filter:drop-shadow(0 calc(3px*var(--S)) calc(6px*var(--S)) rgba(0,0,0,.45))}
+#outro.win.go .word{animation:owWin .55s cubic-bezier(.2,.9,.25,1.15) .05s both}
+@keyframes owWin{0%{opacity:0;transform:scale(1.35)}60%{opacity:1;transform:scale(.97)}100%{opacity:1;transform:none}}
 /* 패배: cold, no laurels, dropping in and settling */
-#outro.lose .word .lf,#outro.draw .word .lf{display:none}
+#outro.lose .word .lf,#outro.draw .word .lf{display:none}   /* (and 승리's: above) */
 #outro.lose .word span{background:linear-gradient(#f0f4fa,#9aa8bf 55%,#5b6880);-webkit-background-clip:text;background-clip:text}
 #outro.lose.go .word{animation:owLose .8s cubic-bezier(.3,.7,.35,1) .08s both}
 @keyframes owLose{0%{opacity:0;transform:translateY(-55%) scale(1.04)}55%{opacity:1;transform:translateY(5%)}75%{transform:translateY(-2%)}100%{opacity:1;transform:none}}
@@ -55,8 +44,7 @@
 #outro.hand .word{animation:none!important;opacity:1}
 #outro.hand .lf{animation:none!important;opacity:1}
 #outro.lose.hand .lf,#outro.draw.hand .lf{opacity:0}
-#outro.hand>.shade,#outro.hand>.rays,#outro.hand .sub{opacity:0!important;transition:opacity .45s ease-in}
-#outro.hand>.rays{animation-play-state:paused}
+#outro.hand>.shade,#outro.hand .sub{opacity:0!important;transition:opacity .45s ease-in}
 /* the result, come up under it: the sheet only fades in (it must be where it stays, to be measured) and the slate pops in */
 #app.desk #result.from-outro .r-plane>*{animation:rFade .5s ease-out both}
 #app.desk #result.from-outro .r-side{animation:rPop .55s cubic-bezier(.2,.9,.3,1.15) .28s both}
