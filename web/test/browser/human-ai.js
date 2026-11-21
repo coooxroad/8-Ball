@@ -76,7 +76,10 @@ function fixture(kind) {
     assert.deepEqual(sent, [{ t: 'resign', as: 1 }]);
     assert(await page.evaluate(() => !__dp8.game.over && __dp8.st.phase === 'idle'), 'client fabricated a win before server result');
     await page.evaluate(() => __dp8.ranked.result({ winner: 0, why: 'resigned', coins: [10, 0], dama: [33, 27] }));
-    assert(await page.evaluate(() => __dp8.st.screen === 'result' && __dp8.game.over.winner === 0));
+    // (the result comes up after 승리 has been shown over the table - app/50-outro.js)
+    assert(await page.evaluate(() => __dp8.outro.on && __dp8.game.over.winner === 0), 'the end of the match is shown first');
+    await page.waitForFunction(() => __dp8.st.screen === 'result' && !__dp8.outro.on, { timeout: 15000 });
+    assert(await page.evaluate(() => __dp8.game.over.winner === 0));
     assert.deepEqual(errors, []);
     console.log('human browser: real Worker state, corrected mistap, spin UI, cancel/re-aim, legal in-hand reposition and server-confirmed stand-in resignation passed');
   } finally { await browser.close(); }

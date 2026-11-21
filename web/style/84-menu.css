@@ -173,6 +173,38 @@ body:has(#sheet:not([hidden])) :is(.mn-card,.mn-pc) *,body:has(#sheet:not([hidde
 .mn-pc.t-pro .hd{color:#f0d488}
 .mn-pc.t-bronze .mn-rim :is(i,img){opacity:.55}
 .mn-pc.t-diamond .mn-face,.mn-pc.t-pro .mn-face{inset:calc(4px*var(--u))}
+/* ---- 선수증 꾸미기 (owner 11-21, content/50-cards.js): the card's own face over the tier's paper - its rim, header and ball
+   stay the tier's. Each face: its ground, the ink on it, the cells' tint. (After the tiers' rules: a face wins.) ---- */
+.mn-pc.bg-felt{--pcBg:radial-gradient(120% 70% at 50% 28%,rgba(255,255,255,.12),rgba(0,0,0,0) 60%),var(--felt-img,url(ui/felt.webp)) 0 0/220px,#1f6b46;--pcInk:#f4efe2;--pcCell:rgba(0,0,0,.2)}
+.mn-pc.bg-felt .mn-face{background-blend-mode:normal,luminosity,normal}
+.mn-pc.bg-walnut{--pcBg:linear-gradient(rgba(30,16,6,.25),rgba(30,16,6,.45)),url(ui/desk.webp) 0 0/300px;--pcInk:#f6ecd8;--pcCell:rgba(0,0,0,.25)}
+.mn-pc.bg-chalk{--pcBg:radial-gradient(circle at 20% 30%,rgba(255,255,255,.22) 0 2px,transparent 3px) 0 0/34px 34px,radial-gradient(circle at 70% 60%,rgba(255,255,255,.16) 0 1.5px,transparent 2.5px) 0 0/26px 26px,linear-gradient(160deg,#6aa0e6,#2f62b0);--pcInk:#fff;--pcCell:rgba(0,20,60,.2)}
+.mn-pc.bg-night{--pcBg:radial-gradient(circle,#fff 0 1px,transparent 1.6px) 0 0/38px 41px,radial-gradient(circle,rgba(255,255,255,.7) 0 .8px,transparent 1.4px) 17px 23px/53px 47px,radial-gradient(90% 60% at 50% 100%,#3a2f6e,rgba(0,0,0,0) 70%),linear-gradient(#0b1430,#1a1a3f);--pcInk:#eef0ff;--pcCell:rgba(255,255,255,.08)}
+.mn-pc.bg-racing{--pcBg:linear-gradient(115deg,transparent 40%,#d8322a 40% 48%,#f7f1e3 48% 51%,#d8322a 51% 59%,transparent 59%),linear-gradient(#f7f1e3,#e9dfc7);--pcInk:#2b241c;--pcCell:rgba(60,45,25,.1)}
+.mn-pc.bg-argyle{--pcBg:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 1px,transparent 1px 28px),repeating-linear-gradient(-45deg,rgba(255,255,255,.14) 0 1px,transparent 1px 28px),conic-gradient(from 45deg at 50% 50%,#6e1f33 0 25%,#8a2b42 0 50%,#6e1f33 0 75%,#8a2b42 0) 0 0/40px 40px;--pcInk:#fff2f4;--pcCell:rgba(0,0,0,.2)}
+/* the title, in place of the line under the name: a small band */
+.mn-pc .who.ttl{opacity:1;padding:calc(2px*var(--u)) calc(10px*var(--u));border-radius:99px;background:var(--pcHd);color:#fff;font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,.25);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.mn-pc.t-pro .who.ttl{color:#f0d488}
+button.mn-pc{border:0;margin:0;font:inherit;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.mn-pc:active{filter:brightness(.96)}
+/* the sheet: the card on the left as it is now, its faces and titles on the right */
+.pc-edit{--u:.62;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+.pc-view{display:flex;justify-content:center;padding:4px 4px 10px}
+.pc-view .mn-pc{animation:none}
+.pc-opts h3{margin:4px 0 8px;font:800 15px var(--ui-font)}
+.pc-bgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-bottom:12px}
+#sheet .pc-bg.mn-pc{width:auto;height:64px;padding:0;border-radius:10px;box-shadow:none;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;--u:1}
+#sheet .pc-bg .mn-face{inset:3px;border-radius:8px}
+#sheet .pc-bg b{position:relative;margin:0 0 6px;padding:1px 8px;border-radius:99px;background:rgba(0,0,0,.45);color:#fff;font:800 11.5px var(--ui-font);white-space:nowrap}
+#sheet .pc-bg[aria-pressed=true]{box-shadow:0 0 0 3px var(--acc,#2f6bff)}
+.pc-ttls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.pc-ttl{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:0;border-radius:99px;background:var(--panel2,rgba(127,127,127,.15));color:inherit;font:700 13px var(--ui-font);cursor:pointer}
+.pc-ttl[aria-pressed=true]{background:var(--acc,#2f6bff);color:#fff}
+.pc-ttl.locked{opacity:.5;cursor:default}
+.pc-ttl small{font-size:11px;opacity:.8}
+.pc-ttl.locked small::before{content:'🔒 '}
+@media (max-height:480px){.pc-edit{--u:.5}}
+.pc-view{position:sticky;top:0;align-self:start}
 /* sparkles: from 골드 up, a few stars blinking in turn (blue on 다이아몬드, gold on 프로) */
 .mn-sp{position:absolute;z-index:4;width:calc(22px*var(--u));height:calc(22px*var(--u));pointer-events:none;opacity:0;display:none;will-change:opacity,transform;
   background:radial-gradient(circle,#fff 0 18%,transparent 22%),linear-gradient(0deg,transparent 46%,var(--spc,#fff8de) 46% 54%,transparent 54%),linear-gradient(90deg,transparent 46%,var(--spc,#fff8de) 46% 54%,transparent 54%);
@@ -216,3 +248,4 @@ img.fxp{display:block;-webkit-user-drag:none;user-select:none}
 img.fxp.baked{background:none!important;border-radius:0}
 /* the menu cards' moving ground, drawn on one canvas per card (39-menu-fx.js): the signs, the light and the shade */
 .mn-fx canvas.mn-fxc{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;will-change:transform}
+

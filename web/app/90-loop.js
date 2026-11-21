@@ -133,7 +133,8 @@ function frame(now) {
   const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
   // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
   // (a ranked game goes on under a sheet: the other player is still playing)
-  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown());
+  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown())
+    || vsIntro.hold;   // (the match's opening over the table - 56-league.js: nobody plays, no clock runs, until it lifts)
   let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
   if (!paused) {
     if (st.phase === 'auto') { autoTick(dt); animating = true; }
@@ -159,11 +160,13 @@ function frame(now) {
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   if ((game.world.shape || null) !== shapeShown) { shapeShown = game.world.shape || null; scene.setShape(shapeShown); }   // (a table of another shape)
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
-  const lined = st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming()));
+  // (the table alone - a match's end or opening, 50-outro.js tableAlone: no cue, no line)
+  const nude = app.classList.contains('bare');
+  const lined = !nude && (st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, honest: !!(game.world && game.world.real && game.world.real.cue), el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
-    follow, chalk: st.chalk ? st.chalk.t : null, showCue: clip ? clip.cue : lined || st.phase === 'strike' || st.phase === 'idle' || !!follow, showGuide: lined, aimStyle: prefs.aim,
+    follow, chalk: st.chalk ? st.chalk.t : null, showCue: clip ? clip.cue : !nude && (lined || st.phase === 'strike' || st.phase === 'idle' || !!follow), showGuide: lined, aimStyle: prefs.aim,
     // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
     gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),
     legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
@@ -247,5 +250,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, leagueIntro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { prof, game, st, prefs, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, vsIntro, outro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();

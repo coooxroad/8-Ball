@@ -3,9 +3,9 @@
    bot's plan never waits behind it): ai/60-judge.js judgeShot, the reference hand, no allowance for anyone. What comes
    back is a grade of five - 예술 (light purple) · 좋음 · 무난 · 아쉬움 · 실수 -, a 요행 mark beside it when it went in by
    luck, and what a coach would say (50-review-words.js); the numbers behind it stay inside (owner: never shown).
-     the result's slate - each player's count of each grade, their share of shots made (샷 성공률) and the game's rating
-                     (경기력: the rating whose players lose as much per shot - REVIEW_PERF), then 게임 리뷰 over 한 판 더
-                     and where each lost it (잃은 곳), then 게임 리뷰 over 한 판 더
+     the result's slate - each player's count of each grade (owner 11-21: that only; the game's numbers are the score
+                     sheet's), then 게임 리뷰 over 한 판 더. (Each one's share of shots made and the game's rating - 경기력,
+                     the rating whose players lose as much per shot, REVIEW_PERF - are worked out in stats(), not shown now.)
      게임 리뷰       - the tray turns into a table, the slate into the shots straight away (owner 11-18: the counts are on
                      the slate already) - each one played again on the table when chosen, the coach's words over the list,
                      how it was struck (당점 · 세기 · 큐 각도), and the other good ways to play it, each to see played as a
@@ -91,30 +91,20 @@ const review = {
   // (against a bot or online: this device's seat is 나)
   seat() { const o = match.ctx && match.ctx.online; return o ? (o.team ? o.seat % 2 : o.seat) : 0; },
   names() { const c = match.ctx || {}, solo = c.ai || c.online, me = review.seat(); return [0, 1].map(i => solo && i === me ? '나' : game.players[i].name); },
-  // the counts side by side: a grade a row - the mark between the two numbers (as chess.com's), then 샷 성공률 and 경기력
-  table(big) {
-    const [a, b] = [review.stats(0), review.stats(1)], [na, nb] = review.names();
-    const row = (label, x, y, ico, cls = '') => el('div', { class: 'rv-tr ' + cls }, [el('span', { class: 'rv-k', text: label }), el('b', { class: 'rv-a', text: x }), ico || el('i', { class: 'rv-ico none' }), el('b', { class: 'rv-b', text: y })]);
-    return el('div', { class: 'rv-table' + (big ? ' big' : '') }, [
-      el('div', { class: 'rv-tr hd' }, [el('span'), el('b', { class: 'rv-a', text: na }), el('i', { class: 'rv-ico none' }), el('b', { class: 'rv-b', text: nb })]),
-      ...REVIEW_GRADES.map((G, i) => row(G.name, String(a.n[i]), String(b.n[i]), reviewIcon(G.id), `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero'))),
-      a.fluke || b.fluke ? row('행운', String(a.fluke), String(b.fluke), reviewIcon('fluke'), 'g-fluke') : null,
-      row('샷 성공률', a.made == null ? '-' : a.made + '%', b.made == null ? '-' : b.made + '%', null, 'sum'),
-      row('경기력', a.perf == null ? '-' : String(a.perf), b.perf == null ? '-' : String(b.perf), null, 'sum perf')]);
-  },
   // the result's slate (match.finish, and as verdicts come in)
   paint() {
     const box = $('#rRev'); if (!box || st.screen !== 'result' && !review.finishing) return;
     const all = review.list, got = review.judged(); box.textContent = '';
     box.hidden = !all.length; $('#reviewBtn').hidden = !all.length; if (!all.length) return;
     const wait = all.filter(q => !q.res).length;
-    // (a phone's short slate: one strip - each grade's mark, mine over the other's - in place of the table)
-    const [a, b] = [review.stats(0), review.stats(1)];
-    const strip = el('div', { class: 'rv-strip' }, REVIEW_GRADES.map((G, i) => el('span', { class: `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero') }, [reviewIcon(G.id), el('b', { text: String(a.n[i]) }), el('small', { text: String(b.n[i]) })])));
-    // (more below than the slate shows - the bars of 잃은 곳 on a short screen -: the box fades out at its foot until scrolled)
-    const fade = () => box.classList.toggle('more', box.scrollHeight - box.scrollTop - box.clientHeight > 4);
-    box.onscroll = fade; requestAnimationFrame(fade);
-    box.append(...[el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), review.table(false), strip, review.lost()].filter(Boolean));
+    // (owner 11-21: only how many of each grade - the numbers of the game are the score sheet's, once; 잃은 곳, 샷 성공률
+    // and 경기력 are no longer on the slate) - a grade a column, its mark over mine and the other's
+    const [a, b] = [review.stats(0), review.stats(1)], [na, nb] = review.names();
+    const counts = el('div', { class: 'rv-counts' }, [
+      el('span', { class: 'rv-who' }), ...REVIEW_GRADES.map((G, i) => el('span', { class: `rv-g g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero'), title: G.name }, [reviewIcon(G.id), el('small', { text: G.name })])),
+      el('span', { class: 'rv-who', text: na }), ...REVIEW_GRADES.map((G, i) => el('b', { class: `g-${G.id}` + (a.n[i] ? '' : ' zero'), text: String(a.n[i]) })),
+      el('span', { class: 'rv-who', text: nb }), ...REVIEW_GRADES.map((G, i) => el('b', { class: `g-${G.id} two` + (b.n[i] ? '' : ' zero'), text: String(b.n[i]) }))]);
+    box.append(el('div', { class: 'rv-h' }, [el('b', { text: '게임 리뷰' }), el('span', { text: wait ? `분석 중 ${got.length}/${all.length}` : `샷 ${got.length}개` })]), counts);
   },
 
   /* ---- 게임 리뷰: the tray a table, the slate the review ---- */
@@ -164,15 +154,6 @@ const review = {
   },
   /* where each player lost (as golf's Strokes Gained is split): the way chosen, the striking, the next shot, fouls - two
      bars a row, the longest the longest of all, no numbers (owner 11-17: the scores stay inside) */
-  lost() {
-    const K = [['choice', '길 선택'], ['strike', '조준 · 세기'], ['next', '다음 자리'], ['foul', '파울']];
-    const sum = turn => { const t = { choice: 0, strike: 0, next: 0, foul: 0 }; for (const q of review.judged()) if (q.turn === turn && q.res.parts) for (const k in t) t[k] += q.res.parts[k] || 0; return t; };
-    const [a, b] = [sum(0), sum(1)], top = Math.max(0.001, ...K.map(([k]) => Math.max(a[k], b[k])));
-    if (top <= 0.001) return null;
-    const bar = (v, side) => el('i', { class: 'rv-bar ' + side }, [el('b', { style: `width:${Math.round(100 * v / top)}%` })]);
-    // (a kind where neither lost anything left out: the slate is short)
-    return el('div', { class: 'rv-lost' }, [el('div', { class: 'rv-lh', text: '잃은 곳' }), ...K.filter(([k]) => a[k] > 0.001 || b[k] > 0.001).map(([k, name]) => el('div', { class: 'rv-lr' }, [bar(a[k], 'l'), el('span', { text: name }), bar(b[k], 'r')]))]);
-  },
   firstPick() { const i = review.list.findIndex(q => q.turn === review.seat()); return i < 0 ? 0 : i; },
   /* the coach's card for one shot: its mark and word, what it did and why, how it was struck - then the ways to see it:
      the shot played (내 샷) and the other good ways (judge's alts), each a chip naming how it is played, the easiest and

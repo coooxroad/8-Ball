@@ -60,6 +60,8 @@ function show(screen) {
   $('#deskBar').hidden = !away; $('#deskPlane').hidden = $('#dkBeams').hidden = !home;
   $('#spinPop').hidden = true; closeSheet(); SND.rolling(0);
   if (screen !== 'result' && typeof review !== 'undefined') review.close(true);
+  // (leaving for home while a match's end or opening is on screen: it goes - 50-outro.js, 56-league.js)
+  if (screen === 'home') { if (outro.on) outro.stop(); if (vsIntro.on) vsIntro.stop(); }
   if (screen !== 'play') setView3D(false);
   if (screen !== 'play') { app.classList.add('busy'); scene.setZone(null); }
   app.classList.toggle('bcast', screen === 'play' && flow === match);   // a match is shown as on television (style/80-broadcast.css)

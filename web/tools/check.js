@@ -38,7 +38,7 @@ for (const dir of ['ai', 'app', 'reel', 'scene']) {
   const C = {}; for (const f of fs.readdirSync(path.join(W, 'content')).sort()) Object.assign(C, require(path.join(W, 'content', f)));
   const has = p => fs.existsSync(path.join(W, p));
   const sounds = fs.existsSync(path.join(W, 'sound')) ? fs.readdirSync(path.join(W, 'sound')).map(f => f.replace(/\.[^.]+$/, '')) : [];
-  const kinds = { CUES: q => `ui/cue-${q.id}.webp`, BALLSKINS: null, CLOTHS: q => `ui/cloth-${q.id}.webp`, TRAILS: null };
+  const kinds = { CUES: q => `ui/cue-${q.id}.webp`, BALLSKINS: null, CLOTHS: q => `ui/cloth-${q.id}.webp`, TRAILS: null, CARD_BGS: null, TITLES: null };
   for (const [k, pic] of Object.entries(kinds)) {
     const list = C[k]; if (!Array.isArray(list) || !list.length) { fail(`content: ${k} is missing or empty`); continue; }
     const ids = new Set();

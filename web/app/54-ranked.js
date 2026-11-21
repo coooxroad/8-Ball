@@ -51,7 +51,8 @@ const ranked = {
   // an opponent: whatever is going on here is left (a practice, a sheet, the shop) and the game begins
   found(r) {
     closeSheet(); if (flow && flow !== match && st.screen === 'play') { st.phase = 'idle'; st.auto = null; }
-    SND.tap(); ranked.play(r);
+    // (a ranked game opens under the league's wall and the two players' cards - 56-league.js; 아케이드 goes to its vote)
+    SND.tap(); if ((r.kind || 'ranked') === 'ranked') vsIntro.start(r, () => ranked.play(r)); else ranked.play(r);
   },
   // (quiet: no sound or strip change asked for - the server's queue is left either way: a search for another game must not
   // leave this one waiting there, to be paired in a game nobody is looking for)
@@ -71,7 +72,6 @@ const ranked = {
     o.look = ranked.lookOf(o); useBalls(o.look.ball);
     if (o.kind === 'arcade') arcade.begin(o);                       // (55-arcade.js: the vote and the augments over the table)
     match.start(o.first, { names, mode: o.mode, ai: false, target: rules.target || 10, cushions: rules.cushions || 0, targets: null, finish: rules.finish || false, ice: false, real: rules.real || null, minus: rules.minus !== false, hugu: !!rules.hugu, ot: !!rules.ot, fast: !!rules.fast, online: o, team: !!o.team });
-    if (o.kind === 'ranked') leagueIntro(o.mode, prefs.names[0], o.opp.name);   // (56-league.js: the league's opening over the table)
     // (copy audit 02-02: no toast - the score bar shows the opponent's name and rating, and the first turn's words are not covered)
   },
   /* Watching a friend's game from the list (55-invite.js watch): seat -1, nobody's - every shot is the room's, played
@@ -230,7 +230,9 @@ const ranked = {
       cues: g.map(x => { const i = CUES.findIndex(c => c.id === x.cue); return i >= 0 ? i : usualCue; }),
       trails: g.map(x => TRAILS.some(t => t.id === x.trail) ? x.trail : 'none') };
   },
-  gear() { return { cue: (CUES[prefs.cues[0]] || {}).id || null, ball: prefs.ballSkin, table: (CLOTHS[prefs.cloth] || {}).id || null, trail: prefs.trail }; },
+  // (what this player has on, sent when looking for a game - the vault checks each is known: the other player is shown it;
+  // card, title: the player card's face and title, seen on the match's opening - 56-league.js)
+  gear() { return { cue: (CUES[prefs.cues[0]] || {}).id || null, ball: prefs.ballSkin, table: (CLOTHS[prefs.cloth] || {}).id || null, trail: prefs.trail, card: prefs.card.bg, title: prefs.card.title }; },
   // a turn that is not this device's: the stand-in, worked out here; or the other player's next shot, when it comes
   auto(o) {
     if (o.team && !o.watch) {
@@ -323,9 +325,9 @@ const ranked = {
       undo(); ranked.voided(m);
     } else if (flow === match && st.screen === 'play' && !game.over) {
       game.over = draw ? { winner: null, draw: true, why: '후구 · 무승부', plain: false } : { winner: m.winner, why, plain: !['left', 'resigned', 'idle', 'a shot that does not fit'].includes(m.why) }; match.finish();
-    } else if (flow === match && st.screen === 'result' && game.over && game.over.winner !== m.winner) {
+    } else if (flow === match && (st.screen === 'result' || outro.on) && game.over && game.over.winner !== m.winner) {
       undo(); game.over = { winner: m.winner, why: '서버 판정: ' + why }; match.finish(); toast('결과가 다시 확인되어 바뀌었습니다.', 'foul', 3200);
-    } else if (st.screen === 'result') ranked.paint();
+    } else if (st.screen === 'result' || outro.on) ranked.paint();
     // (a friend's game: the room is kept for 다시 하기; anything else is let go)
     if (o.kind === 'invite') { o.after = true; if (o.againMine && o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify({ t: 'again' })); ranked.againPaint(); }
     else if (o.ws) { const ws = o.ws; o.ws = null; setTimeout(() => ws.close(), 500); }

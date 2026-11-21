@@ -39,7 +39,7 @@ export function standIn(dama, rnd) {
   return { ...p, rd: 150 };
 }
 
-/* What a player has on (their cue, ball set, table, trail - ids, each checked by the vault to be theirs; null: the usual),
+/* What a player has on (their cue, ball set, table, trail, and their card's face and title - ids, each checked by the vault to be theirs; null: the usual),
    shown to the other player. A stand-in dresses as a person might: mostly the usual, now and then something bought. */
 const GEAR_KINDS = { cue: 'CUES', ball: 'BALLSKINS', table: 'CLOTHS', trail: 'TRAILS' };
 export function standInGear(rnd) {
@@ -47,6 +47,12 @@ export function standInGear(rnd) {
   for (const k in GEAR_KINDS) {
     const list = (E[GEAR_KINDS[k]] || []).filter(q => (q.rarity || 0) <= 2 && !q.ice), pick = list.filter(q => (q.rarity || 0) > 0);
     g[k] = rnd() < 0.45 && pick.length ? pick[Math.floor(rnd() * pick.length)].id : null;
+  }
+  // (the player card's look - content/50-cards.js, everyone's for now: a face and a title other than the plain ones, often;
+  // drawn after the gear above, so a seed dresses a stand-in in the same gear as before)
+  for (const [k, list, plain] of [['card', E.CARD_BGS, 'tier'], ['title', E.TITLES, 'none']]) {
+    const pick = (list || []).filter(q => q.id !== plain && !q.need);
+    g[k] = rnd() < 0.6 && pick.length ? pick[Math.floor(rnd() * pick.length)].id : null;
   }
   return g;
 }

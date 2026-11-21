@@ -231,6 +231,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     ok(h.opp.gear && h.opp.gear.cue === 'rose' && h.opp.gear.table === 'pool', 'lobby: the other player\'s gear comes with the room');
     ok(G.lastInit.seats.every(q => q.gear), 'lobby: the room is told both players\' gear'); }
   ok(c.opp.gear && ['cue', 'ball', 'table', 'trail'].every(k => k in c.opp.gear), 'lobby: a stand-in has gear on');
+  // (11-21: the player card's face and title come with the gear - a stand-in wears known ones, or none)
+  ok(['card', 'title'].every(k => k in c.opp.gear && (c.opp.gear[k] === null || (k === 'card' ? E.CARD_BGS : E.TITLES).some(q => q.id === c.opp.gear[k]))), 'lobby: a stand-in has a card face and title (known ones, or none)');
   console.log('ranked lobby: checked');
 }
 // ranked: a room - shots passed on and kept, the game played again, and the replay (not the devices) decides

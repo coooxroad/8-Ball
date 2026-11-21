@@ -7,7 +7,7 @@
 import { E, playPuzzle, playMatch, playLesson, Replay, DRILLS } from './check.js';
 import { logError, matchKey } from './match-log.js';
 
-const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS };
+const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS, card: E.CARD_BGS, title: E.TITLES };   // (card, title: the player card's look - content/50-cards.js)
 const day = () => new Date().toISOString().slice(0, 10);
 export const MAX_DEVICES = 8;
 

@@ -47,7 +47,7 @@ export class Vault extends DurableObject {
          device showing what it does not own looks the same to the other side; a cue's stat only ever plays on
          its owner's own device.) */
       let want = {}; try { want = JSON.parse(request.headers.get('X-Gear') || '{}') || {}; } catch (e) {}
-      const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;
+      const gear = {}; for (const k of ['cue', 'ball', 'table', 'trail', 'card', 'title']) gear[k] = typeof want[k] === 'string' && this.core.known(k, want[k]) ? want[k] : null;
       // (the rating of the family of the game asked for - X-Mode, economy.js familyOf - else the highest)
       const me = this.core.me(), mode = request.headers.get('X-Mode'), f = mode ? E.familyOf(mode) : null;
       // (in a 승급전, the tier played for: its rules, and opponents from it - economy.js PROMO_*)

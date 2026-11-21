@@ -56,9 +56,11 @@ const prefs = (() => {
     oldMenu: false,                    // 디버그: 플레이's menu as the desk's boards, with the 훈련 tab (37-desk-menu.js)
     menuProps: false,                  // 디버그: the menu cards' signs - false the line icons, '3d' (or true, as first saved) rendered icons (37-desk-menu.js menuIco)
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
+    card: { bg: 'tier', title: 'none' }, // 선수증 꾸미기 (owner 11-21): the card's face and title, content/50-cards.js (37-desk-menu.js sheetCard)
     wallet: { coin: 0, dia: 0 } }, saved);
   if (!Array.isArray(p.guides) || p.guides.length !== 2) { const g = typeof saved.guide === 'number' ? saved.guide : 2; p.guides = [g, g]; }   // older saves had one guide for both
   delete p.guide;
+  if (!p.card || typeof p.card !== 'object') p.card = {}; p.card = { bg: CARD_BGS.some(q => q.id === p.card.bg) ? p.card.bg : 'tier', title: TITLES.some(q => q.id === p.card.title) ? p.card.title : 'none' };
   delete p.ui; delete p.uiv; delete p.news;                             // the lobby, the old home and the 2.0 news: gone (theme is 화면 모드 again since 11-15: an old
   // save's theme is read by themeNow as dark unless it says 'light')
   if (!p.trainCpu) p.vsAI = false;                                      // (the computer is played from 훈련 only)

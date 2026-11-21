@@ -38,8 +38,10 @@ const menuIco = k => {
   return s;
 };
 // my rating and tier (economy.js TIER_AT; 33-desk-play.js TIERS)
-function myTier() {
-  const dama = net.me && net.me.dama != null ? net.me.dama : ECONOMY.DAMA_START, T = ECONOMY.TIER_AT;
+function myTier() { return tierAt(net.me && net.me.dama != null ? net.me.dama : ECONOMY.DAMA_START); }
+// a rating's tier, and the way to the next (anyone's: the other player's card on a match's opening too)
+function tierAt(dama) {
+  const T = ECONOMY.TIER_AT;
   const i = Math.min(TIERS.length - 1, Math.max(0, T.filter(x => dama >= x).length - 1)), hi = T[i + 1];
   return { dama, id: TIERS[i][0], name: TIERS[i][1], next: hi == null ? null : TIERS[i + 1][1], need: hi == null ? 0 : hi - dama,
     part: hi == null ? 1 : Math.max(0, Math.min(1, (dama - T[i]) / (hi - T[i]))) };
@@ -98,6 +100,46 @@ function menuFit() {
   row.style.setProperty('--edge', Math.max(0, (pw - seen) / 2).toFixed(1) + 'px');   // (the plane's part off the screen's left edge, there)
   menuBalls.fit(u, fh, (fh - clothH) / 2, Math.max(0, (pw - seen) / 2));   // (the balls on the cloth: 38-menu-balls.js)
 }
+/* A player card (선수증): mine at the head of the menu, and both players' on a ranked match's opening (56-league.js).
+   The tier's look - its paper, its header, its rim and the ring's tint, how much it shines, its ball (84-menu.css
+   .t-<tier>) - with, over it, the player's own face for it and the title under the name (owner 11-21: 선수증 꾸미기,
+   content/50-cards.js). o: { dama, name, sub (the line under the name when there is no title), av, bg, title, stats:
+   [[label, value] ×3], tap?, bar? (false: no way to the next tier) }. */
+function playerCard(o) {
+  const t = tierAt(o.dama), bg = o.bg && o.bg !== 'tier' && CARD_BGS.some(q => q.id === o.bg) ? o.bg : null, ttl = o.title && o.title !== 'none' ? TITLES.find(q => q.id === o.title) : null;
+  return el(o.tap ? 'button' : 'div', Object.assign({ class: `mn-pc t-${t.id}` + (bg ? ` bg-${bg}` : ''), 'aria-label': `선수증, ${o.name}, ${t.name}, 레이팅 ${t.dama}` + (ttl ? `, ${ttl.name}` : '') }, o.tap ? { onclick: o.tap } : { role: 'group' }), [
+    el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' })), el('span', { class: 'mn-face', 'aria-hidden': 'true' }), el('span', { class: 'mn-sheen', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.55', alt: '' })),
+    ...[0, 1, 2, 3].map(k => el('i', { class: 'mn-sp s' + k, 'aria-hidden': 'true' })),
+    el('div', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` })]),
+    el('span', { class: 'av', text: o.av || (o.name || '?').slice(0, 1) }),
+    el('b', { class: 'nm', text: o.name }), ttl ? el('small', { class: 'who ttl', text: ttl.name }) : el('small', { class: 'who', text: o.sub || '' }),
+    el('span', { class: 'em' }, el('b', { text: t.name })),
+    o.bar === false ? null : el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
+    el('span', { class: 'st' }, o.stats.map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
+}
+// a title open to this device's player: one without a need, or with its record met (content/50-cards.js need)
+function titleOpen(q) {
+  const n = q.need; if (!n) return true;
+  const r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
+  return (n.w == null || (r.w || 0) >= n.w) && (n.best == null || (r.best || 0) >= n.best) && (n.games == null || games >= n.games);
+}
+/* 선수증 꾸미기 (owner 11-21): the card as it looks now, then its face and its title to choose - each choice shows at once
+   on the card above, and is worn from the next game (the other player sees it on the match's opening: ranked.gear) */
+function sheetCard() {
+  const t = myTier(), r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
+  const view = el('div', { class: 'pc-view' }), paint = () => {
+    view.replaceChildren(playerCard({ dama: t.dama, name: prefs.names[0], sub: '칭호를 골라 보세요', av: $('#dkMe .av').textContent || '1', bg: prefs.card.bg, title: prefs.card.title,
+      stats: [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]] }));
+    for (const b of document.querySelectorAll('#sheetBody .pc-bg')) b.setAttribute('aria-pressed', String(b.dataset.id === prefs.card.bg));
+    for (const b of document.querySelectorAll('#sheetBody .pc-ttl')) b.setAttribute('aria-pressed', String(b.dataset.id === prefs.card.title));
+  };
+  const pick = (k, id) => { SND.tap(); prefs.card[k] = id; savePrefs(); paint(); if (st.screen === 'home') paintHome(); };
+  const bgs = el('div', { class: 'pc-bgs' }, CARD_BGS.map(q => el('button', { class: `pc-bg mn-pc t-${t.id}` + (q.id === 'tier' ? '' : ` bg-${q.id}`), 'data-id': q.id, 'aria-pressed': 'false', onclick: () => pick('bg', q.id) }, [el('span', { class: 'mn-face' }), el('b', { text: q.name })])));
+  const ttls = el('div', { class: 'pc-ttls' }, TITLES.map(q => { const open = titleOpen(q);
+    return el('button', { class: 'pc-ttl' + (open ? '' : ' locked'), 'data-id': q.id, 'aria-pressed': 'false', disabled: open ? null : '', onclick: open ? () => pick('title', q.id) : null }, [el('b', { text: q.name }), open ? null : el('small', { text: q.need.w ? `${q.need.w}승` : q.need.best ? `${q.need.best}연승` : `${q.need.games}판` })]); }));
+  openSheet('선수증 꾸미기', [el('div', { class: 'pc-edit' }, [view, el('div', { class: 'pc-opts' }, [el('h3', { text: '배경' }), bgs, el('h3', { text: '칭호' }), ttls, note('상대에게도 다음 경기부터 이렇게 보입니다. 도전과제로 여는 칭호와 배경은 곧 나옵니다.')])])]);
+  paint();
+}
 /* 디버그 · 메뉴 진단 (owner 11-20: the screen blinks when a ball is touched, the menu stutters on the tablet): the cards'
    moving layers, or the balls, put away - to see on the device which of them it comes from (20-sheets.js sheetDebug) */
 function menuDbg() { let d = false; try { d = net.debug; } catch (e) {} app.classList.toggle('dbg-nofx', !!(d && prefs.dbgNoFx)); app.classList.toggle('dbg-noballs', !!(d && prefs.dbgNoBalls)); }
@@ -118,16 +160,9 @@ function menuPaint() {
   }
   const t = myTier(), r = rec[prefs.names[0]] || {}, games = (r.w || 0) + (r.l || 0);
   const go = fn => () => { SND.init(); SND.tap(); fn(); };
-  // my 선수증: the tier's look, its sheen and rim (84-menu.css .t-<tier>), a few sparkles from 골드 up
-  const pc = el('div', { class: `mn-pc t-${t.id}`, role: 'group', 'aria-label': `선수증, ${t.name}, 레이팅 ${t.dama}` }, [
-    el('span', { class: 'mn-rim', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.95', alt: '' })), el('span', { class: 'mn-face', 'aria-hidden': 'true' }), el('span', { class: 'mn-sheen', 'aria-hidden': 'true' }, el('img', { class: 'fxp', 'data-fx': 'glint:.55', alt: '' })),
-    ...[0, 1, 2, 3].map(k => el('i', { class: 'mn-sp s' + k, 'aria-hidden': 'true' })),
-    el('div', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` })]),
-    el('span', { class: 'av', text: $('#dkMe .av').textContent || '1' }),
-    el('b', { class: 'nm', text: prefs.names[0] }), el('small', { class: 'who', text: net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : '오프라인' }),
-    el('span', { class: 'em' }, el('b', { text: t.name })),
-    el('span', { class: 'bar' }, [el('small', { text: t.next ? `${t.next}까지 ${t.need}` : '최고 등급' }), el('i', { style: `--p:${(t.part * 100).toFixed(1)}%` })]),
-    el('span', { class: 'st' }, [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]].map(([k, v]) => el('span', null, [el('b', { text: String(v) }), document.createTextNode(k)])))]);
+  // my 선수증 (tapped: 선수증 꾸미기 - its face and title, sheetCard)
+  const pc = playerCard({ dama: myTier().dama, name: prefs.names[0], sub: net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : '오프라인', av: $('#dkMe .av').textContent || '1',
+    bg: prefs.card.bg, title: prefs.card.title, stats: [['판', games], ['승률', games ? `${Math.round(100 * (r.w || 0) / games)}%` : '-'], ['연승', r.streak || 0]], tap: go(sheetCard) });
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), (the icon
   // still since 11-18), (11-17 night) a soft light and shade flowing inside it, and (11-19) its small signs drifting on the
   // diagonal in place of the dots (32-desk.js symLayer); only a card in sight moves - 'mn-live' below -

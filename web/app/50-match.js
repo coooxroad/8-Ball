@@ -144,9 +144,12 @@ const match = {
     { const said = match.ctx.bot && !on && !draw ? botTalk.last(w !== 0) : null, b = said && botTalk.bot();
       if (b) side.appendChild(el('div', { class: 'bot-said' }, [el('span', { class: 'who', text: b.name }), el('p', { lang: b.lang, dir: 'auto', text: said[0] }), said[1] && b.lang !== 'ko' ? el('small', { text: said[1] }) : null])); }   // (copy audit 07-08: only an end the score does not explain)
     review.close(true); review.finishing = true; review.paint(); review.finishing = false;
-    show('result'); SND.win();
-    MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
-    for (const [cv, q] of pics) drawShot(cv, q);
+    SND.win(); MUSIC.play(mine ? 'win' : 'lose');          // between friends it is always the winner's song
+    // (owner 11-21: not the result at once - 승리 / 패배 over the table first, the word then settling into the score sheet
+    // as the slate comes in beside it: 50-outro.js. Already on the result - the room's word changing the winner -: at once)
+    const reveal = () => { show('result'); for (const [cv, q] of pics) if (q) drawShot(cv, q); review.paint(); };
+    if (st.screen === 'result') reveal();
+    else outro.start({ word: $('#rTitle').textContent, kind: draw ? 'draw' : mine ? 'win' : 'lose', score: `${pts(0)} : ${pts(1)}` }, reveal);
   },
 };
 
@@ -184,25 +187,19 @@ function resultStats(carom, inn) {
   }
 }
 
-// finish(): the highlights - the shots of the match worth watching again, in the order they were played, each a card with
-// its name; exactly one is the best shot and one the worst. Returns the cards' canvases with their shots, drawn once the
-// result is showing.
+// finish(): the highlights - three places, always (owner 11-21: kept as placeholders for now, to be worked on later):
+// 베스트, a highlight, 워스트 - each the shot of the match if there was one (played again when tapped), otherwise an empty
+// table saying so. Returns the cards' canvases with their shots (null for an empty one), drawn once the result is showing.
 function resultHighlights() {
-  const list = match.shots.slice(), has = x => x && list.some(q => q.n === x.n && q.good === x.good);
-  const isBest = q => match.best && q.good && q.n === match.best.n, isWorst = q => match.worst && !q.good && q.n === match.worst.n;
-  if (match.best && !has(match.best)) list.push(match.best);
-  if (match.worst && !has(match.worst)) list.push(match.worst);
-  // at most three (the tray holds three): the best and the worst always, then the strongest of the rest
-  const rank = q => (isBest(q) || isWorst(q) ? 1000 : 0) + q.score; list.sort((p, q) => rank(q) - rank(p)); list.length = Math.min(3, list.length);
-  list.sort((p, q) => p.n - q.n || (p.good ? -1 : 1));
-  const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = !list.length; let b1 = false, w1 = false; const pics = [];
-  for (const q of list) {
-    const best = !b1 && isBest(q), worst = !w1 && isWorst(q); if (best) b1 = true; if (worst) w1 = true;
+  const best = match.best, worst = match.worst, same = (p, q) => p && q && p.n === q.n && p.good === q.good;
+  const mid = match.shots.filter(q => !same(q, best) && !same(q, worst)).sort((p, q) => q.score - p.score)[0] || null;
+  const hl = $('#rHl'); hl.textContent = ''; $('#rHlBox').hidden = false; const pics = [];
+  for (const [kind, q, rib] of [['best', best, '베스트 샷'], ['', mid, '하이라이트'], ['worst', worst, '워스트 샷']]) {
     const cv = el('canvas', { class: 'pic' }); pics.push([cv, q]);
-    hl.appendChild(el('button', { class: 'hcard' + (best ? ' best' : worst ? ' worst' : q.good ? '' : ' bad') + (q.turn === 1 ? ' two' : ''), onclick: onTap(() => playShot(q, best || worst ? undefined : 'plain')) }, [
-      // (copy audit 07-06: what the shot was and who played it; 베스트 / 워스트 as a badge with its word)
-      el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q.tag }), el('span', { class: 'who' }, [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })])]),
-      cv, best ? el('span', { class: 'rib', text: '베스트' }) : worst ? el('span', { class: 'rib', text: '워스트' }) : null, el('span', { class: 'go', 'aria-hidden': 'true', text: '▶' })]));
+    hl.appendChild(el('button', { class: 'hcard' + (kind ? ' ' + kind : '') + (q ? (q.turn === 1 ? ' two' : '') : ' none'), disabled: q ? null : '', onclick: q ? onTap(() => playShot(q, kind ? undefined : 'plain')) : null }, [
+      // (copy audit 07-06: what the shot was and who played it; the place's name as a badge)
+      el('span', { class: 'tx' }, [el('span', { class: 'tag', text: q ? q.tag : '아직 없음' }), el('span', { class: 'who' }, q ? [el('i', { class: 'av', text: q.turn + 1 }), el('b', { text: q.who })] : [])]),
+      cv, el('span', { class: 'rib', text: rib }), q ? el('span', { class: 'go', 'aria-hidden': 'true', text: '▶' }) : null]));
   }
   return pics;
 }
