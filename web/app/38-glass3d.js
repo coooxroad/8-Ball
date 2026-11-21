@@ -32,7 +32,9 @@ const glass3d = (() => {
     return R;
   }
   // brightness as alpha: the glass is near clear where it is dark and shows where it reflects (r128's transparent
-  // materials scale their light by the opacity - this keeps the reflection whole)
+  // materials scale their light by the opacity - this keeps the reflection whole). (r128 keys a compiled shader by this
+  // function's source, not by k: the caps and the edges share one, made with the caps' k - drawn first. The look the
+  // owner chose (11-21) is that; giving the edges their own k would change it.)
   const lit = (mat, k) => { mat.onBeforeCompile = s => { s.fragmentShader = s.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );',   // (r128's last line)
     `float L_ = dot(outgoingLight, vec3(0.3, 0.55, 0.15));
      gl_FragColor = vec4( min(outgoingLight / max(L_, 1e-4), vec3(4.0)) * min(L_ * 4.0 + 0.6, 1.0), clamp(diffuseColor.a + L_ * ${k.toFixed(2)}, 0.0, 1.0) );`); }; return mat; };
