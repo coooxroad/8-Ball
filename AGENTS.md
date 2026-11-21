@@ -32,6 +32,7 @@ node web/test/browser/smoke.js         # 앱 한 바퀴: 설정·자유 연습·
 node web/test/browser/desk-text.js     # 데스크톱 배율(1·1.25·2)과 폰에서 책상 글자·조작
 node web/test/browser/pc-performance.js  # 고주사율·픽셀 상한 정책
 node web/test/browser/human-ai.js      # 대역의 실제 Worker·조작·기권 연결
+node web/test/browser/slip.js          # 다이얼을 돌리는 중 파워바를 놓으면 치지 않음
 node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·GPU 대체·컨텍스트 복구
 node web/test/browser/ui-budget.js     # 메뉴 레이어 예산(1280x800@2에서 28M픽셀 이하) — 넘으면 태블릿이 끊기고 점멸한다
 ```
@@ -260,7 +261,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 관리자 페이지(`/admin`)에서 계정마다 "디버그 모드"를 켠다(서버 `core.js` `adminGrant({ debug })`, `me().debug`). 앱은 `net.debug`로 알고,
 설정에 "디버그" 메뉴(`20-sheets.js` `sheetDebug`)를 보인다: 책상 목재·트레이(`DESK_LOOK`), 메인 메뉴 새/예전, 테이블 모양(자유 연습), 궁극기 게이지 미리보기,
 아케이드(준비 중)로 들어가는 길, 선수증 유리 케이스(11-21 시험 중, 기본 켬 — `37-desk-menu.js` `glassCase`/`glassOn`, `84-menu.css` `.g3`:
-각진 3D 아크릴 블록, 메뉴는 정면, 랭킹전·대전 오프닝에서 슬롯을 축으로 흔들리며 들어오고 날아감 — `79-league.css` `g3In/Out`). 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
+각진 3D 아크릴 블록, 뚜껑 없음, 메뉴는 정면, 랭킹전·대전 오프닝에서 위 가장자리를 축으로 흔들리며 들어오고 왼쪽으로 돌며 날아감 — `79-league.css` `g3In/Out`). 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
 코인·보유는 풀지 않는다.
 
 ### 저장 데이터
@@ -339,8 +340,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - 화면 모드(설정, `prefs.theme`): 다크(기본) = 월넛 책상 + 그린 트레이, 파랗던 키(탭·레일 키·주 버튼·토글·초크)는 `ui/*-green.webp`; 라이트 = 오크 + 블루. `00-state.js` `THEMES`, CSS는 `#app.theme-dark`.
 - 앱은 가로 고정(11-21, `AndroidManifest.xml` `sensorLandscape` — 두 방향 가로). 세로 UI는 나중 업데이트(웹은 아직 세로 배치가 남아 있음).
 - 경기 끝(11-21): 결과 화면이 바로 뜨지 않는다 — 테이블 위 승리/패배(`app/50-outro.js` `outro`) 다음 그 글자가 결과 제목 자리로 내려앉는다.
-  결과는 책상·점수표 종이가 아니라 **조작 UI 없는 경기 화면 위 슬레이트 팝업 하나**(가로, `50-result.css` `#result:not(.rv)`: 왼쪽 제목·점수·
-  통계·샷 세 자리, 오른쪽 이번 경기·리뷰 평가표(예전 표 그대로, 잃은 곳만 뺌), 아래 버튼 줄). 게임 리뷰(`.rv`)는 예전 책상 그대로. 세로(웹)는 예전 점수표.
+  결과는 책상·점수표 종이가 아니라 **조작 UI 없는 경기 화면 가운데 세로로 긴 슬레이트 하나**(체스닷컴 게임 리뷰처럼, 가로 화면, `50-result.css`
+  `#result:not(.rv)`: 위에서부터 제목·점수, 통계 막대, 이번 경기, 리뷰 평가표(예전 표 그대로, 잃은 곳만 뺌), 샷 세 자리, 맨 아래 버튼 줄 — 길면 슬레이트
+  안에서 스크롤, 버튼은 늘 보임). 게임 리뷰(`.rv`)는 예전 책상 그대로. 세로(웹)는 예전 점수표.
+- 오발 방지(11-21): 파워바를 놓는 순간 다이얼이 0.35초 안에 조준을 돌렸으면 치지 않는다(`80-input.js` `dialGuard`, 검사 `test/browser/slip.js`).
 - 경기 시작(11-21): 리그 벽이 지나가며 흐린 인게임(조작 UI 없음)을 드러내고 그 위 좌우 선수증 VS, 블러는 가속하며 풀림(`app/56-league.js`
   `vsIntro` — 랭킹전·초대(`start`), 컴퓨터 대전·친구와 한 기기(`local`, 시작 버튼). 그동안 `vsIntro.hold`로 아무도 치지 않고 시계도 서 있다).
 - 4구(중대) 테이블 둘레 바닥은 카펫이 스스로 조금 빛나고 어둠이 멀리서 시작(11-21, `scene/10-room.js` `FLOOR_4` — 다른 테이블은 그대로).

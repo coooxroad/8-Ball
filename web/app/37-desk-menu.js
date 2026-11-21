@@ -76,7 +76,7 @@ const MENU_CARDS = [
    bottom middle) and the strip's rotateX by the same angle about the same line make the plane's own projection - so the
    cards sit on the cloth as before, while the scrolling itself is plain. menuFit places it and sizes the cards. */
 let menuScroll = 0;                                                   // (where the row was scrolled to, kept while the desk is away)
-const MENU_W = { pad: 30, pc: 228, hero: 272, card: 204, gap: 14 };   // (the row's sizes in u: 84-menu.css uses the same)
+const MENU_W = { pad: 30, pc: 244, hero: 272, card: 204, gap: 14 };   // (the row's sizes in u: 84-menu.css uses the same)
 function menuFit() {
   const felt = $('#dkFelt'), layer = $('#dkCards'), row = layer && layer.firstChild, pl = $('#deskPlane');
   if (!felt || !row || !menuShown() || !pl.offsetWidth) return;
@@ -119,14 +119,13 @@ function playerCard(o) {
 }
 /* The glass case (owner 11-21, 디버그 모드 for now - glassOn): the card held in a thick, angular block of clear acrylic -
    a front and a back pane with the card between them, four edge faces (its thickness, cyan-green as thick glass edges
-   are), the front's edges cut at 45° and lit as the light from the upper right lights them, a slot at the top for the
-   lanyard. Drawn in CSS 3D (84-menu.css .g3): on the menu seen from the front (the thickness a thin rim all round, by
-   perspective), on the match's opening swinging in about its slot and flung away (79-league.css). cw: the card's width in
+   are), the front's edges cut at 45° and lit as the light from the upper right lights them - no lid (owner 11-21). Drawn in CSS 3D (84-menu.css .g3): on the menu seen from the front (the thickness a thin rim all round, by
+   perspective), on the match's opening swinging in about its top and flung away (79-league.css). cw: the card's width in
    u (the opening's cards are wider). Returns the case, the card inside it. */
 function glassOn() { return !!net.debug && prefs.dbgGlass !== false; }
 function glassCase(card, cw) {
   const f = (cls, kids) => el('i', { class: 'f ' + cls, 'aria-hidden': 'true' }, kids);
-  return el('div', { class: 'g3', style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), card, f('front', el('i', { class: 'slot' }))]);
+  return el('div', { class: 'g3', style: cw ? `--cw:${cw}px` : null }, [f('shade'), f('back'), f('side l'), f('side r'), f('side t'), f('side b'), card, f('front')]);
 }
 // a title open to this device's player: one without a need, or with its record met (content/50-cards.js need)
 function titleOpen(q) {

@@ -63,6 +63,7 @@ jobs:
         run: |
           node web/test/browser/pc-performance.js
           node web/test/browser/human-ai.js
+          node web/test/browser/slip.js
           node web/test/browser/graphics.js
           node web/test/browser/ui-budget.js
 

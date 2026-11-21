@@ -142,102 +142,80 @@
 #app.desk.compact .r-side h2{font-size:20px}
 #app.desk.compact #againBtn{font-size:20px}
 /* ---------- after a match, held sideways (owner 11-21): no desk and no score sheet - the table as the match left it, without
-   its controls, and over it one slate (ui/slate.webp, the slate of the desk's screens): 승리 between gold laurels, the
-   two players and the score, the game's numbers side by side and the three shots on the left; this match (coins, rating)
-   and the review's table on the right; the keys along its foot. The slate's right-hand parts are the aside's own children
-   laid on the slate's grid (display:contents), so the keys can run under both columns. The game review (#result.rv) is the
-   desk as before. ---------- */
-#app.desk:not(.portrait) #result:not(.rv){background:none;perspective:none;display:grid;place-items:center;padding:clamp(8px,2.2vh,22px) clamp(10px,3vw,40px)}
+   its controls, and over it, in the middle, one tall slate (ui/slate.webp), as chess.com's game review: top to bottom the
+   game (승리 between gold laurels, the two players and the score), the numbers side by side, this match (coins, rating, what
+   the other said), the review's table, the three shots, and the keys along its foot, which stay in sight while the rest
+   scrolls (on a phone held sideways it is taller than the screen). The parts of the tray and the aside are laid on the
+   slate's own column (display:contents), in that order. The game review (#result.rv) is the desk as before. ---------- */
+#app.desk:not(.portrait) #result:not(.rv){background:none;perspective:none;display:block;padding:0}
 #app.desk:not(.portrait) #result:not(.rv)::before{background:radial-gradient(ellipse 75% 70% at 50% 50%,rgba(6,8,12,.38),rgba(6,8,12,.72))}
-#app.desk:not(.portrait) #result:not(.rv) .r-plane{position:relative;inset:auto;top:auto;transform:none;width:min(1040px,100%);max-height:100%;overflow:hidden;
-  grid-template-columns:minmax(0,1fr) minmax(250px,32%);grid-template-rows:auto auto auto auto minmax(0,1fr) auto;gap:6px 22px;
-  border:0 solid transparent;border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:18px 26px 30px;
+#app.desk:not(.portrait) #result:not(.rv) .r-plane{position:absolute;inset:clamp(6px,2vh,22px) 0;margin:0 auto;height:fit-content;max-height:calc(100% - 2*clamp(6px,2vh,22px));
+  width:min(480px,calc(100% - 20px));transform:none;display:flex;flex-direction:column;gap:8px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain;
+  border:0 solid transparent;border-image:url(ui/slate.webp) 48 48 76 48 fill/24px 24px 38px 24px stretch;padding:16px 22px 0;box-sizing:border-box;
   filter:drop-shadow(0 18px 26px rgba(0,0,0,.6))}
-#app.desk:not(.portrait) #result:not(.rv) .r-top{grid-area:1/1/2/3;justify-content:center;color:#9fb0c3;text-shadow:none}
-#app.desk:not(.portrait) #result:not(.rv) .r-top .r-logo{font-size:13px;color:#c9d3df;border-right-color:rgba(201,211,223,.35)}
-#app.desk:not(.portrait) #result:not(.rv) .r-top small{font-size:13px}
-#app.desk:not(.portrait) #result:not(.rv) .r-tray{grid-area:2/1/6/2;border:0;background:none;border-image:none;filter:none;padding:0;gap:10px;overflow:visible;min-height:0}
-#app.desk:not(.portrait) #result:not(.rv) .r-sheet{border:0;border-image:none;filter:none;padding:0;color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) .r-title{color:#e9c56a;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+#app.desk:not(.portrait) #result:not(.rv) .r-plane::-webkit-scrollbar{display:none}
+#app.desk:not(.portrait) #result:not(.rv) :is(.r-tray,.r-side){display:contents}
+#app.desk:not(.portrait) #result:not(.rv) .r-top{order:0;justify-content:center;color:#9fb0c3;text-shadow:none}
+#app.desk:not(.portrait) #result:not(.rv) .r-top .r-logo{font-size:12px;color:#c9d3df;border-right-color:rgba(201,211,223,.35)}
+#app.desk:not(.portrait) #result:not(.rv) .r-top small{font-size:12px}
+#app.desk:not(.portrait) #result:not(.rv) .r-sheet{order:1;flex:none;border:0;border-image:none;filter:none;padding:0;color:#f3eee3}
+#app.desk:not(.portrait) #result:not(.rv) .r-side>h2{order:2}
+#app.desk:not(.portrait) #result:not(.rv) #rSide{order:3}
+#app.desk:not(.portrait) #result:not(.rv) #rRev{order:4}
+#app.desk:not(.portrait) #result:not(.rv) #rWhy{order:5}
+#app.desk:not(.portrait) #result:not(.rv) #rHlBox{order:6}
+#app.desk:not(.portrait) #result:not(.rv) .r-btns{order:7}
+#app.desk:not(.portrait) #result:not(.rv) :is(#rvBoard,#rvPanel){display:none}
+#app.desk:not(.portrait) #result:not(.rv) .r-title{font-size:24px;gap:8px;color:#e9c56a;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+#app.desk:not(.portrait) #result:not(.rv) .r-title .lf{width:36px;height:48px}
 #app.desk:not(.portrait) #result:not(.rv) .r-title.lost{color:#aab6c8}
-#app.desk:not(.portrait) #result:not(.rv) .r-p{color:#9fb0c3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .nm{color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .rc{color:#9fb0c3}
-#app.desk:not(.portrait) #result:not(.rv) .r-p .rc .me{background:rgba(255,255,255,.12);color:#f3eee3}
+#app.desk:not(.portrait) #result:not(.rv) .r-vs{margin:6px 0 0;gap:10px}
+#app.desk:not(.portrait) #result:not(.rv) .r-p{gap:8px;color:#9fb0c3}
+#app.desk:not(.portrait) #result:not(.rv) .r-p .ball{width:38px;height:38px}
+#app.desk:not(.portrait) #result:not(.rv) .r-p .nm{font-size:18px;color:#f3eee3}
+#app.desk:not(.portrait) #result:not(.rv) .r-p .rc{font-size:11.5px;color:#9fb0c3}
+#app.desk:not(.portrait) #result:not(.rv) .r-p .rc .me{background:rgba(255,255,255,.12);color:#f3eee3;padding:0 7px;margin-right:4px}
+#app.desk:not(.portrait) #result:not(.rv) .r-score{font-size:46px;gap:8px;padding:0}
 #app.desk:not(.portrait) #result:not(.rv) .r-score,#app.desk:not(.portrait) #result:not(.rv) .r-score b{color:#fff}
 #app.desk:not(.portrait) #result:not(.rv) .r-score .sep{color:#7d8a9c}
 #app.desk:not(.portrait) #result:not(.rv) .r-score .ot{color:#e9c56a}
-#app.desk:not(.portrait) #result:not(.rv) .r-meta{color:#9fb0c3;border-bottom-color:rgba(255,255,255,.1)}
+#app.desk:not(.portrait) #result:not(.rv) .r-meta{font-size:12px;color:#9fb0c3;padding:2px 0 8px;border-bottom-color:rgba(255,255,255,.1)}
 #app.desk:not(.portrait) #result:not(.rv) #rStats{padding:2px 0 0}
+#app.desk:not(.portrait) #result:not(.rv) #rStats .srow{grid-template-columns:46px minmax(0,1fr) 92px minmax(0,1fr) 46px;padding:5px 0;gap:8px}
 #app.desk:not(.portrait) #result:not(.rv) #rStats .srow+.srow{border-top-color:rgba(255,255,255,.07)}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .k{color:#9fb0c3}
-#app.desk:not(.portrait) #result:not(.rv) #rStats b,#app.desk:not(.portrait) #result:not(.rv) #rStats span.n{color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) #rStats .bar{background:rgba(255,255,255,.08)}
-/* the three shots: small cards side by side, each a little table and its name */
+#app.desk:not(.portrait) #result:not(.rv) #rStats .k{color:#9fb0c3;font-size:12px}
+#app.desk:not(.portrait) #result:not(.rv) #rStats b,#app.desk:not(.portrait) #result:not(.rv) #rStats span.n{color:#f3eee3;font-size:16px}
+#app.desk:not(.portrait) #result:not(.rv) #rStats .bar{height:7px;background:rgba(255,255,255,.08)}
+/* this match, and the review */
+#app.desk:not(.portrait) #result:not(.rv) .r-side>h2{font-size:15px;margin:6px 0 0;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);color:#f3eee3}
+#app.desk:not(.portrait) #result:not(.rv) #rSide .dk-spec{padding:5px 2px}
+#app.desk:not(.portrait) #result:not(.rv) #rSide .dk-spec b{font-size:14px}
+#app.desk:not(.portrait) #result:not(.rv) #rRev{padding-top:10px;gap:4px}
+#app.desk:not(.portrait) #result:not(.rv) #rWhy{margin:0;padding:6px 0 0;font-size:12.5px}
+#app.desk:not(.portrait) #result:not(.rv) #rWhy:empty{display:none}
+/* the three shots: small cards side by side, each a little table over its name */
+#app.desk:not(.portrait) #result:not(.rv) #rHlBox{padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}
 #app.desk:not(.portrait) #result:not(.rv) .hl-lab{display:none}
-#app.desk:not(.portrait) #result:not(.rv) #rHl{gap:10px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard{flex-direction:row;align-items:center;background:rgba(255,255,255,.06);color:#f3eee3;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);border-radius:10px;padding:6px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .pic{order:0;width:44%;flex:none;border-width:8px;border-image-width:8px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tx{flex-direction:column;align-items:flex-start;gap:2px;padding:0 0 0 8px;min-width:0}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tag{color:#f3eee3;font-size:13px;max-width:100%}
+#app.desk:not(.portrait) #result:not(.rv) #rHl{gap:8px}
+#app.desk:not(.portrait) #result:not(.rv) .hcard{background:rgba(255,255,255,.06);color:#f3eee3;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);border-radius:8px}
+#app.desk:not(.portrait) #result:not(.rv) .hcard .pic{border-width:7px;border-image-width:7px}
+#app.desk:not(.portrait) #result:not(.rv) .hcard .tx{padding:5px 7px}
+#app.desk:not(.portrait) #result:not(.rv) .hcard .tag{color:#f3eee3;font-size:11.5px}
 #app.desk:not(.portrait) #result:not(.rv) .hcard.none .tag{color:#7d8a9c}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .rib{position:static;order:-1;align-self:flex-start;margin:0 0 3px 8px;font-size:9.5px;letter-spacing:.06em;padding:1px 6px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tx{order:1}
-#app.desk:not(.portrait) #result:not(.rv) .hcard{display:grid;grid-template-columns:44% minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .pic{grid-area:1/1/3/2;width:100%}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .rib{grid-area:1/2;margin:0;align-self:end}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .tx{grid-area:2/2;padding:0;align-self:start}
-#app.desk:not(.portrait) #result:not(.rv) .hcard .go{left:calc(22% - 13px);bottom:auto;top:calc(50% - 13px);width:26px;height:26px;font-size:10px}
-/* the right-hand column: the aside's parts on the slate's grid */
-#app.desk:not(.portrait) #result:not(.rv) .r-side{display:contents}
-#app.desk:not(.portrait) #result:not(.rv) .r-side>h2{grid-area:2/2;font-size:17px;margin:0;color:#f3eee3}
-#app.desk:not(.portrait) #result:not(.rv) #rSide{grid-area:3/2}
-#app.desk:not(.portrait) #result:not(.rv) #rSide .dk-spec{padding:6px 2px}
-#app.desk:not(.portrait) #result:not(.rv) #rRev{grid-area:4/2;padding-top:8px;gap:6px;min-height:0}
-#app.desk:not(.portrait) #result:not(.rv) #rWhy{grid-area:5/2;align-self:start;padding-top:8px;font-size:13px}
-#app.desk:not(.portrait) #result:not(.rv) #rvPanel{display:none}
-/* the keys along the foot: 로비로 · 게임 리뷰 · 한 판 더 (the last the largest) */
-#app.desk:not(.portrait) #result:not(.rv) .r-btns{grid-area:6/1/7/3;flex-direction:row;align-items:stretch;gap:12px;margin-top:8px}
-#app.desk:not(.portrait) #result:not(.rv) .r-btns .btn{flex:1 1 0;height:auto;min-height:48px}
-#app.desk:not(.portrait) #result:not(.rv) #againBtn{order:3;flex:2 1 0;font-size:21px;padding:8px 0 calc(8px + 7px)}
-#app.desk:not(.portrait) #result:not(.rv) #againBtn small{font-size:11.5px;margin-top:1px}
-#app.desk:not(.portrait) #result:not(.rv) #reviewBtn{order:2;height:auto}
+#app.desk:not(.portrait) #result:not(.rv) .hcard .rib{top:4px;right:4px;font-size:9px;letter-spacing:.04em;padding:1px 5px}
+#app.desk:not(.portrait) #result:not(.rv) .hcard .go{left:50%;margin-left:-13px;top:calc(25% - 6px);bottom:auto;width:26px;height:26px;font-size:10px}
+/* the keys: along the foot, staying in sight as the slate scrolls (the slate's own dark behind them) */
+#app.desk:not(.portrait) #result:not(.rv) .r-btns{position:sticky;bottom:0;z-index:2;display:flex;flex-direction:row;align-items:stretch;gap:8px;margin:4px -12px 0;padding:10px 12px 18px;
+  background:linear-gradient(rgba(22,27,31,0),rgba(22,27,31,.96) 14px)}
+#app.desk:not(.portrait) #result:not(.rv) .r-btns .btn{flex:1 1 0;height:auto;min-height:44px;font-size:14px}
+#app.desk:not(.portrait) #result:not(.rv) #againBtn{order:3;flex:1.6 1 0;font-size:18px;padding:6px 0 calc(6px + 6px)}
+#app.desk:not(.portrait) #result:not(.rv) #againBtn small{display:none}
+#app.desk:not(.portrait) #result:not(.rv) #reviewBtn{order:2;height:auto;font-size:14px}
 #app.desk:not(.portrait) #result:not(.rv) #homeBtn{order:1;height:auto}
 /* comes in: the slate rises a little and settles */
 #app.desk:not(.portrait) #result:not(.rv) .r-plane{animation:rPopIn .45s cubic-bezier(.2,.9,.3,1.1) both}
-#app.desk:not(.portrait) #result:not(.rv) .r-plane>*,#app.desk:not(.portrait) #result:not(.rv) .r-side{animation:none}
+#app.desk:not(.portrait) #result:not(.rv) .r-plane>*,#app.desk:not(.portrait) #result:not(.rv) .r-side,#app.desk:not(.portrait) #result:not(.rv) .r-tray>*,#app.desk:not(.portrait) #result:not(.rv) .r-side>*{animation:none}
 @keyframes rPopIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
-/* a phone held sideways: all of it smaller, so it is one screen */
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-plane{padding:10px 16px 22px;gap:3px 14px;grid-template-columns:minmax(0,1fr) minmax(210px,34%);border-image-width:18px 18px 28px 18px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-top{display:none}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-title{font-size:20px;gap:6px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-title .lf{width:30px;height:40px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-vs{margin:0;gap:10px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-p{gap:8px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-p .ball{width:28px;height:28px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-p .nm{font-size:15px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-p .rc{font-size:11px;margin-top:0}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-score{font-size:34px;gap:8px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-meta{font-size:11px;padding:0 0 3px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rStats .srow{grid-template-columns:40px minmax(0,1fr) 90px minmax(0,1fr) 40px;padding:2px 2px;gap:8px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rStats b,#app.desk.compact:not(.portrait) #result:not(.rv) #rStats span.n{font-size:14px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rStats .k{font-size:11px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rStats .bar{height:6px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-tray{gap:6px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rHl{gap:6px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .hcard{padding:4px;border-radius:8px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .hcard .tag{font-size:11.5px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .hcard .pic{border-width:5px;border-image-width:5px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-side>h2{font-size:14px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rSide .dk-spec{padding:3px 2px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rSide .dk-spec b{font-size:13px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rRev{padding-top:4px;gap:2px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .rv-h b{font-size:13.5px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #rWhy{padding-top:4px;font-size:11.5px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-btns{margin-top:4px;gap:8px}
-#app.desk.compact:not(.portrait) #result:not(.rv) .r-btns .btn{min-height:38px;font-size:14px}
-#app.desk.compact:not(.portrait) #result:not(.rv) #againBtn{font-size:17px;padding:5px 0 calc(5px + 6px)}
-#app.desk.compact:not(.portrait) #result:not(.rv) #againBtn small{display:none}
 #app.desk.portrait .r-plane{display:flex;flex-direction:column;overflow:hidden;transform:rotateX(6deg);top:-20px;padding:30px 10px 14px}
 #app.desk.portrait .r-tray{flex:1 1 auto;min-height:0;overflow-y:auto}
 /* (a phone upright: the tray scrolls, the slate below it keeps only the reason and the two keys, so they are always in reach) */

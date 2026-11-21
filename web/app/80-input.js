@@ -91,6 +91,12 @@ const endDrag = e => {
 };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
+/* (owner 11-21: the misfire that costs games - the power bar held with one hand while the other turns the dial, and the
+   bar's finger slips off: the shot went. As 8BitPool cancels a pull when another finger taps, and as chess.com asks to
+   confirm a move: a release of the bar within DIAL_GRACE ms of the dial turning the aim a step plays nothing - the power
+   falls back and a word says why. A thumb only resting on the dial does not count (it turns nothing): the dial set, then
+   the bar let go, plays as always.) */
+const dialGuard = { at: -1e9 }, DIAL_GRACE = 350;
 (function powerCtl() {
   const box = $('#power'); let id = null;
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
@@ -106,7 +112,9 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
     const p = st.power;
     // (the cue in hand: its hardest stroke, and how far its strike point turns the ball)
     const k = cueK();
-    if (!cancel && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); else { st.power = 0; setPowerUI(0); }
+    const slipped = !cancel && p > 0 && performance.now() - dialGuard.at < DIAL_GRACE;
+    if (slipped) { SND.tap(); toast('다이얼을 돌리는 중이라 치지 않았어요', '', 1800); }
+    if (!cancel && !slipped && p > 0 && humanAiming()) shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); else { st.power = 0; setPowerUI(0); }
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -120,7 +128,8 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
     const unit = HAND_STEP.dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
-    st.aim = from + Math.round(turned / unit) * unit; off += d;
+    const was = st.aim; st.aim = from + Math.round(turned / unit) * unit; off += d;
+    if (st.aim !== was) dialGuard.at = performance.now();   // (the aim stepped: the bar's release just now would be a slip)
     box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
     const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
