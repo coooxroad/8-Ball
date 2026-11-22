@@ -28,6 +28,8 @@ function sheetSettings() {
     segRow('샷 시간', [[0, '끔'], [30, '30초'], [40, '40초'], [60, '60초']], prefs.shotClock || 0, v => { prefs.shotClock = v; savePrefs(); }),
     // (오발 방지: 80-input.js dialGuard - the bar let go while the dial turns holds the shot for a tap)
     segRow('오발 방지', [[true, '켬'], [false, '끔']], prefs.safeShot !== false, v => { prefs.safeShot = v; savePrefs(); }),
+    // (세기를 큐 옆 테이블 위에도: scene/40-cue.js - off unless turned on, owner 11-22)
+    segRow('세기 테이블 표시', [[false, '끔'], [true, '켬']], !!prefs.powerTag, v => { prefs.powerTag = v; savePrefs(); scene.invalidate(); }),
     segRow('화질', [['auto', '자동'], ['high', '높음'], ['low', '낮음']], prefs.quality, v => { prefs.quality = v; savePrefs(); scene.setQuality(v); }),
     segRow('초당 프레임 표시', [[false, '끔'], [true, '켬']], prefs.fps, v => { prefs.fps = v; savePrefs(); $('#fps').hidden = !v; }),
     net.on ? el('div', { class: 'field' }, [el('div', { class: 'lab', text: '계정' }), el('div', { class: 'acct-id', text: acctLine() })]) : null,

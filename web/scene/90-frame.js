@@ -39,7 +39,7 @@
   const INSET_SIDES = ['t', 'l', 'r', 'b'];
   // a ball dropping into a pocket or flying off now (its mesh is the fall's, not the table's)
   const fallingNow = id => { for (const f of falls) if (f.id === id) return true; return false; };
-  /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } - read during the call, never
+  /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds, pwOn, pwCol, pwText } - read during the call, never
      kept (the app fills the same object every frame) */
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
@@ -78,7 +78,7 @@
     if (ringsTick(dt)) dirty = Math.max(dirty, 2);
     if (popsTick(dt)) dirty = Math.max(dirty, 2);
     discoTick(w, R);
-    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on; if (!cue.visible) { chalkCube.visible = false; for (const d of chalkDust) d.m.visible = false; }
+    cue.visible = cueShadow.visible = v.showCue && c.on; guide.visible = v.showGuide && c.on; if (!cue.visible) { chalkCube.visible = false; for (const d of chalkDust) d.m.visible = false; pwStrip.visible = pwLabel.visible = false; }
     // the follow-through after a hit: the cue is drawn from where the ball was struck, carrying on past it (v.follow)
     const fo = v.follow; if (fo) { cue.visible = cueShadow.visible = !!v.showCue; guide.visible = false; }
     if (cue.visible) placeCue(v, c, R, fo);
@@ -161,6 +161,7 @@
        cue, its hollow face to the tip, slid back along the cue's line onto the tip, twisted to and fro about that line
        with the blue dust falling off it, and taken off to the side and away */
     const ct = v.chalk == null ? -1 : v.chalk, tz = R + lift + 0.002;
+    if (fo) pwStrip.visible = pwLabel.visible = false; else placePowerTag(v, px, py, tz, dx, dy, R);   // (세기 beside the cue - 40-cue.js)
     chalkCube.visible = ct >= 0 && ct < 1.3 && !fo;
     if (chalkCube.visible) {
       const inn = Math.min(1, ct / 0.24), out = Math.max(0, (ct - 1.0) / 0.3), e1 = 1 - Math.pow(1 - inn, 3), tw = ct > 0.24 && ct < 1.0 ? Math.sin((ct - 0.24) * 24) : 0;

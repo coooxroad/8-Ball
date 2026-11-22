@@ -64,6 +64,7 @@ const prefs = (() => {
     shapeTry: null,                    // 디버그: free practice on a table of another shape (tables.js TABLE_SHAPES)
     theme: 'dark',                     // 화면 모드 (owner 11-15): 'dark' - walnut desk, green tray, green keys (the default); 'light' - oak and blue
     ultTry: false,                     // 디버그: 아케이드's ultimate gauge shown in any game (50-match.js paintUlt)
+    powerTag: false,                   // 세기를 테이블에도 (owner 11-22: off unless turned on - the table looked busy): scene/40-cue.js
     safeShot: true,                    // 오발 방지 (owner 11-21): the power bar let go while the dial turns holds the shot (80-input.js)
     card: { bg: 'tier', title: 'none' }, // 선수증 꾸미기 (owner 11-21): the card's face and title, content/50-cards.js (37-desk-menu.js sheetCard)
     wallet: { coin: 0, dia: 0 } }, saved);

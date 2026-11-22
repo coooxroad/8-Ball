@@ -175,7 +175,7 @@ function tableSync() {
 }
 // what the 3D is told each frame (scene/90-frame.js frame): one object, filled again every frame - it was made anew
 // 60 times a second, drawn or not
-const view = { game: null, alpha: 1, aim: 0, power: 0, pull: 0, spin: null, honest: false, el: 0, rev: 0, animating: false, follow: null, chalk: null,
+const view = { game: null, alpha: 1, aim: 0, power: 0, pull: 0, spin: null, honest: false, el: 0, rev: 0, animating: false, follow: null, chalk: null, pwOn: false, pwCol: '', pwText: '',
   showCue: false, showGuide: false, aimStyle: null, gear: null, level: 0, legalIds: NONE, hand: false, covered: false };
 // the 3D drawn for this frame (true when it drew)
 function drawFrame(dt) {
@@ -191,10 +191,11 @@ function drawFrame(dt) {
   v.game = game; v.alpha = alpha; v.aim = st.aim; v.power = st.power; v.pull = pull; v.spin = st.spin; v.honest = !!(game.world && game.world.real && game.world.real.cue);
   v.el = st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(); v.rev = st.rev; v.animating = animating;
   v.follow = follow; v.chalk = st.chalk ? st.chalk.t : null; v.showCue = clip ? clip.cue : !nude && (lined || st.phase === 'strike' || st.phase === 'idle' || !!follow);
+  // (세기 beside the cue on the table, in 3D - scene/40-cue.js; off unless turned on in 설정: prefs.powerTag)
+  v.pwOn = !!prefs.powerTag && aiming && st.screen === 'play'; v.pwCol = powerUI.col || '#7fe0ee'; v.pwText = powerUI.num;
   v.showGuide = lined; v.aimStyle = prefs.aim; v.gear = k; v.level = !flow ? 0 : flow.guide() * (aiming ? k.guide : 1);
   v.legalIds = st.screen === 'play' ? legalNow() : NONE; v.hand = !!game.placing && aiming; v.covered = st.screen === 'home' && !deskTableShown();
   const drew = scene.frame(v, dt);
-  powerAt.paint(lined && aiming && st.screen === 'play' && st.power > 0.01);   // (세기 along the cue - 10-ui.js)
   { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
   return drew;
 }

@@ -2,6 +2,59 @@
   const cue = new THREE.Group(); cue.rotation.order = 'ZYX'; scene.add(cue);
   const cueShadow = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
   cueShadow.renderOrder = 1; scene.add(cueShadow);
+  /* 세기 at the cue, in the table's own perspective (owner 11-22; off unless turned on in 설정 - v.pwOn): a glow lying
+     beside the cue a little apart from it, level with its tip and parallel to it, running back towards the butt. It
+     spreads further back the harder the pull (its bright head at the pull's share of the length, a soft tail beyond it),
+     faint at the tip end and gathering towards the head, in the power meter's colour for that pull (v.pwCol). The number
+     (v.pwText, km/h) lies at the tip end of it, on the side the cue points to, written along the cue in the page's own type
+     and turned so that it never reads upside down from where the camera is. */
+  const pwFS = 'uniform vec3 col; uniform float p; varying vec2 vUv;' +
+    'void main() { float x = vUv.x, d = abs(vUv.y - 0.5) * 2.0;' +
+    ' float a = smoothstep(0.0, 0.04, x) * mix(0.16, 1.0, smoothstep(0.0, max(p, 0.001), x));' +
+    ' a *= x < p ? 1.0 : exp(-(x - p) / (0.03 + 0.22 * p));' +
+    ' a *= exp(-d * d * 4.5);' +
+    ' vec3 c = mix(col, vec3(1.0), 0.4 * exp(-d * d * 40.0) * smoothstep(0.0, max(p, 0.001), x));' +
+    ' gl_FragColor = vec4(c, a * 0.9); }';
+  const pwVS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+  const pwStrip = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({ uniforms: { col: { value: new THREE.Color(1, 1, 1) }, p: { value: 0 } },
+    vertexShader: pwVS, fragmentShader: pwFS, transparent: true, depthWrite: false }));
+  pwStrip.renderOrder = 9; pwStrip.visible = false; scene.add(pwStrip);
+  const pwCv = mkCanvas(256, 96), pwTex = new THREE.CanvasTexture(pwCv);
+  const pwLabel = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: pwTex, transparent: true, depthWrite: false }));
+  pwLabel.renderOrder = 9; pwLabel.visible = false; scene.add(pwLabel);
+  const pwAt = { text: '', col: '', w: 1, v3: new THREE.Vector3(), u3: new THREE.Vector3() };
+  function pwText(text) {
+    if (pwAt.text === text) return; pwAt.text = text;
+    const g = pwCv.getContext('2d'), font = (getComputedStyle(document.body).fontFamily || 'sans-serif');
+    g.clearRect(0, 0, 256, 96); g.textBaseline = 'middle'; g.textAlign = 'left';
+    g.font = `800 60px ${font}`; const w1 = g.measureText(text).width; g.font = `700 30px ${font}`; const w2 = g.measureText('km/h').width;
+    const x0 = 6; g.shadowColor = 'rgba(0,0,0,.85)'; g.shadowBlur = 8; g.fillStyle = '#fff';
+    g.font = `800 60px ${font}`; g.fillText(text, x0, 50); g.font = `700 30px ${font}`; g.fillStyle = 'rgba(255,255,255,.82)'; g.fillText('km/h', x0 + w1 + 8, 58);
+    pwAt.w = Math.min(1, (x0 + w1 + 8 + w2 + 10) / 256); pwTex.needsUpdate = true;
+  }
+  function placePowerTag(v, px, py, tz, dx, dy, R) {
+    const on = !!v.pwOn && v.power > 0.01; pwStrip.visible = pwLabel.visible = on; if (!on) return;
+    // (beside the cue on its left as it points, a little apart; the whole length about 18 balls, from the tip back)
+    const L = R * 18, W = R * 1.5, side = R * 1.75, sx = -dy * side, sy = dx * side, z = tz;
+    pwStrip.scale.set(L, W, 1); pwStrip.rotation.set(0, 0, Math.atan2(-dy, -dx));
+    pwStrip.position.set(px + sx - dx * L / 2, py + sy - dy * L / 2, z);
+    if (pwAt.col !== v.pwCol) {   // (the page's 'hsl(h s% l%)'; r128's setStyle reads only the comma form. Shader colours here are sRGB, as the guide's)
+      pwAt.col = v.pwCol; const m = /hsl\(([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/.exec(v.pwCol), c = pwStrip.material.uniforms.col.value;
+      if (m) c.setHSL(m[1] / 360, m[2] / 100, m[3] / 100); else c.setStyle(v.pwCol);
+    }
+    pwStrip.material.uniforms.p.value = Math.min(1, v.power);
+    pwText(v.pwText || '');
+    // the number ahead of the glow, towards the ball, reading along the cue: flipped when the cue points left on screen;
+    // never under about 24 px tall on screen (a phone's table is small - ppm, 60-view.js)
+    const lh = Math.max(R * 2.1, 24 / ppm), lw = lh * 256 / 96, ux = px + sx + dx * (R * 0.5), uy = py + sy + dy * (R * 0.5);
+    pwAt.v3.set(ux, uy, z).project(camera); pwAt.u3.set(ux + dx * R, uy + dy * R, z).project(camera);
+    const flip = pwAt.u3.x < pwAt.v3.x, ang = Math.atan2(dy, dx) + (flip ? Math.PI : 0);
+    pwLabel.scale.set(lw, lh, 1); pwLabel.rotation.set(0, 0, ang);
+    // (the text starts just ahead of the glow's tip end and runs on towards the ball either way: unflipped the plane's
+    // left edge is there, flipped its right edge is the text's end - the texture's text fills its left share pwAt.w)
+    const along = flip ? lw * pwAt.w - lw / 2 : lw / 2;
+    pwLabel.position.set(ux + dx * along, uy + dy * along, z + 0.0005);
+  }
   /* the blue chalk cube put on the tip at the start of the player's own turn (90-frame.js, v.chalk): a hollow face over
      the tip, twisted back and forth, then lifted off */
   const cubeMat = new THREE.MeshStandardMaterial({ color: col(0x2f6fd6), roughness: 0.95, transparent: true, opacity: 1 });

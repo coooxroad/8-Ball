@@ -22,6 +22,53 @@
 #app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{position:relative;overflow:hidden;color:#fff;background:linear-gradient(var(--blue1),var(--blue2));box-shadow:inset 1px 0 0 rgba(255,255,255,.1),inset -1px 0 0 rgba(0,0,0,.35)}
 #app.bcast #hud .pill.on .pts{background:linear-gradient(var(--lgA),var(--lgB));color:#fff}
 #app.bcast #hud .pill.on::after{width:5px;background:linear-gradient(var(--lgA),var(--lgB))}
+/* Lying down, its shape as the snooker broadcast's (owner 11-22, the chosen mock): one slim bar along the top middle -
+   [the stripe of whose turn it is | name · rating | the balls still to play][score] [the game · the clock] [score][...] -
+   each plate a single line, the balls by the score, the scores square, the game's name small over the clock's seconds in
+   the navy middle. The 4구 ball each plays stays as a small ball before the name; the pool plates' 1 / 2 go. */
+#app.bcast:not(.portrait){--bh:40px;--cw:76px;--wb:min(660px,calc(100vw - 420px));--bt:10px}
+#app.bcast.compact:not(.portrait){--bh:32px;--cw:60px;--wb:min(500px,calc(100vw - 360px));--bt:8px}
+#app.bcast:not(.portrait) #hud .pill{gap:0;padding:0;border-radius:0}
+#app.bcast:not(.portrait) #hud #p0{border-radius:calc(var(--bh)*.15) 0 0 calc(var(--bh)*.15)}
+#app.bcast:not(.portrait) #hud #p1{border-radius:0 calc(var(--bh)*.15) calc(var(--bh)*.15) 0}
+#app.bcast:not(.portrait):not(.carom) #hud .pill .av{display:none}
+#app.bcast.carom:not(.portrait) #hud .pill .av{width:calc(var(--bh)*.4);height:calc(var(--bh)*.4);margin:0 0 0 calc(var(--bh)*.3)}
+#app.bcast.carom:not(.portrait) #hud .pill.r .av{margin:0 calc(var(--bh)*.3) 0 0}
+#app.bcast:not(.portrait) #hud .pill .who,#app.bcast:not(.portrait) #hud #p0 .who{flex:0 1 auto;min-width:0;display:flex;flex-direction:row;align-items:baseline;gap:calc(var(--bh)*.16);padding:0 calc(var(--bh)*.22) 0 calc(var(--bh)*.36)}
+#app.bcast:not(.portrait) #hud .pill.r .who,#app.bcast:not(.portrait) #hud #p1 .who{flex-direction:row-reverse;padding:0 calc(var(--bh)*.36) 0 calc(var(--bh)*.22)}
+#app.bcast.carom:not(.portrait) #hud .pill .who{padding-left:calc(var(--bh)*.2)}
+#app.bcast.carom:not(.portrait) #hud .pill.r .who{padding-right:calc(var(--bh)*.2)}
+#app.bcast:not(.portrait) #hud .pill .nm{font-size:calc(var(--bh)*.36);font-weight:800;white-space:nowrap;flex:0 0 auto;max-width:calc(var(--bh)*4.2);overflow:hidden;text-overflow:ellipsis}
+#app.bcast:not(.portrait) #hud .pill .sub{font-size:max(9.5px,calc(var(--bh)*.25));white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* (a phone lying down with balls on the plate: the name and the balls; the rating and the group are for the tablet) */
+#app.bcast.compact:not(.portrait) #hud .pill:has(.tray:not(:empty)) .sub{display:none}
+#app.bcast:not(.portrait) #hud .pill .tray{margin-left:auto;padding:0 calc(var(--bh)*.22);gap:calc(var(--bh)*.05)}
+#app.bcast:not(.portrait) #hud .pill.r .tray{margin-left:0;margin-right:auto}
+#app.bcast:not(.portrait) #hud .pill .tray .mb{width:calc(var(--bh)*.36);height:calc(var(--bh)*.36)}
+#app.bcast:not(.portrait) #hud .pts,#app.bcast:not(.portrait) #hud .pill.on .pts{min-width:var(--bh);margin-left:auto;padding:0 calc(var(--bh)*.12);font-size:calc(var(--bh)*.5)}
+#app.bcast:not(.portrait) #hud .pill .tray:not(:empty)+.pts{margin-left:0}
+#app.bcast:not(.portrait) #hud .pill.r .pts{margin-left:0;margin-right:auto}
+/* whose turn: the stripe at the plate's outer end and a line along its foot, both league blue */
+#app.bcast:not(.portrait) #hud .pill.on::after{width:calc(var(--bh)*.1)}
+#app.bcast:not(.portrait) #hud .pill.on::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),inset 0 calc(var(--bh)*-.075) 0 var(--lgA)}
+#app.bcast:not(.portrait) #badge{padding-top:calc(var(--bh)*.1);border-radius:0;font-size:max(9px,calc(var(--bh)*.22))}
+#app.bcast:not(.portrait) #badge b{font:800 max(8.5px,calc(var(--bh)*.22))/1.15 var(--ui-font);letter-spacing:.14em;color:#b9c6e0}
+/* (the middle holds the game's name over the clock and nothing else - a phrase like 초구 · 빨간 공 먼저 does not fit its
+   width; it is said as the game begins. With no shot clock the name sits in the middle, larger.) */
+#app.bcast:not(.portrait) #badge{font-size:0}
+#app.bcast:not(.portrait) #hud:not(:has(#clock:not([hidden]))) #badge{align-content:center;padding-top:0}
+#app.bcast:not(.portrait) #hud:not(:has(#clock:not([hidden]))) #badge b{font-size:max(11px,calc(var(--bh)*.34));letter-spacing:.06em;color:#fff}
+#app.bcast:not(.portrait) #clock b{bottom:calc(var(--bh)*.12 + 4px);font-size:calc(var(--bh)*.46)}
+#app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 4px)}
+#app.bcast:not(.portrait) #clock i{height:3px}
+/* the bot's words: a strap under the middle of the bar, as a broadcast's caption (34-desk-bots.js botTalk.show) */
+#app.bcast:not(.portrait) .bot-bub{border-radius:calc(var(--bh)*.1);padding:calc(var(--bh)*.16) calc(var(--bh)*.32);background:linear-gradient(#0d2257,var(--navy));color:#eef2fa;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.4);max-width:min(520px,70vw);animation-name:strapIn;transform-origin:50% 0}
+#app.bcast:not(.portrait) .bot-bub::before{display:none}
+#app.bcast:not(.portrait) .bot-bub p{font:600 max(12px,calc(var(--bh)*.34))/1.35 var(--ui-font)}
+#app.bcast:not(.portrait) .bot-bub p b{color:#8fb6ff;margin-right:calc(var(--bh)*.2);font-weight:800}
+#app.bcast:not(.portrait) .bot-bub small{color:#b9c6e0;font-size:max(11px,calc(var(--bh)*.28))}
+@keyframes strapIn{from{opacity:0;transform:translateY(-6px)}}
 /* the points to reach, large and faint behind the score */
 #app.bcast #hud .pts[data-goal]::before{content:attr(data-goal);position:absolute;right:3px;bottom:1px;z-index:-1;
   font:800 calc(var(--bh)*.5)/1 'Outfit',sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.26)}
@@ -33,7 +80,7 @@
 #app.bcast #hud.out #badge{background:linear-gradient(#d23a36,#86171a);box-shadow:inset 0 0 0 1px var(--silver),var(--slDrop)}
 #app.bcast:not(.portrait) #hud::before,#app.bcast.compact:not(.portrait) #hud::before{content:none;display:none}
 /* the shot clock's bar under the bar, clear of its lip */
-#app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 9px)}
+#app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 4px)}
 #app.bcast #clock i{height:4px;background:rgba(7,22,64,.9)}
 /* the shot clock's bar white in every game, whoever's turn and however little is left (owner 11-09); the seconds still
    turn red at the end */
@@ -92,8 +139,16 @@
 /* 스누커: the points still on the table, after the ball on (game.js MODES.snooker badge) */
 #badge .bsub{margin-left:8px;opacity:.72;font-size:.86em;font-weight:600;white-space:nowrap}
 
-/* 세기 at the cue (10-ui.js powerAt): a thin gauge along the cue, beside it, filling towards the butt in the meter's colour,
-   faint at the ball and full at the fill's end; the number written along it */
-#pwAt{position:absolute;left:0;top:0;height:6px;margin-top:-3px;transform-origin:0 50%;z-index:1;pointer-events:none;border-radius:99px;background:rgba(8,10,14,.42)}
-#pwAt i{position:absolute;left:0;top:0;bottom:0;width:var(--p);border-radius:inherit;background:linear-gradient(90deg,var(--c0),var(--c));box-shadow:0 0 8px var(--c)}
-#pwAt b{position:absolute;left:var(--p);top:50%;transform:translate(10px,-50%) rotate(var(--flip));font:800 14px/1 var(--num);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap}
+
+/* A phone lying down (owner 11-22: the controls looked fat - a fifth of the width went to two side panels): the gauge, the
+   dial and the cue ball slimmer, the table wider for it (10-ui.js playInsets). Their lengths and the cue's travel stay. */
+#app.desk.compact:not(.portrait) #power{width:50px;left:10px}
+#app.desk.compact:not(.portrait) #power::before,#app.desk.compact:not(.portrait) #power::after{left:7px;width:36px}
+#app.desk.compact:not(.portrait) #powerCue{width:13px}
+#app.desk.compact:not(.portrait) #powerNum{font-size:12.5px;bottom:7px}
+#app.desk.compact:not(.portrait) #powerNum small{font-size:8px}
+#app.desk.compact:not(.portrait) #power .pw-tk::after{display:none}
+#app.desk.compact:not(.portrait) #fine{width:46px;right:10px}
+#app.desk.compact:not(.portrait) #fine::before{inset:30px 9px}
+#app.desk.compact:not(.portrait) #fine canvas.dial{left:9px;right:9px;width:calc(100% - 18px)}
+#app.desk.compact:not(.portrait) #spinBtn{width:64px;height:64px;right:10px;bottom:10px}

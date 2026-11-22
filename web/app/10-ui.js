@@ -102,7 +102,8 @@ function playInsets(H, portrait) {
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
   app.classList.toggle('ysw', tv && game.mode.table === 'carom' && game.yellow === 0);   // (player 1 has the yellow: the plates' balls swap)
-  if (tv && !portrait) return { t: wide ? 86 : 62, l: wide ? 118 : 116, r: wide ? 92 : 80, b: 10 };   // (the bar along the top, the wider controls at the sides)
+  // (the bar along the top - slim since 11-22, the snooker broadcast's; the controls at the sides - slimmer on a phone)
+  if (tv && !portrait) return { t: wide ? 70 : 50, l: wide ? 118 : 72, r: wide ? 92 : 74, b: 10 };
   // held upright: every control in one column at the right (style/10-play.css), the table beside it
   if (portrait) return { t: hud + 26, l: 6, r: 72, b: 10 };
   return { t: hud + 6, l: 66, r: 74, b: 10 };
@@ -190,35 +191,10 @@ function setPowerUI(p) {
   const run = Math.max(0, th - REST - END);
   tr.style.setProperty('--r0', REST + 'px'); tr.style.setProperty('--run', run + 'px'); tr.style.setProperty('--py', (REST + p * run).toFixed(1) + 'px');
   tr.classList.toggle('drawn', p > 0.01);
-  // the same colour, whole, for the power shown at the cue on the table (powerAt)
+  // the same colour, whole, for the power shown beside the cue on the table (scene/40-cue.js, 90-loop.js v.pwCol)
   powerUI.col = `hsl(${hue.toFixed(0)} ${Math.round(70 + 30 * q)}% ${Math.round(56 - 4 * q)}%)`; powerUI.col0 = powerUI.col.replace(')', ' / .12)');
 }
 
-/* 세기 on the table too (owner 11-22): not floating anywhere - a thin gauge laid along the cue, beside it, from just behind
-   the cue ball back towards the butt. It fills as far as the pull reaches, in the meter's own colour for that pull (as the
-   gauge burns: blue-green, yellow, orange, red), the colour gathering towards the cue's end - faint at the ball, full at
-   the far end of the fill; the number (km/h, as the gauge) at the fill's end, written along the cue and turned so it never
-   reads upside down. Drawn after the table each frame (90-loop.js drawFrame), written only when something moved. */
-const powerAt = {
-  el: null, key: '', A: [0, 0], B: [0, 0],
-  paint(on) {
-    let e = powerAt.el;
-    if (!on) { if (e && !e.hidden) { e.hidden = true; powerAt.key = ''; } return; }
-    const c = game.cueBall && game.cueBall(); if (!c || !scene.proj) return;
-    if (!e) { e = powerAt.el = el('div', { id: 'pwAt', 'aria-hidden': 'true' }, [el('i'), el('b')]); $('#gl').after(e); }
-    // (world units: beside the cue on its left as it points, a little clear of the ball; the gauge's whole length about
-    // eight balls - the fill is the pull's share of it)
-    const R = game.P.R, ca = Math.cos(st.aim), sa = Math.sin(st.aim), gap = R * 2.2, side = R * 2.3, L = R * 16;
-    const ox = c.x - ca * gap - sa * side, oy = c.y - sa * gap + ca * side, A = powerAt.A, B = powerAt.B;
-    scene.proj.begin(); scene.proj.at(ox, oy, R, A); scene.proj.at(ox - ca * L, oy - sa * L, R, B);
-    const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy), ang = Math.atan2(dy, dx), p = Math.max(0, Math.min(1, st.power));
-    const key = `${A[0].toFixed(1)},${A[1].toFixed(1)},${len.toFixed(1)},${ang.toFixed(3)},${p.toFixed(3)},${powerUI.num}`;
-    if (e.hidden) e.hidden = false;
-    if (key === powerAt.key) return; powerAt.key = key;
-    e.style.cssText = `width:${len.toFixed(1)}px;transform:translate(${A[0].toFixed(1)}px,${A[1].toFixed(1)}px) rotate(${ang.toFixed(4)}rad);--p:${(p * 100).toFixed(1)}%;--c:${powerUI.col};--c0:${powerUI.col0};--flip:${Math.cos(ang) < 0 ? '180deg' : '0deg'}`;
-    e.lastChild.textContent = powerUI.num;
-  },
-};
 /* Where on the pad the cue in hand's furthest strike is, as a share of its width - the ring drawn there (style/10-play.css
    #spinPad::before). On the desk the ball is the inner 79% of the pad (its bezel round it) and the ring is at 60%; the
    plain pad is all ball, the ring at 72%. A cue with no strike limit (content/20-cues.js TRAITS reach) has its furthest
