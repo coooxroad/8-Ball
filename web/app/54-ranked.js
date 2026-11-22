@@ -354,7 +354,19 @@ const ranked = {
     // (a friend's game: the room is kept for 다시 하기; anything else is let go)
     if (o.kind === 'invite') { o.after = true; if (o.againMine && o.ws && o.ws.readyState === 1) o.ws.send(JSON.stringify({ t: 'again' })); ranked.againPaint(); }
     else ranked.unplug(o, 500);
-    net.flush(); setTimeout(() => net.flush(), 3000);              // (the room tells the vaults a moment after)
+    ranked.vault(o);
+  },
+  /* The vault's word after the room's (owner 11-22: the rating on the 선수증 and the panels came late): the room pays the
+     vaults right after it sends the result, so the account is asked soon and again until its rating for the game's family
+     has moved (or a few tries) - then the slate's line shows the vault's number (a 승급전 holds it under the next tier) and
+     the desk has it. (A flush already under way answers at once without asking: it is tried again.) */
+  vault(o, k = 0) {
+    setTimeout(() => net.flush().then(() => {
+      const r = o.result, fam = familyOf(o.mode), now = net.me && net.me.damas ? net.me.damas[fam] : null;
+      const moved = !r || !r.dama || r.dama[o.seat] === o.dama || o.kind === 'invite' || o.kind === 'arcade' || (now != null && now !== o.dama);
+      if (moved || k >= 4) { o.vaultSeen = true; if (ranked.on === o && st.screen === 'result') ranked.paint(); }
+      else ranked.vault(o, k + 1);
+    }), [500, 1200, 2500, 5000, 9000][k]);
   },
   // a watched game over: who won, and back to the hall
   watchEnd(m) {
@@ -390,7 +402,6 @@ const ranked = {
     const pl = net.me && net.me.promoLast, p = net.me && net.me.promo && net.me.promo[fam], tn = t => (TIERS[t] || [])[1] || '';
     if (o.vaultSeen && pl && pl.f === fam && pl.at >= o.t0) line('승급전', pl.what === 'promo' ? `${tn(p ? p.to : 0)} 승급전 시작 · 3판 2선승` : pl.what === 'up' ? `${tierName(now)} 승급!` : pl.what === 'failed' ? '승급전 실패 · 다시 도전' : `강등 방어 · 남은 ${(net.me.shield || {})[fam] || 0}번`);
     else if (o.vaultSeen && p) line('승급전', `${tn(p.to)} · ${p.w}승 ${p.l}패`);
-    if (!o.flushing) { o.flushing = true; setTimeout(() => net.flush().then(() => { o.vaultSeen = true; if (ranked.on === o && st.screen === 'result') ranked.paint(); }), 1800); }
   },
   // leaving the game (home, or the app goes away): it is given up
   leave() { app.classList.remove('watching'); arcade.close(); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; o.after = false; ranked.unplug(o); ranked.on = null; },

@@ -355,6 +355,33 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       }
     }
   }
+  // the room replaying as the game is played (RoomCore.ahead, owner 11-22: results came late): the same result as the
+  // check from the start, and at the end little is left to play; a moved ball is still caught; a resignation mid-game
+  // still decided from the replay; no endless work on a log that ends in a timeout
+  for (const mode of ['eight', 'four']) {
+    const seed = 4242, first = 1, G = rankedGame(mode, seed, first); if (G.winner == null) continue;
+    const keep = (R, k = 0) => { while (R.ahead(150) && k < 100000) k++; return k; };
+    const { R } = roomOf(mode, seed, first); let during = 0;
+    for (const x of G.msgs) { R.message(x.seat, x.m); during += keep(R); }
+    R.message(0, { t: 'end' }); R.message(1, { t: 'end' });
+    let left = 0; while (R.work(150) && left < 100000) left++;
+    const res = R.get('result'), { R: R0 } = roomOf(mode, seed, first); for (const x of G.msgs) R0.message(x.seat, x.m); R0.message(0, { t: 'end' }); R0.message(1, { t: 'end' });
+    let all = 0; while (R0.work(150) && all < 100000) all++; const res0 = R0.get('result');
+    ok(res && res.winner === G.winner && JSON.stringify(res) === JSON.stringify(res0), `ranked ${mode}, replayed during play: the same result as replayed at the end (${res && res.why})`);
+    ok(left <= 2 && all > left && during > 0, `ranked ${mode}, replayed during play: little left at the end (${left} slices, against ${all})`);
+    if (G.msgs.length > 2) {
+      const { R: R2 } = roomOf(mode, seed, first), j = G.msgs.findIndex((x, i) => i > 0 && x.seat === 1);
+      if (j > 0) {
+        G.msgs.forEach((x, i) => { const m = JSON.parse(JSON.stringify(x.m)); if (i === j) { const bs = m.shot.s.balls, b = bs.findIndex((q, k) => q[2] && k !== m.shot.s.cue); bs[b][0] += 0.02; } R2.message(x.seat, m); keep(R2); });
+        ok(R2.get('aheadBad', false) && R2.ahead(150) === false, `ranked ${mode}, replayed during play: stops at a shot that does not fit`);
+        R2.message(0, { t: 'end' }); R2.message(1, { t: 'end' }); const r2 = finish(R2);
+        ok(r2.winner === 0 && r2.why === 'a shot that does not fit', `ranked ${mode}, replayed during play: a moved ball still loses the game for the seat that sent it`);
+      }
+      const { R: R3 } = roomOf(mode, seed, first), half = G.msgs.slice(0, Math.max(1, G.msgs.length >> 1));
+      for (const x of half) { R3.message(x.seat, x.m); keep(R3); }
+      R3.message(0, { t: 'timeout', n: half.length }); ok(keep(R3) < 3 && R3.ahead(150) === false, `ranked ${mode}, replayed during play: a timeout at the end does not keep it busy`);
+    }
+  }
   // a seat that shoots out of turn loses; one that leaves and does not come back loses
   { const G = rankedGame('eight', 7, 0), { R } = roomOf('eight', 7, 0); R.message(G.msgs[0].seat, G.msgs[0].m); const m = JSON.parse(JSON.stringify(G.msgs[1] || G.msgs[0])); m.m.n = 1; R.message(G.msgs[0].seat, m.m); R.message(0, { t: 'resign' });
     const r = finish(R); ok(r.winner === 1 - G.msgs[0].seat, 'ranked: a shot out of turn loses'); }

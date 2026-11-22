@@ -518,12 +518,30 @@ export class RoomCore {
   }
   nextGo(x) { const msg = { t: 'next', room: x.room, seed: x.seed, first: x.first, rules: x.rules }; this.set('next', msg); this.others(-1, msg); }
   nextFailed() { this.set('opening', false); this.set('again', null); this.others(-1, { t: 'again', want: this.get('seats').map(() => false), failed: true }); }
-  over(why, loser, standIn) { this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
+  over(why, loser, standIn) { this.pre = null; this.set('status', 'checking'); this.set('end', { why, loser: loser == null ? null : loser, standIn: !!standIn }); return 'check'; }
 
   log() {
     const r = this.get('room'), rules = r.rules || RANKED_RULES[r.mode];
     const cues = this.get('seats').map(q => (q.gear && typeof q.gear.cue === 'string' && q.gear.cue) || null);   // (check.js vMax)
     return { v: 1, mode: r.mode, table: r.table || ROOM_TABLE, seed: r.seed, opts: Object.assign({ first: r.first, team: !!r.team }, rules), cues, shots: this.shots(), winner: 0, points: [0, 0] };
+  }
+  /* The replay kept up with the game while it is played (owner 11-22: the result - the rating, the coins - came many
+     seconds after a game ended, the whole log played again only then, a slice an alarm). Each shot the room is sent is
+     played here soon after and the checkpoint after it kept, so at the end only what came last is left to play. Returns
+     true while there is more to play now. Nothing is decided here: work() decides at the end, from the checkpoint - a
+     shot that does not fit is found again there (and this stops trying past it: 'aheadBad'). */
+  ahead(steps) {
+    if (this.get('status') !== 'playing' || this.get('aheadBad', false)) return false;
+    // (preN: the log's length when the replay last ran out of it - nothing new since, nothing to do; a log ending in
+    // timeouts never gets a checkpoint past them)
+    const n = this.shots().length;
+    if (!this.pre) { const cp = this.get('cp', null); if ((cp ? cp.i : 0) >= n || this.preN === n) return false; this.pre = new Replay(this.log(), cp, true); }
+    const rp = this.pre, out = rp.advance(steps), c = rp.lastCp;
+    if (c) { this.set('cp', c); rp.lastCp = null; }
+    if (!out) return true;
+    // (out of shots - or the game over, or a shot that does not fit: let go; a shot sent since starts it again)
+    this.pre = null; this.preN = rp.log.shots.length; if (!out.ok) this.set('aheadBad', true);
+    return out.ok && !rp.g.over && this.shots().length > this.preN;
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
      that resigned, left or sent a shot that does not fit; else (the game stopped with no winner and nobody to blame) a

@@ -99,7 +99,7 @@ const rise = {
     const t0 = performance.now(), go = () => {
       const o = ranked.on, r = o && o.result;
       if (r && r.dama) { const me = o.seat; return rise.run({ from: o.dama, to: r.dama[me], coins: (r.coins && r.coins[me]) || 0 }, done); }
-      if (!o || performance.now() - t0 > 2500 || st.screen !== 'play') return done();
+      if (!o || performance.now() - t0 > 4000 || st.screen !== 'play') return done();   // (the room's word: usually there already - 11-22)
       setTimeout(go, 120);
     };
     go();

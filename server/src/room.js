@@ -44,7 +44,11 @@ export class Room extends DurableObject {
     const seat = this.seatOfSocket(ws); if (seat < 0 || typeof data !== 'string' || data.length > 64000) return;
     let m; try { m = JSON.parse(data); } catch (e) { return; }
     const said = this.core.message(seat, m);
-    if (said === 'check') return this.soon(20);
+    // (the end: the first slice of the check at once - what is left after the replay kept up with play is usually less -
+    // and the result's payouts on the alarm straight after)
+    if (said === 'check') return this.soon(this.core.work(SLICE) ? 20 : 0);
+    // (a shot: played soon, while the game goes on - RoomCore.ahead)
+    if ((m.t === 'shot' || m.t === 'timeout') && this.core.get('status') === 'playing') await this.soon(30);
     // 다시 하기: everyone agreed - the next room opened, then every seat told where
     if (said === 'again') {
       const x = this.core.nextInit();
@@ -65,6 +69,7 @@ export class Room extends DurableObject {
     const st = this.core.get('status');
     if (st === 'checking') { if (this.core.work(SLICE)) return this.soon(20); }
     if (st === 'playing') {
+      if (this.core.ahead(SLICE)) return this.soon(20);        // (the timers are looked at again on that alarm)
       const gone = this.core.get('gone'), wj = this.core.waitingJoin(), idle = this.core.idleIn();
       if (gone.some(Boolean)) return this.soon(5000);
       if (wj != null) return this.soon(wj + 500);

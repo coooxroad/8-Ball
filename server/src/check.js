@@ -63,8 +63,9 @@ export class Replay {
     this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, minus: o.minus !== false, hugu: !!o.hugu, ot: !!o.ot, team: !!o.team });
     if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
     this.i = 0; this.points = [0, 0]; this.running = false;
-    // Older checkpoints did not save a win. Replaying those terminal checkpoints from the start recovers pending rewards.
-    if (cp && cp.i === log.shots.length && !cp.over) cp = null;
+    // Older checkpoints did not save a win (no 'over' at all). Replaying those terminal checkpoints from the start recovers
+    // pending rewards. (One of now has over: null when the game went on - the room's replay kept up with play, RoomCore.ahead.)
+    if (cp && cp.i === log.shots.length && cp.over === undefined) cp = null;
     if (cp) { this.i = cp.i; this.points = cp.points.slice(); if (!this.g.restore(cp.game)) this.out = { ok: false, why: 'bad checkpoint' }; else { this.g.world.ice = !!o.ice; this.g.world.real = this.g.real; this.g.over = cp.over || null; this.fresh = !!cp.fresh; if (cp.rnd != null && this.g.rnd.seek) this.g.rnd.seek(cp.rnd); } }
   }
   // (rnd: where the rack's chances have got to - a break that does not stand is racked again from them, game.js)
