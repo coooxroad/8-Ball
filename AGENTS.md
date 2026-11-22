@@ -60,7 +60,7 @@ node web/test/browser/result.js        # 결과의 숫자: 레이팅 단계 게�
 | `web/audio.js`, `web/sounds.js` | 소리. 공·큐 소리는 녹음(`sounds.js`), 나머지는 합성 | 모름 |
 | `web/sound/` | 아이템이 자기 소리로 쓰는 녹음 파일(선택). 빌드가 페이지 안에 넣는다 | — |
 | `web/reel/` | 하이라이트 재생. 편집 하나당 파일 하나 (한 범위) | 앎 |
-| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 랭킹전은 `54-ranked.js`, 친구 초대 `55-invite.js`, 플레이 카드 메뉴 `37-desk-menu.js`(선수증·유리 케이스), 유리 케이스 3D `38-glass3d.js`, 경기 끝 `50-match.js` `finish`(→ `50-outro.js` 승리/패배, `50-celebrate.js` 색종이·승리 카메라, `50-rise.js` 레이팅 단계, `50-receipt.js` 영수증) | 앎 |
+| `web/app/` | 앱: 화면, 입력, 프레임 루프 (한 범위). 파일 목록은 `web/app/00-state.js` 맨 위. 프레임 루프는 `90-loop.js` `frame`(멈춤 조건 `framePaused` 한 곳 → `playTick` → `tableSync` → `drawFrame`), 입력은 `80-input.js`(파워바·다이얼·당점). 랭킹전은 `54-ranked.js`(맨 위에 `ranked.on`의 상태 흐름과 칸), 친구 초대 `55-invite.js`, 플레이 카드 메뉴 `37-desk-menu.js`(선수증·유리 케이스), 유리 케이스 3D `38-glass3d.js`, 경기 끝 `50-match.js` `finish`(→ `50-outro.js` 승리/패배, `50-celebrate.js` 색종이·승리 카메라, `50-rise.js` 레이팅 단계, `50-receipt.js` 영수증) | 앎 |
 | `web/index.html` | 마크업만. `<!--STYLE-->` 자리에 빌드가 스타일을 넣는다 | — |
 | `web/style/` | 스타일. 무엇을 꾸미는지에 따라 파일이 나뉜다(아래 5절) | — |
 | `web/ui/`, `web/tex/` | 화면 재료 그림 / 3D 재질 그림(WebP). 쓰임과 9-slice 값은 `web/ui/README.md` | — |
@@ -95,6 +95,9 @@ node web/test/browser/result.js        # 결과의 숫자: 레이팅 단계 게�
 - 가만히 있는 화면이 일하지 않게(11-22): 프레임마다 요소 크기(`clientWidth` 등)를 읽지 않는다 — CSS 애니메이션이 도는 화면에서는 읽을 때마다 스타일·배치를
   다시 계산한다(크기는 `ResizeObserver`로 바뀔 때만, `39-menu-fx.js`). 화면 밖의 끝없는 애니메이션은 멈춘다(`IntersectionObserver`로 `live`·`aur-on`·`mn-live`).
   카메라가 멈췄으면 3D를 다시 그리지 않는다(`winCam`). 유리 케이스의 재질은 dispose하지 않는다 — 셰이더가 렌더러에 남아 다음 케이스가 다시 컴파일하지 않는다(`38-glass3d.js` `free`).
+- 프레임마다 새 객체를 만들지 않는다(11-22): 3D에 넘기는 값(`90-loop.js` `view`)·팔로스루(`followAt`)는 하나를 다시 채운다 — 그래서 `scene.frame`은
+  받은 `v`를 붙잡아 두지 않는다(그 프레임 안에서만 읽는다). 프레임마다 도는 곳에서 배열 풀기(`const [a, b] = …`)·`Object.values`·클로저를 피한다.
+  core로 Worker를 만들 땐 `coreUrl()`(40-shot.js — Blob 하나를 컴퓨터·리뷰 Worker가 같이 씀).
 - 정리·최적화의 기준 수치와 진행: `tasks/CUE-refactor-plan.md`(재는 법은 `web/tools/measure.js`).
 
 ## 5. 이렇게 고친다
@@ -293,7 +296,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   끝까지 맞으면 지급, 안 맞으면 거절한다. 코인은 몇 초~1분 뒤 들어오고 앱이 알아서 다시 물어본다. 유료면 `"true"`(한 번에).
   다 확인하면 하루 500~700판이 한도라 **일부만** 확인한다(economy.js): 무작위 25%, 600코인 넘는 판, 새 계정의 첫 3판, 한 번
   걸린 계정의 모든 판. 나머지는 앱이 말한 점수로 바로 지급(상식 범위, 하루 3,000). 기록은 확인이 끝나면 지운다.
-- 앱 쪽 통신은 `web/app/07-net.js`(`net.*`)에만 있다. 보상은 기기에 큐로 저장했다가 연결되면 보낸다(퍼즐은 오프라인 가능).
+- 앱 쪽 통신은 `web/app/07-net.js`(`net.*`)에만 있다(한 클로저 안이 구역으로: 연결 `call` · 계정 `ensure`/`doubt`/`putAside` · 지갑 `setMe`/`owns` · 보상 `flush`; 계정이 있어야 하는 요청은 `signed()`로). 보상은 기기에 큐로 저장했다가 연결되면 보낸다(퍼즐은 오프라인 가능).
   서버 주소는 그 파일의 `SERVER`. 비어 있으면 예전처럼 오프라인으로 모든 아이템을 쓴다.
 - 검사: `cd server && npm test`(규칙, 같은 요청 두 번, 잔액 부족, 바뀐 샷·옮긴 공 잡기, 하루 상한).
   배포: `main`에 푸시하면 `.github/workflows/server.yml`이 검사 후 배포한다(저장소 Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
