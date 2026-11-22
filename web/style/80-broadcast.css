@@ -75,7 +75,6 @@
 #app.bcast #toast.foul{border-left-color:#e0262e;color:#7d0d12;border-top-color:#e0262e}
 #app.bcast #toast.good{border-left-color:var(--gold2);border-top-color:var(--gold2)}
 #app.bcast.portrait #toast{font-size:14.5px;left:50%;right:auto;max-width:calc(100% - 20px)}
-#app.bcast:not(.portrait) #viewBtn{grid-column:-2/-1}
 #app.bcast.compact:not(.portrait) #hud::before{font-size:9px;width:78px;height:21px;padding:0}
 /* ---- in play on the desk, second pass: roomier controls ----
    score bar along the TOP middle (its clock bar under it, the tour tab hanging below its left end), messages under it in

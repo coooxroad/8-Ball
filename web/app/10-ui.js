@@ -102,10 +102,14 @@ function playInsets(H, portrait) {
   const tv = app.classList.contains('bcast');
   app.classList.toggle('carom', tv && game.mode.table === 'carom');
   app.classList.toggle('ysw', tv && game.mode.table === 'carom' && game.yellow === 0);   // (player 1 has the yellow: the plates' balls swap)
-  // (the bar along the top - slim since 11-22, the snooker broadcast's; the controls at the sides - slimmer on a phone)
-  if (tv && !portrait) return { t: wide ? 70 : 50, l: wide ? 118 : 72, r: wide ? 92 : 74, b: 10 };
   // held upright: every control in one column at the right (style/10-play.css), the table beside it
   if (portrait) return { t: hud + 26, l: 6, r: 72, b: 10 };
+  // Lying, the controls stand in a frame (style/82-ingame.css: the margin, the two columns, the row of keys along the top)
+  // and the table keeps clear of those same lengths - read from there, not written again here (until 11-22 these were
+  // numbers of their own, and the table and the controls drifted apart as either changed).
+  const cs = getComputedStyle(app), f = k => parseFloat(cs.getPropertyValue(k));
+  const g = f('--g'), gap = f('--gap'), cl = f('--cl'), cr = f('--cr'), tb = f('--tb');
+  if (g >= 0 && cl > 0 && cr > 0 && tb > 0) return { t: g + tb + gap / 2, l: g + cl + gap, r: g + cr + gap, b: g };
   return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.

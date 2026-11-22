@@ -26,8 +26,9 @@
    [the stripe of whose turn it is | name · rating | the balls still to play][score] [the game · the clock] [score][...] -
    each plate a single line, the balls by the score, the scores square, the game's name small over the clock's seconds in
    the navy middle. The 4구 ball each plays stays as a small ball before the name; the pool plates' 1 / 2 go. */
-#app.bcast:not(.portrait){--bh:40px;--cw:76px;--wb:min(660px,calc(100vw - 420px));--bt:10px}
-#app.bcast.compact:not(.portrait){--bh:32px;--cw:60px;--wb:min(500px,calc(100vw - 360px));--bt:8px}
+/* (on the top keys' middle line, and as wide as the room between them allows, kept centred: the frame's lengths, below) */
+#app.bcast:not(.portrait){--bh:40px;--cw:76px;--wb:min(660px,calc(100vw - 2 * (var(--g) + 3 * var(--cr) + 3 * var(--gap))));--bt:calc(var(--g) + (var(--tb) - var(--bh)) / 2)}
+#app.bcast.compact:not(.portrait){--bh:32px;--cw:60px;--wb:min(500px,calc(100vw - 2 * (var(--g) + 3 * var(--cr) + 3 * var(--gap))))}
 #app.bcast:not(.portrait) #hud .pill{gap:0;padding:0;border-radius:0}
 #app.bcast:not(.portrait) #hud #p0{border-radius:calc(var(--bh)*.15) 0 0 calc(var(--bh)*.15)}
 #app.bcast:not(.portrait) #hud #p1{border-radius:0 calc(var(--bh)*.15) calc(var(--bh)*.15) 0}
@@ -114,7 +115,6 @@
 /* the fine-aim drum: a slate frame with a silver-edged window, a silver pointer */
 #app.desk #fine,#app.desk.portrait #fine{background:var(--slate);border-radius:10px;box-shadow:var(--slEdge),var(--slDrop)}
 #app.desk #fine::before{inset:42px 15px;border:0;border-image:none;border-radius:3px;box-shadow:inset 0 0 0 1px var(--silver),inset 0 10px 10px -4px rgba(0,0,0,.65),inset 0 -10px 10px -4px rgba(0,0,0,.65)}
-#app.desk.compact:not(.portrait) #fine::before{inset:30px 15px}
 #app.desk.portrait #fine::before{inset:28px 12px;border-image:none}
 #app.desk #fine::after{background:#e9edf2;filter:drop-shadow(0 0 3px rgba(150,190,255,.6))}
 
@@ -140,15 +140,42 @@
 #badge .bsub{margin-left:8px;opacity:.72;font-size:.86em;font-weight:600;white-space:nowrap}
 
 
-/* A phone lying down (owner 11-22: the controls looked fat - a fifth of the width went to two side panels): the gauge, the
-   dial and the cue ball slimmer, the table wider for it (10-ui.js playInsets). Their lengths and the cue's travel stay. */
-#app.desk.compact:not(.portrait) #power{width:50px;left:10px}
-#app.desk.compact:not(.portrait) #power::before,#app.desk.compact:not(.portrait) #power::after{left:7px;width:36px}
+/* ---- the frame of the controls, lying (owner 11-22: the keys at the top sat at three different heights, the pause key and
+   the gauge under it were different widths, the spin ball was half again as wide as the dial over it and ran into it on a
+   short phone). Each of those had been placed on its own, with its own numbers, in four files; now every one of them is
+   placed from these few lengths and nothing else:
+     --g    the margin to the screen's edge        --gap  between two controls
+     --cl   the left column: the power gauge       --cr   the right column: the dial
+     --tb   the height of the row of keys along the top
+   The pause key caps the left column (the gauge's width, its corners), the three view keys each the right column's width,
+   the rightmost over the dial; all the keys and the score bar share one middle line. The dial fills the right column
+   between the keys and the spin ball (as tall as it was, or less where the screen is short) and the ball is the column's
+   width, under it. The table keeps clear of the same lengths (10-ui.js playInsets reads them). */
+#app.desk:not(.portrait){--g:12px;--gap:10px;--cl:72px;--cr:66px;--tb:48px;--pin:10px;--fpad:15px;--fh:380px;--fend:42px}
+#app.desk.compact:not(.portrait){--g:10px;--gap:8px;--cl:50px;--cr:46px;--tb:40px;--pin:7px;--fpad:9px;--fh:260px;--fend:30px}
+/* the keys along the top */
+#app.desk:not(.portrait) #menuBtn,#app.desk:not(.portrait) #viewBtn,#app.desk:not(.portrait) #views .btn{height:var(--tb);border-radius:10px;margin:0}
+#app.desk:not(.portrait) #menuBtn{position:fixed;left:var(--g);top:var(--g);width:var(--cl)}
+#app.desk:not(.portrait) #viewBtn{position:fixed;right:var(--g);top:var(--g);width:var(--cr)}
+#app.desk:not(.portrait) #views{position:fixed;top:var(--g);right:calc(var(--g) + var(--cr) + var(--gap));flex-direction:row;gap:var(--gap)}
+#app.desk:not(.portrait) #views .btn{width:var(--cr)}
+/* (the score row of practice and puzzles stays a grid, 10-play.css #hud: with the two keys out of it, it is kept between
+   them and on their middle line - its own padding and height from the same lengths) */
+#app.desk:not(.portrait){--hud-h:calc(2 * var(--g) + var(--tb))}
+#app.desk:not(.portrait) #hud{padding:0 calc(var(--g) + 3 * var(--cr) + 3 * var(--gap)) 0 calc(var(--g) + var(--cl) + var(--gap))}
+#app.desk:not(.portrait) #pracBar{margin-right:0}
+#app.desk:not(.portrait) #pracBar .btn{height:var(--tb)}
+/* the left column: the gauge under the pause key */
+#app.desk:not(.portrait) #power{left:var(--g);width:var(--cl);top:calc(var(--g) + var(--tb) + var(--gap));bottom:var(--g)}
+#app.desk:not(.portrait) #power::before,#app.desk:not(.portrait) #power::after{left:var(--pin);width:calc(var(--cl) - 2 * var(--pin))}
 #app.desk.compact:not(.portrait) #powerCue{width:13px}
 #app.desk.compact:not(.portrait) #powerNum{font-size:12.5px;bottom:7px}
 #app.desk.compact:not(.portrait) #powerNum small{font-size:8px}
 #app.desk.compact:not(.portrait) #power .pw-tk::after{display:none}
-#app.desk.compact:not(.portrait) #fine{width:46px;right:10px}
-#app.desk.compact:not(.portrait) #fine::before{inset:30px 9px}
-#app.desk.compact:not(.portrait) #fine canvas.dial{left:9px;right:9px;width:calc(100% - 18px)}
-#app.desk.compact:not(.portrait) #spinBtn{width:64px;height:64px;right:10px;bottom:10px}
+/* the right column: the dial between the keys and the spin ball */
+#app.desk:not(.portrait) #fine{right:var(--g);width:var(--cr);top:calc(var(--g) + var(--tb) + var(--gap));bottom:calc(var(--g) + var(--cr) + var(--gap));
+  height:min(var(--fh),calc(100% - 2 * var(--g) - var(--tb) - var(--cr) - 2 * var(--gap)));margin:auto 0}
+#app.desk:not(.portrait) #fine::before{inset:var(--fend) var(--fpad)}
+#app.desk:not(.portrait) #fine canvas.dial{left:var(--fpad);right:var(--fpad);top:var(--fend);bottom:var(--fend);width:calc(100% - 2 * var(--fpad));height:calc(100% - 2 * var(--fend))}
+#app.desk:not(.portrait) #spinBtn{right:var(--g);bottom:var(--g);width:var(--cr);height:var(--cr)}
+#app.desk:not(.portrait) #spinPop{right:calc(var(--g) + var(--cr) + var(--gap));bottom:var(--g)}

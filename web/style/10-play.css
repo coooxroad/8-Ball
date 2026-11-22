@@ -125,7 +125,6 @@
 #app.desk #spinBtn,#app.desk #spinPad{background:url(ui/spin-ball.webp) center/79% no-repeat;border-radius:50%;box-shadow:-4px 6px 10px rgba(0,0,0,.45)}
 #app.desk #spinPad::before{inset:20%;border-color:rgba(60,45,20,.3)}
 #app.desk #spinBtn{width:96px;height:96px;right:12px;bottom:12px}
-#app.desk.compact:not(.portrait) #spinBtn{width:78px;height:78px}
 #app.desk #spinDot,#app.desk .sdot{width:18px;height:18px;margin:-9px;background:radial-gradient(circle at 38% 32%,#ff9a8f,#e3261d 55%,#9d1410);box-shadow:0 0 0 2px rgba(255,255,255,.65),0 1px 3px rgba(0,0,0,.45)}
 #app.desk #spinPad .sdot{width:30px;height:30px;margin:-15px}
 /* the spin and cue-angle pop: a slate with the ball in its bezel and the masse side view on a brass protractor */
@@ -142,12 +141,9 @@
 #app.desk #spinTag{background:linear-gradient(#ffd34d,#e09a00);color:#2b1d05}
 #app.desk #spinReset{color:#e9eef5;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:10px}
 #app.desk #fine{box-shadow:-4px 6px 10px rgba(0,0,0,.45);right:12px;top:50%;bottom:auto;width:66px;background:none;border:0;border-radius:4px;overflow:visible;height:380px;margin-top:-190px}
-#app.desk.compact:not(.portrait) #fine{height:260px;margin-top:-130px}
 #app.desk #fine::before{position:absolute;inset:0;border:0 solid transparent;content:"";pointer-events:none;z-index:1;border-image:none}
-#app.desk.compact:not(.portrait) #fine::before{border-image-width:30px 15px}
 #app.desk #fine::after{z-index:2;left:-6px;right:auto;width:12px;height:12px;margin-top:-6px;border-radius:0;background:#e9c46a;clip-path:polygon(0 0,100% 50%,0 100%);box-shadow:none}
 #app.desk #fine canvas.dial{position:absolute;left:15px;right:15px;top:42px;bottom:42px;width:calc(100% - 30px);height:calc(100% - 84px)}
-#app.desk.compact:not(.portrait) #fine canvas.dial{top:30px;bottom:30px;height:calc(100% - 60px)}
 #app.desk #fineLab,#app.desk #powerLab{display:none}
 #app.desk #power{border:0;border-image:none;border-radius:6px;background:#0c100d;box-shadow:-5px 8px 12px rgba(0,0,0,.5);overflow:visible;width:72px;left:12px}
 /* 오발 방지 (app/80-input.js): the shot held after a slip - the bar glows and says a tap plays it */
@@ -167,10 +163,6 @@
 #app.desk.compact #views{top:64px;gap:8px}
 #app.desk.compact #views .btn{width:42px;height:42px}
 #app:not(.desk) #views,#hud[hidden] #views{display:none}
-#app.desk:not(.portrait) #views{top:12px;right:80px;flex-direction:row;gap:12px}
-#app.desk:not(.portrait) #views .btn{width:56px;height:56px}
-#app.desk.compact:not(.portrait) #views{top:6px;right:62px}
-#app.desk.compact:not(.portrait) #views .btn{width:48px;height:48px}
 /* Held upright (a phone, mostly) - after the portrait billiard games people play: the table on the left, and every control
    in one column on the right, top to bottom: the view keys, the spin ball, the fine-aim drum and the power gauge, the
    last two standing upright (the gauge is pulled down, as the cue is drawn back). The thumb holding the phone reaches the

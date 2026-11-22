@@ -30,6 +30,9 @@ function fixture(kind) {
   } });
   try {
     await page.evaluate(() => {
+      // (this checks that the Worker's answer is used, not how fast it comes: on CI's software renderer it can pass the
+      // game's 8 s fallback - app/40-shot.js aiw.slow)
+      __dp8.aiw.slow = 60000;
       const d = __dp8, r = d.ranked;
       window.__humanMessages = []; r.connect = () => {}; r.send = m => window.__humanMessages.push(m);
       const person = createAI(null).rankedPersonaFor(500, seededRandom(170), { personality: 'calm', style: 'power' });
@@ -40,7 +43,8 @@ function fixture(kind) {
       d.match.enter();
     });
     await page.waitForFunction(() => __dp8.st.auto && __dp8.st.auto.plan && __dp8.game.humanStates[1], { timeout: 30000 });
-    assert(await page.evaluate(() => __dp8.st.auto.aiJob && !__dp8.st.auto.aiJob.res.err), 'actual Worker answer missing');
+    { const j = await page.evaluate(() => { const j = __dp8.st.auto.aiJob; return j && { err: j.res && j.res.err, ms: Math.round(performance.now() - j.t) }; });
+      assert(j && !j.err, 'actual Worker answer missing ' + JSON.stringify(j)); }
     { const v = await page.evaluate(() => { const { st } = __dp8, p = st.auto.plan; return { ver: p.preShot.version, el: p.el, k0: p.preShot.keyframes[0].el, st: st.el }; });
       // (the cue starts level whatever the plan ends at: this layout's plan used to raise the cue, and since the physics of
       // 11-07 it chooses a level shot - the start is what is checked, not which shot the computer likes)

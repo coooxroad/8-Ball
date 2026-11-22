@@ -38,7 +38,10 @@ function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHo
    taken once it is there and the thinking time is up (autoTick). The Worker is made from the page's own game code (its
    first script, id "core"; on the web, the core file). If there is no Worker, it fails, or it has not answered in 8 s, the
    plan is worked out here as it always was. A stand-in's seeded chances come back from the Worker and go on from there. */
-const aiw = { w: null, n: 0, wait: new Map(), dead: false };
+/* (slow: how long the Worker is waited for before the plan is worked out here instead. A test raises it: on CI's software
+   renderer the page's own frames take the runner's cores and the Worker's first answer came after the 8 s now and then -
+   the game fell back as it should, and the test that checks the Worker's answer arrives failed, 11-22) */
+const aiw = { w: null, n: 0, wait: new Map(), dead: false, slow: 8000 };
 /* The address a Worker of the core is made from: the page's own core script made a file once (a Blob, about 600 KB) and
    shared by the computer's Worker and the review's (50-review.js) - each used to make its own copy; on the web, the core
    file. null: none. */
@@ -69,7 +72,7 @@ function aiAsk(a) {
     else j.res = { err: 'none' };
   }
   const j = a.aiJob;
-  if (!j.res && performance.now() - j.t > 8000) j.res = { err: 'slow' };
+  if (!j.res && performance.now() - j.t > aiw.slow) j.res = { err: 'slow' };
   if (!j.res) return null;
   if (j.res.err) a.aiPlan = game.aiPlan();
   else { a.aiPlan = j.res.plan; if (j.rnd && j.res.rnd != null) j.rnd.seek(j.res.rnd); }
