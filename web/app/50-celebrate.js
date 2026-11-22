@@ -1,8 +1,8 @@
 /* ================= a win's celebration: confetti and the camera drawing back round the table =================
    Started by the word over the table (50-outro.js start) on a win; each stops itself - the confetti when the last piece
    has fallen, the camera when the result is left (or the game screen is back without the word). */
-/* Confetti (a win - owner 11-21, as a table-tennis game's): paper squares of every colour bursting up from behind the word,
-   then raining from the top for a while, each tumbling (its face turning to the light and away), swaying as it falls and
+/* Confetti (a win - owner 11-21, as a table-tennis game's): paper squares of every colour raining from the top for a while
+   (the burst up from behind the word taken out, owner 11-22), each tumbling (its face turning to the light and away), swaying as it falls and
    slowed by the air. Drawn on a canvas over the table and under everything else (after #gl); gone when the last has fallen. */
 const confetti = {
   cv: null, raf: 0,
@@ -15,7 +15,7 @@ const confetti = {
     const C = ['#ff3b5c', '#ffd23f', '#35d06d', '#2fb6ff', '#9b5cff', '#ff8a1f', '#ff5fd2', '#ffffff', '#3bf0e0'];
     const s = Math.max(0.75, Math.min(1.5, Math.min(W, H) / 560)), P = [], R = Math.random;
     const add = (x, y, vx, vy) => P.push({ x, y, vx, vy, r: R() * 6.28, vr: (R() - 0.5) * 10, f: R() * 6.28, vf: 5 + R() * 9, w: (5 + R() * 4) * s, h: (8 + R() * 7) * s, c: C[R() * C.length | 0], sw: (0.5 + R()) * 36 * s, sp: R() * 6.28 });
-    for (let i = 0; i < 120; i++) { const a = -Math.PI / 2 + (R() - 0.5) * 2.6, v = (420 + R() * 720) * s; add(W / 2 + (R() - 0.5) * W * 0.24, H * 0.47 + (R() - 0.5) * 30, Math.cos(a) * v, Math.sin(a) * v); }
+    // (no burst from the middle any more - owner 11-22: only the rain from the top)
     const t0 = performance.now(); let last = t0, rain = 0;
     const step = () => {
       if (!confetti.cv) return;

@@ -246,3 +246,10 @@ function fullChanged() {
 document.addEventListener('fullscreenchange', fullChanged);
 document.addEventListener('webkitfullscreenchange', fullChanged);
 
+/* No zooming the page with the fingers (owner 11-22): the viewport says so (build.sh) and the styles let a touch only pan
+   (00-base.css), but iOS Safari zooms anyway on a pinch - its gesture events are turned down here, and a touch of two
+   fingers moving is not let zoom either. A trackpad's pinch on a computer comes as a wheel with ctrl: not the page's
+   zoom either. (The game's own controls never use two fingers; they still get every event.) */
+for (const k of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(k, e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
