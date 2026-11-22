@@ -194,6 +194,7 @@ function drawFrame(dt) {
   v.showGuide = lined; v.aimStyle = prefs.aim; v.gear = k; v.level = !flow ? 0 : flow.guide() * (aiming ? k.guide : 1);
   v.legalIds = st.screen === 'play' ? legalNow() : NONE; v.hand = !!game.placing && aiming; v.covered = st.screen === 'home' && !deskTableShown();
   const drew = scene.frame(v, dt);
+  powerAt.paint(lined && aiming && st.screen === 'play' && st.power > 0.01);   // (세기 along the cue - 10-ui.js)
   { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
   return drew;
 }

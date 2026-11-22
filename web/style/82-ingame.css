@@ -4,22 +4,24 @@
    down - as the selected tab is in the lobby. The power meter keeps its colours, green to red as the cue is drawn.
    The score bar keeps its shape from the broadcast one, made a plain rectangle: under each name the player's rating,
    and in each score box the points to reach written large and faint behind the score. No tour tab. */
-#app.desk{--sl1:#3b4149;--sl2:#262a30;--slLip:#121418;--silver:rgba(214,221,230,.78);--silverHi:rgba(255,255,255,.2);--live1:#4a86e0;--live2:#1f57b8;
+#app.desk{--sl1:#1f242b;--sl2:#14171c;--slLip:#0b0d10;--silver:rgba(214,221,230,.16);--silverHi:rgba(255,255,255,.07);--live1:#4a86e0;--live2:#1f57b8;
   --slate:linear-gradient(var(--sl1),var(--sl2));--slEdge:inset 0 0 0 1px var(--silver),inset 0 2px 0 var(--silverHi);
   --slDrop:0 3px 0 var(--slLip),-4px 9px 12px rgba(0,0,0,.45)}
 
-/* the score bar */
-#app.bcast{--navy:#1b1f24;--blue1:var(--live1);--blue2:var(--live2);--gold1:#e9edf2;--gold2:#aeb7c2}
-#app.bcast #hud .pill{background:var(--slate);color:#9aa6b4;box-shadow:var(--slDrop)}
-#app.bcast #hud .pill::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:var(--slEdge)}
-#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#f3eee3}
-#app.bcast #hud .pill.on{color:#b9c4d2}
-#app.bcast:not(.portrait) #hud .pill .sub{color:#9aa6b4;font-weight:700;letter-spacing:.01em}
+/* the score bar: a snooker broadcast's bar along the top in the CUE LEAGUE colours (owner 11-22 - the opening's royal blue
+   and pale grey, 79-league.css): pale plates with navy names, the scores in deep blue, the game and the clock in navy;
+   whose turn it is, a bright league-blue score box and a stripe at the plate's outer end */
+#app.bcast{--navy:#071640;--lgA:#1a66d6;--lgB:#0042a0;--blue1:#173a78;--blue2:#0b2552;--gold1:var(--lgA);--gold2:var(--lgB)}
+#app.bcast #hud .pill{background:linear-gradient(#f5f7fa,#dfe4ea);color:#5b6678;box-shadow:0 3px 0 #8f9bb0,-4px 9px 12px rgba(0,0,0,.45)}
+#app.bcast #hud .pill::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+#app.bcast #hud .pill .nm,#app.bcast #hud .pill.on .nm{color:#0a1a3f}
+#app.bcast #hud .pill.on{color:#4a5670}
+#app.bcast:not(.portrait) #hud .pill .sub{color:#5b6678;font-weight:700;letter-spacing:.01em}
 #app.bcast:not(.portrait) #hud #p0,#app.bcast:not(.portrait) #hud #p1{clip-path:none}
-#app.bcast #hud .pill .av{background:#14171b;color:#e9e4da;box-shadow:inset 0 0 0 1px var(--silver)}
-#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{position:relative;overflow:hidden;color:#f3eee3;background:linear-gradient(#30353c,#1d2025);box-shadow:inset 1px 0 0 rgba(255,255,255,.08),inset -1px 0 0 rgba(0,0,0,.35)}
-#app.bcast #hud .pill.on .pts{background:linear-gradient(var(--live1),var(--live2));color:#fff}
-#app.bcast #hud .pill.on::after{width:4px;background:linear-gradient(var(--live1),var(--live2))}
+#app.bcast #hud .pill .av{background:var(--lgB);color:#fff;box-shadow:none}
+#app.bcast #hud .pts,#app.bcast #hud .pill.on .pts{position:relative;overflow:hidden;color:#fff;background:linear-gradient(var(--blue1),var(--blue2));box-shadow:inset 1px 0 0 rgba(255,255,255,.1),inset -1px 0 0 rgba(0,0,0,.35)}
+#app.bcast #hud .pill.on .pts{background:linear-gradient(var(--lgA),var(--lgB));color:#fff}
+#app.bcast #hud .pill.on::after{width:5px;background:linear-gradient(var(--lgA),var(--lgB))}
 /* the points to reach, large and faint behind the score */
 #app.bcast #hud .pts[data-goal]::before{content:attr(data-goal);position:absolute;right:3px;bottom:1px;z-index:-1;
   font:800 calc(var(--bh)*.5)/1 'Outfit',sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.26)}
@@ -27,12 +29,12 @@
 #app.bcast #hud .pts[data-goal]{isolation:isolate}
 #app.bcast #hud .pts[data-goal=""]::before{content:none}
 #app.bcast.portrait #hud .pts[data-goal]::before{font-size:15px;right:2px}
-#app.bcast:not(.portrait) #badge{background:linear-gradient(#22262c,#16191d);border-top:0;color:#9aa6b4;box-shadow:var(--slEdge),var(--slDrop)}
+#app.bcast:not(.portrait) #badge{background:linear-gradient(#0d2257,var(--navy));border-top:0;color:#b9c6e0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 3px 0 #030a1f,-4px 9px 12px rgba(0,0,0,.45)}
 #app.bcast #hud.out #badge{background:linear-gradient(#d23a36,#86171a);box-shadow:inset 0 0 0 1px var(--silver),var(--slDrop)}
 #app.bcast:not(.portrait) #hud::before,#app.bcast.compact:not(.portrait) #hud::before{content:none;display:none}
 /* the shot clock's bar under the bar, clear of its lip */
 #app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 9px)}
-#app.bcast #clock i{height:4px;background:rgba(18,20,24,.9)}
+#app.bcast #clock i{height:4px;background:rgba(7,22,64,.9)}
 /* the shot clock's bar white in every game, whoever's turn and however little is left (owner 11-09); the seconds still
    turn red at the end */
 #app.bcast #clock,#app.bcast #clock.two,#app.bcast #clock[data-lv]{--c:#ffffff}
@@ -55,6 +57,12 @@
 #app.desk #power::before{border-radius:4px}
 #app.desk.portrait #power::after{inset:30px auto 30px 7px;width:42px}
 #app.desk #powerNum,#app.desk.portrait #powerNum{color:#e9e4da;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+/* (owner 11-22, K2: the cue in the gauge as it is, with marks at 25 / 50 / 75 of the pull and a line at the tip - 10-ui.js) */
+#power .pw-tk{position:absolute;left:3px;width:6px;height:1px;background:rgba(255,255,255,.55);z-index:3;pointer-events:none;top:calc(var(--r0) + var(--v) * var(--run))}
+#power .pw-tk::after{content:attr(data-v);position:absolute;left:0;top:3px;font:600 9px/1 var(--num);color:rgba(255,255,255,.5)}
+#power .pw-lip{position:absolute;left:6px;right:6px;height:2px;z-index:3;pointer-events:none;top:var(--py,48px);background:#7fe0ee;box-shadow:0 0 8px #7fe0ee;opacity:0;transition:opacity .15s}
+#power.drawn .pw-lip{opacity:1}
+.portrait #power .pw-tk,.portrait #power .pw-lip{display:none}
 
 /* the fine-aim drum: a slate frame with a silver-edged window, a silver pointer */
 #app.desk #fine,#app.desk.portrait #fine{background:var(--slate);border-radius:10px;box-shadow:var(--slEdge),var(--slDrop)}
@@ -83,3 +91,9 @@
 
 /* 스누커: the points still on the table, after the ball on (game.js MODES.snooker badge) */
 #badge .bsub{margin-left:8px;opacity:.72;font-size:.86em;font-weight:600;white-space:nowrap}
+
+/* 세기 at the cue (10-ui.js powerAt): a thin gauge along the cue, beside it, filling towards the butt in the meter's colour,
+   faint at the ball and full at the fill's end; the number written along it */
+#pwAt{position:absolute;left:0;top:0;height:6px;margin-top:-3px;transform-origin:0 50%;z-index:1;pointer-events:none;border-radius:99px;background:rgba(8,10,14,.42)}
+#pwAt i{position:absolute;left:0;top:0;bottom:0;width:var(--p);border-radius:inherit;background:linear-gradient(90deg,var(--c0),var(--c));box-shadow:0 0 8px var(--c)}
+#pwAt b{position:absolute;left:var(--p);top:50%;transform:translate(10px,-50%) rotate(var(--flip));font:800 14px/1 var(--num);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);white-space:nowrap}
