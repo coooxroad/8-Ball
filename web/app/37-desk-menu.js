@@ -186,9 +186,9 @@ function menuPaint() {
   const soonOf = c => typeof c.soon === 'function' ? c.soon() : !!c.soon;
   const key = JSON.stringify([pcO, MENU_CARDS.map(c => [soonOf(c), c.strip()])]);
   const old = layer.firstChild; if (old) menuScroll = old.scrollLeft;
-  if (old && old._key === key) { menuFit(); old.scrollLeft = menuScroll; requestAnimationFrame(() => { menuFit(); old.scrollLeft = menuScroll; menuFx.run(); }); return; }
+  if (old && old._key === key) { streakPaint(); menuFit(); old.scrollLeft = menuScroll; requestAnimationFrame(() => { menuFit(); old.scrollLeft = menuScroll; menuFx.run(); }); return; }
   // my 선수증 (tapped: 선수증 꾸미기 - its face and title, sheetCard)
-  const pc = playerCard(Object.assign({ tap: go(sheetCard) }, pcO));
+  const pc = playerCard(Object.assign({ tap: go(sheetCard) }, pcO)); pc.classList.add('me');   // (its badge burns while the days run on: 58-streak.js)
   // (each card alive, calmly - owner 11-16: the light crossing it now and then, each on its own beat (--i), (the icon
   // still since 11-18), (11-17 night) a soft light and shade flowing inside it, and (11-19) its small signs drifting on the
   // diagonal in place of the dots (32-desk.js symLayer); only a card in sight moves - 'mn-live' below -
@@ -203,7 +203,7 @@ function menuPaint() {
   });
   // (디버그 모드: the 선수증 in its glass case, seen from the front - glassCase)
   const row = el('div', { class: 'mn-row' }, el('div', { class: 'mn-track' }, [glassCase(pc), ...cards])); row._key = key;
-  layer.textContent = ''; layer.appendChild(row);
+  layer.textContent = ''; layer.appendChild(row); streakPaint();
   row.addEventListener('scroll', () => { menuScroll = row.scrollLeft; }, { passive: true });
   // (a card moves only while it is in sight, or nearly: the rest wait without their moving layers - 84-menu.css gives
   // those only to .mn-live, so the cards out of sight hold no memory on the graphics chip; owner 11-19, parts of the screen

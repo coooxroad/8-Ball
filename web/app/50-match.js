@@ -104,6 +104,7 @@ const match = {
     const r = matchResult();
     arcade.close();
     keepRecords(r);
+    attend.played();                                                   // (a game to its end: the day counted - 58-streak.js)
     const coins = payMatch(r);
     if (r.on) ranked.ended();
     const pics = paintResult(r, coins);

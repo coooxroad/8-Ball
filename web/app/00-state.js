@@ -18,6 +18,7 @@
    34-desk-bots     컴퓨터 대전's bots                 54-ranked      랭킹전: finding an opponent, playing them online
    35-desk-shelves  내 장비 and 상점                    55-invite      친구 초대: a code, and a game on two devices
    36-desk-paint    laying the desk out and leaning it 56-league     the CUELEAGUE opening; 57-account, 58-tutorial
+                                                      58-streak     연속 출석: the days in a row, the fire, the celebration
    37-desk-menu     플레이's card menu, 선수증, the glass case       59-emote       quick emotes in an online game
    38-glass3d       the glass case in 3D               62-bolts       the lightning border while play runs fast
    38-menu-balls    the menu's balls on the felt       70-buttons     what each button does
@@ -106,6 +107,9 @@ const prefs = (() => {
   if (p.v < 2) { p.how = Object.keys(saved).length > 0; p.v = 2; p.fast = false; if (![3, 5, 10].includes(p.target)) p.target = 5; }   // 2.0: fast play starts switched off
   return p;
 })();
+/* the server's clock where it has been heard (07-net.js: every answer from /v1/me carries its time), so a day is counted by
+   it and not by a device's clock set forward (58-streak.js) */
+const clock = { skew: +store.get('skew', 0) || 0, now: () => Date.now() + clock.skew, heard(t) { clock.skew = t - Date.now(); store.set('skew', clock.skew); } };
 const savePrefs = () => { prefs.clothId = (CLOTHS[prefs.cloth] || CLOTHS[0]).id; prefs.cueIds = (prefs.cues || []).map(i => (CUES[i] || CUES[0]).id); prefs.cueId = (CUES[prefs.cue] || CUES[0]).id; store.set('prefs', prefs); };   // (cues by id: above)
 
 /* Everything plays on the one physics (physics.js: what you picture is what happens). usePhysics() puts the tables of the

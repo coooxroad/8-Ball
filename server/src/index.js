@@ -2,7 +2,7 @@
    accounts and passes each request to the vault it belongs to.
 
    POST /v1/account                 -> { id, key }   a new account; the app keeps both (key is shown once, kept only hashed)
-   GET  /v1/me                      -> { coin, dia, dama, owned, solved }
+   GET  /v1/me                      -> { coin, dia, dama, owned, solved } (and now: the server's time)
    POST /v1/buy     { req, kind, id }                 buy an item from content/ at its rarity's price
    POST /v1/puzzle  { req, id, shot }                 a puzzle solved: checked, paid once
    POST /v1/match   { req, kind: friend | cpu, log }  a match played on the device: paid by economy.js

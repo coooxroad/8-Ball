@@ -69,6 +69,7 @@ function show(screen) {
   app.classList.toggle('bcast', (screen === 'play' || screen === 'result') && flow === match);
   if (screen !== 'play' || flow === match) fbar(null);               // (a puzzle's or a lesson's bar: theirs to put up - 40-shot.js)
   applyBackdrop(); layout(); MUSIC.screen(screen);
+  if (screen === 'home') { streakPaint(); attend.show(); }          // (the day's fire, and its celebration after the day's first game - 58-streak.js)
 }
 let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0, winW = 0, winH = 0;
 function layout() {

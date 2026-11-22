@@ -66,7 +66,7 @@ const practice = {
     game.resolve(); p.tries++;
     if (p.drill === TUT_DRILL) { tutorial.shot(!why); if (why) { SND.bad(); hold(1.7, p.again); } return; }   // (58-tutorial.js)
     if (why) { p.streak = 0; toast('실패 · ' + why, 'foul', 1900); SND.bad(); return hold(1.7, p.again); }           // same layout until it goes in
-    p.ok++; p.streak++;
+    p.ok++; p.streak++; attend.played();                               // (a lesson's shot made good: the day counted - 58-streak.js)
     // done at the top level: kept as the proof (the layout's seed, the table, the shot) the server plays again for a prize
     if (p.layout.level === drills.LEVELS && p.layout.seed != null && p.shot) { prefs.lessonProof[p.drill.id] = { table: prefs.table, seed: p.layout.seed, shot: p.shot }; savePrefs(); lessonPrize(p.drill.vol); }
     let msg = '성공!';

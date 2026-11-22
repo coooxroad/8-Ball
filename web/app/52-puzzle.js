@@ -87,6 +87,7 @@ const puzzle = {
     const p = puzzle, z = p.cur, r = game.resolve().r;
     if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
     // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
+    attend.played();                                                   // (a puzzle solved: the day counted - 58-streak.js)
     if (z.practice) { toast('정답! ' + '★'.repeat(Math.min(3 - p.helped, p.starsOf(p.stage(z).goal))) + ' · 다음 연습 퍼즐', 'good', 2000); return hold(1.9, () => p.practice(z.stage)); }   // (no stars kept, nothing paid)
     const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = puzzles.STAGES.filter((_, si) => pzOpen(si)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();

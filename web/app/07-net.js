@@ -31,6 +31,7 @@ const net = (() => {
       if (r.status >= 500) { const e = await r.json().catch(() => null); trouble = { path, status: r.status, why: 'server', error: e && e.error || '' }; console.warn('[net]', path, r.status, trouble.error); return null; }
       const j = await r.json().catch(() => ({ ok: false, why: 'not json' }));
       Object.defineProperty(j, 'status', { value: r.status, enumerable: false });
+      if (j && typeof j.now === 'number' && r.ok) clock.heard(j.now);   // (the server's time: 00-state.js clock)
       if (r.status === 401 && who && who === account && path !== '/v1/me') { trouble = { path, status: 401, why: 'account' }; doubt(who); }
       else if (r.status === 401 && who && path === '/v1/me') trouble = { path, status: 401, why: 'account' };
       else trouble = j && j.ok === false ? { path, status: r.status, why: j.why || 'refused' } : null;

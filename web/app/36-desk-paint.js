@@ -150,7 +150,7 @@ function deskPaint() {
   for (const b of document.querySelectorAll('#dkTabs .dk-tab')) b.setAttribute('aria-selected', String(st.screen === 'home' && b.dataset.t === tabOf));
   walletPaint();
   // (the name, and under it whether this is a member or a guest - a guest is asked to sign up: 57-account.js)
-  $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : recText(prefs.names[0]);
+  streakPaint(); $('#dkMe .nm').textContent = prefs.names[0]; $('#dkMe .rc').textContent = net.on ? (net.me && net.me.joined ? '회원' : '게스트 · 가입하기') : recText(prefs.names[0]);
   /* 플레이's menu is a row of cards on a cloth across the desk (37-desk-menu.js): the rail, the tray and the slate are put
      away (and kept as they were - the next place fills them again), no table in the tray */
   const menu = menuNow();

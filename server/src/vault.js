@@ -39,7 +39,7 @@ export class Vault extends DurableObject {
     if (path === '/admin/grant') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.adminGrant(body); if (r.ok) this.listed(true); return json(r); }
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
-    if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); this.listed(); return json({ ok: true, me }); }
+    if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); this.listed(); return json({ ok: true, me, now: Date.now() }); }   // (now: the client counts its days by this clock - web/app/58-streak.js)
     if (path === '/v1/buy') return json(this.core.buy(body));
     // waiting for a ranked game: the front door asks who this is, then goes to the lobby
     if (path === '/v1/ticket') {
