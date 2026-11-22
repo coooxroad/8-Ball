@@ -115,6 +115,8 @@ function paceDue(now) {
   return true;
 }
 // follow-through (frame): the cue's place this frame for the moment after the hit, or null once it is over
+// (one object, filled again each frame - the drawing reads it and lets it go)
+const followAt = { x: 0, y: 0, pull: 0, el: 0, spin: null };
 function followTick(dt) {
   const f = st.follow; f.t += Math.max(0, dt);
   if (f.t > 0.42) { st.follow = null; return null; }
@@ -122,7 +124,8 @@ function followTick(dt) {
   let reach = Math.min(0.11, 0.025 + f.V * 0.014);
   if (se > 0.05) reach = Math.min(reach, Math.max(0, (R + lift - 0.006) / se - R));   // (a raised cue stops above the cloth)
   const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
-  return { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
+  followAt.x = f.x; followAt.y = f.y; followAt.pull = -0.004 - reach * ease; followAt.el = f.el; followAt.spin = f.spin;
+  return followAt;
 }
 /* Whether play waits this frame - nothing on the table moves and no clock runs (it is still drawn). covered: the home
    screen's table is hidden under the desk (the play boards, the cards, the books), so its demo waits; otherwise
@@ -170,23 +173,27 @@ function tableSync() {
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   if ((game.world.shape || null) !== shapeShown) { shapeShown = game.world.shape || null; scene.setShape(shapeShown); }   // (a table of another shape)
 }
+// what the 3D is told each frame (scene/90-frame.js frame): one object, filled again every frame - it was made anew
+// 60 times a second, drawn or not
+const view = { game: null, alpha: 1, aim: 0, power: 0, pull: 0, spin: null, honest: false, el: 0, rev: 0, animating: false, follow: null, chalk: null,
+  showCue: false, showGuide: false, aimStyle: null, gear: null, level: 0, legalIds: NONE, hand: false, covered: false };
 // the 3D drawn for this frame (true when it drew)
 function drawFrame(dt) {
-  const { animating, alpha, pull, clip, follow } = fr;
+  const { animating, alpha, pull, clip, follow } = fr, v = view, aiming = st.phase === 'aim';
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
   // (the table alone - a match's end or opening, 50-outro.js tableAlone, and under the result: no cue, no line)
   const nude = app.classList.contains('bare') || (st.screen === 'result' && !review.on);   // (and under the result's slate)
-  const lined = !nude && (st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
+  const lined = !nude && (aiming || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
   winCam.tick();   // (a win's camera, moved before the frame is drawn - 50-celebrate.js)
   const d0 = performance.now(); scene.prof.guide = 0;
-  const drew = scene.frame({
-    game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, honest: !!(game.world && game.world.real && game.world.real.cue), el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
-    follow, chalk: st.chalk ? st.chalk.t : null, showCue: clip ? clip.cue : !nude && (lined || st.phase === 'strike' || st.phase === 'idle' || !!follow), showGuide: lined, aimStyle: prefs.aim,
-    // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
-    gear: st.phase === 'aim' ? cueK() : null, level: !flow ? 0 : flow.guide() * (st.phase === 'aim' ? cueK().guide : 1),
-    legalIds: st.screen === 'play' ? legalNow() : NONE, hand: !!game.placing && st.phase === 'aim',
-    covered: st.screen === 'home' && !deskTableShown(),
-  }, dt);
+  // the player's own aim is played out with their cue's stat (the guide is the shot); a planned one as it was planned
+  const k = aiming ? cueK() : null;
+  v.game = game; v.alpha = alpha; v.aim = st.aim; v.power = st.power; v.pull = pull; v.spin = st.spin; v.honest = !!(game.world && game.world.real && game.world.real.cue);
+  v.el = st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(); v.rev = st.rev; v.animating = animating;
+  v.follow = follow; v.chalk = st.chalk ? st.chalk.t : null; v.showCue = clip ? clip.cue : !nude && (lined || st.phase === 'strike' || st.phase === 'idle' || !!follow);
+  v.showGuide = lined; v.aimStyle = prefs.aim; v.gear = k; v.level = !flow ? 0 : flow.guide() * (aiming ? k.guide : 1);
+  v.legalIds = st.screen === 'play' ? legalNow() : NONE; v.hand = !!game.placing && aiming; v.covered = st.screen === 'home' && !deskTableShown();
+  const drew = scene.frame(v, dt);
   { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
   return drew;
 }

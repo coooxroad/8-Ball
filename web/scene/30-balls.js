@@ -309,11 +309,11 @@
   const blobM = new THREE.Matrix4();
   // (a set not on the table, already empty, is left alone: nothing to send the GPU)
   function blobSync(set, on) {
-    const [ci, li] = set.ims; let nc = 0, nl = 0;
+    const ci = set.ims[0], li = set.ims[1]; let nc = 0, nl = 0;   // (by index: a destructuring made an iterator every frame)
     if (!on && !ci.count && !li.count) return;
     if (on) for (const s of set.blob) {
       if (!s.visible) continue;
-      const [c, l] = s.children;
+      const c = s.children[0], l = s.children[1];
       blobM.compose(c.position, c.quaternion, c.scale); ci.setMatrixAt(nc++, blobM);
       blobM.compose(l.position, l.quaternion, l.scale); li.setMatrixAt(nl++, blobM);
     }
@@ -339,6 +339,7 @@
   // number, shared by the balls that carry it)
   const sets = { pool: ballSet('pool', 16, PH.pool.R), carom: ballSet('carom', 4, PH.carom.R), snooker: ballSet('snooker', 22, PH.snooker.R),
     arcade: Object.assign(ballSet('pool', ARCADE.BALLS + 1, PH.pool.R), { face: ARCADE.face }) };
+  const setList = Object.values(sets);                                // (the sets, listed once - gone through every frame)
   // another ball set: each ball's picture drawn again (the meshes stay)
   let caromY = 1;                                                     // which carom ball wears the yellow (frame)
   // (each set is dressed - its pictures drawn, its shape made - when it is next drawn: a set not on the table waits, and

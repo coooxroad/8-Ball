@@ -36,7 +36,11 @@
     staticDirty = true; dirty = 3;
   }
 
-  /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } */
+  const INSET_SIDES = ['t', 'l', 'r', 'b'];
+  // a ball dropping into a pocket or flying off now (its mesh is the fall's, not the table's)
+  const fallingNow = id => { for (const f of falls) if (f.id === id) return true; return false; };
+  /* one frame. v: { game, alpha, aim, power, pull, showCue, showGuide, level, spin, legalIds } - read during the call, never
+     kept (the app fills the same object every frame) */
   function frame(v, dt) {
     if (gl.isContextLost()) return false;
     // (the table out of sight - the desk covers it: nothing is drawn, not even the water; drawn afresh once it shows again)
@@ -47,7 +51,7 @@
     const still = !v.animating && !falls.length;
     if (still) takeScale();
     let moved = false;
-    for (const k of ['t', 'l', 'r', 'b']) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
+    for (const k of INSET_SIDES) { const d = insTo[k] - ins[k]; if (Math.abs(d) > 0.5) { ins[k] += d * Math.min(1, dt * 9); moved = true; } else ins[k] = insTo[k]; }
     if (moved) applyCamera(true); else if (stale) { stale = false; staticDirty = true; dirty = 3; }
     if (orbit.on && Math.abs(orbit.elTo - orbit.el) > 0.002) { orbit.el += (orbit.elTo - orbit.el) * Math.min(1, dt * 7); orbit.live = 4; applyCamera(); }   // easing down from overhead
     if (orbit.live > 0) dirty = 3;
@@ -68,7 +72,7 @@
     if (P !== cur || !tables.has(P)) { setTable(P); warmDue = true; }
     placeBalls(set, w, R, a);
     fallTick(set, R, dt);
-    for (const s of Object.values(sets)) blobSync(s, s === set);
+    for (const s of setList) blobSync(s, s === set);
     const c = w.balls[w.cue];
     if (trailTick(w, c, R, dt)) dirty = Math.max(dirty, 2);
     if (ringsTick(dt)) dirty = Math.max(dirty, 2);
@@ -101,7 +105,7 @@
         // is long and wide - the half-shadow of a ball under a wide light reaches out by R times the lamp's size over its height
         { const f = R / (SHADE.z - R), c2 = s.children[1]; c2.position.x = x + (x - SHADE.x) * f; c2.position.y = y + (y - SHADE.y) * f;
           c2.scale.set(R * (2.4 + SHADE.len * f * 1.1 / R), R * (2.4 + SHADE.wid * f * 1.1 / R), 1); }
-      } else if (!falls.some(f => f.id === i)) m.visible = false;
+      } else if (!fallingNow(i)) m.visible = false;
     }
   }
 
