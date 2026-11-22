@@ -163,6 +163,75 @@
 #app.desk:not(.portrait) #hud{padding:0 calc(var(--g) + 3 * var(--cr) + 3 * var(--gap)) 0 calc(var(--g) + var(--cl) + var(--gap))}
 #app.desk:not(.portrait) #pracBar{margin-right:0}
 #app.desk:not(.portrait) #pracBar .btn{height:var(--tb)}
+/* ---- puzzles and lessons, lying (owner 11-22: Z3 + P2, L6 - 40-shot.js fbar): a bar of their own in the match bar's place,
+   size and colours (pale plates, navy, the league blue), on the keys' middle line, between the pause key and the keys at the
+   right (--nt more of them for a lesson: its own keys join that row). The plates and #pracBar of before stay for upright. */
+#flowBar{display:none}
+#app.fbar:not(.portrait){--bh:54px;--navy:#071640;--lgA:#1a66d6;--lgB:#0042a0;--fk:calc(var(--bh) / 54px)}
+#app.fbar.compact:not(.portrait){--bh:42px}
+#app.fbar:not(.portrait) #hud .pill,#app.fbar:not(.portrait) #badge,#app.fbar:not(.portrait) #clock,#app.fbar:not(.portrait) #pracBar{display:none!important}
+#app.fbar:not(.portrait) #flowBar{display:block}
+#flowBar .fw{position:fixed;z-index:5;top:calc(var(--g) + (var(--tb) - var(--bh)) / 2);left:calc(var(--g) + var(--cl) + var(--gap));
+  right:calc(var(--g) + (2 + var(--nt,0)) * (var(--cr) + var(--gap)));display:flex;justify-content:center;pointer-events:none}
+#flowBar .fb{display:flex;align-items:stretch;height:var(--bh);max-width:100%;min-width:0;border-radius:calc(var(--bh)*.15);overflow:hidden;pointer-events:auto;
+  font-family:var(--ui-font);box-shadow:0 3px 0 #8f9bb0,-4px 9px 12px rgba(0,0,0,.45)}
+#flowBar svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#flowBar button{border:0;margin:0;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* a plate: pale, a navy name; the live one with the league-blue stripe at its end and along its foot */
+#flowBar .fpl{flex:none;position:relative;display:flex;align-items:center;gap:calc(10px*var(--fk));padding:0 calc(18px*var(--fk));white-space:nowrap;
+  background:linear-gradient(#f5f7fa,#dfe4ea);color:#5b6678}
+#flowBar .fpl.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc(var(--bh)*.1);background:linear-gradient(var(--lgA),var(--lgB))}
+#flowBar .fpl.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--bh)*.075);background:var(--lgA)}
+#flowBar .fnm{font:800 calc(var(--bh)*.36)/1 var(--ui-font);color:#0a1a3f}
+#flowBar .fsb{font:600 calc(var(--bh)*.25)/1 var(--ui-font);color:#5b6678}
+#flowBar .fstars{display:flex;gap:calc(3px*var(--fk))}
+#flowBar .fstars i{width:calc(var(--bh)*.36);height:calc(var(--bh)*.36);background:#c3cad6;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+#flowBar .fstars i.f{background:linear-gradient(#ffd34d,#e9a100)}
+/* the goal, the headline: navy, the widest part, cut short with an ellipsis before anything else gives way */
+#flowBar .fhead{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:calc(10px*var(--fk));padding:0 calc(22px*var(--fk));color:#fff;
+  background:linear-gradient(#0d2257,var(--navy));font:700 calc(var(--bh)*.34)/1.1 var(--ui-font);white-space:nowrap}
+#flowBar .fhead b{flex:none;color:#8fb6ff;font-weight:800;font-size:calc(var(--bh)*.26);letter-spacing:.1em}
+#flowBar .fhead span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* 힌트 · 정답 in the bar, and the arrows at its ends: the dark keys of the bar */
+#flowBar .fib,#flowBar .farw{flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(#22283a,#121620);color:#e9eef8;
+  transition:filter 80ms ease-out}
+#flowBar .fib{gap:calc(5px*var(--fk));padding:0 calc(14px*var(--fk));font:700 calc(var(--bh)*.26)/1 var(--ui-font);border-left:1px solid rgba(255,255,255,.08);white-space:nowrap}
+#flowBar .fib svg{width:calc(var(--bh)*.38);height:calc(var(--bh)*.38)}
+#flowBar .fib.on{color:#ffd34d}
+#flowBar .farw{width:calc(var(--bh)*.8);color:#cfd8ea}
+#flowBar .farw svg{width:calc(var(--bh)*.4);height:calc(var(--bh)*.4)}
+#flowBar .fib:active,#flowBar .farw:active,#flowBar .flad:active{filter:brightness(1.35)}
+/* a lesson's five levels by name: three boxes each, blue when passed, green for each success in a row on the one played */
+#flowBar .flad{gap:calc(4px*var(--fk));align-items:center;padding:0 calc(14px*var(--fk))}
+#flowBar .flad > span{display:flex;flex-direction:column;align-items:center;gap:calc(3px*var(--fk))}
+#flowBar .flad em{font:700 calc(var(--bh)*.17)/1 var(--ui-font);font-style:normal;color:#8a94a6}
+#flowBar .flad .c em{color:#0042a0;font-weight:800}
+#flowBar .fbx{display:flex;gap:1px;width:calc(var(--bh)*.78);height:calc(var(--bh)*.2)}
+#flowBar .fbx i{flex:1;background:#c3cad6}
+#flowBar .fbx i:first-child{border-radius:2px 0 0 2px}#flowBar .fbx i:last-child{border-radius:0 2px 2px 0}
+#flowBar .d .fbx i{background:var(--lgA)}
+#flowBar .c .fbx i.f{background:#22c55e}
+#flowBar .fblk{flex:none;display:flex;align-items:baseline;justify-content:center;gap:1px;min-width:var(--bh);padding:calc(var(--bh)*.2) calc(10px*var(--fk)) 0;color:#fff;
+  background:linear-gradient(var(--lgA),var(--lgB));font:800 calc(var(--bh)*.5)/1 var(--num,'Outfit'),var(--ui-font)}
+#flowBar .fblk small{font-size:calc(var(--bh)*.22);opacity:.85}
+#flowBar .fblk small:only-child{align-self:center;font-size:calc(var(--bh)*.24);margin-top:calc(var(--bh)*-.2);opacity:1}
+/* the task on a navy strap under the bar */
+#flowBar .fcap{position:fixed;z-index:5;left:calc(var(--g) + var(--cl) + var(--gap) + (100vw - 2 * var(--g) - var(--cl) - var(--gap) - (2 + var(--nt,0)) * (var(--cr) + var(--gap))) / 2);
+  top:calc(var(--g) + (var(--tb) + var(--bh)) / 2 + 8px*var(--fk));transform:translateX(-50%);max-width:calc(100vw - 2 * (var(--g) + var(--cl) + var(--gap)));
+  display:flex;align-items:center;gap:calc(10px*var(--fk));padding:calc(7px*var(--fk)) calc(16px*var(--fk));border-radius:calc(6px*var(--fk));pointer-events:none;
+  background:linear-gradient(#0d2257,var(--navy));color:#eef2fa;font:600 calc(15px*var(--fk))/1.2 var(--ui-font);white-space:nowrap;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.4)}
+#flowBar .fcap b{flex:none;color:#8fb6ff;font-weight:800}
+#flowBar .fcap span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* a lesson's keys, in the row along the top left of the view keys: slate keys as theirs, an icon over a word */
+#flowBar .fkeys{position:fixed;z-index:5;top:var(--g);right:calc(var(--g) + 2 * (var(--cr) + var(--gap)));display:flex;gap:var(--gap)}
+#flowBar .fkey{width:var(--cr);height:var(--tb);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;
+  background:var(--slate);color:#e9e4da;box-shadow:var(--slEdge),var(--slDrop);transition:transform 80ms ease-out,box-shadow 80ms ease-out}
+#flowBar .fkey svg{width:calc(var(--tb)*.42);height:calc(var(--tb)*.42)}
+#flowBar .fkey span{font:700 max(9px,calc(var(--tb)*.21))/1 var(--ui-font);opacity:.85;white-space:nowrap}
+#flowBar .fkey:active{transform:translateY(2px);box-shadow:var(--slEdge),0 1px 0 var(--slLip),-3px 5px 8px rgba(0,0,0,.4)}
+/* (the messages drop below the strap) */
+#app.fbar.fstrap:not(.portrait) #toast{top:calc(var(--g) + (var(--tb) + var(--bh)) / 2 + 52px*var(--fk))}
 /* the left column: the gauge under the pause key */
 #app.desk:not(.portrait) #power{left:var(--g);width:var(--cl);top:calc(var(--g) + var(--tb) + var(--gap));bottom:var(--g)}
 #app.desk:not(.portrait) #power::before,#app.desk:not(.portrait) #power::after{left:var(--pin);width:calc(var(--cl) - 2 * var(--pin))}

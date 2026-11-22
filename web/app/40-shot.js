@@ -145,6 +145,27 @@ function paintBadge(name, b) {
   if (b.sub) badge.appendChild(el('small', { class: 'bsub', text: b.sub }));   // (스누커: the points still on the table)
 }
 const setBusy = () => app.classList.toggle('busy', !(st.screen === 'play' && st.phase === 'aim'));
+/* Puzzles and lessons, lying (owner 11-22, Z3 + P2 and L6): one bar of their own in the match bar's place and colours
+   (style/82-ingame.css #flowBar) - a puzzle's name and stars, its goal as the headline, 힌트 · 정답 in the bar and the
+   arrows at its ends; a lesson's name, its five named levels and the rate, with its task on a strap under the bar and its
+   keys in the row along the top. Upright, the plates and #pracBar of before. fbar(null) takes it away. */
+const FB_ICO = { prev: 'M15 5l-7 7 7 7', next: 'M9 5l7 7-7 7', bulb: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z',
+  play: 'M7 5l12 7-12 7z', shuf: 'M4 7h3c5 0 5 10 10 10h3M4 17h3c2 0 3-1.5 4-3M17 7h3M14 10c1-2 2-3 3-3M18 4l3 3-3 3M18 14l3 3-3 3' };
+function fbIco(k) {
+  const ns = 'http://www.w3.org/2000/svg', s = document.createElementNS(ns, 'svg'), p = document.createElementNS(ns, 'path');
+  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true'); p.setAttribute('d', FB_ICO[k]); s.appendChild(p); return s;
+}
+// a key in the bar or in the row along the top: an icon, a word under or beside it, pressed only while aiming
+const fbKey = (cls, ico, text, fn, label) => el('button', { class: cls, 'aria-label': label || text, onclick: () => { SND.tap(); fn(); } }, [ico && fbIco(ico), text ? el('span', { text }) : null]);
+function fbar(s) {
+  const box = $('#flowBar'); box.textContent = ''; app.classList.toggle('fbar', !!s); app.classList.toggle('fstrap', !!(s && s.cap));
+  if (!s) return;
+  app.style.setProperty('--nt', s.keys ? s.keys.length : 0);
+  box.appendChild(el('div', { class: 'fw' }, el('div', { class: 'fb' }, s.bar)));
+  if (s.cap) box.appendChild(el('div', { class: 'fcap' }, s.cap));
+  if (s.keys) box.appendChild(el('div', { class: 'fkeys' }, s.keys));
+}
+const fbStars = n => el('span', { class: 'fstars', 'aria-label': `별 ${n}개` }, [0, 1, 2].map(i => el('i', { class: i < n ? 'f' : '' })));
 
 // A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.
 // a ball's colour on the little tables (the highlights, the review's table)

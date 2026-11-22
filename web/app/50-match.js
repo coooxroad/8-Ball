@@ -34,13 +34,16 @@ const match = {
     if (c.mode === 'four' && o && o.watch) { game.rollOut(seededRandom((o.seed ^ 0x5bd1e995) >>> 0)); game.P.run(game.world, 40); game.world.ev = game.P.newEv(); st.rev++; beginTurn(true); }
     else if (c.mode === 'four' && (!ctx || o)) { st.phase = 'idle'; flow.hud(); return hold(0.5, () => { if (flow === match) rollOut(o ? seededRandom((o.seed ^ 0x5bd1e995) >>> 0) : undefined); }); }
     { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
-    if (c.bot) { botTalk.clear(); botTalk.at = 0; botTalk.say('hello', 1, 1.4); }
+    match.helloLate = false; if (c.bot) { botTalk.clear(); match.hello(1.4); }
     if (!prefs.how && !game.players[game.turn].ai && !o) sheetHow();
   },
   enter() { flow = match; $('#pracBar').hidden = true; $('#p1').hidden = false; scene.setMarks(null); dress(game.ice); scene.setTable(game.P); st.rev++; match.cue(); show('play'); beginTurn(true); },
   cue() { const L = lookNow(); useCue(L ? L.cues[game.shooter()] : prefs.cues[game.players[1].ai ? 0 : game.turn]); },
   restart() { match.start(game.turn, match.ctx); },
-  rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); if (match.ctx.bot && !match.ctx.online) { botTalk.at = 0; botTalk.say('hello', 1, 0.8); } beginTurn(true); },
+  rolled() { game.world.ev = game.P.newEv(); const t = game.mode.intro(game); if (t) toast(t, '', 2600); if (match.ctx.bot && !match.ctx.online) match.hello(0.8); beginTurn(true); },
+  /* the bot's first word. Since the opening of 11-21 a game starts under its cover, and the word said then was gone before
+     the cover lifted - heard only when a pause brought it back (owner 11-22); so under the cover it waits for it to lift. */
+  hello(delay) { if (vsIntro.on) { match.helloLate = true; return; } match.helloLate = false; botTalk.at = 0; botTalk.say('hello', 1, delay); },
   // the shot clock ran out: the turn goes over, as game.timeout() says
   timeout() { if (match.log) match.log.shots.push({ timeout: true }); if (match.ctx.online) ranked.timedOut(); const out = game.timeout(); if (game.over) { toast(out.msg, out.kind, out.dur); return match.finish(); } if (match.innings) match.innings[game.turn]++; SND.bad(); toast(out.msg, out.kind, out.dur); flashOut(out.dur); match.cue(); beginTurn(false); snapshot(); },
   guide: () => GUIDE_STD,

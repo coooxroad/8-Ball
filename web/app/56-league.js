@@ -93,5 +93,7 @@ const vsIntro = {
     if (was) tableAlone(false);
     // (the rule's reminder the game said at its start was under the cover: said again - 4구 says its own after rolling out)
     if (done && flow === match && st.screen === 'play' && game.modeId !== 'four' && !game.over) { const t = game.mode.intro(game); if (t) toast(t, '', 2600); }
+    // (and the bot's hello, if it came under the cover - 50-match.js hello)
+    if (match.helloLate) { match.helloLate = false; if (done && flow === match && st.screen === 'play' && !game.over) match.hello(0.5); }
   },
 };

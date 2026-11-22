@@ -37,7 +37,7 @@ const puzzle = {
     p.cur = z; if (!z.practice) { prefs.pz.cur = z.id; prefs.pz.open = z.stage; savePrefs(); }
     usePhysics(); game.start('puzzle4', [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
-    toast(`${z.practice ? `${p.stage(z).name} 연습` : pzName(z)} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.`, '', 4200);
+    toast(app.classList.contains('portrait') ? `${z.practice ? `${p.stage(z).name} 연습` : pzName(z)} · ${game.MODES.puzzle4.GOALS[p.stage(z).goal].text}. 노란 공은 건드리면 안 됩니다.` : '노란 공은 건드리면 안 됩니다.', '', 3200);   // (lying, the goal is in the bar)
   },
   restart() { const z = puzzle.cur; if (z && z.practice) puzzle.start(null, z); else puzzle.start(); },
   again() { flow = puzzle; puzzle.put(puzzle.cur); beginTurn(true); },
@@ -97,9 +97,16 @@ const puzzle = {
     hold(1.9, () => p.step(1));
   },
   hud() {
-    const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0;
-    paintPill(0, { name: z.practice ? `${p.stage(z).name} 연습` : pzName(z), on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
-    paintBadge('4구 퍼즐', { text: game.MODES.puzzle4.GOALS[p.stage(z).goal].text }); setBusy();
+    const p = puzzle, z = p.cur, n = prefs.pz.stars[z.id] || 0, name = z.practice ? `${p.stage(z).name} 연습` : pzName(z), goal = game.MODES.puzzle4.GOALS[p.stage(z).goal].text;
+    paintPill(0, { name, on: true, sub: n ? '★'.repeat(n) + '☆'.repeat(3 - n) : p.tries ? `${p.tries + 1}번째 시도` : '☆☆☆', tray: [], pts: null });
+    paintBadge('4구 퍼즐', { text: goal });
+    // lying: the bar of its own (40-shot.js fbar) - the arrows at its ends, the goal its headline, 힌트 · 정답 beside it
+    fbar({ bar: [fbKey('farw', 'prev', '', p.aiming(() => p.step(-1)), '이전 문제'),
+      el('div', { class: 'fpl on' }, [el('span', { class: 'fnm', text: name }), fbStars(n)]),
+      el('div', { class: 'fhead' }, [el('b', { text: '목표' }), el('span', { text: goal })]),
+      fbKey('fib' + (p.helped >= 1 ? ' on' : ''), 'bulb', '힌트', p.aiming(p.hint)), fbKey('fib' + (p.helped >= 2 ? ' on' : ''), 'play', '정답', p.aiming(p.answer)),
+      fbKey('farw', 'next', '', p.aiming(() => p.step(1)), '다음 문제')] });
+    setBusy();
   },
   // where the cue ball of the stored answer touches a cushion or a ball, in order, up to the second red
   marks(z) {
@@ -111,14 +118,15 @@ const puzzle = {
     }
     return out;
   },
+  aiming: fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); },
+  // a hint marks every place the cue ball touches on the way, numbered; the answer is played out in full
+  hint() { const p = puzzle, z = p.cur; p.helped = Math.max(+p.helped, 1); scene.setMarks(p.marks(z)); p.hud(); const k = z.sol[4] ? ` 큐를 ${Math.round(z.sol[4] * 180 / Math.PI)}° 세워 칩니다.` : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); },
+  answer() { const p = puzzle, z = p.cur; p.helped = 2; scene.setMarks(null); p.hud(); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4] }, { quiet: false, after: p.again }); },
+  // (upright: the row of keys where the second player's plate would be)
   bar() {
     const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
     const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
-    const aiming = fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); };
-    // a hint marks every place the cue ball touches on the way, numbered; the answer is played out in full
-    btn('힌트', aiming(() => { const z = p.cur; p.helped = Math.max(+p.helped, 1); scene.setMarks(p.marks(z)); const k = z.sol[4] ? ` 큐를 ${Math.round(z.sol[4] * 180 / Math.PI)}° 세워 칩니다.` : z.sol[3] > 0 ? ' 밀어치기입니다.' : z.sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); }));
-    btn('정답', aiming(() => { const z = p.cur; p.helped = 2; scene.setMarks(null); toast('정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: z.sol[0], power: game.powerOf(z.sol[1]), a: z.sol[2], b: z.sol[3], el: z.sol[4] }, { quiet: false, after: p.again }); }));
-    btn('이전', aiming(() => p.step(-1)));
-    btn('다음', aiming(() => p.step(1)));
+    btn('힌트', p.aiming(p.hint)); btn('정답', p.aiming(p.answer));
+    btn('이전', p.aiming(() => p.step(-1))); btn('다음', p.aiming(() => p.step(1)));
   },
 };

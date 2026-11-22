@@ -67,6 +67,7 @@ function show(screen) {
   // a match is shown as on television (style/80-broadcast.css); kept on its result, which is a slate over the same table
   // (owner 11-21 - the table must not move under it)
   app.classList.toggle('bcast', (screen === 'play' || screen === 'result') && flow === match);
+  if (screen !== 'play' || flow === match) fbar(null);               // (a puzzle's or a lesson's bar: theirs to put up - 40-shot.js)
   applyBackdrop(); layout(); MUSIC.screen(screen);
 }
 let wide = true, layoutN = 0, layoutW = 0, layoutH = 0, layoutDpr = 0, winW = 0, winH = 0;

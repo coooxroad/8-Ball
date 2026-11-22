@@ -24,6 +24,8 @@ function lessonPrize(vol) {
   net.claim('lessons', { vol, proofs });
 }
 // 자유 연습's game (prefs.trainGame.free: 34-desk-train.js)
+// a lesson's five levels by name (owner 11-22, L6: names, not numbers)
+const LV_KO = ['입문', '기초', '중급', '상급', '달인'];
 const freeGame = () => FRIEND_GAMES.includes((prefs.trainGame || {}).free) && !soonGame(prefs.trainGame.free) ? prefs.trainGame.free : 'eight';
 const practice = {
   quiet: false, save: false,
@@ -68,15 +70,31 @@ const practice = {
     // done at the top level: kept as the proof (the layout's seed, the table, the shot) the server plays again for a prize
     if (p.layout.level === drills.LEVELS && p.layout.seed != null && p.shot) { prefs.lessonProof[p.drill.id] = { table: prefs.table, seed: p.layout.seed, shot: p.shot }; savePrefs(); lessonPrize(p.drill.vol); }
     let msg = '성공!';
-    if (p.streak >= 3 && p.level < drills.LEVELS) { p.level++; p.streak = 0; prefs.drillLv[p.drill.id] = p.level; savePrefs(); p.bar(); msg = `성공! 이제 ${p.level}단계`; }
+    if (p.streak >= 3 && p.level < drills.LEVELS) { p.level++; p.streak = 0; prefs.drillLv[p.drill.id] = p.level; savePrefs(); p.bar(); msg = `성공! 이제 ${LV_KO[p.level - 1]}`; }
     else if (p.level < drills.LEVELS) msg = `성공! 다음 단계까지 ${3 - p.streak}번`;
     toast(msg, 'good', 1700); SND.good(); hold(1.4, p.fresh);
   },
   hud() {
-    const p = practice;
-    paintPill(0, { name: p.drill.name, on: true, sub: p.drill === TUT_DRILL ? '' : p.drill.make ? `${p.level}단계 · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
-    paintBadge(p.drill.make ? '레슨' : MODE_KO[freeGame()], { text: p.drill.make ? p.drill.d : '자유롭게' }); setBusy();
+    const p = practice, lesson = p.drill.make && p.drill !== TUT_DRILL;
+    paintPill(0, { name: p.drill.name, on: true, sub: p.drill === TUT_DRILL ? '' : p.drill.make ? `${LV_KO[p.level - 1]} · 성공 ${p.ok}/${p.tries}` : '규칙 없음', tray: [], pts: null });
+    paintBadge(p.drill.make ? '레슨' : MODE_KO[freeGame()], { text: p.drill.make ? p.drill.d : '자유롭게' });
+    /* lying, a lesson's own bar (40-shot.js fbar; L6): its name and book, the five levels by name - those passed blue, the
+       one being played three boxes that fill green with each success in a row (three: the next level) - and the rate; the
+       task on a strap under it, named by its level; 시범 · 힌트 · 새 배치 in the row of keys. The levels open the level sheet. */
+    if (!lesson || tutorial.on) fbar(null);
+    else fbar({
+      bar: [el('div', { class: 'fpl on' }, [el('span', { class: 'fnm', text: p.drill.name }), el('span', { class: 'fsb', text: p.drill.course || '' })]),
+        el('button', { class: 'fpl flad', 'aria-label': `단계: ${LV_KO[p.level - 1]}`, onclick: () => { SND.tap(); p.sheetLevel(); } }, LV_KO.map((t, i) => el('span', { class: i + 1 < p.level ? 'd' : i + 1 === p.level ? 'c' : '' },
+          [el('span', { class: 'fbx' }, [0, 1, 2].map(j => el('i', { class: i + 1 === p.level && j < p.streak ? 'f' : '' }))), el('em', { text: t })]))),
+        el('div', { class: 'fblk' }, p.tries ? [document.createTextNode(String(Math.round(p.ok / p.tries * 100))), el('small', { text: '%' })] : [el('small', { text: '첫 샷' })])],
+      cap: [el('b', { text: LV_KO[p.level - 1] }), el('span', { text: p.drill.d })],
+      keys: [fbKey('fkey', 'play', '시범', p.aiming(p.demo)), fbKey('fkey', 'bulb', '힌트', p.hint), fbKey('fkey', 'shuf', '새 배치', p.aiming(p.fresh))],
+    });
+    setBusy();
   },
+  aiming: fn => () => { if (flow === practice && st.phase === 'aim') fn(); },
+  demo() { toast('시범: 이렇게 치면 됩니다.', '', 2200); playDemo(practice.layout.demo, { quiet: false, after: practice.again }); },
+  hint() { const p = practice; toast(p.drill.tip + ' (' + drills.hint(p.layout.demo) + ')', '', 5200); },
   // the row of buttons where the second player's panel would be
   bar() {
     if (tutorial.on) return tutorial.bar();
@@ -88,10 +106,10 @@ const practice = {
       btn('옮기기', () => { p.edit = !p.edit; p.bar(); if (p.edit) toast('공을 끌어 옮깁니다. 테이블 밖으로 끌면 빠집니다.', '', 2600); }, p.edit);
       btn('공 놓기', p.sheetRack);
     } else {
-      btn('시범', aiming(() => { toast('시범: 이렇게 치면 됩니다.', '', 2200); playDemo(p.layout.demo, { quiet: false, after: p.again }); }));
-      btn('힌트', () => toast(p.drill.tip + ' (' + drills.hint(p.layout.demo) + ')', '', 5200));
+      btn('시범', aiming(p.demo));
+      btn('힌트', p.hint);
       btn('새 배치', aiming(p.fresh));
-      btn(p.level + '단계', p.sheetLevel);
+      btn(LV_KO[p.level - 1], p.sheetLevel);
     }
   },
   undo() {
@@ -102,7 +120,7 @@ const practice = {
   },
   sheetLevel() {
     const p = practice, i = drills.list.indexOf(p.drill), next = drills.list[i + 1 < drills.list.length ? i + 1 : 1];
-    const levels = []; for (let k = 1; k <= drills.LEVELS; k++) levels.push([k, k + '단계']);
+    const levels = []; for (let k = 1; k <= drills.LEVELS; k++) levels.push([k, LV_KO[k - 1]]);
     openSheet(p.drill.name, [
       segRow('단계', levels, p.level, v => { p.level = v; p.streak = 0; prefs.drillLv[p.drill.id] = v; savePrefs(); closeSheet(); p.bar(); if (flow === practice && st.phase === 'aim') p.fresh(); }),
       note('세 번 잇따라 성공하면 다음 단계'),
