@@ -101,7 +101,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
 const dialGuard = { down: false, at: -1e9 }, DIAL_GRACE = 200;
 const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-shot.js beginTurn)
 (function powerCtl() {
-  const box = $('#power'); let id = null, held = 0, y0 = 0, t0 = 0, moved = false;
+  const box = $('#power'); let id = null, held = 0, y0 = 0, moved = false;
   // The first little stretch of the track is for changing your mind: let go there and nothing is played. Power starts from
   // nothing just past it, so the gentlest touch is as easy to find as any other (it used to start at a fair tap).
   const CANCEL = 0.04;
@@ -113,7 +113,7 @@ const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-s
   powerHold.clear = unhold;
   box.addEventListener('pointerdown', e => {
     SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); try { box.setPointerCapture(id); } catch (err) {}
-    y0 = e.clientY; t0 = performance.now(); moved = false;
+    y0 = e.clientY; moved = false;
     if (!held) { st.power = read(e); setPowerUI(st.power); }   // (held: a tap plays the held power - a drag will set a new one)
     scene.invalidate(); e.preventDefault();
   });
@@ -122,12 +122,14 @@ const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-s
     if (held && !moved && Math.abs(e.clientY - y0) < 10) return;
     moved = true; unhold(); st.power = read(e); setPowerUI(st.power); if (st.el) setKindUI(); scene.invalidate();
   });
+  // nothing played: the cue let back to the ball
+  const drop = () => { st.power = 0; setPowerUI(0); };
+  // played: the cue in hand's hardest stroke, and how far its strike point turns the ball
+  const fire = p => { const k = cueK(); shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el); };
   const up = (e, cancel) => {
     if (id !== e.pointerId) return; id = null; ctlUp();
-    // (the cue in hand: its hardest stroke, and how far its strike point turns the ball)
-    const k = cueK(), fire = p => shoot(game.vOf(p) * k.power, st.spin.x * 0.5 * k.spin, st.spin.y * 0.5 * k.spin, st.el);
     if (held && !moved) {                                  // a tap on the glowing bar: the held power, played
-      const p = held; unhold(); if (!cancel && humanAiming()) fire(p); else { st.power = 0; setPowerUI(0); }
+      const p = held; unhold(); if (!cancel && humanAiming()) fire(p); else drop();
       return scene.invalidate();
     }
     const p = st.power;
@@ -135,7 +137,7 @@ const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-s
     if (slipped && humanAiming()) {
       held = p; box.classList.add('held'); SND.tap();
       toast('오발 방지 · 파워바를 탭하면 이 세기로 쳐요 (설정에서 끌 수 있어요)', '', 2600);
-    } else if (!cancel && p > 0 && humanAiming()) fire(p); else { st.power = 0; setPowerUI(0); }
+    } else if (!cancel && p > 0 && humanAiming()) fire(p); else drop();
     scene.invalidate();
   };
   box.addEventListener('pointerup', e => up(e, false)); box.addEventListener('pointercancel', e => up(e, true));
@@ -144,16 +146,24 @@ const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-s
   // the aim moves in steps of HAND_STEP.dial (degrees) from where the turn began
   // (the drum turns along its length: upright in either orientation now, lying only if a layout lays it down)
   const box = $('#fine'); let id = null, last = 0, off = 0, from = 0, turned = 0;
-  const lying = () => box.clientWidth > box.clientHeight, pos = e => lying() ? e.clientX : e.clientY;
-  box.addEventListener('pointerdown', e => { SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); dialGuard.down = true; last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault(); });
+  // (its way and the spacing of its ridges, read once as a turn begins - not on every move, each read a layout)
+  let lie = false, ridge = 8;
+  const lying = () => box.clientWidth > box.clientHeight, pos = e => lie ? e.clientX : e.clientY;
+  // the drum rolled on by d pixels at its face: its picture slides, and it is drawn again with the next frame
+  const roll = d => { off += d; box.style.backgroundPosition = lie ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); };
+  box.addEventListener('pointerdown', e => {
+    SND.init(); if (!humanAiming()) return; id = e.pointerId; ctlDown(); dialGuard.down = true;
+    lie = lying(); ridge = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8;
+    last = pos(e); from = st.aim; turned = 0; try { box.setPointerCapture(id); } catch (err) {} e.preventDefault();
+  });
   box.addEventListener('pointermove', e => {
     if (id !== e.pointerId) return; const d = pos(e) - last; last = pos(e);
-    const unit = HAND_STEP.dial * Math.PI / 180; turned += d * 0.0009 * (lying() ? -1 : 1);
-    const was = st.aim; st.aim = from + Math.round(turned / unit) * unit; off += d;
+    const unit = HAND_STEP.dial * Math.PI / 180; turned += d * 0.0009 * (lie ? -1 : 1);
+    const was = st.aim; st.aim = from + Math.round(turned / unit) * unit;
     if (st.aim !== was) dialGuard.at = performance.now();   // (the aim stepped: the bar let go just now, with this finger still here, is a slip)
-    box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); scene.invalidate();
+    roll(d); scene.invalidate();
     // a click for every ridge that rolls past the pointer, softer and quicker the faster it turns (at most one a frame)
-    const step = (box.querySelector('canvas.dial') || box).clientHeight * Math.PI / 56 || 8, n = Math.floor(dialPh / step);
+    const n = Math.floor(dialPh / ridge);
     if (n !== dialN) { dialN = n; SND.dial(Math.abs(d) / 20); }
   });
   const up = e => { if (id === e.pointerId) { id = null; ctlUp(); dialGuard.down = false; } };
@@ -166,7 +176,7 @@ const powerHold = { clear() {} };   // (the held power let go - a new turn: 40-s
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') || !$('#sheet').hidden) return;
     e.preventDefault();
     st.aim += dir * (e.shiftKey ? 10 : 1) * HAND_STEP.dial * Math.PI / 180;
-    const d = dir * 8; off += d; box.style.backgroundPosition = lying() ? `${off}px 0` : `0 ${off}px`; dialPh += d; dialSoon(); SND.dial(0.3); scene.invalidate();
+    lie = lying(); roll(dir * 8); SND.dial(0.3); scene.invalidate();
   });
 })();
 /* The fine-aim dial (on the desk): a knurled rubber drum turning in its walnut slot, drawn as a real cylinder - its ridges

@@ -124,46 +124,60 @@ function followTick(dt) {
   const k = Math.min(1, f.t / 0.11), ease = 1 - (1 - k) * (1 - k);
   return { x: f.x, y: f.y, pull: -0.004 - reach * ease, el: f.el, spin: f.spin };
 }
+/* Whether play waits this frame - nothing on the table moves and no clock runs (it is still drawn). covered: the home
+   screen's table is hidden under the desk (the play boards, the cards, the books), so its demo waits; otherwise
+   - a sheet is up - but a game online goes on under it in play (the other player is still playing);
+   - the match's opening is over the table (56-league.js vsIntro.hold): nobody plays, no clock runs, until it lifts. */
+function framePaused(covered) {
+  return covered || vsIntro.hold || (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play'));
+}
+// what this frame's play came to, for the drawing: filled again by playTick each frame
+const fr = { animating: false, alpha: 1, pull: 0, clip: null, follow: null };
+// the stroke (phase 'strike'): the cue drawn back comes through in a tenth of a second, and at the end of it the shot is struck
+function strikeTick(dt) {
+  const ca = st.cueAnim; ca.t += dt; fr.animating = true;
+  const k = Math.min(1, ca.t / 0.1); fr.pull = ca.from * (1 - k * k) - 0.004 * k;
+  if (ca.t < 0.1) return;
+  const c = game.cueBall();
+  st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.show ?? ca.el ?? 0, spin: { x: st.spin.x, y: st.spin.y } };
+  aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el);
+  if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y));
+  st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0);
+}
+// a frame of play, by the phase it is in: the computer lining up, chalking, the clocks, the stroke, the balls running,
+// the gathering (4구), a highlight, a review's shot, the hold after a shot
+function playTick(dt) {
+  if (st.phase === 'auto') { autoTick(dt); fr.animating = true; }
+  // (the cue drawn back a little off the ball while it is chalked, and brought up again)
+  if (chalkTick(dt)) { fr.animating = true; if (st.chalk) { const t = st.chalk.t; fr.pull += 0.07 * Math.max(0, Math.min(1, t / 0.2, (CHALK - t) / 0.3)); } }
+  shotClock(dt); eyeTick(); ranked.tick();
+  if (st.phase === 'strike') strikeTick(dt);
+  // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
+  if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) fr.follow = followTick(dt);
+  const ph = st.phase;
+  if (ph === 'sim') { const s0 = performance.now(); fr.alpha = stepSim(dt); prof.add('sim', performance.now() - s0); fr.animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
+  else if (ph === 'gather') { gatherTick(dt); fr.animating = true; st.rev++; }
+  else if (ph === 'reel') { const clip = fr.clip = reel.tick(dt); fr.animating = true; if (clip) { fr.alpha = clip.alpha; fr.pull = clip.pull; } }
+  else if (ph === 'rvplay') { if (review.tick(dt)) fr.animating = true; }
+  else if (ph === 'hold') { st.holdT -= dt; fr.animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
+}
 let wallsShown = null, shapeShown = null;
-function frame(now) {
-  requestAnimationFrame(frame);
-  if (!paceDue(now)) return;
-  const f0 = performance.now(); prof.frame();
-  checkLayout();
-  const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
-  // (a sheet is up, or the home screen's table is covered - the play boards, the cards, the books: its demo waits)
-  // (a ranked game goes on under a sheet: the other player is still playing)
-  const paused = (!$('#sheet').hidden && !(flow === match && match.ctx && match.ctx.online && st.screen === 'play')) || (st.screen === 'home' && !deskTableShown())
-    || vsIntro.hold;   // (the match's opening over the table - 56-league.js: nobody plays, no clock runs, until it lifts)
-  let animating = false, alpha = 1, pull = 0.03 + st.power * 0.2, clip = null, follow = null;
-  if (!paused) {
-    if (st.phase === 'auto') { autoTick(dt); animating = true; }
-    // (the cue drawn back a little off the ball while it is chalked, and brought up again)
-    if (chalkTick(dt)) { animating = true; if (st.chalk) { const t = st.chalk.t; pull += 0.07 * Math.max(0, Math.min(1, t / 0.2, (CHALK - t) / 0.3)); } }
-    shotClock(dt); eyeTick(); ranked.tick();
-    if (st.phase === 'strike') {
-      const ca = st.cueAnim; ca.t += dt; animating = true;
-      const k = Math.min(1, ca.t / 0.1); pull = ca.from * (1 - k * k) - 0.004 * k;
-      if (ca.t >= 0.1) { const c = game.cueBall(); st.follow = { t: 0, x: c.x, y: c.y, V: ca.V, el: ca.show ?? ca.el ?? 0, spin: { x: st.spin.x, y: st.spin.y } }; aheadStart(ca); st.simTick = 0; game.P.strike(game.world, st.aim, ca.V, ca.a, ca.b, ca.el); if (!flow.quiet) SND.cue(ca.V, panOf(c.x, c.y)); st.phase = 'sim'; acc = 0; st.settle = 0; st.power = 0; setPowerUI(0); }
-    }
-    // follow-through: for a moment after the hit the cue carries on through where the ball was, then is lifted away
-    if (st.follow && (st.phase === 'sim' || st.phase === 'hold')) follow = followTick(dt);
-    if (st.phase === 'sim') { const s0 = performance.now(); alpha = stepSim(dt); prof.add('sim', performance.now() - s0); animating = true; if (st.phase !== 'sim') { SND.rolling(0); bolts.set(false); } }
-    else if (st.phase === 'gather') { gatherTick(dt); animating = true; st.rev++; }
-    else if (st.phase === 'reel') { clip = reel.tick(dt); animating = true; if (clip) { alpha = clip.alpha; pull = clip.pull; } }
-    else if (st.phase === 'rvplay') { if (review.tick(dt)) animating = true; }
-    else if (st.phase === 'hold') { st.holdT -= dt; animating = true; if (st.holdT <= 0) { const f = st.afterHold, by = st.holdFlow; st.afterHold = st.holdFlow = null; if (f && by === flow) f(); else st.phase = 'idle'; } }
-  }
+// what the table shows besides the balls, kept in step with the game: the cue angle shown, a puzzle's barricades, its shape
+function tableSync() {
   if (st.phase === 'aim') syncEl();
   // (현실 당구 · 큐 각도: the angle shown follows the cue as it is turned past something it must stand up over)
   if (st.phase === 'aim' && game.world.real && game.world.real.cue) { const e = shownEl(); if (Math.abs(e - (st.elShown || 0)) > 1e-4) { st.elShown = e; setKindUI(); } }
   if (game.world.walls !== wallsShown) { wallsShown = game.world.walls; scene.setWalls(wallsShown); }   // (a puzzle's barricades)
   if ((game.world.shape || null) !== shapeShown) { shapeShown = game.world.shape || null; scene.setShape(shapeShown); }   // (a table of another shape)
+}
+// the 3D drawn for this frame (true when it drew)
+function drawFrame(dt) {
+  const { animating, alpha, pull, clip, follow } = fr;
   // (the other player online lining up counts too: their cue and line from what their screen sends - ranked.aimShow)
   // (the table alone - a match's end or opening, 50-outro.js tableAlone, and under the result: no cue, no line)
   const nude = app.classList.contains('bare') || (st.screen === 'result' && !review.on);   // (and under the result's slate)
   const lined = !nude && (st.phase === 'aim' || (st.phase === 'auto' && !!st.auto && (!!st.auto.plan || ranked.aiming())));
-  winCam.tick();   // (a win's camera, moved before the frame is drawn - 50-outro.js)
+  winCam.tick();   // (a win's camera, moved before the frame is drawn - 50-celebrate.js)
   const d0 = performance.now(); scene.prof.guide = 0;
   const drew = scene.frame({
     game, alpha, aim: st.aim, power: st.power, pull, spin: st.spin, honest: !!(game.world && game.world.real && game.world.real.cue), el: st.phase === 'strike' && st.cueAnim ? st.cueAnim.show ?? st.cueAnim.el : shownEl(), rev: st.rev, animating,
@@ -174,6 +188,19 @@ function frame(now) {
     covered: st.screen === 'home' && !deskTableShown(),
   }, dt);
   { const g = scene.prof.guide; prof.add('guide', g); prof.add('draw', performance.now() - d0 - g); }
+  return drew;
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!paceDue(now)) return;
+  const f0 = performance.now(); prof.frame();
+  checkLayout();
+  const raw = lastT ? now - lastT : 0, dt = Math.min(0.1, raw / 1000 || 0); lastT = now; lastRaw = raw;
+  const paused = framePaused(st.screen === 'home' && !deskTableShown());
+  fr.animating = false; fr.alpha = 1; fr.pull = 0.03 + st.power * 0.2; fr.clip = null; fr.follow = null;
+  if (!paused) playTick(dt);
+  tableSync();
+  const drew = drawFrame(dt);   // (after play: the screen may have changed under it)
   if (drew && review.on) review.copy();                    // (the game review shows the live table on its tray: 50-review.js)
   drainFalls(); drainFx();
   if (paused && st.phase === 'sim') { SND.rolling(0); bolts.set(false); }
@@ -251,5 +278,5 @@ function start() {
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('boot')));   // shown once laid out and drawn
   requestAnimationFrame(frame);
 }
-window.__dp8 = { prof, game, st, prefs, winCam, receipt, rise, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, practice, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, vsIntro, outro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
+window.__dp8 = { prof, game, st, prefs, winCam, receipt, rise, bolts, resume, homeDemo, get flow() { return flow; }, menuFx, get lay() { return { layoutW, layoutH, layoutN, layoutPending, sinceSized: performance.now() - sizedAt, pace: framePace }; }, scene, drills, puzzle, puzzles, match, reel, playBest, playWorst, SND, ranked, arcade, net, applyBackdrop, invite, paintHome, vsIntro, outro, tutorial, practice, emote, EMOTES, highlights, review, BOTS, startMatch: match.start, startPractice: practice.start, goHome, shoot, endShot };
 start();
