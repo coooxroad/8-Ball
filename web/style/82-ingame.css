@@ -147,12 +147,14 @@
      --g    the margin to the screen's edge        --gap  between two controls
      --cl   the left column: the power gauge       --cr   the right column: the dial
      --tb   the height of the row of keys along the top
+     --sb   the spin ball: big enough to see where on it the cue meets (it was never too big - the red mark on it was,
+            a fixed 18 px whatever the ball, near half of a phone's ball: owner 11-22), so the mark is now a share of it
    The pause key caps the left column (the gauge's width, its corners), the three view keys each the right column's width,
    the rightmost over the dial; all the keys and the score bar share one middle line. The dial fills the right column
-   between the keys and the spin ball (as tall as it was, or less where the screen is short) and the ball is the column's
-   width, under it. The table keeps clear of the same lengths (10-ui.js playInsets reads them). */
-#app.desk:not(.portrait){--g:12px;--gap:10px;--cl:72px;--cr:66px;--tb:48px;--pin:10px;--fpad:15px;--fh:380px;--fend:42px}
-#app.desk.compact:not(.portrait){--g:10px;--gap:8px;--cl:50px;--cr:46px;--tb:40px;--pin:7px;--fpad:9px;--fh:260px;--fend:30px}
+   between the keys and the spin ball (as tall as it was, or less where the screen is short); the ball under it, at the
+   column's outer edge. The table keeps clear of the same lengths (10-ui.js playInsets reads them). */
+#app.desk:not(.portrait){--g:12px;--gap:10px;--cl:72px;--cr:66px;--tb:48px;--sb:96px;--pin:10px;--fpad:15px;--fh:380px;--fend:42px}
+#app.desk.compact:not(.portrait){--g:10px;--gap:8px;--cl:50px;--cr:46px;--tb:40px;--sb:64px;--pin:7px;--fpad:9px;--fh:260px;--fend:30px}
 /* the keys along the top */
 #app.desk:not(.portrait) #menuBtn,#app.desk:not(.portrait) #viewBtn,#app.desk:not(.portrait) #views .btn{height:var(--tb);border-radius:10px;margin:0}
 #app.desk:not(.portrait) #menuBtn{position:fixed;left:var(--g);top:var(--g);width:var(--cl)}
@@ -173,9 +175,13 @@
 #app.desk.compact:not(.portrait) #powerNum small{font-size:8px}
 #app.desk.compact:not(.portrait) #power .pw-tk::after{display:none}
 /* the right column: the dial between the keys and the spin ball */
-#app.desk:not(.portrait) #fine{right:var(--g);width:var(--cr);top:calc(var(--g) + var(--tb) + var(--gap));bottom:calc(var(--g) + var(--cr) + var(--gap));
-  height:min(var(--fh),calc(100% - 2 * var(--g) - var(--tb) - var(--cr) - 2 * var(--gap)));margin:auto 0}
+#app.desk:not(.portrait) #fine{right:var(--g);width:var(--cr);top:calc(var(--g) + var(--tb) + var(--gap));bottom:calc(var(--g) + var(--sb) + var(--gap));
+  height:min(var(--fh),calc(100% - 2 * var(--g) - var(--tb) - var(--sb) - 2 * var(--gap)));margin:auto 0}
 #app.desk:not(.portrait) #fine::before{inset:var(--fend) var(--fpad)}
 #app.desk:not(.portrait) #fine canvas.dial{left:var(--fpad);right:var(--fpad);top:var(--fend);bottom:var(--fend);width:calc(100% - 2 * var(--fpad));height:calc(100% - 2 * var(--fend))}
-#app.desk:not(.portrait) #spinBtn{right:var(--g);bottom:var(--g);width:var(--cr);height:var(--cr)}
-#app.desk:not(.portrait) #spinPop{right:calc(var(--g) + var(--cr) + var(--gap));bottom:var(--g)}
+#app.desk:not(.portrait) #spinBtn{right:var(--g);bottom:var(--g);width:var(--sb);height:var(--sb)}
+#app.desk:not(.portrait) #spinPop{right:calc(var(--g) + var(--sb) + var(--gap));bottom:var(--g)}
+/* the mark where the cue meets: a cue's tip is about a fifth of the ball across - a little less here, so where it sits
+   reads at a glance (the ball is drawn at 79% of the button). Upright the same share (10-play.css sizes the button there). */
+#app.desk #spinBtn{--sd:max(7px,calc(var(--sb,60px) * .14))}
+#app.desk #spinDot{width:var(--sd);height:var(--sd);margin:calc(var(--sd) / -2);box-shadow:0 0 0 1.5px rgba(255,255,255,.7),0 1px 2px rgba(0,0,0,.45)}
