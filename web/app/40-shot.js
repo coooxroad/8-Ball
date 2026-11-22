@@ -39,11 +39,19 @@ function hold(seconds, then) { st.phase = 'hold'; st.holdT = seconds; st.afterHo
    first script, id "core"; on the web, the core file). If there is no Worker, it fails, or it has not answered in 8 s, the
    plan is worked out here as it always was. A stand-in's seeded chances come back from the Worker and go on from there. */
 const aiw = { w: null, n: 0, wait: new Map(), dead: false };
+/* The address a Worker of the core is made from: the page's own core script made a file once (a Blob, about 600 KB) and
+   shared by the computer's Worker and the review's (50-review.js) - each used to make its own copy; on the web, the core
+   file. null: none. */
+let coreUrlMade;
+function coreUrl() {
+  if (coreUrlMade !== undefined) return coreUrlMade;
+  const core = document.getElementById('core'), src = core && core.textContent;
+  return coreUrlMade = src && src.length > 1000 ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : core && core.src ? core.src : null;
+}
 function aiWorker() {
   if (aiw.w || aiw.dead) return aiw.w;
   try {
-    const core = document.getElementById('core'), src = core && core.textContent;
-    const url = src && src.length > 1000 ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : core && core.src ? core.src : null;
+    const url = coreUrl();
     if (!url) { aiw.dead = true; return null; }
     const w = new Worker(url);
     w.onmessage = e => { const r = e.data, j = aiw.wait.get(r.id); aiw.wait.delete(r.id); if (j) { j.res = r; if (j.cb) j.cb(r); } };

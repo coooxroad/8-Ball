@@ -49,8 +49,7 @@ const rvw = { w: null, n: 0, wait: new Map(), dead: false };
 function reviewWorker() {
   if (rvw.w || rvw.dead) return rvw.w;
   try {
-    const core = document.getElementById('core'), src = core && core.textContent;
-    const url = src && src.length > 1000 ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : core && core.src ? core.src : null;
+    const url = coreUrl();
     if (!url) { rvw.dead = true; return null; }
     const w = new Worker(url);
     w.onmessage = e => { const r = e.data, cb = rvw.wait.get(r.id); rvw.wait.delete(r.id); if (cb) cb(r); };
