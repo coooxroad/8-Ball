@@ -109,7 +109,9 @@ function playInsets(H, portrait) {
   // numbers of their own, and the table and the controls drifted apart as either changed).
   const cs = getComputedStyle(app), f = k => parseFloat(cs.getPropertyValue(k));
   const g = f('--g'), gap = f('--gap'), cl = f('--cl'), cr = f('--cr'), tb = f('--tb');
-  if (g >= 0 && cl > 0 && cr > 0 && tb > 0) return { t: g + tb + gap / 2, l: g + cl + gap, r: g + cr + gap, b: g };
+  // (the score bar of a match can stand a little taller than the keys, on their middle line: clear of whichever is lower)
+  const bh = tv ? f('--bh') || 0 : 0;
+  if (g >= 0 && cl > 0 && cr > 0 && tb > 0) return { t: g + Math.max(tb, (tb + bh) / 2) + gap / 2, l: g + cl + gap, r: g + cr + gap, b: g };
   return { t: hud + 6, l: 66, r: 74, b: 10 };
 }
 // Resizes arrive in bursts (keyboard sliding, rotation): lay out once when they stop, and not at all while typing a name.

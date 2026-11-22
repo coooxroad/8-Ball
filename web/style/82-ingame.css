@@ -26,9 +26,13 @@
    [the stripe of whose turn it is | name · rating | the balls still to play][score] [the game · the clock] [score][...] -
    each plate a single line, the balls by the score, the scores square, the game's name small over the clock's seconds in
    the navy middle. The 4구 ball each plays stays as a small ball before the name; the pool plates' 1 / 2 go. */
-/* (on the top keys' middle line, and as wide as the room between them allows, kept centred: the frame's lengths, below) */
-#app.bcast:not(.portrait){--bh:40px;--cw:76px;--wb:min(660px,calc(100vw - 2 * (var(--g) + 3 * var(--cr) + 3 * var(--gap))));--bt:calc(var(--g) + (var(--tb) - var(--bh)) / 2)}
-#app.bcast.compact:not(.portrait){--bh:32px;--cw:60px;--wb:min(500px,calc(100vw - 2 * (var(--g) + 3 * var(--cr) + 3 * var(--gap))))}
+/* (on the top keys' middle line - a little taller than they are - and as wide as the room between them allows, kept centred:
+   the frame's lengths, below; --nk the keys in the row at the right, 2 or 3 with the emote key. Bigger since 11-22 evening:
+   at 40 / 32 px the bar was a thin line over an empty screen - owner: "보는 맛이 안 남") */
+#app.bcast:not(.portrait){--nk:2;--bh:54px;--cw:calc(var(--bh) * 1.9);--wb:min(900px,calc(100vw - 2 * (var(--g) + var(--nk) * (var(--cr) + var(--gap)) + var(--gap))));--bt:calc(var(--g) + (var(--tb) - var(--bh)) / 2)}
+#app.bcast.compact:not(.portrait){--bh:42px;--wb:min(700px,calc(100vw - 2 * (var(--g) + var(--nk) * (var(--cr) + var(--gap)) + var(--gap))))}
+#app.bcast:not(.portrait):has(#emoteBtn:not([hidden])){--nk:3}
+#app.bcast:not(.portrait) #hud .pill{max-width:none}
 #app.bcast:not(.portrait) #hud .pill{gap:0;padding:0;border-radius:0}
 #app.bcast:not(.portrait) #hud #p0{border-radius:calc(var(--bh)*.15) 0 0 calc(var(--bh)*.15)}
 #app.bcast:not(.portrait) #hud #p1{border-radius:0 calc(var(--bh)*.15) calc(var(--bh)*.15) 0}
@@ -62,14 +66,6 @@
 #app.bcast:not(.portrait) #clock b{bottom:calc(var(--bh)*.12 + 4px);font-size:calc(var(--bh)*.46)}
 #app.bcast:not(.portrait) #clock{height:calc(var(--bh) + 4px)}
 #app.bcast:not(.portrait) #clock i{height:3px}
-/* the bot's words: a strap under the middle of the bar, as a broadcast's caption (34-desk-bots.js botTalk.show) */
-#app.bcast:not(.portrait) .bot-bub{border-radius:calc(var(--bh)*.1);padding:calc(var(--bh)*.16) calc(var(--bh)*.32);background:linear-gradient(#0d2257,var(--navy));color:#eef2fa;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.4);max-width:min(520px,70vw);animation-name:strapIn;transform-origin:50% 0}
-#app.bcast:not(.portrait) .bot-bub::before{display:none}
-#app.bcast:not(.portrait) .bot-bub p{font:600 max(12px,calc(var(--bh)*.34))/1.35 var(--ui-font)}
-#app.bcast:not(.portrait) .bot-bub p b{color:#8fb6ff;margin-right:calc(var(--bh)*.2);font-weight:800}
-#app.bcast:not(.portrait) .bot-bub small{color:#b9c6e0;font-size:max(11px,calc(var(--bh)*.28))}
-@keyframes strapIn{from{opacity:0;transform:translateY(-6px)}}
 /* the points to reach, large and faint behind the score */
 #app.bcast #hud .pts[data-goal]::before{content:attr(data-goal);position:absolute;right:3px;bottom:1px;z-index:-1;
   font:800 calc(var(--bh)*.5)/1 'Outfit',sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.26)}

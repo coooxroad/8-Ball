@@ -13,10 +13,8 @@
 @keyframes bubIn{0%{opacity:0;transform:translateY(-10px) scale(.3)}60%{opacity:1;transform:translateY(2px) scale(1.12)}100%{transform:none}}
 @keyframes bubOut{to{opacity:0;transform:translateY(-8px) scale(.8)}}
 @media (prefers-reduced-motion:reduce){#emoteBox,.emo-bub,.emo-bub.out{animation-duration:.01s}}
-/* the key: on a wide screen under the 3D key at the top right (in the row of view keys it ran into the score bar); on an
-   upright screen first in the column of view keys */
-#app.desk:not(.portrait) #emoteBtn{position:fixed;right:12px;top:80px}
-#app.desk.compact:not(.portrait) #emoteBtn{top:68px}
+/* the key: lying, first in the row of keys at the top right (82-ingame.css, the frame - room for it since the 2D key went,
+   11-22); upright, first in the column of view keys */
 /* 컴퓨터 대전: the bot's speech bubble under its plate (app/34-desk-bots.js botTalk) - its words, the Korean under them in a
    near-black grey (owner 11-16) */
 .bot-bub{position:fixed;z-index:25;max-width:min(340px,46vw);padding:10px 14px 11px;border-radius:16px 4px 16px 16px;pointer-events:none;

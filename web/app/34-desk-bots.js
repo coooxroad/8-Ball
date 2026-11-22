@@ -288,14 +288,11 @@ const botTalk = {
   show(b, [text, ko]) {
     const pill = $('#p1'); if (!pill || st.screen !== 'play') return;
     const old = $('#botBub'); if (old) old.remove();
-    // (lying down on the broadcast bar: a strap under its middle with the bot's name first - 82-ingame.css; upright, a
-    // bubble under its plate)
-    const strap = app.classList.contains('bcast') && !app.classList.contains('portrait');
-    const bub = el('div', { id: 'botBub', class: 'bot-bub', role: 'status' }, [el('p', { lang: b.lang, dir: 'auto' }, [strap ? el('b', { text: b.name }) : null, document.createTextNode(text)]), ko && b.lang !== 'ko' ? el('small', { text: ko }) : null]);
+    const bub = el('div', { id: 'botBub', class: 'bot-bub', role: 'status' }, [el('p', { lang: b.lang, dir: 'auto', text }), ko && b.lang !== 'ko' ? el('small', { text: ko }) : null]);
     $('#app').appendChild(bub);
     const r = pill.getBoundingClientRect(), bw = bub.offsetWidth;
-    if (strap) { const c = $('#clock').getBoundingClientRect(), bot = Math.max(r.bottom, c.height ? c.bottom : 0); bub.style.left = Math.max(8, (innerWidth - bw) / 2) + 'px'; bub.style.top = (bot + 6) + 'px'; }
-    else { bub.style.left = Math.max(8, Math.min(innerWidth - bw - 8, r.right - bw - 6)) + 'px'; bub.style.top = (r.bottom + 12) + 'px'; }
+    // (a bubble under the bot's plate - the broadcast strap of 11-22 went back: the owner liked the bubble better)
+    bub.style.left = Math.max(8, Math.min(innerWidth - bw - 8, r.right - bw - 6)) + 'px'; bub.style.top = (r.bottom + 12) + 'px';
     const stay = 2600 + Math.min(2600, (text.length + (ko || '').length) * 45);
     setTimeout(() => bub.classList.add('out'), stay); setTimeout(() => bub.remove(), stay + 400);
   },

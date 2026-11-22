@@ -6,7 +6,7 @@ press('#menuBtn', sheetPause);
 // (dragging the eye view turns it into the free look).
 let viewMode = 'top';
 const eyeCam = () => { const c = game.cueBall(), a = st.aim; return { eye: true, az: Math.atan2(-Math.cos(a), Math.sin(a)), el: 0.3, zoom: 0.42, tx: c.x + Math.cos(a) * 0.3, ty: c.y + Math.sin(a) * 0.3 }; };
-function paintViews() { $('#viewBtn').setAttribute('aria-pressed', String(viewMode === 'free')); $('#topBtn').setAttribute('aria-pressed', String(viewMode === 'top')); $('#eyeBtn').setAttribute('aria-pressed', String(viewMode === 'eye')); }
+function paintViews() { $('#viewBtn').setAttribute('aria-pressed', String(viewMode === 'free')); $('#eyeBtn').setAttribute('aria-pressed', String(viewMode === 'eye')); }
 function setView(m) {
   if (m === viewMode && m !== 'eye') return;
   drag = null; orbitPts.clear(); viewMode = m;
@@ -27,8 +27,8 @@ function eyeTick() {
 }
 scene.onFreeLook = () => { viewMode = 'free'; paintViews(); };
 press('#viewBtn', () => setView(viewMode === 'free' ? 'top' : 'free'));
-press('#topBtn', () => setView('top'));
-press('#eyeBtn', () => setView('eye'));
+// (no key of its own for the view from above since 11-22, owner: 3D and the player's view each go back to it when pressed again)
+press('#eyeBtn', () => setView(viewMode === 'eye' ? 'top' : 'eye'));
 // (after a ranked game: look for the next opponent in the same game)
 press('#reviewBtn', () => review.open());
 press('#againBtn', () => { const o = match.ctx && match.ctx.online; if (o && o.kind === 'invite') return ranked.again(); if (o) { ranked.leave(); goHome(); return ranked.find(o.mode); } match.start(st.lastLoser == null ? 0 : st.lastLoser); });
