@@ -320,7 +320,7 @@ function createGame(PH, makeAI) {
       // (with only the black left, the first score or foul ends the frame: a black potted on a foul stays down)
       r.last = c.on === 'clear' && c.next === 21;
       r.respot = cols.filter(i => (c.on !== 'clear' || foul) && !(r.last && i === 21));
-      // what is on next, if the same player goes on (else after the turn passes: snookerNext)
+      // what is on next, if the same player goes on (else after the turn passes: after, below)
       r.snk = { on: c.on, next: c.next };
       if (!foul && c.on === 'red' && pts) r.snk.on = 'colour';
       else if (c.on === 'colour') r.snk.on = 'after';            // (a red if any are left, else the clearance: decided once the balls are put back)

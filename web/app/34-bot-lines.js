@@ -2,7 +2,7 @@
    language, the Korean under it in a near-black grey). Written here beforehand - never made up at the table, so the
    foreign words are right - each line [its own words, the Korean] (a Korean bot's lines have no second).
    BOT_LINES[id][stage][moment]: stage 0 is how a bot talks to someone it has just met; later stages (how it talks once it
-   knows the player better) go beside it as 1, 2, … and fall back to 0 where they have no line (botSay, 34-desk-bots.js).
+   knows the player better) go beside it as 1, 2, … and fall back to 0 where they have no line (botLines, 34-desk-bots.js).
    The moments: hello (the game begins), think (before its own shot, now and then), score (it scored), miss (it missed),
    nice (the player's good shot), oops (the player missed or fouled), win, lose (the game is over); and by the review's
    grade of the player's shot (BOT_REACT, below): wow, lucky, gift. A line is said at most once a game (botTalk.line). */

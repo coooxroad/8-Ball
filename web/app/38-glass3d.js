@@ -160,7 +160,7 @@ const glass3d = (() => {
       if (!g._ro) { let last = g.offsetWidth ? g.offsetWidth + 'x' + g.offsetHeight : ''; g._ro = new ResizeObserver(() => { if (!g.offsetWidth) return; const k = g.offsetWidth + 'x' + g.offsetHeight; if (k !== last) { last = k; paint(); } }); g._ro.observe(g); }
       return true;
     },
-    /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3In/g3Out, now played here): layer -
+    /* A match's opening, its cases swinging in and flung away (as 79-league.css's g3InL/R · g3OutL/R, which play it where there is no WebGL): layer -
        the .vs, box - the #league ('open' and 'away' on it say when). Everything is made now, while the league's wall
        still covers the screen - the cases measured, their models built and their shaders compiled - and the swing's clock
        starts only when the wall opens, so no frame of it waits on any of that (owner 11-21: the cards stuttered as they

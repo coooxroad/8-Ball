@@ -221,7 +221,7 @@
   /* The table's own light, as in a billiard hall: a long box hung on two wires over the table, its underside a lit
      acrylic panel and its sides glowing through frosted panels, so it reads as a light from any side. It lights nothing
      itself (the lamps under it do that). Shown when the camera looks round, unless on screen it would hang over the
-     table (tableClear in applyCamera). Scaled along the table in setTable. */
+     table (hallClear in applyCamera, 60-view.js). Scaled along the table in setTable. */
   const hall = new THREE.Group(), HALL_Z = 1.25;
   (function hallLight() {
     const top = new THREE.MeshStandardMaterial({ color: col(0x16171a), roughness: 0.5, metalness: 0.6, envMapIntensity: 0.6 });

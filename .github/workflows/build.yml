@@ -30,7 +30,7 @@ jobs:
         run: node web/tools/check.js
 
   # The app in a real browser (headless Chromium, software WebGL): the smoke run through the app at a tablet and a phone
-  # size, desktop text, the PC frame policy, the stand-in's wiring, desktop sizes and GPU fallback. Here, not on Claude's
+  # size, desktop text, the PC frame policy, the stand-in's wiring, desktop sizes and GPU fallback, the result's numbers. Here, not on Claude's
   # machine, which has no GPU and takes many minutes for the same. Three runners side by side and alongside 'check', so
   # the release waits about as long as the slowest (~4 min). A smoke run that fails is tried once more (software rendering
   # is slow and a wait can run out); the others must pass first time.
@@ -66,6 +66,7 @@ jobs:
           node web/test/browser/slip.js
           node web/test/browser/graphics.js
           node web/test/browser/ui-budget.js
+          node web/test/browser/result.js
 
   # Only what lands on main becomes an APK and a release.
   apk:

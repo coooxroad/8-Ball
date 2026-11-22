@@ -111,7 +111,7 @@
      worst a lumpy one stands a hair off the cloth or off another ball). Normals come from the shape itself, not the
      triangles, so the sphere's seam does not show. */
   const geoms = {};
-  // lod 1: half the rows and columns, for a ball small on the screen (화질 '자동' with the table seen whole, or '낮음': ballLod)
+  // lod 1: half the rows and columns, for a ball small on the screen (화질 '자동' with the table seen whole, or '낮음': dressSet, 90-frame.js)
   function geomOf(k, lod) {
     if (!k.shape && !k.holes) return sphere;
     const key = JSON.stringify([k.shape || null, k.holes || null, lod ? 1 : 0]); if (geoms[key]) return geoms[key];

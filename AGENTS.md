@@ -35,6 +35,7 @@ node web/test/browser/human-ai.js      # 대역의 실제 Worker·조작·기권
 node web/test/browser/slip.js          # 다이얼을 돌리는 중 파워바를 놓으면 치지 않음
 node web/test/browser/graphics.js      # 데스크톱 크기·고밀도 입력·GPU 대체·컨텍스트 복구
 node web/test/browser/ui-budget.js     # 메뉴 레이어 예산(1280x800@2에서 28M픽셀 이하) — 넘으면 태블릿이 끊기고 점멸한다
+node web/test/browser/result.js        # 결과의 숫자: 레이팅 단계 게이지(rise.at — 오름·내림·승급 직전·티어 밖·최고)와 영수증의 돈 줄(슬레이트 줄을 따라 바뀜)
 ```
 브라우저 검사는 playwright가 필요하다(`CHROME=<경로>`로 크롬을 고른다). 검사를 통과시키려고 검사를 지우거나 약하게 만들지 않는다.
 물리나 규칙을 바꿨으면 그 동작을 보는 검사를 `web/test/run.js`에 더한다. 전후 비교 도구(검사 아님)는 `web/tools/compare/`
@@ -266,7 +267,7 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 ### 디버그 모드
 관리자 페이지(`/admin`)에서 계정마다 "디버그 모드"를 켠다(서버 `core.js` `adminGrant({ debug })`, `me().debug`). 앱은 `net.debug`로 알고,
 설정에 "디버그" 메뉴(`20-sheets.js` `sheetDebug`)를 보인다: 책상 목재·트레이(`DESK_LOOK`), 메인 메뉴 새/예전, 테이블 모양(자유 연습), 궁극기 게이지 미리보기,
-아케이드(준비 중)로 들어가는 길, 선수증 유리 케이스(11-21 시험 중, 기본 켬 — `37-desk-menu.js` `glassCase`/`glassOn`, `84-menu.css` `.g3`:
+아케이드(준비 중)로 들어가는 길, 선수증 유리 케이스(11-21 시험 중, 기본 켬 — `37-desk-menu.js` `glassCase`, 3D는 `38-glass3d.js`, `84-menu.css` `.g3`:
 각진 3D 아크릴 블록, 뚜껑 없음, 메뉴는 정면, 랭킹전·대전 오프닝에서 위 가장자리를 축으로 흔들리며 들어오고 왼쪽으로 돌며 날아감 — `79-league.css` `g3In/Out`). 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
 코인·보유는 풀지 않는다.
 
