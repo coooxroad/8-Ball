@@ -165,6 +165,8 @@ function fbar(s) {
   if (s.cap) box.appendChild(el('div', { class: 'fcap' }, s.cap));
   if (s.keys) box.appendChild(el('div', { class: 'fkeys' }, s.keys));
 }
+// (puzzles solved at the first shot, one after another: a small flame and how many - 52-puzzle.js)
+const fbRun = n => { const s = el('span', { class: 'frun', 'aria-label': `한 번에 ${n}연속` }); s.innerHTML = flameSvg(n >= 10 ? 't30' : n >= 5 ? 't7' : 't1'); s.appendChild(el('b', { text: String(n) })); return s; };
 const fbStars = n => el('span', { class: 'fstars', 'aria-label': `별 ${n}개` }, [0, 1, 2].map(i => el('i', { class: i < n ? 'f' : '' })));
 
 // A small top view of one shot: the table, where the balls stood, and the lines the cue ball and the ball that mattered drew.

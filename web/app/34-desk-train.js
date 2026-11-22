@@ -43,7 +43,6 @@ function trainHead(head, title, sub) {
 const PZ_SLOTS = 20;
 const pzSlots = si => Array.from({ length: PZ_SLOTS }, (_, k) => ({ si, n: k + 1, q: puzzles.of(si).find(x => x.n === k + 1) || null, ch: (k + 1) % 10 === 0 }));
 const pzBothCh = si => pzSlots(si).filter(x => x.ch).every(x => x.q && prefs.pz.stars[x.q.id]);
-const pzMapTop = {};                                                   // where the map was scrolled to, kept between paints
 function deskPuzzle(d) {
   const { head, stage, slate } = d;
   // (the puzzles are being made again on the game's physics: until then the place is kept, empty)
@@ -55,10 +54,13 @@ function deskPuzzle(d) {
   const z = prefs.pz, L = puzzles.list.filter(pzOpenQ), cur0 = puzzles.byId(z.cur) || puzzles.list[0], cur = pzOpenQ(cur0) ? cur0 : L.find(q => q.stage === cur0.stage) || L[0], S = puzzles.STAGES[cur.stage];
   const slots = pzSlots(cur.stage), done = slots.filter(x => x.q && z.stars[x.q.id]).length;
   trainHead(head, '퍼즐', `${puzzles.list.filter(q => z.stars[q.id]).length} / ${puzzles.STAGES.length * PZ_SLOTS}`);
+  // 오늘의 퍼즐 (owner 11-22): one puzzle a day, the same for everyone (by the date), open or not
+  const day = pzDaily(), dayDone = z.day === attend.today();
+  if (day) head.appendChild(el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id)) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]));
   pzMap(stage, cur);
   // (copy audit 03-07: the goal once)
   dkPut(slate, [el('div', { class: 'pz-topic' }, [el('small', { text: `주제 ${cur.stage + 1}` }), el('b', { text: S.name })]), dkTxt(S.desc), dkHr(),
-    ...pzRoad(slots, cur, done), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지')]);
+    ...pzGrid(slots, cur, done), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지')]);
   dkPut(slate, dkActs(dkMain(puzzles.challenge(cur) ? '챌린지 시작' : `스테이지 ${cur.n} 시작`, null, () => puzzle.start(cur.id))));
 }
 // a stage on either road picked: the one in hand, or why it cannot be (closed, or not made yet)
@@ -69,56 +71,89 @@ function pzPick(x) {
   if (!pzOpenQ(x.q)) return toast(!pzOpen(x.si) ? `'${puzzles.STAGES[x.si - 1].name}'에서 ${PZ_NEED}문제를 풀면 열립니다` : x.ch ? '앞 스테이지를 모두 풀면 챌린지가 열립니다' : '앞 스테이지를 풀면 열립니다', '', 1900);
   if (z.cur === x.q.id) return; z.cur = x.q.id; z.open = x.si; repaintLive();
 }
-// a stage as a node: its number (or the challenge's stone), its stars once solved; open, closed, or not made yet
-function pzNode(x, cur, cls) {
-  const z = prefs.pz, q = x.q, open = q && pzOpenQ(q), stars = q ? z.stars[q.id] || 0 : 0;
-  return el('button', { class: cls + (x.ch ? ' ch' : '') + (x.more ? ' more' : '') + (q || x.more ? '' : ' soon') + (open ? '' : ' lock') + (stars ? ' done' : ''), 'aria-pressed': String(!!q && q === cur),
-    'aria-label': `${x.more ? '연습 퍼즐' : x.ch ? '챌린지' : x.n + '번'}${stars ? `, 별 ${stars}개` : !q ? ', 준비 중' : open ? '' : ', 잠김'}`, onclick: onTap(() => pzPick(x)) }, [
-    x.ch ? el('i', { class: 'gem' }) : el('b', { text: x.more ? '∞' : String(x.n) }),
-    stars ? el('span', { class: 'st' }, [0, 1, 2].map(i => el('i', { class: i < stars ? 'on' : '' }))) : null]);
-}
-/* The tray's map: each topic a stretch of the road going up, its name at its foot; the road lit as far as it is open; the
-   stage in hand ringed and brought into view (or the map where it was left). */
+/* The tray's map (owner 11-22: a metro line, after R2): every topic a station, its twenty stages two rows of ten - out to
+   the right from the station, round a turn and back - and a curve up to the next topic's station, on which stands its
+   ∞ (연습 퍼즐: made without end once both 챌린지 are beaten). Read from the bottom up, scrolled as before. A stage solved
+   is a ball as the 랭킹전 card draws its game's balls (the worn set's own picture, 32-desk.js ballPic) - 4구's red with its
+   number, a 챌린지 its yellow; the stage in hand the white, ringed. The line lit as far as it is solved, gold once the
+   whole topic is; a topic not yet open, dotted. Down the right an 8-step bar, a topic to a step, each filled as far as
+   it is solved, the part in view framed: tap one to go to it. 지금 brings the stage in hand back into view. */
+const pzMapTop = {};                                                   // where the map was scrolled to, kept between paints
 function pzMap(stage, cur) {
   stage.dataset.win = '0';
-  const ROW = app.classList.contains('compact') ? 54 : 66, xOf = k => 50 + 30 * Math.sin(k * 0.62);
-  const box = el('div', { class: 'pz-map' });
-  const regions = puzzles.STAGES.map((S, si) => {
-    const slots = [...pzSlots(si), { si, n: PZ_SLOTS + 1, q: null, more: true }], H = (slots.length + 0.6) * ROW, at = k => [xOf(k + si * 3), H - (k + 0.8) * ROW];
-    const open = slots.filter(x => x.q && pzOpenQ(x.q)).length, P = slots.map((_, k) => at(k));
-    const line = A => A.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(1)).join(' ');
-    const reg = el('section', { class: 'pz-reg' + (si % 2 ? ' alt' : '') + (pzOpen(si) ? '' : ' shut'), style: `height:${H}px` }, [
-      el('div', { class: 'pz-reg-h' }, [el('small', { text: `주제 ${si + 1}` }), el('b', { text: S.name }),
-        el('span', { text: pzOpen(si) ? `${slots.filter(x => x.q && prefs.pz.stars[x.q.id]).length} / ${PZ_SLOTS}` : '잠김' })])]);
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', `0 0 100 ${H}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML = `<path class="rd-all" d="${line(P)}"/>${open ? `<path class="rd-on" d="${line(P.slice(0, Math.max(1, open)))}"/>` : ''}`;
-    reg.appendChild(svg);
-    slots.forEach((x, k) => { const n = pzNode(x, cur, 'pz-node'); n.style.left = P[k][0].toFixed(2) + '%'; n.style.top = P[k][1].toFixed(1) + 'px'; reg.appendChild(n); });
-    return reg;
-  });
-  dkPut(box, regions); dkPut(stage, box);
-  box.addEventListener('scroll', () => { pzMapTop.v = box.scrollTop; }, { passive: true });
-  requestAnimationFrame(() => {
-    if (!box.isConnected) return;
-    // (where it was left; the stage in hand brought to the middle only when it is out of sight there)
-    if (pzMapTop.v != null) box.scrollTop = pzMapTop.v;
-    const n = box.querySelector('.pz-node[aria-pressed="true"]');
-    if (n) { const r = n.getBoundingClientRect(), b = box.getBoundingClientRect(); if (r.top < b.top + 20 || r.bottom > b.bottom - 20) box.scrollTop += (r.top + r.height / 2) - (b.top + b.height / 2); }
-    pzMapTop.v = box.scrollTop;
-  });
+  const box = el('div', { class: 'pz-map' }), bar = el('div', { class: 'pz-bar', role: 'navigation', 'aria-label': '주제로 가기' }), now = el('button', { class: 'pz-now', hidden: '' });
+  dkPut(stage, [box, bar, now]);
+  requestAnimationFrame(() => { if (box.isConnected) pzMetro(box, bar, now, cur); });
 }
-/* A topic's small road on the slate: its stages five to a row, winding back and forth, the line lit as far as they are open,
-   the 챌린지 cut stones at the ends of their rows. */
-function pzRoad(slots, cur, done) {
-  const W = 300, per = 5, row = app.classList.contains('compact') && !app.classList.contains('portrait') ? 50 : 58, gap = (W - 40) / (per - 1), n = slots.length, rows = Math.ceil(n / per);
-  const at = k => { const r = Math.floor(k / per), c = k % per; return [20 + (r % 2 ? per - 1 - c : c) * gap, 26 + r * row]; };
-  const pts = slots.map((_, k) => at(k)), H = 26 + (rows - 1) * row + 34, reached = slots.filter(x => x.q && pzOpenQ(x.q)).length;
-  const line = P => P.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
-  const box = el('div', { class: 'pz-road', style: `aspect-ratio:${W}/${H}` });
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path class="rd-all" d="${line(pts)}"/>${reached ? `<path class="rd-on" d="${line(pts.slice(0, Math.max(1, reached)))}"/>` : ''}</svg>`;
-  slots.forEach((x, k) => { const nd = pzNode(x, cur, 'rd-node'); nd.style.left = (pts[k][0] / W * 100).toFixed(2) + '%'; nd.style.top = (pts[k][1] / H * 100).toFixed(2) + '%'; box.appendChild(nd); });
-  return [el('div', { class: 'pz-road-h' }, [el('b', { text: `스테이지 ${cur.n}` }), el('small', { text: `${done} / ${n}` })]), box];
+function pzMetro(box, bar, now, cur) {
+  const z = prefs.pz, S = puzzles.STAGES, nT = S.length, small = app.classList.contains('compact');
+  const W = box.clientWidth - (small ? 24 : 32);                       // (once, as it is built: the bar takes the right edge)
+  const rowH = small ? 50 : 64, band = small ? 36 : 44, R = small ? 13 : 17, r = small ? 11 : 14, turn = rowH / 2;
+  const mL = turn + r + 10, mR = turn + 8, per = 2 * rowH + band, top = band + r + 30, foot = band + 46, Htot = nT * per + top + foot;
+  const yA = t => Htot - foot - t * per - rowH / 2, yB = t => yA(t) - rowH;
+  const sx = mL + R - turn * 0.2, xs0 = sx + R + r + 10, xs1 = W - mR;
+  const stopXY = (t, k) => { const f = ((k - 1) % 10) / 9; return k <= 10 ? [xs0 + (xs1 - xs0) * f, yA(t)] : [xs1 - (xs1 - xs0) * f, yB(t)]; };
+  // the curve from a topic's last stage up to the next station, and where its ∞ stands (half way along it)
+  const cx = Math.max(6, mL - turn * 1.15), up = t => t < nT - 1 ? yA(t + 1) : yB(t) - rowH * 0.9;
+  const bez = (t, u) => { const p0 = [xs0, yB(t)], p1 = [cx, yB(t)], p2 = [cx, up(t)], p3 = [t < nT - 1 ? sx : xs0 * 0.6 + cx * 0.4, up(t)], v = 1 - u;
+    return [0, 1].map(i => v * v * v * p0[i] + 3 * v * v * u * p1[i] + 3 * v * u * u * p2[i] + u * u * u * p3[i]); };
+  const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), wrap = el('div', { class: 'pz-mt', style: `height:${Htot}px` });
+  svg.setAttribute('viewBox', `0 0 ${W} ${Htot}`); svg.setAttribute('width', W); svg.setAttribute('height', Htot); svg.setAttribute('aria-hidden', 'true');
+  let lines = '', curY = null; const nodes = [];
+  for (let t = 0; t < nT; t++) {
+    const open = pzOpen(t), slots = pzSlots(t), solved = slots.filter(x => x.q && z.stars[x.q.id]).length, all = solved === PZ_SLOTS, a = yA(t), b = yB(t);
+    const [c1x, c1y] = bez(t, 1), seg = `M${sx} ${a} L${xs1} ${a} A${turn} ${turn} 0 0 0 ${xs1} ${b} L${xs0} ${b} C${cx} ${b} ${cx} ${up(t)} ${c1x} ${c1y}`;
+    lines += `<path class="mt-ln${open ? '' : ' shut'}" d="${seg}"/>`;
+    // (lit: from the station to the last stage solved in a row from the first - the road as far as it goes on)
+    let reach = 0; while (reach < PZ_SLOTS && slots[reach].q && z.stars[slots[reach].q.id]) reach++;
+    if (reach) { const [ex, ey] = stopXY(t, reach); lines += `<path class="mt-on${all ? ' gold' : ''}" d="${all ? seg : reach <= 10 ? `M${sx} ${a} L${ex} ${a}` : `M${sx} ${a} L${xs1} ${a} A${turn} ${turn} 0 0 0 ${xs1} ${b} L${ex} ${b}`}"/>`; }
+    // the station: its number (a tick when all of it is solved), its name in the band under it, how far along at the right
+    nodes.push(el('span', { class: 'mt-st' + (all ? ' all' : open ? '' : ' shut'), style: `left:${sx}px;top:${a}px;--R:${R}px`, text: all ? '✓' : String(t + 1), 'aria-hidden': 'true' }));
+    nodes.push(el('span', { class: 'mt-nm' + (open ? '' : ' shut'), style: `left:${sx + R + 8}px;top:${a + R + 4}px`, text: S[t].name }));
+    nodes.push(el('span', { class: 'mt-ct' + (all ? ' all' : open ? '' : ' shut'), style: `right:${W - xs1 - turn}px;top:${a + R + 4}px`,
+      text: open ? (all ? '완료' : `${solved} / ${PZ_SLOTS}`) : t > 0 ? `'${S[t - 1].name}' ${PZ_NEED}문제면 열림` : '' }));
+    slots.forEach((x, k) => { const [px, py] = stopXY(t, k + 1); const n = pzStop(x, cur, r); n.style.left = px + 'px'; n.style.top = py + 'px'; nodes.push(n); if (x.q && x.q === cur) curY = py; });
+    // its ∞, half way up the curve
+    const [ix, iy] = bez(t, 0.5), inf = pzStop({ si: t, n: PZ_SLOTS + 1, q: null, more: true }, cur, r); inf.style.left = ix + 'px'; inf.style.top = iy + 'px'; nodes.push(inf);
+  }
+  svg.innerHTML = lines; wrap.append(svg, ...nodes); box.appendChild(wrap);
+  // the bar: a step a topic, the first at the bottom; filled as far as it is solved; tapped, its topic brought into view
+  const H = box.clientHeight, steps = S.map((q, t) => {
+    const n = pzSlots(t).filter(x => x.q && z.stars[x.q.id]).length;
+    return el('button', { class: 'pz-step' + (pzOpen(t) ? '' : ' shut') + (n === PZ_SLOTS ? ' all' : ''), style: `--f:${(n / PZ_SLOTS * 100).toFixed(1)}%`, 'aria-label': `주제 ${t + 1} ${q.name}`,
+      onclick: () => { SND.tap(); box.scrollTo({ top: Math.max(0, yA(t) - H * 0.62), behavior: 'smooth' }); } }, el('b', { text: String(t + 1) }));
+  });
+  const win = el('i', { class: 'pz-win', 'aria-hidden': 'true' });
+  dkPut(bar, [...steps.reverse(), win]);
+  // the frame on the bar and 지금 follow the scroll (only the scroll's own number is read)
+  const show = () => {
+    const y = box.scrollTop, lo = (Htot - foot - y - H) / (nT * per), hi = (Htot - foot - y) / (nT * per);
+    win.style.bottom = (Math.max(0, lo) * 100).toFixed(2) + '%'; win.style.height = ((Math.min(1, hi) - Math.max(0, lo)) * 100).toFixed(2) + '%';
+    now.hidden = curY == null || (curY > y + 30 && curY < y + H - 30);
+    pzMapTop.v = y;
+  };
+  now.textContent = ''; now.append(el('i'), document.createTextNode(cur ? `지금 · ${puzzles.challenge(cur) ? '챌린지' : '스테이지 ' + cur.n}` : '지금'));
+  now.onclick = () => { SND.tap(); if (curY != null) box.scrollTo({ top: curY - H * 0.55, behavior: 'smooth' }); };
+  box.addEventListener('scroll', show, { passive: true });
+  // (where it was left; else the stage in hand brought to the middle)
+  box.scrollTop = pzMapTop.v != null ? pzMapTop.v : curY != null ? curY - H * 0.55 : Htot;
+  if (pzMapTop.v != null && curY != null && (curY < box.scrollTop + 20 || curY > box.scrollTop + H - 20)) box.scrollTop = curY - H * 0.55;
+  show();
+}
+/* a stage on the map: solved, a ball - 4구's red with its number, a 챌린지 the yellow with a star; the one in hand the white,
+   ringed; open, a small ring with its number; a 챌린지 still to beat its diamond; closed or not made yet, a faint dot; the ∞ */
+function pzStop(x, cur, r) {
+  const z = prefs.pz, q = x.q, open = q && pzOpenQ(q), stars = q ? z.stars[q.id] || 0 : 0, me = !!q && q === cur, inf = !!x.more, infOn = inf && pzBothCh(x.si);
+  const kind = inf ? 'inf' + (infOn ? '' : ' lock') : me ? 'cur' : stars ? 'done' + (x.ch ? ' ch' : '') : x.ch ? 'gem' + (open ? '' : ' lock') : open ? 'open' : q ? 'lock' : 'soon';
+  const pic = me ? ballPic(prefs.ballSkin, 'carom', 0, { class: 'bp' }) : stars ? ballPic(prefs.ballSkin, 'carom', x.ch ? 1 : 2, { class: 'bp' }) : null;
+  return el('button', { class: 'mt-stop ' + kind, style: r ? `--r:${r}px` : null, 'aria-pressed': String(me),
+    'aria-label': `${inf ? '연습 퍼즐' : x.ch ? '챌린지' : x.n + '번'}${stars ? `, 별 ${stars}개` : inf ? (infOn ? '' : ', 잠김') : !q ? ', 준비 중' : open ? '' : ', 잠김'}`, onclick: onTap(() => pzPick(x)) },
+    [pic, inf ? el('b', { text: '∞' }) : x.ch && !me ? el('b', { class: 'gm', text: stars ? '★' : '' }) : el('b', { text: String(x.n) })]);
+}
+/* The slate: the topic's twenty, five to a row, drawn as on the map */
+function pzGrid(slots, cur, done) {
+  const box = el('div', { class: 'pz-grid' }, slots.map(x => pzStop(x, cur, 0)));
+  return [el('div', { class: 'pz-road-h' }, [el('b', { text: puzzles.challenge(cur) ? '챌린지' : `스테이지 ${cur.n}` }), el('small', { text: `${done} / ${slots.length}` })]), box];
 }
 /* 레슨 (owner 11-16: the books were of another look than the rest of the desk): the game's lessons in the tray as cards in
    the shop's printed-card language (74-shop-cards.css), a course to a row under the shop's ivory rule - 기본기 blue, 큐볼

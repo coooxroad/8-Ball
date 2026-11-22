@@ -4,59 +4,76 @@
 /* (the rail's games: one line each on a short screen) */
 #app.desk.compact .dk-rb.iconed .lb{white-space:nowrap}
 
-/* 퍼즐's map: the tray scrolls up the road, each topic a stretch of it with its name at its foot - the stretches told apart
-   by a faint band of light; a topic not open yet dimmed */
-#dkStage .pz-map{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column-reverse;padding:10px 0 24px;scrollbar-width:none;
-  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 110px);mask-image:linear-gradient(180deg,transparent 0,#000 110px)}   /* (fading out under the tray's head) */
+/* 퍼즐's map (owner 11-22, 34-desk-train.js pzMetro): a metro line up the tray - stations, two rows of ten a topic, the ∞
+   on the curve between - scrolled up as before; the 8-step bar at the right and 지금 at the foot stand still over it */
+#dkStage .pz-map{position:absolute;inset:0 calc(var(--pzb,32px)) 0 0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 70px);mask-image:linear-gradient(180deg,transparent 0,#000 70px)}   /* (fading out under the tray's head) */
+#app.desk.compact #dkStage .pz-map{--pzb:24px}
 #dkStage .pz-map::-webkit-scrollbar{display:none}
-.pz-reg{position:relative;flex:none;margin:0 18px}
-.pz-reg.alt{background:linear-gradient(90deg,transparent,rgba(255,255,255,.035) 20%,rgba(255,255,255,.035) 80%,transparent)}
-.pz-reg.shut{opacity:.55}
-.pz-reg>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.pz-reg-h{position:absolute;left:0;bottom:4px;display:flex;align-items:baseline;gap:8px;padding:5px 12px;border-radius:10px;background:rgba(0,0,0,.28);color:#f1ebe0}
-.pz-reg-h small{font:700 12px var(--ui-font);color:rgba(255,255,255,.6)}
-.pz-reg-h b{font:800 17px var(--ui-font)}
-.pz-reg-h span{font:700 13px var(--ui-font);color:rgba(255,255,255,.6)}
-:is(.pz-road,.pz-reg) path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-:is(.pz-road,.pz-reg) .rd-all{stroke:rgba(255,255,255,.16);stroke-width:6;stroke-dasharray:2 10}
-:is(.pz-road,.pz-reg) .rd-on{stroke:rgba(255,214,120,.6);stroke-width:5}
-.pz-reg .rd-all{stroke-width:9;stroke-dasharray:2 14}
-.pz-reg .rd-on{stroke-width:8}
-
-/* a stage: a ball with its number - ivory open, gold solved (its stars under it), dark closed, a faint ring not made yet;
-   the 챌린지 a cut stone; the practice puzzles past them ∞ */
-:is(.rd-node,.pz-node){position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;padding:0;border:0;display:flex;align-items:center;justify-content:center;
-  color:#2b241c;background:radial-gradient(circle at 38% 30%,#fffaf0,#e6dccb 62%,#b9ab94);box-shadow:0 3px 6px rgba(0,0,0,.45),inset 0 -2px 3px rgba(0,0,0,.18)}
-.pz-node{width:48px;height:48px}
-:is(.rd-node,.pz-node) b{font:800 14px var(--ui-font)}
-.pz-node b{font-size:18px}
-:is(.rd-node,.pz-node).done{background:radial-gradient(circle at 38% 30%,#fff4cf,#f0c95c 60%,#b8892a);color:#3a2a08}
-:is(.rd-node,.pz-node).lock{background:radial-gradient(circle at 38% 30%,#5a605f,#3a3f3e 70%);color:rgba(255,255,255,.35);box-shadow:inset 0 2px 4px rgba(0,0,0,.4)}
-:is(.rd-node,.pz-node).soon{background:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);color:rgba(255,255,255,.22)}
-:is(.rd-node,.pz-node).more{background:radial-gradient(circle at 38% 30%,#d9f3ff,#7cc4e8 60%,#2f6f95);color:#0c2c40}
-:is(.rd-node,.pz-node).more.lock{background:radial-gradient(circle at 38% 30%,#5a605f,#3a3f3e 70%);color:rgba(255,255,255,.4)}
-:is(.rd-node,.pz-node)[aria-pressed="true"]{outline:3px solid rgba(255,255,255,.92);outline-offset:3px}
-@media (prefers-reduced-motion:no-preference){
-  .pz-node[aria-pressed="true"]::after{content:'';position:absolute;inset:-9px;border-radius:inherit;border:2px solid rgba(255,255,255,.55);animation:pzPulse 1.8s ease-out infinite;pointer-events:none}
-}
-@keyframes pzPulse{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.35);opacity:0}}
-:is(.rd-node,.pz-node) .st{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);display:flex;gap:1px}
-:is(.rd-node,.pz-node) .st i{width:10px;height:10px;background:url(ui/star-off.webp) center/contain no-repeat}
-.pz-node .st i{width:13px;height:13px}
-:is(.rd-node,.pz-node) .st i.on{background-image:url(ui/star.webp)}
-:is(.rd-node,.pz-node).ch{width:42px;height:42px;border-radius:11px;transform:translate(-50%,-50%) rotate(45deg);
-  background:linear-gradient(135deg,#e9fbff 0%,#8fd6f2 35%,#3d8fc0 70%,#1d4f78 100%);box-shadow:0 0 16px rgba(120,210,255,.55),0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.55)}
-.pz-node.ch{width:58px;height:58px;border-radius:14px}
-:is(.rd-node,.pz-node).ch.lock{background:linear-gradient(135deg,#7b8a92,#46525a 60%,#2c343a);box-shadow:0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.18)}
-:is(.rd-node,.pz-node).ch.soon{background:none;box-shadow:inset 0 0 0 2px rgba(150,215,255,.3)}
-:is(.rd-node,.pz-node).ch.done{background:linear-gradient(135deg,#fffbe6 0%,#ffd76a 35%,#d69a1f 70%,#8a5a0c 100%);box-shadow:0 0 18px rgba(255,210,110,.6),0 4px 8px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.6)}
-:is(.rd-node,.pz-node).ch .gem{width:60%;height:60%;transform:rotate(-45deg);background:url(ui/dia.webp) center/contain no-repeat;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
-:is(.rd-node,.pz-node).ch:is(.lock,.soon) .gem{opacity:.4;filter:grayscale(1)}
-:is(.rd-node,.pz-node).ch .st{bottom:auto;top:50%;left:50%;transform:rotate(-45deg) translate(-50%,22px);transform-origin:0 0}
-.pz-node.ch .st{transform:rotate(-45deg) translate(-50%,30px)}
-#app.desk.compact .pz-node{width:40px;height:40px}
-#app.desk.compact .pz-node.ch{width:48px;height:48px}
-#app.desk.compact .pz-reg-h b{font-size:15px}
+.pz-mt{position:relative}
+.pz-mt>svg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.pz-mt path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.pz-mt .mt-ln{stroke:rgba(255,255,255,.2);stroke-width:9}
+.pz-mt .mt-ln.shut{stroke:rgba(255,255,255,.14);stroke-dasharray:1 10}
+.pz-mt .mt-on{stroke:#2a76e6;stroke-width:9}
+.pz-mt .mt-on.gold{stroke:#f2c94c}
+#app.desk.compact .pz-mt :is(.mt-ln,.mt-on){stroke-width:7}
+/* a station: a white disc with its number, edged in the league's navy; gold once its topic is done */
+.mt-st{position:absolute;width:calc(2 * var(--R));height:calc(2 * var(--R));transform:translate(-50%,-50%);border-radius:50%;box-sizing:border-box;display:grid;place-items:center;
+  background:#fff;border:calc(var(--R) * .3) solid #0b2552;color:#0a1a3f;font:900 calc(var(--R) * 1.05)/1 var(--num);box-shadow:0 2px 4px rgba(0,0,0,.45);pointer-events:none}
+.mt-st.all{background:#f2c94c}
+.mt-st.shut{background:#2f3a34;border-color:#5d6a62;color:#8a968e}
+.mt-nm,.mt-ct{position:absolute;white-space:nowrap;font:800 14px/1.3 var(--ui-font);color:#fff;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.mt-ct{font-size:13px;color:#9fd0ff}
+.mt-ct.all{color:#f2d27a}
+.mt-nm.shut,.mt-ct.shut{color:#7f9286}
+#app.desk.compact :is(.mt-nm){font-size:12px}#app.desk.compact .mt-ct{font-size:11px}
+/* a stage: a ball once solved (the worn set's picture), the white one in hand, ringed; a ring with its number while open;
+   a 챌린지's diamond; a faint dot closed; ∞ on the curve */
+.mt-stop{position:absolute;width:calc(2 * var(--r) + 8px);height:calc(2 * var(--r) + 8px);transform:translate(-50%,-50%);padding:0;border:0;background:none;display:grid;place-items:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;color:#fff}
+.mt-stop>*{grid-area:1/1}
+.mt-stop .bp{width:calc(2 * var(--r));height:calc(2 * var(--r));filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+.mt-stop b{position:relative;font:800 calc(var(--r) * .8)/1 var(--num);pointer-events:none}
+.mt-stop.done b{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.mt-stop.done.ch b{color:#fff7d0;font-size:calc(var(--r) * 1)}
+.mt-stop.cur b{color:#0b2552;font-weight:900}
+.mt-stop.cur::before{content:"";grid-area:1/1;width:calc(2 * var(--r) + 6px);height:calc(2 * var(--r) + 6px);border-radius:50%;box-shadow:0 0 0 3px #2a76e6,0 0 0 9px rgba(94,200,255,.28)}
+.mt-stop.open::before{content:"";grid-area:1/1;width:calc(2 * var(--r));height:calc(2 * var(--r));border-radius:50%;background:#0f2b22;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7)}
+.mt-stop.open b{position:relative;color:rgba(255,255,255,.85);font-size:calc(var(--r) * .7)}
+.mt-stop:is(.lock,.soon):not(.gem):not(.inf)::before{content:"";grid-area:1/1;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22)}
+.mt-stop:is(.lock,.soon):not(.gem):not(.inf) b{display:none}
+.mt-stop.gem::before{content:"";grid-area:1/1;width:calc(var(--r) * 1.35);height:calc(var(--r) * 1.35);transform:rotate(45deg);border-radius:3px;background:#163a2e;box-shadow:inset 0 0 0 2px #f2c94c}
+.mt-stop.gem.lock::before{background:#2b3a32;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}
+.mt-stop.gem b{display:none}
+.mt-stop.inf::before{content:"";grid-area:1/1;width:calc(2 * var(--r));height:calc(2 * var(--r));border-radius:50%;background:radial-gradient(circle at 38% 30%,#d9f3ff,#7cc4e8 60%,#2f6f95);box-shadow:0 2px 4px rgba(0,0,0,.45)}
+.mt-stop.inf b{position:relative;color:#0c2c40;font:900 calc(var(--r) * 1.1)/1 var(--ui-font)}
+.mt-stop.inf.lock::before{background:#2b3a32;box-shadow:inset 0 0 0 2px rgba(150,215,255,.35)}
+.mt-stop.inf.lock b{color:rgba(150,215,255,.55)}
+@media (prefers-reduced-motion:no-preference){.pz-map .mt-stop.cur::after{content:"";grid-area:1/1;width:calc(2 * var(--r) + 6px);height:calc(2 * var(--r) + 6px);border-radius:50%;border:2px solid rgba(94,200,255,.6);animation:mtPulse 1.8s ease-out infinite;pointer-events:none}}
+@keyframes mtPulse{from{transform:scale(1);opacity:1}to{transform:scale(1.7);opacity:0}}
+/* the bar: a step a topic, the first at the foot, filled blue as far as it is solved (gold when all); the part in view framed */
+.pz-bar{position:absolute;right:6px;top:64px;bottom:12px;width:calc(var(--pzb,32px) - 10px);display:flex;flex-direction:column;gap:4px}
+#app.desk.compact .pz-bar{top:50px;bottom:8px;--pzb:24px;gap:3px}
+.pz-step{position:relative;flex:1;min-height:0;padding:0;border:0;border-radius:5px;overflow:hidden;cursor:pointer;background:rgba(0,0,0,.32);color:#fff;
+  font:800 11px/1 var(--num);-webkit-tap-highlight-color:transparent}
+.pz-step::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--f);background:#2a76e6}
+.pz-step.all::before{background:#f2c94c}
+.pz-step.shut{background:rgba(0,0,0,.16);color:#7f9286}
+.pz-step b{position:relative}
+.pz-win{position:absolute;left:-4px;right:-4px;border-radius:7px;box-shadow:inset 0 0 0 2px #fff;pointer-events:none;transition:bottom .08s linear,height .08s linear}
+/* 지금: back to the stage in hand, when it is out of view */
+.pz-now{position:absolute;left:calc(50% - var(--pzb,32px) / 2);bottom:12px;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:8px 15px;border:0;border-radius:99px;
+  background:#2a76e6;color:#fff;font:800 13px/1 var(--ui-font);white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.45);cursor:pointer}
+.pz-now i{width:8px;height:8px;border-radius:50%;background:#fff}
+.pz-now[hidden]{display:none}
+/* the slate's twenty: five to a row, as on the map */
+.pz-grid{display:grid;grid-template-columns:repeat(5,1fr);justify-items:center;gap:6px 0;margin:4px 0 6px}
+.pz-grid .mt-stop{position:relative;transform:none;--r:16px}
+#app.desk.compact .pz-grid .mt-stop{--r:13px}
+.pz-day{display:flex;align-items:center;gap:7px;margin-left:auto;padding:6px 12px;border:0;border-radius:99px;background:#f6f1e6;color:#2a2418;font:800 12px/1 var(--ui-font);cursor:pointer;white-space:nowrap}
+.pz-day i{width:8px;height:8px;border-radius:50%;background:#e0484f;box-shadow:0 0 0 3px rgba(224,72,79,.25)}
+.pz-day.done{background:rgba(255,255,255,.12);color:#d8e6dc}.pz-day.done i{background:#22c55e;box-shadow:none}
 
 /* the slate: the topic of the stage picked, by its name, and its small road */
 .pz-topic{display:flex;flex-direction:column;gap:2px}
@@ -65,8 +82,6 @@
 .pz-road-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .pz-road-h b{font:800 16px var(--ui-font);color:var(--slate-ink,#f1ebe0)}
 .pz-road-h small{font:700 14px var(--ui-font);color:var(--slate-sub)}
-.pz-road{position:relative;width:100%;max-width:300px;margin:2px auto 6px;flex:none}
-.pz-road svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 
 /* 컴퓨터 대전's bots (34-desk-bots.js, owner 11-16): a picture - drawn, or its initial on its tier's metal */
 .bot-pic svg{display:block;width:100%;height:100%}

@@ -187,6 +187,8 @@
 #flowBar .fstars{display:flex;gap:calc(3px*var(--fk))}
 #flowBar .fstars i{width:calc(var(--bh)*.36);height:calc(var(--bh)*.36);background:#c3cad6;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
 #flowBar .fstars i.f{background:linear-gradient(#ffd34d,#e9a100)}
+#flowBar .frun{display:flex;align-items:center;gap:2px;font:800 calc(var(--bh)*.3)/1 var(--num);color:#d8340d}
+#flowBar .frun svg{width:calc(var(--bh)*.36);height:calc(var(--bh)*.4)}
 /* the goal, the headline: navy, the widest part, cut short with an ellipsis before anything else gives way */
 #flowBar .fhead{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:calc(10px*var(--fk));padding:0 calc(22px*var(--fk));color:#fff;
   background:linear-gradient(#0d2257,var(--navy));font:700 calc(var(--bh)*.34)/1.1 var(--ui-font);white-space:nowrap}

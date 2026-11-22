@@ -85,9 +85,11 @@ const puzzle = {
   },
   afterShot() {
     const p = puzzle, z = p.cur, r = game.resolve().r;
-    if (!r.solved) { p.tries++; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
+    if (!r.solved) { p.tries++; p.run = 0; toast('다시 · ' + r.note, 'foul', 1900); SND.bad(); if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1700); return hold(1.6, p.again); }
     // three stars for a clean shot, two for a fair one, one for a shot that only just did it; a hint takes one off the most, the answer shown two
     attend.played();                                                   // (a puzzle solved: the day counted - 58-streak.js)
+    p.run = p.tries ? 0 : (p.run || 0) + 1;                            // (solved at the first shot, one after another: the bar's fire)
+    { const d = pzDaily(); if (d && d.id === z.id) { prefs.pz.day = attend.today(); savePrefs(); } }   // (오늘의 퍼즐 done)
     if (z.practice) { toast('정답! ' + '★'.repeat(Math.min(3 - p.helped, p.starsOf(p.stage(z).goal))) + ' · 다음 연습 퍼즐', 'good', 2000); return hold(1.9, () => p.practice(z.stage)); }   // (no stars kept, nothing paid)
     const stars = Math.min(3 - p.helped, p.starsOf(p.stage(z).goal)), was = prefs.pz.stars[z.id] || 0, opened = puzzles.STAGES.filter((_, si) => pzOpen(si)).length;
     prefs.pz.stars[z.id] = Math.max(was, stars); savePrefs();
@@ -103,7 +105,7 @@ const puzzle = {
     paintBadge('4구 퍼즐', { text: goal });
     // lying: the bar of its own (40-shot.js fbar) - the arrows at its ends, the goal its headline, 힌트 · 정답 beside it
     fbar({ bar: [fbKey('farw', 'prev', '', p.aiming(() => p.step(-1)), '이전 문제'),
-      el('div', { class: 'fpl on' }, [el('span', { class: 'fnm', text: name }), fbStars(n)]),
+      el('div', { class: 'fpl on' }, [el('span', { class: 'fnm', text: name }), fbStars(n), p.run >= 2 ? fbRun(p.run) : null]),
       el('div', { class: 'fhead' }, [el('b', { text: '목표' }), el('span', { text: goal })]),
       fbKey('fib' + (p.helped >= 1 ? ' on' : ''), 'bulb', '힌트', p.aiming(p.hint)), fbKey('fib' + (p.helped >= 2 ? ' on' : ''), 'play', '정답', p.aiming(p.answer)),
       fbKey('farw', 'next', '', p.aiming(() => p.step(1)), '다음 문제')] });
