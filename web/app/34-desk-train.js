@@ -26,7 +26,11 @@ function deskTrain(d) {
   dkPut(d.rail, FRIEND_GAMES.map(id => soonGame(id) ? railBtn(false, MODE_KO[id], '곧 출시', soonTap(id), true, 'mode-' + id) : railBtn(id === on, MODE_KO[id], TRAIN_HAS[t](id) ? null : '준비 중', pick(id), !TRAIN_HAS[t](id), 'mode-' + id)));
   if (t === 'puzzle') deskPuzzle(d); else if (t === 'lesson') deskLesson(d, on); else if (t === 'cpu') deskMatch(d, true, trainBack()); else deskFree(d, on);
   // (with the old menu - a screen held upright, or 디버그 - 훈련 is one tab: its four places picked at the slate's top)
-  if (!menuOn()) d.slate.insertBefore(dkSeg(Object.entries(TRAIN_KO).map(([k, n]) => [k, k === 'cpu' ? '컴퓨터' : n]), t, k => { if (k !== t) { trainGo(k); repaintLive(); } }), d.slate.firstChild);
+  if (!menuOn()) {
+    const seg = dkSeg(Object.entries(TRAIN_KO).map(([k, n]) => [k, k === 'cpu' ? '컴퓨터' : n]), t, k => { if (k !== t) { trainGo(k); repaintLive(); } });
+    const pz = $('#dkBoards.pzr');                                   // (퍼즐 lies over the desk, its slate put away: the four over it)
+    if (pz) pz.insertBefore(seg, pz.firstChild); else d.slate.insertBefore(seg, d.slate.firstChild);
+  }
 }
 // the way back to the menu: an X at the tray's head, as 친구와 플레이's (none with the old menu, whose tabs are the way)
 const trainBack = () => menuOn() ? () => deskGo('play') : null;
@@ -35,125 +39,88 @@ function trainHead(head, title, sub) {
   if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '메뉴로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(title, sub));
 }
-/* 퍼즐 (owner 11-16): the tray a map of every topic's road (puzzles.js STAGES) - one winding line from the first topic at the
-   bottom up through the rest, each topic PZ_SLOTS stages, its 10th and 20th a 챌린지 (a shot a real player made; diamonds
-   the first time: puzzles.js challenge), and past them a stage of puzzles made for practice (no reward; to come). A stage
-   opens when the one before it is solved; a topic when PZ_NEED of the one before it are. Stages not made yet stand on the
-   road, faint. The slate: the topic of the stage picked, by its name, and its own small road. */
-const PZ_SLOTS = 20;
-const pzSlots = si => Array.from({ length: PZ_SLOTS }, (_, k) => ({ si, n: k + 1, q: puzzles.of(si).find(x => x.n === k + 1) || null, ch: (k + 1) % 10 === 0 }));
-const pzBothCh = si => pzSlots(si).filter(x => x.ch).every(x => x.q && prefs.pz.stars[x.q.id]);
+/* 퍼즐 (owner 11-23: rated, as Chess.com's - 52-puzzle.js pzr - in place of the stages' map): on the menu's charcoal cloth,
+   as 랭킹전's games lie (#desk.felt). Its head: 캐롬 · 포켓 and 오늘의 퍼즐 (no points). Left, the rating - large, today's
+   change, its last moves - and the cases closed; the middle the case being filled (a quarter of a ball a puzzle); right,
+   the next puzzle, hidden until it is started, with what it gives or takes. 포켓's rack (one ball a puzzle) waits until
+   its puzzles are made. A case just closed shows its result over it all (pzDone); the record (pzBook) lists the cases,
+   each one's sixteen to play again without points. */
+let pzView = 'four', pzBook = null, pzDone = null;
+const pzDate = t => { const m = /^\d+-(\d+)-(\d+)/.exec(t || ''); return m ? `${+m[1]}월 ${+m[2]}일` : ''; };
+const pzSigned = d => d > 0 ? `+${d}` : d < 0 ? `−${-d}` : '±0';
 function deskPuzzle(d) {
-  const { head, stage, slate } = d;
-  // (the puzzles are being made again on the game's physics: until then the place is kept, empty)
-  if (!puzzles.list.length) {
-    trainHead(head, '퍼즐');
-    dkPut(slate, [...dkH1('퍼즐'), dkHr(), dkTxt('등록된 퍼즐이 없습니다')]);   // (copy audit 03-09: said once)
-    return;
+  d.stage.dataset.win = '0';
+  $('#desk').classList.add('boards');
+  if (menuOn()) { $('#desk').classList.add('felt'); if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' })); }
+  const wrap = el('div', { id: 'dkBoards', class: 'pzr' }), fit = el('div', { class: 'bd-fit' }), back = trainBack();
+  const x = fn => el('button', { class: 'dk-x', 'aria-label': '뒤로', onclick: () => { SND.tap(); fn(); } }, el('i'));
+  const repaint = () => repaintLive();
+  if (pzDone) {
+    const c = pzDone;
+    wrap.classList.add('done');
+    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzDone = null; repaint(); }), dkTitle('퍼즐', '케이스 완성')]));
+    const ok = c.res.filter(r => r[1] === 'o').length, dl = c.r1 - c.r0;
+    fit.appendChild(el('div', { class: 'pzr-res' }, [
+      el('div', { class: 'hd', text: `케이스 완성 · ${ok} / ${PZ_CASE}` }),
+      el('div', { class: 'big' }, [el('s', { text: String(c.r0) }), document.createTextNode(String(c.r1)), el('em', { class: dl < 0 ? 'm' : '', text: pzSigned(dl) })]),
+      pzSvg(pzCase(c.res, c.m, false), 'pzr-cs'),
+      el('small', { text: `${PZ_MATS[c.m].n} 케이스 · 기록에 남았습니다. 닫힌 케이스는 점수에 다시 들어가지 않습니다.` }),
+      el('div', { class: 'btns' }, [el('button', { class: 'pzr-b2', text: '기록 보기', onclick: onTap(() => { pzDone = null; pzBook = 0; repaint(); }) }),
+        el('button', { class: 'pzr-go', text: '다음 케이스', onclick: onTap(() => { pzDone = null; puzzle.start(); }) })])]));
+    wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
-  const z = prefs.pz, L = puzzles.list.filter(pzOpenQ), cur0 = puzzles.byId(z.cur) || puzzles.list[0], cur = pzOpenQ(cur0) ? cur0 : L.find(q => q.stage === cur0.stage) || L[0], S = puzzles.STAGES[cur.stage];
-  const slots = pzSlots(cur.stage), done = slots.filter(x => x.q && z.stars[x.q.id]).length;
-  trainHead(head, '퍼즐', `${puzzles.list.filter(q => z.stars[q.id]).length} / ${puzzles.STAGES.length * PZ_SLOTS}`);
-  // 오늘의 퍼즐 (owner 11-22): one puzzle a day, the same for everyone (by the date), open or not
-  const day = pzDaily(), dayDone = z.day === attend.today();
-  if (day) head.appendChild(el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id)) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]));
-  pzMap(stage, cur);
-  // (copy audit 03-07: the goal once)
-  dkPut(slate, [el('div', { class: 'pz-topic' }, [el('small', { text: `주제 ${cur.stage + 1}` }), el('b', { text: S.name })]), dkTxt(S.desc), dkHr(),
-    ...pzGrid(slots, cur, done), dkLab('목표'), dkTxt(game.MODES.puzzle4.GOALS[S.goal].text + ' · 노란 공 접촉 금지')]);
-  dkPut(slate, dkActs(dkMain(puzzles.challenge(cur) ? '챌린지 시작' : `스테이지 ${cur.n} 시작`, null, () => puzzle.start(cur.id))));
-}
-// a stage on either road picked: the one in hand, or why it cannot be (closed, or not made yet)
-function pzPick(x) {
-  const z = prefs.pz;
-  if (x.more && pzBothCh(x.si)) return puzzle.practice(x.si);   // (∞: 연습 퍼즐 - 52-puzzle.js practiceOf)
-  if (!x.q) return toast(x.more ? '챌린지 둘을 깨면 열립니다' : '준비 중인 스테이지입니다', '', 1800);
-  if (!pzOpenQ(x.q)) return toast(!pzOpen(x.si) ? `'${puzzles.STAGES[x.si - 1].name}'에서 ${PZ_NEED}문제를 풀면 열립니다` : x.ch ? '앞 스테이지를 모두 풀면 챌린지가 열립니다' : '앞 스테이지를 풀면 열립니다', '', 1900);
-  if (z.cur === x.q.id) return; z.cur = x.q.id; z.open = x.si; repaintLive();
-}
-/* The tray's map (owner 11-22: a metro line, after R2): every topic a station, its twenty stages two rows of ten - out to
-   the right from the station, round a turn and back - and a curve up to the next topic's station, on which stands its
-   ∞ (연습 퍼즐: made without end once both 챌린지 are beaten). Read from the bottom up, scrolled as before. A stage solved
-   is a ball as the 랭킹전 card draws its game's balls (the worn set's own picture, 32-desk.js ballPic) - 4구's red with its
-   number, a 챌린지 its yellow; the stage in hand the white, ringed. The line lit as far as it is solved, gold once the
-   whole topic is; a topic not yet open, dotted. Down the right an 8-step bar, a topic to a step, each filled as far as
-   it is solved, the part in view framed: tap one to go to it. 지금 brings the stage in hand back into view. */
-const pzMapTop = {};                                                   // where the map was scrolled to, kept between paints
-function pzMap(stage, cur) {
-  stage.dataset.win = '0';
-  const box = el('div', { class: 'pz-map' }), bar = el('div', { class: 'pz-bar', role: 'navigation', 'aria-label': '주제로 가기' }), now = el('button', { class: 'pz-now', hidden: '' });
-  dkPut(stage, [box, bar, now]);
-  requestAnimationFrame(() => { if (box.isConnected) pzMetro(box, bar, now, cur); });
-}
-function pzMetro(box, bar, now, cur) {
-  const z = prefs.pz, S = puzzles.STAGES, nT = S.length, small = app.classList.contains('compact');
-  const W = box.clientWidth - (small ? 24 : 32);                       // (once, as it is built: the bar takes the right edge)
-  const rowH = small ? 50 : 64, band = small ? 36 : 44, R = small ? 13 : 17, r = small ? 11 : 14, turn = rowH / 2;
-  const mL = turn + r + 10, mR = turn + 8, per = 2 * rowH + band, top = band + r + 30, foot = band + 46, Htot = nT * per + top + foot;
-  const yA = t => Htot - foot - t * per - rowH / 2, yB = t => yA(t) - rowH;
-  const sx = mL + R - turn * 0.2, xs0 = sx + R + r + 10, xs1 = W - mR;
-  const stopXY = (t, k) => { const f = ((k - 1) % 10) / 9; return k <= 10 ? [xs0 + (xs1 - xs0) * f, yA(t)] : [xs1 - (xs1 - xs0) * f, yB(t)]; };
-  // the curve from a topic's last stage up to the next station, and where its ∞ stands (half way along it)
-  const cx = Math.max(6, mL - turn * 1.15), up = t => t < nT - 1 ? yA(t + 1) : yB(t) - rowH * 0.9;
-  const bez = (t, u) => { const p0 = [xs0, yB(t)], p1 = [cx, yB(t)], p2 = [cx, up(t)], p3 = [t < nT - 1 ? sx : xs0 * 0.6 + cx * 0.4, up(t)], v = 1 - u;
-    return [0, 1].map(i => v * v * v * p0[i] + 3 * v * v * u * p1[i] + 3 * v * u * u * p2[i] + u * u * u * p3[i]); };
-  const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), wrap = el('div', { class: 'pz-mt', style: `height:${Htot}px` });
-  svg.setAttribute('viewBox', `0 0 ${W} ${Htot}`); svg.setAttribute('width', W); svg.setAttribute('height', Htot); svg.setAttribute('aria-hidden', 'true');
-  let lines = '', curY = null; const nodes = [];
-  for (let t = 0; t < nT; t++) {
-    const open = pzOpen(t), slots = pzSlots(t), solved = slots.filter(x => x.q && z.stars[x.q.id]).length, all = solved === PZ_SLOTS, a = yA(t), b = yB(t);
-    const [c1x, c1y] = bez(t, 1), seg = `M${sx} ${a} L${xs1} ${a} A${turn} ${turn} 0 0 0 ${xs1} ${b} L${xs0} ${b} C${cx} ${b} ${cx} ${up(t)} ${c1x} ${c1y}`;
-    lines += `<path class="mt-ln${open ? '' : ' shut'}" d="${seg}"/>`;
-    // (lit: from the station to the last stage solved in a row from the first - the road as far as it goes on)
-    let reach = 0; while (reach < PZ_SLOTS && slots[reach].q && z.stars[slots[reach].q.id]) reach++;
-    if (reach) { const [ex, ey] = stopXY(t, reach); lines += `<path class="mt-on${all ? ' gold' : ''}" d="${all ? seg : reach <= 10 ? `M${sx} ${a} L${ex} ${a}` : `M${sx} ${a} L${xs1} ${a} A${turn} ${turn} 0 0 0 ${xs1} ${b} L${ex} ${b}`}"/>`; }
-    // the station: its number (a tick when all of it is solved), its name in the band under it, how far along at the right
-    nodes.push(el('span', { class: 'mt-st' + (all ? ' all' : open ? '' : ' shut'), style: `left:${sx}px;top:${a}px;--R:${R}px`, text: all ? '✓' : String(t + 1), 'aria-hidden': 'true' }));
-    nodes.push(el('span', { class: 'mt-nm' + (open ? '' : ' shut'), style: `left:${sx + R + 8}px;top:${a + R + 4}px`, text: S[t].name }));
-    nodes.push(el('span', { class: 'mt-ct' + (all ? ' all' : open ? '' : ' shut'), style: `right:${W - xs1 - turn}px;top:${a + R + 4}px`,
-      text: open ? (all ? '완료' : `${solved} / ${PZ_SLOTS}`) : t > 0 ? `'${S[t - 1].name}' ${PZ_NEED}문제면 열림` : '' }));
-    slots.forEach((x, k) => { const [px, py] = stopXY(t, k + 1); const n = pzStop(x, cur, r); n.style.left = px + 'px'; n.style.top = py + 'px'; nodes.push(n); if (x.q && x.q === cur) curY = py; });
-    // its ∞, half way up the curve
-    const [ix, iy] = bez(t, 0.5), inf = pzStop({ si: t, n: PZ_SLOTS + 1, q: null, more: true }, cur, r); inf.style.left = ix + 'px'; inf.style.top = iy + 'px'; nodes.push(inf);
+  const s = pzr.of('four');
+  if (pzBook != null && s.cases.length) {
+    const i = Math.min(pzBook, s.cases.length - 1), c = s.cases[i];
+    wrap.classList.add('book');
+    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzBook = null; repaint(); }), dkTitle('기록 · 4구', `닫힌 케이스 ${s.cases.length}개`)]));
+    const list = el('div', { class: 'pzr-list' }, s.cases.map((k, j) => el('button', { class: 'ln' + (j === i ? ' on' : ''), onclick: onTap(() => { pzBook = j; repaint(); }) }, [
+      el('span', { class: 'dt', text: pzDate(k.t) }), pzSvg(pzMini(k.res, false), 'mi'), el('b', { text: String(k.r1) }), el('em', { class: k.r1 < k.r0 ? 'm' : '', text: pzSigned(k.r1 - k.r0) })])));
+    const grid = el('div', { class: 'pzr-16' }, c.res.map(([id, r, dd], j) => {
+      const q = puzzles.byId(id), lab = `${PZ_BALL_KO[j >> 2]} ${(j & 3) + 1}/4`;
+      return el('button', { class: 'pz1 ' + r, disabled: q ? null : '', 'aria-label': `${lab}, ${r === 'o' ? '성공' : r === 'x' ? '실패' : '힌트'}, 다시 풀기`, onclick: onTap(() => q && puzzle.start(q.id, { free: 'book' })) }, [
+        pzSvg(pzOne(j, r), 'q1'), el('b', { text: lab }), el('span', { text: r === 'o' ? `성공 ${pzSigned(dd)}` : r === 'x' ? `실패 ${pzSigned(dd)}` : '힌트' })]);
+    }));
+    fit.append(list, el('div', { class: 'pzr-pk' }, [el('h4', { text: `${pzDate(c.t)} · ${PZ_MATS[c.m].n} 케이스` }), grid, el('small', { text: '눌러서 다시 풀기 · 점수 없음' })]));
+    wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
-  svg.innerHTML = lines; wrap.append(svg, ...nodes); box.appendChild(wrap);
-  // the bar: a step a topic, the first at the bottom; filled as far as it is solved; tapped, its topic brought into view
-  const H = box.clientHeight, steps = S.map((q, t) => {
-    const n = pzSlots(t).filter(x => x.q && z.stars[x.q.id]).length;
-    return el('button', { class: 'pz-step' + (pzOpen(t) ? '' : ' shut') + (n === PZ_SLOTS ? ' all' : ''), style: `--f:${(n / PZ_SLOTS * 100).toFixed(1)}%`, 'aria-label': `주제 ${t + 1} ${q.name}`,
-      onclick: () => { SND.tap(); box.scrollTo({ top: Math.max(0, yA(t) - H * 0.62), behavior: 'smooth' }); } }, el('b', { text: String(t + 1) }));
-  });
-  const win = el('i', { class: 'pz-win', 'aria-hidden': 'true' });
-  dkPut(bar, [...steps.reverse(), win]);
-  // the frame on the bar and 지금 follow the scroll (only the scroll's own number is read)
-  const show = () => {
-    const y = box.scrollTop, lo = (Htot - foot - y - H) / (nT * per), hi = (Htot - foot - y) / (nT * per);
-    win.style.bottom = (Math.max(0, lo) * 100).toFixed(2) + '%'; win.style.height = ((Math.min(1, hi) - Math.max(0, lo)) * 100).toFixed(2) + '%';
-    now.hidden = curY == null || (curY > y + 30 && curY < y + H - 30);
-    pzMapTop.v = y;
-  };
-  now.textContent = ''; now.append(el('i'), document.createTextNode(cur ? `지금 · ${puzzles.challenge(cur) ? '챌린지' : '스테이지 ' + cur.n}` : '지금'));
-  now.onclick = () => { SND.tap(); if (curY != null) box.scrollTo({ top: curY - H * 0.55, behavior: 'smooth' }); };
-  box.addEventListener('scroll', show, { passive: true });
-  // (where it was left; else the stage in hand brought to the middle)
-  box.scrollTop = pzMapTop.v != null ? pzMapTop.v : curY != null ? curY - H * 0.55 : Htot;
-  if (pzMapTop.v != null && curY != null && (curY < box.scrollTop + 20 || curY > box.scrollTop + H - 20)) box.scrollTop = curY - H * 0.55;
-  show();
+  // 캐롬 · 포켓, and 오늘의 퍼즐 (owner 11-22: one a day, the same for everyone, by the date)
+  const seg = el('div', { class: 'pzr-seg', role: 'tablist' }, [['four', '캐롬', 'carom', 2], ['pocket', '포켓', 'pool', 8]].map(([k, t, kind, n]) =>
+    el('button', { role: 'tab', 'aria-selected': String(pzView === k), class: pzView === k ? 'on' : '', onclick: onTap(() => { if (pzView !== k) { pzView = k; repaint(); } }) }, [ballPic(prefs.ballSkin, kind, n, { class: 'bp' }), el('span', { text: t })])));
+  const day = pzDaily(), dayDone = prefs.pz.day === attend.today();
+  const tools = el('span', { class: 'bd-tools' }, [seg, day && pzView === 'four' ? el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id, { free: 'day' })) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]) : null]);
+  wrap.appendChild(el('div', { class: 'bd-head' }, [back ? x(back) : null, dkTitle('퍼즐', '첫 시도만 점수'), tools]));
+  if (pzView === 'pocket') {
+    // 포켓: the rack of fifteen, one ball a puzzle - its puzzles not made yet
+    wrap.classList.add('pocket');
+    fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: '퍼즐 레이팅 · 포켓' }), el('span', { class: 'd', text: '첫 퍼즐부터 레이팅이 정해집니다' })]),
+      el('div', { class: 'pzr-mid' }, [pzSvg(pzRack(), 'pzr-rk'), el('div', { class: 'cap' }, [el('b', { text: '랙 0 / 15' }), el('small', { text: '한 문제에 공 하나 · 1번부터 15번까지' })])]),
+      el('div', { class: 'pzr-go-p soon' }, [el('h3', { text: '포켓 퍼즐' }), el('p', { text: '포켓 퍼즐은 준비 중입니다.' }), el('button', { class: 'pzr-go', disabled: '', text: '준비 중' })]));
+    wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
+  }
+  if (!puzzles.list.length) { fit.appendChild(el('div', { class: 'pzr-none', text: '등록된 퍼즐이 없습니다' })); wrap.appendChild(fit); $('#desk').appendChild(wrap); return; }
+  const q = pzr.next('four'), g = pzr.gain(s, q), td = pzr.today('four'), k = s.now.length, mat = s.now.length ? (s.mat || 0) : pzMatOf(s.r);
+  // the rating, today's change, its last moves; under it the cases closed (tapped: the record)
+  const spark = s.hist.length >= 2 ? (() => { const L = s.hist, lo = Math.min(...L), hi = Math.max(...L), W = 160, H = 36, sp = Math.max(1, hi - lo);
+    return pzSvg(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#5fd38a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="${L.map((v, i) => `${(i / (L.length - 1) * W).toFixed(1)},${(H - 3 - (v - lo) / sp * (H - 6)).toFixed(1)}`).join(' ')}"/></svg>`, 'sp'); })() : null;
+  const past = s.cases.slice(0, 3);
+  fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: '퍼즐 레이팅 · 4구' }), el('b', { class: 'num', text: s.r.toLocaleString('en-US') }),
+    el('span', { class: 'd' + (td < 0 ? ' m' : '') }, td == null ? [el('span', { text: s.n ? '오늘 아직 안 풂' : '첫 퍼즐부터 레이팅이 정해집니다' })] : [document.createTextNode(pzSigned(td)), el('span', { text: '오늘' })]), spark,
+    past.length ? el('div', { class: 'pzr-past' }, [el('small', { text: '지난 케이스' }), ...past.map((c, j) => el('button', { class: 'ln', onclick: onTap(() => { pzBook = j; repaint(); }) }, [pzSvg(pzMini(c.res, false), 'mi'), el('em', { class: c.r1 < c.r0 ? 'm' : '', text: pzSigned(c.r1 - c.r0) })])),
+      el('button', { class: 'all', text: '기록 전체', onclick: onTap(() => { pzBook = 0; repaint(); }) })]) : null]),
+    el('div', { class: 'pzr-mid' }, [pzSvg(pzCase(s.now, mat, true), 'pzr-cs'), el('div', { class: 'cap' }, [el('b', { text: `이번 케이스 ${k} / ${PZ_CASE}` }), el('small', { text: `${PZ_MATS[mat].n} 케이스 · 한 문제에 공 4분의 1 · 흰 공 → 노란 공 → 빨간 공 → 빨간 공` })])]),
+    el('div', { class: 'pzr-go-p' }, [el('h3', {}, [document.createTextNode(`${PZ_BALL_KO[k >> 2]} ${(k & 3) + 1}/4`), el('small', { text: '레이팅에 맞춰 고른 퍼즐. 시작하기 전엔 보이지 않습니다.' })]),
+      el('div', { class: 'mys', 'aria-hidden': 'true' }, [el('i'), el('span', { text: '?' })]),
+      el('div', { class: 'row' }, [el('span', { text: '맞히면' }), el('b', { text: `+${g.win}` })]), el('div', { class: 'row' }, [el('span', { text: '틀리면' }), el('b', { text: `−${g.lose}` })]),
+      el('button', { class: 'pzr-go', onclick: onTap(() => puzzle.start()) }, [fbIco('play'), el('span', { text: '풀기' })])]));
+  wrap.appendChild(fit); $('#desk').appendChild(wrap);
 }
-/* a stage on the map: solved, a ball - 4구's red with its number, a 챌린지 the yellow with a star; the one in hand the white,
-   ringed; open, a small ring with its number; a 챌린지 still to beat its diamond; closed or not made yet, a faint dot; the ∞ */
-function pzStop(x, cur, r) {
-  const z = prefs.pz, q = x.q, open = q && pzOpenQ(q), stars = q ? z.stars[q.id] || 0 : 0, me = !!q && q === cur, inf = !!x.more, infOn = inf && pzBothCh(x.si);
-  const kind = inf ? 'inf' + (infOn ? '' : ' lock') : me ? 'cur' : stars ? 'done' + (x.ch ? ' ch' : '') : x.ch ? 'gem' + (open ? '' : ' lock') : open ? 'open' : q ? 'lock' : 'soon';
-  const pic = me ? ballPic(prefs.ballSkin, 'carom', 0, { class: 'bp' }) : stars ? ballPic(prefs.ballSkin, 'carom', x.ch ? 1 : 2, { class: 'bp' }) : null;
-  return el('button', { class: 'mt-stop ' + kind, style: r ? `--r:${r}px` : null, 'aria-pressed': String(me),
-    'aria-label': `${inf ? '연습 퍼즐' : x.ch ? '챌린지' : x.n + '번'}${stars ? `, 별 ${stars}개` : inf ? (infOn ? '' : ', 잠김') : !q ? ', 준비 중' : open ? '' : ', 잠김'}`, onclick: onTap(() => pzPick(x)) },
-    [pic, inf ? el('b', { text: '∞' }) : x.ch && !me ? el('b', { class: 'gm', text: stars ? '★' : '' }) : el('b', { text: String(x.n) })]);
-}
-/* The slate: the topic's twenty, five to a row, drawn as on the map */
-function pzGrid(slots, cur, done) {
-  const box = el('div', { class: 'pz-grid' }, slots.map(x => pzStop(x, cur, 0)));
-  return [el('div', { class: 'pz-road-h' }, [el('b', { text: puzzles.challenge(cur) ? '챌린지' : `스테이지 ${cur.n}` }), el('small', { text: `${done} / ${slots.length}` })]), box];
+// 포켓's rack: fifteen places in a triangle, empty (its puzzles to come)
+function pzRack() {
+  const u = ++pzUid, r = 20, g = r * 2.1, rows = 5, W = rows * g + 24, H = rows * g * .87 + 30;
+  let s = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${pzDefs(u)}<path d="M${W / 2} 4L${W - 4} ${H - 6}L4 ${H - 6}Z" fill="#5a3218" stroke="#2f1a0c" stroke-width="3" stroke-linejoin="round"/>`;
+  for (let row = 0; row < rows; row++) for (let i = 0; i <= row; i++) { const cx = W / 2 + (i - row / 2) * g, cy = 24 + r + row * g * .87; s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#pz${u}h)" stroke="#0b1a12" stroke-width="2"/>`; }
+  return s + '</svg>';
 }
 /* 레슨 (owner 11-16: the books were of another look than the rest of the desk): the game's lessons in the tray as cards in
    the shop's printed-card language (74-shop-cards.css), a course to a row under the shop's ivory rule - 기본기 blue, 큐볼

@@ -2,15 +2,8 @@
 const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode === 'practice' && !prefs.lessons ? 'free-' + freeGame() : prefs.mode] || {}).table === 'carom';
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강 당구' };
-// the puzzles on offer, and which stages are open
-const pzList = () => puzzles.list, PZ_NEED = 5;
-const pzOpen = si => si === 0 || puzzles.of(si - 1).filter(q => prefs.pz.stars[q.id]).length >= PZ_NEED;
-// a puzzle's name: its topic and its place on the topic's road, or 챌린지 (34-desk-train.js pzMetro)
-const pzName = q => `${puzzles.STAGES[q.stage].name} ${puzzles.challenge(q) ? '챌린지' : q.n}`;
-// a puzzle open to play: its topic open, and - the topic a road of stages, owner 11-16 - the stage before it on the road solved
-// 오늘의 퍼즐: one of them by the date (a puzzle on a table of its own shape left out)
+// 오늘의 퍼즐: one of the puzzles by the date, the same for everyone (a puzzle on a table of its own shape left out)
 const pzDaily = () => { const L = puzzles.list.filter(q => !q.shape); if (!L.length) return null; let h = 2166136261; for (const c of attend.today()) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return L[h % L.length]; };
-const pzOpenQ = q => pzOpen(q.stage) && (q.n === 1 || !!prefs.pz.stars[(puzzles.of(q.stage).find(x => x.n === q.n - 1) || {}).id]);
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() { deskPaint(); if (!tutorial.asked && st.screen === 'home') setTimeout(() => { if (st.screen === 'home' && $('#sheet').hidden) tutorial.offer(); }, 700); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over
