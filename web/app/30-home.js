@@ -3,7 +3,7 @@ const isCarom = () => prefs.mode === 'puzzle' || (game.MODES[prefs.mode === 'pra
 function recText(n) { const r = rec[n]; if (!r || (!r.w && !r.l)) return '첫 판'; return `${r.w}승 ${r.l}패` + (r.streak >= 2 ? ` · ${r.streak}연승 중` : ''); }
 const MODE_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강 당구' };
 // 오늘의 퍼즐: one of the puzzles by the date, the same for everyone (a puzzle on a table of its own shape left out)
-const pzDaily = () => { const L = puzzles.list.filter(q => !q.shape); if (!L.length) return null; let h = 2166136261; for (const c of attend.today()) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return L[h % L.length]; };
+const pzDaily = () => { const L = pzPool(); if (!L.length) return null; let h = 2166136261; for (const c of attend.today()) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return L[h % L.length]; };
 const levelOf = id => Math.max(1, Math.min(drills.LEVELS, prefs.drillLv[id] || 1));
 function paintHome() { deskPaint(); if (!tutorial.asked && st.screen === 'home') setTimeout(() => { if (st.screen === 'home' && $('#sheet').hidden) tutorial.offer(); }, 700); }
 // The table behind the home screen: the chosen game racked up, or the chosen drill being played over and over

@@ -5,11 +5,15 @@
    counted shot it can be tried again (no points), its answer shown, or passed for the next. Each counted puzzle fills a
    quarter of a ball in the case (white, yellow, red, red - 16 to a case); a full case is closed and kept in the record,
    whose puzzles can be played again only without points. The case's material goes up with the rating (PZ_MATS).
-   The puzzles' own ratings are provisional (PZ_BAND, by what each asks) until the puzzle AI rates them (task: puzzle
-   AI - plan in the project's cue-puzzle-overhaul-plan.md). Up to 800 only plain 4구 positions; harder kinds above. */
+   The puzzles' own ratings come from the puzzle AI (tools/puzzles/rate.js: virtual players; PZ_BAND by kind where there is
+   none yet), to be fitted to real first attempts (the project's cue-puzzle-overhaul-plan.md). Up to 800 only plain 4구. */
 const PZ_CASE = 16, PZ_BALL_KO = ['흰 공', '노란 공', '빨간 공', '빨간 공'];
 // a puzzle's provisional rating: its kind's band, spread over its place in the kind, a little shaken by its id
 const PZ_BAND = [[420, 800], [950, 1300], [1000, 1380], [850, 1180], [620, 980], [1250, 1680], [1400, 1820], [1050, 1480]];
+// the puzzles served: those rated by the puzzle AI (tools/puzzles/rate.js: a stored answer that no longer solves gets no
+// rating and is left out), or all of them while none are; plain: an ordinary 4구 position, nothing asked but to score
+const pzPool = () => { const L = puzzles.list.filter(q => !q.shape && q.sol); return L.some(q => q.rating) ? L.filter(q => q.rating) : L; };
+const pzPlain = q => puzzles.STAGES[q.stage].goal === 'score' && !q.walls && !q.shape;
 const pzRating = q => q.rating || (b => Math.round(b[0] + (b[1] - b[0]) * ((q.n - 1) / 19) + ((q.id * 37) % 61) - 30))(PZ_BAND[q.stage] || [1000, 1400]);
 // the case's material, finer as the rating climbs (owner 11-23: 원목 → 메이플 → 황동 → 크롬 → 금)
 const PZ_MATS = [{ n: '원목', at: 0, a: '#7a4426', b: '#4a2a15', e: '#2f1a0c', t: 'rgba(230,200,140,.35)' }, { n: '메이플', at: 1000, a: '#d9a86a', b: '#a8743c', e: '#6f4a22', t: 'rgba(255,240,210,.5)' },
@@ -25,12 +29,16 @@ const pzr = {
   // the puzzle served next: kept once chosen (leaving and coming back gives the same one), else one of the five nearest
   // the rating among those not met yet (all met: the oldest are let back in)
   next(k = 'four') {
-    const s = pzr.of(k), L = puzzles.list.filter(q => !q.shape && q.sol);
+    const s = pzr.of(k), L = pzPool();
     if (!L.length) return null;
     const cur = puzzles.byId(s.cur); if (cur && !s.seen.includes(cur.id)) return cur;
-    let pool = L.filter(q => !s.seen.includes(q.id)); if (!pool.length) { s.seen = s.seen.slice(-Math.floor(L.length / 4)); pool = L.filter(q => !s.seen.includes(q.id)); }
+    // (up to 800, plain 4구 positions only - owner 11-23; past it every kind, plain ones too when they are hard)
+    const kind = s.r <= 800 && L.some(pzPlain) ? L.filter(pzPlain) : L;
+    let pool = kind.filter(q => !s.seen.includes(q.id)); if (!pool.length) { s.seen = s.seen.filter(id => !kind.some(q => q.id === id)).concat(s.seen.filter(id => kind.some(q => q.id === id)).slice(-Math.floor(kind.length / 4))); pool = kind.filter(q => !s.seen.includes(q.id)); }
     pool.sort((a, b) => Math.abs(pzRating(a) - s.r) - Math.abs(pzRating(b) - s.r));
-    const q = pool[Math.floor(Math.random() * Math.min(5, pool.length))];
+    // (of the five nearest, the more fun the likelier - tools/puzzles/rate.js fun)
+    const near = pool.slice(0, 5), wt = near.map(q => 0.5 + (q.fun || 0.5)), sum = wt.reduce((a, b) => a + b, 0);
+    let x = Math.random() * sum, q = near[near.length - 1]; for (let i = 0; i < near.length; i++) { x -= wt[i]; if (x <= 0) { q = near[i]; break; } }
     s.cur = q.id; savePrefs(); return q;
   },
   // the counted shot: o solved, x missed, h a hint seen first (no points). Returns the change and the case if it closed
