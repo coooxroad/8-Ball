@@ -1,6 +1,6 @@
 /* ================= 연속 출석: the days in a row, the fire round the account's badge, the day's first game ================= */
 /* (owner 11-22) A day counts with one game played to its end - a match finished, a puzzle solved, a lesson's shot made
-   good. No rewards: while the run lasts the account's badge burns (the bar's and the 선수증's), its fire's colour by how
+   good. No rewards: while the run lasts the 선수증's badge burns (only there - owner 11-23), its fire's colour by how
    long - 1일 주황, 7일 빨강, 30일 리그 블루, 100일 보라, 365일 금빛. No number on it.
    얼음: a missed day is saved by one, by itself, if there is one (at most 2 kept, one more for every 3 days played) -
    nothing says how many there are. A saved day is not counted in the run: it only keeps it from breaking. The badge's
@@ -53,25 +53,25 @@ const FIRE_COL = { t1: ['#ff7a12', '#ffb43a', '#fff1bf'], t7: ['#ff2d1a', '#ff8a
 const fnoise = (() => { const T = new Float32Array(512); let sd = 99; for (let i = 0; i < 512; i++) { sd = (sd * 1664525 + 1013904223) >>> 0; T[i] = sd / 4294967296; }
   const at = (x, y) => T[((x & 31) + (y & 15) * 32) & 511];
   return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy); const a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1); return a + (b - a) * sx + (c - a + (a - b + d - c) * sx) * sy; }; })();
-const FIRE_PAD = 2.2, FIRE_N = 96;                               // the canvas: the badge and 2.2 radii round it; points round the edge
+const FIRE_PAD = 1.1, FIRE_N = 96;                               // the canvas: the badge and 1.1 radii round it; points round the edge
 function fireDraw(cv, t) {
   const m = cv._m, r = m.r, R0 = r * m.k, W = m.W, dpr = m.dpr, g = cv.getContext('2d'), cols = FIRE_COL[cv.dataset.t] || FIRE_COL.t1, c = W / 2;
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, W);
-  const lumps = 13, seed = m.seed;
+  const lumps = 11, seed = m.seed;
   for (let L = 0; L < 3; L++) {
-    const reach = [1, 0.62, 0.32][L], sp = [1.5, 2.1, 2.9][L];
+    const reach = [1, 0.6, 0.3][L], sp = [0.7, 1, 1.4][L];
     g.beginPath();
     for (let i = 0; i <= FIRE_N; i++) {
       const a = (i % FIRE_N) / FIRE_N * Math.PI * 2, nx = Math.cos(a), ny = Math.sin(a), u = (i % FIRE_N) / FIRE_N * lumps + seed;
-      const upw = Math.max(0, -ny), side = Math.abs(nx), tall = r * (0.08 + 1.25 * upw * upw * upw + 0.3 * side * (1 - upw));   // how tall fire may stand here
-      const n1 = fnoise(u, t * sp + L * 5), n2 = fnoise(u * 3 + 9, t * sp * 1.7 + L * 3), tongue = Math.pow(n1, 2.4) * 1.5 + Math.pow(n2, 2) * 0.4;
-      const hgt = Math.min(r * 1.75, tall * reach * (0.18 + 1.15 * tongue)), lean = 0.55 + 0.45 * upw;   // off the sides it bends upwards
+      const upw = Math.max(0, -ny), side = Math.abs(nx), tall = r * (0.04 + 0.5 * upw * upw + 0.1 * side * (1 - upw));   // how tall fire may stand here
+      const n1 = fnoise(u, t * sp + L * 5), n2 = fnoise(u * 3 + 9, t * sp * 1.7 + L * 3), tongue = Math.pow(n1, 2) * 1.1 + Math.pow(n2, 2) * 0.25;
+      const hgt = Math.min(r * 0.6, tall * reach * (0.35 + 0.9 * tongue)), lean = 0.55 + 0.45 * upw;   // off the sides it bends upwards
       const dx = nx * lean, dy = ny * lean - (1 - upw) * 0.75 * (ny > 0.5 ? 0 : 1), dl = Math.hypot(dx, dy) || 1, sway = (fnoise(u + 3, t * 0.9) - 0.5) * r * 0.25 * upw;
       const x = c + nx * R0 + dx / dl * hgt + sway, y = c + ny * R0 + dy / dl * hgt;
       if (i) g.lineTo(x, y); else g.moveTo(x, y);
     }
     g.closePath(); g.moveTo(c + R0, c); g.arc(c, c, R0, 0, Math.PI * 2, true);
-    g.shadowColor = cols[0]; g.shadowBlur = L ? 0 : r * 0.5; g.globalAlpha = [0.78, 0.92, 0.95][L]; g.fillStyle = cols[L]; g.fill('evenodd');
+    g.shadowColor = cols[0]; g.shadowBlur = L ? 0 : r * 0.25; g.globalAlpha = [0.55, 0.8, 0.9][L]; g.fillStyle = cols[L]; g.fill('evenodd');
   }
   g.globalAlpha = 1; g.shadowBlur = 0;
 }
@@ -105,8 +105,8 @@ function fireOn(av, k) {
   av.setAttribute('aria-label', `${s.n}일 연속 출석` + (s.state === 'ice' ? ' (얼린 날)' : ''));
   fireLight();
 }
-// the bar's badge (the 선수증's is put on as the card is made - 37-desk-menu.js)
-function streakPaint() { const av = $('#dkMe .av'); if (av) fireOn(av, 1.2); for (const a of document.querySelectorAll('.mn-pc.me .av')) fireOn(a, 1); }
+// the 선수증's badge only (owner 11-23: not the bar's too)
+function streakPaint() { for (const a of document.querySelectorAll('.mn-pc.me .av')) fireOn(a, 1); }
 
 /* ---- the celebration (S4): drawn flames (no emoji - owner 11-22), the plain one (F1) and, for a saved day, the faceted ice
    one (F3) */
