@@ -1,5 +1,6 @@
-/* 퍼즐 (owner 11-23, 34-desk-train.js deskPuzzle; 52-puzzle.js pzr): rated, as Chess.com's, on the menu's cloth - the
-   rating at the left, the case being filled in the middle, the next puzzle (hidden) on an orange card at the right. */
+/* 퍼즐 (owner 11-23, 34-desk-train.js deskPuzzle; 52-puzzle.js pzr; stages and stars since 11-24 저녁): on the menu's
+   cloth - the stage and the stars at the left, the case being filled in the middle, the next stage (hidden) on an orange
+   card at the right. */
 #dkBoards.pzr{color:#fff;--pk:1}
 #app.desk.compact #dkBoards.pzr{--pk:.74}
 #dkBoards.pzr .bd-head{min-width:0}
@@ -38,8 +39,8 @@
 .pzr-cs svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 10px 14px rgba(0,0,0,.45))}
 .pzr-mid .cap{text-align:center;font:800 calc(16px*var(--pk))/1.4 var(--ui-font);color:#e9eef8}
 .pzr-mid .cap small{display:block;font-weight:700;font-size:calc(13px*var(--pk));color:#aeb8c8;word-break:keep-all}
-.pzr-rk{display:block;width:min(100%,calc(340px*var(--pk)))}
-#app.desk.compact .pzr-rk{width:min(100%,190px)}.pzr-rk svg{width:100%;height:auto}
+.pzr-rk{display:block;width:min(100%,calc(440px*var(--pk)))}
+#app.desk.compact .pzr-rk{width:min(100%,250px)}.pzr-rk svg{width:100%;height:auto}
 /* the next puzzle: hidden until it is started; what it gives or takes */
 .pzr-go-p{display:flex;flex-direction:column;gap:calc(10px*var(--pk));min-width:0;padding:calc(18px*var(--pk));border-radius:calc(16px*var(--pk));
   background:linear-gradient(160deg,#f5a531,#d9700c);box-shadow:0 calc(4px*var(--pk)) 0 #a24e06,0 calc(14px*var(--pk)) calc(28px*var(--pk)) rgba(0,0,0,.5)}
@@ -64,7 +65,7 @@
   border-radius:calc(18px*var(--pk));background:linear-gradient(#0d2257,#071640);box-shadow:0 calc(14px*var(--pk)) calc(30px*var(--pk)) rgba(0,0,0,.55)}
 .pzr-res .hd{font:800 calc(15px*var(--pk))/1 var(--ui-font);color:#8fb6ff;letter-spacing:.06em}
 .pzr-res .big{display:flex;align-items:baseline;gap:calc(12px*var(--pk));font:900 calc(52px*var(--pk))/1 var(--num)}
-.pzr-res .big s{font-size:.45em;color:#8a94a6}
+.pzr-res .big s{font-size:.45em;color:#8a94a6;text-decoration:none}
 .pzr-res .big em{font-style:normal;font-size:.42em;color:#5fd38a}.pzr-res .big em.m{color:#ff8a7a}
 .pzr-res .pzr-cs{max-width:calc(480px*var(--pk))}
 #app.desk.compact .pzr-res{gap:6px;padding:12px 18px}#app.desk.compact .pzr-res .pzr-cs{max-width:290px}
@@ -112,3 +113,79 @@
 #app.desk.compact .pzr-res.rack .pzr-rk{width:180px}
 .pzr-16.p15{grid-template-columns:repeat(5,minmax(0,1fr))}
 #flowBar .fchip.need{background:#ffd34d;box-shadow:0 0 0 2px rgba(255,211,77,.35)}
+/* stars: a five-pointed shape, gold when won (the bar, the desk, the card) */
+.pz-stars{display:inline-flex;gap:.12em;vertical-align:middle}
+.pz-stars i,i.star{display:inline-block;width:1em;height:1em;background:rgba(255,255,255,.22);clip-path:polygon(50% 2%,62% 36%,98% 37%,69% 59%,80% 95%,50% 74%,20% 95%,31% 59%,2% 37%,38% 36%)}
+.pz-stars i.on,i.star{background:#ffc93c}
+/* how hard (쉽게 · 보통 · 어렵게) */
+.pzr-diff{display:flex;gap:calc(2px*var(--pk));padding:calc(4px*var(--pk));border-radius:99px;background:rgba(0,0,0,.35)}
+#dkBoards.pzr .pzr-diff button{padding:calc(7px*var(--pk)) calc(12px*var(--pk));border-radius:99px;font:800 calc(13px*var(--pk))/1 var(--ui-font);color:#cdd3dc;white-space:nowrap}
+#dkBoards.pzr .pzr-diff button.on{background:#f6f1e6;color:#2a2418}
+/* the stage, the stars won, the way to the next material */
+.pzr-me>.tot{display:flex;align-items:center;gap:calc(7px*var(--pk));margin-top:calc(4px*var(--pk))}
+.pzr-me>.tot i.star{font-size:calc(22px*var(--pk))}
+.pzr-me>.tot b{font:900 calc(24px*var(--pk))/1 var(--num)}
+.pzr-me>.tot span{font:700 calc(13px*var(--pk))/1 var(--ui-font);color:#c9d1de}
+.pzr-me>.mat{display:flex;flex-direction:column;gap:calc(5px*var(--pk));width:min(100%,calc(190px*var(--pk)));margin-top:calc(4px*var(--pk))}
+.pzr-me>.mat span{font:700 calc(12px*var(--pk))/1.3 var(--ui-font);color:#aeb8c8;word-break:keep-all}
+.pzr-me>.mat i{display:block;height:calc(6px*var(--pk));border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden}
+.pzr-me>.mat i b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#d9a86a,#ffc93c)}
+.pzr-past em i.star,.pzr-list .stn i.star{font-size:.95em;margin-right:.2em;vertical-align:-.1em}
+.pzr-past em,.pzr-list .stn{color:#ffd770}
+.pzr-list .stn{margin-left:auto;font:900 calc(16px*var(--pk))/1 var(--num)}
+.pzr-mid .cap .cst{display:inline-flex;align-items:center;gap:.25em;margin-left:.6em;color:#ffd770;font-family:var(--num)}
+.pzr-mid .cap .cst i.star{font-size:.9em}
+/* the next stage: the stars it can give; the hard one, its own colour and mark */
+.pzr-go-p .rows{display:flex;flex-direction:column;gap:calc(5px*var(--pk))}
+.pzr-go-p .row .pz-stars{font-size:calc(15px*var(--pk))}
+.pzr-go-p .row .pz-stars i{background:rgba(0,0,0,.22)}.pzr-go-p .row .pz-stars i.on{background:#fff4c2}
+.pzr-go-p h3 .hb{display:inline-block;margin-left:calc(8px*var(--pk));padding:calc(4px*var(--pk)) calc(8px*var(--pk));border-radius:99px;background:#fff;color:#b0273a;font:900 calc(12px*var(--pk))/1 var(--ui-font);font-style:normal;vertical-align:middle}
+.pzr-go-p.hard{background:linear-gradient(160deg,#e2475a,#9b1f4a);box-shadow:0 calc(4px*var(--pk)) 0 #6a1031,0 calc(14px*var(--pk)) calc(28px*var(--pk)) rgba(0,0,0,.5)}
+#dkBoards.pzr .pzr-go-p.hard .pzr-go{color:#b0273a}
+/* the done card's total */
+.pzr-res .big i.star{font-size:.8em;margin-right:.1em}
+/* the record: each stage's stars, its edge by them */
+.pz1 .pz-stars{font-size:calc(12px*var(--pk))}
+#dkBoards.pzr .pz1.s0{box-shadow:inset calc(4px*var(--pk)) 0 0 #7d8794}
+#dkBoards.pzr .pz1.s1{box-shadow:inset calc(4px*var(--pk)) 0 0 #cd8a4a}
+#dkBoards.pzr .pz1.s2{box-shadow:inset calc(4px*var(--pk)) 0 0 #cfd8e3}
+#dkBoards.pzr .pz1.s3{box-shadow:inset calc(4px*var(--pk)) 0 0 #f4c430}
+/* in the game: the stage and the stars it can still give, the tries left as dots */
+#flowBar .pzst .fnm{display:flex;align-items:baseline;gap:.35em}
+#flowBar .pzst .fnm small{font:800 calc(var(--bh)*.2)/1 var(--ui-font);opacity:.8}
+#flowBar .pzst .fnm b{font-family:var(--num);font-weight:900}
+#flowBar .pzst .fsb{display:flex;align-items:center;gap:.6em}
+#flowBar .pzst .pz-stars{font-size:calc(var(--bh)*.22)}
+#flowBar .ftries{display:inline-flex;gap:.3em}
+#flowBar .ftries i{width:.55em;height:.55em;border-radius:50%;background:#5ec8ff}
+#flowBar .ftries i.gone{background:rgba(255,255,255,.2)}
+#flowBar .fchip.hard{background:#e2475a;color:#fff}
+/* the card over the table when a stage is over */
+.pz-card-bg{position:absolute;inset:0;z-index:60;display:grid;place-items:center;background:rgba(4,10,20,.45);animation:pzcIn .25s ease-out}
+.pz-card{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(86vw,380px);padding:22px 22px 18px;border-radius:20px;background:linear-gradient(#13285e,#0a1840);color:#fff;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.55);animation:pzcUp .3s cubic-bezier(.2,1.3,.4,1)}
+.pz-card.no{background:linear-gradient(#2b3140,#1a1e28)}
+.pzc-st{font:800 13px/1 var(--ui-font);color:#8fb6ff;letter-spacing:.08em}
+.pz-card.no .pzc-st{color:#aeb8c8}
+.pz-card h3{margin:0;font:900 30px/1.1 var(--ui-font)}
+.pzc-stars{display:flex;gap:10px;margin:4px 0}
+.pzc-stars i{width:52px;height:52px;background:rgba(255,255,255,.14);clip-path:polygon(50% 2%,62% 36%,98% 37%,69% 59%,80% 95%,50% 74%,20% 95%,31% 59%,2% 37%,38% 36%)}
+.pzc-stars i:nth-child(2){transform:translateY(-8px)}
+.pzc-stars i.on{background:linear-gradient(#ffe38a,#f4b400);animation:pzcStar .45s cubic-bezier(.2,1.6,.4,1) both}
+.pzc-how{margin:0;font:800 16px/1.3 var(--ui-font)}
+.pzc-why{margin:0;padding:8px 12px;border-radius:10px;background:rgba(0,0,0,.25);font:700 14px/1.4 var(--ui-font);color:#ffd5a6;word-break:keep-all}
+.pzc-note{margin:0;font:700 12px/1.4 var(--ui-font);color:#aeb8c8;word-break:keep-all}
+.pzc-closed{display:flex;align-items:center;gap:6px;margin:0;padding:6px 12px;border-radius:99px;background:rgba(255,201,60,.15);font:800 14px/1 var(--ui-font);color:#ffd770}
+.pzc-btns{display:flex;gap:8px;width:100%;margin-top:6px}
+.pzc-btns button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:50px;border:0;border-radius:14px;font:800 16px/1 var(--ui-font);cursor:pointer}
+.pzc-b2{background:rgba(255,255,255,.12);color:#fff}
+.pzc-b2 svg{width:16px;height:16px;fill:currentColor}
+.pzc-go{flex:1.4!important;background:#f5a531;color:#fff;box-shadow:0 4px 0 #a24e06}
+@keyframes pzcIn{from{opacity:0}}
+@keyframes pzcUp{from{transform:translateY(24px) scale(.94);opacity:0}}
+@keyframes pzcStar{from{transform:scale(0) rotate(-40deg);opacity:0}}
+.pzc-stars i.on:nth-child(2){animation-name:pzcStar2}
+@keyframes pzcStar2{from{transform:translateY(-8px) scale(0) rotate(-40deg);opacity:0}to{transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.pz-card-bg,.pz-card,.pzc-stars i.on{animation:none!important}}
+#flowBar .fpl.on.pzst .pz-stars i{background:rgba(0,0,0,.14)}#flowBar .fpl.on.pzst .pz-stars i.on{background:#f0a800}
+#flowBar .fpl.on .ftries i{background:#2a76e6}#flowBar .fpl.on .ftries i.gone{background:rgba(0,0,0,.14)}
+@media (max-height:520px){.pz-card{gap:6px;padding:14px 18px 12px;width:min(70vw,360px)}.pz-card h3{font-size:22px}.pzc-stars i{width:36px;height:36px}.pzc-how{font-size:14px}.pzc-why{padding:6px 10px;font-size:13px}.pzc-btns button{min-height:40px;font-size:14px}}

@@ -60,17 +60,20 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
   if (L.length >= 3) {
     const v = vault(), k = Z.gameOf(L[0]); v.init('h');
     const a = v.puzzleTry({ req: req(), id: L[0].id, res: 'o', shots: [shot(L[0].sol)] });
-    ok(a.ok && a.res === 'o' && a.pzr[k].r > Z.RATE.START && a.book && a.book.pr === Z.RATE.START, 'a solve raises the puzzle rating');
+    ok(a.ok && a.res === 1 && a.pzr[k].r > Z.RATE.START && a.book && a.book.pr === Z.RATE.START, 'a solve raises the puzzle rating');
     ok(v.puzzleTry({ req: req(), id: L[0].id, res: 'x' }).again && v.me().pzr[k].r === a.pzr[k].r, 'a puzzle counts once');
     const L1 = L.find(z => Z.gameOf(z) === k && z.id !== L[0].id), b = v.puzzleTry({ req: req(), id: L1.id, res: 'o', shots: [{ aim: 0, V: 1, a: 0, b: 0, el: 0 }] });
-    ok(b.ok && b.res === 'x' && b.pzr[k].r < a.pzr[k].r, 'a solve without its shots counts as missed');
+    ok(b.ok && b.res === 0 && b.pzr[k].r < a.pzr[k].r, 'a solve without its shots counts as missed');
     const L2 = L.find(z => Z.gameOf(z) === k && z.id !== L[0].id && z.id !== L1.id), h = v.puzzleTry({ req: req(), id: L2.id, res: 'h' });
     ok(h.ok && !h.book && h.pzr[k].r === b.pzr[k].r, 'a hint counts for nothing');
-    console.log('puzzle rating: kept on the account, checked solves'); } }
+    const L3 = L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id].includes(z.id)), t = L3 && v.puzzleTry({ req: req(), id: L3.id, res: 0.75, shots: [shot(L3.sol)] });
+    if (L3) ok(t.ok && t.res === 0.75 && t.book && t.book.res === 0.75 && !v.puzzleTry({ req: req(), id: L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id, L3.id].includes(z.id)).id, res: 0.6 }).ok, 'a stage scored by its stars (0.75: the second try); no other score taken');
+    console.log('puzzle rating: kept on the account, checked solves, scored by stars'); } }
 // the puzzles' book (puzzlebook-core.js): an attempt rates the puzzle back - a miss gives it points; tried enough it is live
 { const Z = E.createPuzzles(), z = Z.list.find(q => Number.isFinite(q.rating));
   if (z) { const B = new PuzzleBookCore(sqlOf().sql, E), r0 = B.get(z.id).r;
     ok(B.try({ id: z.id, res: 'x', pr: z.rating, prd: 100 }).r > r0, 'a miss gives the puzzle points');
+    { const B2 = new PuzzleBookCore(sqlOf().sql, E); ok(B2.try({ id: z.id, res: 0.5, pr: z.rating, prd: 100 }).r === B2.get(z.id).r && Math.abs(B2.get(z.id).r - r0) < 2, 'an even score (0.5) leaves an even puzzle where it was'); }
     for (let i = 0; i < 5; i++) B.try({ id: z.id, res: 'o', pr: z.rating + 200, prd: 80 });
     ok(B.live().live.some(q => q[0] === z.id) && B.stats().tries === 6 && B.export(0, 10).rows.length === 6 && !B.try({ id: 999999, res: 'o', pr: 1000 }).ok, 'the book: live, counted, read out');
     console.log('puzzle book: rated back, kept'); } }

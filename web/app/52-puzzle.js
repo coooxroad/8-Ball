@@ -21,19 +21,29 @@ const PZ_BAND = [[420, 800], [950, 1300], [1000, 1380], [850, 1180], [620, 980],
 const pzPool = (k = 'four') => puzzles.list.filter(q => puzzles.gameOf(q) === k && q.sol && q.rating != null);
 const pzPlain = q => puzzles.gameOf(q) === 'four' ? puzzles.plain(q) : (q.pot || []).length === 1 && !q.keep && !q.need && !q.walls && !q.table && !q.turns;
 const pzRating = q => (pzLive.map && pzLive.map.get(q.id)) || q.rating || (b => Math.round(b[0] + (b[1] - b[0]) * ((q.n - 1) / 19) + ((q.id * 37) % 61) - 30))(PZ_BAND[q.stage] || [1000, 1400]);
-// the case's material, finer as the rating climbs (owner 11-23: 원목 → 메이플 → 황동 → 크롬 → 금)
-const PZ_MATS = [{ n: '원목', at: 0, a: '#7a4426', b: '#4a2a15', e: '#2f1a0c', t: 'rgba(230,200,140,.35)' }, { n: '메이플', at: 1000, a: '#d9a86a', b: '#a8743c', e: '#6f4a22', t: 'rgba(255,240,210,.5)' },
-  { n: '황동', at: 1400, a: '#e6c46a', b: '#a8822c', e: '#6f5416', t: 'rgba(255,245,200,.6)' }, { n: '크롬', at: 1800, a: '#eef1f5', b: '#8f98a4', e: '#4d5560', t: 'rgba(255,255,255,.7)' },
-  { n: '금', at: 2200, a: '#ffe38a', b: '#d99a00', e: '#7a5200', t: 'rgba(255,250,220,.75)' }];
-const pzMatOf = r => PZ_MATS.reduce((m, x, i) => r >= x.at ? i : m, 0);
+/* Shown as stages and stars (owner 11-24 저녁: "a rating on it, I was too scared to play"): the rating stays, out of
+   sight, choosing the next puzzle (as a game's hidden difficulty does); the player sees the stage he is at - one up for
+   every puzzle finished, never down - and the stars each won: ★★★ at the first try, ★★ the second, ★ the third (or with
+   a hint seen first), none after three misses (the score each gives the rating: PZ_STAR_S). */
+const PZ_STAR_S = [0, 0.5, 0.75, 1];
+// a place's stars, from what it holds (the first set's results: o 3, h 1, x 0)
+const pzStars = v => typeof v === 'number' ? v : v === 'o' ? 3 : v === 'h' ? 1 : v === 'x' ? 0 : null;
+const PZ_MEDAL = ['#7d8794', '#cd8a4a', '#cfd8e3', '#f4c430'];          // (none, bronze, silver, gold)
+// the case's material, finer as the stars add up (owner 11-23: 원목 → 메이플 → 황동 → 크롬 → 금 - by stars, so only ever up)
+const PZ_MATS = [{ n: '원목', at: 0, a: '#7a4426', b: '#4a2a15', e: '#2f1a0c', t: 'rgba(230,200,140,.35)' }, { n: '메이플', at: 60, a: '#d9a86a', b: '#a8743c', e: '#6f4a22', t: 'rgba(255,240,210,.5)' },
+  { n: '황동', at: 180, a: '#e6c46a', b: '#a8822c', e: '#6f5416', t: 'rgba(255,245,200,.6)' }, { n: '크롬', at: 400, a: '#eef1f5', b: '#8f98a4', e: '#4d5560', t: 'rgba(255,255,255,.7)' },
+  { n: '금', at: 800, a: '#ffe38a', b: '#d99a00', e: '#7a5200', t: 'rgba(255,250,220,.75)' }];
+const pzMatOf = st => PZ_MATS.reduce((m, x, i) => st >= x.at ? i : m, 0);
+// how hard, by the player's own choice (as Lichess offers): where the next puzzle is aimed, against the hidden rating
+const PZ_DIFF = { easy: { n: '쉽게', d: -250 }, normal: { n: '보통', d: -100 }, hard: { n: '어렵게', d: 50 } };
 const pzr = {
   of: (k = 'four') => prefs.pzr[k],
-  // what the puzzle would give, solved or missed (puzzles.js tryAfter: Glicko, as the server keeps it)
-  gain(s, q) { const z = { rating: pzRating(q) }; return { win: Math.max(1, puzzles.tryAfter(s, z, 'o').r - s.r), lose: Math.max(1, s.r - puzzles.tryAfter(s, z, 'x').r) }; },
+  // whether the next place is the hard one (a ball's last quarter; a rack's every fifth ball)
+  hard(k) { const i = pzr.of(k).now.length; return k === 'pocket' ? i % 5 === 4 : i % 4 === 3; },
   // the puzzle served next: kept once chosen (leaving and coming back gives the same one), else one of the five nearest
-  // the rating it aims at (a hundred below; a hundred above for a ball's last quarter, a rack's every fifth) among those
-  // not met yet (all met: the oldest are let back in), the more fun the likelier (tools/puzzles/ai.js fun)
-  aim(k) { const s = pzr.of(k), i = s.now.length; return s.r + ((k === 'pocket' ? i % 5 === 4 : i % 4 === 3) ? 100 : -100); },
+  // the rating it aims at (the player's choice of how hard below it; two hundred more at the hard place) among those not
+  // met yet (all met: the oldest are let back in), the more fun the likelier (tools/puzzles/ai.js fun)
+  aim(k) { const s = pzr.of(k); return s.r + (PZ_DIFF[prefs.pzr.diff] || PZ_DIFF.normal).d + (pzr.hard(k) ? 200 : 0); },
   next(k = 'four') {
     const s = pzr.of(k), L = pzPool(k);
     if (!L.length) return null;
@@ -46,20 +56,21 @@ const pzr = {
     let x = Math.random() * sum, q = near[near.length - 1]; for (let i = 0; i < near.length; i++) { x -= wt[i]; if (x <= 0) { q = near[i]; break; } }
     s.cur = q.id; savePrefs(); return q;
   },
-  // the counted shot: o solved, x missed, h a hint seen first (no points). Returns the change and the case if it closed
-  record(k, q, res) {
-    const s = pzr.of(k), t = attend.today(), after = puzzles.tryAfter(s, { rating: pzRating(q) }, res);
-    if (!s.now.length) { s.r0 = s.r; s.mat = pzMatOf(s.r); }
-    if (s.dayT !== t) { s.dayT = t; s.day0 = s.r; }
-    const d = after.r - s.r; s.r = after.r; s.rd = after.rd; s.n = after.n;
-    // (told to the server, which keeps the rating for the account's every device and rates the puzzle back - 07-net.js)
-    net.claim('pztry', { id: q.id, res, shots: res === 'o' ? puzzle.shots.slice() : null, k });
-    s.seen.push(q.id); s.cur = null; s.now.push([q.id, res, d]); s.hist = s.hist.concat(s.r).slice(-30);
+  // a puzzle finished: its stars (0 .. 3). The hidden rating moves by their score; the stage goes on one; returns the
+  // case (rack) if this filled it
+  record(k, q, stars) {
+    const s = pzr.of(k), t = attend.today(), sc = PZ_STAR_S[stars], after = puzzles.tryAfter(s, { rating: pzRating(q) }, sc);
+    if (!s.now.length) { s.st0 = s.stage + 1; s.mat = pzMatOf(s.stars); }
+    const d = after.r - s.r; s.r = after.r; s.rd = after.rd; s.n = after.n; s.stage++; s.stars += stars;
+    // (told to the server, which keeps the hidden rating for the account's every device and rates the puzzle back - 07-net.js)
+    net.claim('pztry', { id: q.id, res: sc, shots: stars ? puzzle.shots.slice() : null, k });
+    s.seen.push(q.id); s.cur = null; s.now.push([q.id, stars, d]); s.hist = s.hist.concat(s.r).slice(-30);
     let closed = null;
-    if (s.now.length >= pzSize(k)) { closed = { t, k, res: s.now, r0: s.r0 != null ? s.r0 : s.r - d, r1: s.r, m: s.mat || 0 }; s.cases.unshift(closed); s.cases = s.cases.slice(0, 40); s.now = []; }
+    if (s.now.length >= pzSize(k)) { closed = { t, k, res: s.now, st0: s.st0 || s.stage - s.now.length + 1, st1: s.stage, m: s.mat || 0 }; s.cases.unshift(closed); s.cases = s.cases.slice(0, 40); s.now = []; }
     savePrefs(); return { d, closed };
   },
-  today: (k = 'four') => { const s = pzr.of(k); return s.dayT === attend.today() ? s.r - s.day0 : null; },
+  // the stars a case (rack) holds, of how many
+  starsIn: res => res.reduce((a, r) => a + (pzStars(r[1]) || 0), 0),
 };
 /* The server's word on the puzzle ratings (core.js puzzleTry, /v1/me pzr): it keeps them for the account's every device.
    Taken when it has seen as many counted attempts as this device or more (one still waiting to be sent leaves this
@@ -81,8 +92,9 @@ function pzLiveLoad() {
     try { localStorage.setItem('dp8.pzlive', JSON.stringify({ at: pzLive.at, map: [...pzLive.map] })); } catch (e) {}
   }).catch(() => {});
 }
-/* The pictures: a ball whose four quarters fill clockwise from 12 o'clock - solved, the ball's own picture; missed, the
-   picture greyed under a red veil; a hint seen, faint; the one to play now, ringed blue - and the case holding four. */
+/* The pictures: a ball whose four quarters fill clockwise from 12 o'clock - won, the ball's own picture with a rim the
+   colour of its stars (gold ★★★, silver ★★, bronze ★); none, the picture grey and faint; the one to play now, ringed
+   blue - and the case holding four. */
 let pzUid = 0;
 const PZ_BALL_HUE = ['#f4f1ea', '#f2c21b', '#d62b2b', '#d62b2b'];
 // (a pool ball's colour where its picture is not there: 1-7 solid, 8 black, 9-15 striped - drawn plain here)
@@ -92,15 +104,18 @@ const pzBallUrl = (n, kind) => typeof BALL_PICS !== 'undefined' && BALL_PICS.inc
 function pzBall(cx, cy, r, n, q, u, kind, whole) {
   const id = `pz${u}b${n}`, url = pzBallUrl(n, kind), P = (a) => [cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 1.5];
   const wedge = i => { const a0 = -Math.PI / 2 + i * Math.PI / 2, [x0, y0] = P(a0), [x1, y1] = P(a0 + Math.PI / 4), [x2, y2] = P(a0 + Math.PI / 2); return `M${cx} ${cy}L${x0} ${y0}L${x1} ${y1}L${x2} ${y2}Z`; };
+  const arc = (i, rr) => { const a0 = -Math.PI / 2 + i * Math.PI / 2, a1 = a0 + Math.PI / 2; return `M${cx + Math.cos(a0) * rr} ${cy + Math.sin(a0) * rr}A${rr} ${rr} 0 0 1 ${cx + Math.cos(a1) * rr} ${cy + Math.sin(a1) * rr}`; };
   const face = (extra) => url ? `<image href="${url}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" ${extra}/>` : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${(kind === 'pool' ? PZ_POOL_HUE : PZ_BALL_HUE)[n]}" ${extra}/>`;
   let s = `<clipPath id="${id}c"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${r + r * .08}" fill="#0b1a12"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#pz${u}h)"/>`;
-  q.forEach((v, i) => {
-    if (!v || v === 'n') return;
-    s += `<clipPath id="${id}q${i}"><path d="${wedge(i)}"/></clipPath><g clip-path="url(#${id}c)"><g clip-path="url(#${id}q${i})">${face(v === 'x' ? `filter="url(#pz${u}g)"` : v === 'h' ? 'opacity=".4"' : '')}</g></g>`;
-    if (v === 'x') s += `<path d="${wedge(i)}" clip-path="url(#${id}c)" fill="rgba(216,64,47,.3)"/>`;
+  const st = q.map(v => v === 'n' ? 'n' : pzStars(v));
+  st.forEach((v, i) => {
+    if (v == null || v === 'n') return;
+    s += `<clipPath id="${id}q${i}"><path d="${wedge(i)}"/></clipPath><g clip-path="url(#${id}c)"><g clip-path="url(#${id}q${i})">${face(v ? '' : `filter="url(#pz${u}g)" opacity=".5"`)}</g></g>`;
   });
-  if (!url && q.some(v => v && v !== 'n')) s += `<circle cx="${cx - r * .3}" cy="${cy - r * .35}" r="${r * .3}" fill="rgba(255,255,255,.28)" clip-path="url(#${id}c)"/>`;
+  if (!url && st.some(v => v != null && v !== 'n')) s += `<circle cx="${cx - r * .3}" cy="${cy - r * .35}" r="${r * .3}" fill="rgba(255,255,255,.28)" clip-path="url(#${id}c)"/>`;
   if (!whole) s += `<g clip-path="url(#${id}c)" stroke="rgba(0,0,0,.35)" stroke-width="${Math.max(1, r * .04)}"><line x1="${cx}" y1="${cy - r}" x2="${cx}" y2="${cy + r}"/><line x1="${cx - r}" y1="${cy}" x2="${cx + r}" y2="${cy}"/></g>`;
+  // (the medal's rim round each quarter won - or round the whole ball, a rack's)
+  st.forEach((v, i) => { if (v && v !== 'n' && (!whole || i === 0)) s += whole ? `<circle cx="${cx}" cy="${cy}" r="${r * 1.04}" fill="none" stroke="${PZ_MEDAL[v]}" stroke-width="${Math.max(1.5, r * .14)}"/>` : `<path d="${arc(i, r * 1.04)}" fill="none" stroke="${PZ_MEDAL[v]}" stroke-width="${Math.max(1.5, r * .14)}" stroke-linecap="round"/>`; });
   const ni = q.indexOf('n');
   if (ni >= 0) s += whole ? `<circle cx="${cx}" cy="${cy}" r="${r * .94}" fill="rgba(94,200,255,.25)" stroke="#5ec8ff" stroke-width="${Math.max(2, r * .1)}"/>` : `<path d="${wedge(ni)}" clip-path="url(#${id}c)" fill="rgba(94,200,255,.28)" stroke="#5ec8ff" stroke-width="${Math.max(2, r * .09)}"/>`;
   return s;
@@ -123,15 +138,35 @@ function pzMini(res, now) {
   const u = ++pzUid, r = 12, Q = pzQuarters(res, now);
   return `<svg class="pz-mini" viewBox="0 0 ${8 * r + 3 * r * .4 + 4} ${2 * r + 4}" aria-hidden="true">${pzDefs(u)}${Q.map((q, i) => pzBall(2 + r + i * r * 2.4, r + 2, r, i, q, u)).join('')}</svg>`;
 }
-/* 포켓's rack: fifteen places in a triangle, the apex first, one ball a puzzle (numbered by its place) - the rack's
-   wood behind (mini: the balls alone, small, for the bar in the game) */
-function pzRackSvg(res, now, mini) {
-  const u = ++pzUid, r = mini ? 8 : 20, g = r * 2.1, rows = 5, pad = mini ? 2 : 12, W = (rows - 1) * g + 2 * r + 2 * pad, H = (rows - 1) * g * .87 + 2 * r + 2 * pad + (mini ? 0 : 8);
+/* 포켓's rack: fifteen places in a triangle, the apex first, one ball a puzzle (numbered by its place) - a real rack, of
+   the case's material: a frame with rounded corners, light on its upper edge (the light comes from the upper right), its
+   inner edge in shadow, a felt bed, each empty place a cup sunk in it, each ball won sitting in its cup with its shadow
+   (mini: the balls alone, small, for the bar in the game) */
+function pzRackSvg(res, now, mini, mat) {
+  const u = ++pzUid, r = mini ? 8 : 20, g = r * 2.08, S3 = Math.sqrt(3), M = PZ_MATS[mat || 0] || PZ_MATS[0];
+  const F = mini ? 0 : r * .62, gap = mini ? 0 : r * .14, Lb = 4 * g, Lin = Lb + 2 * S3 * (r + gap), Lout = Lin + 2 * S3 * F, pad = mini ? 2 : r * .3;
+  const W = (mini ? Lb + 2 * r : Lout) + 2 * pad, H = (mini ? Lb * S3 / 2 + 2 * r : Lout * S3 / 2) + 2 * pad, Gx = W / 2, Gy = pad + (mini ? r + Lb / S3 : Lout / S3);
+  const tri = L => { const a = [Gx, Gy - L / S3], b = [Gx - L / 2, Gy + L / (2 * S3)], c = [Gx + L / 2, Gy + L / (2 * S3)]; return `M${a[0]} ${a[1]}L${b[0]} ${b[1]}L${c[0]} ${c[1]}Z`; };
   let s = `<svg class="${mini ? 'pz-mini' : 'pz-rack'}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${pzDefs(u)}`;
-  if (!mini) s += `<path d="M${W / 2} 2L${W - 2} ${H - 4}L2 ${H - 4}Z" fill="#5a3218" stroke="#2f1a0c" stroke-width="3" stroke-linejoin="round"/>`;
+  if (!mini) {
+    s += `<defs><linearGradient id="pz${u}w" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${M.a}"/><stop offset="1" stop-color="${M.b}"/></linearGradient>`
+      + `<pattern id="pz${u}gr" width="${r * 1.7}" height="${r * .5}" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)"><path d="M0 ${r * .25}C${r * .5} ${r * .1} ${r} ${r * .4} ${r * 1.7} ${r * .22}" fill="none" stroke="rgba(0,0,0,.13)" stroke-width="${r * .05}"/></pattern>`
+      + `<radialGradient id="pz${u}f" cx="62%" cy="30%" r="80%"><stop offset="0" stop-color="#1f5a3c"/><stop offset="1" stop-color="#0f2f20"/></radialGradient>`
+      + `<radialGradient id="pz${u}cup" cx="42%" cy="62%" r="60%"><stop offset="0" stop-color="#0a1d13"/><stop offset=".75" stop-color="#123827"/><stop offset="1" stop-color="#1e4d35"/></radialGradient></defs>`;
+    // the frame: wood, its corners round, a highlight along the top edge, a dark line round the outside
+    s += `<path d="${tri(Lout - r * .4)}" fill="url(#pz${u}w)" stroke="url(#pz${u}w)" stroke-width="${r * .4}" stroke-linejoin="round"/>`;
+    s += `<path d="${tri(Lout - r * .4)}" fill="url(#pz${u}gr)" stroke="none"/>`;
+    s += `<path d="${tri(Lout)}" fill="none" stroke="${M.e}" stroke-width="${r * .08}" stroke-linejoin="round" opacity=".9"/>`;
+    s += `<path d="${tri(Lout - r * .28)}" fill="none" stroke="${M.t}" stroke-width="${r * .06}" stroke-linejoin="round" opacity=".8"/>`;
+    // the bed inside, felt, the frame's inner edge throwing its shadow on it
+    s += `<path d="${tri(Lin)}" fill="url(#pz${u}f)" stroke="${M.e}" stroke-width="${r * .12}" stroke-linejoin="round"/>`;
+    s += `<path d="${tri(Lin - r * .22)}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="${r * .22}" stroke-linejoin="round"/>`;
+  }
   let i = 0;
-  for (let row = 0; row < rows; row++) for (let c = 0; c <= row; c++, i++) {
-    const cx = W / 2 + (c - row / 2) * g, cy = pad + r + row * g * .87 + (mini ? 0 : 6), v = res[i] ? res[i][1] : now && i === res.length ? 'n' : '';
+  for (let row = 0; row < 5; row++) for (let c = 0; c <= row; c++, i++) {
+    const cx = Gx + (c - row / 2) * g, cy = Gy - Lb / S3 + row * g * S3 / 2, v = res[i] ? res[i][1] : now && i === res.length ? 'n' : '';
+    if (!mini && (v === '' || v === 'n')) { s += `<circle cx="${cx}" cy="${cy}" r="${r * .98}" fill="url(#pz${u}cup)" stroke="rgba(0,0,0,.45)" stroke-width="${r * .06}"/><circle cx="${cx}" cy="${cy}" r="${r * .98}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="${r * .05}" stroke-dasharray="${r * 1.5} ${r * 4.6}" stroke-dashoffset="${-r * .4}"/>`; if (v === '') continue; }
+    if (!mini && v !== 'n') s += `<ellipse cx="${cx - r * .14}" cy="${cy + r * .2}" rx="${r * 1.02}" ry="${r * .94}" fill="rgba(0,0,0,.38)"/>`;
     s += pzBall(cx, cy, r, i + 1, [v, v, v, v], u, 'pool', true);
   }
   return s + '</svg>';
@@ -152,9 +187,9 @@ function pzNews(z) {
 const pzSvg = (html, cls) => { const s = el('span', { class: cls }); s.innerHTML = html; return s; };
 
 const puzzle = {
-  quiet: false, save: false, cur: null, helped: 0, tries: 0,     // helped: 1 a hint seen, 2 the answer
+  quiet: false, save: false, cur: null, helped: 0, tries: 0,     // helped: 1 a hint seen, 2 the answer; tries: the misses so far
   free: null,               // null: counted (the rated puzzle); 'day' 오늘의 퍼즐, 'book' one from the record - no points
-  done: false,              // the counted attempt made (what it gave: puzzle.got)
+  done: false,              // the stage over - solved within three tries, or missed three times (what it gave: puzzle.got)
   k: 'four',                // the game: 'four' or 'pocket'
   turn: 0, down: [], at: null, shots: [],   // two turns: which, the balls potted so far, the table it started from, the shots
   // the balls of a puzzle, onto its table (puzzles.js setup: its outline, barricades, the cushions it asks for)
@@ -172,13 +207,14 @@ const puzzle = {
     const kk = puzzles.gameOf(z);
     if (!p.cur || p.cur.id !== z.id || p.free !== free) { p.helped = 0; p.tries = 0; p.done = false; p.got = null; }
     if (!free && pzr.of(kk).hinted === z.id) p.helped = Math.max(p.helped, 1);   // (a hint seen, then left: still seen)
-    p.cur = z; p.k = kk; p.free = free; p.closed = null; prefs.pz.cur = z.id; savePrefs();
+    if (!free && !p.done) { const t = pzr.of(kk).tried; if (t && t[0] === z.id) p.tries = Math.max(p.tries, t[1]); }   // (and the misses)
+    p.cur = z; p.k = kk; p.free = free; p.closed = null; prefs.pz.cur = z.id; savePrefs(); pzCardOff();
     usePhysics(); game.start(puzzles.modeOf(z), [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
     // (what it has that is new to this player: said once, the first time - as the plan's 처음 만날 때 안내)
     const news = pzNews(z).filter(([key]) => !(prefs.pzr.met || []).includes(key));
     if (news.length) { prefs.pzr.met = (prefs.pzr.met || []).concat(news.map(n => n[0])); savePrefs(); toast(news.map(n => n[1]).join(' · '), '', 3600); }
-    else if (!free && !p.done) toast(app.classList.contains('portrait') ? `${p.goal(z)} · 첫 시도만 점수` : '첫 시도만 점수에 들어갑니다', '', 2600);
+    else if (!free && !p.done) toast(p.tries ? `남은 기회 ${3 - p.tries}번` : app.classList.contains('portrait') ? `${p.goal(z)} · 세 번 안에 풀면 별` : '한 번에 풀면 ★★★ · 세 번 안에 풀면 별', '', 2600);
   },
   // what the puzzle asks, in words
   goal(z) {
@@ -224,14 +260,15 @@ const puzzle = {
       p.turn++; p.at = game.P.clone(w); toast(`${p.turn} / ${T} 성공 · 이어서 치세요`, 'good', 1800); SND.good(); p.hud();
       return hold(1.2, () => { flow = puzzle; beginTurn(true); });
     }
-    let said = null;
-    // the counted attempt: the rating moved, a quarter of the case (a ball of the rack) filled
-    if (!p.free && !p.done) {
-      p.done = true; const res = p.helped ? 'h' : solved ? 'o' : 'x', out = pzr.record(p.k, z, res); p.got = { res, d: out.d }; p.closed = out.closed;
-      said = res === 'h' ? '힌트를 봐서 점수 없음' : res === 'o' ? `성공 +${out.d}` : `실패 −${-out.d}`;
-    }
+    // a miss: told how near it came; the stage (counted) gives three tries, the third missed ends it with no star
     if (!solved) {
-      p.tries++; toast((said ? said + ' · ' : '다시 · ') + (j.note || '실패') + (T > 1 && p.turn ? ' · 처음부터' : ''), 'foul', 2100); SND.bad();
+      const near = pzMiss(z, p.pre, p.shot), why = near || j.note || '실패', again = T > 1 && p.turn ? ' · 처음부터' : '';
+      SND.bad();
+      if (!p.free && !p.done) {
+        p.tries++; const s = pzr.of(p.k); s.tried = [z.id, p.tries]; savePrefs();
+        if (p.tries >= 3) { p.finish(0, why); return; }
+        toast(`${why} · 남은 기회 ${3 - p.tries}번${again}`, 'foul', 2300); p.hud();
+      } else { p.tries++; toast(`${why}${again}`, 'foul', 2100); }
       if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1900);
       return hold(1.6, p.again);
     }
@@ -239,24 +276,35 @@ const puzzle = {
     if (p.free === 'day') { prefs.pz.day = attend.today(); savePrefs(); }   // (오늘의 퍼즐 done)
     // (paid once, by the server, after it plays the shots again - server/src/check.js)
     if (!prefs.pz.stars[z.id]) { prefs.pz.stars[z.id] = 1; savePrefs(); net.claim('puzzle', { id: z.id, shot: p.shots[0], shots: p.shots }); }
-    toast(said || (p.free === 'day' ? '오늘의 퍼즐 완료!' : '정답!'), 'good', 2000); SND.good();
-    hold(1.9, p.next);
+    SND.good();
+    if (!p.free && !p.done) return p.finish(p.helped ? 1 : 3 - p.tries);
+    toast(p.free === 'day' ? '오늘의 퍼즐 완료!' : '정답!', 'good', 2000);
+    hold(1.9, p.free ? p.next : p.again);
+  },
+  // the stage over: its stars (0 .. 3) recorded, the hidden rating moved, and the card over the table (pzCard)
+  finish(stars, why) {
+    const p = puzzle, z = p.cur, stage = pzr.of(p.k).stage + 1, out = pzr.record(p.k, z, stars);
+    p.done = true; p.got = { stars, d: out.d }; p.closed = out.closed; pzr.of(p.k).tried = null; savePrefs(); p.hud();
+    setTimeout(() => pzCard({ stage, stars, why, tries: p.tries, helped: p.helped, k: p.k, closed: out.closed }), stars ? 700 : 300);
   },
   hud() {
     const p = puzzle, z = p.cur, k = p.k, s = pzr.of(k), goal = p.goal(z), T = puzzles.turnsOf(z);
-    const name = p.free === 'day' ? '오늘의 퍼즐' : p.free ? '다시 풀기' : `${s.r}`;
-    paintPill(0, { name, on: true, sub: p.free ? '점수 없음' : p.done ? '점수 없음 · 연습' : '퍼즐 레이팅', tray: [], pts: null });
+    // (the stage being played: before it is over, the stars it can still give - three less a miss each, one with a hint)
+    const stage = p.done ? s.stage : s.stage + 1, can = p.done ? (p.got ? p.got.stars : 0) : p.helped ? 1 : 3 - p.tries;
+    const name = p.free === 'day' ? '오늘의 퍼즐' : p.free ? '다시 풀기' : `스테이지 ${stage}`;
+    paintPill(0, { name, on: true, sub: p.free ? '연습' : p.done ? '연습' : `남은 기회 ${3 - p.tries}번`, tray: [], pts: null });
     paintBadge(k === 'pocket' ? '포켓 퍼즐' : '4구 퍼즐', { text: goal });
-    // lying: the bar of its own (40-shot.js fbar) - the case (or rack) at its left (the place now ringed), the rating, the
-    // goal and what this puzzle has; 힌트, and once the counted attempt is made 정답 and 다음
+    // lying: the bar of its own (40-shot.js fbar) - the case (or rack) at its left (the place now ringed), the stage and
+    // its stars, the goal and what this puzzle has; 힌트, and once the stage is over 정답 and 다음
     const res = p.closed ? p.closed.res : s.now.slice(), mini = pzSvg(k === 'pocket' ? pzRackMini(res, !p.free && !p.done) : pzMini(res, !p.free && !p.done), 'fcase');   // (the case just closed: still shown full)
     const chips = pzNews(z).map(([key, , chip]) => el('span', { class: 'fchip' + (key === 'need' ? ' need' : ''), text: key === 'turns' ? `${p.turn + 1} / ${T}턴` : chip }));
-    const after = p.free || p.done;
+    const after = p.free || p.done, hard = !p.free && !p.done && pzr.hard(k);
+    const tries = el('span', { class: 'ftries', 'aria-label': `남은 기회 ${3 - p.tries}번` }, [0, 1, 2].map(i => el('i', { class: i < p.tries ? 'gone' : '' })));
     fbar({ bar: [p.free ? null : mini,
-      el('div', { class: 'fpl on' }, p.free ? [el('span', { class: 'fnm', text: name }), el('span', { class: 'fsb', text: '점수 없음' })]
-        : [el('span', { class: 'fnm num', text: String(s.r) }), el('span', { class: 'fsb', text: p.got ? (p.got.d > 0 ? `+${p.got.d}` : p.got.d < 0 ? `−${-p.got.d}` : '±0') : '레이팅' })]),
-      el('div', { class: 'fhead' }, [el('b', { text: '목표' }), el('span', { text: goal }), ...chips]),
-      fbKey('fib' + (p.helped >= 1 ? ' on' : ''), 'bulb', '힌트', p.aiming(p.hint)),
+      el('div', { class: 'fpl on pzst' + (hard ? ' hard' : '') }, p.free ? [el('span', { class: 'fnm', text: name }), el('span', { class: 'fsb', text: '연습' })]
+        : [el('span', { class: 'fnm' }, [el('small', { text: '스테이지' }), el('b', { class: 'num', text: String(stage) })]), el('span', { class: 'fsb' }, [pzStarRowS(can), p.done ? null : tries])]),
+      el('div', { class: 'fhead' }, [el('b', { text: '목표' }), el('span', { text: goal }), hard ? el('span', { class: 'fchip hard', text: '어려운 스테이지' }) : null, ...chips]),
+      fbKey('fib' + (p.helped >= 1 ? ' on' : ''), 'bulb', p.free || p.done ? '힌트' : '힌트 (★1)', p.aiming(p.hint)),
       after ? fbKey('fib' + (p.helped >= 2 ? ' on' : ''), 'play', '정답', p.aiming(p.answer)) : null,
       after ? fbKey('fib', 'next', p.free ? '나가기' : '다음', p.aiming(p.next)) : null] });
     setBusy();
@@ -275,13 +323,73 @@ const puzzle = {
   aiming: fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); },
   // a hint marks every place the cue ball touches on the way, numbered (seen before the counted shot: it counts for nothing);
   // the answer (once the counted shot is made) is played out in full
-  hint() { const p = puzzle, z = p.cur, sol = puzzles.shotOf(z, p.turn); p.helped = Math.max(+p.helped, 1); if (!p.free && !p.done) { pzr.of(p.k).hinted = z.id; savePrefs(); } scene.setMarks(p.marks(z)); p.hud(); const k = sol[4] ? ` 큐를 ${Math.round(sol[4] * 180 / Math.PI)}° 세워 칩니다.` : sol[3] > 0 ? ' 밀어치기입니다.' : sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); },
+  hint() { const p = puzzle, z = p.cur, sol = puzzles.shotOf(z, p.turn); if (!p.free && !p.done && !p.helped && p.tries < 2) toast('힌트를 보면 이 스테이지는 별 1개까지', '', 1600); p.helped = Math.max(+p.helped, 1); if (!p.free && !p.done) { pzr.of(p.k).hinted = z.id; savePrefs(); } scene.setMarks(p.marks(z)); p.hud(); const k = sol[4] ? ` 큐를 ${Math.round(sol[4] * 180 / Math.PI)}° 세워 칩니다.` : sol[3] > 0 ? ' 밀어치기입니다.' : sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); },
   answer() { const p = puzzle, z = p.cur, sol = puzzles.shotOf(z, p.turn); p.helped = 2; scene.setMarks(null); p.hud(); toast(puzzles.turnsOf(z) > 1 ? `정답: ${p.turn + 1}턴은 이렇게 칩니다.` : '정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: sol[0], power: game.powerOf(sol[1]), a: sol[2], b: sol[3], el: sol[4] }, { quiet: false, after: p.retake }); },
   // (upright: the row of keys where the second player's plate would be)
   bar() {
     const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;
     const btn = (text, fn) => box.appendChild(el('button', { class: 'btn', text, onclick: () => { SND.tap(); fn(); } }));
-    btn('힌트', p.aiming(p.hint)); btn('정답', p.aiming(() => { if (p.free || p.done) p.answer(); else toast('첫 시도를 한 뒤에 볼 수 있습니다', '', 1800); }));
-    btn('다음', p.aiming(() => { if (p.free || p.done) p.next(); else toast('첫 시도를 한 뒤에 넘어갈 수 있습니다', '', 1800); }));
+    btn('힌트', p.aiming(p.hint)); btn('정답', p.aiming(() => { if (p.free || p.done) p.answer(); else toast('풀거나 세 번 놓친 뒤에 볼 수 있습니다', '', 1800); }));
+    btn('다음', p.aiming(() => { if (p.free || p.done) p.next(); else toast('풀거나 세 번 놓친 뒤에 넘어갈 수 있습니다', '', 1800); }));
   },
 };
+
+// stars in a row, for the bar (n of three)
+const pzStarRowS = n => el('span', { class: 'pz-stars', 'aria-label': `별 ${n}개` }, [0, 1, 2].map(i => el('i', { class: i < n ? 'on' : '' })));
+/* How near a miss came (owner 11-24: 당구는 길을 알아도 각 조금만 틀려도 안 된다 - so say by how much): the shot played
+   again from where it started (the same shot gives the same run), watching - 4구, the cue ball after its first red, how
+   close it came to the other; with neither met, to the nearer; 포켓, each ball to be potted, how close to a pocket's
+   mouth. In words, or null when it was not near (over 15 cm) or the miss was of another kind. */
+function pzMiss(z, pre, shot) {
+  if (!pre || !shot) return null;
+  const P = game.P, t = P.clone(pre), four = puzzles.gameOf(z) === 'four', R = P.R; t.snd = [];
+  P.strike(t, shot.aim, shot.V, shot.a, shot.b, shot.el);
+  const holes = four ? [] : (t.shape && t.shape.holes && t.shape.holes.length ? t.shape.holes : P.POCKETS);
+  const pot = four ? [] : (z.pot || []), best = {};
+  let first = null;
+  for (let i = 0; i < 120 * 25 && !P.rest(t); i++) {
+    P.step(t, TICK); const c = t.balls[0];
+    if (four) {
+      if (first == null) first = t.ev.hits.find(id => id === 2 || id === 3) || null;
+      for (const id of [2, 3]) { if (t.ev.hits.includes(id)) continue; const b = t.balls[id], g = Math.hypot(b.x - c.x, b.y - c.y) - 2 * R; if (best[id] == null || g < best[id]) best[id] = g; }
+    } else for (const id of pot) {
+      const b = t.balls[id]; if (!b || !b.on) { best[id] = -1; continue; }
+      for (const h of holes) { const g = Math.hypot(b.x - h.x, b.y - h.y) - (h.r || 0.06); if (best[id] == null || g < best[id]) best[id] = g; }
+    }
+  }
+  const cm = g => g < 0.01 ? `${Math.max(1, Math.round(g * 1000))}mm` : `${(g * 100).toFixed(g < 0.1 ? 1 : 0)}cm`;
+  if (four) {
+    if (t.ev.hits.includes(1)) return null;                                     // (the yellow met: another kind of miss)
+    const left = [2, 3].filter(id => !t.ev.hits.includes(id) && best[id] != null);
+    if (!left.length) return null;
+    const g = Math.min(...left.map(id => best[id])); if (g > 0.15) return null;
+    return first ? `두 번째 빨간 공을 ${cm(g)} 차이로 비켜감` : `빨간 공을 ${cm(g)} 차이로 비켜감`;
+  }
+  const miss = pot.filter(id => best[id] != null && best[id] >= 0); if (!miss.length) return null;
+  const id = miss.sort((a, b) => best[a] - best[b])[0], g = best[id]; if (g > 0.15) return null;
+  return `${id}번 공이 포켓 입구까지 ${cm(g)}`;
+}
+/* The card over the table when a stage is over (owner 11-24 저녁's plan): cleared - its stars, one by one, and how many
+   tries; missed three times - no star, how near the last came, and that the stage goes on regardless. 다음 스테이지, 한 번
+   더 (played for nothing), 정답 (missed: see it played). A case (rack) it closed: said, and 다음 opens its result. */
+function pzCardOff() { const c = $('#pzCard'); if (c) c.remove(); }
+function pzCard(o) {
+  pzCardOff();
+  const p = puzzle, holder = o.k === 'pocket' ? '랙' : '케이스', ok = o.stars > 0;
+  const how = !ok ? '세 번 모두 놓쳤어요' : o.helped ? '힌트를 보고 성공' : o.tries === 0 ? '한 번에 성공!' : o.tries === 1 ? '두 번째에 성공' : '세 번째에 성공';
+  const stars = el('div', { class: 'pzc-stars' }, [0, 1, 2].map(i => el('i', { class: i < o.stars ? 'on' : '', style: `animation-delay:${0.15 + i * 0.22}s` })));
+  const go = fn => () => { SND.tap(); pzCardOff(); fn(); };
+  const card = el('div', { class: 'pz-card' + (ok ? ' ok' : ' no'), role: 'dialog', 'aria-label': `스테이지 ${o.stage} ${ok ? '클리어' : '실패'}` }, [
+    el('small', { class: 'pzc-st', text: `스테이지 ${o.stage}` }),
+    el('h3', { text: ok ? '클리어' : '다음 기회에' }),
+    stars,
+    el('p', { class: 'pzc-how', text: how }),
+    !ok && o.why ? el('p', { class: 'pzc-why', text: o.why }) : null,
+    !ok ? el('p', { class: 'pzc-note', text: '스테이지는 그대로 넘어갑니다 · 기록에서 다시 풀 수 있어요' }) : null,
+    o.closed ? el('p', { class: 'pzc-closed' }, [el('i', { class: 'star' }), document.createTextNode(`${holder} 완성 · 별 ${pzr.starsIn(o.closed.res)} / ${pzSize(o.k) * 3}`)]) : null,
+    el('div', { class: 'pzc-btns' }, [
+      !ok ? el('button', { class: 'pzc-b2', onclick: go(() => { p.again(); setTimeout(p.answer, 250); }) }, [fbIco('play'), el('span', { text: '정답 보기' })]) : null,
+      el('button', { class: 'pzc-b2', onclick: go(() => p.again()) }, [el('span', { text: '한 번 더' })]),
+      el('button', { class: 'pzc-go', onclick: go(() => p.next()) }, [el('span', { text: o.closed ? `${holder} 결과` : '다음 스테이지' })])])]);
+  $('#app').appendChild(el('div', { id: 'pzCard', class: 'pz-card-bg' }, card));
+}
