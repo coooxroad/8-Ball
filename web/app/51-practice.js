@@ -35,7 +35,7 @@ const practice = {
     if (id) { prefs.drill = id; savePrefs(); }
     const p = practice; p.drill = drills.byId(prefs.drill); p.level = levelOf(p.drill.id); p.streak = 0; p.tries = 0; p.ok = 0; p.edit = false; p.before = null;
     // (디버그: free practice on a table of another shape - 20-sheets.js sheetDebug, tables.js TABLE_SHAPES)
-    const shapeTry = net.debug && prefs.shapeTry && !drills.byId(prefs.drill).make ? TABLE_SHAPES.spec(PH.pool, { kind: prefs.shapeTry }) : null;
+    const shapeTry = net.debug && prefs.shapeTry && !drills.byId(prefs.drill).make ? TABLE_SHAPES.spec(PH[game.MODES['free-' + freeGame()].table] || PH.pool, /^outline:/.test(prefs.shapeTry) ? { kind: 'outline', id: prefs.shapeTry.slice(8) } : { kind: prefs.shapeTry }) : null;
     // (자유 연습: the game picked on the rail, on its own table - game.js free-*; a lesson on practice's pool table)
     game.start(p.drill.make ? 'practice' : 'free-' + freeGame(), [prefs.names[0], ''], false, { shape: shapeTry });
     flow = practice; scene.setMarks(null); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar();

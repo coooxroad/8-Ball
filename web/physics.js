@@ -95,9 +95,10 @@ function createPhysics(cfg) {
   // (run: how far the cue ball went before its second ball - carom - or its first - pool; orun: how far the ball it met first
   // went after (to a pocket, or till it stopped): the length of a shot's way, which the person-like players miss by -
   // ai/50-human.js pathFactor)
-  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, kissPre: 0, seq: [], run: 0, orun: 0 }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
+  function newEv() { return { firstHit: null, hits: [], rail: false, railed: [], pocketed: [], cushions: 0, pre: 0, air: 0, off: [], at: null, walls: 0, kiss: 0, kissPre: 0, seq: [], run: 0, orun: 0, edges: [] }; }   // at: [x, y, z, ball or -1 for a cushion] - where the cue ball was the first time it touched anything
     // seq: what the cue ball met, in order, up to 10 (a ball's id; 'L' a long cushion, 'S' a short one) - the route the review names (ai/62-intent.js);
-    // pre: cushions the cue ball met before any ball;   // kiss: two balls other than the cue ball met (쫑) after the cue ball's first contact - the computer player reads it (ai/50-human.js);   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
+    // edges: on a shaped table, the outline's edges the cue ball met, in order, each with how many balls it had met by then
+    // (physics shape: a puzzle's cushion that must be met);   // pre: cushions the cue ball met before any ball;   // kiss: two balls other than the cue ball met (쫑) after the cue ball's first contact - the computer player reads it (ai/50-human.js);   // off: balls that flew off the table   // cushions: how many the cue ball met before it had hit two balls
 
   function makeWorld(n) {
     const balls = [];
@@ -127,24 +128,56 @@ function createPhysics(cfg) {
      that jumps the cushion and comes down outside it is off the table. The table's own cushions and pockets still count
      wherever the polygon leaves them in play. Made once (shape()) and kept on the world (w.shape); worlds without one
      play exactly as before. tables.js TABLE_SHAPES makes the usual ones. */
+  /* The tables of the puzzles (owner 11-23: a table is its outline - tables.js TABLE_OUTLINES) add to that, each only
+     when given (a shape without them plays as before): spec.islands, [[[x, y], ...], ...] - cushions standing inside the
+     table, each round a block the balls stay out of (a ball come down on one is off the table); and a hole with cut: true
+     is a pocket in the outline itself - its circle cuts the cushion away where it crosses it (the cut ends are the
+     jaws: a face's end is round, as every face's is), and a ball whose centre goes past the cushion's line inside that
+     circle has dropped in (a hole on the cloth takes a ball only once its centre is over the hole's middle). */
   function shape(spec) {
     if (!spec || !Array.isArray(spec.poly) || spec.poly.length < 3) return null;
     const poly = spec.poly.map(p => [+p[0], +p[1]]), faces = [];
-    for (let i = 0; i < poly.length; i++) {
-      const a = poly[i], b = poly[(i + 1) % poly.length], l = DMath.hypot(b[0] - a[0], b[1] - a[1]); if (l < 1e-6) continue;
-      faces.push({ ax: a[0], ay: a[1], bx: b[0], by: b[1], len: l, tx: (b[0] - a[0]) / l, ty: (b[1] - a[1]) / l, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, reach: l / 2 + R });
-    }
-    const holes = (spec.holes || []).map(h => { const r = +h.r || 0.06; return { x: +h.x, y: +h.y, r, sink: r - 0.2 * R }; });
-    return { spec, poly, faces, holes };
+    const islands = (spec.islands || []).filter(q => Array.isArray(q) && q.length >= 3).map(q => q.map(p => [+p[0], +p[1]]));
+    const holes = (spec.holes || []).map(h => { const r = +h.r || 0.06; return { x: +h.x, y: +h.y, r, sink: r - 0.2 * R, cut: !!h.cut }; });
+    const cuts = holes.filter(h => h.cut);
+    // a stretch of cushion, less what the pockets in the outline cut out of it
+    const face = (ax, ay, bx, by, edge) => {
+      const l = DMath.hypot(bx - ax, by - ay); if (l < 1e-6) return;
+      const tx = (bx - ax) / l, ty = (by - ay) / l;
+      let spans = [[0, l]];
+      for (const h of cuts) {
+        const u = (h.x - ax) * tx + (h.y - ay) * ty, dx = h.x - ax - tx * u, dy = h.y - ay - ty * u, q = h.r * h.r - (dx * dx + dy * dy); if (q <= 0) continue;
+        const k = Math.sqrt(q), u0 = u - k, u1 = u + k, next = [];
+        for (const [s0, s1] of spans) { if (u1 <= s0 || u0 >= s1) { next.push([s0, s1]); continue; } if (u0 > s0) next.push([s0, u0]); if (u1 < s1) next.push([u1, s1]); }
+        spans = next;
+      }
+      // (uncut: exactly the face it always was, to the last bit - a match played on an older app is checked again on this one)
+      if (spans.length === 1 && spans[0][0] === 0 && spans[0][1] === l) { faces.push({ ax, ay, bx, by, len: l, tx, ty, cx: (ax + bx) / 2, cy: (ay + by) / 2, reach: l / 2 + R, edge }); return; }
+      for (const [s0, s1] of spans) {
+        if (s1 - s0 < 1e-4) continue;
+        const x0 = ax + tx * s0, y0 = ay + ty * s0, x1 = ax + tx * s1, y1 = ay + ty * s1, len = s1 - s0;
+        faces.push({ ax: x0, ay: y0, bx: x1, by: y1, len, tx, ty, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, reach: len / 2 + R, edge });
+      }
+    };
+    // (edge: which of the outline's edges a face is part of - a puzzle can ask for the cue ball to meet one, ev.edges; an
+    // island's faces are 1000 + the island's index)
+    [poly, ...islands].forEach((ring, k) => { for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length]; face(a[0], a[1], b[0], b[1], k ? 999 + k : i); } });
+    return { spec, poly, islands, faces, holes };
   }
-  // whether a point is within a shape's cushion (even-odd: any simple polygon, convex or not)
-  function inShape(sh, x, y) {
-    let c = false; const p = sh.poly;
+  // whether a point is within a polygon (even-odd: any simple polygon, convex or not)
+  function inPoly(p, x, y) {
+    let c = false;
     for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
       const a = p[i], b = p[j];
       if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
     }
     return c;
+  }
+  // whether a point is within a shape's cushion (and not on one of its islands)
+  function inShape(sh, x, y) {
+    if (!inPoly(sh.poly, x, y)) return false;
+    if (sh.islands) for (const q of sh.islands) if (inPoly(q, x, y)) return false;
+    return true;
   }
   // a ball can stand here: inside the shape, clear of its cushion and its holes
   function freeIn(sh, x, y) {
@@ -162,12 +195,12 @@ function createPhysics(cfg) {
         let best = null, bt = -1;
         for (const f of sh.faces) { if (Math.abs(b.x - f.cx) > f.reach || Math.abs(b.y - f.cy) > f.reach) continue; const t = segTime(b, f); if (t > bt) { bt = t; best = f; } }
         if (!best) break;
-        hitSeg(w, b, best);
+        SHAPE_FACE = best; hitSeg(w, b, best); SHAPE_FACE = null;
       }
       if (b.z !== 0) continue;
       for (let k = 0; k < sh.holes.length; k++) {
         const h = sh.holes[k], dx = b.x - h.x, dy = b.y - h.y;
-        if (dx * dx + dy * dy < h.sink * h.sink) {
+        if (dx * dx + dy * dy < h.sink * h.sink || (h.cut && dx * dx + dy * dy < h.r * h.r && !inShape(sh, b.x, b.y))) {
           b.on = false; w.ev.pocketed.push({ id: b.id, pocket: 6 + k });
           if (w.snd) w.snd.push({ t: 'pocket', id: b.id, pocket: 6 + k, x: b.x, y: b.y, vx: b.vx, vy: b.vy });
           b.vx = b.vy = b.wx = b.wy = b.wz = 0; break;
@@ -443,6 +476,7 @@ function createPhysics(cfg) {
       return;
     }
   }
+  let SHAPE_FACE = null;                                           // (the face of a shaped table being met: its edge goes in ev.edges)
   let ON_WALL = false;                                             // (the face being met is a barricade's, not a cushion's)
   function noteWall(w, b, vn) {
     w.ev.walls++;
@@ -455,6 +489,7 @@ function createPhysics(cfg) {
     if (b.id === w.cue && w.ev.hits.length < 2 && -vn > 0.05) w.ev.cushions++;
     if (b.id === w.cue && -vn > 0.05 && w.ev.seq.length < 10) w.ev.seq.push(Math.abs(b.x) > HL - 2 * R ? 'S' : 'L');
     if (b.id === w.cue && w.ev.firstHit == null && -vn > 0.05) w.ev.pre++;
+    if (SHAPE_FACE && b.id === w.cue && -vn > 0.05 && w.ev.edges.length < 16) w.ev.edges.push([SHAPE_FACE.edge, w.ev.hits.length]);
     if (b.id === w.cue && !w.ev.at) w.ev.at = [b.x, b.y, b.z, -1];
     if (w.snd && -vn > 0.08) w.snd.push({ t: 'rail', v: -vn, x: b.x, y: b.y, id: b.id });
   }

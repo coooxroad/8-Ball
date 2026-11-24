@@ -342,43 +342,127 @@
     }
     renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
   }
-  /* A table of another shape (physics.js shape): the cloth outside the shape filled up level with the rails in the rail's
-     own wood, its edge a cushion face in the cushion's cloth (the materials the table wears: cushMat, woodMat - so a new
-     cloth or table look dresses it too), and each hole a dark cup with a thin metal rim. In the static layer, as the
-     barricades. The pockets' drop (60-view.js fall) finds a hole by its number (6 + its index: shapeHole). */
+  /* A table of another shape (physics.js shape; the puzzles' tables: tables.js TABLE_OUTLINES; 증강 당구's votes) drawn
+     whole from its outline, as a real table is built round its cushions (owner 11-23: not walls filling an ordinary
+     table) - the ordinary table is put away while it shows. Out from the cushion's nose line, step by step all the way
+     round (SH_STEP; the corners mitred): the rubber - a wall up from the cloth to the nose, its top rising back to the
+     rail -, the rail's wood with a rounded outer edge and the apron under it, then the cabinet; under the middle a
+     pedestal to the floor. An island is the same turned inward, its top the rail's wood. The cloth runs under it all.
+     A pocket in the outline (hole.cut) is cut through rubber and rail on its circle, with a pit down through the cloth,
+     a liner standing round its back and a metal cap on the rail round it; a hole in the cloth is a cup with a rim. The
+     sights stand along each long straight rail. In the static layer, as the barricades. The pockets' drop (60-view.js
+     fall) finds a hole by its number (6 + its index: shapeHole). */
   const shapeGrp = new THREE.Group(); sScene.add(shapeGrp);
   const holeMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
-  const shapeFillMat = new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0, envMapIntensity: 0.35 });
+  const SH_CW = 0.05, SH_STEP = 0.01, NOSE = 0.0355;
+  // (the rails' wood without its lacquer: an outline's rails come in under the lamps, where the coat would mirror them white)
+  const shapeWoodMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0, envMapIntensity: 0.4 });
+  shapeWoodMat.onBeforeCompile = woodMat.onBeforeCompile;
   let shapeNow = null;
+  // a ring of the outline (or an island) walked in small steps: each point, and the way out from the cloth there (an
+  // edge's normal; at a corner the mitre, so every offset ring closes on itself)
+  function shapeWalk(pts, island) {
+    const n = pts.length; let A = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; A += a[0] * b[1] - b[0] * a[1]; }
+    const sg = (A > 0 ? 1 : -1) * (island ? -1 : 1);
+    const N = i => { const a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [sg * dy / l, -sg * dx / l]; };
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n], n0 = N((i - 1 + n) % n), n1 = N(i), dot = n0[0] * n1[0] + n0[1] * n1[1];
+      let mx = (n0[0] + n1[0]) / (1 + dot), my = (n0[1] + n1[1]) / (1 + dot); const ml = Math.hypot(mx, my); if (!(ml < 3)) { mx = n1[0]; my = n1[1]; } 
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), k = Math.max(1, Math.ceil(len / SH_STEP));
+      for (let j = 0; j < k; j++) { const t = j / k; out.push({ x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, mx: j ? n1[0] : mx, my: j ? n1[1] : my, e: i }); }
+    }
+    return out;
+  }
+  // (a point of the walk d out from the nose)
+  const shapeAt = (q, d) => [q.x + q.mx * d, q.y + q.my * d];
   function setShape(sh) {
     shapeNow = sh || null;
     while (shapeGrp.children.length) { const m = shapeGrp.children.pop(); m.geometry.dispose(); }
+    const std = cur && tables.get(cur); if (std) std.visible = !sh;
     if (sh && cur) {
-      const top = RAIL_Z * 0.9, pts = sh.poly, n = pts.length;
-      let area = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
-      const ccw = area > 0;
-      // the fill: the table's playing field (out under the rails) with the shape cut out of it
-      const ex = cur.HL + 0.06, ey = cur.HW + 0.06, outer = new THREE.Shape([new THREE.Vector2(-ex, -ey), new THREE.Vector2(ex, -ey), new THREE.Vector2(ex, ey), new THREE.Vector2(-ex, ey)]);
-      const cut = pts.map(p => new THREE.Vector2(p[0], p[1])); if (ccw) cut.reverse();
-      outer.holes.push(new THREE.Path(cut));
-      // (matte: the rails' lacquer would mirror the lamp across the whole fill - the table's own wood, its colour, no coat)
-      shapeFillMat.map = woodMat.map; shapeFillMat.color.copy(woodMat.color); shapeFillMat.needsUpdate = true;
-      const fill = new THREE.Mesh(new THREE.ShapeGeometry(outer), shapeFillMat); fill.position.z = top; fill.receiveShadow = true; fill.layers.enable(OCCL); shapeGrp.add(fill);
-      // the cushion's face: from the cloth up to the fill, all the way round, facing in
-      const pos = [], nrm = [];
-      for (let i = 0; i < n; i++) {
-        const a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = (ccw ? -dy : dy) / l, ny = (ccw ? dx : -dx) / l;
-        const q = [[a[0], a[1], 0], [b[0], b[1], 0], [b[0], b[1], top], [a[0], a[1], 0], [b[0], b[1], top], [a[0], a[1], top]];
-        for (const v of q) { pos.push(v[0], v[1], v[2]); nrm.push(nx, ny, 0.25); }
+      shapeWoodMat.map = woodMat.map; shapeWoodMat.color.copy(woodMat.color); shapeWoodMat.needsUpdate = true;
+      const RT = SH_CW + RW, cuts = sh.holes.filter(h => h.cut), V = { cush: [], wood: [], body: [], liner: [], cap: [] };
+      const cutAt = (x, y, pad) => cuts.some(h => (x - h.x) ** 2 + (y - h.y) ** 2 < (h.r + pad) ** 2);
+      const quad = (arr, a, b, c, d) => arr.push(...a, ...b, ...c, ...a, ...c, ...d);
+      // round one ring: the profile (distance out, height) swept from step to step; a step inside a pocket's circle left out
+      const PROF = [[0, 0, 'cush'], [0, NOSE, 'cush'], [0.012, 0.038, 'cush'], [SH_CW, RAIL_Z, 'cush'], [RT - 0.012, RAIL_Z, 'wood'], [RT - 0.004, RAIL_Z - 0.004, 'wood'], [RT, RAIL_Z - 0.013, 'body'], [RT, RAIL_Z - 0.13, 'body'], [RT - 0.03, RAIL_Z - 0.13, 'body'], [RT - 0.03, -0.27, 'body']];
+      const sweep = (walk, prof) => {
+        // (faces turned to face out of the wood and up: which way round depends on which way the ring runs)
+        const t0 = walk[1], f0 = walk[0], flip = (t0.x - f0.x) * t0.my - (t0.y - f0.y) * t0.mx < 0;
+        for (let k = 0; k < walk.length; k++) {
+          const q0 = walk[k], q1 = walk[(k + 1) % walk.length];
+          for (let j = 0; j + 1 < prof.length; j++) {
+            const [d0, z0] = prof[j], [d1, z1, m] = prof[j + 1], dm = (d0 + d1) / 2, p = shapeAt(q0, dm), r = shapeAt(q1, dm);
+            if (cutAt((p[0] + r[0]) / 2, (p[1] + r[1]) / 2, 0.002)) continue;
+            const a = shapeAt(q0, d0), b = shapeAt(q1, d0), c = shapeAt(q1, d1), d = shapeAt(q0, d1);
+            if (flip) quad(V[m], [a[0], a[1], z0], [d[0], d[1], z1], [c[0], c[1], z1], [b[0], b[1], z0]); else quad(V[m], [a[0], a[1], z0], [b[0], b[1], z0], [c[0], c[1], z1], [d[0], d[1], z1]);
+          }
+        }
+      };
+      const outer = shapeWalk(sh.poly, false);
+      sweep(outer, PROF);
+      const islands = (sh.islands || []).map(q => shapeWalk(q, true));
+      for (const w of islands) {
+        sweep(w, PROF.slice(0, 4));
+        // the island's top: its own wood, level with the rails
+        const top = new THREE.Shape(w.map(q => { const p = shapeAt(q, SH_CW); return new THREE.Vector2(p[0], p[1]); }));
+        const tg = new THREE.ShapeGeometry(top); tg.translate(0, 0, RAIL_Z);
+        const tm = new THREE.Mesh(tg, shapeWoodMat); tm.castShadow = tm.receiveShadow = true; tm.layers.enable(OCCL); shapeGrp.add(tm);
       }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-      const face = new THREE.Mesh(g, cushMat); face.castShadow = true; face.receiveShadow = true; face.layers.enable(OCCL); shapeGrp.add(face);
+      // the pockets in the outline: the liner standing round the back of each (only where it is past the nose), its cap
+      for (const h of cuts) {
+        const n = 48, inT = (x, y) => physIn(sh, x, y);
+        for (let i = 0; i < n; i++) {
+          const t0 = Math.PI * 2 * i / n, t1 = Math.PI * 2 * (i + 1) / n, xm = h.x + Math.cos((t0 + t1) / 2) * h.r, ym = h.y + Math.sin((t0 + t1) / 2) * h.r;
+          if (inT(xm, ym)) continue;
+          const a = [h.x + Math.cos(t0) * h.r, h.y + Math.sin(t0) * h.r], b = [h.x + Math.cos(t1) * h.r, h.y + Math.sin(t1) * h.r];
+          quad(V.liner, [a[0], a[1], -0.002], [b[0], b[1], -0.002], [b[0], b[1], RAIL_Z], [a[0], a[1], RAIL_Z]);
+          const R1 = h.r + 0.013, c = [h.x + Math.cos(t1) * R1, h.y + Math.sin(t1) * R1], d = [h.x + Math.cos(t0) * R1, h.y + Math.sin(t0) * R1];
+          quad(V.cap, [a[0], a[1], RAIL_Z + 0.0008], [d[0], d[1], RAIL_Z + 0.0008], [c[0], c[1], RAIL_Z + 0.0008], [b[0], b[1], RAIL_Z + 0.0008]);
+        }
+      }
+      const mesh = (arr, mat, uvs) => {
+        if (!arr.length) return null;
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+        if (uvs) { const uv = []; for (let i = 0; i < arr.length; i += 3) uv.push(arr[i] * 0.6, arr[i + 1] * 0.6); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); }
+        g.computeVertexNormals();
+        const m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); return m;
+      };
+      mesh(V.cush, cushMat, true); mesh(V.wood, shapeWoodMat, true); mesh(V.body, bodyMat, true); mesh(V.liner, linerMat, false); mesh(V.cap, metalMat, false);
+      // the cloth: out under the rails, the holes cut through it
+      const bed = new THREE.Shape(outer.map(q => { const p = shapeAt(q, RT - 0.01); return new THREE.Vector2(p[0], p[1]); }));
+      for (const h of sh.holes) { const hp = new THREE.Path(); hp.absarc(h.x, h.y, h.r, 0, Math.PI * 2, true); bed.holes.push(hp); }
+      const bm = new THREE.Mesh(new THREE.ShapeGeometry(bed, 40), feltMat); bm.receiveShadow = true; shapeGrp.add(bm);
+      // each hole's pit, down through the cloth, dark at the bottom; a hole in the cloth gets its rim on the cloth
       for (const h of sh.holes) {
-        const cup = new THREE.Mesh(new THREE.CircleGeometry(h.r, 40), holeMat); cup.position.set(h.x, h.y, 0.0006); shapeGrp.add(cup);
-        const rim = new THREE.Mesh(new THREE.RingGeometry(h.r, h.r + 0.006, 40), metalMat); rim.position.set(h.x, h.y, 0.0008); shapeGrp.add(rim);
+        const pit = new THREE.Mesh(new THREE.CylinderGeometry(h.r, h.r, 0.12, 40, 1, true).rotateX(Math.PI / 2), linerMat); pit.position.set(h.x, h.y, -0.06); shapeGrp.add(pit);
+        const bot = new THREE.Mesh(new THREE.CircleGeometry(h.r, 40), holeMat); bot.position.set(h.x, h.y, -0.1); shapeGrp.add(bot);
+        if (!h.cut) { const rim = new THREE.Mesh(new THREE.RingGeometry(h.r, h.r + 0.006, 40), metalMat); rim.position.set(h.x, h.y, 0.0008); shapeGrp.add(rim); }
+      }
+      // a pedestal under the middle, to the floor (the outline, drawn in a little)
+      const pg = new THREE.ExtrudeGeometry(new THREE.Shape(sh.poly.map(p => new THREE.Vector2(p[0] * 0.8, p[1] * 0.8))), { depth: 0.5, bevelEnabled: false }); pg.translate(0, 0, -0.77);
+      const ped = new THREE.Mesh(pg, bodyMat); ped.castShadow = true; ped.receiveShadow = true; shapeGrp.add(ped);
+      // the sights: along each straight stretch of the outer rail 40 cm or longer, a quarter of the table's length apart
+      const pts = sh.poly, dg = new THREE.CircleGeometry(0.0095, 4), gap = cur.HL / 4;
+      let A = 0; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; A += a[0] * b[1] - b[0] * a[1]; }
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy); if (len < 0.4) continue;
+        const tx = dx / len, ty = dy / len, nx = (A > 0 ? ty : -ty), ny = (A > 0 ? -tx : tx), ang = Math.atan2(ty, tx), cnt = Math.floor(len / gap - 0.5);
+        for (let k = -Math.floor(cnt / 2); k <= Math.floor(cnt / 2); k++) {
+          const u = len / 2 + k * gap; if (cnt % 2 === 0 && k === 0 && cnt > 0) continue;
+          const x = a[0] + tx * u + nx * (SH_CW + RW * 0.52), y = a[1] + ty * u + ny * (SH_CW + RW * 0.52); if (cutAt(x, y, 0.02)) continue;
+          const m = new THREE.Mesh(dg, pearl); m.rotation.z = ang; m.position.set(x, y, RAIL_Z + 0.0006); shapeGrp.add(m);
+          const sm = new THREE.Mesh(SIGHT, sightMat); sm.rotation.z = ang + Math.PI / 2; sm.position.set(x, y, RAIL_Z + 0.0007); shapeGrp.add(sm);
+        }
       }
     }
     renderer.shadowMap.needsUpdate = true; staticDirty = true; dirty = 3;
+  }
+  // (inside the shape's play: the outline less its islands - physics.js inShape, which the scene does not have)
+  function physIn(sh, x, y) {
+    const inP = p => { let c = false; for (let i = 0, j = p.length - 1; i < p.length; j = i++) { const a = p[i], b = p[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+    return inP(sh.poly) && !(sh.islands || []).some(inP);
   }
   // a hole as the pocket drop wants it (x, y, r): 6 and on are the shape's holes
   const shapeHole = k => shapeNow && shapeNow.holes[k - 6] || null;

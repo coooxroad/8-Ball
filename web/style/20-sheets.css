@@ -58,3 +58,4 @@
 /* 디버그 (20-sheets.js sheetDebug): the table shows through - no dimming, the sheet docked to the right and scrolling */
 #sheet.see,#app.desk #sheet.see{background:none;place-items:stretch end;pointer-events:none}
 #sheet.see .sheet{pointer-events:auto;width:min(100%,330px);max-height:100%;overflow:auto;gap:10px}
+.seg.wrap{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr))}   /* (a long row of choices, four to a line: the debug sheet's puzzle tables) */

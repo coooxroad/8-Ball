@@ -591,10 +591,20 @@ for (const name of ['bar', 'pro', 'pub']) {
   let shots = 0, holed = 0;
   for (const tid of ['bar', 'pro']) for (const kind of ['pool', 'carom']) {
     const P = T.physicsFor(createPhysics, tid)[kind]; if (!P) continue;
-    for (const k of S.kinds) {
-      if (k === 'poly') continue;
-      const spec = S.spec(P, { kind: k }), sh = P.shape(spec), r = createGameRaw.seededRandom(k.length * 7 + (kind === 'pool' ? 1 : 2));
-      if (!sh || !P.inShape(sh, 0, 0)) { fail(`shapes: ${k} on ${tid} ${kind} is not made`); continue; }
+    // (each kind, and each of the puzzles' outline tables - tables.js TABLE_OUTLINES: islands, pockets cut in the outline)
+    for (const o of S.kinds.filter(k => k !== 'poly' && k !== 'outline').map(k => ({ kind: k })).concat(T.TABLE_OUTLINES.ids.map(id => ({ kind: 'outline', id })))) {
+      const k = o.id ? 'outline ' + o.id : o.kind;
+      const spec = S.spec(P, o), sh = P.shape(spec), r = createGameRaw.seededRandom(k.length * 7 + (kind === 'pool' ? 1 : 2));
+      if (!sh || !sh.faces.length || !P.isFree(Object.assign(P.makeWorld(1), { shape: sh }), ...P.findFree(Object.assign(P.makeWorld(1), { shape: sh }), 0, 0))) { fail(`shapes: ${k} on ${tid} ${kind} is not made`); continue; }
+      // every pocket cut in an outline takes a ball sent straight at it from somewhere on the cloth
+      for (const h of sh.holes.filter(q => q.cut)) {
+        let got = false;
+        for (const st of [[0, 0], [0.3, 0.3], [-0.3, -0.3], [0.6, 0], [-0.6, 0.1], [0.3, -0.3], [-0.3, 0.3], [0, 0.3], [0, -0.3]]) {
+          const w = P.makeWorld(1); w.shape = sh; if (!P.isFree(w, st[0], st[1])) continue; P.place(w, 0, st[0], st[1]);
+          P.strike(w, Math.atan2(h.y - st[1], h.x - st[0]), 1.2, 0, 0, 0); if (P.run(w, 30).pocketed.length) { got = true; break; }
+        }
+        if (!got) fail(`shapes: the pocket at ${h.x}, ${h.y} of ${k} on ${tid} ${kind} takes no ball`);
+      }
       const once = () => {
         const w = P.makeWorld(kind === 'pool' ? 8 : 4); w.shape = sh; const rr = createGameRaw.seededRandom(99);
         for (const b of w.balls) { const [x, y] = P.findFree(w, (rr() - 0.5) * 0.6, (rr() - 0.5) * 0.4); P.place(w, b.id, x, y); }
@@ -609,7 +619,7 @@ for (const name of ['bar', 'pro', 'pub']) {
     }
   }
   if (!holed) fail('shapes: no ball ever dropped into a hole');
-  console.log(`shapes: ${shots} shots on ${S.kinds.length - 1} shapes, ${holed} balls into holes`);
+  console.log(`shapes: ${shots} shots on ${S.kinds.length - 2 + T.TABLE_OUTLINES.ids.length} shapes, ${holed} balls into holes`);
 }
 
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');

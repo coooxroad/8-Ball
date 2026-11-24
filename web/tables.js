@@ -53,7 +53,97 @@ const TABLE_SHAPES = (() => {
     hexa: (P, o) => { const r = fit(P) / Math.cos(Math.PI / 6), poly = ring(6, r, r, 0); const q = poly.map(([x, y]) => [x, Math.max(-fit(P), Math.min(fit(P), y))]); return { poly: q, holes: holesAt(P, q) }; },
     bumpy: (P, o) => { const n = o.n || 14, k = o.k || 0.07, rx = P.HL - 0.01, ry = P.HW - 0.01, poly = ring(n * 6, rx / (1 + k), ry / (1 + k), 0, i => 1 + k * Math.cos(TAU * i / 6)); return { poly, holes: holesAt(P, ring(6, rx * 0.86 / (1 + k), ry * 0.86 / (1 + k), Math.PI / 6)) }; },
     poly: (P, o) => ({ poly: (o.poly || []).map(p => [r4(p[0]), r4(p[1])]), holes: (o.holes || []).map(h => ({ x: r4(h.x), y: r4(h.y), r: r4(h.r || P.R * 2.05) })) }),
+    // a table of the puzzles' (owner 11-23): one of TABLE_OUTLINES, fitted to this table, its pockets cut in its outline
+    outline: (P, o) => TABLE_OUTLINES.spec(P, o.id),
   };
   return { kinds: Object.keys(make), spec: (P, o) => o && make[o.kind] ? make[o.kind](P, o) : null };
 })();
-if (typeof module !== 'undefined') module.exports = { TABLES, CAROM, SNOOKER, physicsFor, TABLE_SHAPES };
+/* The puzzles' tables (owner 11-23: "Pooking has many; we need the structure for it - not walls filling an ordinary
+   table"). A table is its outline: the line of the cushion's nose, where a ball's edge meets the rubber - and, inside
+   it, islands (cushions round a block), and for a pocket game the pockets, set by hand on the outline (where they are
+   is part of the puzzle) or else at its sharp outer corners and halfway along its long sides. Everything else follows
+   from it: the physics' cushions (physics.js shape: the outline's edges, the islands', cut where a pocket is), and the
+   whole table drawn round it (scene/20-table.js buildShaped: the cloth, the cushion's rubber, the rail and its wood,
+   the apron, the cabinet, each pocket cut through cushion and rail) - the ordinary table is not drawn under it.
+   The outlines are drawn on a 2.4 x 1.2 box (x: -1.2 .. 1.2, y: -0.6 .. 0.6) and stretched to the table's own cloth,
+   so the same outline serves 4구's table and a pool table. A new table is one line here. */
+const TABLE_OUTLINES = (() => {
+  const H = 1.2, W = 0.6, TAU = 6.283185307179586, r4 = v => Math.round(v * 1e4) / 1e4;
+  const ell = (n, rx, ry, cx, cy, a0) => Array.from({ length: n }, (_, i) => { const a = (a0 || 0) + TAU * i / n; return [(cx || 0) + Math.cos(a) * rx, (cy || 0) + Math.sin(a) * ry]; });
+  const zig = (x0, x1, y, n, d) => Array.from({ length: n * 2 + 1 }, (_, i) => [x0 + (x1 - x0) * i / (n * 2), y + (i % 2 ? d : 0)]);
+  const wave = (x0, x1, y, n, a, m) => Array.from({ length: m + 1 }, (_, i) => [x0 + (x1 - x0) * i / m, y + a * Math.sin(i / m * Math.PI * 2 * n)]);
+  const L = [
+    { id: 'rect', name: '기본', out: [[-H, -W], [H, -W], [H, W], [-H, W]] },
+    { id: 'steps', name: '계단 모서리', out: [[-H, -0.05], [-1.0, -0.05], [-1.0, -0.25], [-0.8, -0.25], [-0.8, -0.45], [-0.6, -0.45], [-0.6, -W], [H, -W], [H, 0.05], [1.0, 0.05], [1.0, 0.25], [0.8, 0.25], [0.8, 0.45], [0.6, 0.45], [0.6, W], [-H, W]],
+      pk: [[-H, W], [0, W], [-H, -0.05], [-0.6, -W], [0.3, -W], [H, -W], [H, 0.05], [0.6, W]] },
+    { id: 'L', name: 'ㄱ자', out: [[-H, -W], [H, -W], [H, 0.02], [0.05, 0.02], [0.05, W], [-H, W]] },
+    { id: 'cross', name: '십자', out: [[-0.45, -W], [0.45, -W], [0.45, -0.22], [H, -0.22], [H, 0.22], [0.45, 0.22], [0.45, W], [-0.45, W], [-0.45, 0.22], [-H, 0.22], [-H, -0.22], [-0.45, -0.22]],
+      pk: [[-0.45, -W], [0.45, -W], [0.45, W], [-0.45, W], [-H, 0], [H, 0]] },
+    { id: 'hour', name: '모래시계', out: [[-H, -W], [0, -0.22], [H, -W], [H, W], [0, 0.22], [-H, W]] },
+    { id: 'hexa', name: '육각', out: [[-H, 0], [-0.62, -W], [0.62, -W], [H, 0], [0.62, W], [-0.62, W]] },
+    { id: 'island', name: '가운데 섬', out: ell(72, H, W), islands: [ell(40, 0.26, 0.17)], pk: ell(6, H, W, 0, 0, Math.PI / 6) },
+    { id: 'zig', name: '톱니', out: [...zig(-H, H, -W, 6, 0.1), [H, W], ...zig(H, -H, W, 6, -0.1).slice(1)], pk: [[-H, -W], [H, -W], [H, W], [-H, W], [0, -W + 0.1], [0, W - 0.1]] },
+    { id: 'U', name: '말굽', out: [[-H, -W], [H, -W], [H, W], [0.42, W], [0.42, -0.02], [-0.42, -0.02], [-0.42, W], [-H, W]], pk: [[-H, -W], [H, -W], [H, W], [-H, W], [0.42, W], [-0.42, W], [0, -0.02]] },
+    { id: 'oct', name: '팔각', out: [[-H, -0.25], [-0.85, -W], [0.85, -W], [H, -0.25], [H, 0.25], [0.85, W], [-0.85, W], [-H, 0.25]], pk: [[-H, -0.25], [-H, 0.25], [H, -0.25], [H, 0.25], [0, -W], [0, W]] },
+    { id: 'wave', name: '물결', out: [...wave(-H, H, -W + 0.04, 4, 0.04, 48), ...wave(H, -H, W - 0.04, 4, 0.04, 48)], pk: [[-H, -W + 0.04], [H, -W + 0.04], [H, W - 0.04], [-H, W - 0.04]] },
+    { id: 'bowtie', name: '나비', out: [[-H, -W], [-0.25, -0.18], [0.25, -0.18], [H, -W], [H, W], [0.25, 0.18], [-0.25, 0.18], [-H, W]] },
+    { id: 'pillars', name: '기둥 둘', out: [[-H, -W], [H, -W], [H, W], [-H, W]], islands: [ell(24, 0.09, 0.09, -0.45, 0), ell(24, 0.09, 0.09, 0.45, 0)] },
+  ];
+  const area = q => { let a = 0; for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length]; a += p[0] * n[1] - n[0] * p[1]; } return a / 2; };
+  // pockets by default: at the outline's sharp outer corners, and halfway along its long straight sides
+  function auto(out) {
+    const n = out.length, ccw = area(out) > 0, P = [];
+    for (let i = 0; i < n; i++) {
+      const p = out[(i - 1 + n) % n], c = out[i], q = out[(i + 1) % n], ax = c[0] - p[0], ay = c[1] - p[1], bx = q[0] - c[0], by = q[1] - c[1];
+      const cr = ax * by - ay * bx, la = Math.hypot(ax, ay), lb = Math.hypot(bx, by), turn = Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb))));
+      if ((ccw ? cr > 0 : cr < 0) && turn > 0.6 && la > 0.12 && lb > 0.12) P.push(c);
+      if (lb > 1.3) P.push([(c[0] + q[0]) / 2, (c[1] + q[1]) / 2]);
+    }
+    return P;
+  }
+  /* a pocket at its spot: the hole's circle placed so the cushion is cut back to jaws as far apart as the table's own
+     pockets' mouths - at a sharp corner (two edges meeting at the spot) the middle goes in along the corner's bisector
+     until each edge is cut x from the corner, the jaws then CM apart (P.CM, the table's corner mouth); on a side, or on
+     a smooth curve, the middle sits a little outside the line, the mouth SM wide (P.SM) */
+  function hole(out, at, P) {
+    const ccw = area(out) > 0, n = out.length, r = Math.max(P.R * 2.1, P.SM * 0.5);
+    let vi = -1; for (let i = 0; i < n; i++) if (Math.hypot(out[i][0] - at[0], out[i][1] - at[1]) < 1e-6) vi = i;
+    const nrm = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return ccw ? [dy / l, -dx / l] : [-dy / l, dx / l]; };   // (out of the table)
+    if (vi >= 0) {
+      const p = out[(vi - 1 + n) % n], c = out[vi], q = out[(vi + 1) % n], n0 = nrm(p, c), n1 = nrm(c, q);
+      const ax = c[0] - p[0], ay = c[1] - p[1], bx = q[0] - c[0], by = q[1] - c[1], la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+      const turn = Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb))));
+      if (turn > 0.6) {
+        // the bisector, into the table; half the corner's inside angle phi
+        let ix = -(n0[0] + n1[0]), iy = -(n0[1] + n1[1]); const il = Math.hypot(ix, iy) || 1; ix /= il; iy /= il;
+        const phi = (Math.PI - turn) / 2, x = P.CM / (2 * Math.sin(phi)), sn = Math.sin(phi), cs = Math.cos(phi);
+        // a: how far in along the bisector puts each jaw x from the corner (the cut on an edge reaches a cos + root(r^2 - (a sin)^2))
+        // (the reach grows with a up to a = r cos / sin, where it is r / sin: a circle too small for the mouth is made larger)
+        const rc = Math.max(r, x * sn * 1.02);
+        let lo = -rc, hi = rc * cs / Math.max(sn, 1e-3);
+        for (let k = 0; k < 60; k++) { const a = (lo + hi) / 2, reach = a * cs + Math.sqrt(Math.max(0, rc * rc - a * a * sn * sn)); if (reach < x) lo = a; else hi = a; }
+        const a = (lo + hi) / 2;
+        return { x: r4(c[0] + ix * a), y: r4(c[1] + iy * a), r: r4(rc), cut: true };
+      }
+    }
+    // on a side (the edge the spot is on, or the two it joins on a curve, their normals averaged)
+    let nx = 0, ny = 0, best = Infinity;
+    for (let i = 0; i < n; i++) {
+      const a = out[i], b = out[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy); if (l < 1e-9) continue;
+      const u = Math.max(0, Math.min(l, ((at[0] - a[0]) * dx + (at[1] - a[1]) * dy) / l)), d = Math.hypot(at[0] - a[0] - dx / l * u, at[1] - a[1] - dy / l * u), m = nrm(a, b);
+      if (d < best - 1e-9) { best = d; nx = m[0]; ny = m[1]; } else if (Math.abs(d - best) < 1e-9) { nx += m[0]; ny += m[1]; }
+    }
+    const k = Math.hypot(nx, ny) || 1, h = r * r - (P.SM / 2) ** 2, push = h > 0 ? Math.sqrt(h) : 0;
+    return { x: r4(at[0] + nx / k * push), y: r4(at[1] + ny / k * push), r: r4(r), cut: true };
+  }
+  const byId = id => L.find(t => t.id === id) || null;
+  // the spec physics.js shape() takes, for table P: the outline stretched to P's cloth, its pockets if P has pockets
+  function spec(P, id) {
+    const t = byId(id); if (!t) return null;
+    const sx = (P.HL - 0.003) / H, sy = (P.HW - 0.003) / W, fit = q => q.map(p => [r4(p[0] * sx), r4(p[1] * sy)]);
+    const out = fit(t.out);
+    return { poly: out, islands: (t.islands || []).map(fit), holes: P.POCKETED ? fit(t.pk || auto(t.out)).map(at => hole(out, at, P)) : [], table: t.id };
+  }
+  return { list: L, byId, spec, ids: L.map(t => t.id) };
+})();
+if (typeof module !== 'undefined') module.exports = { TABLES, CAROM, SNOOKER, physicsFor, TABLE_SHAPES, TABLE_OUTLINES };
