@@ -13,7 +13,11 @@
      4구 with conditions, above 800 only (owner 11-23): barricades, a table of another shape (tables.js TABLE_OUTLINES),
          a cushion that must be met, a goal (모아치기, 빈쿠션, 쓰리쿠션, 쿠션 없이), two turns - one or two together
      포켓: a ball (or two) to pot, from the plain cut to kicks, banks, combinations, a ball to keep out, two turns
-   Every answer kept is played again from the start exactly as the app, tests and server will (puzzles.js play). */
+   Every answer kept is played again from the start exactly as the app, tests and server will (puzzles.js play).
+   (11-24 밤, owner) Each band asks a least room of its answer (MIN_ROOM - the share of aims and paces around it that
+   still work): up to 800 only wide answers, so what is hard there is finding the way and not a steady hand; the higher
+   the band, the finer an answer may be. write() keeps the puzzles already in the list with their ids (the server pays
+   and rates by id) and gives new ones ids never used (next-id.json). */
 const fs = require('fs'), path = require('path');
 const L = require('./lab'), AI = require('./ai');
 const args = process.argv.slice(2), opt = k => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : null; };
@@ -23,6 +27,13 @@ const BANDS = []; for (let r = 400; r < 2500; r += 100) BANDS.push(r);
 const WANT = { plain: 10, cond: 8, pocket: 6 };
 const wantOf = (kind, band) => kind === 'cond' ? (band > 800 ? WANT.cond : 0) : kind === 'pocket' ? (band <= 2200 ? WANT.pocket : 0) : WANT.plain;
 const bandOf = r => Math.max(400, Math.min(2400, Math.floor(r / 100) * 100));
+const MIN_ROOM = b => b <= 800 ? 0.45 : b <= 1100 ? 0.3 : b <= 1400 ? 0.18 : b <= 1800 ? 0.08 : 0;
+const roomOk = z => (z.room != null ? z.room : 1) >= MIN_ROOM(bandOf(z.rating));
+// a listed puzzle's room: its answer's (the first turn's) share of the grid around it that works (ai.js centre)
+function roomOf(z) { const E = L.env(z); return AI.centre(E, L.Z.shotOf(z, 0), null, 0, []).room; }
+// the list as it is, each with its room (worked out once a run)
+let LISTED = null;
+const listed = () => LISTED || (LISTED = L.Z.list.filter(z => Number.isFinite(z.rating)).map(z => Object.assign({}, z, { room: roomOf(z) })));
 const kindOf = z => z.game === 'pocket' ? 'pocket' : L.Z.plain(z) ? 'plain' : 'cond';
 const r6 = v => Math.round(v * 1e6) / 1e6, r9 = v => Math.round(v * 1e9) / 1e9;
 
@@ -161,7 +172,7 @@ function finish(z, E, found, seed, T) {
   }
   if (!ways.length || !sol) return null;
   const rt = AI.rate(E, ways, seed);
-  const out = Object.assign({}, z, { sol: T > 1 ? sol.map(s => s.map(r9)) : sol.map(r9), rating: rt.rating, fun: AI.fun(z, fams, room, naive(E, found)) });
+  const out = Object.assign({}, z, { sol: T > 1 ? sol.map(s => s.map(r9)) : sol.map(r9), rating: rt.rating, fun: AI.fun(z, fams, room, naive(E, found)), room: Math.round(room * 1000) / 1000 });
   // the answer as stored, played again from the start as the app, the tests and the server play it
   const g = L.g, chk = L.Z.play(g, out, T > 1 ? out.sol : [out.sol], () => 0.5, 40); if (!chk.ok) return null;
   return out;
@@ -171,7 +182,9 @@ function finish(z, E, found, seed, T) {
 function run() {
   const seed = +(opt('seed') || 1), minutes = +(opt('minutes') || 20), only = opt('game'), rnd = L.seeded(seed * 7919 + 13), file = path.join(POOLS, `pool-${seed}.json`);
   const pool = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-  const all = () => [...fs.readdirSync(POOLS).filter(f => /^pool-\d+\.json$/.test(f) && f !== path.basename(file)).flatMap(f => { try { return JSON.parse(fs.readFileSync(path.join(POOLS, f), 'utf8')); } catch (e) { return []; } }), ...pool];
+  // (what is there: the other workers' pools, this one's, and the list's puzzles that keep their places)
+  const kept0 = listed().filter(roomOk);
+  const all = () => [...fs.readdirSync(POOLS).filter(f => /^pool-\d+\.json$/.test(f) && f !== path.basename(file)).flatMap(f => { try { return JSON.parse(fs.readFileSync(path.join(POOLS, f), 'utf8')); } catch (e) { return []; } }), ...pool, ...kept0];
   const count = (kind, band) => all().filter(z => kindOf(z) === kind && bandOf(z.rating) === band).length;
   // (a band takes half as many again as it wants: the list keeps its most fun - write())
   const room = (kind, band) => count(kind, band) < Math.ceil(wantOf(kind, band) * 1.5);
@@ -216,10 +229,10 @@ function run() {
     let out = null; try { out = evaluate(z, seed * 100003 + tried); } catch (e) { console.error('evaluate', e.message); continue; }
     if (!out) continue;
     const k = kindOf(out), b = bandOf(out.rating);
-    if (out.rating >= 2895 || out.rating <= 205 || !room(k, b)) continue;
+    if (out.rating >= 2895 || out.rating <= 205 || !room(k, b) || !roomOk(out)) continue;
     if (k === 'cond' && out.rating <= 800) continue;
     pool.push(out); kept++; fs.writeFileSync(file, JSON.stringify(pool));
-    console.log(`${new Date().toISOString().slice(11, 19)} #${tried} kept ${kept}: ${k} ${out.rating} fun ${out.fun}${out.table ? ' ' + out.table : ''}${out.walls ? ' walls' : ''}${out.need ? ' need' : ''}${out.turns ? ' 2턴' : ''}${out.goal !== 'score' && out.goal !== 'pot' ? ' ' + out.goal : ''}`);
+    console.log(`${new Date().toISOString().slice(11, 19)} #${tried} kept ${kept}: ${k} ${out.rating} fun ${out.fun} room ${out.room}${out.table ? ' ' + out.table : ''}${out.walls ? ' walls' : ''}${out.need ? ' need' : ''}${out.turns ? ' 2턴' : ''}${out.goal !== 'score' && out.goal !== 'pot' ? ' ' + out.goal : ''}`);
   }
   console.log(`done: tried ${tried}, kept ${kept}, ${L.sims()} shots`);
 }
@@ -249,28 +262,32 @@ function barsAcross(E, z, easy, rnd) {
 /* ---------- writing the list ---------- */
 function write() {
   const pools = fs.readdirSync(POOLS).filter(f => /^pool-\d+\.json$/.test(f)).flatMap(f => JSON.parse(fs.readFileSync(path.join(POOLS, f), 'utf8')));
-  // (each answer's speed snapped to one the power slider sets - its round trip - and played again; one that then fails is left out)
-  const g = L.g, snapped = pools.map(z => { const T = L.Z.turnsOf(z), sh = (T > 1 ? z.sol : [z.sol]).map(s => [s[0], g.vOf(g.powerOf(s[1])), s[2], s[3], s[4]]); const q = Object.assign({}, z, { sol: T > 1 ? sh : sh[0] }); return L.Z.play(g, q, sh, () => 0.5, 40).ok ? q : null; }).filter(Boolean);
-  console.log(`${pools.length} in the pools, ${snapped.length} still solved at the slider's speeds`);
-  // (two too alike - the same game and every ball within 2 cm - only one kept)
+  // (each new answer's speed snapped to one the power slider sets - its round trip - and played again; one that then fails is left out)
+  const g = L.g, snapped = pools.map(z => { const T = L.Z.turnsOf(z), sh = (T > 1 ? z.sol : [z.sol]).map(s => [s[0], g.vOf(g.powerOf(s[1])), s[2], s[3], s[4]]); const q = Object.assign({}, z, { sol: T > 1 ? sh : sh[0] }); delete q.id; return L.Z.play(g, q, sh, () => 0.5, 40).ok ? q : null; }).filter(Boolean);
+  const old = listed(), oldOk = old.filter(roomOk);
+  console.log(`${pools.length} in the pools, ${snapped.length} still solved at the slider's speeds; the list ${old.length}, ${oldOk.length} with room enough for their bands`);
+  // (two too alike - the same game and every ball within 2 cm - only one kept: the listed one, else the more fun)
   const keep = [];
-  for (const z of snapped.sort((a, b) => b.fun - a.fun)) {
+  for (const z of oldOk.concat(snapped.sort((a, b) => b.fun - a.fun))) {
     const pos = q => q.game === 'pocket' ? q.balls.map(b => [b[1], b[2]]) : q.balls;
     if (keep.some(o => o.game === z.game && o.balls.length === z.balls.length && pos(o).every((p, i) => Math.hypot(p[0] - pos(z)[i][0], p[1] - pos(z)[i][1]) < 0.02))) continue;
     keep.push(z);
   }
   // each band: its most fun, as many as it wants
-  const fill = {}; const kept = keep.sort((a, b) => b.fun - a.fun).filter(z => { const k = kindOf(z) + bandOf(z.rating); fill[k] = (fill[k] || 0) + 1; return fill[k] <= wantOf(kindOf(z), bandOf(z.rating)); });
-  keep.length = 0; keep.push(...kept);
-  const four = keep.filter(z => z.game !== 'pocket').sort((a, b) => a.rating - b.rating), pocket = keep.filter(z => z.game === 'pocket').sort((a, b) => a.rating - b.rating);
-  four.forEach((z, i) => { z.id = 2001 + i; }); pocket.forEach((z, i) => { z.id = 6001 + i; });
+  const fill = {}; const kept = keep.sort((a, b) => b.fun - a.fun || (a.id ? -1 : 1)).filter(z => { const k = kindOf(z) + bandOf(z.rating); fill[k] = (fill[k] || 0) + 1; return fill[k] <= wantOf(kindOf(z), bandOf(z.rating)); });
+  // (ids: a listed puzzle keeps its own; a new one the next never used - next-id.json; those left out are not used again)
+  const NEXT = path.join(__dirname, 'next-id.json'), next = JSON.parse(fs.readFileSync(NEXT, 'utf8'));
+  for (const z of kept.filter(q => !q.id).sort((a, b) => a.rating - b.rating)) z.id = z.game === 'pocket' ? next.pocket++ : next.four++;
+  fs.writeFileSync(NEXT, JSON.stringify(next) + '\n');
+  const four = kept.filter(z => z.game !== 'pocket').sort((a, b) => a.rating - b.rating || a.id - b.id), pocket = kept.filter(z => z.game === 'pocket').sort((a, b) => a.rating - b.rating || a.id - b.id);
   const order = ['id', 'game', 'goal', 'pot', 'keep', 'table', 'need', 'turns', 'balls', 'walls', 'sol', 'rating', 'fun'];
   const line = z => '    ' + JSON.stringify(Object.fromEntries(order.filter(k => z[k] != null).map(k => [k, z[k]])));
   const FILE = path.join(__dirname, '../../puzzles.js'), src = fs.readFileSync(FILE, 'utf8');
   const a = src.indexOf('  const list = [\n'), b = src.indexOf('\n  ];', a);
   fs.writeFileSync(FILE, src.slice(0, a) + '  const list = [\n' + four.concat(pocket).map(line).join(',\n') + src.slice(b));
   const show = list => { const by = {}; for (const z of list) { const k = bandOf(z.rating); by[k] = (by[k] || 0) + 1; } return Object.entries(by).map(([k, n]) => `${k}:${n}`).join(' '); };
-  console.log(`wrote ${four.length} 4구 (${four.filter(z => L.Z.plain(z)).length} plain) and ${pocket.length} 포켓 puzzles\n  4구 ${show(four)}\n  포켓 ${show(pocket)}`);
+  console.log(`wrote ${four.length} 4구 (${four.filter(z => L.Z.plain(z)).length} plain, ${four.concat(pocket).filter(z => old.some(o => o.id === z.id)).length} kept from the list) and ${pocket.length} 포켓 puzzles`);
+  console.log(`  4구 plain ${show(four.filter(z => L.Z.plain(z)))}\n  4구 cond ${show(four.filter(z => !L.Z.plain(z)))}\n  포켓 ${show(pocket)}`);
 }
 if (require.main === module) { if (args[0] === 'write') write(); else run(); }
-module.exports = { aims, search, evaluate, fourLayout, pocketLayout, BANDS };
+module.exports = { aims, search, evaluate, fourLayout, pocketLayout, BANDS, MIN_ROOM };
