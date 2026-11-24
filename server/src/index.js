@@ -4,7 +4,9 @@
    POST /v1/account                 -> { id, key }   a new account; the app keeps both (key is shown once, kept only hashed)
    GET  /v1/me                      -> { coin, dia, dama, owned, solved } (and now: the server's time)
    POST /v1/buy     { req, kind, id }                 buy an item from content/ at its rarity's price
-   POST /v1/puzzle  { req, id, shot }                 a puzzle solved: checked, paid once
+   POST /v1/puzzle  { req, id, shot, shots }          a puzzle solved: checked (shots: a two-turn puzzle's both), paid once
+   POST /v1/pztry   { req, id, res, shots }           a counted puzzle attempt: the account's puzzle rating (core.js puzzleTry)
+   GET  /v1/puzzles/live                              the puzzles' ratings as players have moved them (puzzlebook-core.js)
    POST /v1/match   { req, kind: friend | cpu, log }  a match played on the device: paid by economy.js
    POST /v1/queue   { mode, name, icon, gear }        waiting for a ranked game (ask every 2 s): { waiting } or the room
    POST /v1/queue/leave { mode }                      stop waiting
@@ -40,6 +42,7 @@ export { Vault } from './vault.js';
 export { Lobby } from './lobby.js';
 export { Room } from './room.js';
 export { Dataset } from './dataset.js';
+export { PuzzleBook } from './puzzlebook.js';
 
 const MODES = ['eight', 'nine', 'four', 'three', 'snooker'];
 // (the lobbies: those, and 아케이드's 증강 당구 - not for friends' rooms)
@@ -127,6 +130,12 @@ async function adminRoute(what, request, env) {
     }
     return json({ ok: true, month, rows, next: p * 1e9 + n, more: p < parts.length });
   }
+  // the puzzles' book (puzzlebook-core.js): { stats: true } its counts, else the attempts after a point ({ after, limit })
+  if (what === 'puzzles') {
+    if (!env.PUZZLES) return json({ ok: false, why: 'no book' });
+    const B = env.PUZZLES.get(env.PUZZLES.idFromName('book'));
+    return json(await (await B.fetch('https://book/' + (body.stats ? 'stats' : 'export'), { method: 'POST', body: JSON.stringify({ after: body.after, limit: body.limit }) })).json());
+  }
   const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
   const vault = env.VAULT.get(env.VAULT.idFromName(acct));
   const r = await vault.fetch('https://vault/admin/' + what, { method: 'POST', headers: { 'X-Acct': acct }, body: JSON.stringify(Object.assign({}, body, { by })) });
@@ -200,9 +209,14 @@ async function frontDoor(request, env) {
     const room = /^\/v1\/room\/([0-9a-f]{32})$/.exec(url.pathname);
     if (room) return env.ROOM.get(env.ROOM.idFromName(room[1])).fetch(request);
     if (!url.pathname.startsWith('/v1/')) return json({ ok: false, why: 'no such thing' }, 404);
+    // the puzzles' ratings as the players have moved them (puzzlebook-core.js live) - for everyone, no account asked
+    if (url.pathname === '/v1/puzzles/live' && env.PUZZLES) {
+      const r = await env.PUZZLES.get(env.PUZZLES.idFromName('book')).fetch('https://book/live');
+      return new Response(await r.text(), { headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' }, CORS) });
+    }
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
-    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset)$/.exec(url.pathname);
+    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset|puzzles)$/.exec(url.pathname);
     if (adm) return adminRoute(adm[1], request, env);
     const link = /^\/v1\/link\/(google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);

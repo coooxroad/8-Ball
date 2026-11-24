@@ -63,7 +63,7 @@ const MENU_CARDS = [
   { id: 'rank', title: '랭킹전', sub: '4구 · 3구 · 8볼 · 9볼', hero: true, strip: () => { const t = myTier(); return `${t.name} ${t.dama.toLocaleString('ko-KR')}`; }, go: () => ranked.pick() },
   { id: 'friend', title: '친구와 플레이', sub: '한 기기 · 방 만들기', strip: () => '1 : 1 · 2 : 2', go: () => { playFor = 'friend'; playStep = 'friend'; playFx = 'fan'; paintHome(); } },
   { id: 'lesson', title: '레슨', sub: '기본기부터 차근차근', strip: () => { const ids = drills.list.filter(q => q.make && q.vol).map(q => q.id); return `${ids.filter(id => prefs.lessonProof[id]).length} / ${ids.length}`; }, go: () => trainGo('lesson') },
-  { id: 'puzzle', title: '퍼즐', sub: '한 번에 끝내기', strip: () => puzzles.list.length ? `레이팅 ${pzr.of('four').r}` : '준비 중', go: () => trainGo('puzzle') },
+  { id: 'puzzle', title: '퍼즐', sub: '한 번에 끝내기', strip: () => pzPool('four').length ? `레이팅 ${pzr.of('four').r}` : '준비 중', go: () => trainGo('puzzle') },
   { id: 'arcade', title: '아케이드', sub: '증강 당구', soon: () => !net.debug, strip: () => net.debug ? '디버그' : '준비 중', go: () => net.debug ? (playStep = 'arcade', playFx = 'fan', paintHome()) : soonToast('아케이드는')() },
   { id: 'cpu', title: '컴퓨터 대전', sub: '봇과 한 판', strip: () => `봇 ${typeof BOTS !== 'undefined' ? BOTS.length : 0}명`, go: () => trainGo('cpu') },
   { id: 'free', title: '자유 연습', sub: '마음대로 치기', strip: () => '4구 · 3구 · 8볼 · 9볼', go: () => trainGo('free') }];

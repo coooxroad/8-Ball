@@ -55,6 +55,12 @@ export class Vault extends DurableObject {
       return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null, debug: me.debug });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
+    // a counted puzzle attempt (core.js puzzleTry): the puzzle rated back by the puzzles' book - not waited for
+    if (path === '/v1/pztry') {
+      const r = this.core.puzzleTry(body), book = r.book; delete r.book;
+      if (book && this.env.PUZZLES) this.ctx.waitUntil(this.env.PUZZLES.get(this.env.PUZZLES.idFromName('book')).fetch('https://book/try', { method: 'POST', body: JSON.stringify(book) }).catch(() => null));
+      return json(r);
+    }
     if (path === '/v1/lessons') return json(this.core.lessons(body));
     if (path === '/v1/nick') { const r = this.core.nick(body); if (r.ok) this.listed(true); return json(r); }
     if (path === '/v1/tutorial') return json(this.core.tutorial(body));

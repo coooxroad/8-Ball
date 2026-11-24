@@ -107,3 +107,8 @@
 #app.desk.portrait .pzr-past .ln:nth-of-type(3){display:none}
 #app.desk.portrait .pzr-go-p .mys{max-height:110px}
 #app.desk.portrait .pzr-go-p{align-self:start}#app.desk.portrait .pzr-go-p .pzr-go{margin-top:6px}
+/* 포켓: the rack (a ball a puzzle), its record's fifteen */
+.pzr-res.rack .pzr-rk{width:min(100%,calc(300px*var(--pk)))}
+#app.desk.compact .pzr-res.rack .pzr-rk{width:180px}
+.pzr-16.p15{grid-template-columns:repeat(5,minmax(0,1fr))}
+#flowBar .fchip.need{background:#ffd34d;box-shadow:0 0 0 2px rgba(255,211,77,.35)}

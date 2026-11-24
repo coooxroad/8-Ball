@@ -36,6 +36,11 @@ class_name = "Room"
 name = "DATASET"
 class_name = "Dataset"
 
+# the puzzles' book (src/puzzlebook-core.js): every puzzle's rating as players move it, every counted attempt kept (11-24)
+[[durable_objects.bindings]]
+name = "PUZZLES"
+class_name = "PuzzleBook"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Vault"]
@@ -49,3 +54,8 @@ new_sqlite_classes = ["Lobby", "Room"]
 [[migrations]]
 tag = "v3"
 new_sqlite_classes = ["Dataset"]
+
+# the puzzles' book (11-24)
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["PuzzleBook"]

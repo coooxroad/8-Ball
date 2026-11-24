@@ -18,6 +18,7 @@ export class VaultCore {
     sql.exec(`CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS owned (kind TEXT, id TEXT, at INTEGER, PRIMARY KEY (kind, id))`);
     sql.exec(`CREATE TABLE IF NOT EXISTS solved (id INTEGER PRIMARY KEY, at INTEGER)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS pztry (id INTEGER PRIMARY KEY, res TEXT, r INTEGER, at INTEGER)`);   // (each puzzle's counted attempt: puzzleTry)
     sql.exec(`CREATE TABLE IF NOT EXISTS reqs (req TEXT PRIMARY KEY, res TEXT, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS match_claims (digest TEXT PRIMARY KEY, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, coins INTEGER)`);
@@ -69,7 +70,7 @@ export class VaultCore {
       // debug mode, turned on for this account in the admin console (adminGrant debug): the app's 디버그 settings
       debug: !!this.get('debug'),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
-      solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id) };
+      solved: this.sql.exec(`SELECT id FROM solved`).toArray().map(r => r.id), pzr: this.pzr() };
   }
 
   // a change the app asked for: once per request number
@@ -104,10 +105,10 @@ export class VaultCore {
   }
 
   // a puzzle solved (perhaps offline, days ago): checked by playing the shot again, paid the first time only
-  puzzle({ req, id, shot }) {
+  puzzle({ req, id, shot, shots }) {
     return this.once(req, () => {
       if (this.sql.exec(`SELECT 1 FROM solved WHERE id = ?`, id).toArray().length) return { ok: true, paid: 0, me: this.me() };
-      const r = playPuzzle(id, shot); if (!r.ok) return { ok: false, why: r.why };
+      const r = playPuzzle(id, shot, shots); if (!r.ok) return { ok: false, why: r.why };
       this.sql.exec(`INSERT INTO solved (id, at) VALUES (?, ?)`, id, Date.now());
       // (a stage's 챌린지 - its tenth: puzzles.js challenge - pays diamonds as well)
       const Z = E.createPuzzles(), dia = Z.challenge(Z.byId(id)) ? E.ECONOMY.PUZZLE_CHALLENGE_DIA : 0;
@@ -115,6 +116,26 @@ export class VaultCore {
       return { ok: true, paid: E.ECONOMY.PUZZLE, dia, me: this.me() };
     });
   }
+
+  /* 퍼즐 레이팅 (owner 11-23/24): a counted attempt (the first at a puzzle - 52-puzzle.js pzr) - res 'o' solved (its shots
+     played again: one that does not solve it counts as missed), 'x' missed, 'h' a hint seen first (nothing). The game's
+     rating moves as puzzles.js tryAfter says (Glicko - the device moved it the same way at once), only the first time a
+     puzzle is tried; the attempt is passed on to the puzzles' book (puzzlebook-core.js: the puzzle rated back, and kept
+     for the puzzle AI to learn from) - book: what to pass on, read by vault.js. */
+  puzzleTry({ req, id, res, shots }) {
+    return this.once(req, () => {
+      const Z = E.createPuzzles(), z = Z.byId(id); if (!z || !['o', 'x', 'h'].includes(res)) return { ok: false, why: 'no such puzzle' };
+      const k = Z.gameOf(z), key = 'pz:' + k, before = this.get(key, null);
+      if (this.sql.exec(`SELECT 1 FROM pztry WHERE id = ?`, id).toArray().length) return { ok: true, again: true, pzr: this.pzr() };
+      let got = res; if (got === 'o' && !playPuzzle(id, null, shots).ok) got = 'x';
+      const after = Z.tryAfter(before, z, got);
+      this.sql.exec(`INSERT INTO pztry (id, res, r, at) VALUES (?, ?, ?, ?)`, id, got, after.r, Date.now());
+      this.set(key, after);
+      return { ok: true, res: got, pzr: this.pzr(), book: got === 'h' ? null : { id, res: got, pr: before ? before.r : Z.RATE.START, prd: before ? before.rd : Z.RATE.RD0 } };
+    });
+  }
+  // the account's puzzle ratings, by game ({ four: { r, rd, n }, pocket: ... } - the games tried)
+  pzr() { const o = {}; for (const k of ['four', 'pocket']) { const v = this.get('pz:' + k, null); if (v) o[k] = v; } return o; }
 
   // how sure this account's rating is now: as last set, less sure for every day since its last ranked game (economy.js)
   rd(f) { return E.rdNow(this.get('rd:' + f, this.get('rd', E.ECONOMY.RD_START)), (Date.now() - this.get('rdAt:' + f, this.get('rdAt', Date.now()))) / 86400000); }

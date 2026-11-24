@@ -9,17 +9,16 @@ import { logError, shotOk, badShotAt } from './match-log.js';
 const seeded = s => () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
 const H = E.createHighlights();
 
-// A puzzle (web/puzzles.js) and the shot the player solved it with: does that shot do what the puzzle asks?
-export function playPuzzle(id, shot) {
+/* A puzzle (web/puzzles.js) and the shots the player solved it with (one, or a two-turn puzzle's two): played from the
+   start turn by turn and judged exactly as the app judges them (puzzles.js play) - on the puzzle's own table (4구's,
+   or the 7-foot pool table for a pocket puzzle: tables.js physicsFor pzpool) */
+export function playPuzzle(id, shot, shots) {
   const Z = E.createPuzzles(), z = Z.byId(id);
   if (!z) return { ok: false, why: 'no such puzzle' };
-  if (!shotOk(shot)) return { ok: false, why: 'bad shot' };
-  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar')), rnd = seeded(1);
-  g.start('puzzle4', ['A', ''], false, { rnd }); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal;
-  w.walls = P.walls(z.walls); z.balls.forEach((b, i) => P.place(w, i, b[0], b[1], rnd)); w.cue = 0; g.goal = goal;
-  P.strike(w, shot.aim, shot.V, shot.a, shot.b, shot.el || 0);
-  const ev = P.run(w, 40);
-  return g.MODES.puzzle4.judge(goal, ev, w).ok ? { ok: true } : { ok: false, why: 'the shot does not solve it' };
+  const list = Array.isArray(shots) && shots.length ? shots.slice(0, 2) : [shot];
+  if (!list.every(shotOk)) return { ok: false, why: 'bad shot' };
+  const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'));
+  return Z.play(g, z, list, seeded(1), 40).ok ? { ok: true } : { ok: false, why: 'the shot does not solve it' };
 }
 
 /* A lesson (web/drills.js) done at its top level: the layout is made again from the seed the device made it from (on that

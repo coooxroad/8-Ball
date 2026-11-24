@@ -28,8 +28,10 @@ const SNOOKER = {
     return { 16: [xb, -d], 17: [xb, d], 18: [xb, 0], 19: [0, 0], 20: [P.HL / 2, 0], 21: [P.HL - SNOOKER.BLACK * k, 0] }[id];
   },
 };
+// (pzpool: the pocket puzzles' table - always the 7-foot one, whatever size the player plays on: a puzzle is the same
+// everywhere, and the server checks it on that table)
 const physicsFor = (createPhysics, tableId) => ({ pool: createPhysics(Object.assign({ pockets: true }, (TABLES.find(t => t.id === tableId) || TABLES[0]).cfg)),
-  carom: createPhysics(CAROM.carom), carom3: createPhysics(CAROM.carom3), snooker: createPhysics(SNOOKER.cfg) });
+  carom: createPhysics(CAROM.carom), carom3: createPhysics(CAROM.carom3), snooker: createPhysics(SNOOKER.cfg), pzpool: createPhysics(Object.assign({ pockets: true }, TABLES[0].cfg)) });
 /* Tables of other shapes (physics.js shape(): a cushion along a polygon inside the table, holes in the cloth). Each maker
    takes the table (P: HL, HW, R, POCKETED) and options, and gives the spec - { poly, holes } - so the same name makes
    the same shape on every device and the server. A table with pockets gets holes on the shape's own corners (or round its

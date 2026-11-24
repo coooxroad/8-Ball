@@ -131,10 +131,11 @@ const net = (() => {
         if (!account || account.id !== who) return;
         if (r.ok && r.paid) toast(`+${r.paid.toLocaleString('ko-KR')} 코인` + (r.dia ? ` · 다이아 ${r.dia}` : '') + (r.item ? ` · ${itemName(r.item)} 획득!` : ''), 'good', 3200);   // (다이아: a puzzle stage's 챌린지)
         if (r.me) setMe(r.me);
+        if (r.pzr) pzrSync(r.pzr);                                     // (a puzzle attempt: the server's rating - 52-puzzle.js)
         if (r.pending) laterN = 0;
         store.set('claims', claims().filter(x => x.body.req !== c.body.req));
       }
-      const m = await call('/v1/me'); if (!account || account.id !== who) return; if (m && m.ok) { setMe(m.me, true); if (m.me.checking) later(); }
+      const m = await call('/v1/me'); if (!account || account.id !== who) return; if (m && m.ok) { setMe(m.me, true); if (m.me.checking) later(); if (m.me.pzr) pzrSync(m.me.pzr); }
       // a member's progress (lessons, puzzles, the tutorial seen), kept on the server for their other devices: taken in
       // (the further of the two, each thing), and sent back when this device's has moved on (57-account.js)
       if (m && m.ok && m.me.joined) { const pulled = progressMerge(m.me.save); const mine = progressOf();
@@ -189,7 +190,8 @@ const net = (() => {
     get me() { return me; }, owns, flush,
     // the name changed: what is worn is looked at again
     renamed() { if (me) setMe(me); },
-    // a reward to be paid: kind 'puzzle' ({ id, shot }) or 'match' ({ kind: friend | cpu, log })
+    // a reward to be paid: kind 'puzzle' ({ id, shot, shots }) or 'match' ({ kind: friend | cpu, log }); or a counted puzzle
+    // attempt to be kept: 'pztry' ({ id, res, shots, k } - server core.js puzzleTry)
     claim(kind, body) { const q = claims(); q.push({ kind, acct: account ? account.id : null, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
 
     // ---- the lobby and the rooms

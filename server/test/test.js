@@ -8,6 +8,7 @@ import { LinkCore } from '../src/link.js';
 import { originOk } from '../src/origins.js';
 import { PHYS_V } from '../src/version.js';
 import { datasetRow, DatasetCore, monthOf, dayOf, partsOf } from '../src/dataset-core.js';
+import { PuzzleBookCore } from '../src/puzzlebook-core.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInGear, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
@@ -44,17 +45,35 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
 
 // puzzles: an unknown one, or a nonsense shot, pays nothing
 { const v = vault(); v.init('h'); ok(!v.puzzle({ req: req(), id: 99999, shot: { aim: 0, V: 2, a: 0, b: 0 } }).ok && v.me().coin === 0, 'unknown puzzle'); ok(!playPuzzle(1, { aim: 0, V: 999, a: 0, b: 0 }).ok, 'nonsense shot'); console.log('puzzles: checked (none to solve yet)'); }
-// a stage's 챌린지 (every tenth puzzle) pays diamonds besides the coins, the first time only; the others coins alone
-{ const v = vault(); v.init('h'); const Z = E.createPuzzles(), shot = z => ({ aim: z.sol[0], V: z.sol[1], a: z.sol[2], b: z.sol[3], el: z.sol[4] });
-  const ch = Z.list.find(z => Z.challenge(z)), plain = Z.list.find(z => !Z.challenge(z));
-  if (ch && plain && playPuzzle(ch.id, shot(ch)).ok && playPuzzle(plain.id, shot(plain)).ok) {
-    const d0 = v.me().dia || 0, c0 = v.me().coin;
-    ok(v.puzzle({ req: req(), id: plain.id, shot: shot(plain) }).ok && (v.me().dia || 0) === d0 && v.me().coin === c0 + E.ECONOMY.PUZZLE, 'a puzzle pays coins only');
-    const r = v.puzzle({ req: req(), id: ch.id, shot: shot(ch) });
-    ok(r.ok && r.dia === E.ECONOMY.PUZZLE_CHALLENGE_DIA && v.me().dia === d0 + E.ECONOMY.PUZZLE_CHALLENGE_DIA, 'a challenge pays diamonds too');
-    ok(v.puzzle({ req: req(), id: ch.id, shot: shot(ch) }).paid === 0 && v.me().dia === d0 + E.ECONOMY.PUZZLE_CHALLENGE_DIA, 'a challenge pays once');
-    console.log('puzzles: a challenge pays diamonds, once');
-  } else console.log('puzzles: (no solvable challenge to check)'); }
+// a puzzle solved with its answer pays once (a two-turn one with both its shots); one shot of two pays nothing
+{ const Z = E.createPuzzles(), shot = s => ({ aim: s[0], V: s[1], a: s[2], b: s[3], el: s[4] });
+  const one = Z.list.find(z => Z.turnsOf(z) === 1 && z.game), two = Z.list.find(z => Z.turnsOf(z) === 2);
+  if (one) { const v = vault(); v.init('h'); const c0 = v.me().coin, r = v.puzzle({ req: req(), id: one.id, shot: shot(one.sol) });
+    ok(r.ok && v.me().coin === c0 + E.ECONOMY.PUZZLE, 'a puzzle pays'); ok(v.puzzle({ req: req(), id: one.id, shot: shot(one.sol) }).paid === 0, 'a puzzle pays once'); }
+  if (two) { const v = vault(); v.init('h');
+    ok(!v.puzzle({ req: req(), id: two.id, shot: shot(two.sol[0]) }).ok, 'one shot of a two-turn puzzle pays nothing');
+    ok(v.puzzle({ req: req(), id: two.id, shot: shot(two.sol[0]), shots: two.sol.map(shot) }).ok, 'a two-turn puzzle with both shots pays'); }
+  console.log(`puzzles: paid when solved${two ? ', a two-turn one with both shots' : ''}`); }
+// 퍼즐 레이팅 (core.js puzzleTry): solved with its shots up, missed down, a hint nothing; a solve whose shots do not solve
+// it counts as missed; a puzzle counts once; the rating is in me()
+{ const Z = E.createPuzzles(), shot = s => ({ aim: s[0], V: s[1], a: s[2], b: s[3], el: s[4] }), L = Z.list.filter(z => Z.turnsOf(z) === 1 && Number.isFinite(z.rating) && z.game);
+  if (L.length >= 3) {
+    const v = vault(), k = Z.gameOf(L[0]); v.init('h');
+    const a = v.puzzleTry({ req: req(), id: L[0].id, res: 'o', shots: [shot(L[0].sol)] });
+    ok(a.ok && a.res === 'o' && a.pzr[k].r > Z.RATE.START && a.book && a.book.pr === Z.RATE.START, 'a solve raises the puzzle rating');
+    ok(v.puzzleTry({ req: req(), id: L[0].id, res: 'x' }).again && v.me().pzr[k].r === a.pzr[k].r, 'a puzzle counts once');
+    const L1 = L.find(z => Z.gameOf(z) === k && z.id !== L[0].id), b = v.puzzleTry({ req: req(), id: L1.id, res: 'o', shots: [{ aim: 0, V: 1, a: 0, b: 0, el: 0 }] });
+    ok(b.ok && b.res === 'x' && b.pzr[k].r < a.pzr[k].r, 'a solve without its shots counts as missed');
+    const L2 = L.find(z => Z.gameOf(z) === k && z.id !== L[0].id && z.id !== L1.id), h = v.puzzleTry({ req: req(), id: L2.id, res: 'h' });
+    ok(h.ok && !h.book && h.pzr[k].r === b.pzr[k].r, 'a hint counts for nothing');
+    console.log('puzzle rating: kept on the account, checked solves'); } }
+// the puzzles' book (puzzlebook-core.js): an attempt rates the puzzle back - a miss gives it points; tried enough it is live
+{ const Z = E.createPuzzles(), z = Z.list.find(q => Number.isFinite(q.rating));
+  if (z) { const B = new PuzzleBookCore(sqlOf().sql, E), r0 = B.get(z.id).r;
+    ok(B.try({ id: z.id, res: 'x', pr: z.rating, prd: 100 }).r > r0, 'a miss gives the puzzle points');
+    for (let i = 0; i < 5; i++) B.try({ id: z.id, res: 'o', pr: z.rating + 200, prd: 80 });
+    ok(B.live().live.some(q => q[0] === z.id) && B.stats().tries === 6 && B.export(0, 10).rows.length === 6 && !B.try({ id: 999999, res: 'o', pr: 1000 }).ok, 'the book: live, counted, read out');
+    console.log('puzzle book: rated back, kept'); } }
 
 // a match recorded the way the app records it, by two computers playing it out
 let s = 99; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };

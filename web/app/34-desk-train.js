@@ -39,88 +39,83 @@ function trainHead(head, title, sub) {
   if (back) { head.className = 'dk-head open'; dkPut(head, el('button', { class: 'dk-x', 'aria-label': '메뉴로', onclick: () => { SND.tap(); back(); } }, el('i'))); }
   dkPut(head, dkTitle(title, sub));
 }
-/* 퍼즐 (owner 11-23: rated, as Chess.com's - 52-puzzle.js pzr - in place of the stages' map): on the menu's charcoal cloth,
-   as 랭킹전's games lie (#desk.felt). Its head: 캐롬 · 포켓 and 오늘의 퍼즐 (no points). Left, the rating - large, today's
-   change, its last moves - and the cases closed; the middle the case being filled (a quarter of a ball a puzzle); right,
-   the next puzzle, hidden until it is started, with what it gives or takes. 포켓's rack (one ball a puzzle) waits until
-   its puzzles are made. A case just closed shows its result over it all (pzDone); the record (pzBook) lists the cases,
-   each one's sixteen to play again without points. */
+/* 퍼즐 (owner 11-23/24: rated, as Chess.com's - 52-puzzle.js pzr - in place of the stages' map): on the menu's charcoal
+   cloth, as 랭킹전's games lie (#desk.felt). Its head: 캐롬 · 포켓 and 오늘의 퍼즐 (no points). Left, the game's rating -
+   large, today's change, its last moves - and the cases (racks) closed; the middle the case being filled (a quarter of a
+   ball a puzzle) or the rack (a ball a puzzle); right, the next puzzle, hidden until it is started, with what it gives or
+   takes. A case just closed shows its result over it all (pzDone); the record (pzBook) lists the closed ones, each one's
+   puzzles to play again without points. */
 let pzView = 'four', pzBook = null, pzDone = null;
 const pzDate = t => { const m = /^\d+-(\d+)-(\d+)/.exec(t || ''); return m ? `${+m[1]}월 ${+m[2]}일` : ''; };
 const pzSigned = d => d > 0 ? `+${d}` : d < 0 ? `−${-d}` : '±0';
+// a case's (rack's) picture: k the game, res its results, mat the case's material, now whether the next place is ringed
+const pzHolder = (k, res, mat, now) => k === 'pocket' ? pzRackSvg(res, now) : pzCase(res, mat, now);
+// the place a puzzle fills, in words: a ball's quarter, or a ball of the rack
+const pzPlace = (k, j) => k === 'pocket' ? `${j + 1}번 공` : `${PZ_BALL_KO[j >> 2]} ${(j & 3) + 1}/4`;
 function deskPuzzle(d) {
-  d.stage.dataset.win = '0';
+  d.stage.dataset.win = '0'; pzLiveLoad();
   $('#desk').classList.add('boards');
   if (menuOn()) { $('#desk').classList.add('felt'); if (!$('#dkFelt')) $('#desk').appendChild(el('div', { class: 'dk-felt', id: 'dkFelt', 'aria-hidden': 'true' })); }
   const wrap = el('div', { id: 'dkBoards', class: 'pzr' }), fit = el('div', { class: 'bd-fit' }), back = trainBack();
   const x = fn => el('button', { class: 'dk-x', 'aria-label': '뒤로', onclick: () => { SND.tap(); fn(); } }, el('i'));
   const repaint = () => repaintLive();
   if (pzDone) {
-    const c = pzDone;
+    const c = pzDone, k = c.k || 'four', size = pzSize(k);
     wrap.classList.add('done');
-    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzDone = null; repaint(); }), dkTitle('퍼즐', '케이스 완성')]));
+    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzDone = null; repaint(); }), dkTitle('퍼즐', k === 'pocket' ? '랙 완성' : '케이스 완성')]));
     const ok = c.res.filter(r => r[1] === 'o').length, dl = c.r1 - c.r0;
-    fit.appendChild(el('div', { class: 'pzr-res' }, [
-      el('div', { class: 'hd', text: `케이스 완성 · ${ok} / ${PZ_CASE}` }),
+    fit.appendChild(el('div', { class: 'pzr-res' + (k === 'pocket' ? ' rack' : '') }, [
+      el('div', { class: 'hd', text: `${k === 'pocket' ? '랙' : '케이스'} 완성 · ${ok} / ${size}` }),
       el('div', { class: 'big' }, [el('s', { text: String(c.r0) }), document.createTextNode(String(c.r1)), el('em', { class: dl < 0 ? 'm' : '', text: pzSigned(dl) })]),
-      pzSvg(pzCase(c.res, c.m, false), 'pzr-cs'),
-      el('small', { text: `${PZ_MATS[c.m].n} 케이스 · 기록에 남았습니다. 닫힌 케이스는 점수에 다시 들어가지 않습니다.` }),
-      el('div', { class: 'btns' }, [el('button', { class: 'pzr-b2', text: '기록 보기', onclick: onTap(() => { pzDone = null; pzBook = 0; repaint(); }) }),
-        el('button', { class: 'pzr-go', text: '다음 케이스', onclick: onTap(() => { pzDone = null; puzzle.start(); }) })])]));
+      pzSvg(pzHolder(k, c.res, c.m, false), k === 'pocket' ? 'pzr-rk' : 'pzr-cs'),
+      el('small', { text: `${k === 'pocket' ? '' : PZ_MATS[c.m].n + ' 케이스 · '}기록에 남았습니다. 닫힌 ${k === 'pocket' ? '랙' : '케이스'}는 점수에 다시 들어가지 않습니다.` }),
+      el('div', { class: 'btns' }, [el('button', { class: 'pzr-b2', text: '기록 보기', onclick: onTap(() => { pzDone = null; pzView = k; pzBook = 0; repaint(); }) }),
+        el('button', { class: 'pzr-go', text: k === 'pocket' ? '다음 랙' : '다음 케이스', onclick: onTap(() => { pzDone = null; puzzle.start(null, { game: k }); }) })])]));
     wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
-  const s = pzr.of('four');
+  const k = pzView, s = pzr.of(k), size = pzSize(k), holder = k === 'pocket' ? '랙' : '케이스';
   if (pzBook != null && s.cases.length) {
     const i = Math.min(pzBook, s.cases.length - 1), c = s.cases[i];
     wrap.classList.add('book');
-    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzBook = null; repaint(); }), dkTitle('기록 · 4구', `닫힌 케이스 ${s.cases.length}개`)]));
-    const list = el('div', { class: 'pzr-list' }, s.cases.map((k, j) => el('button', { class: 'ln' + (j === i ? ' on' : ''), onclick: onTap(() => { pzBook = j; repaint(); }) }, [
-      el('span', { class: 'dt', text: pzDate(k.t) }), pzSvg(pzMini(k.res, false), 'mi'), el('b', { text: String(k.r1) }), el('em', { class: k.r1 < k.r0 ? 'm' : '', text: pzSigned(k.r1 - k.r0) })])));
-    const grid = el('div', { class: 'pzr-16' }, c.res.map(([id, r, dd], j) => {
-      const q = puzzles.byId(id), lab = `${PZ_BALL_KO[j >> 2]} ${(j & 3) + 1}/4`;
+    wrap.appendChild(el('div', { class: 'bd-head' }, [x(() => { pzBook = null; repaint(); }), dkTitle(`기록 · ${k === 'pocket' ? '포켓' : '4구'}`, `닫힌 ${holder} ${s.cases.length}개`)]));
+    const list = el('div', { class: 'pzr-list' }, s.cases.map((q, j) => el('button', { class: 'ln' + (j === i ? ' on' : ''), onclick: onTap(() => { pzBook = j; repaint(); }) }, [
+      el('span', { class: 'dt', text: pzDate(q.t) }), pzSvg(k === 'pocket' ? pzRackMini(q.res, false) : pzMini(q.res, false), 'mi'), el('b', { text: String(q.r1) }), el('em', { class: q.r1 < q.r0 ? 'm' : '', text: pzSigned(q.r1 - q.r0) })])));
+    const grid = el('div', { class: 'pzr-16' + (k === 'pocket' ? ' p15' : '') }, c.res.map(([id, r, dd], j) => {
+      const q = puzzles.byId(id), lab = pzPlace(k, j);
       return el('button', { class: 'pz1 ' + r, disabled: q ? null : '', 'aria-label': `${lab}, ${r === 'o' ? '성공' : r === 'x' ? '실패' : '힌트'}, 다시 풀기`, onclick: onTap(() => q && puzzle.start(q.id, { free: 'book' })) }, [
-        pzSvg(pzOne(j, r), 'q1'), el('b', { text: lab }), el('span', { text: r === 'o' ? `성공 ${pzSigned(dd)}` : r === 'x' ? `실패 ${pzSigned(dd)}` : '힌트' })]);
+        pzSvg(pzOne(j, r, k), 'q1'), el('b', { text: lab }), el('span', { text: r === 'o' ? `성공 ${pzSigned(dd)}` : r === 'x' ? `실패 ${pzSigned(dd)}` : '힌트' })]);
     }));
-    fit.append(list, el('div', { class: 'pzr-pk' }, [el('h4', { text: `${pzDate(c.t)} · ${PZ_MATS[c.m].n} 케이스` }), grid, el('small', { text: '눌러서 다시 풀기 · 점수 없음' })]));
+    fit.append(list, el('div', { class: 'pzr-pk' }, [el('h4', { text: `${pzDate(c.t)}${k === 'pocket' ? ' · 랙' : ` · ${PZ_MATS[c.m].n} 케이스`}` }), grid, el('small', { text: '눌러서 다시 풀기 · 점수 없음' })]));
     wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
   // 캐롬 · 포켓, and 오늘의 퍼즐 (owner 11-22: one a day, the same for everyone, by the date)
-  const seg = el('div', { class: 'pzr-seg', role: 'tablist' }, [['four', '캐롬', 'carom', 2], ['pocket', '포켓', 'pool', 8]].map(([k, t, kind, n]) =>
-    el('button', { role: 'tab', 'aria-selected': String(pzView === k), class: pzView === k ? 'on' : '', onclick: onTap(() => { if (pzView !== k) { pzView = k; repaint(); } }) }, [ballPic(prefs.ballSkin, kind, n, { class: 'bp' }), el('span', { text: t })])));
+  const seg = el('div', { class: 'pzr-seg', role: 'tablist' }, [['four', '캐롬', 'carom', 2], ['pocket', '포켓', 'pool', 8]].map(([kk, t, kind, n]) =>
+    el('button', { role: 'tab', 'aria-selected': String(pzView === kk), class: pzView === kk ? 'on' : '', onclick: onTap(() => { if (pzView !== kk) { pzView = kk; repaint(); } }) }, [ballPic(prefs.ballSkin, kind, n, { class: 'bp' }), el('span', { text: t })])));
   const day = pzDaily(), dayDone = prefs.pz.day === attend.today();
-  const tools = el('span', { class: 'bd-tools' }, [seg, day && pzView === 'four' ? el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id, { free: 'day' })) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]) : null]);
+  const tools = el('span', { class: 'bd-tools' }, [seg, day && k === 'four' ? el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id, { free: 'day' })) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]) : null]);
   wrap.appendChild(el('div', { class: 'bd-head' }, [back ? x(back) : null, dkTitle('퍼즐', '첫 시도만 점수'), tools]));
-  if (pzView === 'pocket') {
-    // 포켓: the rack of fifteen, one ball a puzzle - its puzzles not made yet
-    wrap.classList.add('pocket');
-    fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: '퍼즐 레이팅 · 포켓' }), el('span', { class: 'd', text: '첫 퍼즐부터 레이팅이 정해집니다' })]),
-      el('div', { class: 'pzr-mid' }, [pzSvg(pzRack(), 'pzr-rk'), el('div', { class: 'cap' }, [el('b', { text: '랙 0 / 15' }), el('small', { text: '한 문제에 공 하나 · 1번부터 15번까지' })])]),
-      el('div', { class: 'pzr-go-p soon' }, [el('h3', { text: '포켓 퍼즐' }), el('p', { text: '포켓 퍼즐은 준비 중입니다.' }), el('button', { class: 'pzr-go', disabled: '', text: '준비 중' })]));
+  if (k === 'pocket') wrap.classList.add('pocket');
+  if (!pzPool(k).length) {
+    fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: `퍼즐 레이팅 · ${k === 'pocket' ? '포켓' : '4구'}` }), el('span', { class: 'd', text: '첫 퍼즐부터 레이팅이 정해집니다' })]),
+      el('div', { class: 'pzr-mid' }, [pzSvg(pzHolder(k, [], 0, false), k === 'pocket' ? 'pzr-rk' : 'pzr-cs')]),
+      el('div', { class: 'pzr-go-p soon' }, [el('h3', { text: k === 'pocket' ? '포켓 퍼즐' : '4구 퍼즐' }), el('p', { text: '새 퍼즐을 만드는 중입니다.' }), el('button', { class: 'pzr-go', disabled: '', text: '준비 중' })]));
     wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
-  if (!puzzles.list.length) { fit.appendChild(el('div', { class: 'pzr-none', text: '등록된 퍼즐이 없습니다' })); wrap.appendChild(fit); $('#desk').appendChild(wrap); return; }
-  const q = pzr.next('four'), g = pzr.gain(s, q), td = pzr.today('four'), k = s.now.length, mat = s.now.length ? (s.mat || 0) : pzMatOf(s.r);
+  const q = pzr.next(k), g = pzr.gain(s, q), td = pzr.today(k), n = s.now.length, mat = s.now.length ? (s.mat || 0) : pzMatOf(s.r);
   // the rating, today's change, its last moves; under it the cases closed (tapped: the record)
   const spark = s.hist.length >= 2 ? (() => { const L = s.hist, lo = Math.min(...L), hi = Math.max(...L), W = 160, H = 36, sp = Math.max(1, hi - lo);
     return pzSvg(`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="#5fd38a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" points="${L.map((v, i) => `${(i / (L.length - 1) * W).toFixed(1)},${(H - 3 - (v - lo) / sp * (H - 6)).toFixed(1)}`).join(' ')}"/></svg>`, 'sp'); })() : null;
   const past = s.cases.slice(0, 3);
-  fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: '퍼즐 레이팅 · 4구' }), el('b', { class: 'num', text: s.r.toLocaleString('en-US') }),
+  fit.append(el('div', { class: 'pzr-me' }, [el('small', { text: `퍼즐 레이팅 · ${k === 'pocket' ? '포켓' : '4구'}` }), el('b', { class: 'num', text: s.r.toLocaleString('en-US') }),
     el('span', { class: 'd' + (td < 0 ? ' m' : '') }, td == null ? [el('span', { text: s.n ? '오늘 아직 안 풂' : '첫 퍼즐부터 레이팅이 정해집니다' })] : [document.createTextNode(pzSigned(td)), el('span', { text: '오늘' })]), spark,
-    past.length ? el('div', { class: 'pzr-past' }, [el('small', { text: '지난 케이스' }), ...past.map((c, j) => el('button', { class: 'ln', onclick: onTap(() => { pzBook = j; repaint(); }) }, [pzSvg(pzMini(c.res, false), 'mi'), el('em', { class: c.r1 < c.r0 ? 'm' : '', text: pzSigned(c.r1 - c.r0) })])),
+    past.length ? el('div', { class: 'pzr-past' }, [el('small', { text: `지난 ${holder}` }), ...past.map((c, j) => el('button', { class: 'ln', onclick: onTap(() => { pzBook = j; repaint(); }) }, [pzSvg(k === 'pocket' ? pzRackMini(c.res, false) : pzMini(c.res, false), 'mi'), el('em', { class: c.r1 < c.r0 ? 'm' : '', text: pzSigned(c.r1 - c.r0) })])),
       el('button', { class: 'all', text: '기록 전체', onclick: onTap(() => { pzBook = 0; repaint(); }) })]) : null]),
-    el('div', { class: 'pzr-mid' }, [pzSvg(pzCase(s.now, mat, true), 'pzr-cs'), el('div', { class: 'cap' }, [el('b', { text: `이번 케이스 ${k} / ${PZ_CASE}` }), el('small', { text: `${PZ_MATS[mat].n} 케이스 · 한 문제에 공 4분의 1 · 흰 공 → 노란 공 → 빨간 공 → 빨간 공` })])]),
-    el('div', { class: 'pzr-go-p' }, [el('h3', {}, [document.createTextNode(`${PZ_BALL_KO[k >> 2]} ${(k & 3) + 1}/4`), el('small', { text: '레이팅에 맞춰 고른 퍼즐. 시작하기 전엔 보이지 않습니다.' })]),
+    el('div', { class: 'pzr-mid' }, [pzSvg(pzHolder(k, s.now, mat, true), k === 'pocket' ? 'pzr-rk' : 'pzr-cs'), el('div', { class: 'cap' }, [el('b', { text: `이번 ${holder} ${n} / ${size}` }), el('small', { text: k === 'pocket' ? '한 문제에 공 하나 · 1번부터 15번까지' : `${PZ_MATS[mat].n} 케이스 · 한 문제에 공 4분의 1 · 흰 공 → 노란 공 → 빨간 공 → 빨간 공` })])]),
+    el('div', { class: 'pzr-go-p' }, [el('h3', {}, [document.createTextNode(pzPlace(k, n)), el('small', { text: '레이팅에 맞춰 고른 퍼즐. 시작하기 전엔 보이지 않습니다.' })]),
       el('div', { class: 'mys', 'aria-hidden': 'true' }, [el('i'), el('span', { text: '?' })]),
       el('div', { class: 'row' }, [el('span', { text: '맞히면' }), el('b', { text: `+${g.win}` })]), el('div', { class: 'row' }, [el('span', { text: '틀리면' }), el('b', { text: `−${g.lose}` })]),
-      el('button', { class: 'pzr-go', onclick: onTap(() => puzzle.start()) }, [fbIco('play'), el('span', { text: '풀기' })])]));
+      el('button', { class: 'pzr-go', onclick: onTap(() => puzzle.start(null, { game: k })) }, [fbIco('play'), el('span', { text: '풀기' })])]));
   wrap.appendChild(fit); $('#desk').appendChild(wrap);
-}
-// 포켓's rack: fifteen places in a triangle, empty (its puzzles to come)
-function pzRack() {
-  const u = ++pzUid, r = 20, g = r * 2.1, rows = 5, W = rows * g + 24, H = rows * g * .87 + 30;
-  let s = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">${pzDefs(u)}<path d="M${W / 2} 4L${W - 4} ${H - 6}L4 ${H - 6}Z" fill="#5a3218" stroke="#2f1a0c" stroke-width="3" stroke-linejoin="round"/>`;
-  for (let row = 0; row < rows; row++) for (let i = 0; i <= row; i++) { const cx = W / 2 + (i - row / 2) * g, cy = 24 + r + row * g * .87; s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#pz${u}h)" stroke="#0b1a12" stroke-width="2"/>`; }
-  return s + '</svg>';
 }
 /* 레슨 (owner 11-16: the books were of another look than the rest of the desk): the game's lessons in the tray as cards in
    the shop's printed-card language (74-shop-cards.css), a course to a row under the shop's ivory rule - 기본기 blue, 큐볼

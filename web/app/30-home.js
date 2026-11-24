@@ -12,7 +12,7 @@ function homePreview() {
   usePhysics(); scene.clearFalls(); scene.setZone(null);
   st.phase = 'idle'; st.auto = null; st.cueAnim = null; st.power = 0; st.spin = { x: 0, y: 0 }; st.aim = 0;
   const d = drills.byId(prefs.drill);
-  if (prefs.mode === 'puzzle' && puzzles.list.length) { flow = null; game.start('puzzle4', [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(puzzles.byId(prefs.pz.cur) || puzzles.list[0]); return; }
+  if (prefs.mode === 'puzzle' && puzzles.list.length) { const z = puzzles.byId(prefs.pz.cur) || puzzles.list[0]; flow = null; game.start(puzzles.modeOf(z), [prefs.names[0], ''], false, {}); dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); puzzle.put(z); return; }
   if (prefs.mode === 'practice' && d.make) {
     game.start('practice', [prefs.names[0], ''], false, {}); dress(false); scene.setTable(game.P);
     const L = drills.make(d.id, game.P, levelOf(d.id), Math.random, game.vOf);

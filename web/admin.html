@@ -88,6 +88,12 @@
       <form class="row" id="dsForm"><input id="dsMonth" placeholder="shots-2026-11" style="max-width:150px"><button class="go" data-act="stats">현황</button><button data-act="get">내려받기</button></form>
       <div id="dsOut" class="small" style="margin-top:8px"></div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <h2>퍼즐 책 (퍼즐 AI 학습용)</h2>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">레이팅 퍼즐의 첫 시도가 계정 없이 쌓입니다(퍼즐, 풀었는지, 그때 선수 레이팅). 받은 파일은 web/tools/puzzles/fit.js로 학습합니다.</p>
+      <form class="row" id="pbForm"><button class="go" data-act="stats">현황</button><button data-act="get">내려받기</button></form>
+      <div id="pbOut" class="small" style="margin-top:8px"></div>
+    </div>
   </div>
 
   <div id="detail" hidden>
@@ -231,6 +237,16 @@ $('#dsForm').onsubmit = async e => {
   while (more) { const r = await api('dataset', { month, after, limit: 200 }); if (!r.ok) return toast(r.why || '실패', 'bad'); m = r.month; for (const row of r.rows) lines.push(JSON.stringify(row)); after = r.next; more = r.more; out.textContent = `${num(lines.length)}판 받는 중…`; }
   const url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson' })), a = document.createElement('a');
   a.href = url; a.download = `${m}.jsonl`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); out.textContent = `${num(lines.length)}판 내려받음`;
+};
+
+// the puzzles' book (server/src/puzzlebook-core.js): its counts, or every attempt as one .json file for fit.js
+$('#pbForm').onsubmit = async e => {
+  e.preventDefault(); const out = $('#pbOut'), act = e.submitter && e.submitter.dataset.act;
+  if (act !== 'get') { const r = await api('puzzles', { stats: true }); if (!r.ok) return toast(r.why || '실패', 'bad'); out.textContent = `시도 ${num(r.tries)} · 성공 ${num(r.solved)} · 퍼즐 ${num(r.puzzles)}개`; return; }
+  const rows = []; let after = 0;
+  for (;;) { const r = await api('puzzles', { after, limit: 1000 }); if (!r.ok) return toast(r.why || '실패', 'bad'); rows.push(...r.rows); out.textContent = `${num(rows.length)}개 받는 중…`; if (r.rows.length < 1000) break; after = r.next; }
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ rows })], { type: 'application/json' })), a = document.createElement('a');
+  a.href = url; a.download = 'puzzle-tries.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); out.textContent = `${num(rows.length)}개 내려받음`;
 };
 
 async function open(acct) {

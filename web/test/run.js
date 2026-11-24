@@ -131,28 +131,26 @@ for (const name of ['bar', 'pro', 'pub']) {
     console.log(`highlights, ${mode}: ${tapes} tapes (${bests} good shots, ${worsts} bad), all ending where the game did`);
   }
 }
-// puzzles (web/puzzles.js): every one is on the cloth, its id is unique, and its stored answer solves it - struck at the
-// speed stored and at that speed after the power slider's round trip (what a player can actually set)
+// puzzles (web/puzzles.js, the rated ones - owner 11-23/24): ids unique; each has its game, goal, rating and answer; up
+// to 800 only plain 4구 (owner 11-23) - nothing else rated that low; and the stored answer solves it from the start,
+// turn by turn, exactly as the app, the tests and the server play it (puzzles.js play) - at the speed stored, which is
+// one the power slider can set (its round trip gives it back)
 {
-  const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles();
-  const g = createGame({ pool: createPhysics(Object.assign({ pockets: true }, TABLES.bar)), carom: createPhysics({ R: 0.03275, pockets: false }) });
-  /* PUZZLES_WAIT (owner, 2026-11-07): while the physics is being reworked the puzzles are not kept up with it - a stored
-     answer that no longer solves is said, not failed. Every other puzzle check stands. Set false (and find the answers
-     again: web/tools/puzzles) once the physics is settled. */
-  const PUZZLES_WAIT = true;
-  let bad = 0; const ids = new Set();
+  const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles(), T = require(path.join(W, 'tables.js'));
+  const g = createGame(T.physicsFor(createPhysics, 'bar'));
+  const ids = new Set(); let four = 0, pocket = 0, plain = 0;
   for (const z of Z.list) {
     if (ids.has(z.id)) fail(`puzzle ${z.id}: id used twice`); ids.add(z.id);
-    if (!Z.STAGES[z.stage]) { fail(`puzzle ${z.id}: no stage ${z.stage}`); continue; }
-    g.start('puzzle4', ['A', ''], false, {}); const P = g.P, w = g.world, goal = Z.STAGES[z.stage].goal; w.walls = P.walls(z.walls);
-    z.balls.forEach((b, i) => { P.place(w, i, b[0], b[1], rnd); if (Math.abs(b[0]) > P.HL - P.R || Math.abs(b[1]) > P.HW - P.R) { fail(`puzzle ${z.id}: ball ${i} off the cloth`); } });
-    w.cue = 0;
-    for (const V of [z.sol[1], g.vOf(g.powerOf(z.sol[1]))]) {
-      const t = P.clone(w); P.strike(t, z.sol[0], V, z.sol[2], z.sol[3], z.sol[4]); const ev = P.run(t, 30);
-      if (!g.MODES.puzzle4.judge(goal, ev, t).ok) { bad++; if (!PUZZLES_WAIT) fail(`puzzle ${z.id}: its stored answer does not solve it`); break; }
-    }
+    if (z.id >= 101 && z.id <= 999) fail(`puzzle ${z.id}: an id of the first set, not to be used again`);
+    if (!['four', 'pocket'].includes(Z.gameOf(z)) || !Number.isFinite(z.rating)) { fail(`puzzle ${z.id}: no game or rating`); continue; }
+    if (Z.gameOf(z) === 'four') { four++; if (Z.plain(z)) plain++; else if (z.rating <= 800) fail(`puzzle ${z.id}: rated ${z.rating} but not a plain position (up to 800 only plain)`); }
+    else pocket++;
+    if (z.table && !T.TABLE_OUTLINES.byId(z.table)) fail(`puzzle ${z.id}: no table ${z.table}`);
+    const shots = Z.turnsOf(z) > 1 ? z.sol : [z.sol];
+    if (shots.some(s => Math.abs(g.vOf(g.powerOf(s[1])) - s[1]) > 1e-9)) fail(`puzzle ${z.id}: a speed the power slider cannot set`);
+    const r = Z.play(g, z, shots, rnd, 40); if (!r.ok) fail(`puzzle ${z.id}: its stored answer does not solve it (${r.note || ''}, turn ${r.turn + 1})`);
   }
-  console.log(`puzzles: ${Z.list.length} in ${Z.STAGES.length} stages (${Z.STAGES.map((s, i) => s.name + ' ' + Z.of(i).length).join(', ')}), ${Z.list.length - bad} stored answers work${bad && PUZZLES_WAIT ? ` - ${bad} wait for the physics to settle (PUZZLES_WAIT)` : ''}`);
+  console.log(`puzzles: ${Z.list.length} - 4구 ${four} (${plain} plain), 포켓 ${pocket}; every stored answer solves its puzzle`);
 }
 // Meetings at the same instant are settled together, not in the balls' order: two touching balls struck square between
 // them come off alike, whatever their numbers; a straight break opens the rack evenly; a row of touching balls passes the

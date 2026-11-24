@@ -408,6 +408,17 @@ function createGame(PH, makeAI) {
     },
   };
 
+  /* 포켓 퍼즐 (owner 11-24): the pocket puzzles' game - on the 7-foot table always (pzpool), one player, a few of the
+     fifteen balls set out (puzzles.js setup), what the shot must do judged by puzzles.js (pot these, keep those out, the
+     cue ball not lost; a cushion that must be met; two turns). Its balls are 8볼's set. */
+  MODES.puzzle8 = {
+    id: 'puzzle8', name: '포켓 퍼즐', blurb: '정해진 공을 넣으세요', table: 'pzpool', set: 'pool', n: 16, ballInHand: false, solo: true,
+    setup(g, rnd) { const P = g.P, w = g.world; for (let i = 1; i < 16; i++) { P.place(w, i, 9 + i, 9, rnd); w.balls[i].on = false; } P.place(w, 0, -P.HL / 2, 0, rnd); g.placing = null; g.isBreak = false; },
+    legal: g => g.world.balls.filter(b => b.on && b.id !== 0).map(b => b.id),
+    ctx: g => ({ turn: g.turn }),
+    evaluate(ev) { return { foul: null, scratch: false, respot: [], win: null, why: '', assign: null, keep: true, pts: 0 }; },
+  };
+
   // A four-ball puzzle: one player, one position, one shot. The app puts the balls down and says what the shot has to do
   // (g.goal): score - both reds, never the yellow;  gather - score and leave the three balls close together;
   // bank - a cushion before any ball;  three - three cushions before the second red;  direct - no cushion at all on the way.

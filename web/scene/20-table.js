@@ -354,6 +354,7 @@
      fall) finds a hole by its number (6 + its index: shapeHole). */
   const shapeGrp = new THREE.Group(); sScene.add(shapeGrp);
   const holeMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
+  const needMat = new THREE.MeshBasicMaterial({ color: 0xffd34d, toneMapped: false, side: THREE.DoubleSide });   // (a cushion that must be met)
   const SH_CW = 0.05, SH_STEP = 0.01, NOSE = 0.0355;
   // (the rails' wood without its lacquer: an outline's rails come in under the lamps, where the coat would mirror them white)
   const shapeWoodMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0, envMapIntensity: 0.4 });
@@ -365,12 +366,24 @@
     const n = pts.length; let A = 0; for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n]; A += a[0] * b[1] - b[0] * a[1]; }
     const sg = (A > 0 ? 1 : -1) * (island ? -1 : 1);
     const N = i => { const a = pts[i], b = pts[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [sg * dy / l, -sg * dx / l]; };
+    // (a curve drawn as short edges - a round or bumpy table, a wave - is offset along its smoothed normal, as a parallel
+    // curve, not mitred edge by edge: mitres on a curve fold the rail into spikes)
+    const L = i => { const a = pts[i], b = pts[(i + 1) % n]; return Math.hypot(b[0] - a[0], b[1] - a[1]); }, short = i => L(i) < 0.12;
+    const vN = pts.map((_, i) => {
+      const i0 = (i - 1 + n) % n, n0 = N(i0), n1 = N(i);
+      if (short(i0) && short(i)) { let sx = 0, sy = 0; for (let k = -3; k <= 3; k++) { const q = N((i + k + n) % n), wt = 4 - Math.abs(k); sx += q[0] * wt; sy += q[1] * wt; } const l = Math.hypot(sx, sy) || 1; return [sx / l, sy / l, true]; }
+      const dot = n0[0] * n1[0] + n0[1] * n1[1]; let mx = (n0[0] + n1[0]) / (1 + dot), my = (n0[1] + n1[1]) / (1 + dot); if (!(Math.hypot(mx, my) < 3)) { mx = n1[0]; my = n1[1]; }
+      return [mx, my, false];
+    });
     const out = [];
     for (let i = 0; i < n; i++) {
-      const a = pts[i], b = pts[(i + 1) % n], n0 = N((i - 1 + n) % n), n1 = N(i), dot = n0[0] * n1[0] + n0[1] * n1[1];
-      let mx = (n0[0] + n1[0]) / (1 + dot), my = (n0[1] + n1[1]) / (1 + dot); const ml = Math.hypot(mx, my); if (!(ml < 3)) { mx = n1[0]; my = n1[1]; } 
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]), k = Math.max(1, Math.ceil(len / SH_STEP));
-      for (let j = 0; j < k; j++) { const t = j / k; out.push({ x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, mx: j ? n1[0] : mx, my: j ? n1[1] : my, e: i }); }
+      const a = pts[i], b = pts[(i + 1) % n], n1 = N(i), v0 = vN[i], v1 = vN[(i + 1) % n], curve = short(i) && v0[2] && v1[2];
+      const len = L(i), k = Math.max(1, Math.ceil(len / SH_STEP));
+      for (let j = 0; j < k; j++) {
+        const t = j / k; let mx = j ? n1[0] : v0[0], my = j ? n1[1] : v0[1];
+        if (curve) { mx = v0[0] + (v1[0] - v0[0]) * t; my = v0[1] + (v1[1] - v0[1]) * t; const l = Math.hypot(mx, my) || 1; mx /= l; my /= l; }
+        out.push({ x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, mx, my, e: i });
+      }
     }
     return out;
   }
@@ -378,7 +391,7 @@
   const shapeAt = (q, d) => [q.x + q.mx * d, q.y + q.my * d];
   function setShape(sh) {
     shapeNow = sh || null;
-    while (shapeGrp.children.length) { const m = shapeGrp.children.pop(); m.geometry.dispose(); }
+    while (shapeGrp.children.length) { const m = shapeGrp.children.pop(); m.geometry.dispose(); if (m.material && m.material.map && m.material.map.isCanvasTexture) { m.material.map.dispose(); m.material.dispose(); } }
     const std = cur && tables.get(cur); if (std) std.visible = !sh;
     if (sh && cur) {
       shapeWoodMat.map = woodMat.map; shapeWoodMat.color.copy(woodMat.color); shapeWoodMat.needsUpdate = true;
@@ -429,6 +442,26 @@
         g.computeVertexNormals();
         const m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); return m;
       };
+      // the cushions a puzzle asks the cue ball to meet (puzzles.js need): a yellow band along the rubber's top, numbered
+      // on the rail when there is more than one
+      const need = (sh.spec && sh.spec.need) || [];
+      need.forEach((e, ni) => {
+        const seg = outer.filter(q => q.e === e), band = [];
+        const zAt = d => 0.038 + (d - 0.012) / (SH_CW - 0.012) * (RAIL_Z - 0.038) + 0.0009;
+        for (let k = 0; k < seg.length; k++) {
+          const q0 = seg[k], q1 = k + 1 < seg.length ? seg[k + 1] : outer[(outer.indexOf(q0) + 1) % outer.length];
+          const a = shapeAt(q0, 0.014), b = shapeAt(q1, 0.014), c = shapeAt(q1, 0.044), d = shapeAt(q0, 0.044);
+          if (cutAt((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, 0.002)) continue;
+          band.push(a[0], a[1], zAt(0.014), b[0], b[1], zAt(0.014), c[0], c[1], zAt(0.044), a[0], a[1], zAt(0.014), c[0], c[1], zAt(0.044), d[0], d[1], zAt(0.044));
+        }
+        if (band.length) { const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(band, 3)); shapeGrp.add(new THREE.Mesh(bg, needMat)); }
+        if (need.length > 1 && seg.length) {
+          const mid = seg[Math.floor(seg.length / 2)], p = shapeAt(mid, SH_CW + RW * 0.5), cv = document.createElement('canvas'); cv.width = cv.height = 64;
+          const c2 = cv.getContext('2d'); c2.fillStyle = '#ffd34d'; c2.beginPath(); c2.arc(32, 32, 30, 0, Math.PI * 2); c2.fill(); c2.fillStyle = '#3f200f'; c2.font = 'bold 40px sans-serif'; c2.textAlign = 'center'; c2.textBaseline = 'middle'; c2.fillText(String(ni + 1), 32, 34);
+          const tx = new THREE.CanvasTexture(cv), m = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05), new THREE.MeshBasicMaterial({ map: tx, transparent: true }));
+          m.position.set(p[0], p[1], RAIL_Z + 0.001); shapeGrp.add(m);
+        }
+      });
       mesh(V.cush, cushMat, true); mesh(V.wood, shapeWoodMat, true); mesh(V.body, bodyMat, true); mesh(V.liner, linerMat, false); mesh(V.cap, metalMat, false);
       // the cloth: out under the rails, the holes cut through it
       const bed = new THREE.Shape(outer.map(q => { const p = shapeAt(q, RT - 0.01); return new THREE.Vector2(p[0], p[1]); }));
