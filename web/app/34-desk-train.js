@@ -47,6 +47,71 @@ function trainHead(head, title, sub) {
    its result over it all (pzDone); the record (pzBook) lists the closed ones, each one's puzzles to play again. No rating
    anywhere: it chooses, unseen. */
 let pzView = 'four', pzBook = null, pzDone = null;
+/* 시안 (owner 11-24 밤: several looks for the desk, to choose from): 'case' the case in the middle (above); 'map' the
+   case's stages as a path; 'shelf' the cases as a collection on shelves; 'card' the next stage as one card. */
+let pzLook = 'case';
+// the stages of the case being filled: each one's number, stars (null: not yet), whether hard, whether the one to play
+function pzStagesOf(k, s) {
+  const size = pzSize(k), n = s.now.length, st0 = n ? (s.st0 || s.stage - n + 1) : s.stage + 1;
+  return Array.from({ length: size }, (_, i) => ({ i, st: st0 + i, stars: i < n ? pzStars(s.now[i][1]) : null, cur: i === n, hard: k === 'pocket' ? i % 5 === 4 : i % 4 === 3 }));
+}
+const pzMedal = v => v == null ? '' : ['m0', 'm1', 'm2', 'm3'][v];
+// the stars and the way to the next material, small (a line)
+const pzTotal = (s, holder) => { const m = pzMatOf(s.stars), up = PZ_MATS[m + 1]; return el('div', { class: 'pz-tot' }, [el('i', { class: 'star' }), el('b', { text: String(s.stars) }),
+  up ? el('span', { text: `${up.n} ${holder}까지 ${up.at - s.stars}` }) : el('span', { text: `금 ${holder}` }), up ? el('i', { class: 'bar' }, el('b', { style: `width:${Math.round(100 * (s.stars - PZ_MATS[m].at) / (up.at - PZ_MATS[m].at))}%` })) : null]); };
+// B: the stages of this case as a path, two rows snaking; the stars over each done one, the next one large with 풀기
+function pzDeskMap(fit, k, s) {
+  const L = pzStagesOf(k, s), holder = k === 'pocket' ? '랙' : '케이스', mat = s.now.length ? (s.mat || 0) : pzMatOf(s.stars), per = 8, step = 88 / (per - 1);
+  const pos = i => i < per ? [6 + i * step, 30] : [94 - (i - per) * step, 72];
+  const path = el('div', { class: 'pzm-path' });
+  path.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M6 30H94C100 30 100 72 94 72H${pos(L.length - 1)[0]}" class="bg"/><path d="M6 30H94C100 30 100 72 94 72H${pos(L.length - 1)[0]}" class="dash"/></svg>`;
+  for (const q of L) {
+    const [x, y] = pos(q.i), cls = 'nd' + (q.stars != null ? ' done ' + pzMedal(q.stars) : '') + (q.cur ? ' cur' : '') + (q.hard ? ' hard' : '') + (x > 80 ? ' gl' : '');
+    path.appendChild(el('div', { class: cls, style: `left:${x}%;top:${y}%` }, [
+      q.stars != null ? pzStarRow(q.stars, 3, 'up') : null,
+      q.cur ? el('button', { class: 'dot', 'aria-label': `스테이지 ${q.st} 풀기`, onclick: onTap(() => puzzle.start(null, { game: k })) }, el('b', { text: String(q.st) })) : el('span', { class: 'dot' }, el('b', { text: String(q.st) })),
+      q.cur ? el('button', { class: 'go', onclick: onTap(() => puzzle.start(null, { game: k })) }, [fbIco('play'), el('span', { text: '풀기' }), q.hard ? el('em', { text: '어려운 스테이지' }) : null]) : null]));
+  }
+  const L0 = L[0].st, L1 = L[L.length - 1].st;
+  fit.append(el('div', { class: 'pzm-top' }, [el('div', { class: 'pzm-ch' }, [pzSvg(k === 'pocket' ? pzRackMini(s.now, true) : pzMini(s.now, true), 'mi'),
+    el('div', {}, [el('b', { text: `${PZ_MATS[mat].n} ${holder}` }), el('small', { text: `스테이지 ${L0}–${L1} · ${k === 'pocket' ? '한 스테이지에 공 하나' : '한 스테이지에 공 4분의 1'}` })])]), pzTotal(s, holder)]),
+    path,
+    el('div', { class: 'pzm-foot' }, [el('span', { class: 'lg' }, [el('i', { class: 'm3' }), document.createTextNode('★★★'), el('i', { class: 'm2' }), document.createTextNode('★★'), el('i', { class: 'm1' }), document.createTextNode('★'), el('i', { class: 'hard' }), document.createTextNode('어려운 스테이지')]),
+      el('button', { class: 'lnk', text: `지난 ${holder} ${s.cases.length}개 · 기록`, onclick: onTap(() => { if (s.cases.length) { pzBook = 0; repaintLive(); } }) })]));
+}
+// C: the case being filled large on a plank, the ones closed on a shelf under it, the materials still to come; the next
+// stage on a tile at the side
+function pzDeskShelf(fit, k, s) {
+  const holder = k === 'pocket' ? '랙' : '케이스', n = s.now.length, mat = n ? (s.mat || 0) : pzMatOf(s.stars), L = pzStagesOf(k, s), cur = L[n] || L[0], m = pzMatOf(s.stars);
+  const shelf = el('div', { class: 'pzs-shelf' }, [...s.cases.slice(0, 4).map((c, j) => el('button', { class: 'it', onclick: onTap(() => { pzBook = j; repaintLive(); }) }, [pzSvg(pzHolder(k, c.res, c.m, false), 'pc'), el('em', {}, [el('i', { class: 'star' }), document.createTextNode(`${pzr.starsIn(c.res)}`)])])),
+    el('div', { class: 'it next' }, el('span', { text: '다음 자리' }))]);
+  fit.append(el('div', { class: 'pzs-main' }, [
+    el('div', { class: 'pzs-now' }, [el('div', { class: 'hd' }, [el('small', { text: `지금 채우는 ${holder} · ${PZ_MATS[mat].n}` }), el('b', {}, [document.createTextNode(`스테이지 ${L[0].st}–${L[L.length - 1].st}`), el('span', {}, [el('i', { class: 'star' }), document.createTextNode(`${pzr.starsIn(s.now)} / ${pzSize(k) * 3}`)])]), el('em', { text: `${n} / ${pzSize(k)}` })]),
+      pzSvg(pzHolder(k, s.now, mat, true), k === 'pocket' ? 'pzr-rk' : 'pzr-cs'), el('i', { class: 'plank' })]),
+    el('div', { class: 'pzs-done' }, [el('small', { text: `완성한 ${holder} ${s.cases.length}개` }), shelf, el('i', { class: 'plank' })]),
+    el('div', { class: 'pzs-mats' }, PZ_MATS.map((x, i) => el('div', { class: 'mt' + (i <= m ? ' on' : '') }, [el('i', { style: `background:linear-gradient(${x.a},${x.b})` }), el('b', { text: x.n }), el('span', { text: `★ ${x.at}` })])))]),
+  el('div', { class: 'pzs-side' }, [el('div', { class: 'pzs-st' }, [el('small', { text: '모은 별' }), el('div', { class: 'big' }, [el('i', { class: 'star' }), el('b', { text: String(s.stars) })]), pzTotal(s, holder)]),
+    el('div', { class: 'pzs-go' + (cur.hard ? ' hard' : '') }, [el('small', { text: cur.hard ? '다음 · 어려운 스테이지' : '다음' }), el('b', { class: 'num', text: String(cur.st) }), el('span', { text: `스테이지 · ${pzPlace(k, n)}` }),
+      el('div', { class: 'mys', 'aria-hidden': 'true' }, [el('i'), el('span', { text: '?' })]), el('div', { class: 'st3' }, [0, 1, 2].map(() => el('i', { class: 'star' }))), el('small', { text: '한 번에 풀면 칸이 금색으로' }),
+      el('button', { class: 'pzr-go', onclick: onTap(() => puzzle.start(null, { game: k })) }, [fbIco('play'), el('span', { text: '풀기' })])])]));
+}
+// D: the next stage as one card (a table under frosted glass, its number), a stack behind it; the stages just played at
+// the left, how hard and 오늘의 퍼즐 at the right
+function pzDeskCard(fit, k, s) {
+  const holder = k === 'pocket' ? '랙' : '케이스', n = s.now.length, L = pzStagesOf(k, s), cur = L[n] || L[0];
+  const past = [...s.now.map((r, i) => [L[i].st, pzStars(r[1])]).reverse(), ...(s.cases[0] ? s.cases[0].res.map((r, i) => [(s.cases[0].st0 || 0) + i, pzStars(r[1])]).reverse() : [])].slice(0, 8);
+  const dots = k === 'pocket' ? [['#f2c21b', 30, 36], ['#1d4fb8', 62, 28], ['#d62b2b', 74, 62], ['#f4f1ea', 22, 66], ['#111', 48, 52]] : [['#f4f1ea', 26, 34], ['#f2c21b', 64, 60], ['#d62b2b', 80, 24], ['#d62b2b', 44, 72]];
+  const prev = el('div', { class: 'pv' + (k === 'pocket' ? ' pool' : '') }, [el('div', { class: 'cl' }, dots.map(([c, x, y]) => el('i', { style: `background:${c};left:${x}%;top:${y}%` }))), el('span', { class: 'q', text: '?' }), cur.hard ? el('em', { text: '어려운 스테이지' }) : null]);
+  fit.append(el('div', { class: 'pzd-recent' }, [el('small', { text: '최근 스테이지' }), ...past.map(([st, v], i) => el('div', { class: 'ln' + (i === 0 ? ' on' : '') }, [el('b', { text: String(st) }), pzStarRow(v), el('span', { text: v === 0 ? '못 풂' : v === 3 ? '한 번에' : v === 2 ? '두 번째' : '세 번째' })])),
+    el('button', { class: 'lnk', text: `기록 · ${holder} ${s.cases.length}개`, onclick: onTap(() => { if (s.cases.length) { pzBook = 0; repaintLive(); } }) })]),
+  el('div', { class: 'pzd-mid' }, [el('div', { class: 'stack' }, [el('i', { class: 'b1' }), el('i', { class: 'b2' }), el('article', { class: 'cd' }, [prev,
+    el('div', { class: 'tx' }, [el('small', { text: '스테이지' }), el('b', { class: 'num', text: String(cur.st) }), el('span', { text: `${pzPlace(k, n)} · ${PZ_MATS[s.now.length ? (s.mat || 0) : pzMatOf(s.stars)].n} ${holder} ${n} / ${pzSize(k)}` }),
+      el('div', { class: 'lg' }, [['한 번에', 3], ['두 번째', 2], ['세 번째', 1]].map(([t, m]) => el('span', {}, [pzStarRow(m, m), document.createTextNode(t)])))])])]),
+    el('button', { class: 'pzr-go', onclick: onTap(() => puzzle.start(null, { game: k })) }, [fbIco('play'), el('span', { text: '풀기' })])]),
+  el('div', { class: 'pzd-side' }, [el('div', { class: 'tot' }, [el('i', { class: 'star' }), el('b', { text: String(s.stars) }), el('span', { text: '모은 별' })]),
+    el('small', { text: '난이도' }), ...Object.entries(PZ_DIFF).map(([kk, v]) => el('button', { class: 'df' + (prefs.pzr.diff === kk ? ' on' : ''), onclick: onTap(() => { prefs.pzr.diff = kk; for (const g of ['four', 'pocket']) pzr.of(g).cur = null; savePrefs(); repaintLive(); }) }, [el('b', { text: v.n }), el('span', { text: kk === 'easy' ? '거의 다 풀리는' : kk === 'normal' ? '셋 중 둘' : '반반' })])),
+    el('div', { class: 'day' }, [el('b', { text: '오늘의 퍼즐' }), el('span', { text: '모두 같은 문제 · 하루 한 번' }), el('button', { text: '풀어보기', onclick: onTap(() => { const d = pzDaily(); if (d) puzzle.start(d.id, { free: 'day' }); }) })])]));
+}
 const pzDate = t => { const m = /^\d+-(\d+)-(\d+)/.exec(t || ''); return m ? `${+m[1]}월 ${+m[2]}일` : ''; };
 // stars drawn: n won of three (or out of `of`)
 const pzStarRow = (n, of = 3, cls = '') => el('span', { class: 'pz-stars ' + cls, 'aria-label': `별 ${n}개` }, Array.from({ length: of }, (_, i) => el('i', { class: i < n ? 'on' : '' })));
@@ -96,7 +161,7 @@ function deskPuzzle(d) {
   const diff = el('div', { class: 'pzr-diff', role: 'radiogroup', 'aria-label': '난이도' }, Object.entries(PZ_DIFF).map(([kk, v]) =>
     el('button', { role: 'radio', 'aria-checked': String(prefs.pzr.diff === kk), class: prefs.pzr.diff === kk ? 'on' : '', onclick: onTap(() => { if (prefs.pzr.diff !== kk) { prefs.pzr.diff = kk; for (const g of ['four', 'pocket']) pzr.of(g).cur = null; savePrefs(); repaint(); } }) }, el('span', { text: v.n }))));
   const day = pzDaily(), dayDone = prefs.pz.day === attend.today();
-  const tools = el('span', { class: 'bd-tools' }, [seg, diff, day && k === 'four' ? el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id, { free: 'day' })) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]) : null]);
+  const tools = el('span', { class: 'bd-tools' }, [seg, pzLook === 'card' ? null : diff, day && k === 'four' && pzLook !== 'card' ? el('button', { class: 'pz-day' + (dayDone ? ' done' : ''), onclick: onTap(() => puzzle.start(day.id, { free: 'day' })) }, [el('i'), document.createTextNode(dayDone ? '오늘의 퍼즐 완료' : '오늘의 퍼즐')]) : null]);
   wrap.appendChild(el('div', { class: 'bd-head' }, [back ? x(back) : null, dkTitle('퍼즐', '세 번 안에 풀면 별'), tools]));
   if (k === 'pocket') wrap.classList.add('pocket');
   if (!pzPool(k).length) {
@@ -106,6 +171,7 @@ function deskPuzzle(d) {
     wrap.appendChild(fit); $('#desk').appendChild(wrap); return;
   }
   pzr.next(k);
+  if (pzLook !== 'case') { const f = { map: pzDeskMap, shelf: pzDeskShelf, card: pzDeskCard }[pzLook]; if (f) { f(fit, k, s); wrap.classList.add('lk-' + pzLook); wrap.appendChild(fit); $('#desk').appendChild(wrap); return; } }
   const n = s.now.length, mat = s.now.length ? (s.mat || 0) : pzMatOf(s.stars), hard = pzr.hard(k), up = PZ_MATS[pzMatOf(s.stars) + 1];
   const past = s.cases.slice(0, 3), inCase = pzr.starsIn(s.now);
   // the stage, the stars, the way to the next material; the cases closed (tapped: the record)

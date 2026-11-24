@@ -26,6 +26,9 @@ const pzRating = q => (pzLive.map && pzLive.map.get(q.id)) || q.rating || (b => 
    every puzzle finished, never down - and the stars each won: ★★★ at the first try, ★★ the second, ★ the third (or with
    a hint seen first), none after three misses (the score each gives the rating: PZ_STAR_S). */
 const PZ_STAR_S = [0, 0.5, 0.75, 1];
+// 시안 (owner 11-24 밤): how a stage's end is shown ('card' over the table, 'sheet' a sheet at the foot) and a near miss
+// ('toast' a line, 'mark' a ring on the table where it came closest, with the distance)
+let pzEnd = 'card', pzNear = 'toast';
 // a place's stars, from what it holds (the first set's results: o 3, h 1, x 0)
 const pzStars = v => typeof v === 'number' ? v : v === 'o' ? 3 : v === 'h' ? 1 : v === 'x' ? 0 : null;
 const PZ_MEDAL = ['#7d8794', '#cd8a4a', '#cfd8e3', '#f4c430'];          // (none, bronze, silver, gold)
@@ -208,7 +211,7 @@ const puzzle = {
     if (!p.cur || p.cur.id !== z.id || p.free !== free) { p.helped = 0; p.tries = 0; p.done = false; p.got = null; }
     if (!free && pzr.of(kk).hinted === z.id) p.helped = Math.max(p.helped, 1);   // (a hint seen, then left: still seen)
     if (!free && !p.done) { const t = pzr.of(kk).tried; if (t && t[0] === z.id) p.tries = Math.max(p.tries, t[1]); }   // (and the misses)
-    p.cur = z; p.k = kk; p.free = free; p.closed = null; prefs.pz.cur = z.id; savePrefs(); pzCardOff();
+    p.cur = z; p.k = kk; p.free = free; p.closed = null; prefs.pz.cur = z.id; savePrefs(); pzCardOff(); pzMarkOff(); p.lastNear = null;
     usePhysics(); game.start(puzzles.modeOf(z), [prefs.names[0], ''], false, {});
     flow = puzzle; dress(false); useCue(prefs.cues[0]); scene.setTable(game.P); show('play'); p.bar(); p.again();
     // (what it has that is new to this player: said once, the first time - as the plan's 처음 만날 때 안내)
@@ -234,7 +237,7 @@ const puzzle = {
   },
   guide: () => GUIDE_STD,
   auto: () => null,
-  beforeShot(V, a, b, el) { scene.setMarks(null); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; puzzle.pre = game.P.clone(game.world); },
+  beforeShot(V, a, b, el) { scene.setMarks(null); pzMarkOff(); puzzle.shot = { aim: st.aim, V, a, b, el: el || 0 }; puzzle.pre = game.P.clone(game.world); },
   /* after a miss, once a session while it is off: a small capsule in the middle - 빠른 진행을 켤까요? and a tick. Its edge fills
      blue as the moments pass; full, it drops away and fades (owner 11-10). The tick turns it on for puzzles. */
   askFast() {
@@ -262,12 +265,13 @@ const puzzle = {
     }
     // a miss: told how near it came; the stage (counted) gives three tries, the third missed ends it with no star
     if (!solved) {
-      const near = pzMiss(z, p.pre, p.shot), why = near || j.note || '실패', again = T > 1 && p.turn ? ' · 처음부터' : '';
+      const nm = pzMiss(z, p.pre, p.shot), near = nm && nm.say, why = near || j.note || '실패', again = T > 1 && p.turn ? ' · 처음부터' : '';
+      p.lastNear = nm; if (nm && pzNear === 'mark') pzMark(nm);
       SND.bad();
       if (!p.free && !p.done) {
         p.tries++; const s = pzr.of(p.k); s.tried = [z.id, p.tries]; savePrefs();
         if (p.tries >= 3) { p.finish(0, why); return; }
-        toast(`${why} · 남은 기회 ${3 - p.tries}번${again}`, 'foul', 2300); p.hud();
+        toast(nm && pzNear === 'mark' ? `아까워요 · 남은 기회 ${3 - p.tries}번${again}` : `${why} · 남은 기회 ${3 - p.tries}번${again}`, 'foul', 2300); p.hud();
       } else { p.tries++; toast(`${why}${again}`, 'foul', 2100); }
       if (!prefs.pzFast && !p.askedFast) setTimeout(p.askFast, 1900);
       return hold(1.6, p.again);
@@ -346,28 +350,30 @@ function pzMiss(z, pre, shot) {
   P.strike(t, shot.aim, shot.V, shot.a, shot.b, shot.el);
   const holes = four ? [] : (t.shape && t.shape.holes && t.shape.holes.length ? t.shape.holes : P.POCKETS);
   const pot = four ? [] : (z.pot || []), best = {};
-  let first = null;
+  let first = null; const where = {};
   for (let i = 0; i < 120 * 25 && !P.rest(t); i++) {
     P.step(t, TICK); const c = t.balls[0];
     if (four) {
       if (first == null) first = t.ev.hits.find(id => id === 2 || id === 3) || null;
-      for (const id of [2, 3]) { if (t.ev.hits.includes(id)) continue; const b = t.balls[id], g = Math.hypot(b.x - c.x, b.y - c.y) - 2 * R; if (best[id] == null || g < best[id]) best[id] = g; }
+      for (const id of [2, 3]) { if (t.ev.hits.includes(id)) continue; const b = t.balls[id], g = Math.hypot(b.x - c.x, b.y - c.y) - 2 * R; if (best[id] == null || g < best[id]) { best[id] = g; where[id] = [c.x, c.y, b.x, b.y]; } }
     } else for (const id of pot) {
       const b = t.balls[id]; if (!b || !b.on) { best[id] = -1; continue; }
-      for (const h of holes) { const g = Math.hypot(b.x - h.x, b.y - h.y) - (h.r || 0.06); if (best[id] == null || g < best[id]) best[id] = g; }
+      for (const h of holes) { const g = Math.hypot(b.x - h.x, b.y - h.y) - (h.r || 0.06); if (best[id] == null || g < best[id]) { best[id] = g; where[id] = [b.x, b.y, h.x, h.y]; } }
     }
   }
+  const out = (say, id) => ({ say, g: best[id], cm: cm(best[id]), at: where[id], four });
   const cm = g => g < 0.01 ? `${Math.max(1, Math.round(g * 1000))}mm` : `${(g * 100).toFixed(g < 0.1 ? 1 : 0)}cm`;
   if (four) {
     if (t.ev.hits.includes(1)) return null;                                     // (the yellow met: another kind of miss)
     const left = [2, 3].filter(id => !t.ev.hits.includes(id) && best[id] != null);
     if (!left.length) return null;
     const g = Math.min(...left.map(id => best[id])); if (g > 0.15) return null;
-    return first ? `두 번째 빨간 공을 ${cm(g)} 차이로 비켜감` : `빨간 공을 ${cm(g)} 차이로 비켜감`;
+    const id = left.find(q => best[q] === g);
+    return out(first ? `두 번째 빨간 공을 ${cm(g)} 차이로 비켜감` : `빨간 공을 ${cm(g)} 차이로 비켜감`, id);
   }
   const miss = pot.filter(id => best[id] != null && best[id] >= 0); if (!miss.length) return null;
   const id = miss.sort((a, b) => best[a] - best[b])[0], g = best[id]; if (g > 0.15) return null;
-  return `${id}번 공이 포켓 입구까지 ${cm(g)}`;
+  return out(`${id}번 공이 포켓 입구까지 ${cm(g)}`, id);
 }
 /* The card over the table when a stage is over (owner 11-24 저녁's plan): cleared - its stars, one by one, and how many
    tries; missed three times - no star, how near the last came, and that the stage goes on regardless. 다음 스테이지, 한 번
@@ -375,6 +381,7 @@ function pzMiss(z, pre, shot) {
 function pzCardOff() { const c = $('#pzCard'); if (c) c.remove(); }
 function pzCard(o) {
   pzCardOff();
+  if (pzEnd === 'sheet') return pzSheet(o);
   const p = puzzle, holder = o.k === 'pocket' ? '랙' : '케이스', ok = o.stars > 0;
   const how = !ok ? '세 번 모두 놓쳤어요' : o.helped ? '힌트를 보고 성공' : o.tries === 0 ? '한 번에 성공!' : o.tries === 1 ? '두 번째에 성공' : '세 번째에 성공';
   const stars = el('div', { class: 'pzc-stars' }, [0, 1, 2].map(i => el('i', { class: i < o.stars ? 'on' : '', style: `animation-delay:${0.15 + i * 0.22}s` })));
@@ -392,4 +399,35 @@ function pzCard(o) {
       el('button', { class: 'pzc-b2', onclick: go(() => p.again()) }, [el('span', { text: '한 번 더' })]),
       el('button', { class: 'pzc-go', onclick: go(() => p.next()) }, [el('span', { text: o.closed ? `${holder} 결과` : '다음 스테이지' })])])]);
   $('#app').appendChild(el('div', { id: 'pzCard', class: 'pz-card-bg' }, card));
+}
+
+/* 시안: the near miss shown on the table - a dashed ring where the cue ball (포켓: the ball) came closest, a line to what it
+   missed, and the distance in a bubble; gone at the next shot */
+function pzMarkOff() { const m = $('#pzMark'); if (m) m.remove(); }
+function pzMark(nm) {
+  pzMarkOff(); if (!nm.at) return;
+  const gl = $('#gl').getBoundingClientRect(), ap = $('#app').getBoundingClientRect(), o = [0, 0], R = game.P.R, P = [];
+  scene.proj.begin();
+  for (const [x, y] of [[nm.at[0], nm.at[1]], [nm.at[2], nm.at[3]], [nm.at[0] + R, nm.at[1]]]) { scene.proj.at(x, y, R, o); P.push([o[0] + gl.left - ap.left, o[1] + gl.top - ap.top]); }
+  const r = Math.max(8, Math.hypot(P[2][0] - P[0][0], P[2][1] - P[0][1])), [ax, ay] = P[0], [bx, by] = P[1];
+  const sx = (ax + bx) / 2, sy = Math.min(ay, by) - r * 3.4;
+  const box = el('div', { id: 'pzMark', 'aria-hidden': 'true' });
+  box.innerHTML = `<svg width="100%" height="100%"><line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" class="ln"/><circle cx="${ax}" cy="${ay}" r="${r}" class="rg"/>${nm.four ? `<circle cx="${bx}" cy="${by}" r="${r}" class="tg"/>` : `<circle cx="${bx}" cy="${by}" r="${r * 1.6}" class="pk"/>`}</svg>`;
+  box.appendChild(el('div', { class: 'bub', style: `left:${sx}px;top:${sy}px` }, [el('b', { text: nm.cm.replace(/(mm|cm)$/, '') }), el('small', { text: /mm$/.test(nm.cm) ? 'mm' : 'cm' }), el('span', { text: nm.four ? '차이' : '포켓까지' })]));
+  $('#app').appendChild(box);
+}
+/* 시안: a stage's end as a sheet at the foot of the screen - the table and where the balls went stay in view; a miss shows
+   by how much in place of the stars */
+function pzSheet(o) {
+  const p = puzzle, holder = o.k === 'pocket' ? '랙' : '케이스', ok = o.stars > 0, nm = p.lastNear;
+  const how = !ok ? '세 번 모두 놓쳤어요' : o.helped ? '힌트를 보고 성공' : o.tries === 0 ? '한 번에 성공!' : o.tries === 1 ? '두 번째에 성공' : '세 번째에 성공';
+  const go = fn => () => { SND.tap(); pzCardOff(); pzMarkOff(); fn(); }, s = pzr.of(o.k);
+  const lead = ok || !nm ? el('div', { class: 'pzs-l' }, el('div', { class: 'pzc-stars' }, [0, 1, 2].map(i => el('i', { class: i < o.stars ? 'on' : '', style: `animation-delay:${0.15 + i * 0.22}s` }))))
+    : el('div', { class: 'pzs-l gap' }, [el('b', {}, [document.createTextNode(nm.cm.replace(/(mm|cm)$/, '')), el('small', { text: /mm$/.test(nm.cm) ? 'mm' : 'cm' })]), el('span', { text: '차이로 놓침' })]);
+  const sub = o.closed ? `${holder} 완성 · 별 ${pzr.starsIn(o.closed.res)} / ${pzSize(o.k) * 3}` : ok ? `${how} · ${holder} ${s.now.length} / ${pzSize(o.k)}` : '스테이지는 넘어가요 · 기록에서 다시 풀 수 있어요';
+  $('#app').appendChild(el('div', { id: 'pzCard', class: 'pz-sheet' + (ok ? ' ok' : ' no'), role: 'dialog', 'aria-label': `스테이지 ${o.stage} ${ok ? '클리어' : '실패'}` }, [lead,
+    el('div', { class: 'pzs-t' }, [el('b', { text: ok ? `스테이지 ${o.stage} 클리어` : how }), el('span', { text: sub })]),
+    el('div', { class: 'pzs-b' }, [!ok ? el('button', { class: 'b2', onclick: go(() => { p.again(); setTimeout(p.answer, 250); }) }, [fbIco('play'), el('span', { text: '정답 보기' })]) : null,
+      el('button', { class: 'b2', onclick: go(() => p.again()) }, el('span', { text: ok ? '다시 보기' : '한 번 더' })),
+      el('button', { class: 'go', onclick: go(() => p.next()) }, el('span', { text: o.closed ? `${holder} 결과` : '다음 스테이지 ›' }))])]));
 }
