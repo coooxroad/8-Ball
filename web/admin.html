@@ -57,10 +57,27 @@
   label.debug { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #0f141a; cursor: pointer; font-size: 14px; }
   label.debug input { width: 18px; height: 18px; accent-color: var(--gold); align-self: center; }
   label.debug .muted { font-size: 12px; flex-basis: 100%; }
+  nav#tabs { display: flex; gap: 4px; margin-left: 12px; }
+  nav#tabs button { background: transparent; border-color: transparent; color: var(--dim); }
+  nav#tabs button.on { background: #1f2935; border-color: var(--line); color: var(--ink); font-weight: 700; }
+  /* the puzzles: the filters across the top; the list at the left, the one opened, the group change, the knobs, the log at the right */
+  #pzTab { max-width: 1500px; margin: 0 auto; padding: 16px; }
+  .pz-main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1000px) { .pz-main { grid-template-columns: 1fr; } }
+  .pz-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow: auto; }
+  .pz-listc { padding: 6px; max-height: calc(100vh - 170px); overflow: auto; }
+  #pzList tr { cursor: pointer; } #pzList tr:hover td { background: #1b232d; } #pzList tr.on td { background: #22303f; }
+  #pzList td { vertical-align: middle; } #pzList canvas { display: block; width: 104px; height: 56px; border-radius: 4px; }
+  #pzList .ar { white-space: nowrap; font-variant-numeric: tabular-nums; } #pzList .ar b { font-size: 15px; }
+  .chip { display: inline-block; font-size: 11px; padding: 1px 6px; margin: 1px 2px 1px 0; border-radius: 99px; background: #0f141a; border: 1px solid var(--line); color: var(--dim); }
+  .chip.fix { border-color: var(--gold); color: var(--gold); } .chip.off { border-color: var(--bad); color: var(--bad); } .chip.set { border-color: #4a9be8; color: #8cc0f2; }
+  #pzBig { width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 8px; background: #0f141a; }
+  .pz-st { grid-template-columns: repeat(5, 1fr); margin-top: 8px; } .pz-st b { font-size: 16px; }
+  label.pz-chk { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 </style>
 </head>
 <body>
-<header><h1>CUE 관리자</h1><span class="who" id="who"></span><button id="out" hidden>로그아웃</button></header>
+<header><h1>CUE 관리자</h1><nav id="tabs" hidden><button data-tab="acct" class="on">계정</button><button data-tab="pz">퍼즐</button></nav><span class="who" id="who"></span><button id="out" hidden>로그아웃</button></header>
 
 <section id="gate" class="card">
   <h2 style="font-size:18px;color:var(--ink)">관리자 로그인</h2>
@@ -90,7 +107,7 @@
     </div>
     <div class="card" style="margin-top:14px">
       <h2>퍼즐 책 (퍼즐 AI 학습용)</h2>
-      <p class="muted" style="font-size:12px;margin:0 0 8px">레이팅 퍼즐의 첫 시도가 계정 없이 쌓입니다(퍼즐, 풀었는지, 그때 선수 레이팅). 받은 파일은 web/tools/puzzles/fit.js로 학습합니다.</p>
+      <p class="muted" style="font-size:12px;margin:0 0 8px">퍼즐 시도가 계정 없이 쌓입니다(퍼즐, 점수 1·0.75·0.5·0, 그때 선수 레이팅). 받은 파일은 web/tools/puzzles/fit.js로 학습합니다.</p>
       <form class="row" id="pbForm"><button class="go" data-act="stats">현황</button><button data-act="get">내려받기</button></form>
       <div id="pbOut" class="small" style="margin-top:8px"></div>
     </div>
@@ -147,163 +164,64 @@
       <div class="card"><h2>거래 내역 (최근 30)</h2><div class="scroll"><table id="ledger"></table></div></div>
     </div>
     <div class="card" style="margin-top:14px"><h2>최근 경기 (20)</h2><div class="scroll"><table id="games"></table></div></div>
+    <div class="grid2">
+      <div class="card"><h2>퍼즐 레이팅 (플레이어에겐 안 보임)</h2><table id="pzrOf"></table>
+        <form class="row" id="pzrForm" style="margin-top:10px"><select id="fPzK" style="max-width:90px"><option value="four">4구</option><option value="pocket">포켓</option></select><input id="fPzR" type="number" step="1" placeholder="새 레이팅"><button class="go">설정</button></form></div>
+      <div class="card"><h2>최근 퍼즐 시도 (30)</h2><div class="scroll"><table id="pzTries"></table></div></div>
+    </div>
   </div>
 </main>
+
+<!-- the puzzles (admin-puzzles.js; the server's puzzles' book - server/src/puzzlebook-core.js admin) -->
+<section id="pzTab" hidden>
+  <div class="pz-bar card">
+    <div class="row">
+      <select id="pzGame"><option value="">전체 종목</option><option value="four">4구</option><option value="pocket">포켓</option></select>
+      <select id="pzKind"><option value="">전체 종류</option><option value="plain">일반</option><option value="cond">조건</option></select>
+      <select id="pzEl"><option value="">전체 요소</option><option value="table">테이블 모양</option><option value="walls">바리케이드</option><option value="need">쿠션 지정</option><option value="turns">2턴</option><option value="keep">금지 공</option></select>
+      <input id="pzLo" type="number" step="50" placeholder="레이팅 ≥" style="max-width:110px"><input id="pzHi" type="number" step="50" placeholder="≤" style="max-width:90px">
+      <select id="pzState"><option value="">전체 상태</option><option value="ok">정상</option><option value="fix">고정</option><option value="off">끔</option><option value="set">손댐</option><option value="live">실제 레이팅</option></select>
+      <select id="pzSort"><option value="r">레이팅순</option><option value="n">시도 수순</option><option value="ok">성공률순</option><option value="stars">평균 별순</option><option value="fun">재미순</option><option value="gap">AI와 차이순</option><option value="id">번호순</option></select>
+      <button id="pzLoad" class="go">새로고침</button><span id="pzCount" class="muted"></span>
+    </div>
+  </div>
+  <div class="pz-main">
+    <div class="card pz-listc"><table id="pzList"></table></div>
+    <div class="pz-side">
+      <div class="card" id="pzOne" hidden>
+        <div class="row" style="justify-content:space-between"><b id="pzOneT" style="font-size:17px"></b><span id="pzOneS" class="muted"></span></div>
+        <canvas id="pzBig" width="760" height="420"></canvas>
+        <div class="row"><button id="pzPlay">▶ 정답 재생</button><span id="pzPlayNote" class="muted"></span></div>
+        <div class="stats pz-st" id="pzOneStats"></div>
+        <form class="row" id="pzSetForm" style="margin-top:10px">
+          <input id="pzR" type="number" step="1" placeholder="레이팅" style="max-width:120px">
+          <label class="pz-chk"><input type="checkbox" id="pzFix"> 고정</label>
+          <button class="go">정하기</button><button type="button" id="pzReset">AI 값으로</button><button type="button" id="pzOff" class="warn">끄기</button>
+        </form>
+        <form class="row" id="pzNoteForm" style="margin-top:8px"><input id="pzNote" maxlength="200" placeholder="메모"><button>메모 저장</button></form>
+        <h2 style="margin-top:14px">최근 시도</h2><div class="scroll" style="max-height:180px"><table id="pzOneTries"></table></div>
+        <h2 style="margin-top:14px">바꾼 기록</h2><div class="scroll" style="max-height:160px"><table id="pzOneLog"></table></div>
+      </div>
+      <form class="card" id="pzBatch">
+        <h2>묶음 조정 (위 필터의 종목·종류·요소·레이팅 구간)</h2>
+        <div class="row"><input id="pzD" type="number" step="10" placeholder="± 레이팅 (예: 100, -50)"><button class="go">적용</button></div>
+      </form>
+      <form class="card" id="pzCfg">
+        <h2>운영 손잡이 (앱이 따름)</h2>
+        <label class="small">시작 레이팅</label><input id="cStart" type="number" step="10">
+        <label class="small">다음 퍼즐 목표 (내 레이팅 +, 보통 −100)</label><input id="cAim" type="number" step="10">
+        <label class="small">어려운 차례 (공 마지막 조각·랙 다섯째마다 +)</label><input id="cHard" type="number" step="10">
+        <label class="small">별 점수 (놓침 · ★ · ★★ · ★★★)</label><div class="row"><input id="cS0" type="number" step="0.05"><input id="cS1" type="number" step="0.05"><input id="cS2" type="number" step="0.05"><input id="cS3" type="number" step="0.05"></div>
+        <label class="small">일반 배치만 나오는 레이팅 상한</label><input id="cPlain" type="number" step="50">
+        <div class="row" style="margin-top:10px"><button class="go">저장</button><span class="muted" id="cNote"></span></div>
+      </form>
+      <div class="card"><h2>바꾼 기록 (전체)</h2><div class="scroll"><table id="pzLog"></table></div></div>
+    </div>
+  </div>
+</section>
 <div id="toast"></div>
 
-<script>
-const SERVER = 'https://api.danguuu.com';
-const KIND_KO = { cue: '큐', ball: '공', table: '테이블', trail: '궤적' };
-const RARITY_KO = ['일반', '고급', '희귀', '영웅', '전설', '시크릿'];
-const $ = s => document.querySelector(s);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const num = n => (n | 0).toLocaleString('ko-KR');
-const when = t => t ? new Date(t).toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-let token = null, pass = null, who = '', catalog = null, cur = null, toastT;
-
-function toast(msg, kind) { const t = $('#toast'); t.textContent = msg; t.className = 'show ' + (kind || ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 2600); }
-
-/* Signed in through Google's account chooser every time (prompt=select_account: '다른 계정 사용' is always on it - Google's
-   own button kept to the account it last used, owner 11-10). An access token for 'openid email', an hour long: kept for
-   this tab only, and asked for again when it runs out or the server says it is no good. */
-try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s && s.exp > Date.now() / 1000 + 60) { token = s.t; who = s.email || ''; } } catch (e) {}
-
-async function api(what, body) {
-  const r = await fetch(SERVER + '/v1/admin/' + what, { method: body ? 'POST' : 'GET', headers: Object.assign(pass ? { 'X-Admin-Pass': pass } : { 'X-Admin': token }, { 'Content-Type': 'application/json' }), body: body ? JSON.stringify(body) : undefined }).catch(() => null);
-  if (!r) return { ok: false, why: '서버에 연결할 수 없습니다' };
-  const j = await r.json().catch(() => ({ ok: false, why: 'bad reply' }));
-  const PW = { 'wrong password': '비밀번호가 틀렸습니다', 'locked': '틀린 비밀번호가 많아 15분 동안 막혔습니다', 'no password set': '서버에 관리자 비밀번호가 아직 없습니다 (Cloudflare의 ADMIN_PASSWORD)' };
-  if (r.status === 403) { signOut(PW[j.why] || (j.why !== 'not an admin' ? '관리자 기능이 꺼져 있습니다' : j.seen ? `${j.seen} 은(는) 관리자가 아닙니다. 다른 계정을 고르세요.` : `구글이 이 계정의 이메일을 알려주지 않았습니다${j.google ? ` (${j.google})` : ''}`)); }
-  return j;
-}
-
-async function enter() {
-  catalog = await api('catalog'); if (!catalog.ok) return;
-  who = catalog.me || who; try { const s = JSON.parse(sessionStorage.getItem('cueAdmin') || 'null'); if (s) { s.email = who; sessionStorage.setItem('cueAdmin', JSON.stringify(s)); } } catch (e) {}
-  $('#gate').hidden = true; $('#app').hidden = false; $('#out').hidden = false; $('#who').textContent = who;
-  fillItems(); find('');
-}
-function signOut(msg) {
-  token = null; pass = null; try { sessionStorage.removeItem('cueAdmin'); } catch (e) {}
-  $('#app').hidden = true; $('#out').hidden = true; $('#who').textContent = ''; $('#gate').hidden = false; $('#gateMsg').textContent = msg || '';
-  drawButton();
-}
-function drawButton() {
-  const draw = async () => {
-    const cfg = await fetch(SERVER + '/v1/link/google-config').then(r => r.json()).catch(() => null);
-    if (!cfg || !cfg.clientId) { $('#gateMsg').textContent = '구글 로그인이 설정되지 않았습니다'; return; }
-    const client = google.accounts.oauth2.initTokenClient({ client_id: cfg.clientId, scope: 'openid email https://www.googleapis.com/auth/userinfo.email', prompt: 'select_account',
-      error_callback: e => { $('#gateMsg').textContent = e && e.type === 'popup_failed_to_open' ? '팝업이 막혔습니다. 팝업을 허용해 주세요' : e && e.type === 'popup_closed' ? '' : '구글 창을 열 수 없습니다'; },
-      callback: async r => {
-      if (!r || !r.access_token) { $('#gateMsg').textContent = r && r.error ? '구글: ' + r.error : ''; return; }
-      token = r.access_token;
-      who = '';   // (whose it is: the server says, with the catalog - it is the one that checks)
-      try { sessionStorage.setItem('cueAdmin', JSON.stringify({ t: token, email: who, exp: Date.now() / 1000 + (+r.expires_in || 3600) })); } catch (e) {}
-      $('#gateMsg').textContent = ''; enter();
-    } });
-    $('#gbtn').textContent = '';
-    const b = document.createElement('button'); b.className = 'go'; b.textContent = 'Google 계정 선택'; b.style.cssText = 'padding:10px 22px;border-radius:99px';
-    b.onclick = () => client.requestAccessToken(); $('#gbtn').appendChild(b);
-  };
-  if (window.google && google.accounts && google.accounts.oauth2) return draw();
-  const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = draw;
-  s.onerror = () => { $('#gateMsg').textContent = '구글에 연결할 수 없습니다'; }; document.head.appendChild(s);
-}
-$('#out').onclick = () => signOut('로그아웃했습니다');
-// (the password is kept in this page only, not stored: a reload asks again)
-$('#passForm').onsubmit = e => { e.preventDefault(); const v = $('#pass').value; if (!v) return; pass = v; token = null; $('#pass').value = ''; $('#gateMsg').textContent = ''; enter(); };
-
-async function find(q) {
-  const r = await api('find', { q }); const ul = $('#people'); ul.textContent = '';
-  if (!r.ok) return toast(r.why || '검색 실패', 'bad');
-  if (!r.people.length) { ul.innerHTML = '<li class="muted">찾은 계정이 없습니다</li>'; return; }
-  for (const p of r.people) {
-    const li = document.createElement('li'); li.dataset.acct = p.acct;
-    li.innerHTML = `<div><b>${esc(p.nick || '(이름 없음)')}</b>${p.joined ? '' : ' <span class="muted" style="font-size:12px">게스트</span>'}<div class="id">${p.acct.slice(0, 4).toUpperCase()}·${p.acct.slice(4, 8).toUpperCase()}…</div></div><div style="text-align:right;font-size:13px">${num(p.dama)}<div class="muted" style="font-size:11px">${when(p.seen)}</div></div>`;
-    li.onclick = () => open(p.acct); ul.appendChild(li);
-  }
-}
-$('#findForm').onsubmit = e => { e.preventDefault(); find($('#q').value); };
-// the shot dataset (server/src/dataset.js): a month's counts, or all its rows as one .jsonl file, read a page at a time
-const GAME_KO = { eight: '8볼', nine: '9볼', four: '4구', three: '3구', snooker: '스누커', arcade: '증강' }, KIND_DS = { cpu: '봇', friend: '친구', ranked: '랭크', invite: '초대', standin: '대리' };
-$('#dsForm').onsubmit = async e => {
-  e.preventDefault(); const month = $('#dsMonth').value.trim() || undefined, out = $('#dsOut'), act = e.submitter && e.submitter.dataset.act;
-  if (act !== 'get') {
-    const r = await api('dataset', { month, stats: true }); if (!r.ok) return toast(r.why || '실패', 'bad');
-    out.innerHTML = `<b>${esc(r.month)}</b> · ` + (r.by.length ? r.by.map(b => `${KIND_DS[b.kind] || b.kind} ${GAME_KO[b.mode] || b.mode} ${num(b.matches)}판 ${num(b.shots)}샷`).join(' · ') + ` · ${(r.by.reduce((t, b) => t + b.bytes, 0) / 1e6).toFixed(1)}MB` : '아직 없음');
-    return;
-  }
-  const lines = []; let after = 0, m = month, more = true;
-  while (more) { const r = await api('dataset', { month, after, limit: 200 }); if (!r.ok) return toast(r.why || '실패', 'bad'); m = r.month; for (const row of r.rows) lines.push(JSON.stringify(row)); after = r.next; more = r.more; out.textContent = `${num(lines.length)}판 받는 중…`; }
-  const url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson' })), a = document.createElement('a');
-  a.href = url; a.download = `${m}.jsonl`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); out.textContent = `${num(lines.length)}판 내려받음`;
-};
-
-// the puzzles' book (server/src/puzzlebook-core.js): its counts, or every attempt as one .json file for fit.js
-$('#pbForm').onsubmit = async e => {
-  e.preventDefault(); const out = $('#pbOut'), act = e.submitter && e.submitter.dataset.act;
-  if (act !== 'get') { const r = await api('puzzles', { stats: true }); if (!r.ok) return toast(r.why || '실패', 'bad'); out.textContent = `시도 ${num(r.tries)} · 성공 ${num(r.solved)} · 퍼즐 ${num(r.puzzles)}개`; return; }
-  const rows = []; let after = 0;
-  for (;;) { const r = await api('puzzles', { after, limit: 1000 }); if (!r.ok) return toast(r.why || '실패', 'bad'); rows.push(...r.rows); out.textContent = `${num(rows.length)}개 받는 중…`; if (r.rows.length < 1000) break; after = r.next; }
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ rows })], { type: 'application/json' })), a = document.createElement('a');
-  a.href = url; a.download = 'puzzle-tries.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); out.textContent = `${num(rows.length)}개 내려받음`;
-};
-
-async function open(acct) {
-  cur = acct; document.querySelectorAll('#people li').forEach(li => li.classList.toggle('on', li.dataset.acct === acct));
-  const r = await api('view', { acct }); if (!r.ok) return toast(r.why === 'no such account' ? '없는 계정입니다' : (r.why || '불러오지 못했습니다'), 'bad');
-  show(r);
-}
-$('#reload').onclick = () => cur && open(cur);
-
-function itemName(kind, id) { const it = (catalog.items[kind] || []).find(q => q.id === id); return it ? it.name : id; }
-function show(v) {
-  const m = v.me; $('#detail').hidden = false;
-  $('#dNick').textContent = m.nick || '(이름 없음)'; $('#dJoined').textContent = m.joined ? '구글 가입' : '게스트';
-  $('#dAcct').textContent = cur; $('#sCoin').textContent = num(m.coin); $('#sDia').textContent = num(m.dia); $('#sDama').textContent = num(m.dama);
-  $('#sSince').textContent = v.since ? new Date(v.since).toLocaleDateString('ko-KR') : '-'; $('#fDama').value = m.dama;
-  $('#fDebug').checked = !!m.debug;
-  const rar = (k, id) => ((catalog.items[k] || []).find(q => q.id === id) || {}).rarity || 0;
-  $('#owned').innerHTML = v.bought.length ? v.bought.map(b => `<span class="tag r${rar(b.kind, b.id)}" title="${when(b.at)}">${KIND_KO[b.kind] || b.kind} · ${esc(itemName(b.kind, b.id))}</span>`).join('') : '<span class="muted">없음 (기본 아이템만)</span>';
-  const sign = n => n ? `<span class="${n > 0 ? 'plus' : 'minus'}">${n > 0 ? '+' : ''}${num(n)}</span>` : '';
-  $('#ledger').innerHTML = '<tr><th>때</th><th>내용</th><th>코인</th><th>다이아</th></tr>' + v.ledger.map(l => `<tr><td>${when(l.at)}</td><td>${esc(l.what)}</td><td>${sign(l.coin)}</td><td>${sign(l.dia)}</td></tr>`).join('');
-  $('#adminLog').innerHTML = v.admin.length ? '<tr><th>때</th><th>한 일</th><th>사유</th></tr>' + v.admin.map(a => `<tr><td>${when(a.at)}</td><td>${esc(a.did)}<div class="muted" style="font-size:11px">${esc(a.by)}</div></td><td>${esc(a.why)}</td></tr>`).join('') : '<tr><td class="muted">기록 없음</td></tr>';
-  $('#games').innerHTML = v.games.length ? '<tr><th>때</th><th>종류</th><th>모드</th><th>지급</th><th>상태</th></tr>' + v.games.map(g => `<tr><td>${when(g.at)}</td><td>${esc(g.kind)}</td><td>${esc(g.mode)}</td><td>${num(g.paid)}</td><td>${esc(g.status)}</td></tr>`).join('') : '<tr><td class="muted">경기 기록 없음</td></tr>';
-}
-
-function fillItems() {
-  const k = $('#fKind').value, sel = $('#fItem');
-  sel.innerHTML = (catalog.items[k] || []).filter(q => q.rarity > 0).sort((a, b) => a.rarity - b.rarity).map(q => `<option value="${esc(q.id)}">[${RARITY_KO[q.rarity] || q.rarity}] ${esc(q.name)}</option>`).join('');
-}
-$('#fKind').onchange = fillItems;
-
-const WHY = { 'too much': '한 번에 너무 많습니다', 'not enough': '잔액보다 많이 뺄 수 없습니다', 'no such item': '없는 아이템입니다', 'bad rating': '레이팅 범위를 벗어났습니다', 'nothing to do': '바뀐 것이 없습니다 (이미 가지고 있거나 없음)', 'no such account': '없는 계정입니다' };
-async function grant(body, what) {
-  if (!cur) return;
-  if (!confirm(`${$('#dNick').textContent}에게: ${what}\n적용할까요?`)) return open(cur);
-  const r = await api('grant', Object.assign({ acct: cur }, body));
-  if (!r.ok) return toast(WHY[r.why] || r.why || '실패', 'bad');
-  toast('적용했습니다', 'good'); open(cur);
-}
-$('#payForm').onsubmit = e => {
-  e.preventDefault(); const coin = Math.trunc(+$('#fCoin').value || 0), dia = Math.trunc(+$('#fDia').value || 0);
-  if (!coin && !dia) return toast('코인이나 다이아를 입력하세요', 'bad');
-  grant({ coin, dia, why: $('#fWhy1').value }, `코인 ${coin >= 0 ? '+' : ''}${num(coin)}, 다이아 ${dia >= 0 ? '+' : ''}${num(dia)}`).then(() => { $('#fCoin').value = $('#fDia').value = ''; });
-};
-$('#itemForm').onsubmit = e => {
-  e.preventDefault(); const take = e.submitter && e.submitter.dataset.act === 'take', kind = $('#fKind').value, id = $('#fItem').value;
-  if (!id) return;
-  grant({ kind, id, take, why: $('#fWhy2').value }, `${KIND_KO[kind]} '${itemName(kind, id)}' ${take ? '회수' : '지급'}`);
-};
-// debug mode for this account (core.js adminGrant debug): the box shows what the server has; a cancelled change puts it back
-$('#fDebug').onchange = e => grant({ debug: e.target.checked, why: '디버그 모드' }, `디버그 모드 ${e.target.checked ? '켜기' : '끄기'}`);
-$('#damaForm').onsubmit = e => {
-  e.preventDefault(); const dama = Math.round(+$('#fDama').value);
-  if (!Number.isFinite(dama)) return;
-  grant({ dama, why: $('#fWhy3').value }, `레이팅 ${num(dama)}로 설정`);
-};
-
-if (token) enter(); else drawButton();
-</script>
+<script src="admin.js"></script>
+<script src="admin-puzzles.js"></script>
 </body>
 </html>
