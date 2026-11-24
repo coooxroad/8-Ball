@@ -96,7 +96,7 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
     const grp = L.filter(q => q.game === 'four' && !q.plain && q.r >= 1000 && q.r <= 1400), b = A.admin({ op: 'batch', game: 'four', kind: 'cond', lo: 1000, hi: 1400, d: 50, by: 't' });
     ok(grp.length ? b.ok && b.n === grp.length && grp.every(q => A.admin({ op: 'get', id: q.id }).row.r === q.r + 50) : !b.ok, 'puzzle admin: a group moved together');
     ok(!A.admin({ op: 'cfg', set: { aim: 9999 } }).ok && A.admin({ op: 'cfg', set: { aim: -150, stars: [0, 0.4, 0.7, 1] }, by: 't' }).cfg.aim === -150 && A.live().cfg.stars[1] === 0.4 && A.live().cfg.start === 600, 'puzzle admin: the knobs, checked, handed to the app');
-    const lg = A.admin({ op: 'log' }).rows;
+    const lg = A.admin({ op: 'log', limit: 200 }).rows;
     ok(lg[0].what === 'cfg' && lg.some(q => q.what === 'reset' && q.id === y.id) && lg.some(q => q.what === 'batch') && lg.every(q => q.by === 't' || q.by === 'admin') && A.admin({ op: 'get', id: y.id }).log.length === 3, 'puzzle admin: every change in the log');
     console.log('puzzle admin: set, held, off, reset, batch, knobs, log'); } }
 

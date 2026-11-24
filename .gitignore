@@ -8,3 +8,4 @@ node_modules/
 .idea/
 # the page inside the app: made by web/build.sh (in CI too), never committed
 app/src/main/assets/
+web/tools/puzzles/pool-*.json

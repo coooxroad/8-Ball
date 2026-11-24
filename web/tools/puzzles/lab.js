@@ -45,8 +45,11 @@ const gauss = rnd => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Ma
 // a shot as a hand of rating R plays it: aim, pace and tip each off by a normal error halving every 400 points
 const SIG = { A: 0.0028, V: 0.03, T: 0.05 };
 const hand = R => Math.pow(2, (1500 - R) / 400);
-function noisy(E, s, R, rnd) {
-  const k = hand(R), out = [s[0] + gauss(rnd) * SIG.A * k, Math.min(E.vmax, Math.max(E.vmin, s[1] * (1 + gauss(rnd) * SIG.V * k))), s[2] + gauss(rnd) * SIG.T * k, s[3] + gauss(rnd) * SIG.T * k, s[4]];
+// (f: the hand's error scaled - a try put right after a miss is played with a smaller one, ai.js TRY_HAND; q: the four
+// normal draws given, so the same hands can be played at every rating - ai.js rate)
+function noisy(E, s, R, rnd, f, q) {
+  const k = hand(R) * (f || 1), n = q || [gauss(rnd), gauss(rnd), gauss(rnd), gauss(rnd)];
+  const out = [s[0] + n[0] * SIG.A * k, Math.min(E.vmax, Math.max(E.vmin, s[1] * (1 + n[1] * SIG.V * k))), s[2] + n[2] * SIG.T * k, s[3] + n[3] * SIG.T * k, s[4]];
   const r = Math.hypot(out[2], out[3]); if (r > 0.79) { out[2] *= 0.79 / r; out[3] *= 0.79 / r; }
   return out;
 }

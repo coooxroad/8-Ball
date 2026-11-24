@@ -12,14 +12,23 @@
      plays it  p_exec(R): the middle of that family's working shots (where a player aims) struck by R's hand - aim, pace
                and tip each off by a normal error halving every 400 points (lab.js hand) - on the game's own physics; two
                turns: each turn's share, multiplied
-   and he takes the way he is likeliest to make: p(R) = max over the ways of p_find x p_exec. The rating is the R where
-   p(R) is one half (searched between 200 and 2,900). */
+   and he takes the way he is likeliest to make. (11-24 밤, owner: billiards is not chess - the way known, a little off
+   the angle still misses, and putting it right is the skill.) A puzzle gives three tries, scored 1, 0.75, 0.5 (none: 0):
+   the player who sees the way plays it up to three times, each try after a miss with a steadier hand (his error x1, x0.6,
+   x0.4 - he has seen where it went), so his expected score is
+     e(R) = p_find x [p1 + (1 - p1) p2 0.75 + (1 - p1)(1 - p2) p3 0.5]          (p_k: p_exec with the k-th try's hand)
+   the best of the ways. The rating is the R where e(R) is one half (searched between 200 and 2,900) - the level of the
+   player who scores even with the puzzle, as the game's Glicko counts it (puzzles.js tryAfter). The hands are drawn
+   once for a puzzle and played at every R (common random numbers), so e(R) rises smoothly and the rating comes out the
+   same each time it is asked. */
 const L = require('./lab');
 const FIND = {
   four: { base: 300, cushion: 170, side: 110, fb: 60, raised: 380, wall: 140, shape: 70, need: 110, gather: 260, bank: 60, three: 120, direct: 40, turn: 220 },
   pocket: { base: 240, kick: 170, bank: 220, combo: 230, side: 100, fb: 50, raised: 380, wall: 130, shape: 70, need: 110, extra: 180, keep: 80, turn: 200 },
 };
 const pFind = (R, D) => 1 / (1 + Math.exp(-(R - D) / 120));
+// the three tries: the hand's error on each (a try after a miss put right), and what each scores
+const TRY_HAND = [1, 0.6, 0.4], TRY_S = [1, 0.75, 0.5];
 // what one working shot asks of the player (ev: its events; z: the puzzle; t: its turn)
 function traits(z, ev, s, t) {
   const pocket = L.Z.gameOf(z) === 'pocket', side = Math.abs(s[2]) > 0.15, fb = Math.abs(s[3]) > 0.15, raised = (s[4] || 0) > 0.03;
@@ -61,21 +70,31 @@ function centre(E, s, from, t, before) {
   for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) { if (!G[i][j]) continue; ok++; let n = 0; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (G[i + a] && G[i + a][j + b]) n++; if (n > most) { most = n; best = G[i][j]; } }
   return { s: best, room: ok / 49 };
 }
-// p_exec(R) of one turn's shot: N tries by R's hand
-function pExec(E, s, R, from, t, before, rnd, N) {
-  let ok = 0; for (let i = 0; i < N; i++) if (L.turn(E, L.noisy(E, s, R, rnd), from, t, before).ok) ok++;
+// p_exec(R) of one turn's shot: N tries by R's hand (f: the hand scaled; Q: the hands' draws, given - or drawn from rnd)
+function pExec(E, s, R, from, t, before, rnd, N, f, Q) {
+  let ok = 0; for (let i = 0; i < N; i++) if (L.turn(E, L.noisy(E, s, R, rnd, f, Q && Q[i]), from, t, before).ok) ok++;
   return ok / N;
 }
 /* Rate a puzzle. ways: for each family to weigh, its turns - [{ s (the centred shot), from (world), t, before, D }] - one
-   for a one-turn puzzle, two for two. Returns { rating, curve, D } */
+   for a one-turn puzzle, two for two. Returns { rating, e: [e(200), e(2900)], p1: [the first try's p_exec at the rating] } */
 function rate(E, ways, seed) {
-  const N = 24, rnd = L.seeded(seed || 1);
-  const p = R => Math.max(...ways.map(turns => pFind(R, Math.max(...turns.map(u => u.D)) + (turns.length > 1 ? FIND.four.turn : 0)) * turns.reduce((m, u) => m * pExec(E, u.s, R, u.from, u.t, u.before, rnd, N), 1)));
-  let lo = 200, hi = 2900, plo = p(lo), phi = p(hi);
-  if (plo >= 0.5) return { rating: lo, p: [plo, phi] };
-  if (phi < 0.5) return { rating: hi, p: [plo, phi] };
-  for (let k = 0; k < 7; k++) { const m = (lo + hi) / 2, pm = p(m); if (pm >= 0.5) hi = m; else lo = m; }
-  return { rating: Math.round((lo + hi) / 2 / 5) * 5, p: [plo, phi] };
+  const N = 32, rnd = L.seeded(seed || 1);
+  // (the hands: for each way, each try, each turn, N draws - the same at every R)
+  const Q = ways.map(turns => TRY_HAND.map(() => turns.map(() => Array.from({ length: N }, () => [L.gauss(rnd), L.gauss(rnd), L.gauss(rnd), L.gauss(rnd)]))));
+  const e = R => Math.max(...ways.map((turns, w) => {
+    const pf = pFind(R, Math.max(...turns.map(u => u.D)) + (turns.length > 1 ? FIND.four.turn : 0));
+    let miss = 1, sc = 0;
+    for (let k = 0; k < TRY_HAND.length && miss > 1e-3; k++) {
+      const pk = turns.reduce((m, u, i) => m * (m ? pExec(E, u.s, R, u.from, u.t, u.before, rnd, N, TRY_HAND[k], Q[w][k][i]) : 0), 1);
+      sc += miss * pk * TRY_S[k]; miss *= 1 - pk;
+    }
+    return pf * sc;
+  }));
+  let lo = 200, hi = 2900; const elo = e(lo), ehi = e(hi);
+  if (elo >= 0.5) return { rating: lo, e: [elo, ehi] };
+  if (ehi < 0.5) return { rating: hi, e: [elo, ehi] };
+  for (let k = 0; k < 7; k++) { const m = (lo + hi) / 2; if (e(m) >= 0.5) hi = m; else lo = m; }
+  return { rating: Math.round((lo + hi) / 2 / 5) * 5, e: [elo, ehi] };
 }
 /* Fun (0 .. 1): a route with something in it (cushions, spin, a raised cue, the elements), an obvious shot that does
    not work, a way that is not one of many, and an answer with room enough to be fair but not so much it is dull */
@@ -86,4 +105,4 @@ function fun(z, fams, room, naiveFails) {
   const v = 0.26 * depth + 0.1 * (b.side || b.fb ? 1 : 0) + 0.08 * (b.raised ? 1 : 0) + 0.12 * Math.min(1, elems / 2) + 0.2 * (naiveFails ? 1 : 0) + 0.08 * (fams.length <= 2 ? 1 : 0) + 0.16 * Math.max(0, 1 - Math.abs(room - 0.35) / 0.65);
   return Math.round(Math.min(1, v) * 100) / 100;
 }
-module.exports = { FIND, pFind, traits, findD, families, centre, pExec, rate, fun };
+module.exports = { FIND, TRY_HAND, TRY_S, pFind, traits, findD, families, centre, pExec, rate, fun };

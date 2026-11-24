@@ -1,6 +1,7 @@
 'use strict';
 /* The puzzle AI learning from real play (owner 11-24: 머신러닝). The server keeps every counted attempt with no account
-   in it (server/src/puzzlebook-core.js: puzzle id, solved or not, the player's rating then); read them out and fit:
+   in it (server/src/puzzlebook-core.js: puzzle id, its score - 11-24 밤: three tries, 1 / 0.75 / 0.5 / 0, or the first
+   set's 'o' / 'x' - the player's rating then); read them out and fit:
 
      curl -s -X POST https://api.danguuu.com/v1/admin/puzzles -H 'X-Admin-Pass: …' -d '{"after":0,"limit":1000}' > tries.json
      node web/tools/puzzles/fit.js tries.json [more.json …]      # prints the fit, writes fit.json beside this file
@@ -8,7 +9,8 @@
 
    1. Each puzzle's rating, from its attempts: the rating Rp that makes what happened likeliest, the chance a player of
       rating pr solves it being 1 / (1 + 10^((Rp - pr) / 400)) (item response theory's one-parameter model - Elo's
-      curve, as Pelánek uses it for adaptive practice), pulled towards the puzzle AI's rating by a prior (sd 250) so a
+      curve, as Pelánek uses it for adaptive practice; a part score counted as a draw is, the expected score being that
+      curve, as the game's Glicko takes it), pulled towards the puzzle AI's rating by a prior (sd 250) so a
       puzzle tried a few times stays near it. Newton's method on the log-likelihood.
    2. What the AI misjudges, learnt: ridge regression of (those ratings less the AI's) on what each puzzle asks (its features: the
       route's cushions, side spin, follow/draw, a raised cue, barricades, the table's shape, a cushion asked for, two turns,
@@ -48,8 +50,14 @@ function ridge(X, y, wts, lambda) {
     for (let r = 0; r < n; r++) if (r !== i && A[i][i]) { const f = A[r][i] / A[i][i]; for (let c = i; c < n; c++) A[r][c] -= f * A[i][c]; B[r] -= f * B[i]; } }
   return B.map((b, i) => b / A[i][i]);
 }
+// a try's score as the book keeps it: 'o' 1, 'x' 0, or the number (as text); a hint's 'h' is nothing
+const scoreOf = r => r === 'o' ? 1 : r === 'x' ? 0 : r === 'h' || r == null || r === '' ? null : Number.isFinite(+r) && +r >= 0 && +r <= 1 ? +r : null;
 function fit(rows) {
-  const by = new Map(); for (const t of rows) { if (!['o', 'x'].includes(t.res) || !Number.isFinite(t.pr)) continue; if (!by.has(t.id)) by.set(t.id, []); by.get(t.id).push({ pr: t.pr, s: t.res === 'o' ? 1 : 0 }); }
+  const by = new Map();
+  for (const t of rows) {
+    const s = scoreOf(t.res); if (s == null || !Number.isFinite(+t.pr)) continue;
+    if (!by.has(t.id)) by.set(t.id, []); by.get(t.id).push({ pr: +t.pr, s });
+  }
   const out = [];
   for (const [id, tries] of by) { const z = L.Z.byId(id); if (!z || !Number.isFinite(z.rating)) continue; out.push({ id, n: tries.length, ai: z.rating, R: puzzleRating(tries, z.rating), z }); }
   if (!out.length) return null;
@@ -66,7 +74,13 @@ function selftest() {
   const rnd = L.seeded(7), list = L.Z.list.filter(z => Number.isFinite(z.rating)).filter((z, i) => i % 2 === 0).slice(0, 140), rows = [];
   if (list.length < 20) { console.log('selftest: too few rated puzzles in web/puzzles.js'); return; }
   const truth = new Map(list.map(z => { const f = features(z); return [z.id, z.rating + 150 * f.wall + 200 * f.raised - 300 * (f.room - 0.3)]; }));
-  for (let i = 0; i < 14000; i++) { const z = list[Math.floor(rnd() * list.length)], pr = 400 + rnd() * 1800, p = expect(truth.get(z.id), pr); rows.push({ id: z.id, res: rnd() < p ? 'o' : 'x', pr }); }
+  // (scores as the three tries give them, kept as the book keeps them: half the rows the first set's o / x, half numbers -
+  // drawn so their mean is the curve's: solved with chance p, then 1, 0.75 or 0.5 with the misses made up in 0)
+  for (let i = 0; i < 14000; i++) {
+    const z = list[Math.floor(rnd() * list.length)], pr = 400 + rnd() * 1800, p = expect(truth.get(z.id), pr);
+    if (i % 2) { rows.push({ id: z.id, res: rnd() < p ? 'o' : 'x', pr }); continue; }
+    let s = [1, 0.75, 0.5][Math.floor(rnd() * 3)]; if (p > s) s = 1; rows.push({ id: z.id, res: String(rnd() < p / s ? s : 0), pr });
+  }
   const r = fit(rows), near = r.puzzles.reduce((a, o) => a + Math.abs(o.fitted - truth.get(o.id)), 0) / r.puzzles.length;
   console.log(`selftest: ${rows.length} attempts on ${r.puzzles.length} puzzles; fitted ratings off the truth by ${Math.round(near)} on average (the AI's by ${Math.round(r.puzzles.reduce((a, o) => a + Math.abs(o.ai - truth.get(o.id)), 0) / r.puzzles.length)})`);
   console.log('  learnt beyond the AI (made up: wall +150, raised +200, room -300 a whole):', JSON.stringify(r.weights), 'rmse', JSON.stringify(r.rmse));
@@ -82,4 +96,4 @@ if (require.main === module) {
     fs.writeFileSync(path.join(__dirname, 'fit.json'), JSON.stringify(r, null, 1) + '\n'); console.log('wrote fit.json');
   }
 }
-module.exports = { fit, puzzleRating, features, ridge };
+module.exports = { fit, puzzleRating, features, ridge, scoreOf };
