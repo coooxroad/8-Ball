@@ -195,7 +195,7 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
   선수 레이팅. 모두 다시 매기고 `fit.js`는 소수 점수로. `puzzles.js` 레이팅 갱신 + `run.js` 퍼즐 검사.
 - [~] (https://claude.ai/code/session_01SqeiJsjzLVh7JvyR4kSvUX) **P6 생성기**: 구간마다 여유(정답 주변 성공 폭) 최소값 — 800 이하는 넓은 답만(길 찾기가 문제가 되게), 위로 갈수록 정밀 허용. 빈 구간을 채워
   다시 생성(4구·포켓, 조건 퍼즐 포함). 2000대에도 난구(11-24 14:20 지시). 재미 점수 유지. 구간별 개수를 여기 적는다.
-- [ ] **P7 윤곽 테이블 마감**(계획 4절): `railCut`·`tableCushions`·`pocketPits`·`tableCabinet`·`cushionShade`를 윤곽을 받게 일반화 — 레일 단면·래커,
+- [x] (480da47 - 실수로 'HANDOFF: P5 끝, P6 시작' 커밋에 같이 올라감; 비교 시트는 세션 출력 table-outlines-carom.png·table-outlines-pocket.png) **P7 윤곽 테이블 마감**(계획 4절): `railCut`·`tableCushions`·`pocketPits`·`tableCabinet`·`cushionShade`를 윤곽을 받게 일반화 — 레일 단면·래커,
   나뭇결 UV(윤곽 길이·안쪽 거리), 포켓 캡·립·라이너·비스듬한 턱, 에이프런·다리, 쿠션 그늘, 안쪽 모서리 마이터·라운드, 섬. 합격: 'rect' 윤곽으로
   지은 테이블이 일반 테이블과 거의 구별 안 됨. 13종 탑뷰·3D·선수 시점 비교 시트(PNG, 세션 출력으로).
 - [ ] **P8 마무리**: 6·7절 갱신, 프로젝트 문서 8절 체크(Projects 도구가 있으면), 소유자에게 한국어 요약.

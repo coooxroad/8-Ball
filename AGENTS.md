@@ -170,22 +170,34 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   흐리게, `TRAIN_HAS`), 뒤로는 트레이 머리의 X.
   - 레슨: 트레이에 상점 카드 언어(`.dk-cards.pc`)의 카드, 코스마다 아이보리 줄(기본기 파랑·큐볼 다루기 빨강·응용 초록), 카드 가운데는
     그 레슨 배치를 그린 작은 당구대(`lessonPic`, `drills.make` 1레벨).
-  - 퍼즐(11-23/24, Chess.com식 레이팅): 랭킹전처럼 차콜 천 위(`#desk.felt`, `#dkBoards.pzr`, `deskPuzzle`). 머리 = 캐롬·포켓, 오늘의 퍼즐
-    (점수 없음). 왼쪽 레이팅(크게, 오늘 변화, 최근 추이)·지난 케이스/랙, 가운데 이번 케이스(4구: 한 문제 = 공 4분의 1, 16문제) 또는
-    랙(포켓: 한 문제 = 공 하나, 15문제), 오른쪽 다음 퍼즐(시작 전엔 안 보임). 다 차면 결과(`pzDone`) → 기록(`pzBook`, 점수 없이만 다시).
-    `52-puzzle.js pzr`: 종목마다 `prefs.pzr.four|pocket`(r, rd, n, now, cases, seen, hist, cur). **첫 시도만** 점수, 계산은
-    `puzzles.js tryAfter`(Glicko-1, 앱·서버 같은 식). 다음 퍼즐 = 목표 레이팅(내 레이팅 −100, 공의 마지막 조각·랙의 다섯째마다 +100)
-    근처 안 본 것 5개 중 재미로 가중(적응형 학습의 성공률 ~2/3). 내 레이팅 800 이하면 일반 배치만(`pzPlain`). 첫 시도 전 힌트는 'h'.
+  - 퍼즐(11-23/24 Chess.com식 레이팅, **11-24 밤부터 레이팅은 화면에 없음** — 소유자 "레이팅 걸려 있으니 무서워서 못 하겠다"): 랭킹전처럼
+    차콜 천 위(`#desk.felt`, `#dkBoards.pzr`, `deskPuzzle`). 머리 = 캐롬·포켓, 오늘의 퍼즐(점수 없음). 왼쪽 푼 퍼즐 수(크게, 오늘, 모은 별)·
+    지난 케이스/랙(별), 가운데 이번 케이스(4구: 한 문제 = 공 4분의 1, 16문제) 또는 랙(포켓: 한 문제 = 공 하나, 15문제) — 칸마다 별 수로
+    금·은·동 테두리(0 = 회색, `PZ_MEDAL`), 재질은 모은 별로(`PZ_MATS`, 앞으로만). 오른쪽 다음 퍼즐(시작 전엔 안 보임, 별 기준 세 줄).
+    다 차면 결과(`pzDone`) → 기록(`pzBook`, 점수 없이만 다시).
+    `52-puzzle.js pzr`: 종목마다 `prefs.pzr.four|pocket`(r·rd·n 숨은 레이팅, solved·stars·dayN 보이는 것, now, cases, seen, hist, cur,
+    tried = 놓친 횟수 — 나갔다 와도 유지). **기회 세 번**: 1번째 성공 ★★★(점수 1)·2번째 ★★(0.75)·3번째 ★(0.5)·세 번 놓침 0, 힌트를 보면
+    최고 ★(별을 잃게 되면 두 번 눌러야 봄). 세 번 놓치면 0으로 기록하고 그 퍼즐에 남는다(바에 정답·다음, 플레이어가 고름); 성공은 다음으로.
+    놓치면 같은 샷을 다시 쳐서 얼마나 아깝게 놓쳤는지(`pzMiss`). 바의 왼쪽 칸 = 남은 기회(끝나면 받은 별). 계산은 `puzzles.js tryAfter`
+    (Glicko-1, 0~1 점수, 앱·서버 같은 식). 다음 퍼즐 = 목표(숨은 레이팅 + 손잡이 `aim` −100, 공의 마지막 조각·랙의 다섯째마다 `hard` +100)
+    근처 안 본 것 5개 중 재미로 가중(적응형 학습의 성공률 ~2/3). 숨은 레이팅이 `plainMax`(800) 이하면 일반 배치만(`pzPlain`).
+    손잡이(`pzKnob`: 시작 레이팅·목표 차·어려운 차례·별 점수·일반 배치 상한)와 끈 퍼즐·손댄 레이팅은 서버의 `/v1/puzzles/live`
+    {live, ov, cfg}(`pzLive`, 한 시간마다, 오프라인이면 기본값).
     두 턴(`turns: 2`): 첫 샷이 멈춘 자리에서 이어 치고, 실패하면 처음부터. 정답은 지금 턴의 것(`retake`로 그 턴 시작으로).
     요소를 처음 만나면 한 번 안내(`pzNews`, `prefs.pzr.met`), 바에는 칩(테이블 이름, 바리케이드, 표시된 쿠션, n/2턴, 금지 공).
-    서버: 첫 시도는 `net.claim('pztry')` → `core.js puzzleTry`(풀었다는 샷은 다시 쳐 봄, 계정의 레이팅 보관, `/v1/me pzr`) →
-    퍼즐 책(`puzzlebook-core.js`, DO 하나: 퍼즐도 Glicko로 다시 매기고 시도를 계정 없이 남김). 앱은 서버 값(`pzrSync`)과
-    많이 시도된 퍼즐의 실제 레이팅(`/v1/puzzles/live`, `pzLive`)을 씀. 보상(`net.claim('puzzle')`, 두 턴은 shots 둘)은 id마다 한 번.
+    서버: 퍼즐이 끝나면 `net.claim('pztry', { res: 점수, st: 별 })` → `core.js puzzleTry`(풀었다는 샷은 다시 쳐 봄, 계정의 숨은 레이팅과
+    푼 수 w·별 st, `/v1/me pzr`; 첫 시도의 시작 레이팅은 퍼즐 책의 손잡이 — `vault.js`가 물음) → 퍼즐 책(`puzzlebook-core.js`, DO 하나:
+    퍼즐도 Glicko로 다시 매기고 시도를 계정 없이 남김; 관리자의 `ov`(레이팅 직접·고정·끔·메모)·`cfg`(손잡이)·`log`). 보상(`net.claim('puzzle')`,
+    두 턴은 shots 둘)은 id마다 한 번. 관리자 콘솔 퍼즐 탭: `web/admin-puzzles.js`(아래 디버그 모드 절).
   - 퍼즐 데이터·규칙은 `puzzles.js`(형식 주석, `setup`/`judge`/`play`: 앱·테스트·서버가 같은 판정). 포켓 퍼즐은 늘 7피트(`PH.pzpool`,
-    `game.js MODES.puzzle8`). 만들기·매기기는 `web/tools/puzzles`(README): `gen.js`(배치→탐색→가상 선수 레이팅→100점 칸 채우기),
-    `ai.js`(가상 선수: 길을 볼 확률 × 칠 확률), `rate.js`(지금 목록 다시 매김), `fit.js`(서버 시도 기록으로 학습: 퍼즐별 IRT 레이팅 +
-    AI가 틀린 만큼을 특징으로 릿지 회귀). 퍼즐 테이블은 `tables.js TABLE_OUTLINES`(윤곽 = 쿠션 코 선, 섬, 포켓 자리)와
-    `physics.js shape`(섬, 윤곽에 뚫린 포켓 `cut`, `ev.edges`), 화면은 `scene/20-table.js setShape`가 윤곽에서 통째로 지음.
+    `game.js MODES.puzzle8`). 만들기·매기기는 `web/tools/puzzles`(README): `gen.js`(배치→탐색→가상 선수 레이팅→100점 칸 채우기, 칸마다
+    답의 최소 여유 `MIN_ROOM` — 800 이하는 넓은 답만; `write`는 목록의 퍼즐 id를 그대로 두고 새 퍼즐엔 `next-id.json`의 안 쓴 번호),
+    `ai.js`(가상 선수: 길을 볼 확률 × 세 번까지 고쳐 침 — 손 오차 ×1/×0.6/×0.4, 기대 점수 0.5인 레이팅; 손 오차는 퍼즐마다 한 번 뽑아 고정),
+    `rate.js`(지금 목록 다시 매김, `--part`/`--merge`로 나눠서), `fit.js`(서버 시도 기록으로 학습: 퍼즐별 IRT 레이팅 + AI가 틀린 만큼을
+    특징으로 릿지 회귀, 소수 점수). 퍼즐 테이블은 `tables.js TABLE_OUTLINES`(윤곽 = 쿠션 코 선, 섬, 포켓 자리)와
+    `physics.js shape`(섬, 윤곽에 뚫린 포켓 `cut`, `ev.edges`), 화면은 `scene/20-table.js setShape`가 윤곽에서 통째로 지음(11-24 밤: 일반 테이블처럼
+    마감 — 단면 `SH_PROF`을 윤곽 따라 돌림, 래커·윤곽 따라 나뭇결·판 이음선, 바깥 모서리 둥글게, 포켓 판·립·라이너, 쿠션 그늘, 직사각형이면
+    `tableCabinet`, 아니면 에이프런 + 다리; 'rect' 윤곽 ≈ 일반 테이블).
   - 자유 연습: 그 종목 테이블(`game.js`의 `free-<종목>` 모드: 그 게임의 테이블·배치, 규칙 없음), 슬레이트는 비움.
   - 컴퓨터 대전: 트레이 = 봇 카드(티어 금속, 가끔 빛이 지나감), 슬레이트 = 고른 봇(그림·이름·국기·티어·레이팅, 자기 나라 말 한마디와
     그 아래 회색 번역, 플레이 스타일·성격, 소개). 봇은 `app/34-desk-bots.js` `BOTS`(id는 다시 쓰지 않음, `from` 국가 = `BOT_FLAGS`의
@@ -283,6 +295,9 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 아케이드(준비 중)로 들어가는 길, 선수증 유리 케이스(11-21 시험 중, 기본 켬 — `37-desk-menu.js` `glassCase`, 3D는 `38-glass3d.js`, `84-menu.css` `.g3`:
 각진 3D 아크릴 블록, 뚜껑 없음, 메뉴는 정면, 랭킹전·대전 오프닝에서 위 가장자리를 축으로 흔들리며 들어오고 왼쪽으로 돌며 날아감 — `79-league.css` `g3In/Out`). 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
 코인·보유는 풀지 않는다.
+관리자 페이지의 스크립트는 파일(`web/admin.js` 계정, `web/admin-puzzles.js` 퍼즐 탭 — 인라인 스크립트 금지, 7절). 퍼즐 탭(11-24 밤): 필터·정렬,
+배치 그림·정답 경로(사이트의 `h/core.*.js`를 페이지에서 찾아 불러 직접 쳐 봄), 레이팅 직접(고정/거기서부터)·AI 값으로·끄기·메모, 묶음 조정,
+손잡이, 바꾼 기록 — 서버는 `/v1/admin/puzzles { op }`(`puzzlebook-core.js admin`). 계정 보기에 퍼즐 레이팅·최근 시도·수정(`adminGrant pzr`).
 
 ### 저장 데이터
 `localStorage`의 `dp8.*` 모양을 바꾸면 옛 저장본을 읽는 줄도 같이 넣는다(`app/00-state.js`의 `prefs`). 전적과 진행이 날아가면 안 된다.
