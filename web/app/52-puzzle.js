@@ -23,11 +23,22 @@ const pzSize = k => k === 'pocket' ? PZ_RACK : PZ_CASE;
 const PZ_BAND = [[420, 800], [950, 1300], [1000, 1380], [850, 1180], [620, 980], [1250, 1680], [1400, 1820], [1050, 1480]];
 // the puzzles of a game the rated puzzles serve (those the puzzle AI rated); plain: nothing asked but the plain thing - a
 // point (4구), one ball to pot (포켓)
-const pzPool = (k = 'four') => puzzles.list.filter(q => puzzles.gameOf(q) === k && q.sol && q.rating != null);
+const pzPool = (k = 'four') => puzzles.list.filter(q => puzzles.gameOf(q) === k && q.sol && q.rating != null && !(pzLive.off && pzLive.off.has(q.id)));
 const pzPlain = q => puzzles.gameOf(q) === 'four' ? puzzles.plain(q) : (q.pot || []).length === 1 && !q.keep && !q.need && !q.walls && !q.table && !q.turns;
 const pzRating = q => (pzLive.map && pzLive.map.get(q.id)) || q.rating || (b => Math.round(b[0] + (b[1] - b[0]) * ((q.n - 1) / 19) + ((q.id * 37) % 61) - 30))(PZ_BAND[q.stage] || [1000, 1400]);
-// a puzzle's score by its stars (none, ★, ★★, ★★★), and the stars a place holds (the first set's results: o 3, h 1, x 0)
+// a puzzle's score by its stars (none, ★, ★★, ★★★ - the knob's, pzKnob), and the stars a place holds (the first set's
+// results: o 3, h 1, x 0)
 const PZ_STAR_S = [0, 0.5, 0.75, 1], PZ_TRIES = 3;
+/* The knobs the admin turns (owner 11-24 밤 - the server's puzzles' book, puzzlebook-core.js CFG, handed with the players'
+   ratings: pzLive.cfg): the rating a player starts from, where the next puzzle is aimed against the rating (most of the
+   time; at the harder place), the score of each star count, the rating up to which only plain positions are served.
+   Offline, or never heard: these. */
+const PZ_KNOB = { start: 600, aim: -100, hard: 100, stars: PZ_STAR_S, plainMax: 800 };
+function pzKnob() {
+  const c = pzLive.cfg || {}, n = (v, lo, hi, d) => Number.isFinite(v) && v >= lo && v <= hi ? v : d;
+  const st = Array.isArray(c.stars) && c.stars.length === 4 && c.stars.every((x, i) => Number.isFinite(x) && x >= 0 && x <= 1 && (!i || x >= c.stars[i - 1])) ? c.stars : PZ_KNOB.stars;
+  return { start: n(c.start, 100, 3000, PZ_KNOB.start), aim: n(c.aim, -600, 600, PZ_KNOB.aim), hard: n(c.hard, -600, 600, PZ_KNOB.hard), stars: st, plainMax: n(c.plainMax, 0, 3000, PZ_KNOB.plainMax) };
+}
 const pzStars = v => typeof v === 'number' ? v : v === 'o' ? 3 : v === 'h' ? 1 : v === 'x' ? 0 : null;
 const pzStarTxt = n => n > 0 ? '★'.repeat(n) : '놓침';
 const PZ_MEDAL = ['#7d8794', '#cd8a4a', '#cfd8e3', '#f4c430'];          // a place's rim: none grey, ★ bronze, ★★ silver, ★★★ gold
@@ -42,12 +53,14 @@ const pzr = {
   // the puzzle served next: kept once chosen (leaving and coming back gives the same one), else one of the five nearest
   // the rating it aims at (a hundred below; a hundred above for a ball's last quarter, a rack's every fifth) among those
   // not met yet (all met: the oldest are let back in), the more fun the likelier (tools/puzzles/ai.js fun)
-  aim(k) { const s = pzr.of(k), i = s.now.length; return s.r + ((k === 'pocket' ? i % 5 === 4 : i % 4 === 3) ? 100 : -100); },
+  aim(k) { const s = pzr.of(k), i = s.now.length, K = pzKnob(); return s.r + ((k === 'pocket' ? i % 5 === 4 : i % 4 === 3) ? K.hard : K.aim); },
+  // (no counted attempt yet: the rating is the knob's starting one - as the server starts it, vault.js)
+  fresh(k) { const s = pzr.of(k), K = pzKnob(); if (!s.n && s.r !== K.start) { s.r = K.start; savePrefs(); } return s; },
   next(k = 'four') {
-    const s = pzr.of(k), L = pzPool(k);
+    const s = pzr.fresh(k), L = pzPool(k);
     if (!L.length) return null;
-    const cur = puzzles.byId(s.cur); if (cur && puzzles.gameOf(cur) === k && !s.seen.includes(cur.id)) return cur;
-    const kind = s.r <= 800 && L.some(pzPlain) ? L.filter(pzPlain) : L, inKind = id => kind.some(q => q.id === id);
+    const cur = puzzles.byId(s.cur); if (cur && puzzles.gameOf(cur) === k && !s.seen.includes(cur.id) && L.includes(cur)) return cur;
+    const kind = s.r <= pzKnob().plainMax && L.some(pzPlain) ? L.filter(pzPlain) : L, inKind = id => kind.some(q => q.id === id);
     let pool = kind.filter(q => !s.seen.includes(q.id));
     if (!pool.length) { s.seen = s.seen.filter(id => !inKind(id)).concat(s.seen.filter(inKind).slice(-Math.floor(kind.length / 4))); pool = kind.filter(q => !s.seen.includes(q.id)); }
     const to = pzr.aim(k); pool.sort((a, b) => Math.abs(pzRating(a) - to) - Math.abs(pzRating(b) - to));
@@ -57,12 +70,12 @@ const pzr = {
   },
   // a puzzle over: its stars (0 .. 3). The hidden rating moves by their score; returns the case (rack) if this filled it
   record(k, q, stars) {
-    const s = pzr.of(k), t = attend.today(), sc = PZ_STAR_S[stars], after = puzzles.tryAfter(s, { rating: pzRating(q) }, sc);
+    const s = pzr.fresh(k), t = attend.today(), sc = pzKnob().stars[stars], after = puzzles.tryAfter(s, { rating: pzRating(q) }, sc);
     if (!s.now.length) { s.r0 = s.r; s.mat = pzMatOf(s.stars); }
     if (s.dayT !== t) { s.dayT = t; s.dayN = 0; }
     const d = after.r - s.r; s.r = after.r; s.rd = after.rd; s.n = after.n; s.stars += stars; if (stars) { s.solved++; s.dayN++; }
     // (told to the server, which keeps the rating for the account's every device and rates the puzzle back - 07-net.js)
-    net.claim('pztry', { id: q.id, res: sc, shots: stars ? puzzle.shots.slice() : null, k });
+    net.claim('pztry', { id: q.id, res: sc, st: stars, shots: stars ? puzzle.shots.slice() : null, k });
     s.seen.push(q.id); s.cur = null; s.tried = null; s.now.push([q.id, stars, d]); s.hist = s.hist.concat(s.r).slice(-30);
     let closed = null;
     if (s.now.length >= pzSize(k)) { closed = { t, k, res: s.now, r0: s.r0 != null ? s.r0 : s.r - d, r1: s.r, m: s.mat || 0 }; s.cases.unshift(closed); s.cases = s.cases.slice(0, 40); s.now = []; }
@@ -88,15 +101,18 @@ function pzrSync(srv) {
   if (moved) { savePrefs(); if (typeof repaintLive === 'function' && $('#dkBoards.pzr')) repaintLive(); }
 }
 /* The players' word on the puzzles (the server's puzzles' book, /v1/puzzles/live): a puzzle tried enough is served by the
-   rating the players gave it, not the one the puzzle AI guessed - asked at most twice a day, kept */
-const pzLive = { at: 0, map: null };
+   rating the players gave it, not the one the puzzle AI guessed - and the admin's (11-24 밤): a rating set by hand (in
+   live), the puzzles turned off (ov: not served), the knobs (cfg, pzKnob). Asked at most once an hour, kept. */
+const pzLive = { at: 0, map: null, off: null, cfg: null };
 function pzLiveLoad() {
-  try { const o = JSON.parse(localStorage.getItem('dp8.pzlive') || 'null'); if (o && o.map) { pzLive.map = new Map(o.map); pzLive.at = o.at || 0; } } catch (e) {}
-  if (Date.now() - pzLive.at < 12 * 3600000 || !SERVER) return;
+  if (!pzLive.map) try { const o = JSON.parse(localStorage.getItem('dp8.pzlive') || 'null'); if (o && o.map) { pzLive.map = new Map(o.map); pzLive.at = o.at || 0; pzLive.off = new Set(o.off || []); pzLive.cfg = o.cfg || null; } } catch (e) {}
+  if (Date.now() - pzLive.at < 3600000 || !SERVER) return;
   pzLive.at = Date.now();
   fetch(SERVER + '/v1/puzzles/live').then(r => r.json()).then(j => {
     if (!j || !Array.isArray(j.live)) return; pzLive.map = new Map(j.live.map(q => [q[0], q[1]]));
-    try { localStorage.setItem('dp8.pzlive', JSON.stringify({ at: pzLive.at, map: [...pzLive.map] })); } catch (e) {}
+    pzLive.off = new Set((j.ov || []).filter(o => o[3]).map(o => o[0])); pzLive.cfg = j.cfg && typeof j.cfg === 'object' ? j.cfg : null;
+    try { localStorage.setItem('dp8.pzlive', JSON.stringify({ at: pzLive.at, map: [...pzLive.map], off: [...pzLive.off], cfg: pzLive.cfg })); } catch (e) {}
+    if (typeof repaintLive === 'function' && $('#dkBoards.pzr')) repaintLive();
   }).catch(() => {});
 }
 /* The pictures: a ball whose four quarters fill clockwise from 12 o'clock - each the ball's own picture with a rim the

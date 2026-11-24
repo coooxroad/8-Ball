@@ -123,24 +123,29 @@ export class VaultCore {
      rating moves as puzzles.js tryAfter says (Glicko - the device moved it the same way at once), only the first time a
      puzzle is tried; the attempt is passed on to the puzzles' book (puzzlebook-core.js: the puzzle rated back, and kept
      for the puzzle AI to learn from) - book: what to pass on, read by vault.js. */
-  puzzleTry({ req, id, res, shots }) {
+  /* (st: the stars the app gave it, 0 .. 3 - the score of each is a knob the admin may turn (puzzlebook-core.js CFG), so any
+     score from 0 to 1 is taken; start: the rating a first attempt starts from, the book's knob - handed in by vault.js, never
+     the app's) */
+  puzzleTry({ req, id, res, shots, st, start }) {
     return this.once(req, () => {
-      const Z = E.createPuzzles(), z = Z.byId(id), sc = res === 'o' ? 1 : res === 'x' ? 0 : res === 'h' ? 'h' : [0, 0.5, 0.75, 1].includes(res) ? res : null;
+      const Z = E.createPuzzles(), z = Z.byId(id), sc = res === 'o' ? 1 : res === 'x' ? 0 : res === 'h' ? 'h' : typeof res === 'number' && res >= 0 && res <= 1 ? res : null;
       if (!z || sc == null) return { ok: false, why: 'no such puzzle' };
-      const k = Z.gameOf(z), key = 'pz:' + k, before = this.get(key, null);
+      const k = Z.gameOf(z), key = 'pz:' + k, s0 = Number.isFinite(start) && start >= 100 && start <= 3000 ? { r: start, rd: Z.RATE.RD0, n: 0 } : null, before = this.get(key, null) || s0;
       if (this.sql.exec(`SELECT 1 FROM pztry WHERE id = ?`, id).toArray().length) return { ok: true, again: true, pzr: this.pzr() };
       let got = sc; if (got !== 'h' && got > 0 && !playPuzzle(id, null, shots).ok) got = 0;
       const after = Z.tryAfter(before, z, got === 'h' ? 'h' : got);
       // (what the player is shown in its place, 11-24 밤: the puzzles solved and the stars won - w, st; a score's stars:
       // 1 three, 0.75 two, 0.5 one)
       after.w = ((before && before.w) || 0) + (got !== 'h' && got > 0 ? 1 : 0);
-      after.st = ((before && before.st) || 0) + (got === 1 ? 3 : got === 0.75 ? 2 : got === 0.5 ? 1 : 0);
+      after.st = ((before && before.st) || 0) + (got === 'h' || !(got > 0) ? 0 : Number.isInteger(st) && st >= 1 && st <= 3 ? st : got >= 1 ? 3 : got >= 0.75 ? 2 : 1);
       this.sql.exec(`INSERT INTO pztry (id, res, r, at) VALUES (?, ?, ?, ?)`, id, String(got), after.r, Date.now());
       this.set(key, after);
       return { ok: true, res: got, pzr: this.pzr(), book: got === 'h' ? null : { id, res: got, pr: before ? before.r : Z.RATE.START, prd: before ? before.rd : Z.RATE.RD0 } };
     });
   }
   // the account's puzzle ratings, by game ({ four: { r, rd, n, w, st }, pocket: ... } - the games tried)
+  // whether the account has a puzzle rating for puzzle id's game yet (vault.js: if not, the book's starting rating is asked)
+  pzNew(id) { const Z = E.createPuzzles(), z = Z.byId(id); return !!z && !this.get('pz:' + Z.gameOf(z), null); }
   pzr() { const o = {}; for (const k of ['four', 'pocket']) { const v = this.get('pz:' + k, null); if (v) o[k] = v; } return o; }
 
   // how sure this account's rating is now: as last set, less sure for every day since its last ranked game (economy.js)

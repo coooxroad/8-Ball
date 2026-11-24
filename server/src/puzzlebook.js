@@ -10,6 +10,7 @@ export class PuzzleBook extends DurableObject {
     const json = b => new Response(JSON.stringify(b), { headers: { 'Content-Type': 'application/json' } });
     if (path === '/try') return json(this.core.try(body));
     if (path === '/live') return json(this.core.live());
+    if (path === '/cfg') return json({ ok: true, cfg: this.core.cfg() });
     if (path === '/stats') return json(this.core.stats());
     if (path === '/export') return json(this.core.export(body.after, body.limit));
     if (path === '/admin') return json(this.core.admin(body));

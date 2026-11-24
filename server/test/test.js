@@ -67,7 +67,10 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
     const L2 = L.find(z => Z.gameOf(z) === k && z.id !== L[0].id && z.id !== L1.id), h = v.puzzleTry({ req: req(), id: L2.id, res: 'h' });
     ok(h.ok && !h.book && h.pzr[k].r === b.pzr[k].r, 'a hint counts for nothing');
     const L3 = L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id].includes(z.id)), t = L3 && v.puzzleTry({ req: req(), id: L3.id, res: 0.75, shots: [shot(L3.sol)] });
-    if (L3) ok(t.ok && t.res === 0.75 && t.pzr[k].w === 2 && t.pzr[k].st === 5 && t.book && t.book.res === 0.75 && !v.puzzleTry({ req: req(), id: L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id, L3.id].includes(z.id)).id, res: 0.6 }).ok, 'a stage scored by its stars (0.75: the second try); no other score taken');
+    if (L3) ok(t.ok && t.res === 0.75 && t.pzr[k].w === 2 && t.pzr[k].st === 5 && t.book && t.book.res === 0.75 , 'a puzzle scored by its stars (0.75: the second try)');
+    if (L3) { const L4 = L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id, L3.id].includes(z.id)), u = v.puzzleTry({ req: req(), id: L4.id, res: 0.6, st: 2, shots: [shot(L4.sol)] });
+      ok(u.ok && u.res === 0.6 && u.pzr[k].st === 7 && !v.puzzleTry({ req: req(), id: L4.id + 0.5, res: 1.5 }).ok, 'a score from a turned knob taken (0 .. 1), its stars as the app gave them'); }
+    { const w = vault(); w.init('s'); const t0 = w.puzzleTry({ req: req(), id: L[0].id, res: 0, start: 1200 }); ok(t0.ok && t0.pzr[k].r < 1200 && t0.pzr[k].r > 1000, 'a first attempt starts from the book\'s starting rating'); }
     console.log('puzzle rating: kept on the account, checked solves, scored by stars'); } }
 // the puzzles' book (puzzlebook-core.js): an attempt rates the puzzle back - a miss gives it points; tried enough it is live
 { const Z = E.createPuzzles(), z = Z.list.find(q => Number.isFinite(q.rating));

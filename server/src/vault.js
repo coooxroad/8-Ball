@@ -57,6 +57,9 @@ export class Vault extends DurableObject {
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     // a counted puzzle attempt (core.js puzzleTry): the puzzle rated back by the puzzles' book - not waited for
     if (path === '/v1/pztry') {
+      // (a first attempt starts from the book's starting rating - the admin's knob; the app's word is not taken for it)
+      delete body.start;
+      if (this.env.PUZZLES && this.core.pzNew(body.id)) body.start = await this.env.PUZZLES.get(this.env.PUZZLES.idFromName('book')).fetch('https://book/cfg').then(r => r.json()).then(j => j && j.cfg && j.cfg.start).catch(() => undefined);
       const r = this.core.puzzleTry(body), book = r.book; delete r.book;
       if (book && this.env.PUZZLES) this.ctx.waitUntil(this.env.PUZZLES.get(this.env.PUZZLES.idFromName('book')).fetch('https://book/try', { method: 'POST', body: JSON.stringify(book) }).catch(() => null));
       return json(r);
