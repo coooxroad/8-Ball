@@ -12,6 +12,7 @@ export class PuzzleBook extends DurableObject {
     if (path === '/live') return json(this.core.live());
     if (path === '/stats') return json(this.core.stats());
     if (path === '/export') return json(this.core.export(body.after, body.limit));
+    if (path === '/admin') return json(this.core.admin(body));
     return json({ ok: false, why: 'no such thing' });
   }
 }

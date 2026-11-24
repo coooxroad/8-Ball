@@ -6,7 +6,8 @@
    POST /v1/buy     { req, kind, id }                 buy an item from content/ at its rarity's price
    POST /v1/puzzle  { req, id, shot, shots }          a puzzle solved: checked (shots: a two-turn puzzle's both), paid once
    POST /v1/pztry   { req, id, res, shots }           a counted puzzle attempt: the account's puzzle rating (core.js puzzleTry)
-   GET  /v1/puzzles/live                              the puzzles' ratings as players have moved them (puzzlebook-core.js)
+   GET  /v1/puzzles/live                              the puzzles' ratings as players have moved them, the admin's overrides and
+                                                      knobs (puzzlebook-core.js live)
    POST /v1/match   { req, kind: friend | cpu, log }  a match played on the device: paid by economy.js
    POST /v1/queue   { mode, name, icon, gear }        waiting for a ranked game (ask every 2 s): { waiting } or the room
    POST /v1/queue/leave { mode }                      stop waiting
@@ -65,7 +66,9 @@ const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-2
    ADMIN_EMAILS_SHA256 (wrangler.toml: SHA-256 of each address, lower case - the address itself is not in the code).
    POST /v1/admin/find  { q }                          accounts by name or id (the directory lobby: vault.js listed)
    POST /v1/admin/view  { acct }                       one account: balances, rating, items, ledger, recent games
-   POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, debug, why }   give or take; set the rating; debug mode on or off (core.js adminGrant)
+   POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, debug, pzr, why }   give or take; set the rating (pzr: { k, r } a
+                                                       puzzle rating); debug mode on or off (core.js adminGrant)
+   POST /v1/admin/puzzles { op, ... }                  the puzzles: list, get, set, reset, off, batch, cfg, log (puzzlebook-core.js admin)
    GET  /v1/admin/catalog                              every item there is, to give */
 export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
 /* Or a password (owner 11-10: on a phone or tablet the Google window would not let another account be chosen without
@@ -130,10 +133,12 @@ async function adminRoute(what, request, env) {
     }
     return json({ ok: true, month, rows, next: p * 1e9 + n, more: p < parts.length });
   }
-  // the puzzles' book (puzzlebook-core.js): { stats: true } its counts, else the attempts after a point ({ after, limit })
+  // the puzzles' book (puzzlebook-core.js): { op } the admin's hand on the puzzles (list, get, set, reset, off, batch, cfg,
+  // log - who did it, as the ledger keeps it); else { stats: true } its counts, or the attempts after a point ({ after, limit })
   if (what === 'puzzles') {
     if (!env.PUZZLES) return json({ ok: false, why: 'no book' });
     const B = env.PUZZLES.get(env.PUZZLES.idFromName('book'));
+    if (body.op) return json(await (await B.fetch('https://book/admin', { method: 'POST', body: JSON.stringify(Object.assign({}, body, { by })) })).json());
     return json(await (await B.fetch('https://book/' + (body.stats ? 'stats' : 'export'), { method: 'POST', body: JSON.stringify({ after: body.after, limit: body.limit }) })).json());
   }
   const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);

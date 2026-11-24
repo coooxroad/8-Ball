@@ -201,14 +201,19 @@ export class VaultCore {
     const me = this.me(), led = this.sql.exec(`SELECT at, what, coin, dia FROM ledger ORDER BY n DESC LIMIT 30`).toArray();
     const games = this.sql.exec(`SELECT at, kind, mode, paid, status FROM matches ORDER BY n DESC LIMIT 20`).toArray();
     const bought = this.sql.exec(`SELECT kind, id, at FROM owned ORDER BY at DESC`).toArray();
-    return { ok: true, me: Object.assign({}, me, { save: undefined }), since: this.get('since', 0), ledger: led, games, bought, admin: this.get('adminLog', []) };
+    // (the puzzles: the ratings are in me.pzr; the last counted attempts - id, score, the rating after)
+    const pztries = this.sql.exec(`SELECT id, res, r, at FROM pztry ORDER BY at DESC LIMIT 30`).toArray();
+    return { ok: true, me: Object.assign({}, me, { save: undefined }), since: this.get('since', 0), ledger: led, games, bought, pztries, admin: this.get('adminLog', []) };
   }
-  adminGrant({ by, why, coin, dia, kind, id, dama, take, debug }) {
+  adminGrant({ by, why, coin, dia, kind, id, dama, take, debug, pzr }) {
     const note = `${String(by || 'admin').slice(0, 40)}${why ? ' · ' + String(why).slice(0, 80) : ''}`, did = [];
     // (all of it checked before any of it is done: a refusal leaves the account as it was)
     const v = dama != null && dama !== '' ? Math.round(+dama) : null;
     if (v != null && (!Number.isFinite(v) || v < E.ECONOMY.DAMA_FLOOR || v > 5000)) return { ok: false, why: 'bad rating' };
     if (kind && !this.known(kind, id)) return { ok: false, why: 'no such item' };
+    // (a puzzle rating set by hand: { k: 'four' | 'pocket', r, rd } - the attempts and the stars stay as they are)
+    const pk = pzr && ['four', 'pocket'].includes(pzr.k) ? pzr.k : null, pv = pk ? Math.round(+pzr.r) : null;
+    if (pzr && (!pk || !Number.isFinite(pv) || pv < 100 || pv > 3500)) return { ok: false, why: 'bad puzzle rating' };
     return this.tx(() => {
       const c = coin | 0, d = dia | 0;
       if (c || d) {
@@ -223,6 +228,10 @@ export class VaultCore {
       }
       if (v != null) {
         did.push(`dama ${JSON.stringify(this.damas())} -> ${v}`); this.set('dama', v); for (const f of E.FAMILIES) this.set('dama:' + f, v);
+      }
+      if (pk) {
+        const was = this.get('pz:' + pk, null), rd = Number.isFinite(+pzr.rd) && +pzr.rd >= 30 && +pzr.rd <= 350 ? +pzr.rd : was ? was.rd : E.createPuzzles().RATE.RD0;
+        this.set('pz:' + pk, Object.assign({ n: 0 }, was || {}, { r: pv, rd })); did.push(`puzzle ${pk} ${was ? was.r : '-'} -> ${pv}`);
       }
       if (typeof debug === 'boolean' && debug !== !!this.get('debug')) { this.set('debug', debug); did.push(`debug ${debug ? 'on' : 'off'}`); }
       if (!did.length) return { ok: false, why: 'nothing to do' };

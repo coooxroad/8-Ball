@@ -76,7 +76,26 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
     { const B2 = new PuzzleBookCore(sqlOf().sql, E); ok(B2.try({ id: z.id, res: 0.5, pr: z.rating, prd: 100 }).r === B2.get(z.id).r && Math.abs(B2.get(z.id).r - r0) < 2, 'an even score (0.5) leaves an even puzzle where it was'); }
     for (let i = 0; i < 5; i++) B.try({ id: z.id, res: 'o', pr: z.rating + 200, prd: 80 });
     ok(B.live().live.some(q => q[0] === z.id) && B.stats().tries === 6 && B.export(0, 10).rows.length === 6 && !B.try({ id: 999999, res: 'o', pr: 1000 }).ok, 'the book: live, counted, read out');
-    console.log('puzzle book: rated back, kept'); } }
+    console.log('puzzle book: rated back, kept');
+    // the admin's hand (owner 11-24 밤): set, held, off, back to the AI's, a group moved, the knobs, the log
+    const A = new PuzzleBookCore(sqlOf().sql, E), L = A.admin({ op: 'list' }).rows, y = L[0], y2 = L.find(q => q.game === y.game && q.id !== y.id);
+    ok(L.length === Z.list.filter(q => Number.isFinite(q.rating)).length && L.every(q => q.r === q.ai && !q.live && q.n === 0), 'puzzle admin: the list, each at the AI\'s rating');
+    ok(A.admin({ op: 'set', id: y.id, r: 1234, by: 't' }).row.r === 1234 && A.live().live.some(q => q[0] === y.id && q[1] === 1234), 'puzzle admin: a rating set is served at once');
+    A.try({ id: y.id, res: 'x', pr: 1500, prd: 80 });
+    const moved = A.admin({ op: 'get', id: y.id }).row;
+    ok(moved.r > 1234 && moved.n === 1 && moved.score === 0, 'puzzle admin: not held, the players move it on from there');
+    A.admin({ op: 'set', id: y.id, r: 1300, fix: true, note: '손으로', by: 't' }); A.try({ id: y.id, res: 1, pr: 900, prd: 80 });
+    const held = A.admin({ op: 'get', id: y.id });
+    ok(held.row.r === 1300 && held.row.fix && held.row.n === 2 && held.row.note === '손으로' && A.live().live.find(q => q[0] === y.id)[1] === 1300, 'puzzle admin: held, a try counted but the rating stays');
+    ok(A.admin({ op: 'off', id: y2.id, off: true }).row.off && A.live().ov.some(o => o[0] === y2.id && o[3] === 1), 'puzzle admin: a puzzle turned off is said so to the app');
+    const back = A.admin({ op: 'reset', id: y.id, by: 't' }).row;
+    ok(back.r === y.ai && !back.fix && !back.live && back.note === '손으로', 'puzzle admin: back to the AI\'s rating, the note kept');
+    const grp = L.filter(q => q.game === 'four' && !q.plain && q.r >= 1000 && q.r <= 1400), b = A.admin({ op: 'batch', game: 'four', kind: 'cond', lo: 1000, hi: 1400, d: 50, by: 't' });
+    ok(grp.length ? b.ok && b.n === grp.length && grp.every(q => A.admin({ op: 'get', id: q.id }).row.r === q.r + 50) : !b.ok, 'puzzle admin: a group moved together');
+    ok(!A.admin({ op: 'cfg', set: { aim: 9999 } }).ok && A.admin({ op: 'cfg', set: { aim: -150, stars: [0, 0.4, 0.7, 1] }, by: 't' }).cfg.aim === -150 && A.live().cfg.stars[1] === 0.4 && A.live().cfg.start === 600, 'puzzle admin: the knobs, checked, handed to the app');
+    const lg = A.admin({ op: 'log' }).rows;
+    ok(lg[0].what === 'cfg' && lg.some(q => q.what === 'reset' && q.id === y.id) && lg.some(q => q.what === 'batch') && lg.every(q => q.by === 't' || q.by === 'admin') && A.admin({ op: 'get', id: y.id }).log.length === 3, 'puzzle admin: every change in the log');
+    console.log('puzzle admin: set, held, off, reset, batch, knobs, log'); } }
 
 // a match recorded the way the app records it, by two computers playing it out
 let s = 99; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
@@ -761,6 +780,8 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(v.adminGrant({ by: 'admin', debug: true }).ok && v.me().debug === true && v.me().coin === 4000, 'admin: debug mode turned on, nothing else changed');
   ok(!v.adminGrant({ by: 'admin', debug: true }).ok, 'admin: debug already on is nothing to do');
   ok(v.adminGrant({ by: 'admin', debug: false }).ok && v.me().debug === false, 'admin: debug mode turned off');
+  ok(v.adminGrant({ by: 'admin', pzr: { k: 'four', r: 1450 } }).ok && v.me().pzr.four.r === 1450 && !v.adminGrant({ by: 'admin', pzr: { k: 'snooker', r: 1450 } }).ok && !v.adminGrant({ by: 'admin', pzr: { k: 'four', r: 9 } }).ok, 'admin: a puzzle rating set, bad ones refused');
+  ok(Array.isArray(v.adminView().pztries), 'admin: the view has the puzzle attempts');
   const { Directory } = await import('../src/directory.js');
   const D = new Directory(sqlOf().sql), A = 'ab'.repeat(16), B = 'cd'.repeat(16);
   D.put({ acct: A, nick: '큐대장', joined: true, dama: 1200, coin: 10, dia: 1 }); D.put({ acct: B, nick: '초보', dama: 1000 });
