@@ -547,11 +547,15 @@ function createPuzzles(tableShapes) {
     const d2 = 1 / (q * q * gg * gg * e * (1 - e)), k = 1 / (1 / (rd * rd) + 1 / d2);
     return [r + q * k * gg * (s - e), Math.sqrt(k)];
   }
-  // a player's { r, rd, n } after a counted attempt at z: res 'o' solved, 'x' missed, 'h' a hint seen first
+  /* a player's { r, rd, n } after a counted attempt at z: res a score from 0 to 1 (owner 11-24: billiards is not chess -
+     the way known, a little off the angle still misses, and the same stroke does the same again, so putting it right is
+     the skill: three tries count, solved at the first 1, the second 0.75, the third 0.5, not at all 0 - Glicko takes a
+     part score as it takes a draw); or the first set's 'o' solved, 'x' missed, 'h' (nothing) */
   function tryAfter(me, z, res) {
     const r0 = me && Number.isFinite(me.r) ? me.r : RATE.START, rd0 = me && Number.isFinite(me.rd) ? me.rd : RATE.RD0, n = (me && me.n) || 0;
-    if (res !== 'o' && res !== 'x') return { r: r0, rd: rd0, n };
-    const [r, rd] = glicko(r0, rd0, Number.isFinite(z.rating) ? z.rating : 1000, RATE.PRD, res === 'o' ? 1 : 0);
+    const sc = typeof res === 'number' && res >= 0 && res <= 1 ? res : res === 'o' ? 1 : res === 'x' ? 0 : null;
+    if (sc == null) return { r: r0, rd: rd0, n };
+    const [r, rd] = glicko(r0, rd0, Number.isFinite(z.rating) ? z.rating : 1000, RATE.PRD, sc);
     return { r: Math.max(RATE.FLOOR, Math.round(r)), rd: Math.max(RATE.RD_MIN, Math.round(rd * 10) / 10), n: n + 1 };
   }
   return { list, STAGES, byId, of: s => list.filter(p => p.stage === s), challenge, gameOf, goalOf, turnsOf, shotOf, plain, modeOf, setup, judge, metNeed, play, RATE, glicko, tryAfter };

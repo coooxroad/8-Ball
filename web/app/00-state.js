@@ -101,6 +101,13 @@ const prefs = (() => {
   // 퍼즐 레이팅 (owner 11-23): a rating a game, the case being filled and the cases closed - 52-puzzle.js pzr
   if (!p.pzr || typeof p.pzr !== 'object') p.pzr = {};
   for (const k of ['four', 'pocket']) { const s = p.pzr[k]; if (!s || typeof s !== 'object' || typeof s.r !== 'number') p.pzr[k] = { r: 600, n: 0, now: [], cases: [], seen: [], hist: [], cur: null }; }
+  // (11-24 밤: the rating kept out of sight - the puzzles solved and the stars won shown; counted from what was kept)
+  const pzSt = v => typeof v === 'number' ? v : v === 'o' ? 3 : v === 'h' ? 1 : 0;
+  for (const k of ['four', 'pocket']) {
+    const s = p.pzr[k], all = s.now.concat(...s.cases.map(c => c.res || []));
+    if (!Number.isFinite(s.solved)) s.solved = all.filter(r => pzSt(r[1]) > 0).length;
+    if (!Number.isFinite(s.stars)) s.stars = all.reduce((a, r) => a + pzSt(r[1]), 0);
+  }
   if (p.clk !== 2) { if (p.shotClock === 40) p.shotClock = 60; p.clk = 2; }   // 4.0: the shot clock's default went from 40 to 60 s
   delete p.lab; delete p.masse;                                         // the 2.0 laboratory switches and the raised-cue permission: gone
   // (debug switches taken out 11-21: the desk's wood and tray to try, the old menu, the menu's signs and diagnosis, the

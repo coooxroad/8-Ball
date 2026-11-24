@@ -151,6 +151,11 @@ for (const name of ['bar', 'pro', 'pub']) {
     const r = Z.play(g, z, shots, rnd, 40); if (!r.ok) fail(`puzzle ${z.id}: its stored answer does not solve it (${r.note || ''}, turn ${r.turn + 1})`);
   }
   console.log(`puzzles: ${Z.list.length} - 4구 ${four} (${plain} plain), 포켓 ${pocket}; every stored answer solves its puzzle`);
+  // (11-24 밤: three tries scored 1 / 0.75 / 0.5 / 0 - each lower score moves the rating less, 0.5 against an even puzzle
+  // hardly at all; the first set's o / x / h still taken)
+  { const me = { r: 1000, rd: 120, n: 3 }, z = { rating: 1000 }, at = v => Z.tryAfter(me, z, v).r;
+    if (!(at(1) > at(0.75) && at(0.75) > at(0.5) && at(0.5) > at(0) && Math.abs(at(0.5) - 1000) <= 1)) fail(`puzzle scores: ${[1, 0.75, 0.5, 0].map(at)}`);
+    if (at('o') !== at(1) || at('x') !== at(0) || Z.tryAfter(me, z, 'h').n !== 3 || Z.tryAfter(me, z, 0.6).n !== 4) fail('puzzle scores: the first set\'s results'); }
 }
 // Meetings at the same instant are settled together, not in the balls' order: two touching balls struck square between
 // them come off alike, whatever their numbers; a straight break opens the rack evenly; a row of touching balls passes the
