@@ -3,8 +3,8 @@
    own physics and judged by puzzles.js (setup, judge) - the rules the app, the tests and the server use - so what is
    found here works there. A puzzle is set out once (env) and each try played on a copy of it. */
 const createPhysics = require('../../physics.js'), createGame = require('../../game.js');
-const { physicsFor, TABLE_OUTLINES } = require('../../tables.js');
-const Z = require('../../puzzles.js')();
+const { physicsFor, TABLE_OUTLINES, TABLE_SHAPES } = require('../../tables.js');
+const Z = require('../../puzzles.js')(TABLE_SHAPES);
 const DEG = Math.PI / 180;
 const g = createGame(physicsFor(createPhysics, 'bar'));
 function seeded(seed) { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); }

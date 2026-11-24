@@ -136,7 +136,7 @@ for (const name of ['bar', 'pro', 'pub']) {
 // turn by turn, exactly as the app, the tests and the server play it (puzzles.js play) - at the speed stored, which is
 // one the power slider can set (its round trip gives it back)
 {
-  const createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles(), T = require(path.join(W, 'tables.js'));
+  const T = require(path.join(W, 'tables.js')), createPuzzles = require(path.join(W, 'puzzles.js')), Z = createPuzzles(T.TABLE_SHAPES);
   const g = createGame(T.physicsFor(createPhysics, 'bar'));
   const ids = new Set(); let four = 0, pocket = 0, plain = 0;
   for (const z of Z.list) {

@@ -15,7 +15,8 @@
      rating, fun   what the puzzle AI gave it (tools/puzzles/rate.js); plain: an ordinary 4구 position, nothing asked
               but a point (what is served up to 800)
    The first set (stage, n: 11-01 .. 11-22, by stages) is gone; its ids, 101 .. 825, are not used again. */
-function createPuzzles() {
+// (tableShapes: tables.js TABLE_SHAPES - given by a caller on node; the app and the server's bundle have it to hand)
+function createPuzzles(tableShapes) {
   const STAGES = [{"name":"첫 득점","goal":"score","desc":"가까운 두 공을 한 번에","trick":false},{"name":"모아치기","goal":"gather","desc":"치고 나서 세 공이 한데 모이게","trick":false},{"name":"빈쿠션","goal":"bank","desc":"쿠션을 먼저 맞히고 들어가기","trick":false},{"name":"밀어치기 · 끌어치기","goal":"direct","desc":"쿠션 없이, 위아래 회전으로","trick":false},{"name":"상대 공 피해 가기","goal":"score","desc":"노란 공을 건드리지 않고","trick":false},{"name":"돌려치기","goal":"three","desc":"쿠션 세 번을 돌아서","trick":false},{"name":"맛세이 · 점프","goal":"direct","desc":"막은 공을 넘거나 휘어서","trick":true},{"name":"바리케이드","goal":"score","desc":"막힌 길을 돌아서","trick":false,"walls":true}];
   const list = [
     {"id":2001,"game":"four","goal":"score","balls":[[0.584073,0.198612],[0.774734,0.003383],[0.686734,0.422848],[0.805218,0.404941]],"sol":[0.899257037,0.9489443669999998,0,0,0],"rating":295,"fun":0},
@@ -474,8 +475,9 @@ function createPuzzles() {
   const shotOf = (z, t) => turnsOf(z) > 1 ? z.sol[t] : z.sol;
   const plain = z => gameOf(z) === 'four' && goalOf(z) === 'score' && !z.walls && !z.table && !z.need && turnsOf(z) === 1;
   const modeOf = z => gameOf(z) === 'pocket' ? 'puzzle8' : 'puzzle4';
-  // (the shapes of the tables: tables.js, already there in the app and the server's bundle; asked for when run on its own)
-  const shapes = () => typeof TABLE_SHAPES !== 'undefined' ? TABLE_SHAPES : require('./tables.js').TABLE_SHAPES;
+  // (the shapes of the tables: tables.js - there in the app and the server's bundle, handed in on node; no require here:
+  // the server's bundler would try to resolve it)
+  const shapes = () => tableShapes || (typeof TABLE_SHAPES !== 'undefined' ? TABLE_SHAPES : null);
   // puzzle z set out on game g (started in modeOf(z)): its table (and the cushions it asks for, which the scene marks),
   // barricades, balls
   function setup(g, z, rnd) {
