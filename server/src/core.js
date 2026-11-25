@@ -1,4 +1,4 @@
-/* One player's vault: coins, diamonds, what they own, DAMA, the puzzles they were paid for. Each account is one Durable
+/* One player's vault: coins, diamonds, what they own, rating, the puzzles they were paid for. Each account is one Durable
    Object, and a Durable Object handles one request at a time - so a balance is read, checked and changed with nothing in
    between (no paying twice by sending two requests at once). Every change also carries the app's own request number:
    the same number again gets the first answer back and changes nothing (no paying twice by sending one request twice).
@@ -52,7 +52,7 @@ export class VaultCore {
     // (one read for everything owned; the 일반 things are everyone's)
     const bought = new Set(this.sql.exec(`SELECT kind, id FROM owned`).toArray().map(r => r.kind + ':' + r.id)), owned = {};
     for (const k in KINDS) owned[k] = KINDS[k].filter(q => !(q.rarity > 0) || bought.has(k + ':' + q.id)).map(q => q.id);
-    /* 5.0: the rating went from DAMA's small scale (started at 30, an even game moving 3) to chess.com's (500, Glicko -
+    /* 5.0: the rating went from the old 다마's small scale (started at 30, an even game moving 3) to chess.com's (500, Glicko -
        economy.js); an account from before is moved over once, its distance from the start kept at four times the size,
        and a little surer than a new one (it has played). (An account from the very first days, at 1000, starts again.) */
     if (!this.get('r5')) { const old = this.get('dama', null);
@@ -174,12 +174,12 @@ export class VaultCore {
     if (tn < tb) { const sh = this.get('shield:' + f, 0); if (sh > 0) { this.set('shield:' + f, sh - 1); return [T[tb], 'shield']; } }
     return [next, null];
   }
-  // a game's result from its room (room.js), once per room: coins, the change in DAMA and how sure it is now - a ranked
-  // game, or one with an invited friend (kind 'invite': no DAMA).
+  // a game's result from its room (room.js), once per room: coins, the change in rating and how sure it is now - a ranked
+  // game, or one with an invited friend (kind 'invite': no rating).
   ranked({ room, mode, won, draw, coins, dama, kind, rd }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
-      // (증강 당구 - kind 'arcade' - moves no DAMA either, and is kept as its own kind)
+      // (증강 당구 - kind 'arcade' - moves no rating either, and is kept as its own kind)
       const inv = kind === 'invite' || kind === 'arcade', c = Math.max(0, Math.min(20000, coins | 0)), d = inv ? 0 : Math.max(-E.ECONOMY.DAMA_STEP_MAX, Math.min(E.ECONOMY.DAMA_STEP_MAX, dama | 0));
       // (its own family's rating only - economy.js familyOf)
       const f = E.familyOf(mode);

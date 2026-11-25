@@ -159,7 +159,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(!v.match({ req: req(), kind: 'ranked', log: { mode: 'four' } }).ok, 'ranked is not paid from the device');
   console.log('unchecked matches: checked');
 }
-// DAMA and the tour
+// rating and the tour
 { const [a, b, ra] = E.damaAfter(500, 500, true); ok(a - 500 === 500 - b && a - 500 > 100 && ra < 350, `rating: two new players move a lot, evenly, and are surer after (${a}, ${b}, ${Math.round(ra)})`);
   const [c, d] = E.damaAfter(1500, 1500, true, 50, 50); ok(c - 1500 >= 5 && c - 1500 <= 9 && c - 1500 === 1500 - d, `rating: two settled players move a few points (${c - 1500})`);
   const [e] = E.damaAfter(1500, 1800, true, 50, 50); ok(e - 1500 > c - 1500, 'rating: beating someone higher earns more');
@@ -240,11 +240,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     ok(!logError({ ...good, mode: 'snooker', opts: {}, shots: [{ aim: 0.1, V: 2, a: 0, b: 0, el: 0, s: snap }] }) && logError({ ...good, mode: 'snooker', opts: {}, shots: [{ aim: 0.1, V: 2, a: 0, b: 0, el: 0, s: { cue: 0, balls: snap.balls.slice(0, 16) } }] }), '스누커 shots: 22 balls'); }
   console.log('reward regressions: receipts, duplicate matches, corrupt queue and terminal checkpoints checked');
 }
-// ranked: the lobby pairs by DAMA (the range widening with the wait), and after a while seats a stand-in
+// ranked: the lobby pairs by rating (the range widening with the wait), and after a while seats a stand-in
 {
   let t = 0; const L = new LobbyCore('eight', () => t, () => 20000);
   ok(L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }).waiting, 'lobby: one alone waits');
-  const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in DAMA are paired at once');
+  const b = L.ask({ acct: 'b', dama: 32, name: 'B', icon: 2 }); ok(b.room && b.seat === 0 && b.opp.name === 'A', 'lobby: two close in rating are paired at once');
   const a = L.ask({ acct: 'a', dama: 30, name: 'A', icon: 1 }); ok(a.room === b.room && a.seat === 1 && a.token !== b.token && a.seed === b.seed, 'lobby: the other hears the same room, its own seat');
   ok(L.ask({ acct: 'c', dama: 460, name: 'C' }).waiting && L.ask({ acct: 'd', dama: 660, name: 'D' }).waiting, 'lobby: far apart, they wait');
   // (11-16: the devices played the base rules while the room replayed the tier's - every ranked game ended 무효)
@@ -384,7 +384,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     ok(R.message(0, { t: 'end' }) === null && R.message(1, { t: 'end' }) === 'check', `ranked ${mode}: both saying it ended starts the check`);
     const res = finish(R);
     ok(res && res.winner === G.winner && res.why === 'ended', `ranked ${mode}: the replay names the winner (${res && res.why})`);
-    ok(res.coins[G.winner] > 0 && res.dama[G.winner] > [30, 40][G.winner], `ranked ${mode}: the winner is paid and gains DAMA`);
+    ok(res.coins[G.winner] > 0 && res.dama[G.winner] > [30, 40][G.winner], `ranked ${mode}: the winner is paid and gains rating`);
     const pay = R.payouts(); ok(pay.length === 2 && pay[G.winner].body.won && pay[G.winner].body.coins === res.coins[G.winner], `ranked ${mode}: both vaults are told`);
     const v = vault(); v.init('h'); const before = v.me().dama;
     v.ranked(pay[0].body); v.ranked(pay[0].body);
@@ -432,7 +432,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   { const { R, sent } = roomOf('nine', 9, 0); ok(R.disconnected(1) && sent[0].some(m => m.t === 'away'), 'ranked: the other seat hears one has gone');
     const gone = R.get('gone'); gone[1] = Date.now() - RETURN_WITHIN - 1; R.set('gone', gone); ok(R.timers() === 'check', 'ranked: gone too long ends it');
     const r = finish(R); ok(r.winner === 0 && r.why === 'left', 'ranked: one who left loses'); }
-  // a stand-in: its shots come from seat 0's device; DAMA moves as in any game; only the player's vault is told
+  // a stand-in: its shots come from seat 0's device; rating moves as in any game; only the player's vault is told
   { const G = rankedGame('eight', 11, 0), { R } = roomOf('eight', 11, 0, { name: 'S', icon: 0, dama: 40, level: 2 });
     for (const x of G.msgs) R.message(0, Object.assign({}, x.m, { as: x.seat }));
     R.message(0, { t: 'end' }); const r = finish(R);
@@ -486,7 +486,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       ok(R.idleIn() === null && R.timers() === null, 'B15: a seat away is the away rule\'s (RETURN_WITHIN), not the quiet turn\'s'); }
   }
   console.log('ranked rooms: checked');
-  // 증강 당구's room: the table's vote, the steps after it, the game played again for the winner, no DAMA
+  // 증강 당구's room: the table's vote, the steps after it, the game played again for the winner, no rating
   {
     const A = E.ARCADE, initArc = standIn => { const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
       R.init({ room: 'e'.repeat(32), mode: 'arcade', kind: 'arcade', seed: 77, first: 0, standIn: standIn || null, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: standIn ? null : 'b'.repeat(32), token: 't1', name: 'B', icon: 1, dama: 40 }] });
@@ -510,7 +510,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       R.message(1, { t: 'card', step: 2, id: A.cards(77, 2, 1)[0] }); const a = R.get('arc'); a.open.by = Date.now() - 1; R.set('arc', a); R.timers();
       const p2 = sent[1].find(m => m.t === 'step' && m.step === 2); ok(p2 && A.cards(77, 2, 0).includes(p2.ids[0]) && p2.ids.includes(p2.id), 'arcade: a card not given in time is one of the three');
       for (const x of G.msgs) R.message(x.seat, x.m); R.message(0, { t: 'end' }); R.message(1, { t: 'end' });
-      const r = finish(R); ok(G.winner != null && r.winner === G.winner && r.dama.join() === '30,40' && R.payouts().every(p => p.body.kind === 'arcade' && p.body.dama === 0), `arcade: the replay names the winner, no DAMA (${r.why})`); }
+      const r = finish(R); ok(G.winner != null && r.winner === G.winner && r.dama.join() === '30,40' && R.payouts().every(p => p.body.kind === 'arcade' && p.body.dama === 0), `arcade: the replay names the winner, no rating (${r.why})`); }
     { const { R, sent } = initArc({ name: 'S', icon: 0, dama: 40, level: 2 }); R.connected(0);
       ok(R.arcIn() != null, 'arcade: with a stand-in the vote starts when the player comes in');
       R.message(0, { t: 'card', step: 0, id: 'bumpy' }); ok(sent[0].some(m => m.t === 'step'), 'arcade: a stand-in\'s vote is the room\'s, there already');
@@ -524,11 +524,11 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(Number.isInteger(E.PHYS_V) && E.PHYS_V === PHYS_V, `physics version: engine ${E.PHYS_V}, server ${PHYS_V}`);
 }
 
-// a ranked game moves DAMA, an invite game does not; the break cue is not for sale
+// a ranked game moves rating, an invite game does not; the break cue is not for sale
 {
   const v = vault(); v.init('h');
   v.ranked({ room: '1'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3 }); v.ranked({ room: '3'.repeat(32), mode: 'eight', won: true, coins: 10, dama: 3, kind: 'invite' });
-  ok(v.me().dama === E.ECONOMY.DAMA_START + 3 && v.me().drops === undefined, 'ranked: a win moves DAMA, an invite game none; no drops any more');
+  ok(v.me().dama === E.ECONOMY.DAMA_START + 3 && v.me().drops === undefined, 'ranked: a win moves rating, an invite game none; no drops any more');
   // (owner 11-16: a rating for each family - 캐롬, 포켓, 스누커; a game moves its own; me().dama is the highest, the ticket the family's)
   { const w = vault(); w.init('h'); const S = E.ECONOMY.DAMA_START;
     w.ranked({ room: '5'.repeat(32), mode: 'four', won: true, coins: 0, dama: 40, rd: 200 }); w.ranked({ room: '6'.repeat(32), mode: 'snooker', won: false, coins: 0, dama: -20 });
@@ -597,7 +597,7 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(R.state(0).kind === 'invite' && R.state(0).rules.target === 3 && R.log().opts.cushions === 1, 'invite: the room plays the host\'s rules');
   R.message(1, { t: 'resign' }); let k = 0; while (R.work(500) && k < 1000) k++;
   const res = R.get('result'), pay = R.payouts();
-  ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no DAMA moves');
+  ok(res.winner === 0 && res.dama[0] === 30 && res.dama[1] === 50 && pay.every(p => p.body.kind === 'invite' && p.body.dama === 0), 'invite: no rating moves');
   const o2 = I.open(host), o3 = I.open(Object.assign({}, host, { mode: 'eight' })); ok(o2.code === o3.code && I.peek(o3.code).mode === 'eight', 'invite: a host keeps one code, opened again with new rules');
   // the list of open rooms: only listed ones, never their codes; a password guards taking one from the list
   { const L = new InviteCore(), a = L.open({ acct: 'a'.repeat(32), dama: 500, name: 'A', mode: 'eight', listed: true }), b = L.open({ acct: 'b'.repeat(32), dama: 600, name: 'B', mode: 'four', listed: true, pw: '1234' });

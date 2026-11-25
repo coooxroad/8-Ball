@@ -6,10 +6,10 @@
      ranked (랭킹전)        my points x price x (2 if I won, 1/2 if I lost)
      friend (한 기기 둘이서) both players' points x price x 1/4, to the device's account
      cpu (컴퓨터 대전)       my points x price x 1/4
-     invite (초대한 친구와)   my points x price x 1/4 (two devices, the room checks it as a ranked game; no DAMA)
+     invite (초대한 친구와)   my points x price x 1/4 (two devices, the room checks it as a ranked game; no rating)
      tour (투어)            both put up the same stake; the winner takes the pot less the house's cut
    A puzzle pays once, the first time it is solved. Anything bought is priced by its rarity (content/00-rarity.js).
-   DAMA is the ranked score, shown as 레이팅 (until 5.0 as 다마, billiard-hall slang), kept the way chess.com keeps its
+   The ranked score is the rating (레이팅 - called 다마, billiard-hall slang, until 5.0: the code's dama and DAMA_* keep that old name), kept the way chess.com keeps its
    ratings (owner, 11-08) - Glicko: each player has a rating and how sure it is (RD, its deviation). Everyone starts at
    DAMA_START (500) and RD_START (350: not known yet), so a new player's rating moves a lot - over a hundred a game - and
    settles as games are played (RD shrinks, to RD_MIN); a long time away makes it less sure again (RD grows by RD_GROW

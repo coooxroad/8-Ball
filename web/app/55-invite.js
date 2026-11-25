@@ -2,7 +2,7 @@
    On the match's setup (33-desk-play.js) the way is picked: 한 기기에서 (one device, taking turns) or 초대하기. Inviting
    opens a code on the server (server/src/ranked.js InviteCore) - six letters and digits, with a link that carries it -
    and asks after it every two seconds; the friend enters the code (or opens the link) and both are in a room, played as
-   a ranked game is (54-ranked.js, kind 'invite': the host's rules, coins as against the computer, no DAMA).
+   a ranked game is (54-ranked.js, kind 'invite': the host's rules, coins as against the computer, no rating).
    The code stays open only while its screen is up. */
 const INVITE_LINK = 'https://danguuu.com/?join=';
 const invite = {

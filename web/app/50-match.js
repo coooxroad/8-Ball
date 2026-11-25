@@ -167,7 +167,7 @@ function paintResult(r, coins) {
   const side = $('#rSide'); side.textContent = '';
   const pics = resultHighlights();
   if (coins > 0) side.appendChild(el('div', { class: 'dk-spec' }, [el('span', { text: '코인' }), el('b', { text: `+${coins.toLocaleString('ko-KR')}` })]));
-  if (on) ranked.paint();   // (a ranked game: the room plays it again; its word - coins, DAMA - fills in the slate when it comes)
+  if (on) ranked.paint();   // (a ranked game: the room plays it again; its word - coins, rating - fills in the slate when it comes)
   // (copy audit 07-07: online, the key looks for a new opponent)
   $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
   if (on && on.kind === 'invite') ranked.againPaint();

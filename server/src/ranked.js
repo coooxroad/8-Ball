@@ -5,7 +5,7 @@ import { shotError } from './match-log.js';
 import { datasetRow } from './dataset-core.js';
 
 /* The ranked lobby: one Durable Object per game (8볼, 9볼, 4구, 3구). Players waiting for a ranked game ask it every couple
-   of seconds; it pairs two whose DAMA is close, the range widening the longer they wait. Nobody close enough after a
+   of seconds; it pairs two whose rating is close, the range widening the longer they wait. Nobody close enough after a
    while - each player's own, drawn when they start waiting (standInDelay) - a stand-in takes the other seat - a person-like computer player (web/ai/), shown as a player like any
    other. A pair (or a player and a stand-in) get a room (room.js) and each a token for their seat.
    What is waiting is held in memory only: a lobby that restarts loses at most a few seconds of waiting. */
@@ -96,7 +96,7 @@ export class LobbyCore {
     this.wait.delete(a.acct); if (b.acct) this.wait.delete(b.acct);
     const room = hex(16), seed = crypto.getRandomValues(new Uint32Array(1))[0], first = Math.random() < 0.5 ? 0 : 1, seats = [a, b];
     const tokens = [hex(16), hex(16)], pub = s => ({ name: s.name, icon: s.icon, dama: s.dama, gear: s.gear || null });
-    // (증강 당구's lobby: its rooms are arcade games - no DAMA, the vote and the augments: RoomCore)
+    // (증강 당구's lobby: its rooms are arcade games - no rating, the vote and the augments: RoomCore)
     const kind = this.mode === 'arcade' ? 'arcade' : undefined;
     // the rules, by the two players' tiers (economy.js rankedRules), worked out once here and given to the room and to both
     // devices alike - the devices once played the base rules while the room replayed the tier's, and every ranked game
@@ -124,7 +124,7 @@ export class LobbyCore {
 
 /* Games with an invited friend: the host opens a code (six letters and digits, nothing that reads two ways) and asks after
    it every couple of seconds; a friend who enters the code - or opens the link with it - takes the other seat, and a room
-   opens as for a ranked game (kind 'invite': the host's rules, no DAMA). Held in memory in one Durable Object
+   opens as for a ranked game (kind 'invite': the host's rules, no rating). Held in memory in one Durable Object
    (the lobby named 'invites'); a code whose host has not asked for INVITE_IDLE is gone. */
 export const INVITE_IDLE = 30000;
 // a listed room's game being played stays in the list (경기 중, to watch) this long at most - the room says when it ends
@@ -303,9 +303,9 @@ export class InviteCore {
    gives both the same table). The room passes them on and keeps the log. When the game ends - both say so, or one seat
    has been gone RETURN_WITHIN - the room plays the log again (check.js, a slice at a time) and that replay, not what
    either device says, decides: who won, the points, and a seat that sent a shot that does not fit (it loses). Then each
-   player's vault is paid: coins (economy.js, ranked) and the new DAMA.
+   player's vault is paid: coins (economy.js, ranked) and the new rating.
    A stand-in seat (a person-like computer player, lobby.js) is played by the other player's device: its shots come in
-   from seat 0, marked for seat 1. It counts exactly as any game - the same DAMA, the same coins - so nothing, on the
+   from seat 0, marked for seat 1. It counts exactly as any game - the same rating, the same coins - so nothing, on the
    screen or in the numbers, tells a stand-in from a person (the owner's rule).
 
    Messages, as JSON. From a device: { t: 'aim', ... } (passed on as it is: the other screen shows the aiming),
@@ -566,12 +566,12 @@ export class RoomCore {
     this.result(winner, points, why);
     return false;
   }
-  // winner: a side (in 2 seats, the seat); coins and DAMA by seat
+  // winner: a side (in 2 seats, the seat); coins and rating by seat
   result(winner, points, why) {
     const r = this.get('room'), seats = this.get('seats'), n = seats.length, res = { winner, points, why, coins: seats.map(() => 0), dama: seats.map(q => q.dama) };
     const inv = r.kind === 'invite', rated = !r.kind || r.kind === 'ranked';
     // (a draw in a friend's room pays each their points, as a loss would; a ranked game has no draws)
-    // (증강 당구 moves no DAMA, and pays nothing yet - economy.js matchCoins knows no 'arcade')
+    // (증강 당구 moves no rating, and pays nothing yet - economy.js matchCoins knows no 'arcade')
     if (winner != null || (inv && why === 'draw')) {
       if (rated) { const r = E.damaAfter(seats[0].dama, seats[1].dama, winner === 0, seats[0].rd, seats[1].rd); res.dama = [r[0], r[1]]; res.rd = [r[2], r[3]]; }
       for (let s = 0; s < n; s++) res.coins[s] = seats[s].bot ? 0 : E.matchCoins(inv ? 'invite' : rated ? 'ranked' : r.kind, r.mode, sideOf(s) ? [points[1], points[0]] : points, winner === sideOf(s));
@@ -588,7 +588,7 @@ export class RoomCore {
     this.send('w', Object.assign({ t: 'result' }, res, { seat: -1 }));
     return res;
   }
-  // what each player's vault is told (the Durable Object sends it, again until the vault has it): coins, and DAMA as a change
+  // what each player's vault is told (the Durable Object sends it, again until the vault has it): coins, and rating as a change
   // (a player may have finished another game since this one began)
   payouts() {
     const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', seats.map(() => false));

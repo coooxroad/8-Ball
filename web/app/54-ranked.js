@@ -1,11 +1,11 @@
 /* ================= 랭킹전: finding an opponent, and playing them through the server =================
-   The 랭킹전 panel picks a game; the lobby (server/src/ranked.js) pairs this player with someone close in DAMA, or after a
+   The 랭킹전 panel picks a game; the lobby (server/src/ranked.js) pairs this player with someone close in rating, or after a
    while seats a stand-in (a person-like computer player, ai/), which looks like anyone else. Then it is a match like any
    other (50-match.js), with match.ctx.online = the game below:
      each device plays its own shots and sends them to the room; the other's shots come in and are played here the same
      way (the table first put exactly where the shot was struck from), as the computer's shots are (flow.auto);
      a stand-in's shots are worked out here, and sent as its seat's;
-     the room plays the whole game again when it ends, and its result - who won, the coins, the DAMA - is the one shown.
+     the room plays the whole game again when it ends, and its result - who won, the coins, the rating - is the one shown.
    The seats are the room's: seat 0 on the left. */
 // this player's rating in a game's family (economy.js familyOf - each family its own, 11-16), and a rating's tier name
 const famDama = mode => net.me ? (net.me.damas ? net.me.damas[familyOf(mode)] : net.me.dama) : ECONOMY.DAMA_START;
@@ -327,7 +327,7 @@ const ranked = {
   resign(as) { const o = ranked.on; if (!o || o.done) return; ranked.send(o.standIn && as === 1 - o.seat ? { t: 'resign', as } : { t: 'resign' }); },
   /* The room's result is the result. Still playing here (the other player resigned or left): it ends now. Already ended
      here with another winner (a shot that did not play out the same, a resignation not taken): the records go back to
-     before and the game is finished again with the room's winner - the title, the records, the coins and DAMA all agree.
+     before and the game is finished again with the room's winner - the title, the records, the coins and rating all agree.
      No winner (the room found nobody to blame - neither came, or the game stopped): it ends as 무효, nobody's win or loss. */
   result(m) {
     const o = ranked.on; if (!o || o.done) return;

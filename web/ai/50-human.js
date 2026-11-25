@@ -317,7 +317,7 @@
     const guide = ranked && !chosen.el && !turn.throwing ? humanGuideAim(chosen, person, turn.tilt) : [];
     const linedUp = guide.length ? guide[guide.length - 1] : chosen.angle;
     const shot = { pos: chosen.pos, angle: linedUp + noise() * angleError + bankError + thicknessError, V: g.vOf(clamp(power * (1 + practice.paceBias * (1 - practice.touch) * 0.035), 0, 1)), a: a * spinScale, b: b * spinScale, el: chosen.el };
-    // A deliberate full-power release remains full power, including for the lower-DAMA strong hitter.
+    // A deliberate full-power release remains full power, including for the lower-rated strong hitter.
     if (chosen.kind === 'blast') shot.V = g.vOf(1);
     const otherPosition = shot.pos && candidates.find(k => k.pos && Math.hypot(k.pos[0] - shot.pos[0], k.pos[1] - shot.pos[1]) > 0.1);
     const otherLine = ranked && visible.find(k => Math.abs(Math.atan2(Math.sin(k.angle - shot.angle), Math.cos(k.angle - shot.angle))) > 0.06);

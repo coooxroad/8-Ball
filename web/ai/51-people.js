@@ -92,7 +92,7 @@
     return { ...person, practice: humanPractice(person) };
   }
   function humanPerson(persona) {
-    // Existing ranked rooms may carry only name/icon/DAMA/level. Identity selects stable axes across reloads and turns;
+    // Existing ranked rooms may carry only name/icon/rating/level. Identity selects stable axes across reloads and turns;
     // no extra gameplay random draws or mutation of the room's saved persona are needed for this compatibility path.
     const identity = `${persona.name || ''}|${persona.icon || 0}|${persona.dama || 30}`;
     let hash = 2166136261; for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619) >>> 0;
