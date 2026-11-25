@@ -145,20 +145,28 @@ function evaluate(z, seed) {
   const E = L.env(z), T = L.Z.turnsOf(z);
   let found = search(E, null, 0, [], 400);
   if (!found.length) return null;
-  // a cushion asked for (on an outline): one a way meets before scoring that the easiest way does not
+  // a cushion asked for (on an outline): a rail a way meets before scoring that the easiest way does not - a whole rail
+  // (tables.js rails: a curve's pieces one cushion), none shorter than RAIL.min (owner 11-25: generous, or it takes away
+  // the player's own way), named by its middle edge
   if (z.wantNeed) {
     delete z.wantNeed;
-    const fam0 = AI.families(z, found), easy = new Set((fam0[0].best.ev.edges || []).map(e => e[0]));
-    const cand = [...new Set(found.flatMap(f => (f.ev.edges || []).filter(e => (L.Z.gameOf(z) === 'pocket' || e[1] < 2) && e[0] < 1000).map(e => e[0])))].filter(e => !easy.has(e));
+    const R = E.w0.shape && E.w0.shape.spec ? E.w0.shape.spec.rails : null, railOf = e => R && R.of[e] != null ? R.of[e] : -1;
+    const fam0 = AI.families(z, found), easy = new Set((fam0[0].best.ev.edges || []).map(e => railOf(e[0])));
+    const met = found.flatMap(f => (f.ev.edges || []).filter(e => (L.Z.gameOf(z) === 'pocket' || e[1] < 2) && e[0] < 1000).map(e => railOf(e[0])));
+    const cand = [...new Set(met)].filter(r => r >= 0 && !easy.has(r) && R.len[r] >= L.TABLE_OUTLINES.RAIL.min);
     if (!cand.length) return null;
-    z.need = [cand[Math.floor(L.seeded(seed)() * cand.length)]];
+    const r = cand[Math.floor(L.seeded(seed)() * cand.length)], es = R.edges[r];
+    z.need = [es[Math.floor(es.length / 2)]];
     const E2 = L.env(z); found = found.filter(f => L.turn(E2, f.s, null, 0, []).ok).map(f => Object.assign(f, { D: AI.findD(z, f.tr, 0) }));
     if (!found.length) return null; return finish(z, L.env(z), found, seed, 1);
   }
   return finish(z, E, found, seed, T);
 }
 function finish(z, E, found, seed, T) {
-  const fams = AI.families(z, found).slice(0, 3), ways = [];
+  // (the three easiest routes to see, and the one with the most shots that work if it is not among them - with a whole
+  // rail asked for (11-25) the easiest to see were sometimes needles while a wide way went unrated)
+  const all = AI.families(z, found), fams = all.slice(0, 3), ways = [], wide = all.slice(3).sort((a, b) => b.n - a.n)[0];
+  if (wide) fams.push(wide);
   let room = 0, sol = null;
   for (const f of fams) {
     const c = AI.centre(E, f.best.s, null, 0, []); if (!ways.length) room = c.room;

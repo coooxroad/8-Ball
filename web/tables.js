@@ -139,13 +139,36 @@ const TABLE_OUTLINES = (() => {
     return { x: r4(at[0] + nx / k * push), y: r4(at[1] + ny / k * push), r: r4(r), cut: true };
   }
   const byId = id => L.find(t => t.id === id) || null;
+  /* The outline's rails - the cushions as a player names them: its edges in runs, edges meeting at under RAIL.turn (a
+     curve drawn in short straight pieces) one rail, a run longer than RAIL.max cut into equal parts where its pieces
+     join. A cushion a puzzle asks for (puzzles.js need) is a rail: met anywhere along it counts (owner 11-25: a 5 cm
+     piece of the wave was no cushion to aim at, "목표 쿠션은 좀 널널해야 재밌다"), and none shorter than RAIL.min is
+     asked for (tools/puzzles/gen.js). { of: each edge's rail, edges: each rail's edges in order, len: each rail's length } */
+  const RAIL = { turn: 0.3, max: 1.3, min: 0.45 };
+  function rails(poly) {
+    const n = poly.length, len = i => Math.hypot(poly[(i + 1) % n][0] - poly[i][0], poly[(i + 1) % n][1] - poly[i][1]);
+    const turnAt = i => { const p = poly[(i - 1 + n) % n], c = poly[i], q = poly[(i + 1) % n], ax = c[0] - p[0], ay = c[1] - p[1], bx = q[0] - c[0], by = q[1] - c[1];
+      return Math.acos(Math.max(-1, Math.min(1, (ax * bx + ay * by) / ((Math.hypot(ax, ay) * Math.hypot(bx, by)) || 1)))); };
+    const starts = []; for (let i = 0; i < n; i++) if (turnAt(i) >= RAIL.turn) starts.push(i);
+    if (!starts.length) starts.push(0);
+    const edges = [];
+    starts.forEach((s0, k) => {
+      const e0 = starts[(k + 1) % starts.length], run = []; let i = s0; do { run.push(i); i = (i + 1) % n; } while (i !== e0);
+      const total = run.reduce((a, j) => a + len(j), 0), parts = Math.max(1, Math.ceil(total / RAIL.max - 1e-9));
+      let acc = 0, cur = [], part = 1;
+      for (const j of run) { cur.push(j); acc += len(j); if (part < parts && acc >= total * part / parts - len(j) / 2) { edges.push(cur); cur = []; part++; } }
+      if (cur.length) edges.push(cur);
+    });
+    const of = new Array(n); edges.forEach((g, gi) => g.forEach(j => { of[j] = gi; }));
+    return { of, edges, len: edges.map(g => r4(g.reduce((a, j) => a + len(j), 0))) };
+  }
   // the spec physics.js shape() takes, for table P: the outline stretched to P's cloth, its pockets if P has pockets
   function spec(P, id) {
     const t = byId(id); if (!t) return null;
     const sx = (P.HL - 0.003) / H, sy = (P.HW - 0.003) / W, fit = q => q.map(p => [r4(p[0] * sx), r4(p[1] * sy)]);
     const out = fit(t.out);
-    return { poly: out, islands: (t.islands || []).map(fit), holes: P.POCKETED ? fit(t.pk || auto(t.out)).map(at => hole(out, at, P)) : [], table: t.id };
+    return { poly: out, islands: (t.islands || []).map(fit), holes: P.POCKETED ? fit(t.pk || auto(t.out)).map(at => hole(out, at, P)) : [], table: t.id, rails: rails(out) };
   }
-  return { list: L, byId, spec, ids: L.map(t => t.id) };
+  return { list: L, byId, spec, ids: L.map(t => t.id), rails, RAIL };
 })();
 if (typeof module !== 'undefined') module.exports = { TABLES, CAROM, SNOOKER, physicsFor, TABLE_SHAPES, TABLE_OUTLINES };

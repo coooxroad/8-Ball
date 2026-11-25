@@ -613,12 +613,17 @@
       }
       if (cv.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(cv, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(cn, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(cu, 2)); const m = new THREE.Mesh(g, cushMat); m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); }
       if (lv.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(lv, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(ln, 3)); const m = new THREE.Mesh(g, linerMat); m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); }
-      // the need's yellow bands (puzzles.js need): along the rubber's top, numbered on the rail when there is more than one
-      const need = (sh.spec && sh.spec.need) || [];
+      // the need's yellow bands (puzzles.js need): along the rubber's top, the whole rail the edge asked for is on (tables.js
+      // rails: a curve's pieces are one cushion), numbered on the rail when there is more than one
+      const need = (sh.spec && sh.spec.need) || [], railOf = sh.spec && sh.spec.rails ? sh.spec.rails.of : null;
       need.forEach((e, ni) => {
-        const seg = outer.filter(q => q.e === e && !q.seam), band = [];
+        const on = q => q.e === e || railOf && q.e != null && q.e < 1000 && railOf[q.e] != null && railOf[q.e] === railOf[e];
+        const idx = []; outer.forEach((q, i) => { if (on(q) && !q.seam) idx.push(i); });
+        const seg = idx.map(i => outer[i]), band = [];
         const zAt = d => NOSE + d / SH_CW * (RAIL_Z - NOSE) + 0.0009;
         for (let k = 0; k + 1 < seg.length; k++) {
+          // (only neighbours on the way round: a rail that runs past the outline's first edge is listed in two pieces)
+          if (idx[k + 1] - idx[k] > 2) continue;
           const q0 = seg[k], q1 = seg[k + 1];
           const a = shapeAt(q0, 0.008), b = shapeAt(q1, 0.008), c = shapeAt(q1, 0.04), d = shapeAt(q0, 0.04);
           if (cutAt((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, SH_BEV + 0.014)) continue;
