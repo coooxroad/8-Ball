@@ -36,6 +36,7 @@ export class Vault extends DurableObject {
     if (path === '/link/joined') return json(this.core.joinPrize());
     // from the front door's admin console only (index.js checks who the admin is first)
     if (path === '/admin/view') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json(this.core.adminView()); }
+    if (path === '/admin/games') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json(this.core.adminGames(body)); }
     if (path === '/admin/grant') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.adminGrant(body); if (r.ok) this.listed(true); return json(r); }
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)

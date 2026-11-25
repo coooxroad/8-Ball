@@ -71,6 +71,7 @@ const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-2
    POST /v1/admin/grant { acct, coin, dia, kind, id, take, dama, debug, pzr, why }   give or take; set the rating (pzr: { k, r } a
                                                        puzzle rating); debug mode on or off (core.js adminGrant)
    POST /v1/admin/puzzles { op, ... }                  the puzzles: list, get, set, reset, off, batch, cfg, log (puzzlebook-core.js admin)
+   POST /v1/admin/games { acct, room?, before?, limit? }   the account's ranked games kept 90 days (core.js adminGames): a list, or one whole
    GET  /v1/admin/catalog                              every item there is, to give */
 export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
 /* Or a password (owner 11-10: on a phone or tablet the Google window would not let another account be chosen without
@@ -223,7 +224,7 @@ async function frontDoor(request, env) {
     }
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
-    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset|puzzles)$/.exec(url.pathname);
+    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset|puzzles|games)$/.exec(url.pathname);
     if (adm) return adminRoute(adm[1], request, env);
     const link = /^\/v1\/link\/(google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);

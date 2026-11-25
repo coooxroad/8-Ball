@@ -342,6 +342,25 @@ export const RANKED_RULES = E.RANKED_RULES;
    sides are what wins and loses. A seat of the computer's (bot) is played by the host's device (seat 0), its shots sent
    'as' that seat, as a stand-in's are. Everything below takes 2 or 4 seats. */
 const sideOf = seat => seat % 2;
+/* A ranked game as a player's account keeps it (core.js VaultCore.ranked, 90 days - fair play): the game, who sat where (a
+   rating; the other a person or a stand-in), the result, and this seat's shots - each with the table before it (to be
+   played again), how it was struck, and how it was aimed (bh). A shot: [n, aim, V, a, b, el, in hand, cue, x, y, on, ...]
+   (as the dataset's, its place in the game first), and its bh beside it. */
+export function recordOf(r, seats, seat, shots, winner, points, res) {
+  const r5 = x => Math.round(x * 1e5) / 1e5, mine = [], bh = [];
+  shots.forEach((q, n) => {
+    if (!q || q.timeout || q.seat !== seat || !q.s || !Array.isArray(q.s.balls)) return;
+    const row = [n, r5(q.aim), r5(q.V), r5(q.a || 0), r5(q.b || 0), r5(q.el || 0), q.inHand ? 1 : 0, q.s.cue | 0];
+    for (const b of q.s.balls) row.push(r5(b[0]), r5(b[1]), b[2] ? 1 : 0);
+    mine.push(row); bh.push(q.bh || null);
+  });
+  const o = seats[1 - seat];
+  return { v: 1, room: r.room, at: r.at, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || null, seat, me: seats[seat].dama, opp: o ? o.dama : null, oppPerson: !!(o && o.acct && !o.bot && !(r.standIn && seat === 0)),
+    // (the other's account and both rating changes: what fair play gives back to someone who lost to a cheat - owner 11-25)
+    oppAcct: o && o.acct && !o.bot && !(r.standIn && seat === 0) ? o.acct : null, dd: res && res.dama ? [res.dama[seat] - seats[seat].dama, o ? res.dama[1 - seat] - o.dama : 0] : null,
+    winner, points, n: shots.length, shots: mine, bh };
+}
+
 export class RoomCore {
   // sql: the room's SQLite; send(seat, msg): to that seat's device, if it is there
   constructor(sql, send, tx) {
@@ -407,7 +426,7 @@ export class RoomCore {
       if (EMOTES.has(id) && now - at[seat] >= 1500) { at[seat] = now; this.others(seat, { t: 'emote', id, seat }); }
       return null;
     }
-    if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null, seat }; this.others(seat, a); return null; }
+    if (m.t === 'aim') { const a = { t: 'aim', aim: +m.aim || 0, power: +m.power || 0, spin: m.spin && { x: +m.spin.x || 0, y: +m.spin.y || 0 }, el: +m.el || 0, pos: Array.isArray(m.pos) ? m.pos.slice(0, 2).map(Number) : null, seat }; this.aimSeen(seat, a.aim); this.others(seat, a); return null; }
     // how a shot came out on the device that struck it, for the other to check against (relayed as it is)
     if (m.t === 'res') { if (Number.isInteger(m.n) && m.st && typeof m.st === 'object') this.others(seat, { t: 'res', n: m.n, st: m.st }); return null; }
     if (m.t === 'card') { this.arcHear(seat, m); return null; }
@@ -428,6 +447,8 @@ export class RoomCore {
       else {
         const q = m.shot; if (shotError(q, r.mode) || (q && q.timeout)) return this.over('a shot that does not fit', seat);
         body = { s: { cue: q.s.cue, ice: !!q.s.ice, balls: q.s.balls }, aim: q.aim, V: q.V, a: q.a, b: q.b, el: q.el || 0, inHand: !!q.inHand, seat: as, by: seat };
+        // (how the turn was aimed - its player's own, not a stand-in's: aimTook)
+        if (as === seat) { const bh = this.aimTook(seat, q.aim, m.bh); if (bh) body.bh = bh; }
       }
       this.set('turnAt', Date.now());
       this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, m.n, JSON.stringify(body));
@@ -444,6 +465,25 @@ export class RoomCore {
     // (in 2:2 a player resigning gives the game up for their side; loser: a side)
     if (m.t === 'resign') return r.standIn && seat === 0 && m.as === 1 ? this.over('resigned', 1, true) : this.over('resigned', sideOf(seat));
     return null;
+  }
+  /* How a turn was aimed (owner 11-25, the fair-play plan's 행동 - a person drags the aim about and settles it by little
+     nudges, takes longer over a hard shot; an aiming engine puts it there at once): from the aim the device passes on
+     (15 a second while it moves) - how many, how many nudges (under 0.2 degrees), how many big swings (over 3), how long
+     from the first to the shot, how long the last big swing came before it - and from the device itself, how long its
+     turn lasted and how often the app went to the background in it (bh: { think, hid }; only a summary is taken, each
+     number held in bounds). Held in memory only - a room that restarts mid-turn loses that turn's summary, no more. */
+  aimSeen(seat, aim) {
+    const t = Date.now(), m = this.aimBh || (this.aimBh = {}), b = m[seat] || (m[seat] = { n: 0, fine: 0, big: 0, first: t, lastBig: t, last: aim });
+    const d = Math.abs(Math.atan2(Math.sin(aim - b.last), Math.cos(aim - b.last)));
+    if (b.n) { if (d < 0.0035) b.fine++; else if (d > 0.052) { b.big++; b.lastBig = t; } }
+    b.n++; b.last = aim;
+  }
+  aimTook(seat, aim, dev) {
+    const t = Date.now(), b = (this.aimBh || {})[seat]; if (this.aimBh) delete this.aimBh[seat];
+    const cap = (v, hi) => Number.isFinite(+v) ? Math.max(0, Math.min(hi, Math.round(+v))) : null;
+    const out = { n: b ? b.n : 0, fine: b ? b.fine : 0, big: b ? b.big : 0, span: b ? cap(t - b.first, 600000) : null, settle: b ? cap(t - b.lastBig, 600000) : null };
+    if (dev && typeof dev === 'object') { out.think = cap(dev.think, 600000); out.hid = cap(dev.hid, 99); }
+    return out;
   }
   // the room looked again: a seat gone too long loses
   timers() {
@@ -630,6 +670,9 @@ export class RoomCore {
       const shots = this.shots(), row = shots.length ? datasetRow(r.standIn ? 'standin' : r.kind || 'ranked', Object.assign(this.log(), { shots, winner, points }),
         seats.map((q, i) => ({ rating: q.dama, human: !!q.acct && !q.bot && !(r.standIn && i === 1) }))) : null;
       if (row) { row.key = r.room; this.set('dataset', row); }
+      // (and each person's own, for their account - payouts: a ranked game's shots kept with the account 90 days for fair
+      // play, owner 11-25 - their shots only, how each was aimed, and the game round them)
+      if (rated) this.set('recs', seats.map((q, i) => q.acct && !q.bot && !(r.standIn && i === 1) ? recordOf(r, seats, i, shots, winner, points, res) : null));
     }
     this.sql.exec(`DELETE FROM shots`);
     for (let s = 0; s < n; s++) this.send(s, Object.assign({ t: 'result' }, res, { seat: s }));
@@ -642,7 +685,8 @@ export class RoomCore {
     const res = this.get('result'), seats = this.get('seats'), r = this.get('room'), paid = this.get('paid', seats.map(() => false));
     if (!res) return [];
     return seats.map((q, s) => s).filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
-      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === sideOf(s), draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined } }));
+      body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === sideOf(s), draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined,
+        rec: (this.get('recs', null) || [])[s] || undefined } }));
   }
   paid(seat) { const p = this.get('paid', this.get('seats').map(() => false)); p[seat] = true; this.set('paid', p); }
 }

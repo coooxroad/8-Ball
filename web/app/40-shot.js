@@ -4,7 +4,7 @@ function beginTurn(first) {
   // (증강 당구: the table's vote or an augments' round comes first - the turn begins once it is done: 55-arcade.js)
   if (arcade.hold(first)) return;
   // (a turn begins clean: a 4구 roll-out left mid-roll by another flow is not this flow's - Codex B19)
-  st.rolling = false; st.phase = 'aim'; st.clock = clockLimit(); st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
+  st.rolling = false; st.phase = 'aim'; st.turnAt = Date.now(); st.hid = 0; st.clock = clockLimit(); st.power = 0; st.spin = { x: 0, y: 0 }; st.el = st.elWant = 0; setPowerUI(0); setSpinUI(); setKindUI(); $('#spinPop').hidden = true;
   const auto = flow.auto();
   if (auto) { st.phase = 'auto'; st.auto = { t: 0, plan: null, from: st.aim, src: auto }; }
   else if (!first || game.mode.table === 'carom') {

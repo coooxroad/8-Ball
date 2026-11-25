@@ -289,7 +289,10 @@ const ranked = {
     const o = ranked.on; if (!o) return;
     const who = game.shooter();
     o.lastMine = ranked.ours(o);
-    if (o.lastMine) ranked.send({ t: 'shot', n: o.n, shot: { s: snap, aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing }, as: o.team ? who : game.turn });
+    // (bh: how long this player's turn took here and how often the app went to the background in it - the room keeps a
+    // summary of how a turn was aimed for fair play: server ranked.js aimTook; a stand-in's or a computer seat's: none)
+    const own = o.team ? who === o.seat : game.turn === o.seat, bh = own ? { think: Date.now() - (st.turnAt || Date.now()), hid: st.hid || 0 } : undefined;
+    if (o.lastMine) ranked.send({ t: 'shot', n: o.n, shot: { s: snap, aim: st.aim, V, a, b, el: el || 0, inHand: !!game.placing }, as: o.team ? who : game.turn, bh });
     o.n++;
   },
   timedOut() {
@@ -413,3 +416,5 @@ const ranked = {
   leave() { app.classList.remove('watching'); arcade.close(); const o = ranked.on; if (!o) return; if (!o.done && !o.watch) ranked.resign(); o.done = true; o.after = false; ranked.unplug(o); ranked.on = null; },
 };
 press('#rkCancel', () => ranked.cancel());
+// (a turn's times in the background, for the room's summary of how it was aimed - ranked.struck)
+document.addEventListener('visibilitychange', () => { if (document.hidden && ranked.on && st.phase === 'aim') st.hid = (st.hid || 0) + 1; });

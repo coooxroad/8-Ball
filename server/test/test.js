@@ -396,6 +396,10 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     const v = vault(); v.init('h'); const before = v.me().dama;
     v.ranked(pay[0].body); v.ranked(pay[0].body);
     ok(v.me().dama === before + pay[0].body.dama && v.me().coin === pay[0].body.coins, `ranked ${mode}: a vault takes a room's result once`);
+    // (owner 11-25, fair play: each person's ranked game kept with their account - their shots, how each was aimed)
+    { const rec = pay[0].body.rec, mine = G.msgs.filter(x => x.m.t === 'shot' && x.seat === 0).length, g0 = v.adminGames({}), one = v.adminGames({ room: pay[0].body.room });
+      ok(rec && rec.seat === 0 && rec.shots.length === mine && rec.bh.length === mine && rec.dd && rec.dd[0] === pay[0].body.dama && rec.oppPerson === true, `ranked ${mode}: the record has the seat's own shots (${rec && rec.shots.length}/${mine}) and both rating changes`);
+      ok(g0.games.length === 1 && g0.games[0].shots === mine && one.ok && one.game.rec.shots.length === mine, `ranked ${mode}: the vault keeps the game once, and gives it to the admin`); }
     // a seat that moves a ball before its shot is caught by the replay, and loses
     if (G.msgs.length > 2) {
       const { R: R2 } = roomOf(mode, seed, first), j = G.msgs.findIndex((x, i) => i > 0 && x.seat === 1);
@@ -406,6 +410,13 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
       }
     }
   }
+  // how a turn was aimed (RoomCore.aimSeen / aimTook): nudges, big swings, the device's own word held in bounds
+  { const { sql, tx } = sqlOf(), R = new RoomCore(sql, () => {}, tx);
+    R.aimSeen(0, 0); R.aimSeen(0, 0.001); R.aimSeen(0, 0.002); R.aimSeen(0, 0.3); R.aimSeen(0, 0.301);
+    const bh = R.aimTook(0, 0.301, { think: 9e9, hid: 2 }), none = R.aimTook(0, 0, null);
+    ok(bh.n === 5 && bh.fine === 3 && bh.big === 1 && bh.think === 600000 && bh.hid === 2 && none.n === 0, `the aim summary: ${JSON.stringify(bh)}`);
+    const v = vault(); v.init('k'); v.keepGame('d'.repeat(32), 'four', true, 10, { shots: [] }); v.sql.exec(`UPDATE rgames SET at = ?`, Date.now() - 91 * 86400000); v.keepGame('e'.repeat(32), 'four', false, 0, { shots: [] });
+    ok(v.adminGames({}).games.length === 1, 'a ranked record older than 90 days is let go'); }
   // the room replaying as the game is played (RoomCore.ahead, owner 11-22: results came late): the same result as the
   // check from the start, and at the end little is left to play; a moved ball is still caught; a resignation mid-game
   // still decided from the replay; no endless work on a log that ends in a timeout

@@ -11,6 +11,7 @@ const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS
 const day = () => new Date().toISOString().slice(0, 10);
 export const MAX_DEVICES = 8;
 
+export const RGAME_KEEP = 90 * 86400000;     // ms a ranked game's record is kept (owner 11-25: 90 days)
 export class VaultCore {
   // tx(fn): runs fn as one transaction - all of it happens or none (ctx.storage.transactionSync in the Durable Object)
   constructor(sql, env, tx) {
@@ -25,6 +26,8 @@ export class VaultCore {
     sql.exec(`CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, coins INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS matches (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, kind TEXT, mode TEXT, log TEXT, paid INTEGER, checked INTEGER, status TEXT, cp TEXT, why TEXT)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS ledger (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, what TEXT, coin INTEGER, dia INTEGER)`);
+    // (the ranked games' shots, kept with the account 90 days for fair play - ranked.js recordOf, owner 11-25)
+    sql.exec(`CREATE TABLE IF NOT EXISTS rgames (room TEXT PRIMARY KEY, at INTEGER, mode TEXT, won INTEGER, coins INTEGER, rec TEXT)`);
   }
   get(k, d) { const r = this.sql.exec(`SELECT v FROM kv WHERE k = ?`, k).toArray(); return r.length ? JSON.parse(r[0].v) : d; }
   set(k, v) { this.sql.exec(`INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v`, k, JSON.stringify(v)); }
@@ -188,7 +191,22 @@ export class VaultCore {
   }
   // a game's result from its room (room.js), once per room: coins, the change in rating and how sure it is now - a ranked
   // game, or one with an invited friend (kind 'invite': no rating).
-  ranked({ room, mode, won, draw, coins, dama, kind, rd }) {
+  /* a ranked game's record (ranked.js recordOf) kept 90 days, the oldest let go as a new one comes - its shots, how each
+     was aimed, the coins it paid (what fair play would take back) */
+  keepGame(room, mode, won, coins, rec) {
+    const t = Date.now(); this.sql.exec(`DELETE FROM rgames WHERE at < ?`, t - RGAME_KEEP);
+    const body = rec && typeof rec === 'object' && Array.isArray(rec.shots) ? JSON.stringify(rec) : null;
+    if (body && body.length > 400000) return;
+    this.sql.exec(`INSERT OR IGNORE INTO rgames (room, at, mode, won, coins, rec) VALUES (?, ?, ?, ?, ?, ?)`, room, t, mode, won ? 1 : 0, coins | 0, body);
+  }
+  // the admin's look at them: { list } newest first (no shots), or { room } one whole
+  adminGames({ room, before, limit }) {
+    this.sql.exec(`DELETE FROM rgames WHERE at < ?`, Date.now() - RGAME_KEEP);
+    if (typeof room === 'string') { const r = this.sql.exec(`SELECT room, at, mode, won, coins, rec FROM rgames WHERE room = ?`, room).toArray()[0]; return r ? { ok: true, game: Object.assign({}, r, { rec: r.rec ? JSON.parse(r.rec) : null }) } : { ok: false, why: 'no such game' }; }
+    const n = Math.max(1, Math.min(500, limit | 0 || 200)), rows = this.sql.exec(`SELECT room, at, mode, won, coins, rec FROM rgames WHERE at < ? ORDER BY at DESC LIMIT ?`, +before || 9e15, n).toArray();
+    return { ok: true, games: rows.map(r => { const x = r.rec ? JSON.parse(r.rec) : null; return { room: r.room, at: r.at, mode: r.mode, won: !!r.won, coins: r.coins, me: x && x.me, opp: x && x.opp, oppPerson: x && x.oppPerson, shots: x ? x.shots.length : 0, rec: undefined }; }) };
+  }
+  ranked({ room, mode, won, draw, coins, dama, kind, rd, rec }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
       // (증강 당구 - kind 'arcade' - moves no rating either, and is kept as its own kind)
@@ -199,6 +217,7 @@ export class VaultCore {
       if (!inv && Number.isFinite(rd)) { this.set('rd:' + f, Math.max(E.ECONOMY.RD_MIN, Math.min(E.ECONOMY.RD_MAX, rd))); this.set('rdAt:' + f, Date.now()); }
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
+      if (!inv) this.keepGame(room, mode, !!won, c, rec);
       return { ok: true };
     });
   }
@@ -278,7 +297,7 @@ export class VaultCore {
      (vault.js). What the app asks to be sure: { sure: '삭제' }. */
   erase(body) {
     if (!body || body.sure !== '삭제') return { ok: false, why: 'not sure' };
-    this.tx(() => { for (const t of ['kv', 'owned', 'solved', 'reqs', 'match_claims', 'daily', 'matches', 'ledger']) this.sql.exec(`DELETE FROM ${t}`); });
+    this.tx(() => { for (const t of ['kv', 'owned', 'solved', 'reqs', 'match_claims', 'daily', 'matches', 'ledger', 'rgames']) this.sql.exec(`DELETE FROM ${t}`); });
     return { ok: true };
   }
   // the app's progress, kept for the account's other devices: a small object, as the app gives it
