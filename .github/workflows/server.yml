@@ -12,6 +12,7 @@ on:
       - 'web/game.js'
       - 'web/ai/**'
       - 'web/puzzles.js'
+      - 'web/tools/puzzles/answers.json'   # (the puzzles' answers: only in the server's bundle - server/tools/pack.cjs)
       - 'web/highlights.js'
       - 'web/tables.js'
       - 'web/economy.js'
