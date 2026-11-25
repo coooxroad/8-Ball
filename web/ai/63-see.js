@@ -8,9 +8,8 @@
                          kissPre; pool: a ball other than the cue ball meeting another, a combination's included): where,
                          after how many cushions, and whether it lies on a line one can see from where the balls stand
        kissSeen(s, R)    the chance that player saw it coming
-       kissMeant(...)    the chance the kiss was part of what they played: they saw it, no plain line lay under their
-                         aim (their own hand's spread), and the way through the kiss was one they could play again
-     Then the judge: a point made through a kiss that was likely not meant (under SEE.LUCK) is 행운; a line that would
+     (v1's kissMeant - seen, no plain line under the aim, a way one could play again - is now the seeing AI's inverse
+     planning, 64-see-mind.js seeKiss.) Then the judge: a point made through a kiss that was likely not meant (under SEE.LUCK) is 행운; a line that would
      have come off, spoilt by a kiss the player likely did not see, is 불운; anything between says nothing (owner 11-25:
      "애매하면 표시 x"). The numbers are set by hand for now; the shots players really play (server dataset) will set them
      (plan 6절 9). */
@@ -79,33 +78,3 @@
     return n === 0 ? SEE.VIS.rail : n === 1 ? SEE.VIS.one : SEE.VIS.more;
   }
   const kissSeen = (s, R) => Math.min(0.97, kissVis(s) * seeSkill(R));
-
-  /* the nearest stroke to the one played that comes off without the kiss (carom: no kiss before the point; pool: the first
-     ball potted itself) - by aim first (the judge's steps), then pace: { da, k (pace ratio), res } or null */
-  function plainNear(world, who, shot, view) {
-    const plain = res => res.made && (g.P.POCKETED ? (res.ev.pocketed || []).some(q => q.id === res.ev.firstHit) && !(res.ev.kissPre > 0) : !(res.ev.kissPre > 0));
-    for (const k of [1, 0.88, 1.12]) for (const d of JUDGE_STEPS) for (const s of [1, -1]) {
-      const res = judgeSim(world, who, { ...shot, angle: shot.angle + s * d, V: Math.min(g.vOf(1), shot.V * k) }, view);
-      if (plain(res)) return { da: s * d, k, res };
-    }
-    return null;
-  }
-  // the way through the kiss, as played: how far the aim may stray each side and still make it (the judge's windowOf,
-  // any make counting) - its chance for the player's own hand
-  function madeWindow(world, who, shot, view, R) {
-    const ok = da => judgeSim(world, who, { ...shot, angle: shot.angle + da }, view).made;
-    const end = s => { let lo = 0, hi = 0.002; while (hi < 0.06 && ok(s * hi)) { lo = hi; hi *= 2; } for (let n = 0; n < 4; n++) { const m = (lo + hi) / 2; if (ok(s * m)) lo = m; else hi = m; } return lo; };
-    const half = (end(1) + end(-1)) / 2;
-    return { half, p: winChance(half, seeAim(R)) };
-  }
-  /* was the kiss meant? { story, seen, plain, z, again, p } - p the chance it was part of what was played */
-  function kissMeant(world, who, shot, view, R) {
-    const story = kissStory(world, who, shot); if (!story) return null;
-    const seen = kissSeen(story, R), plain = plainNear(world, who, shot, view), sig = seeAim(R);
-    // (how far, in the player's own spread, the stroke was from a plain line: on it - they were playing that)
-    const z = !plain ? Infinity : Math.hypot(plain.da / sig, Math.log(plain.k) / 0.05);
-    const underPlain = Number.isFinite(z) ? Math.exp(-z * z / 2) : 0;
-    const again = madeWindow(world, who, shot, view, R).p;
-    const p = seen * (1 - underPlain) * (0.4 + 0.6 * Math.min(1, again / 0.3));
-    return { story, seen: Math.round(seen * 100) / 100, plain: !!plain, z: Number.isFinite(z) ? Math.round(z * 10) / 10 : null, again: Math.round(again * 100) / 100, p: Math.round(p * 100) / 100 };
-  }

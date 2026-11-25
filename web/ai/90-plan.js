@@ -10,4 +10,6 @@
   const review = played => judgeShot(played);
   // The lobby opts into v3 using the rating it will display and settle the match against.
   // (judgeKit: the judge's parts, for the tests and the tuning tools - web/test/judge.js)
-  return { plan, review, judgeKit: { JUDGE, kissStory, kissSeen, seeSkill, potLines, potExtras, caromLines, cushionFirst, judgeAim, leaveOf, leaveTeach, judgeView, judgeSim, winChance, winOf, winRace, routeOf, shapeOf, whyBetter, raisedShots, STROKE_SET, PACE, strokeFeatures, strokeGuess }, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };
+  return { plan, review, judgeKit: { JUDGE, kissStory, kissSeen, seeSkill, potLines, potExtras, caromLines, cushionFirst, judgeAim, leaveOf, leaveTeach, judgeView, judgeSim, winChance, winOf, winRace, routeOf, shapeOf, whyBetter, raisedShots, STROKE_SET, PACE, strokeFeatures, strokeGuess,
+    // (the seeing AI, 64-see-mind.js: the puzzle AI, the fair-play tools and the tests use it as it is)
+    see: { MIND, SEE, seeComp, seeHand, seeFaces, seeCast, seeRecord, seeView, seeMindEv, seeMindOk, seeJudge, seeAims, seeSig, seeSweep, seeRefine, seeRuns, seeFeats, seeFindD, seeIdea, seeRoutes, seeChoose, seeInverse, seeKiss, kissStory, kissSeen } }, personaFor, rankedPersonaFor: (rating, random, overrides) => personaFor(rating, random, overrides, true) };

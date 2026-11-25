@@ -576,12 +576,14 @@
     const ev = res.ev, potted = (ev.pocketed || []).map(p => p.id).filter(id => id !== 0);
     // (the kiss that made it - before the point: a kiss after it, or the shot played as a line, is no luck - owner 11-19)
     const odd = g.P.POCKETED ? potted.length && ev.firstHit != null && !potted.includes(ev.firstHit) || ev.kissPre > 0 && line && line.p < 0.15 : ev.kissPre > 0;
-    /* 행운 (owner 11-25): whether this player meant the kiss - saw it coming, was not playing a plain line under it, could
-       play it again (63-see.js kissMeant, at the shooter's rating: played.rating); likely not meant - luck; likely meant -
-       none; between - nothing said ("애매하면 표시 x"). With no kiss to read (none found again), the window as before. */
+    /* 행운 (owner 11-25): whether this player meant the kiss - read by the seeing AI (64-see-mind.js seeKiss, at the
+       shooter's rating: played.rating): the ways a player of that rating sees and plays, and which of them the aim was
+       for (inverse planning); a kiss way likely not meant - luck; likely meant - none; between - nothing said ("애매하면
+       표시 x"). A stroke that comes off with the balls standing still (the kiss did not make it) is no luck. With no kiss
+       to read (none found again), the window as before. */
     const R = Number.isFinite(played.rating) ? played.rating : null;
-    const meantKiss = res.made && odd ? kissMeant(world, who, shot, view, R) : null;
-    const fluke = !!(res.made && odd && (meantKiss ? meantKiss.p < SEE.LUCK : (!line || line.p < 0.3)));
+    const meantKiss = res.made && odd ? seeKiss(world, who, shot, view, R) : null;
+    const fluke = !!(res.made && odd && (meantKiss ? !meantKiss.right && meantKiss.p < SEE.LUCK : (!line || line.p < 0.3)));
     const cuts = JUDGE.CUTS[game] || JUDGE.CUTS.pool, hard = JUDGE.HARD[game] || 0.4;
     const bestLeave = best.filter(k => k.nominal.made && k.worth).reduce((m, k) => Math.max(m, k.worth.mine), 0);
     /* (owner 11-18) A shot that came off is graded by what it left: the next shot set (실용성 high) - 좋음; and the line
@@ -618,9 +620,10 @@
       // 공을 놓쳤습니다')
       if (res.ev.kissPre > 0 && meant.why === 'aim' && Math.abs(meant.da) <= 0.012) cause = 'kiss';
     }
-    // 불운 (owner 11-25): a line that would have come off, spoilt by a kiss this player likely did not see coming (one they
-    // would have seen - on the ball's own line - is theirs to have played round)
-    const kissed = cause === 'kiss' ? kissStory(world, who, shot) : null, unlucky = !!kissed && kissSeen(kissed, R) < SEE.LUCK;
+    // 불운 (owner 11-25): a line that would have come off - with the balls standing still it does (seeKiss: right) -,
+    // spoilt by a kiss this player likely did not see coming (one they would have seen - on the ball's own line - is
+    // theirs to have played round)
+    const kissed = cause === 'kiss' ? seeKiss(world, who, shot, view, R) : null, unlucky = !!kissed && kissed.spoiled && kissed.seen < SEE.LUCK;
     const swing = swingOf(world, who), better = top && top.e - Math.max(asMeant, res.made ? A : -Infinity) > JUDGE.BETTER * swing ? top : null;
     /* where the shot lost what it lost (as golf's Strokes Gained is split by kind of shot, 11-18): the way chosen (the best
        expected against the one meant), the striking (meant against what came, a miss), the next shot (a ball made, the

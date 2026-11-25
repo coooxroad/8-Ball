@@ -24,6 +24,8 @@ jobs:
         run: node web/test/run.js
       - name: The shot judge
         run: node web/test/judge.js
+      - name: The seeing AI
+        run: node web/test/see.js
       - name: Build the page
         run: sh web/build.sh
       - name: Check the page
