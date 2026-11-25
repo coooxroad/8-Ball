@@ -135,6 +135,7 @@ function rvKey(q) {
   if (choiceBad || !r.meant && b && r.grade >= 3) return r.meant || b ? 'choice' : 'none';
   if (!r.meant) return 'none';
   if (r.cause === 'kiss') return 'kiss';
+  if (r.cause === 'picture' && r.picture) return 'picture';
   if (c.given && r.p != null && r.p >= 0.6) return 'chanceMiss';
   if (raised === 'masse' || raised === 'curve') return r.offDeg == null ? 'hardMiss' : (r.offDeg > 0) === ((d.a || 0) > 0) ? 'masseLess' : 'masseMore';
   if (raised === 'jump') return 'jumpMiss';
@@ -197,6 +198,8 @@ function rvFacts(q) {
     ball: rvShort(ballId), first: rvShort(d.first), second: rvShort(d.second), next: rvShort(nx), pocket: pocketK != null ? rvPocket(pocketK) : null,
     rails, cush: String(d.cushions || 0), need: need !== got ? need : null, got: need !== got ? got : null,
     nudge: deg == null ? null : deg < 0.2 ? '아주 조금' : `${deg.toFixed(1)}°`, dir: r.offDeg == null ? null : r.offDeg > 0 ? '왼쪽' : '오른쪽',
+    // (the picture's lean - the way past the guide drawn off the real one: 60-judge.js cause 'picture')
+    lean: r.picture ? `${Math.abs(r.picture.leanDeg).toFixed(1)}°` : null, leanDir: r.picture ? (r.picture.leanDeg > 0 ? '왼쪽' : '오른쪽') : null,
     pa: md && md.pace != null ? String(Math.round(md.pace * 100)) : null, pb: d.pace != null ? String(Math.round(d.pace * 100)) : null,
     reach: carom ? '둘째 공에 닿았습니다' : '들어갔습니다', gap,
     alt: null, grp: R.group ? (R.group === 'solid' ? '단색' : '줄무늬') : null, lowest: R.lowest != null ? String(R.lowest) : null,
@@ -335,6 +338,7 @@ function rvMiss(q, kind, f) {
   const { r, d, carom, v, R } = f;
   switch (kind) {
     case 'kiss': return rvLine(q, 'miss.kiss', v);
+    case 'picture': { const fd = Math.abs(r.picture.fixDeg || 0); return rvLine(q, 'miss.picture', { ...v, nudge: fd < 0.2 ? '아주 조금' : `${fd.toFixed(1)}°`, dir: (r.picture.fixDeg || 0) > 0 ? '왼쪽' : '오른쪽' }); }
     case 'short': return rvLine(q, R.finish ? 'miss.short.finish' : (d.cushions || 0) === 0 ? 'miss.short.none' : 'miss.short', v);
     case 'choice': case 'none': {
       const e = (r.alts || []).find(a => a.easiest) || (r.alts || []).find(a => a.best);
@@ -459,7 +463,7 @@ function rvAltProse(a) {
 // the button under the words: the one shot most worth seeing next
 function rvAction(q, key) {
   const r = q.res, alts = r.alts || [], idx = f => alts.findIndex(f), best = idx(a => a.best), easy = idx(a => a.easiest);
-  if (!r.made && !r.foul && r.fix && /thick|thin|soft|hard|tip|aim|masse|jump|easyMiss|chanceMiss|hardMiss/.test(key)) return { label: '교정한 샷 보기', alt: 'fix' };
+  if (!r.made && !r.foul && r.fix && /thick|thin|soft|hard|tip|aim|masse|jump|picture|easyMiss|chanceMiss|hardMiss/.test(key)) return { label: '교정한 샷 보기', alt: 'fix' };
   if ((key === 'choice' || key === 'none') && easy >= 0) return { label: '쉬운 샷 보기', alt: easy };
   if ((/^safety(Ok|Bad)$/.test(key) || r.foul || r.grade >= 2) && best >= 0) return { label: alts[best].kind === 'safety' ? '수비 보기' : '추천 샷 보기', alt: best };
   return null;

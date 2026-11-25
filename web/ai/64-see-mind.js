@@ -27,7 +27,7 @@
      The numbers are set by hand from what each thing is; the attempts players make (puzzles, ranked records) fit them
      (the Fit workflow, plan §8-3). */
   const MIND = {
-    COMP: 1500, COMP_W: 220,              // seeComp: half of the real game's effects pictured at COMP, the logistic's width
+    COMP: 1200, COMP_W: 160,              // seeComp: half of the real game's effects pictured at COMP, the logistic's width
     VIS_RAIL: 0.16, VIS_STUB: 0.14,       // the guide (GUIDE_STD 0.5 = grow 1): the cue ball's real way past a ball; the stub off a cushion
     DL: 0.02,                             // the pictured way's step, metres
     ROLL: { true: 0.098, false: 0.0686 }, // the cloth's hold on a rolling ball, m/s^2 (physics MU_R0 x g), by P.POCKETED
@@ -81,6 +81,8 @@
     const holes = [];
     P.POCKETS.forEach((p, i) => holes.push({ x: p.x, y: p.y, r: p.sink * 0.8, id: i }));
     if (w.shape) w.shape.holes.forEach((h, i) => holes.push({ x: h.x, y: h.y, r: h.cut ? h.r * 0.95 : h.sink, id: 6 + i }));
+    // (each face's box, grown by a ball: a step that does not reach it skips it)
+    const R = P.R + 0.002; for (const q of segs) { q.x0 = Math.min(q.ax, q.bx) - R; q.x1 = Math.max(q.ax, q.bx) + R; q.y0 = Math.min(q.ay, q.by) - R; q.y1 = Math.max(q.ay, q.by) + R; }
     m = { P, walls: w.walls, shape: w.shape, segs, holes };
     mindFaces.set(key, m);
     return m;
@@ -95,7 +97,9 @@
       const q = fx * fx + fy * fy - pr * pr; if (q >= 4 * R * R) continue;
       const t = pr - Math.sqrt(4 * R * R - q); if (t > 1e-7 && t < bt) { bt = t; best = { t, type: 'ball', ball: id, nx: (bx - (x + dx * t)) / (2 * R), ny: (by - (y + dy * t)) / (2 * R) }; }
     }
+    const bx0 = Math.min(x, x + dx * len), bx1 = Math.max(x, x + dx * len), by0 = Math.min(y, y + dy * len), by1 = Math.max(y, y + dy * len);
     for (const s of F.segs) {
+      if (s.x1 < bx0 || s.x0 > bx1 || s.y1 < by0 || s.y0 > by1) continue;
       for (const sg of [1, -1]) {
         const px = s.ax - s.ty * R * sg, py = s.ay + s.tx * R * sg, den = dx * s.ty - dy * s.tx;
         if (Math.abs(den) < 1e-12) continue;
@@ -182,7 +186,8 @@
      start): in bins of DL along it, the heading change where nothing was met (kap) and the pace (spd); what it met, in
      order - evs: { l, kind: 'rail' | 'wall' | 'ball' | 'pivot', d } (a cushion: how far off the mirror it came away; a
      ball - the cue ball's first: off the tangent; a pivot - a drawn ball stopping and coming back -: its turn); how far
-     it guides the picture (lv: to the cue ball's second ball, another ball's first) and how far it would have run on
+     it guides the picture (lv: to its second ball - the cue ball's first contact, or the ball that sent another, the
+     first) and how far it would have run on
      (lb); the guide's reach (vis: the cue ball past a ball, 0.16 m on - its point and heading). */
   function seeView(rec, id) {
     if (rec.views.has(id)) return rec.views.get(id);
@@ -205,7 +210,7 @@
         if (fn && s0 > 1e-4 && s1 > 1e-4) { const dn = u0x * fn[0] + u0y * fn[1], mx = u0x - 2 * dn * fn[0], my = u0y - 2 * dn * fn[1]; evs.push({ l: Math.max(0, l), kind: e === 'w' ? 'wall' : 'rail', d: wrapA(Math.atan2(u1y, u1x) - Math.atan2(my, mx)), edge: fn[2].edge, jaw: !!fn[2].jaw }); }
       } else if (typeof e === 'number') {
         balls++;
-        if (!cue || balls >= 2) { lv = l; vEnd = s0; break; }
+        if (balls >= 2) { lv = Math.max(0, l); vEnd = s0; break; }
         const o = rec.start[e], nx = o[1] - x0, ny = o[2] - y0, nl = Math.hypot(nx, ny) || 1, dn = (u0x * nx + u0y * ny) / nl, tx = u0x - dn * nx / nl, ty = u0y - dn * ny / nl;
         evs.push({ l: Math.max(0, l), kind: 'ball', ball: e, d: Math.hypot(tx, ty) > 1e-3 && s1 > 1e-4 ? wrapA(Math.atan2(u1y, u1x) - Math.atan2(ty, tx)) : 0 });
       } else if (s0 > 1e-4 && s1 > 1e-4) {
@@ -308,7 +313,8 @@
             if (me.firstHit == null) { me.firstHit = b; me.at = [x, y, 0, b]; }
             if (me.hits.indexOf(b) < 0) me.hits.push(b);
             if (me.seq.length < 10) me.seq.push(b);
-            if (me.hits.length >= 2) return;
+            // (carom: the second ball is the point - the picture ends there)
+            if (me.hits.length >= 2 && !P.POCKETED) return;
           } else if (depth >= 2) return;
           gone.add(b);
           const nx = c.nx, ny = c.ny, dn = dx * nx + dy * ny, tx = dx - dn * nx, ty = dy - dn * ny, tl = Math.hypot(tx, ty);
@@ -316,7 +322,10 @@
             const ob = rec.start[b], obv = seeView(rec, b), on = Math.atan2(ny, nx);
             trace(b, ob[1], ob[2], on, v * dn * 0.98, obv && Math.abs(wrapA(obv.phi0 - on)) < 0.35 ? obv : null, 0, depth + 1);
           }
-          if (id !== cue) return;
+          // (pool: the cue ball's second ball sent on its way - a carom pot - and the picture of the cue ball ends there)
+          if (id === cue && me.hits.length >= 2) return;
+          // (a ball sent on into another goes on too, as the cue ball does - two balls potted with one; one sent by that,
+          // no further)
           const t = tb[kb];
           if (t) { l = Math.max(l, t.l + 1e-6); kb++; }
           if (tl < 0.02) { if (!tp.length) return; v = 0; }
@@ -367,19 +376,20 @@
     };
     // the cushions as lines a ball's middle comes off: the table's four (or a shaped table's longer faces)
     const lines = [];
-    if (world.shape) { for (const f of world.shape.faces) { if (f.len < 0.12) continue; let nx = -f.ty, ny = f.tx; if (!P.inShape(world.shape, f.cx + nx * 0.02, f.cy + ny * 0.02)) { nx = -nx; ny = -ny; } lines.push({ px: f.cx + nx * R, py: f.cy + ny * R, nx, ny }); } }
+    // (a shaped table: its six longest faces - a curve's pieces are not aimed at one by one)
+    if (world.shape) { for (const f of world.shape.faces.filter(f => f.len >= 0.12).sort((a, b) => b.len - a.len).slice(0, 6)) { let nx = -f.ty, ny = f.tx; if (!P.inShape(world.shape, f.cx + nx * 0.02, f.cy + ny * 0.02)) { nx = -nx; ny = -ny; } lines.push({ px: f.cx + nx * R, py: f.cy + ny * R, nx, ny }); } }
     else { const X = P.HL - R, Y = P.HW - R; lines.push({ px: X, py: 0, nx: -1, ny: 0 }, { px: -X, py: 0, nx: 1, ny: 0 }, { px: 0, py: Y, nx: 0, ny: -1 }, { px: 0, py: -Y, nx: 0, ny: 1 }); }
     const mirror = (x, y, l) => { const d = (x - l.px) * l.nx + (y - l.py) * l.ny; return [x - 2 * d * l.nx, y - 2 * d * l.ny]; };
     for (const id of targets) {
       const b = world.balls[id]; if (!b || !b.on) continue;
       across(b.x, b.y, o.impact || MIND.IMPACT, 2 - 0.004);
-      if (o.kicks) for (const l of lines) {
+      if (o.kicks && (!o.kickTargets || o.kickTargets.indexOf(id) >= 0)) for (const l of lines) {
         const m = mirror(b.x, b.y, l); across(m[0], m[1], o.kickN || 25, 3);
         if (o.kicks > 1 && !world.shape) for (const l2 of lines) if (l2 !== l && l2.nx !== -l.nx) { const m2 = mirror(m[0], m[1], l2); across(m2[0], m2[1], 9, 2.6); }
       }
     }
     if (o.round) for (let a = -180; a < 180; a += o.round) add(a * Math.PI / 180, o.round * Math.PI / 180 * 1.6);
-    if (o.around) { const [a0, half, step] = o.around; for (let d = -half; d <= half + 1e-9; d += step) add(a0 + d, step * 1.6); }
+    for (const ar of (o.around ? [o.around] : []).concat(o.arounds || [])) { const [a0, half, step] = ar; for (let d = -half; d <= half + 1e-9; d += step) add(a0 + d, step * 1.6); }
     out.sort((p, q) => p[0] - q[0]);
     const keep = []; for (const p of out) { const l = keep[keep.length - 1]; if (l && p[0] - l[0] < 2e-5) { l[1] = Math.max(l[1], p[1]); continue; } keep.push(p); }
     return keep;
@@ -398,20 +408,22 @@
     const P = g.P, cue = P.POCKETED ? 0 : who, view = o.view || (o.judge ? null : judgeView(world, who)), judge = o.judge || seeJudge(world, who, view);
     const targets = o.targets || g.mode.legal(view, who).filter(id => world.balls[id] && world.balls[id].on);
     const strokes = o.strokes || [{ V: g.vOf(0.5), a: 0, b: 0, el: 0 }];
-    const sw = { world, who, judge, view, cue, groups: [], sims: 0 };
+    // (coarse: a way is any run of aims that comes off - the puzzles ask only that; else ways are told apart by name, seeSig)
+    const sw = { world, who, judge, view, cue, groups: [], sims: 0, coarse: !!o.coarse }, tkey = r => r.ok ? (sw.coarse ? 'ok' + (r.ev.kissPre > 0 ? '|k' : '') : seeSig(r.ev)) : null;
+    sw.tkey = tkey;
     for (const st of strokes) {
       const aims = seeAims(world, cue, targets, { ...o, pos: st.pos || o.pos });
       const grp = { stroke: st, recs: [] };
       for (const [aim, sp] of aims) grp.recs.push({ aim, sp, rec: seeRecord(world, who, { ...st, angle: aim }, judge) });
       sw.sims += aims.length; sw.groups.push(grp);
-      if (o.refine !== false) seeRefine(sw, grp, r => r.ok ? seeSig(r.ev) : null, 4);
+      if (o.refine !== false) seeRefine(sw, grp, tkey, o.coarse ? 3 : 4);
       // (fine: about every way that really comes off, aims close together - where a picture a little off would aim)
       if (o.fine) {
-        const runs = seeRuns(grp.recs, r => r.ok ? seeSig(r.ev) : null), more = [];
+        const runs = seeRuns(grp.recs, tkey), more = [];
         for (const t of runs) for (let a = t.lo - o.fine; a <= t.hi + o.fine; a += 0.0015) if (!grp.recs.some(q => Math.abs(q.aim - a) < 0.0007) && !more.some(q => Math.abs(q - a) < 0.0007)) more.push(a);
         for (const aim of more) grp.recs.push({ aim, sp: 0.0015 * 1.6, rec: seeRecord(world, who, { ...st, angle: aim }, judge) });
         sw.sims += more.length; grp.recs.sort((a, b) => a.aim - b.aim);
-        if (more.length && o.refine !== false) seeRefine(sw, grp, r => r.ok ? seeSig(r.ev) : null, 3);
+        if (more.length && o.refine !== false) seeRefine(sw, grp, tkey, 3);
       }
     }
     return sw;
@@ -425,8 +437,11 @@
     for (let i = 0; i + 1 < L.length; i++) {
       const p = L[i], q = L[i + 1]; if (q.aim - p.aim > Math.max(p.sp, q.sp)) continue;
       let lo = p, hi = q, fl = f(p.rec); const fh = f(q.rec); if (fl === fh) continue;
-      for (let k = 0; k < n; k++) {
-        const aim = (lo.aim + hi.aim) / 2, m = { aim, sp: Math.max(lo.sp, hi.sp), rec: play(aim) };
+      const nk = typeof n === 'function' ? n(q.aim - p.aim, p.aim) : n;
+      for (let k = 0; k < nk; k++) {
+        // (the halves on a grid - MIND.SNAP - so that what one rating plays another finds already played)
+        const aim = Math.round((lo.aim + hi.aim) / 2 / MIND.SNAP) * MIND.SNAP; if (aim <= lo.aim + 1e-12 || aim >= hi.aim - 1e-12) break;
+        const m = { aim, sp: Math.max(lo.sp, hi.sp), rec: play(aim) };
         add.push(m); const fm = f(m.rec); if (fm === fl) lo = m; else hi = m;
         if (fm !== fl && fm !== fh) break;
       }
@@ -436,7 +451,7 @@
   }
   /* a way the picture makes too narrow to fall on an aim tried: between two neighbours the picture passes what it is
      after (seeMindEv miss) on one side and then the other - bisected on that side (4 times), the way found if there */
-  function seeRefineMiss(sw, grp, s, mf, L0) {
+  function seeRefineMiss(sw, grp, s, mf, L0, iters) {
     const L = L0.slice(), add = [], seen = grp.seen || (grp.seen = new Map());
     const play = aim => { const k = aim.toFixed(9); let r = seen.get(k); if (!r) { r = seeRecord(sw.world, sw.who, { ...grp.stroke, angle: aim }, sw.judge); sw.sims++; seen.set(k, r); } return r; };
     for (let i = 0; i + 1 < L.length; i++) {
@@ -444,14 +459,15 @@
       const mp = seeMindEv(p.rec, s).ev.miss, mq = seeMindEv(q.rec, s).ev.miss;
       const key = Object.keys(mp).find(k => mq[k] != null && Math.abs(mp[k]) < 0.1 && Math.abs(mq[k]) < 0.1 && Math.sign(mp[k]) !== Math.sign(mq[k]));
       if (!key) continue;
-      let lo = p, hi = q; const sl = Math.sign(mp[key]);
-      for (let k = 0; k < 4; k++) {
-        const aim = (lo.aim + hi.aim) / 2, m = { aim, sp: Math.max(lo.sp, hi.sp), rec: play(aim) }; add.push(m);
+      let lo = p, hi = q; const sl = Math.sign(mp[key]), nk = iters ? iters(p.aim) : 4;
+      for (let k = 0; k < nk; k++) {
+        const aim = Math.round((lo.aim + hi.aim) / 2 / MIND.SNAP) * MIND.SNAP; if (aim <= lo.aim + 1e-12 || aim >= hi.aim - 1e-12) break;
+        const m = { aim, sp: Math.max(lo.sp, hi.sp), rec: play(aim) }; add.push(m);
         if (mf(m.rec) != null) break;
         const v = seeMindEv(m.rec, s).ev.miss[key]; if (v == null) break; if (Math.sign(v) === sl) lo = m; else hi = m;
       }
     }
-    if (add.length) { L.push(...add); L.sort((a, b) => a.aim - b.aim); return seeRefine(sw, grp, mf, 3, L); }
+    if (add.length) { L.push(...add); L.sort((a, b) => a.aim - b.aim); return seeRefine(sw, grp, mf, 2, L); }
     return L;
   }
   // the runs of neighbours alike under f (null: none): [{ key, lo, hi, recs }] - an edge half way to the unlike neighbour
@@ -501,27 +517,40 @@
        seen          the chance it comes to mind (seeIdea, by what it asks) - a kiss way also as v1 reads its kiss
        p             the chance it comes off as they play it: their hand about their middle, over every aim that really
                      comes off (any way); pr - over this way's own aims; tries - the same for a second and a third try
-                     after a miss (the hand steadier, TRY_HAND; the middle moved towards the real one - they saw where it went)
+                     after a miss (the hand steadier, o.tries; the aim moved 60%, then 85% of the way to the real middle -
+                     they saw where it went)
        sure          how sure they are of it: their hand over the run as pictured
        truth         the real run nearest (lo, hi, c) or null
-     o: { extra: D added (puzzles), tries: [1, 0.6, 0.4] } */
+     (a kiss that spoils a pictured way where it lies makes the player less sure of it, as far as they read it coming)
+     o: { extra: D added (puzzles), tries: the hand on each try, [1, 0.6, 0.4] } */
   function seeRoutes(sw, R, o = {}) {
     const s = seeComp(R), out = [];
     for (const grp of sw.groups) {
-      const st = grp.stroke, hand = seeHand(R, st), sig = hand.aim, mf = r => seeMindOk(r, s, sw.judge) ? seeSig(seeMindEv(r, s).ev) : null;
-      let L = o.refine !== false ? seeRefine(sw, grp, mf, 3, grp.recs) : grp.recs;
-      if (o.refine !== false) L = seeRefineMiss(sw, grp, s, mf, L);
-      const truth = seeRuns(L, r => r.ok ? seeSig(r.ev) : null), mind = seeRuns(L, mf);
+      const st = grp.stroke, hand = seeHand(R, st), sig = hand.aim, tkey = sw.tkey || (r => r.ok ? seeSig(r.ev) : null), mf = r => seeMindOk(r, s, sw.judge) ? (sw.coarse ? 'ok' : seeSig(seeMindEv(r, s).ev)) : null;
+      // (the picture's edges found as finely as this hand needs: a half of its spread - a weak hand's coarse, a strong
+      // one's on the real edges the sweep found already; a way too narrow to fall on an aim looked for only near a real one)
+      const its = gap => Math.max(0, Math.min(3, Math.ceil(Math.log2(gap / (sig / 2)))));
+      const real = seeRuns(grp.recs, tkey), nearReal = a => real.some(t => a > t.lo - 0.05 && a < t.hi + 0.05);
+      let L = o.refine !== false ? seeRefine(sw, grp, mf, (gap, a) => nearReal(a) ? its(gap) : 0, grp.recs) : grp.recs;
+      if (o.refine !== false) L = seeRefineMiss(sw, grp, s, mf, L, a => nearReal(a) ? Math.max(2, its(0.004)) : 0);
+      const truth = seeRuns(L, tkey), mind = seeRuns(L, mf);
       const pIn = (c, sg, runs) => { let p = 0; for (const t of runs) if (t.hi > c - 7 * sg && t.lo < c + 7 * sg) p += seePhi((t.hi - c) / sg) - seePhi((t.lo - c) / sg); return Math.min(1, p); };
       const nearest = (c, key) => { let best = null, bd = Infinity; for (const t of truth) { if (key && t.key.replace('|k', '') !== key) continue; const d = c < t.lo ? t.lo - c : c > t.hi ? c - t.hi : 0; if (d < bd) { bd = d; best = t; } } return best && bd < 0.08 ? best : null; };
       const mk = (run, kiss) => {
         const c = (run.lo + run.hi) / 2, half = (run.hi - run.lo) / 2, mid = run.recs.reduce((a, b) => Math.abs(b.aim - c) < Math.abs(a.aim - c) ? b : a);
         const ev = kiss ? mid.rec.ev : seeMindEv(mid.rec, s).ev, f = seeFeats(ev, st, mid.rec), D = seeFindD(f, o.extra);
         const t = kiss ? run : nearest(c, run.key), own = t ? [t] : [];
-        let seen = seeIdea(R, D), story = null;
+        let seen = seeIdea(R, D), story = null, sure = half > 0 ? erf(half / (sig * Math.SQRT2)) : 0;
         if (kiss) { story = kissStory(sw.world, sw.who, { ...st, angle: c }); seen *= story ? kissSeen(story, R) : 0; }
-        const tries = (o.tries || [1, 0.6, 0.4]).map((k, i) => { const cc = t ? c + ((t.lo + t.hi) / 2 - c) * (1 - k) : c; return pIn(cc, sig * k, truth); });
-        return { key: run.key, stroke: st, lo: run.lo, hi: run.hi, c, half, kiss: !!kiss, feats: f, D, seen, p: tries[0], pr: pIn(c, sig, own), tries, sure: half > 0 ? erf(half / (sig * Math.SQRT2)) : 0,
+        else {
+          // (a way pictured where the balls standing still would let it, that a kiss really spoils - the other ball not
+          // where the picture keeps it: so much the less sure, as far as this player reads that kiss coming, v1 kissSeen)
+          const bad = run.recs.filter(q => !q.rec.ok && q.rec.ev.kissPre > 0);
+          if (bad.length) { const q = bad.reduce((a, b) => Math.abs(b.aim - c) < Math.abs(a.aim - c) ? b : a), ks = kissStory(sw.world, sw.who, { ...st, angle: q.aim }); if (ks) sure *= 1 - kissSeen(ks, R) * bad.length / run.recs.length; }
+        }
+        // (a try after a miss: the hand steadier and the aim moved most of the way to the real middle - the ball showed where it went)
+        const tries = (o.tries || [1, 0.6, 0.4]).map((k, i) => { const cc = t ? c + ((t.lo + t.hi) / 2 - c) * [0, 0.6, 0.85][Math.min(2, i)] : c; return pIn(cc, sig * k, truth); });
+        return { key: run.key, stroke: st, lo: run.lo, hi: run.hi, c, half, kiss: !!kiss, feats: f, D, seen, p: tries[0], pr: pIn(c, sig, own), tries, sure,
           truth: t ? { lo: t.lo, hi: t.hi, c: (t.lo + t.hi) / 2 } : null, shot: { ...st, angle: c }, story };
       };
       for (const run of mind) out.push(mk(run, false));
@@ -548,6 +577,7 @@
      nothing to kiss: seeRight), routes } */
   MIND.ELSE = 0.004;
   MIND.WIN = 0.12; MIND.WIN_STEP = 0.002;
+  MIND.SNAP = 0.0002;                     // (the edges' grid, radians: a 2400 hand's third)
   function seeInverse(world, who, shot, R, o = {}) {
     const st = { V: shot.V, a: shot.a || 0, b: shot.b || 0, el: shot.el || 0, pos: shot.pos || null };
     const win = o.win || MIND.WIN, sw = seeSweep(world, who, { view: o.view, judge: o.judge, targets: [], strokes: [st], around: [shot.angle, win, MIND.WIN_STEP] });
@@ -596,3 +626,46 @@
     const r2 = x => Math.round(x * 100) / 100;
     return { p: r2(inv.kiss), seen: r2(kissSeen(story, R)), story, spoiled: !inv.rec.ok && inv.right, right: inv.right, meant: r2(meant), other: r2(inv.other), sims: inv.sims };
   }
+
+  /* The aim as pictured (the bots and stand-ins, 50-human.js): a stroke found on the physics, looked at as a player of
+     rating R pictures it - the strokes within `half` of it at its own pace and tip; the run that really comes off about
+     it and the run the picture says comes off nearest it: how far the picture leans the aim (lean: the pictured run's
+     middle less the real one's, both read off the same strokes - what the grid misses, it misses in both). { lean (null:
+     the picture shows no such way near, or the real one is not there - the player aims where the line is), sims } */
+  function seePicture(world, who, shot, R, half = 0.03, step = 0.0025) {
+    const st = { V: shot.V, a: shot.a || 0, b: shot.b || 0, el: shot.el || 0, pos: shot.pos || null }, judge = seeJudge(world, who), s = seeComp(R), L = [];
+    for (let d = -half; d <= half + 1e-9; d += step) L.push({ aim: shot.angle + d, sp: step * 1.6, rec: seeRecord(world, who, { ...st, angle: shot.angle + d }, judge) });
+    const near = runs => { let best = null, bd = Infinity; for (const r of runs) { const d = shot.angle < r.lo ? r.lo - shot.angle : shot.angle > r.hi ? shot.angle - r.hi : 0; if (d < bd) { bd = d; best = r; } } return best && bd < half ? best : null; };
+    const m = near(seeRuns(L, r => seeMindOk(r, s, judge) ? 'ok' : null)), t = near(seeRuns(L, r => r.ok ? 'ok' : null));
+    return { lean: m && t ? (m.lo + m.hi) / 2 - (t.lo + t.hi) / 2 : null, sims: L.length };
+  }
+
+  /* What the attempts and the shots players really play have taught (the Fit workflow - web/tools/see/fit.js writes
+     64a-see-fit.js, which hands it here): the hand at 1500 (aim), where and how fast the picture comes right (COMP,
+     COMP_W), and what each thing a way asks is worth to real players beyond the table (FIND, rating points added). Nothing
+     given: the numbers set by hand stand. */
+  function seeApplyFit(f) {
+    if (!f || typeof f !== 'object') return;
+    const ok = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+    if (ok(f.aim1500, 0.0005, 0.02)) SEE.AIM_1500 = f.aim1500;
+    if (ok(f.comp, 500, 2500)) MIND.COMP = f.comp;
+    if (ok(f.compW, 80, 600)) MIND.COMP_W = f.compW;
+    for (const k of ['four', 'pocket']) if (f.find && f.find[k]) for (const [q, d] of Object.entries(f.find[k])) if (MIND.FIND[k][q] != null && ok(d, -400, 400)) MIND.FIND[k][q] += d;
+  }
+
+  /* A miss read for the picture (the review, 60-judge.js cause 'picture'): the strokes within `half` of the one played,
+     at its pace and tip. If the aim lies in a way the player of rating R pictures coming off (within their hand of it),
+     and that way's real run - the same way by name, nearest its pictured middle - is elsewhere, the miss is in the
+     picture: { lean (the pictured middle less the real one), fix (the real middle less the aim), sims } - else null */
+  function seeMisread(world, who, shot, R, half = 0.06, step = 0.002) {
+    const st = { V: shot.V, a: shot.a || 0, b: shot.b || 0, el: shot.el || 0, pos: shot.pos || null }, judge = seeJudge(world, who), s = seeComp(R), L = [], sg = seeHand(R, st).aim;
+    for (let d = -half; d <= half + 1e-9; d += step) L.push({ aim: shot.angle + d, sp: step * 1.6, rec: seeRecord(world, who, { ...st, angle: shot.angle + d }, judge) });
+    // (the same way by name - the first ball, the second, the cushions (carom); the ball, the pocket, the kicks (pool))
+    const mind = seeRuns(L, r => seeMindOk(r, s, judge) ? seeSig(seeMindEv(r, s).ev) : null), real = seeRuns(L, r => r.ok ? seeSig(r.ev).replace('|k', '') : null), a = shot.angle;
+    const m = mind.filter(r => r.lo - 2 * sg <= a && a <= r.hi + 2 * sg).sort((p, q) => Math.abs((p.lo + p.hi) / 2 - a) - Math.abs((q.lo + q.hi) / 2 - a))[0]; if (!m) return null;
+    const cm = (m.lo + m.hi) / 2; let t = null, bd = Infinity;
+    for (const r of real) { if (r.key !== m.key) continue; const d = cm < r.lo ? r.lo - cm : cm > r.hi ? cm - r.hi : 0; if (d < bd) { bd = d; t = r; } }
+    if (!t || (t.lo <= a && a <= t.hi)) return null;
+    const ct = (t.lo + t.hi) / 2; return { lean: cm - ct, fix: ct - a, sims: L.length };
+  }
+

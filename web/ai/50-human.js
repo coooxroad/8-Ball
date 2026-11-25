@@ -311,7 +311,17 @@
     const angleError = (ranked ? aimSigma(chosen) * pf : (pool ? 1 : 0.1) * (0.00035 + Math.pow(1 - practice.aim, 2.4) * 0.033) * (0.6 + diff * 1.7)) * (lapse ? 3 : 1) * (1 + turn.tilt * 0.25) * shake;
     const powerError = (pool ? 1 : 0.35) * (0.012 + Math.pow(1 - practice.touch, 2) * 0.28) * (1 + legs * 0.12);
     const power = chosen.kind === 'blast' ? 1 : clamp(g.powerOf(chosen.V) * (1 + noise() * powerError) + ((chosen.kind === 'masse' || chosen.kind === 'curve') && ordinaryFour ? 0 : (1 - skill) * style.power * (pool ? 0.09 : 0.045)) + (person.quirk === 'heavy' && chosen.kind !== 'masse' && chosen.kind !== 'curve' ? (pool ? 0.05 : 0.03) * (1 - skill * 0.6) : 0), 0, 1);
-    const bankError = chosen.kind === 'bank' ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
+    /* (the way past what the guide shows - cushions the cue ball meets after its first ball, a kick, a bank - is aimed
+       where this player pictures it: the seeing AI's picture at the player's rating, 64-see-mind.js seePicture - a weak
+       player's mirror cushions and straight lines, a strong one's nearly the real game - owner 11-25 night: 봇·대역도 보는
+       AI로. Off the ranked path, the old fixed lean of a bank.) */
+    // (a player who pictures the game all but whole - s(R) 0.97 and up - leans by nothing a hand would show: not looked at)
+    let pictured = null;
+    if (ranked && !turn.throwing && !chosen.el && chosen.kind !== 'blast' && chosen.kind !== 'safety' && legs > 0 && seeComp(person.dama) < 0.97 && sims + 25 <= SIM_CAP + 40) {
+      const pc = seePicture(w, me, chosen, person.dama, 0.03, 0.0025); sims += pc.sims;
+      if (pc.lean != null) { pictured = pc.lean; chosen = { ...chosen, angle: chosen.angle + pc.lean }; }
+    }
+    const bankError = chosen.kind === 'bank' && !(ranked && pictured != null) ? practice.bankBias * (1 - practice.bank) * (pool ? 0.01 : 0.003) : 0;
     const thicknessError = practice.thicknessBias * (1 - practice.aim) * (pool ? 0.003 : 0.0005);
     const spinError = (1 - practice.spin) * 0.045, a = chosen.a * (1 + noise() * spinError), b = chosen.b * (1 + noise() * spinError), spinScale = Math.min(1, 0.79 / Math.max(0.001, Math.hypot(a, b)));
     const guide = ranked && !chosen.el && !turn.throwing ? humanGuideAim(chosen, person, turn.tilt) : [];

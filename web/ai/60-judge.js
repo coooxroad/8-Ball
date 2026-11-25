@@ -605,7 +605,7 @@
     // (a foul that costs - a ball in hand, a point - is never good: only 4구 played without the minus treats it as a miss)
     if (res.foul && grade < 3 && !(g.modeId === 'four' && !g.minus)) grade = 3;
     // why it missed, for the words: the aim (thick or thin), the pace (soft or hard), the tip - or a better way
-    let cause = null;
+    let cause = null, picture = null;
     const fr = res.r || {}, legal = g.mode.legal(view, who);
     if (res.foul) cause = fr.scratch ? 'scratch' : res.ev.off && res.ev.off.length ? 'off' : res.ev.firstHit == null ? 'nohit' : !legal.includes(res.ev.firstHit) || /먼저|상대 공/.test(fr.foul || '') ? 'wrong' : /쿠션/.test(fr.foul || '') ? 'norail' : 'foul';
     else if (!res.made && meant) {
@@ -619,6 +619,14 @@
       // (a kiss on the way - the shot as played was the line, near enough: the kiss took it - owner 11-19 '키스 때문에 다 된
       // 공을 놓쳤습니다')
       if (res.ev.kissPre > 0 && meant.why === 'aim' && Math.abs(meant.da) <= 0.012) cause = 'kiss';
+      /* (the picture: the aim lies in a way this player pictures coming off - past what the guide shows, cushions after
+         the first ball, a kick, a bank - and the real way is elsewhere: the miss is in the picture, not the hand -
+         64-see-mind.js seeMisread at the shooter's rating; said when the lean is more than their hand's spread) */
+      // (a way the guide shows whole - a plain cut, a point with no cushion - is pictured as it is: no lean to find)
+      if (R != null && /^(thick|thin|aim)$/.test(cause || '') && !(shot.el > 0.3)) {
+        const mr = seeMisread(world, who, shot, R), sg = seeHand(R, shot).aim;
+        if (mr && Math.abs(mr.lean) >= Math.max(0.0026, 1.5 * sg)) { cause = 'picture'; picture = { leanDeg: Math.round(mr.lean * 1800 / Math.PI) / 10, fixDeg: Math.round(mr.fix * 1800 / Math.PI) / 10 }; }
+      }
     }
     // 불운 (owner 11-25): a line that would have come off - with the balls standing still it does (seeKiss: right) -,
     // spoilt by a kiss this player likely did not see coming (one they would have seen - on the ball's own line - is
@@ -678,7 +686,7 @@
       grade, fluke, unlucky, kissMeant: meantKiss ? meantKiss.p : null, made: res.made, foul: res.foul, won: res.won, lost: res.lost, pass: !!res.pass, tie: !!res.tie, theirs: res.made && got.theirs != null ? r2(got.theirs) : null, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
       loss: Math.round(loss * 100) / 100, B: Math.round(B * 100) / 100, A: Math.round(A * 100) / 100,
-      p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, offDeg: line ? Math.round((line.centre - shot.angle) * 1800 / Math.PI) / 10 : null, cause,
+      p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, offDeg: line ? Math.round((line.centre - shot.angle) * 1800 / Math.PI) / 10 : null, cause, picture,
       leave: Math.round((res.made ? got.mine : got.theirs) * 100) / 100, bestLeave: Math.round(bestLeave * 100) / 100,
       better: better ? { shot: better.shot, kind: better.line.kind, id: better.line.id, pocket: better.line.pocket, p: Math.round(better.p * 100) / 100, safety: better.line.kind === 'safety',
         same: !!meant && better.line.id === meant.res.ev.firstHit && (!g.P.POCKETED || (meant.res.ev.pocketed || []).some(q => q.id === better.line.id && q.pocket === better.line.pocket)),

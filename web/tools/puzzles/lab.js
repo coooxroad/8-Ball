@@ -6,7 +6,10 @@ const createPhysics = require('../../physics.js'), createGame = require('../../g
 const { physicsFor, TABLE_OUTLINES, TABLE_SHAPES } = require('../../tables.js');
 const Z = require('../../puzzles.js')(TABLE_SHAPES);
 const DEG = Math.PI / 180;
-const g = createGame(physicsFor(createPhysics, 'bar'));
+// (with the computer player's parts: the seeing AI, see.js - ai/ read as the app reads it, one scope)
+const fs = require('fs'), path = require('path');
+const createAI = new Function('g', fs.readdirSync(path.join(__dirname, '../../ai')).sort().map(f => fs.readFileSync(path.join(__dirname, '../../ai', f), 'utf8')).join('\n'));
+const g = createGame(physicsFor(createPhysics, 'bar'), createAI);
 function seeded(seed) { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); }
 let sims = 0;
 // a puzzle set out, ready to be tried: the game started in its mode, the balls down

@@ -200,7 +200,11 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     답의 최소 여유 `MIN_ROOM` — 800 이하는 넓은 답만; `write`는 목록의 퍼즐 id를 그대로 두고 새 퍼즐엔 `next-id.json`의 안 쓴 번호),
     `ai.js`(가상 선수: 길을 볼 확률 × 세 번까지 고쳐 침 — 손 오차 ×1/×0.6/×0.4, 기대 점수 0.5인 레이팅; 손 오차는 퍼즐마다 한 번 뽑아 고정),
     `rate.js`(지금 목록 다시 매김, `--part`/`--merge`로 나눠서), `fit.js`(서버 시도 기록으로 학습: 퍼즐별 IRT 레이팅 + AI가 틀린 만큼을
-    특징으로 릿지 회귀, 소수 점수). 퍼즐 테이블은 `tables.js TABLE_OUTLINES`(윤곽 = 쿠션 코 선, 섬, 포켓 자리)와
+    특징으로 릿지 회귀, 소수 점수). **11-26 밤 퍼즐 AI v2**: `see.js`(rateSee — 보는 AI로: 그 레이팅의 사람이 그리는 그림으로 떠올린 길들을
+    확신 순으로 쳐 봄, 그림이 틀려 크게 빗나간 길은 한 번 뒤 버림, 세 번), `see-rate.js`(목록 전체를 보는 AI로 다시 매기고 괴리 보고서
+    `docs/puzzle-see-gap.md`, `see-ratings.json` — Fit이 읽음; `--write`면 `puzzles.js` 레이팅도, 사람이 길을 못 찾는 퍼즐(`fair` < 0.5)은
+    그대로 두고 보고서에 — 지울지는 소유자). 보는 AI 맞추기: `web/tools/see/fit.js`(샷 데이터셋 → 손·그림 곡선, 퍼즐 시도 → FIND 더하기;
+    Maia식 설명률) + `pull.js`(관리자 비밀번호로 서버에서 읽기) + `.github/workflows/fit.yml`(손으로·매달 2일, 결과 `web/ai/64a-see-fit.js`). 퍼즐 테이블은 `tables.js TABLE_OUTLINES`(윤곽 = 쿠션 코 선, 섬, 포켓 자리)와
     `physics.js shape`(섬, 윤곽에 뚫린 포켓 `cut`, `ev.edges`), 화면은 `scene/20-table.js setShape`가 윤곽에서 통째로 지음(11-24 밤: 일반 테이블처럼
     마감 — 단면 `SH_PROF`을 윤곽 따라 돌림, 윤곽 따라 나뭇결·판 이음선, 바깥 모서리 둥글게·안쪽은 연귀(`shapeAt`이 두 연귀 사이로 묶음),
     포켓은 물리의 원을 따라 잘라(`cutsOn`·`clipOut`) 턱은 쿠션 천·뒤는 라이너·립·판, 쿠션 그늘, 직사각형이면 `tableCabinet`·일반 래커,
@@ -249,7 +253,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
   키스 득점인데 키스 길을 노렸을 확률 < 0.35이고 키스 없이는 안 되는 샷(`seeRight`), 불운 = 키스 없이는 되는 샷을 키스가 망쳤고 그 키스를 봤을
   확률 < 0.35). 길 찾기 `seeSweep`(스트로크마다 공의 두께 전부·쿠션 거울·한 바퀴)·`seeRoutes`(그림이 된다고 하는 조준 구간 = 길, 가운데를
   겨눔, 진짜 되는 조준 위에서 그 손의 확률). v1(`ai/63-see.js`)의 `kissStory`·`kissSeen`(키스가 읽히는 정도)은 그대로 씀. 시험 `node web/test/see.js`.
-  등급은 그대로 기준 손 하나(봐주기 없음). 리뷰 요청에 친 사람의 레이팅(`review.ratingOf`). 숫자(`MIND`)는 손으로 정함 — 데이터로 맞출 예정(8-3절).
+  봇·대역(`50-human.js`): 쿠션 길은 그 레이팅의 그림만큼 조준이 기운다(`seePicture` — 같은 스트로크로 ±0.03 rad를 쳐서 그림의 길 가운데
+  − 진짜 길 가운데). 그림 곡선 `MIND.COMP`·`COMP_W`(1200·160)는 봇 4구 득점률이 레이팅마다 예전과 같게 맞춘 값(1800 81%→81%, 1200 49%→48%, 600샷씩; s ≥ 0.97인 봇은 그림을 안 봄). 퍼즐 AI v2·페어플레이
+  깊은 분석도 이것. 등급은 그대로 기준 손 하나(봐주기 없음). 리뷰 요청에 친 사람의 레이팅(`review.ratingOf`). 숫자(`MIND`)는 손으로 정한 것 +
+  Fit 워크플로가 실제 샷·퍼즐 시도로 맞춘 것(`ai/64a-see-fit.js`, 생성 파일 — 손으로 고치지 않음).
 - 봇·대역의 성향 4층(11-19 밤, chess.com·Chessmaster·NBA 2K에서): **보는 길**(후보 — 맛세이는 `ai/53-raised.js` `masseAims`: 빈 천에서
   친 수구 곡선 36개를 돌려 맞힐 자리를 지나게), **바라는 것**(`ai/51-people.js` `FLAIR`·`humanFlair` — 좋아하는 샷은 득점할 때만 가산,
   못 넣는 큐 세운 샷은 감점; `50-human.js` `missCost` — 빗나감의 값이 성향·종목별, 수비파는 불확실한 공 대신 수비),
@@ -313,7 +320,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 아케이드(준비 중)로 들어가는 길, 선수증 유리 케이스(11-21 시험 중, 기본 켬 — `37-desk-menu.js` `glassCase`, 3D는 `38-glass3d.js`, `84-menu.css` `.g3`:
 각진 3D 아크릴 블록, 뚜껑 없음, 메뉴는 정면, 랭킹전·대전 오프닝에서 위 가장자리를 축으로 흔들리며 들어오고 왼쪽으로 돌며 날아감 — `79-league.css` `g3In/Out`). 값은 그 기기에만, 디버그 모드일 때만 쓰인다. 새 디버그 기능은 이 메뉴에 넣고 `net.debug`로 가린다.
 코인·보유는 풀지 않는다.
-관리자 페이지의 스크립트는 파일(`web/admin.js` 계정, `web/admin-puzzles.js` 퍼즐 탭 — 인라인 스크립트 금지, 7절). 퍼즐 탭(11-24 밤): 필터·정렬,
+관리자 페이지의 스크립트는 파일(`web/admin.js` 계정, `web/admin-puzzles.js` 퍼즐 탭, `web/admin-fairplay.js` 페어플레이 탭 — 인라인 스크립트 금지, 7절).
+페어플레이 탭(11-26 밤): 계정별 90일 숫자(`core.js fpSummary` — 랭크 게임·퍼즐 끝날 때 디렉터리 `fp`에), 서버 설정의 문턱을 넘으면 표시(문턱은
+서버에만, `/v1/admin/fairplay { op: cfg }`), 게임 골라 깊은 분석(브라우저에서 보는 AI `seeInverse`로 샷마다 노린 길·조준 지문·어려운 길), 제재
+①~⑤(`core.js adminSanction` — 매칭 금지는 `/v1/queue` 거절, 퍼즐 코인 0, 레이팅 초기화, 코인 압수, 상대 레이팅 돌려주기 `refundOf`). 자동 제재 없음. 퍼즐 탭(11-24 밤): 필터·정렬,
 배치 그림·정답 경로(사이트의 `h/core.*.js`를 페이지에서 찾아 불러 직접 쳐 봄), 레이팅 직접(고정/거기서부터)·AI 값으로·끄기·메모, 묶음 조정,
 손잡이, 바꾼 기록 — 서버는 `/v1/admin/puzzles { op }`(`puzzlebook-core.js admin`). 계정 보기에 퍼즐 레이팅·최근 시도·수정(`adminGrant pzr`).
 

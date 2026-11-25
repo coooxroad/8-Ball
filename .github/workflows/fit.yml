@@ -1,0 +1,39 @@
+# The seeing AI (web/ai/64-see-mind.js) fitted to real play - owner 11-25 night, plan claude/cue-ai-upgrade-plan.md 8-3:
+# the puzzle attempts and the shot dataset read from the server with the admin password (web/tools/see/pull.js), what
+# they teach worked out (web/tools/see/fit.js: the hand, how the picture comes right with rating, what each thing a way
+# asks is worth to real players; and the puzzle AI's own fit, web/tools/puzzles/fit.js) and put straight onto main
+# (web/ai/64a-see-fit.js, the reports). The password: the repository secret ADMIN_PASSWORD (the owner adds it once -
+# Settings → Secrets and variables → Actions → New repository secret; the same as the server's). Nothing is changed
+# without enough behind it (fit.js SHOTS_MIN, PUZZLES_MIN). Run by hand (Actions → Fit), or on the 2nd of each month.
+# (The fair-play thresholds are not fitted here: they live on the server - the code is public.)
+name: Fit
+on:
+  workflow_dispatch:
+    inputs:
+      months: { description: 'shot months, e.g. shots-2026-11 shots-2026-12 (empty: this month)', required: false, default: '' }
+      max: { description: 'shots to read at most', required: false, default: '3000' }
+  schedule:
+    - cron: '17 19 1 * *'
+permissions:
+  contents: write
+jobs:
+  fit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: What the server keeps
+        env: { PASS: '${{ secrets.ADMIN_PASSWORD }}' }
+        run: node web/tools/see/pull.js --max "${{ inputs.max || '3000' }}" ${{ inputs.months && format('--months {0}', inputs.months) || '' }}
+      - name: The puzzle AI's fit
+        run: node web/tools/puzzles/fit.js tries.json || true
+      - name: The seeing AI's fit
+        run: node web/tools/see/fit.js --shots shots.json --tries tries.json --max "${{ inputs.max || '3000' }}" --write
+      - name: Onto main
+        run: |
+          git config user.name "cue-fit"; git config user.email "cue-fit@users.noreply.github.com"
+          git add web/ai/64a-see-fit.js web/tools/see/fit-report.json web/tools/puzzles/fit.json 2>/dev/null || true
+          git commit -m "보는 AI 맞추기 (Fit): 실제 샷·퍼즐 시도로" || exit 0
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
