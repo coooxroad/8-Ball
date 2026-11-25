@@ -28,12 +28,12 @@ export class Directory {
   /* the accounts with ranked games or puzzles, most games first; each with the flags its numbers raise by the config -
      { field: { min | max, n (the games it needs) } } - and how many */
   fpList({ limit, min }) {
-    const cfg = this.fpCfg().cfg, rows = this.sql.exec(`SELECT acct, at, body FROM fp WHERE games >= ? ORDER BY games DESC LIMIT ?`, Math.max(0, min | 0), Math.max(1, Math.min(2000, limit | 0 || 500))).toArray();
-    const people = new Map(this.sql.exec(`SELECT acct, nick, dama FROM people WHERE acct IN (${rows.map(() => '?').join(',') || "''"})`, ...rows.map(r => r.acct)).toArray().map(p => [p.acct, p]));
+    // (the name from the accounts' list, joined - a query's bound values are few on the platform)
+    const cfg = this.fpCfg().cfg, rows = this.sql.exec(`SELECT fp.acct AS acct, fp.at AS at, fp.body AS body, people.nick AS pnick FROM fp LEFT JOIN people ON people.acct = fp.acct WHERE fp.games >= ? ORDER BY fp.games DESC LIMIT ?`, Math.max(0, min | 0), Math.max(1, Math.min(2000, limit | 0 || 500))).toArray();
     return { ok: true, cfg, rows: rows.map(r => {
       const b = JSON.parse(r.body), flags = [];
       for (const [k, c] of Object.entries(cfg || {})) { const v = b[k]; if (v == null || !c || (c.n && (b.games || 0) < c.n)) continue; if (c.min != null && v >= c.min || c.max != null && v <= c.max) flags.push(k); }
-      return Object.assign({ acct: r.acct, at: r.at, nick: (people.get(r.acct) || {}).nick || b.nick || null, flags }, b);
+      return Object.assign({}, b, { acct: r.acct, at: r.at, nick: r.pnick || b.nick || null, flags });
     }) };
   }
   // wrong admin passwords in the last 15 minutes (index.js adminPass), one more when add
