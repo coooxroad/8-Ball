@@ -84,7 +84,29 @@ function fixture(kind) {
     assert(await page.evaluate(() => __dp8.outro.on && __dp8.game.over.winner === 0), 'the end of the match is shown first');
     await page.waitForFunction(() => __dp8.st.screen === 'result' && !__dp8.outro.on, { timeout: 15000 });
     assert(await page.evaluate(() => __dp8.game.over.winner === 0));
+    // a stand-in the room plays (owner 11-25, server/src/ranked.js standInPlan): its shot comes in with how it lines up; the
+    // device lines it up (the preShot), strikes exactly the room's shot from the room's balls, and sends nothing for it
+    const f = fixtures.mistap;
+    const snap = await page.evaluate(f => {
+      const d = __dp8, r = d.ranked; r.leave(); window.__humanMessages = [];
+      const person = createAI(null).rankedPersonaFor(500, seededRandom(171), { personality: 'calm', style: 'balanced' });
+      r.play({ seat: 0, room: 'offline-room-standin', token: 'test', seed: 35, first: 1, mode: 'four', opp: { name: person.name, dama: person.dama }, standIn: person, standInServer: true });
+      d.game.restore(f.game); d.scene.setTable(d.game.P); d.match.enter();
+      const p = f.plan, shot = { s: JSON.parse(JSON.stringify(d.highlights.snapshot(d.game.world))), aim: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, inHand: false, seat: 1, by: 1 };
+      r.hear({ t: 'shot', n: 0, shot, plan: { preShot: p.preShot, pos: null } });
+      window.__snap0 = shot.s.balls; return shot.s;
+    }, f);
+    // (where the shot must leave the balls: struck here on the same physics from the room's balls)
+    const want = (() => { const g = createGame(physicsFor(createPhysics, 'bar'), createAI); g.restore(f.game); require('../../highlights')().restore(g.world, snap); const p = f.plan;
+      g.P.strike(g.world, p.angle, p.V, p.a || 0, p.b || 0, p.el || 0); g.P.run(g.world, 40); return g.world.balls.map(b => [b.x, b.y, b.on]); })();
+    await page.waitForFunction(() => __dp8.st.auto && __dp8.st.auto.plan && __dp8.st.auto.plan.exact, null, { timeout: 30000 });
+    await page.evaluate(() => { const a = __dp8.st.auto; a.t = a.t0 + a.plan.preShot.duration + 0.01; });
+    // (struck, run and settled: the shot over - the next turn begun, the stand-in's again if it scored, or the game over)
+    await page.waitForFunction(() => { const d = __dp8; return !(d.st.auto && d.st.auto.plan) && d.st.phase !== 'sim' && d.st.phase !== 'strike' && d.game.P.rest(d.game.world) && d.game.world.balls.some((b, i) => b.x !== window.__snap0[i][0] || b.y !== window.__snap0[i][1]); }, null, { timeout: 90000 });
+    const got = await page.evaluate(() => ({ balls: __dp8.game.world.balls.map(b => [b.x, b.y, b.on]), sent: window.__humanMessages.filter(m => m.t === 'shot' || m.t === 'resign') }));
+    assert.deepEqual(got.sent, [], 'the device sent something for the room\'s stand-in');
+    assert(got.balls.every((b, i) => Math.abs(b[0] - want[i][0]) < 1e-9 && Math.abs(b[1] - want[i][1]) < 1e-9 && b[2] === want[i][2]), 'the room\'s stand-in shot was not struck exactly: ' + JSON.stringify({ got: got.balls, want }));
     assert.deepEqual(errors, []);
-    console.log('human browser: real Worker state, corrected mistap, spin UI, cancel/re-aim, legal in-hand reposition and server-confirmed stand-in resignation passed');
+    console.log('human browser: real Worker state, corrected mistap, spin UI, cancel/re-aim, legal in-hand reposition, server-confirmed stand-in resignation and the room\'s stand-in struck exactly passed');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

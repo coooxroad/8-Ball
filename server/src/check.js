@@ -49,6 +49,16 @@ export function playLesson(id, proof) {
    null while there is more, or the result. Between shots (when every ball is still) checkpoint() says where it is, and
    a Replay made from that checkpoint carries on from there - so a server that may only think for a few milliseconds per
    request still plays every shot, a few hundred steps per request. */
+/* A match's game at its start, before any shot: a ranked game (open) from its room's seed - the rack and the 4구 roll-out
+   as both devices made them (room.js); one played on a device from seed 1. makeAI: the computer player too (a stand-in's
+   turn planned by the room - ranked.js standInPlan). */
+export function startGame(log, open, makeAI) {
+  const o = log && log.opts || {}, g = E.createGame(E.physicsFor(E.createPhysics, log.table), makeAI);
+  const rnd = open ? E.seededRandom(log.seed >>> 0) : seeded(1);
+  g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, minus: o.minus !== false, hugu: !!o.hugu, ot: !!o.ot, team: !!o.team });
+  if (open && log.mode === 'four') { g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); g.P.run(g.world, 40); g.world.ev = g.P.newEv(); }
+  return g;
+}
 export class Replay {
   // open: a ranked game's log (room.js) - it may stop before the end (someone left), and who won is what the replay says,
   // not what a player claims. A shot carries the seat that sent it (seat), checked against whose turn it was; a failing
@@ -56,11 +66,7 @@ export class Replay {
   constructor(log, cp, open) {
     this.log = log; this.open = !!open; const o = log && log.opts || {};
     const why = logError(log); if (why) { const at = badShotAt(log); this.out = at == null ? { ok: false, why } : { ok: false, why: `shot ${at}: ${why}`, at }; return; }
-    this.g = E.createGame(E.physicsFor(E.createPhysics, log.table));
-    // a ranked game starts from its room's seed, the rack and the 4구 roll-out as both devices made them (room.js)
-    const rnd = this.open ? E.seededRandom(log.seed >>> 0) : seeded(1);
-    this.g.start(log.mode, ['A', 'B'], false, { rnd, first: o.first ? 1 : 0, target: o.target, cushions: o.cushions, targets: o.targets, tens: !!o.tens, finish: o.finish, ice: !!o.ice, real: o.real, minus: o.minus !== false, hugu: !!o.hugu, ot: !!o.ot, team: !!o.team });
-    if (this.open && log.mode === 'four') { this.g.rollOut(E.seededRandom((log.seed ^ 0x5bd1e995) >>> 0)); this.g.P.run(this.g.world, 40); this.g.world.ev = this.g.P.newEv(); }
+    this.g = startGame(log, this.open);
     this.i = 0; this.points = [0, 0]; this.running = false;
     // Older checkpoints did not save a win (no 'over' at all). Replaying those terminal checkpoints from the start recovers
     // pending rewards. (One of now has over: null when the game went on - the room's replay kept up with play, RoomCore.ahead.)

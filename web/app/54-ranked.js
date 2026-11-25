@@ -4,7 +4,9 @@
    other (50-match.js), with match.ctx.online = the game below:
      each device plays its own shots and sends them to the room; the other's shots come in and are played here the same
      way (the table first put exactly where the shot was struck from), as the computer's shots are (flow.auto);
-     a stand-in's shots are worked out here, and sent as its seat's;
+     a stand-in's shots come from the room, which plays it (owner 11-25 - server/src/ranked.js standInPlan), and are
+     lined up here as the computer's are (their preShot); an older server's room (no standInServer) still has them
+     worked out here, and sent as its seat's;
      the room plays the whole game again when it ends, and its result - who won, the coins, the rating - is the one shown.
    The seats are the room's: seat 0 on the left. */
 // this player's rating in a game's family (economy.js familyOf - each family its own, 11-16), and a rating's tier name
@@ -75,7 +77,7 @@ const ranked = {
 
   play(r) {
     // (kind 'invite': a game with a friend who came by a code - 55-invite.js - played the same way, its rules the host's)
-    const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, table: r.table || 'bar', opp: r.opp, standIn: r.standIn || null, kind: r.kind || 'ranked',
+    const o = ranked.on = { seat: r.seat, room: r.room, token: r.token, seed: r.seed >>> 0, first: r.first, mode: r.mode, table: r.table || 'bar', opp: r.opp, standIn: r.standIn || null, standInServer: !!r.standInServer, kind: r.kind || 'ranked',
       inbox: [], n: 0, sent: [], ws: null, done: false, aimAt: 0, tries: 0, res: {}, mine: {}, dama: famDama(r.mode), t0: Date.now(), r };
     ranked.connect();
     // (2:2: r.team - the four seats; each side's name is its two players', and whose shot it is goes round - game.js)
@@ -148,7 +150,8 @@ const ranked = {
       const have = m.shots.length;
       const byOf = s => s.by != null ? s.by : s.seat;
       if (m.team && !o.team) o.team = m.team;
-      for (let i = o.n + o.inbox.length; i < have; i++) if (byOf(m.shots[i]) !== o.seat && !o.standIn) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
+      if (m.standInServer) o.standInServer = true;
+      for (let i = o.n + o.inbox.length; i < have; i++) if (byOf(m.shots[i]) !== o.seat && (!o.standIn || o.standInServer)) o.inbox.push(Object.assign({ n: i }, m.shots[i].timeout ? { timeout: true } : { shot: m.shots[i] }));
       if (o.watch) return ranked.catchUp();
       // (the room's rules are the rules: a device that began the game on others, before any shot, begins it again on the
       // room's - the 무효 games of 11-16 were a device playing the base rules while the room replayed the tier's)
@@ -163,7 +166,7 @@ const ranked = {
     }
     // (a shot already in line - heard again after a reconnect - is not played twice)
     if ((m.t === 'shot' || m.t === 'timeout') && m.n < o.n + o.inbox.length) return;
-    if (m.t === 'shot') { o.inbox.push({ n: m.n, shot: m.shot }); o.aimBuf = null; }   // (their next turn starts from their next aim, not this one)
+    if (m.t === 'shot') { o.inbox.push({ n: m.n, shot: m.shot, plan: m.plan || null }); o.aimBuf = null; }   // (their next turn starts from their next aim, not this one)
     else if (m.t === 'timeout') { o.inbox.push({ n: m.n, timeout: true }); o.aimBuf = null; }
     else if (m.t === 'aim') ranked.aimFrom(m);
     else if (m.t === 'emote') emote.got(m);
@@ -264,20 +267,23 @@ const ranked = {
       if (bot) { game.levels = [q.bot, q.bot]; return { think: 0.6, showSpin: true, ai: true, plan: a => ranked.planOf(aiAsk(a), false) }; }
     } else if (game.turn === o.seat) return null;
     // (a person-like stand-in lines up its own way - its preShot, played by autoTick - so it needs no fixed wait)
-    if (o.standIn) return { think: 0.4, showSpin: true, ai: true, resign() { ranked.resign(1 - o.seat); }, plan: a => ranked.planOf(aiAsk(a), true) };
-    return { think: 0, showSpin: true, plan() {
+    if (o.standIn && !o.standInServer) return { think: 0.4, showSpin: true, ai: true, resign() { ranked.resign(1 - o.seat); }, plan: a => ranked.planOf(aiAsk(a), true) };
+    return { think: o.standIn ? 0.4 : 0, showSpin: true, plan() {
       const m = o.inbox[0]; if (!m) return null;
       o.inbox.shift();
       if (m.timeout) { setTimeout(() => { if (ranked.on === o && flow === match) match.timeout(); }, 0); return null; }
       // the table exactly as it was when they struck (the same physics has brought it there anyway; this keeps it so)
       const sh = m.shot; highlights.restore(game.world, sh.s); game.placing = null;
+      // (the room's stand-in: lined up as the computer lines up its own - its preShot - then struck exactly as the room has
+      // it, from exactly where the room has the balls: snap, exact)
+      if (m.plan && m.plan.preShot) return { angle: sh.aim, V: sh.V, a: sh.a, b: sh.b, el: sh.el || 0, pos: m.plan.pos || null, preShot: m.plan.preShot, snap: sh.s, exact: true };
       return { angle: sh.aim, V: sh.V, a: sh.a, b: sh.b, el: sh.el || 0, pos: null, quick: true };
     } };
   },
   // the computer's plan (aiAsk) as a turn plays it (40-shot.js autoTick); a stand-in's may be an action (resigning)
   planOf: (p, action) => !p ? null : Object.assign({ angle: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, pos: p.pos, preShot: p.preShot }, action ? { action: p.action } : {}),
   // this turn is this device's to send: its player's, its stand-in's, or (2:2, the host) a computer seat's
-  ours(o) { const who = game.shooter(); return o.team ? who === o.seat || (o.seat === 0 && !!o.team[who] && o.team[who].bot != null) : game.turn === o.seat || !!o.standIn; },
+  ours(o) { const who = game.shooter(); return o.team ? who === o.seat || (o.seat === 0 && !!o.team[who] && o.team[who].bot != null) : game.turn === o.seat || (!!o.standIn && !o.standInServer); },
   // every shot struck here (by this device's player or its stand-in) goes to the room; every shot counts toward the next n
   struck(snap, V, a, b, el) {
     const o = ranked.on; if (!o) return;

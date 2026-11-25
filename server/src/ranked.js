@@ -1,8 +1,9 @@
 /* Ranked games: the lobby that pairs players and the room a game is played in - their rules, testable in node.
    lobby.js and room.js are the Durable Objects that hold them. */
-import { E, Replay } from './check.js';
+import { E, Replay, startGame } from './check.js';
 import { shotError } from './match-log.js';
 import { datasetRow } from './dataset-core.js';
+const H = E.createHighlights();
 
 /* The ranked lobby: one Durable Object per game (8볼, 9볼, 4구, 3구). Players waiting for a ranked game ask it every couple
    of seconds; it pairs two whose rating is close, the range widening the longer they wait. Nobody close enough after a
@@ -76,7 +77,7 @@ export class LobbyCore {
     for (const [k, w] of this.wait) if (t - w.seen > GONE) this.wait.delete(k);
     let me = this.wait.get(p.acct);
     if (!me || (p.seek != null && me.seek != null && me.seek !== p.seek)) this.wait.set(p.acct, me = { acct: p.acct, dama: p.dama, rd: p.rd, name: p.name, icon: p.icon, gear: p.gear || null, since: t, standInAt: this.delayOf() });
-    me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null; me.seek = p.seek;
+    me.seen = t; me.name = p.name; me.icon = p.icon; me.gear = p.gear || null; me.seek = p.seek; me.si = p.si === 1;
     // the closest of those close enough (by either one's wait)
     let best = null, bd = Infinity;
     for (const o of this.wait.values()) {
@@ -102,9 +103,12 @@ export class LobbyCore {
     // devices alike - the devices once played the base rules while the room replayed the tier's, and every ranked game
     // ended 무효 (the replay found no winner where the devices had one: 11-16)
     const rules = kind === 'arcade' ? undefined : E.rankedRules(this.mode, seats.map(s => s.dama));
-    const init = { room, mode: this.mode, seed, first, standIn: persona, kind, rules,
+    // (a stand-in's turns planned by the room - RoomCore.standInPlan - for a device that takes them: si, an app since 11-25;
+    // an older one still plans them itself, as before. 증강 당구 pays nothing and moves no rating: its stand-in stays the device's)
+    const siServer = !!persona && !!a.si && kind !== 'arcade';
+    const init = { room, mode: this.mode, seed, first, standIn: persona, siServer, kind, rules,
       seats: seats.map((s, i) => ({ acct: s.acct, token: tokens[i], name: s.name, icon: s.icon, dama: s.dama, rd: s.rd, gear: s.gear || null })) };
-    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, kind, rules, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined });
+    const you = i => ({ room, seat: i, token: tokens[i], seed, first, mode: this.mode, table: ROOM_TABLE, kind, rules, opp: pub(seats[1 - i]), standIn: i === 0 && persona ? persona : undefined, standInServer: i === 0 && siServer ? true : undefined });
     const ready = !this.deferReady;
     this.made.set(a.acct, { at: t, you: you(0), seek: a.seek, room, ready });
     if (b.acct) this.made.set(b.acct, { at: t, you: you(1), seek: b.seek, room, ready });
@@ -354,7 +358,7 @@ export class RoomCore {
     if (this.get('room')) return false;
     const kind = x.kind === 'invite' ? 'invite' : x.kind === 'arcade' && x.mode === 'arcade' ? 'arcade' : 'ranked', n = kind === 'invite' && x.seats.length === 4 ? 4 : 2, seats = x.seats.slice(0, n);
     const bots = seats.map((q, i) => q.bot && i > 0 ? i : -1).filter(i => i > 0);
-    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
+    this.set('room', { room: x.room, mode: x.mode, seed: x.seed >>> 0, first: x.first ? 1 : 0, standIn: x.standIn || null, siServer: !!(x.standIn && x.siServer && kind === 'ranked'), at: Date.now(), kind, watch: typeof x.watch === 'string' ? x.watch : null,
       rules: kind === 'invite' ? E.inviteRules(x.mode, x.rules) : kind === 'ranked' ? (x.rules && x.rules.target ? x.rules : E.rankedRules(x.mode, seats.map(q => q.dama))) : RANKED_RULES[x.mode], team: n === 4, bots });
     this.set('seats', seats); this.set('status', 'playing'); this.set('ended', seats.map((q, i) => bots.includes(i))); this.set('gone', seats.map(() => null));
     this.set('joined', seats.map((q, i) => (i === 1 && !!x.standIn) || bots.includes(i))); this.set('joinBy', Date.now() + JOIN_WITHIN);
@@ -376,7 +380,7 @@ export class RoomCore {
   // what a device needs to play: the game, the other player (in 2:2 every seat), every shot so far
   state(seat) {
     const r = this.get('room'), s = this.get('seats'), o = s[r.team ? (seat + 1) % 4 : 1 - seat], pub = q => ({ name: q.name, icon: q.icon, dama: q.dama, gear: q.gear || null, bot: q.bot ? (q.level || 2) : undefined });
-    return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null,
+    return { t: 'state', seat, mode: r.mode, seed: r.seed, first: r.first, rules: r.rules || RANKED_RULES[r.mode], kind: r.kind || 'ranked', standIn: seat === 0 ? r.standIn : null, standInServer: seat === 0 && r.siServer ? true : undefined,
       opp: pub(o), team: r.team ? s.map(pub) : undefined, shots: this.shots(), status: this.get('status'), result: this.get('result', null), arc: this.arcState(seat),
       again: this.get('again', null) || undefined, next: this.get('next', null) || undefined };
   }
@@ -409,8 +413,10 @@ export class RoomCore {
     if (m.t === 'card') { this.arcHear(seat, m); return null; }
     // (증강 당구: nothing is played before the table is chosen)
     if ((m.t === 'shot' || m.t === 'timeout') && r.kind === 'arcade' && !(this.get('arc') || { done: [] }).done.length) return null;
+    // (a stand-in the room plays - standInPlan: nothing a device says for it counts)
+    if (r.siServer && seat === 0 && m.as === 1 && (m.t === 'shot' || m.t === 'timeout' || m.t === 'resign')) return null;
     if (m.t === 'shot' || m.t === 'timeout') {
-      // the stand-in's shots come from the other device; a shot's place must be the next one (a repeat is dropped)
+      // the stand-in's shots come from the other device (an older app's: standInPlan); a shot's place must be the next one (a repeat is dropped)
       // seat: whose turn it is played as; by: the device that sent it (a stand-in's shots are its player's device's to
       // answer for). A shot not of the right shape is never kept nor passed on: it ends the game against the device that
       // sent it (Codex B13). Only the fields a shot has are kept.
@@ -542,6 +548,48 @@ export class RoomCore {
     // (out of shots - or the game over, or a shot that does not fit: let go; a shot sent since starts it again)
     this.pre = null; this.preN = rp.log.shots.length; if (!out.ok) this.set('aheadBad', true);
     return out.ok && !rp.g.over && this.shots().length > this.preN;
+  }
+  /* A stand-in's turn, played by the room (owner 11-25: "대리선수샷 그냥 서버가 전달하자" - its player's own device worked
+     its shots out before, and a changed app could have had it miss on purpose). Once the replay kept up with play (ahead)
+     has reached the last shot, and the turn is the stand-in's (seat 1), the person-like computer player (web/ai/50-human.js,
+     in the bundle) plans on the table as the room has it - as a device's AI worker does (web/ai-worker.js): its persona,
+     its seeded chances and its frame of mind kept here from turn to turn ('si'). The shot goes into the log as seat 1's
+     (by 1: nobody's device) and to the device with how the stand-in lines it up (plan.preShot, played there as before).
+     A plan to resign ends the game when the stand-in may (standInMayResign). True when a shot went in (the replay goes on). */
+  standInPlan() {
+    const r = this.get('room'); if (!r || !r.siServer || this.get('status') !== 'playing') return false;
+    if (!this.get('joined', [true, true]).every(Boolean)) return false;
+    const shots = this.shots(), n = shots.length, si = this.get('si', null) || { n: -1, rnd: (r.seed ^ 0x2545f491) >>> 0, hs: [null, null] };
+    if (si.n === n) return false;                                   // (planned at this place already)
+    const log = this.log(); let g;
+    if (!n) g = startGame(log, true);
+    else {
+      // (the game after the last shot: the replay's checkpoint, and the timeouts after it, which never get one)
+      const cp = this.get('cp', null); if (!cp || shots.slice(cp.i).some(q => !q.timeout)) return false;
+      const rp = new Replay(log, cp, true); if (rp.out) return false;
+      if (rp.i < n) { const out = rp.begin(); if (out && !out.ok) return false; }
+      g = rp.g;
+    }
+    if (g.over || g.shooter() !== 1) return false;
+    const G = startGame(log, true, E.createAI);
+    if (!G.restore(JSON.parse(JSON.stringify(g.serialize())))) return false;
+    const lv = r.standIn.level != null ? r.standIn.level : 2;
+    G.levels = [lv, lv]; G.personas = [null, r.standIn]; G.humanStates = si.hs; G.humanCanResign = true; G.aiRnd = E.seededRandom(si.rnd);
+    let p = null; try { p = G.aiPlan(); } catch (e) { p = null; }
+    const hs = si.hs.slice(); if (p && p.humanState) hs[1] = p.humanState;
+    this.set('si', { n, rnd: G.aiRnd.state(), hs });
+    if (p && p.action === 'resign' && standInMayResign(g)) { this.over('resigned', 1, true); return 'check'; }
+    // (no plan - it cannot happen, but the turn must not hang: the softest stroke straight ahead)
+    const plan = p && p.action !== 'resign' && [p.angle, p.V].every(Number.isFinite) ? p : { angle: 0, V: G.vOf(0.2), a: 0, b: 0, el: 0, pos: g.placing ? g.P.findFree(g.world, g.placing === 'kitchen' ? -g.P.HL * 0.75 : 0, 0, g.world.cue) : null };
+    if (g.placing && Array.isArray(plan.pos)) g.P.place(g.world, g.world.cue, plan.pos[0], plan.pos[1]);   // (the cue ball in hand put down, as a device does)
+    const snap = JSON.parse(JSON.stringify(H.snapshot(g.world)));
+    const body = { s: { cue: snap.cue, ice: !!snap.ice, balls: snap.balls }, aim: plan.angle, V: plan.V, a: plan.a || 0, b: plan.b || 0, el: plan.el || 0, inHand: !!g.placing, seat: 1, by: 1 };
+    if (shotError(body, r.mode)) return false;
+    this.set('turnAt', Date.now());
+    this.sql.exec(`INSERT INTO shots (n, body) VALUES (?, ?)`, n, JSON.stringify(body));
+    const pass = { t: 'shot', n, shot: body };
+    this.send(0, Object.assign({ plan: { preShot: plan.preShot || null, pos: g.placing && Array.isArray(plan.pos) ? plan.pos : null } }, pass)); this.send('w', pass);
+    return true;
   }
   /* A slice of the replay. Returns true while there is more. At the end: who won and why - the replay's winner; else a seat
      that resigned, left or sent a shot that does not fit; else (the game stopped with no winner and nobody to blame) a

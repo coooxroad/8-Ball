@@ -197,7 +197,8 @@ const net = (() => {
     // ---- the lobby and the rooms
     // waiting for a ranked game (asked again every couple of seconds): { waiting } or the room it is in (server/src/ranked.js)
     // (seek: this one search's id - the lobby answers a room found only to it, so a new search never lands in an old room)
-    queue: (mode, seek) => signed('/v1/queue', Object.assign({ mode, seek }, seatOf()), 10000),
+    // (si: this app takes a stand-in played by the room - server/src/ranked.js standInPlan)
+    queue: (mode, seek) => signed('/v1/queue', Object.assign({ mode, seek, si: 1 }, seatOf()), 10000),
     leaveQueue(mode) { if (account) call('/v1/queue/leave', { mode }); },
     // a ranked game's room, by WebSocket: its address for the seat's token
     roomUrl: (room, token) => SERVER.replace(/^http/, 'ws') + `/v1/room/${room}?token=${token}`,

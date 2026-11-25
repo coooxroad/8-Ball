@@ -438,6 +438,40 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
     R.message(0, { t: 'end' }); const r = finish(R);
     if (G.winner != null) { const full = E.damaAfter(30, 40, G.winner === 0)[0] - 30;
       ok(r.winner === G.winner && r.dama[0] - 30 === full && R.payouts().length === 1, `ranked: a stand-in game counts like any (${r.why})`); } }
+  // a stand-in the room plays (owner 11-25, RoomCore.standInPlan): the device sends its player's shots only; once the replay
+  // has caught up the room plans the stand-in's and passes them on with how it lines up; a stand-in shot from the device
+  // counts for nothing; the game ends with the replay's winner
+  for (const mode of ['eight', 'four']) {
+    const { sql, tx } = sqlOf(), sent = [[], []], R = new RoomCore(sql, (s, m) => (sent[s] || (sent[s] = [])).push(m), tx);
+    const persona = Object.assign(E.createAI(null).rankedPersonaFor(35, E.seededRandom(5)), { rd: 150 });
+    R.init({ room: 'e'.repeat(32), mode, seed: 99, first: 1, standIn: persona, siServer: true, seats: [{ acct: 'a'.repeat(32), token: 't0', name: 'A', icon: 0, dama: 30 }, { acct: null, token: 't1', name: persona.name, icon: 0, dama: 35 }] });
+    R.connected(0);
+    const g = E.createGame(E.physicsFor(E.createPhysics, 'bar'), E.createAI);
+    g.start(mode, ['A', 'B'], false, Object.assign({ rnd: E.seededRandom(99), first: 1, level: 2 }, R.get('room').rules)); g.players[0].ai = true;
+    if (mode === 'four') { g.rollOut(E.seededRandom((99 ^ 0x5bd1e995) >>> 0)); g.P.run(g.world, 40); g.world.ev = g.P.newEv(); }
+    const drive = () => { for (let k = 0; k < 200000; k++) { if (R.ahead(500)) continue; return R.standInPlan(); } return false; };
+    let n = 0, theirs = 0, lined = 0, ignored = true, said = null;
+    while (!g.over && n < 300 && R.get('status') === 'playing') {
+      const w = g.world;
+      if (g.turn === 1) {
+        said = drive(); const m = said === true ? sent[0].filter(q => q.t === 'shot' && q.n === n).pop() : null; if (!m) break;
+        theirs++; if (m.plan && m.plan.preShot) lined++;
+        H2.restore(w, m.shot.s); g.placing = null; g.beginShot(); g.P.strike(w, m.shot.aim, m.shot.V, m.shot.a, m.shot.b, m.shot.el); g.P.run(w, 40); g.resolve(); n++;
+        continue;
+      }
+      const p = g.aiPlan(); if (p.pos && g.placing) g.P.place(w, g.cueBall().id, p.pos[0], p.pos[1]);
+      const shot = { s: JSON.parse(JSON.stringify(H2.snapshot(w))), aim: p.angle, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, inHand: !!g.placing };
+      // (the device trying to play the stand-in's next turn for it: dropped)
+      if (n === 2) { R.message(0, { t: 'shot', n: n + 1, shot, as: 1 }); R.message(0, { t: 'resign', as: 1 }); ignored = ignored && R.count() === n && R.get('status') === 'playing'; }
+      R.message(0, { t: 'shot', n, shot }); g.beginShot(); g.P.strike(w, p.angle, p.V, p.a || 0, p.b || 0, p.el || 0); g.P.run(w, 40); g.resolve(); n++;
+    }
+    if (R.get('status') === 'playing') R.message(0, { t: 'end' });
+    const res = finish(R);
+    if (process.env.SI_LOG) console.log(`stand-in by the room, ${mode}: ${n} shots, ${theirs} by the room, ${res && res.why} ${res && res.winner}`);
+    ok(theirs > 0 && lined === theirs, `stand-in by the room, ${mode}: the room plays the stand-in's turns and says how it lines up (${theirs} shots)`);
+    ok(ignored, `stand-in by the room, ${mode}: a stand-in shot or resignation from the device counts for nothing`);
+    ok(res && (g.over ? res.winner === g.over.winner && res.why === 'ended' : said === 'check' && res.why === 'resigned' && res.winner === 0), `stand-in by the room, ${mode}: the device's game and the room's agree (${res && res.why}, ${n} shots)`);
+  }
   // Codex B11-B15: what a seat sends is held to the game
   { const G = rankedGame('eight', 7, 0), s0 = G.msgs[0].seat, play = (R, msgs) => { for (const x of msgs) R.message(x.seat, x.m); };
     const sendWith = (change, by) => { const { R, sent } = roomOf('eight', 7, 0); const m = JSON.parse(JSON.stringify(G.msgs[0].m)); change(m.shot); R.message(by == null ? s0 : by, m); return { R, sent }; };

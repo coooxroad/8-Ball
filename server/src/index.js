@@ -9,7 +9,8 @@
    GET  /v1/puzzles/live                              the puzzles' ratings as players have moved them, the admin's overrides and
                                                       knobs (puzzlebook-core.js live)
    POST /v1/match   { req, kind: friend | cpu, log }  a match played on the device: paid by economy.js
-   POST /v1/queue   { mode, name, icon, gear }        waiting for a ranked game (ask every 2 s): { waiting } or the room
+   POST /v1/queue   { mode, name, icon, gear, si }    waiting for a ranked game (ask every 2 s): { waiting } or the room
+                                                     (si 1: the app takes a stand-in the room plays - ranked.js standInPlan)
    POST /v1/queue/leave { mode }                      stop waiting
    POST /v1/invite/open { mode, rules, name, icon, gear } a game with a friend: a code ({ code }); then
    POST /v1/invite/ask  { code }                      (every 2 s) { waiting } or the room, as /v1/queue
@@ -253,7 +254,7 @@ async function frontDoor(request, env) {
       if (!url.pathname.endsWith('leave') && E.soonFor(body.mode, t.debug)) return json({ ok: false, why: 'soon' }, 403);
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));
       const lobby = env.LOBBY.get(env.LOBBY.idFromName(body.mode));
-      const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ near: nearOf(request), acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, seek: typeof body.seek === 'string' ? body.seek.slice(0, 32) : undefined }) });
+      const r = await lobby.fetch('https://lobby' + (url.pathname.endsWith('leave') ? '/leave' : '/ask'), { method: 'POST', body: JSON.stringify({ near: nearOf(request), acct: m[1], dama: t.dama, rd: t.rd, name, icon, gear: t.gear || null, mode: body.mode, seek: typeof body.seek === 'string' ? body.seek.slice(0, 32) : undefined, si: body.si === 1 ? 1 : 0 }) });
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json' }, CORS) });
     }
     const r = await vault.fetch('https://vault' + url.pathname, {

@@ -36,6 +36,7 @@ export class Room extends DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, ['s' + seat]);
     this.core.connected(seat);
+    { const r = this.core.get('room'); if (r && r.siServer) await this.soon(30); }   // (the stand-in may be the first to play)
     { const a = this.core.arcIn(); if (a != null) await this.soon(a + 50); }   // (증강 당구's vote: its clock started)
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -70,6 +71,8 @@ export class Room extends DurableObject {
     if (st === 'checking') { if (this.core.work(SLICE)) return this.soon(20); }
     if (st === 'playing') {
       if (this.core.ahead(SLICE)) return this.soon(20);        // (the timers are looked at again on that alarm)
+      // (a stand-in the room plays: its turn, once the replay has caught up - a shot played, or its resignation checked)
+      if (this.core.standInPlan()) return this.soon(20);
       const gone = this.core.get('gone'), wj = this.core.waitingJoin(), idle = this.core.idleIn();
       if (gone.some(Boolean)) return this.soon(5000);
       if (wj != null) return this.soon(wj + 500);

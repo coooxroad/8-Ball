@@ -110,6 +110,8 @@ function autoTick(dt) {
     if (t >= a.plan.preShot.duration) {
       st.aim = a.plan.angle; st.auto = null;
       if (a.plan.action === 'resign' && a.src.resign) { st.phase = 'idle'; a.src.resign(); return; }
+      // (a shot that must be struck exactly as given - the room's stand-in, 54-ranked.js: from its balls, at its el)
+      if (a.plan.exact) { highlights.restore(game.world, a.plan.snap); game.placing = null; st.el = a.plan.el; }
       shoot(a.plan.V, a.plan.a, a.plan.b, st.el);
     }
     return;
