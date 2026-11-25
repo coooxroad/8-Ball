@@ -168,6 +168,8 @@
       if (atStep < 0 && w.ev.at) atStep = n;
     }
     for (const b of w.balls) { const q = raw.get(b.id); if (q && !q.end && b.on && (b.vx || b.vy)) q.end = { v: Math.hypot(b.vx, b.vy), pocket: null }; }
+    // (kept as single floats - a sweep keeps thousands of strokes: a tenth of a micron is all a position loses)
+    for (const q of raw.values()) q.a = Float32Array.from(q.a);
     const ev = w.ev, res = judge(ev, w);
     return { shot, ev, ok: !!res.ok, foul: !!res.foul, cue, start, at: ev.at ? { x: ev.at[0], y: ev.at[1], ball: ev.at[3], step: atStep } : null, raw, w, views: new Map(), minds: new Map() };
   }

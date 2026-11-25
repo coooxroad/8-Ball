@@ -8,7 +8,7 @@
    for, the table's shape, a ball to keep out, more than one to pot, a second turn: extraOf). The player looks over the
    ways that came to mind, surest first (their hand over the window as pictured), and plays the first - three tries, the
    hand steadier and the aim moved towards the real middle after each miss (they saw where it went: seeRoutes tries); a
-   way that misses by far (under 0.3 on the first try) is given up for the surest one left that is really there.
+   way pictured that is not there at all is given up after a try for the surest one left that is really there.
      e(R) = sum over ways r, surest first: seen_r x prod(1 - seen_q, q surer) x [p1 + (1 - p1) p2 0.75 + (1 - p1)(1 - p2) p3 0.5]
    with p_k a try's chance on the real game - every aim that really comes off, any way, under the hand about the aim the
    player takes. A way pictured that is not there costs the tries spent on it; a real way pictured off its line is played
@@ -74,17 +74,22 @@ function rateSee(z, o = {}) {
       seconds.set(r, sweepTurn(E, z, res.w, 1, res.down, z.sol && z.sol[1]));
     }
   }
-  /* (a way that misses by far - the picture was wrong, the ball showed it - is given up after the first try for the
-     surest way left that really comes off near enough, if one came to mind: the second and third tries are that way's) */
-  const keep = r => r.tries[0] >= 0.3;
-  const after = (rs, r) => { const alt = rs.filter(q => q !== r && keep(q)).sort((a, b) => b.sure - a.sure)[0]; return alt ? alt.seen * (alt.tries[1] * AI.TRY_S[1] + (1 - alt.tries[1]) * alt.tries[2] * AI.TRY_S[2]) : 0; };
+  /* (a way pictured that is not there at all - no real way near it - is given up after the first try, the ball having
+     shown it, for the surest way left that is really there, if one came to mind: the second and third tries are that
+     way's. A real way pictured off its line is tried again, the aim put right as far as the miss showed: seeRoutes tries) */
+  const keep = r => !!r.truth;
+  // (each try's chance on a turn, the way r chosen first: its own tries, or - not there - the first, then the way switched to)
+  const tries = (rs, r) => { if (keep(r)) return r.tries; const alt = rs.filter(q => q !== r && keep(q)).sort((a, b) => b.sure - a.sure)[0]; return [r.tries[0], alt ? alt.seen * alt.tries[1] : 0, alt ? alt.seen * alt.tries[2] : 0]; };
   const e = R => {
     const rs = chosen(sw1, R); let sc = 0;
+    // (the second turn as it is from where the likeliest first way leaves the balls - taken for every first way)
+    const sw2 = T > 1 ? [...seconds.values()][0] : null, rs2 = sw2 ? chosen(sw2, R) : null;
     for (const r of rs) {
       if (r.pc < 1e-4) continue;
-      if (T === 1) { sc += r.pc * (keep(r) ? score(r.tries) : r.tries[0] + (1 - r.tries[0]) * after(rs, r)); continue; }
-      const key = [...seconds.keys()].find(q => q.key === r.key && q.stroke === r.stroke && Math.abs(q.c - r.c) < 0.02); if (!key) continue;
-      for (const r2 of chosen(seconds.get(key), R)) if (r2.pc > 1e-4) sc += r.pc * r2.pc * score(r.tries.map((p, k) => p * r2.tries[k]));
+      const t1 = tries(rs, r);
+      if (T === 1) { sc += r.pc * score(t1); continue; }
+      if (!rs2) continue;
+      for (const r2 of rs2) if (r2.pc > 1e-4) { const t2 = tries(rs2, r2); sc += r.pc * r2.pc * score(t1.map((p, k) => p * t2[k])); }
     }
     return sc;
   };

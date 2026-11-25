@@ -192,8 +192,11 @@ AGENTS.md는 "코드를 어떻게 고치나"를, 이 파일은 "이 소유자와
   - [x] 8-1. 보는 AI v2 코어 ①~⑤(`web/ai/64-see-mind.js`) + 시험(`web/test/see.js`, CI에도) — 커밋 메시지 'AI 4차 8-1'
   - [x] 8-2. 분석: 키스를 역계획으로(`seeKiss` — 행운·불운이 레이팅·조준에 따라), v1 `kissMeant` 걷어냄 — 같은 커밋.
     + 빗나감의 원인 '그림'(`seeMisread`: 그 레이팅이 그리는 길 위를 겨눴는데 진짜 길이 손의 퍼짐보다 멀리 — 리뷰 문장 `miss.picture`)
-  - [~] 8-3. 퍼즐 AI 교체 + 다시 매김 + 괴리 보고서 — `web/tools/puzzles/see.js`(rateSee)·`see-rate.js`(다시 매김·보고서 `docs/puzzle-see-gap.md`)
-  - [~] 8-4. 봇·대역: 큐를 안 세운 쿠션 길(4구 쿠션, 킥·뱅크)은 그 레이팅이 그리는 그림만큼 조준이 기운다(`seePicture` lean, `50-human.js`).
+  - [x] 8-3. 퍼즐 AI 교체 + 다시 매김 + 괴리 보고서 — `web/tools/puzzles/see.js`(rateSee)·`see-rate.js`. 409개 전부 보는 AI로 매김(옛과 상관 0.4,
+    평균 차이 562 — `docs/puzzle-see-gap.md`). `puzzles.js`엔 옛·새 가운데(가중치 0.5)를 309개에; 두 턴 60개와 '2900도 세 번에 반을 못 푸는'
+    50개(목록은 보고서 — 지울지 소유자)는 그대로. 보는 AI만 쓰려면 `node web/tools/puzzles/see-rate.js --merge … --write --weight 1`
+    (결과 JSON은 다시 돌려야 함: 한 퍼즐 10~20초, 두 일꾼이면 40분쯤; 일꾼은 `--max-old-space-size=2500`로 — 기록이 많아 메모리가 큼)
+  - [x] 8-4. 봇·대역: 큐를 안 세운 쿠션 길(4구 쿠션, 킥·뱅크)은 그 레이팅이 그리는 그림만큼 조준이 기운다(`seePicture` lean, `50-human.js`).
     그림의 곡선(`MIND.COMP` 1200, `COMP_W` 160)은 봇 4구 득점률이 레이팅마다 예전과 같게 맞춤(1800 81%→81%, 1200 49%→48%, 600샷씩)
   - [x] 8-5. 페어플레이 v1 — 커밋 메시지 'AI 4차 8-5' (서버 숫자·관리자 탭·제재 ①~⑤; 문턱은 서버 설정에만)
   - [x] 8-6. Fit 워크플로(`.github/workflows/fit.yml`, `web/tools/see/pull.js`·`fit.js` → `web/ai/64a-see-fit.js`) —

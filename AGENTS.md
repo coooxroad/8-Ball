@@ -202,8 +202,8 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     `rate.js`(지금 목록 다시 매김, `--part`/`--merge`로 나눠서), `fit.js`(서버 시도 기록으로 학습: 퍼즐별 IRT 레이팅 + AI가 틀린 만큼을
     특징으로 릿지 회귀, 소수 점수). **11-26 밤 퍼즐 AI v2**: `see.js`(rateSee — 보는 AI로: 그 레이팅의 사람이 그리는 그림으로 떠올린 길들을
     확신 순으로 쳐 봄, 그림이 틀려 크게 빗나간 길은 한 번 뒤 버림, 세 번), `see-rate.js`(목록 전체를 보는 AI로 다시 매기고 괴리 보고서
-    `docs/puzzle-see-gap.md`, `see-ratings.json` — Fit이 읽음; `--write`면 `puzzles.js` 레이팅도, 사람이 길을 못 찾는 퍼즐(`fair` < 0.5)은
-    그대로 두고 보고서에 — 지울지는 소유자). 보는 AI 맞추기: `web/tools/see/fit.js`(샷 데이터셋 → 손·그림 곡선, 퍼즐 시도 → FIND 더하기;
+    `docs/puzzle-see-gap.md`, `see-ratings.json` — Fit이 읽음; `--write`면 `puzzles.js` 레이팅을 옛·새 가운데로(`--weight`, 기본 0.5),
+    두 턴과 사람이 길을 못 찾는 퍼즐(2900도 세 번에 반을 못 품)은 그대로 두고 보고서에 — 지울지는 소유자). 일꾼은 `--max-old-space-size=2500`. 보는 AI 맞추기: `web/tools/see/fit.js`(샷 데이터셋 → 손·그림 곡선, 퍼즐 시도 → FIND 더하기;
     Maia식 설명률) + `pull.js`(관리자 비밀번호로 서버에서 읽기) + `.github/workflows/fit.yml`(손으로·매달 2일, 결과 `web/ai/64a-see-fit.js`). 퍼즐 테이블은 `tables.js TABLE_OUTLINES`(윤곽 = 쿠션 코 선, 섬, 포켓 자리)와
     `physics.js shape`(섬, 윤곽에 뚫린 포켓 `cut`, `ev.edges`), 화면은 `scene/20-table.js setShape`가 윤곽에서 통째로 지음(11-24 밤: 일반 테이블처럼
     마감 — 단면 `SH_PROF`을 윤곽 따라 돌림, 윤곽 따라 나뭇결·판 이음선, 바깥 모서리 둥글게·안쪽은 연귀(`shapeAt`이 두 연귀 사이로 묶음),

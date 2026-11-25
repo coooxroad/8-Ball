@@ -6,7 +6,7 @@
      node web/tools/puzzles/see-rate.js --merge a.json b.json --report ../../../docs/puzzle-see-gap.md [--write]
        --report   the gap report (markdown): how far the two ratings lie apart, by kind; the puzzles no person finds a way
                   in (fair: the surest real way a 2400 player sees comes to mind under half the time); the biggest moves
-       --write    the seeing AI's ratings into web/puzzles.js (a puzzle no person finds a way in keeps its rating - it is
+       --write    the seeing AI's ratings into web/puzzles.js - half way from the old, --weight 1 for all the way (a puzzle no person finds a way in keeps its rating - it is
                   listed in the report, for the owner to take out), and see-ratings.json (the Fit workflow reads it)
        --ratings  see-ratings.json only */
 const fs = require('fs'), path = require('path'), L = require('./lab'), SEE = require('./see');
@@ -37,7 +37,8 @@ const stat = list => {
   return { n: list.length, mean: Math.round(mean), abs: Math.round(abs), corr: so && ss ? Math.round(cov / so / ss * 100) / 100 : null };
 };
 const way = q => q ? `${q.kiss ? '키스 ' : ''}쿠션 ${q.feats.cushions}${q.feats.kick ? `·먼저 쿠션 ${q.feats.kick}` : ''}${q.feats.bank ? '·뱅크' : ''}${q.feats.combo ? '·콤비' : ''}${q.feats.fb ? '·밀고/끌고' : ''}${q.feats.side ? '·회전' : ''}${q.feats.raised ? '·세운 큐' : ''}${q.feats.graze ? `·스침 ${q.feats.graze}` : ''}` : '-';
-const unfair = rows.filter(r => r.fair < FAIR);
+// (no way a person finds: even a 2900 player, three tries, solves it under half the time - e(2900) < 1/2)
+const unfair = rows.filter(r => !(r.e && r.e[1] >= 0.5));
 if (opt('report')) {
   const lines = [];
   lines.push('# 퍼즐 괴리 보고서 — 물리가 찾은 길 대 사람이 보는 길 (보는 AI v2, 11-26 밤)', '');
@@ -49,14 +50,16 @@ if (opt('report')) {
     const s = stat(list); if (s) lines.push(`| ${name} | ${s.n} | ${s.mean > 0 ? '+' : ''}${s.mean} | ${s.abs} | ${s.corr} |`);
   }
   lines.push('', `## 사람이 길을 못 찾는 퍼즐 (${unfair.length}개)`, '');
-  lines.push(`2400 플레이어가 실제로 되는 길(그 손으로 50% 이상)을 떠올릴 확률이 ${FAIR} 미만 — 물리만 아는 답. 지우지 않았다(소유자 확인 후). 목록:`, '');
-  lines.push(unfair.map(r => `${r.id}(${r.kind}, ${r.old}→${r.see}, 볼 확률 ${r.fair})`).join(', ') || '없음', '');
+  lines.push('2900 플레이어도 세 번 안에 반을 못 푼다(보는 AI) — 물리만 아는 답. 지우지 않았고 레이팅도 그대로 뒀다(소유자 확인 후). 괄호: 옛 레이팅, 2900의 성공 기대, 2400 플레이어가 첫 시도에 되는 진짜 길을 떠올릴 확률. 목록:', '');
+  lines.push(unfair.map(r => `${r.id}(${r.kind}${r.turns > 1 ? '·두 턴' : ''}, ${r.old}, ${r.e ? r.e[1] : '-'}, ${r.fair})`).join(', ') || '없음', '');
   lines.push('## 가장 크게 움직인 20개', '', '| id | 묶음 | 옛 | 새 | 그 레이팅의 사람이 먼저 치는 길 | 볼 확률 | 실제 성공 | 그림이 어긋난 각 |', '|---|---|---|---|---|---|---|---|');
   for (const r of rows.slice().sort((a, b) => Math.abs(b.see - b.old) - Math.abs(a.see - a.old)).slice(0, 20)) {
     const q = (r.at && r.at[r.see] || [])[0];
     lines.push(`| ${r.id} | ${r.kind}${r.turns > 1 ? '·두 턴' : ''} | ${r.old} | ${r.see} | ${way(q)} | ${q ? q.seen : '-'} | ${q ? q.p : '-'} | ${q && q.off != null ? q.off + '°' : '-'} |`);
   }
   lines.push('', '## 읽는 법', '');
+  lines.push(`- \`web/puzzles.js\`에는 옛과 새의 가운데(가중치 0.5)를 넣었다 — 두 추정 모두 아직 실제 시도로 맞춰지지 않았으므로. 보는 AI만 쓰려면 \`--write --weight 1\`.`);
+  lines.push('- 두 턴 퍼즐은 레이팅을 그대로 뒀다 — 둘째 턴을 첫 길 하나가 남긴 자리에서만 읽어 아직 거칠다(위 표의 두 턴 숫자도 그만큼 덜 믿을 것).');
   lines.push('- **새 > 옛**: 답이 사람 눈에 잘 안 보이거나(볼 확률 낮음) 그림이 실제와 어긋나(그림이 어긋난 각 큼) 사람이 노린 곳이 빗나간다 — 옛 AI가 쉽게 본 퍼즐.');
   lines.push('- **새 < 옛**: 넓은 길이 여럿이라 사람이 쉽게 찾는다 — 옛 AI가 길 하나의 어려움으로 매긴 퍼즐.');
   lines.push('- 숫자는 손으로 정한 값(`MIND`)이다. 실제 시도가 쌓이면 Fit 워크플로로 맞춘다(계획 8-3).');
@@ -70,10 +73,14 @@ if (args.includes('--write') || args.includes('--ratings')) {
   fs.writeFileSync(path.join(__dirname, 'see-ratings.json'), '[\n' + out.map(o => JSON.stringify(o)).join(',\n') + '\n]\n'); console.log('wrote see-ratings.json');
 }
 if (args.includes('--write')) {
-  const FILE = path.join(__dirname, '../../puzzles.js'); let n = 0;
+  /* (--weight w: the rating written is old + w (seeing AI - old). Two estimates whose errors are not yet known - the
+     seeing AI's numbers are set by hand until the Fit has real attempts - are best taken half and half; 1: the seeing
+     AI's alone) */
+  const FILE = path.join(__dirname, '../../puzzles.js'), wt = Math.max(0, Math.min(1, +(opt('weight') || 0.5))); let n = 0;
   const src = fs.readFileSync(FILE, 'utf8').replace(/^(\s*)(\{"id":(\d+),.*\})(,?)\n/gm, (m, ind, json, id, comma) => {
-    const q = JSON.parse(json), r = all.get(+id); if (!r || r.fair < FAIR) return m;
-    q.rating = r.see; n++; return ind + JSON.stringify(q) + comma + '\n';
+    // (two turns: the second read from where one first way leaves the balls - too rough yet to move a rating by)
+    const q = JSON.parse(json), r = all.get(+id); if (!r || unfair.includes(r) || r.turns > 1) return m;
+    q.rating = Math.round((r.old + wt * (r.see - r.old)) / 5) * 5; n++; return ind + JSON.stringify(q) + comma + '\n';
   });
-  fs.writeFileSync(FILE, src); console.log(`wrote ${n} ratings into web/puzzles.js`);
+  fs.writeFileSync(FILE, src); console.log(`wrote ${n} ratings into web/puzzles.js (weight ${wt})`);
 }
