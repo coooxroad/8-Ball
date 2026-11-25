@@ -268,6 +268,10 @@ function barsAcross(E, z, easy, rnd) {
 }
 
 /* ---------- writing the list ---------- */
+// the answers file (answers.json: id -> the answer, one line each), from a map of them
+function writeAnswers(m) {
+  fs.writeFileSync(path.join(__dirname, 'answers.json'), '{\n' + [...m].map(([id, s]) => `"${id}":${JSON.stringify(s)}`).join(',\n') + '\n}\n');
+}
 function write() {
   const pools = fs.readdirSync(POOLS).filter(f => /^pool-\d+\.json$/.test(f)).flatMap(f => JSON.parse(fs.readFileSync(path.join(POOLS, f), 'utf8')));
   // (each new answer's speed snapped to one the power slider sets - its round trip - and played again; one that then fails is left out)
@@ -288,14 +292,16 @@ function write() {
   for (const z of kept.filter(q => !q.id).sort((a, b) => a.rating - b.rating)) z.id = z.game === 'pocket' ? next.pocket++ : next.four++;
   fs.writeFileSync(NEXT, JSON.stringify(next) + '\n');
   const four = kept.filter(z => z.game !== 'pocket').sort((a, b) => a.rating - b.rating || a.id - b.id), pocket = kept.filter(z => z.game === 'pocket').sort((a, b) => a.rating - b.rating || a.id - b.id);
-  const order = ['id', 'game', 'goal', 'pot', 'keep', 'table', 'need', 'turns', 'balls', 'walls', 'sol', 'rating', 'fun'];
+  // (the answers apart, in answers.json - never in the app's puzzles.js: owner 11-25)
+  const order = ['id', 'game', 'goal', 'pot', 'keep', 'table', 'need', 'turns', 'balls', 'walls', 'rating', 'fun'];
   const line = z => '    ' + JSON.stringify(Object.fromEntries(order.filter(k => z[k] != null).map(k => [k, z[k]])));
   const FILE = path.join(__dirname, '../../puzzles.js'), src = fs.readFileSync(FILE, 'utf8');
   const a = src.indexOf('  const list = [\n'), b = src.indexOf('\n  ];', a);
   fs.writeFileSync(FILE, src.slice(0, a) + '  const list = [\n' + four.concat(pocket).map(line).join(',\n') + src.slice(b));
+  writeAnswers(new Map(four.concat(pocket).map(z => [z.id, z.sol])));
   const show = list => { const by = {}; for (const z of list) { const k = bandOf(z.rating); by[k] = (by[k] || 0) + 1; } return Object.entries(by).map(([k, n]) => `${k}:${n}`).join(' '); };
   console.log(`wrote ${four.length} 4구 (${four.filter(z => L.Z.plain(z)).length} plain, ${four.concat(pocket).filter(z => old.some(o => o.id === z.id)).length} kept from the list) and ${pocket.length} 포켓 puzzles`);
   console.log(`  4구 plain ${show(four.filter(z => L.Z.plain(z)))}\n  4구 cond ${show(four.filter(z => !L.Z.plain(z)))}\n  포켓 ${show(pocket)}`);
 }
 if (require.main === module) { if (args[0] === 'write') write(); else run(); }
-module.exports = { aims, search, evaluate, fourLayout, pocketLayout, BANDS, MIN_ROOM };
+module.exports = { aims, search, evaluate, fourLayout, pocketLayout, writeAnswers, BANDS, MIN_ROOM };

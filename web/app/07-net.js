@@ -192,6 +192,8 @@ const net = (() => {
     renamed() { if (me) setMe(me); },
     // a reward to be paid: kind 'puzzle' ({ id, shot, shots }) or 'match' ({ kind: friend | cpu, log }); or a counted puzzle
     // attempt to be kept: 'pztry' ({ id, res, shots, k } - server core.js puzzleTry)
+    // a puzzle's answer, for a hint (level 1) or to show it (2) - the answers are not in the app (server core.js puzzleHelp)
+    pzHelp: (id, level, after) => signed('/v1/pzhelp', { id, level, after: !!after }, 8000),
     claim(kind, body) { const q = claims(); q.push({ kind, acct: account ? account.id : null, body: Object.assign({ req: hex(12) }, body) }); store.set('claims', q); flush(); },
 
     // ---- the lobby and the rooms

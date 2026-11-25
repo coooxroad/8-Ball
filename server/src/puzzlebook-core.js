@@ -110,7 +110,7 @@ export class PuzzleBookCore {
     const z = this.Z.byId(id); if (!z) return { ok: false, why: 'no such puzzle' };
     const row = this.list().rows.find(q => q.id === id) || null;
     const tries = this.sql.exec(`SELECT n, res, pr, prd, at FROM tries WHERE id = ? ORDER BY n DESC LIMIT 30`, id).toArray();
-    return { ok: true, row, tries, log: this.logOf(0, 30, id).rows };
+    return { ok: true, row, tries, log: this.logOf(0, 30, id).rows, sol: z.sol || null };   // (the answer: the admin console plays it - not in the app's puzzles.js)
   }
   // a rating by hand (fix: held), and/or a note
   set(id, { r, fix, note }, by, quiet) {

@@ -23,7 +23,7 @@ const pzSize = k => k === 'pocket' ? PZ_RACK : PZ_CASE;
 const PZ_BAND = [[420, 800], [950, 1300], [1000, 1380], [850, 1180], [620, 980], [1250, 1680], [1400, 1820], [1050, 1480]];
 // the puzzles of a game the rated puzzles serve (those the puzzle AI rated); plain: nothing asked but the plain thing - a
 // point (4구), one ball to pot (포켓)
-const pzPool = (k = 'four') => puzzles.list.filter(q => puzzles.gameOf(q) === k && q.sol && q.rating != null && !(pzLive.off && pzLive.off.has(q.id)));
+const pzPool = (k = 'four') => puzzles.list.filter(q => puzzles.gameOf(q) === k && q.rating != null && !(pzLive.off && pzLive.off.has(q.id)));
 const pzPlain = q => puzzles.gameOf(q) === 'four' ? puzzles.plain(q) : (q.pot || []).length === 1 && !q.keep && !q.need && !q.walls && !q.table && !q.turns;
 const pzRating = q => (pzLive.map && pzLive.map.get(q.id)) || q.rating || (b => Math.round(b[0] + (b[1] - b[0]) * ((q.n - 1) / 19) + ((q.id * 37) % 61) - 30))(PZ_BAND[q.stage] || [1000, 1400]);
 // a puzzle's score by its stars (none, ★, ★★, ★★★ - the knob's, pzKnob), and the stars a place holds (the first set's
@@ -329,13 +329,29 @@ const puzzle = {
     return out;
   },
   aiming: fn => () => { if (flow === puzzle && st.phase === 'aim') fn(); },
+  /* the puzzle's answer, from the server the first time it is wanted (owner 11-25: not in the app - the answers had been
+     read off its file): kept on the puzzle (z.sol) from then on; then go() (level 1 a hint, 2 the answer) */
+  helpThen(z, level, go) {
+    const p = puzzle; if (z.sol) return go();
+    if (p.helpBusy) return; p.helpBusy = true;
+    net.pzHelp(z.id, level, p.free || p.done).then(r => {
+      p.helpBusy = false;
+      if (r && r.ok && Array.isArray(r.sol) && r.id === z.id) { z.sol = r.sol; if (flow === puzzle && puzzle.cur === z) go(); }
+      else toast(r ? '정답을 받지 못했습니다. 다시 눌러 주세요.' : '힌트와 정답은 인터넷에 연결되어 있을 때 볼 수 있습니다.', 'foul', 2400);
+    });
+  },
   // a hint marks every place the cue ball touches on the way, numbered (seen while the puzzle counts: ★ at most - asked
   // twice when it would cost a star); the answer (once the puzzle is over) is played out in full
   hint() {
-    const p = puzzle, z = p.cur, sol = puzzles.shotOf(z, p.turn);
+    const p = puzzle, z = p.cur;
     if (!p.free && !p.done && !p.helped && PZ_TRIES - p.tries > 1 && !(Date.now() - (p.hintAsk || 0) < 5000)) { p.hintAsk = Date.now(); return toast('힌트를 보면 최대 ★ · 한 번 더 누르면 봅니다', '', 2400); }
+    p.helpThen(z, 1, () => p.hintShow(z));
+  },
+  hintShow(z) {
+    const p = puzzle, sol = puzzles.shotOf(z, p.turn);
     p.helped = Math.max(+p.helped, 1); if (!p.free && !p.done) { pzr.of(p.k).hinted = z.id; savePrefs(); } scene.setMarks(p.marks(z)); p.hud(); const k = sol[4] ? ` 큐를 ${Math.round(sol[4] * 180 / Math.PI)}° 세워 칩니다.` : sol[3] > 0 ? ' 밀어치기입니다.' : sol[3] < 0 ? ' 끌어치기입니다.' : ''; toast('힌트: 흰 공이 번호 순서대로 닿습니다.' + k, '', 3600); },
-  answer() { const p = puzzle, z = p.cur, sol = puzzles.shotOf(z, p.turn); p.helped = 2; scene.setMarks(null); p.hud(); toast(puzzles.turnsOf(z) > 1 ? `정답: ${p.turn + 1}턴은 이렇게 칩니다.` : '정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: sol[0], power: game.powerOf(sol[1]), a: sol[2], b: sol[3], el: sol[4] }, { quiet: false, after: p.retake }); },
+  answer() { const p = puzzle, z = p.cur; p.helpThen(z, 2, () => p.answerShow(z)); },
+  answerShow(z) { const p = puzzle, sol = puzzles.shotOf(z, p.turn); p.helped = 2; scene.setMarks(null); p.hud(); toast(puzzles.turnsOf(z) > 1 ? `정답: ${p.turn + 1}턴은 이렇게 칩니다.` : '정답: 이렇게 치면 됩니다.', '', 2200); playDemo({ angle: sol[0], power: game.powerOf(sol[1]), a: sol[2], b: sol[3], el: sol[4] }, { quiet: false, after: p.retake }); },
   // (upright: the row of keys where the second player's plate would be)
   bar() {
     const p = puzzle, box = $('#pracBar'); box.textContent = ''; box.hidden = false; $('#p1').hidden = true;

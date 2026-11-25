@@ -19,6 +19,7 @@ export class VaultCore {
     sql.exec(`CREATE TABLE IF NOT EXISTS owned (kind TEXT, id TEXT, at INTEGER, PRIMARY KEY (kind, id))`);
     sql.exec(`CREATE TABLE IF NOT EXISTS solved (id INTEGER PRIMARY KEY, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pztry (id INTEGER PRIMARY KEY, res TEXT, r INTEGER, at INTEGER)`);   // (each puzzle's counted attempt: puzzleTry)
+    sql.exec(`CREATE TABLE IF NOT EXISTS pzhelp (id INTEGER, level INTEGER, after INTEGER, at INTEGER)`);   // (each hint or answer asked for: puzzleHelp)
     sql.exec(`CREATE TABLE IF NOT EXISTS reqs (req TEXT PRIMARY KEY, res TEXT, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS match_claims (digest TEXT PRIMARY KEY, at INTEGER)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, coins INTEGER)`);
@@ -117,6 +118,15 @@ export class VaultCore {
     });
   }
 
+  /* A puzzle's answer, asked for (owner 11-25: the answers are not in the app - web/puzzles.js): level 1 a hint, 2 the
+     answer; after: asked once the puzzle was over (not while it counted). Each is kept - a hint asked while the puzzle
+     counted makes its attempt one star at most (puzzleTry); the rest is for fair play (planned: claude/cue-ai-upgrade-plan.md 4절). */
+  puzzleHelp({ id, level, after }) {
+    const Z = E.createPuzzles(), z = Z.byId(id | 0); if (!z || !z.sol) return { ok: false, why: 'no such puzzle' };
+    const lv = level === 2 ? 2 : 1, n = this.sql.exec(`SELECT COUNT(*) AS c FROM pzhelp`).toArray()[0].c;
+    if (n < 5000) this.sql.exec(`INSERT INTO pzhelp (id, level, after, at) VALUES (?, ?, ?, ?)`, z.id, lv, after ? 1 : 0, Date.now());
+    return { ok: true, id: z.id, sol: z.sol };
+  }
   /* 퍼즐 레이팅 (owner 11-23/24; out of the player's sight since 11-24 밤): a puzzle over (52-puzzle.js pzr) - res its
      score, 1 solved at the first try, 0.75 the second, 0.5 the third (or after a hint), 0 missed three times (its shots
      played again: ones that do not solve it count as missed); the first set's 'o' (1), 'x' (0), 'h' (nothing) still taken. The game's
@@ -133,6 +143,8 @@ export class VaultCore {
       const k = Z.gameOf(z), key = 'pz:' + k, s0 = Number.isFinite(start) && start >= 100 && start <= 3000 ? { r: start, rd: Z.RATE.RD0, n: 0 } : null, before = this.get(key, null) || s0;
       if (this.sql.exec(`SELECT 1 FROM pztry WHERE id = ?`, id).toArray().length) return { ok: true, again: true, pzr: this.pzr() };
       let got = sc; if (got !== 'h' && got > 0 && !playPuzzle(id, null, shots).ok) got = 0;
+      // (a hint taken from the server while it counted: one star at most, whatever the app says - puzzleHelp)
+      if (got !== 'h' && got > 0.5 && this.sql.exec(`SELECT 1 FROM pzhelp WHERE id = ? AND after = 0`, id).toArray().length) { got = 0.5; st = 1; }
       const after = Z.tryAfter(before, z, got === 'h' ? 'h' : got);
       // (what the player is shown in its place, 11-24 밤: the puzzles solved and the stars won - w, st; a score's stars:
       // 1 three, 0.75 two, 0.5 one)

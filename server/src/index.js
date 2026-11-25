@@ -5,6 +5,7 @@
    GET  /v1/me                      -> { coin, dia, dama, owned, solved } (and now: the server's time)
    POST /v1/buy     { req, kind, id }                 buy an item from content/ at its rarity's price
    POST /v1/puzzle  { req, id, shot, shots }          a puzzle solved: checked (shots: a two-turn puzzle's both), paid once
+   POST /v1/pzhelp  { id, level, after }             a puzzle's answer for a hint (level 1) or to show (2): { sol } (not in the app)
    POST /v1/pztry   { req, id, res, shots }           a counted puzzle attempt: the account's puzzle rating (core.js puzzleTry)
    GET  /v1/puzzles/live                              the puzzles' ratings as players have moved them, the admin's overrides and
                                                       knobs (puzzlebook-core.js live)

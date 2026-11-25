@@ -71,7 +71,14 @@ let n = 0; const req = () => 'test-req-' + (++n).toString().padStart(4, '0');
     if (L3) { const L4 = L.find(z => Z.gameOf(z) === k && ![L[0].id, L1.id, L2.id, L3.id].includes(z.id)), u = v.puzzleTry({ req: req(), id: L4.id, res: 0.6, st: 2, shots: [shot(L4.sol)] });
       ok(u.ok && u.res === 0.6 && u.pzr[k].st === 7 && !v.puzzleTry({ req: req(), id: L4.id + 0.5, res: 1.5 }).ok, 'a score from a turned knob taken (0 .. 1), its stars as the app gave them'); }
     { const w = vault(); w.init('s'); const t0 = w.puzzleTry({ req: req(), id: L[0].id, res: 0, start: 1200 }); ok(t0.ok && t0.pzr[k].r < 1200 && t0.pzr[k].r > 1000, 'a first attempt starts from the book\'s starting rating'); }
-    console.log('puzzle rating: kept on the account, checked solves, scored by stars'); } }
+    // (the answers are the server's - owner 11-25: a hint or the answer asked for; a hint asked while it counted is one star)
+    { const w = vault(); w.init('hh'); const z5 = L[1], hlp = w.puzzleHelp({ id: z5.id, level: 1 });
+      ok(hlp.ok && JSON.stringify(hlp.sol) === JSON.stringify(z5.sol) && !w.puzzleHelp({ id: 999999, level: 1 }).ok, 'a hint\'s answer comes from the server');
+      const t5 = w.puzzleTry({ req: req(), id: z5.id, res: 1, st: 3, shots: [shot(z5.sol)] });
+      ok(t5.ok && t5.res === 0.5 && t5.pzr[k].st === 1, `a hint asked while it counted: one star at most (${t5.res})`);
+      const z6 = L[2]; w.puzzleHelp({ id: z6.id, level: 2, after: true }); const t6 = w.puzzleTry({ req: req(), id: z6.id, res: 1, st: 3, shots: [shot(z6.sol)] });
+      ok(t6.ok && t6.res === 1, 'the answer asked once it was over does not take a star'); }
+    console.log('puzzle rating: kept on the account, checked solves, scored by stars, hints from the server'); } }
 // the puzzles' book (puzzlebook-core.js): an attempt rates the puzzle back - a miss gives it points; tried enough it is live
 { const Z = E.createPuzzles(), z = Z.list.find(q => Number.isFinite(q.rating));
   if (z) { const B = new PuzzleBookCore(sqlOf().sql, E), r0 = B.get(z.id).r;

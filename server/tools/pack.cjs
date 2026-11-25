@@ -5,6 +5,8 @@ const W = path.join(__dirname, '..', '..', 'web'), OUT = path.join(__dirname, '.
 const files = [...fs.readdirSync(path.join(W, 'content')).sort().map(f => 'content/' + f), 'tables.js', 'economy.js', 'physics.js', 'game.js', 'puzzles.js', 'highlights.js', 'drills.js'];
 let src = '/* Made by server/tools/pack.js from web/ - do not edit. */\n';
 for (const f of files) src += `// ---- web/${f}\n` + fs.readFileSync(path.join(W, f), 'utf8').split('\n').filter(l => !l.startsWith('if (typeof module')).join('\n') + '\n';
+// the puzzles' answers (web/tools/puzzles/answers.json): only here and in the node tools, never in the app (web/puzzles.js)
+src += '// ---- web/tools/puzzles/answers.json\nconst PUZZLE_ANSWERS = ' + JSON.stringify(JSON.parse(fs.readFileSync(path.join(W, 'tools/puzzles/answers.json'), 'utf8'))) + ';\n';
 // the computer player (web/ai/, the body of one function as web/build.sh makes it): for the tests' recorded matches, and
 // later for checking a person-like opponent's shots
 src += '// ---- web/ai/\nfunction createAI(g) {\n' + fs.readdirSync(path.join(W, 'ai')).sort().map(f => fs.readFileSync(path.join(W, 'ai', f), 'utf8')).join('\n') + '}\n';

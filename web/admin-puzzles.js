@@ -107,7 +107,7 @@ function pzDraw(cv, z, run, upto) {
     if (!four && i > 8) { ctx.fillStyle = '#f4f1ea'; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), Math.max(1, P.R * k * 0.45), 0, 7); ctx.fill(); }
     ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 1; ctx.stroke(); });
   // (where the answer is aimed, before it is played: a short line from the cue ball)
-  if (upto == null && w.balls[0].on) { const s = pzEngine.Z.shotOf(z, 0), c = w.balls[0], L = P.R * 8; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(c.x), Y(c.y)); ctx.lineTo(X(c.x + Math.cos(s[0]) * L), Y(c.y + Math.sin(s[0]) * L)); ctx.stroke(); }
+  if (upto == null && w.balls[0].on && z.sol) { const s = pzEngine.Z.shotOf(z, 0), c = w.balls[0], L = P.R * 8; ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(c.x), Y(c.y)); ctx.lineTo(X(c.x + Math.cos(s[0]) * L), Y(c.y + Math.sin(s[0]) * L)); ctx.stroke(); }
 }
 
 /* ---- the list ---- */
@@ -153,16 +153,18 @@ async function pzShow(id) {
   $('#pzR').value = q.set != null ? q.set : ''; $('#pzR').placeholder = String(q.r); $('#pzFix').checked = q.fix; $('#pzNote').value = q.note || '';
   $('#pzOff').textContent = q.off ? '켜기' : '끄기'; $('#pzOff').className = q.off ? 'go' : 'warn';
   pzRunNow = null; $('#pzPlayNote').textContent = '';
-  if (pzEngine) { const z = pzEngine.Z.byId(id); pzRunNow = pzRun(z); pzDraw($('#pzBig'), z, pzRunNow, Infinity); $('#pzPlayNote').textContent = pzRunNow.ok ? '정답 확인됨 (이 버전의 물리)' : `정답이 안 됨: ${pzRunNow.note || ''}`; }
-  else $('#pzPlayNote').textContent = '게임 코드를 불러오는 중…';
+  // (the answer comes from the server - not in the game's puzzles.js since 11-25)
   const r = await api('puzzles', { op: 'get', id }); if (!r.ok || pzSel !== id) return;
+  if (pzEngine) { const z = pzEngine.Z.byId(id); if (r.sol) z.sol = r.sol; }
+  if (pzEngine && pzEngine.Z.byId(id).sol) { const z = pzEngine.Z.byId(id); pzRunNow = pzRun(z); pzDraw($('#pzBig'), z, pzRunNow, Infinity); $('#pzPlayNote').textContent = pzRunNow.ok ? '정답 확인됨 (이 버전의 물리)' : `정답이 안 됨: ${pzRunNow.note || ''}`; }
+  else $('#pzPlayNote').textContent = pzEngine ? '정답을 받지 못함' : '게임 코드를 불러오는 중…';
   const sc = s => { const v = s === 'o' ? 1 : s === 'x' ? 0 : +s; return v >= 1 ? '★★★' : v >= 0.75 ? '★★' : v > 0 ? '★' : '놓침'; };
   $('#pzOneTries').innerHTML = r.tries.length ? '<tr><th>때</th><th>결과</th><th>선수 레이팅</th></tr>' + r.tries.map(t => `<tr><td>${when(t.at)}</td><td>${sc(t.res)}</td><td>${num(t.pr)} ±${t.prd}</td></tr>`).join('') : '<tr><td class="muted">시도 없음</td></tr>';
   $('#pzOneLog').innerHTML = pzLogRows(r.log, true);
 }
 // the answer played out on the big picture, the balls moving along their paths
 $('#pzPlay').onclick = () => {
-  if (!pzEngine || !pzSel) return; const z = pzEngine.Z.byId(pzSel); pzRunNow = pzRunNow || pzRun(z);
+  if (!pzEngine || !pzSel) return; const z = pzEngine.Z.byId(pzSel); if (!z.sol) return; pzRunNow = pzRunNow || pzRun(z);
   const run = pzRunNow, n = run.frames.filter(f => f !== 'turn').length, t0 = performance.now(); cancelAnimationFrame(pzAnim);
   const tick = now => { const f = Math.min(n - 1, Math.floor((now - t0) / 1000 * 60)); pzDraw($('#pzBig'), z, run, f); if (f < n - 1) pzAnim = requestAnimationFrame(tick); };
   pzAnim = requestAnimationFrame(tick);

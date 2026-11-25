@@ -39,9 +39,13 @@ if (!DRY) {
   let dropped = [];
   const src = fs.readFileSync(FILE, 'utf8').replace(/^(\s*)(\{"id":(\d+),.*\})(,?)\n/gm, (all, ind, json, id, comma) => {
     const q = JSON.parse(json), r = out.get(+id); if (!r) return all;
-    q.sol = r.sol; q.rating = r.rating; q.fun = r.fun; if (r.need) q.need = r.need;
+    q.rating = r.rating; q.fun = r.fun; if (r.need) q.need = r.need;
     if (L.Z.gameOf(q) === 'four' && !L.Z.plain(q) && q.rating <= 800) { dropped.push(q.id); return ''; }
     return ind + JSON.stringify(q) + comma + '\n';
   }).replace(/,(\n\s*\];)/, '$1');
-  fs.writeFileSync(FILE, src); console.log(`wrote web/puzzles.js${dropped.length ? `; taken off (conditions, rated 800 or under): ${dropped.join(' ')}` : ''}`);
+  fs.writeFileSync(FILE, src);
+  // (the answers apart - answers.json, never the app's file: owner 11-25)
+  const kept = new Set(L.Z.list.map(z => z.id).filter(id => !dropped.includes(id)));
+  G.writeAnswers(new Map(L.Z.list.filter(z => kept.has(z.id)).map(z => [z.id, out.has(z.id) ? out.get(z.id).sol : z.sol])));
+  console.log(`wrote web/puzzles.js and its answers${dropped.length ? `; taken off (conditions, rated 800 or under): ${dropped.join(' ')}` : ''}`);
 }

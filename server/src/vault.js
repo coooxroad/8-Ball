@@ -55,6 +55,8 @@ export class Vault extends DurableObject {
       return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null, debug: me.debug });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
+    // a puzzle's hint or answer (core.js puzzleHelp: the answers are not in the app)
+    if (path === '/v1/pzhelp') return json(this.core.puzzleHelp(body));
     // a counted puzzle attempt (core.js puzzleTry): the puzzle rated back by the puzzles' book - not waited for
     if (path === '/v1/pztry') {
       // (a first attempt starts from the book's starting rating - the admin's knob; the app's word is not taken for it)

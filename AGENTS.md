@@ -178,6 +178,10 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
     `52-puzzle.js pzr`: 종목마다 `prefs.pzr.four|pocket`(r·rd·n 숨은 레이팅, solved·stars·dayN 보이는 것, now, cases, seen, hist, cur,
     tried = 놓친 횟수 — 나갔다 와도 유지). **기회 세 번**: 1번째 성공 ★★★(점수 1)·2번째 ★★(0.75)·3번째 ★(0.5)·세 번 놓침 0, 힌트를 보면
     최고 ★(별을 잃게 되면 두 번 눌러야 봄). 세 번 놓치면 0으로 기록하고 그 퍼즐에 남는다(바에 정답·다음, 플레이어가 고름); 성공은 다음으로.
+    **정답은 앱에 없다**(11-25, 소유자 "앱에서 빼"): `web/tools/puzzles/answers.json`(생성기·`rate.js`가 씀)에만 있고, 서버 묶음
+    (`server/tools/pack.cjs`가 `PUZZLE_ANSWERS`로)과 node 도구·시험(`puzzles.js` 마지막 줄)이 붙여 쓴다. 힌트·정답은 앱이
+    `POST /v1/pzhelp`로 받아(`52-puzzle.js helpThen`, 오프라인이면 못 봄) `z.sol`에 둔다. 셀 때 받은 힌트는 서버가 그 시도를 ★로 막음
+    (`core.js puzzleHelp`·`puzzleTry`). 관리자 콘솔의 정답 경로도 서버('get'의 `sol`)에서. 저장소는 공개라 저장소의 사본은 보인다.
     놓치면 같은 샷을 다시 쳐서 얼마나 아깝게 놓쳤는지(`pzMiss`). 바의 왼쪽 칸 = 남은 기회(끝나면 받은 별). 계산은 `puzzles.js tryAfter`
     (Glicko-1, 0~1 점수, 앱·서버 같은 식). 다음 퍼즐 = 목표(숨은 레이팅 + 손잡이 `aim` −100, 공의 마지막 조각·랙의 다섯째마다 `hard` +100)
     근처 안 본 것 5개 중 재미로 가중(적응형 학습의 성공률 ~2/3). 숨은 레이팅이 `plainMax`(800) 이하면 일반 배치만(`pzPlain`).
