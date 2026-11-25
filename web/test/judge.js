@@ -9,7 +9,7 @@ let failed = 0, ok = 0; const fail = m => { failed++; console.log('FAIL', m); },
 const GR = ['예술', '좋음', '무난', '아쉬움', '실수'], K = () => g.aiJudge;
 const times = { pool: [], carom: [] };
 const judge = shot => { const t = Date.now(), r = g.aiReview({ pos: null, a: 0, b: 0, el: 0, ...shot }); times[g.P.POCKETED ? 'pool' : 'carom'].push(Date.now() - t); return r; };
-const say = r => `${GR[r.grade]}${r.fluke ? ' 요행' : ''} (made ${r.made}, loss ${r.loss}, p ${r.p}, cause ${r.cause})`;
+const say = r => `${GR[r.grade]}${r.fluke ? ' 행운' : ''}${r.unlucky ? ' 불운' : ''} (made ${r.made}, loss ${r.loss}, p ${r.p}, cause ${r.cause})`;
 
 // ---- 8볼: a table set by hand (the player on solids)
 function eight(balls, cue) {
@@ -181,6 +181,36 @@ for (const [mode, opts] of [['four', {}], ['three', { cushions: 3 }]]) {
     check(!gone.made && gone.lost && gone.grade >= 3 && gone.intent.kind !== 'safety' && gone.rule && gone.rule.chase, `4구 후구, missed: lost, never a good safety: ${say(gone)}`);
     break;
   }
+}
+// ---- 행운 · 불운 (owner 11-25, ai/63-see.js): a point made through a kiss is luck to a player who would not have seen it
+// coming, and not said of one who would have (between: nothing); a near line a kiss spoilt is bad luck to one who did
+// not see the kiss; a kiss on the moving ball's own line is plain to see
+{
+  let seed = 5; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  let kissed = 0, told = 0, spoilt = 0, saidSpoilt = 0;
+  for (let tbl = 0; tbl < 8 && (kissed < 3 || spoilt < 1); tbl++) {
+    g.start('four', ['A', 'B'], true, { level: 3, rnd }); g.isBreak = false; g.turn = 0; g.world.cue = 0;
+    for (let k = 0; k < 360 && (kissed < 3 || spoilt < 1); k++) {
+      const angle = k / 360 * Math.PI * 2, V = g.vOf(0.55), C = g.P, w = C.clone(g.world); w.cue = 0; C.strike(w, angle, V, 0, 0, 0); const ev = C.run(w, 20);
+      if (!(ev.kissPre > 0)) continue;
+      const scored = ev.hits.includes(2) && ev.hits.includes(3) && !ev.hits.includes(1);
+      if (scored && kissed < 3) {
+        const lo = judge({ angle, V, rating: 600 }), hi = judge({ angle, V, rating: 2200 }); if (!lo.made) continue; kissed++;
+        if (lo.fluke && hi.kissMeant >= lo.kissMeant && (hi.fluke === hi.kissMeant < 0.35)) told++;
+        else fail(`a kiss point, by rating: 600 ${say(lo)} ${lo.kissMeant}, 2200 ${say(hi)} ${hi.kissMeant}`);
+      } else if (!scored && spoilt < 1) {
+        const lo = judge({ angle, V, rating: 600 }); if (lo.cause !== 'kiss') continue; spoilt++;
+        if (lo.unlucky) saidSpoilt++; else fail(`a line a kiss spoilt, to a 600 player: ${say(lo)} unlucky ${lo.unlucky}`);
+      }
+    }
+  }
+  check(kissed >= 2 && told === kissed, `kiss points: luck to a 600 player, never less meant to a 2200 one (${told}/${kissed})`);
+  check(spoilt === 0 || saidSpoilt === spoilt, `a near line a kiss spoilt: bad luck to one who did not see it (${saidSpoilt}/${spoilt})`);
+  // (a kiss on the moving ball's own line: the red sent straight into the other red)
+  g.start('four', ['A', 'B'], true, { level: 3, rnd }); g.isBreak = false; g.turn = 0; g.world.cue = 0;
+  const w0 = g.world, place = (id, x, y) => g.P.place(w0, id, x, y); place(0, -0.8, 0); place(1, -0.8, 0.5); place(2, -0.3, 0); place(3, 0.3, 0);
+  const st = K().kissStory ? K().kissStory(w0, 0, { angle: 0, V: g.vOf(0.5), a: 0, b: 0, el: 0 }) : null;
+  check(st && st.kind === 'obj' && st.straight, `a red sent straight into the other: a plain kiss ${JSON.stringify(st)}`);
 }
 const avg = L => L.length ? Math.round(L.reduce((s, v) => s + v, 0) / L.length) : 0;
 console.log(`judging: pool ${avg(times.pool)} ms, carom ${avg(times.carom)} ms on average`);

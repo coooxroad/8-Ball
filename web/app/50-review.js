@@ -19,7 +19,8 @@ const REVIEW_GRADES = [
 ];
 /* The marks, drawn for billiards (owner: not chess.com's): a ring of the grade's colour with a white sign in it -
    예술 a cue ball's curve ending in a spark, 좋음 a ball over the pocket, 무난 a plain straight line, 아쉬움 a line passing
-   by the pocket, 실수 a line broken; 요행 a four-leaf clover. */
+   by the pocket, 실수 a line broken; 행운 a four-leaf clover, 불운 a cloud raining (owner 11-25: a kiss the player did not
+   see coming - ai/63-see.js). */
 const REVIEW_ICON = {
   art: '<path d="M5.5 18.5C7 12 10.5 8.6 16.6 7.4" fill="none"/><circle cx="5.5" cy="18.5" r="2.1" stroke="none" fill="#fff"/><path d="M17.6 3.2l1 2.4 2.4 1-2.4 1-1 2.4-1-2.4-2.4-1 2.4-1z" stroke="none" fill="#fff"/>',
   good: '<path d="M5.5 13.5a6.5 6.5 0 0 0 13 0" fill="none"/><circle cx="12" cy="8.6" r="3" stroke="none" fill="#fff"/>',
@@ -28,6 +29,7 @@ const REVIEW_ICON = {
   miss: '<path d="M4 19l5.6-5.6M12.6 11.4L20 4" fill="none"/><path d="M9.6 9.2l1.4 1.4M13.4 15.2l1.6.6" fill="none" stroke-width="1.8"/>',
   fluke: '<g stroke="none" fill="#fff"><circle cx="9.3" cy="9.3" r="3.2"/><circle cx="14.7" cy="9.3" r="3.2"/><circle cx="9.3" cy="14.7" r="3.2"/><circle cx="14.7" cy="14.7" r="3.2"/></g><path d="M14 14.4c1.6 2.1 2.6 3.8 3 6" fill="none" stroke="#fff" stroke-width="1.6"/>',
 };
+REVIEW_ICON.unlucky = '<path d="M7.2 14.6a3.6 3.6 0 0 1 .3-7.2 4.6 4.6 0 0 1 8.7 1.4 3 3 0 0 1-.2 5.8z" stroke="none" fill="#fff"/><path d="M8.6 17.2l-.8 2.2M12.4 17.2l-.8 2.2M16.2 17.2l-.8 2.2" fill="none"/>';
 const reviewIcon = (id, cls = '') => { const i = el('i', { class: `rv-ico i-${id} ${cls}`, 'aria-hidden': 'true' }); i.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${REVIEW_ICON[id]}</svg>`; return i; };
 /* 경기력: a game's rating from its shots - the rating whose bots lose as much per shot, against the judge, as this player
    did (bots of each rating played and judged: web/tools/judge-games.js, 11-18; the loss in chances to win, smoothed - the
@@ -72,7 +74,7 @@ const review = {
     review.list.push(item);
     const id = ++rvw.n;
     rvw.wait.set(id, r => { item.res = r && r.review || { none: true }; review.heard(item); });
-    w.postMessage({ id, tbl: tableNow(), d: game.serialize(), review: { pos: null, angle: p.aim, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0 } });
+    w.postMessage({ id, tbl: tableNow(), d: game.serialize(), review: { pos: null, angle: p.aim, V: p.V, a: p.a || 0, b: p.b || 0, el: p.el || 0, rating: review.ratingOf(p.turn) } });
   },
   // a verdict in: the bot answers the player's shot by its grade (while the moment is still fresh), the slate catches up
   heard(item) {
@@ -81,10 +83,18 @@ const review = {
     if (st.screen === 'result') { review.paint(); if (review.on) review.panel(); }
   },
   judged: () => review.list.filter(q => q.res && q.res.grade != null),
+  /* the shooter's rating - what they would have seen coming (ai/63-see.js: 행운 · 불운): online, the room's; a desk bot's own;
+     this player's own in the game's family; anyone else's not known (null: the judge's middle) */
+  ratingOf(turn) {
+    const c = match.ctx || {}, o = c.online, pl = game.players[turn];
+    if (o && !o.team && !o.watch) return turn === o.seat ? o.dama : o.opp && Number.isFinite(o.opp.dama) ? o.opp.dama : null;
+    if (c.bot && pl && pl.ai) return Number.isFinite(c.bot.dama) ? c.bot.dama : null;
+    return turn === review.seat() && !o ? famDama(game.modeId) : null;
+  },
   // each player's numbers: the grades counted, shots made of those judged, the game's rating
   stats(turn) {
     const L = review.judged().filter(q => q.turn === turn), n = REVIEW_GRADES.map((_, i) => L.filter(q => q.res.grade === i).length);
-    return { n, all: L.length, made: L.length ? Math.round(100 * L.filter(q => q.res.made).length / L.length) : null, perf: reviewPerf(game.modeId, L.map(q => q.res.loss)), fluke: L.filter(q => q.res.fluke).length };
+    return { n, all: L.length, made: L.length ? Math.round(100 * L.filter(q => q.res.made).length / L.length) : null, perf: reviewPerf(game.modeId, L.map(q => q.res.loss)), fluke: L.filter(q => q.res.fluke).length, unlucky: L.filter(q => q.res.unlucky).length };
   },
   // (against a bot or online: this device's seat is 나)
   seat() { const o = match.ctx && match.ctx.online; return o ? (o.team ? o.seat % 2 : o.seat) : 0; },
@@ -97,6 +107,7 @@ const review = {
       el('div', { class: 'rv-tr hd' }, [el('span'), el('b', { class: 'rv-a', text: na }), el('i', { class: 'rv-ico none' }), el('b', { class: 'rv-b', text: nb })]),
       ...REVIEW_GRADES.map((G, i) => row(G.name, String(a.n[i]), String(b.n[i]), reviewIcon(G.id), `g-${G.id}` + (a.n[i] || b.n[i] ? '' : ' zero'))),
       a.fluke || b.fluke ? row('행운', String(a.fluke), String(b.fluke), reviewIcon('fluke'), 'g-fluke') : null,
+      a.unlucky || b.unlucky ? row('불운', String(a.unlucky), String(b.unlucky), reviewIcon('unlucky'), 'g-unlucky') : null,
       row('샷 성공률', a.made == null ? '-' : a.made + '%', b.made == null ? '-' : b.made + '%', null, 'sum'),
       row('경기력', a.perf == null ? '-' : String(a.perf), b.perf == null ? '-' : String(b.perf), null, 'sum perf')]);
   },
@@ -148,7 +159,7 @@ const review = {
         const r = s.res, G = r && r.grade != null ? REVIEW_GRADES[r.grade] : null;
         return el('button', { class: 'rv-shot' + (i === review.pick ? ' on' : '') + (s.turn ? ' two' : ''), onclick: onTap(() => review.select(i)) }, [
           el('span', { class: 'rv-n', text: String(i + 1) }), el('span', { class: 'rv-who', text: review.names()[s.turn] }),
-          G ? reviewIcon(G.id) : el('i', { class: 'rv-ico wait' }), el('b', { text: G ? G.name : r ? '-' : '분석 중' }), r && r.fluke ? reviewIcon('fluke', 'tag') : null]);
+          G ? reviewIcon(G.id) : el('i', { class: 'rv-ico wait' }), el('b', { text: G ? G.name : r ? '-' : '분석 중' }), r && r.fluke ? reviewIcon('fluke', 'tag') : r && r.unlucky ? reviewIcon('unlucky', 'tag') : null]);
       })));
     // (the chosen shot brought into view in the list; a phone's panel scrolls as one, so it goes back to the coach instead)
     // (the same shot drawn again - an other way picked, the analysis come in - stays where it was scrolled)
@@ -175,7 +186,7 @@ const review = {
     // (the button to the shot most worth seeing: 교정한 샷 · 쉬운 샷 · 추천 샷 - pressed again, back to the shot played)
     const act = w.act ? el('button', { class: 'rv-go' + (review.alt === w.act.alt ? ' on' : ''), onclick: pick(w.act.alt) }, [el('span', { text: review.alt === w.act.alt ? '내 샷 보기' : w.act.label })]) : null;
     return el('div', { class: `rv-coach g-${G.id}` + (A ? ' alt' : '') }, [
-      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.title })]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('행운')]) : null]),
+      el('div', { class: 'rv-say' }, [reviewIcon(G.id), el('p', {}, [el('b', { text: w.title })]), r.fluke ? el('span', { class: 'rv-fluke' }, [reviewIcon('fluke'), document.createTextNode('행운')]) : r.unlucky ? el('span', { class: 'rv-fluke unlucky' }, [reviewIcon('unlucky'), document.createTextNode('불운')]) : null]),
       w.body.length ? el('p', { class: 'rv-body', text: w.body.join(' ') }) : null,
       act,
       A ? (() => { const st = A.fix ? { how: rvSay(rvDid(A.d, game.mode.table === 'carom'), 'pre') || '이렇게 쳤으면 들어갔습니다.', why: [] } : rvAltStory(A); return el('div', { class: 'rv-why alt' }, [el('p', { text: (A.fix ? '교정한 샷 — ' : '') + st.how }), st.why.length ? el('ul', { class: 'rv-whys' }, st.why.map(t => el('li', { text: t }))) : null]); })() : null,

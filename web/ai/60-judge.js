@@ -576,7 +576,12 @@
     const ev = res.ev, potted = (ev.pocketed || []).map(p => p.id).filter(id => id !== 0);
     // (the kiss that made it - before the point: a kiss after it, or the shot played as a line, is no luck - owner 11-19)
     const odd = g.P.POCKETED ? potted.length && ev.firstHit != null && !potted.includes(ev.firstHit) || ev.kissPre > 0 && line && line.p < 0.15 : ev.kissPre > 0;
-    const fluke = !!(res.made && odd && (!line || line.p < 0.3));
+    /* 행운 (owner 11-25): whether this player meant the kiss - saw it coming, was not playing a plain line under it, could
+       play it again (63-see.js kissMeant, at the shooter's rating: played.rating); likely not meant - luck; likely meant -
+       none; between - nothing said ("애매하면 표시 x"). With no kiss to read (none found again), the window as before. */
+    const R = Number.isFinite(played.rating) ? played.rating : null;
+    const meantKiss = res.made && odd ? kissMeant(world, who, shot, view, R) : null;
+    const fluke = !!(res.made && odd && (meantKiss ? meantKiss.p < SEE.LUCK : (!line || line.p < 0.3)));
     const cuts = JUDGE.CUTS[game] || JUDGE.CUTS.pool, hard = JUDGE.HARD[game] || 0.4;
     const bestLeave = best.filter(k => k.nominal.made && k.worth).reduce((m, k) => Math.max(m, k.worth.mine), 0);
     /* (owner 11-18) A shot that came off is graded by what it left: the next shot set (실용성 high) - 좋음; and the line
@@ -613,6 +618,9 @@
       // 공을 놓쳤습니다')
       if (res.ev.kissPre > 0 && meant.why === 'aim' && Math.abs(meant.da) <= 0.012) cause = 'kiss';
     }
+    // 불운 (owner 11-25): a line that would have come off, spoilt by a kiss this player likely did not see coming (one they
+    // would have seen - on the ball's own line - is theirs to have played round)
+    const kissed = cause === 'kiss' ? kissStory(world, who, shot) : null, unlucky = !!kissed && kissSeen(kissed, R) < SEE.LUCK;
     const swing = swingOf(world, who), better = top && top.e - Math.max(asMeant, res.made ? A : -Infinity) > JUDGE.BETTER * swing ? top : null;
     /* where the shot lost what it lost (as golf's Strokes Gained is split by kind of shot, 11-18): the way chosen (the best
        expected against the one meant), the striking (meant against what came, a miss), the next shot (a ball made, the
@@ -664,7 +672,7 @@
       // (pool: how far the cue ball sat from the nearest cushion before the shot and after - '쿠션에서 떼어', '쿠션에 붙었습니다')
       rail: g.P.POCKETED && res.made ? (() => { const c0 = shot.pos ? { x: shot.pos[0], y: shot.pos[1] } : world.balls[0], c1 = res.world.balls[0], to = b => b && b.on !== false ? r2(Math.min(g.P.HL - Math.abs(b.x), g.P.HW - Math.abs(b.y)) - g.P.R) : null;
         return { before: to(c0), after: to(c1) }; })() : null,
-      grade, fluke, made: res.made, foul: res.foul, won: res.won, lost: res.lost, pass: !!res.pass, tie: !!res.tie, theirs: res.made && got.theirs != null ? r2(got.theirs) : null, game,
+      grade, fluke, unlucky, kissMeant: meantKiss ? meantKiss.p : null, made: res.made, foul: res.foul, won: res.won, lost: res.lost, pass: !!res.pass, tie: !!res.tie, theirs: res.made && got.theirs != null ? r2(got.theirs) : null, game,
       // (inside only - never shown as numbers: the shot's worth against the best, how hard the line was, the leaves)
       loss: Math.round(loss * 100) / 100, B: Math.round(B * 100) / 100, A: Math.round(A * 100) / 100,
       p: line ? Math.round(line.p * 100) / 100 : null, meant: !!meant, off: line ? Math.round((line.centre - shot.angle) / JUDGE.SIG_A * 10) / 10 : null, offDeg: line ? Math.round((line.centre - shot.angle) * 1800 / Math.PI) / 10 : null, cause,
