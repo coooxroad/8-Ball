@@ -34,7 +34,7 @@ async function enter() {
 }
 function signOut(msg) {
   token = null; pass = null; try { sessionStorage.removeItem('cueAdmin'); } catch (e) {}
-  $('#app').hidden = true; $('#pzTab').hidden = true; $('#tabs').hidden = true; $('#out').hidden = true; $('#who').textContent = ''; $('#gate').hidden = false; $('#gateMsg').textContent = msg || '';
+  $('#app').hidden = true; $('#pzTab').hidden = true; $('#fpTab').hidden = true; $('#tabs').hidden = true; $('#out').hidden = true; $('#who').textContent = ''; $('#gate').hidden = false; $('#gateMsg').textContent = msg || '';
   drawButton();
 }
 function drawButton() {
@@ -59,12 +59,13 @@ function drawButton() {
   s.onerror = () => { $('#gateMsg').textContent = '구글에 연결할 수 없습니다'; }; document.head.appendChild(s);
 }
 $('#out').onclick = () => signOut('로그아웃했습니다');
-// the tabs: 계정 (this file) and 퍼즐 (admin-puzzles.js pzOpen)
+// the tabs: 계정 (this file), 퍼즐 (admin-puzzles.js pzOpen), 페어플레이 (admin-fairplay.js fpOpen)
 let currentTab = 'acct';
 function tab(t) {
-  currentTab = t; $('#app').hidden = t !== 'acct'; $('#pzTab').hidden = t !== 'pz';
+  currentTab = t; $('#app').hidden = t !== 'acct'; $('#pzTab').hidden = t !== 'pz'; $('#fpTab').hidden = t !== 'fp';
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   if (t === 'pz' && typeof pzOpen === 'function') pzOpen();
+  if (t === 'fp' && typeof fpOpen === 'function') fpOpen();
 }
 document.querySelectorAll('#tabs button').forEach(b => { b.onclick = () => tab(b.dataset.tab); });
 // (the password is kept in this page only, not stored: a reload asks again)

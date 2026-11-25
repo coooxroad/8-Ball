@@ -74,10 +74,19 @@
   #pzBig { width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 8px; background: #0f141a; }
   .pz-st { grid-template-columns: repeat(5, 1fr); margin-top: 8px; } .pz-st b { font-size: 16px; }
   label.pz-chk { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+  /* fair play: the accounts at the left, the one opened at the right */
+  #fpTab { max-width: 1500px; margin: 0 auto; padding: 16px; }
+  .fp-main { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
+  @media (max-width: 1000px) { .fp-main { grid-template-columns: 1fr; } }
+  #fpList tr { cursor: pointer; } #fpList tr:hover td { background: #1b232d; } #fpList tr.on td { background: #22303f; }
+  #fpList td, #fpList th { white-space: nowrap; font-variant-numeric: tabular-nums; } #fpList th { cursor: pointer; }
+  td.flag { color: var(--gold); font-weight: 700; }
+  #fpCfg { width: 100%; min-height: 120px; font: 12px ui-monospace, monospace; color: var(--ink); background: #0f141a; border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+  #fpShots td { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
-<header><h1>CUE 관리자</h1><nav id="tabs" hidden><button data-tab="acct" class="on">계정</button><button data-tab="pz">퍼즐</button></nav><span class="who" id="who"></span><button id="out" hidden>로그아웃</button></header>
+<header><h1>CUE 관리자</h1><nav id="tabs" hidden><button data-tab="acct" class="on">계정</button><button data-tab="pz">퍼즐</button><button data-tab="fp">페어플레이</button></nav><span class="who" id="who"></span><button id="out" hidden>로그아웃</button></header>
 
 <section id="gate" class="card">
   <h2 style="font-size:18px;color:var(--ink)">관리자 로그인</h2>
@@ -219,9 +228,42 @@
     </div>
   </div>
 </section>
+<section id="fpTab" hidden>
+  <div class="row"><button id="fpLoad" class="go">불러오기</button><label class="small" style="margin:0">판 수 이상</label><input id="fpMin" type="number" value="5" style="max-width:90px"><span class="muted" id="fpNote"></span></div>
+  <p class="muted" style="font-size:13px">자동 제재 없음 — 숫자와 근거를 보고 관리자가 판단합니다. 표시(노란 칸)는 아래 설정의 문턱을 넘은 값입니다. 문턱·가중치는 서버에만 둡니다(저장소는 공개).</p>
+  <div class="fp-main">
+    <div class="card" style="padding:6px"><div class="scroll" style="max-height:calc(100vh - 220px)"><table id="fpList"></table></div></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card" id="fpOne" hidden>
+        <h2 id="fpOneTitle"></h2>
+        <div class="stats" id="fpOneStats"></div>
+        <h2 style="margin-top:14px">랭크 게임 (90일) — 골라서 깊은 분석·제재</h2>
+        <div class="scroll" style="max-height:260px"><table id="fpGames"></table></div>
+        <div class="row" style="margin-top:8px"><button id="fpDeep">고른 게임 깊은 분석</button><span class="muted" id="fpDeepNote"></span></div>
+        <div id="fpDeepOut"></div>
+        <form id="fpSanction" style="margin-top:14px">
+          <h2>제재 (소유자 11-25: ①~⑤)</h2>
+          <label class="pz-chk"><input type="checkbox" id="fsBan"> ① 기간 동안 매칭 금지</label>
+          <label class="pz-chk"><input type="checkbox" id="fsPz"> ② 그 기간 퍼즐 재화 없음</label>
+          <div class="row"><label class="small" style="margin:0">기간(일)</label><input id="fsDays" type="number" value="14" style="max-width:90px"></div>
+          <label class="pz-chk"><input type="checkbox" id="fsReset"> ③ 레이팅 초기화</label>
+          <label class="pz-chk"><input type="checkbox" id="fsTake"> ④ 고른 게임에서 받은 코인 압수</label>
+          <label class="pz-chk"><input type="checkbox" id="fsRefund"> ⑤ 고른 게임에서 진 상대에게 잃은 레이팅 돌려주기</label>
+          <input id="fsWhy" placeholder="사유 (기록에 남음)" style="width:100%;margin-top:8px">
+          <div class="row" style="margin-top:8px"><button class="warn">제재 적용</button><button type="button" id="fsLift">매칭·퍼즐 제한 풀기</button></div>
+        </form>
+      </div>
+      <div class="card"><h2>표시 설정 (서버에만 저장)</h2>
+        <p class="muted" style="font-size:12px;margin:0 0 6px">{ "칸": { "min": 값 이상이면 표시, "max": 값 이하면 표시, "n": 필요한 판 수 } — 칸: oneAim(한 번에 조준 비율), thinkCv(생각 시간 고름), think, settle, hid, pzFirst(퍼즐 첫 시도 성공률), pzExact(정답 그대로), week, dd</p>
+        <textarea id="fpCfg"></textarea><div class="row" style="margin-top:6px"><button id="fpCfgSave">설정 저장</button></div>
+      </div>
+    </div>
+  </div>
+</section>
 <div id="toast"></div>
 
 <script src="admin.js"></script>
 <script src="admin-puzzles.js"></script>
+<script src="admin-fairplay.js"></script>
 </body>
 </html>

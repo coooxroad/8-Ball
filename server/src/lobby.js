@@ -25,6 +25,9 @@ export class Lobby extends DurableObject {
       if (what === 'find') return Response.json(D.find(body.q));
       if (what === 'fails') return Response.json(D.fails(!!body.add));
       if (what === 'forget') return Response.json(D.forget(String(body.acct || '')));
+      if (what === 'fp') return Response.json(D.fpPut(body));
+      if (what === 'fp-list') return Response.json(D.fpList(body));
+      if (what === 'fp-cfg') return Response.json(D.fpCfg(body.set));
       return Response.json({ ok: false, why: 'no such thing' }, { status: 404 });
     }
     // the lobby named 'invites': codes for games with a friend (ranked.js InviteCore)

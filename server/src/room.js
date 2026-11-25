@@ -82,7 +82,7 @@ export class Room extends DurableObject {
     // paid out: each vault told, again a little later if one did not answer
     let left = false;
     for (const p of this.core.payouts()) {
-      const r = await this.env.VAULT.get(this.env.VAULT.idFromName(p.acct)).fetch('https://vault/room/result', { method: 'POST', body: JSON.stringify(p.body) }).catch(() => null);
+      const r = await this.env.VAULT.get(this.env.VAULT.idFromName(p.acct)).fetch('https://vault/room/result', { method: 'POST', headers: { 'X-Acct': p.acct }, body: JSON.stringify(p.body) }).catch(() => null);
       if (r && r.ok) this.core.paid(p.seat); else left = true;
     }
     // the game's shots to the dataset (dataset.js), again later if it did not answer

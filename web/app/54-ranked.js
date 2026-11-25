@@ -51,6 +51,8 @@ const ranked = {
       if (ranked.finding !== f) return;
       if (r && r.ok && r.room) { clearInterval(f.tick); ranked.finding = null; ranked.strip(false); ranked.found(r); return; }
       if (r && r.why === 'update') { ranked.cancel(true); toast(`${mode === 'arcade' ? '아케이드' : '랭킹전'}은 업데이트 후 이용할 수 있습니다.`, 'foul', 3200); return; }   // (server/src/version.js)
+      // (fair play's sanction ①: no matchmaking till then - server/src/core.js adminSanction)
+      if (r && r.why === 'banned') { ranked.cancel(true); const d = new Date(r.until || 0); toast(`페어플레이 검토로 ${d.getMonth() + 1}월 ${d.getDate()}일까지 매칭을 이용할 수 없습니다.`, 'foul', 4200); return; }
       // (an answer that is not "waiting" - no connection, the account not known, the server failing - is said on the strip
       // once it has happened twice running, instead of the clock just going on)
       const why = r && r.ok ? null : net.troubleText() || '서버 응답 없음';

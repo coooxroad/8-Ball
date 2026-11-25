@@ -72,6 +72,7 @@ const hashOf = async key => hex(new Uint8Array(await crypto.subtle.digest('SHA-2
                                                        puzzle rating); debug mode on or off (core.js adminGrant)
    POST /v1/admin/puzzles { op, ... }                  the puzzles: list, get, set, reset, off, batch, cfg, log (puzzlebook-core.js admin)
    POST /v1/admin/games { acct, room?, before?, limit? }   the account's ranked games kept 90 days (core.js adminGames): a list, or one whole
+   POST /v1/admin/fairplay { op: list | cfg | view | sanction, ... }   fair play: the numbers, the flags' config, a sanction ①~⑤
    GET  /v1/admin/catalog                              every item there is, to give */
 export const isAdmin = async (email, allowed) => allowed.includes(await hashOf(String(email).trim().toLowerCase()));
 /* Or a password (owner 11-10: on a phone or tablet the Google window would not let another account be chosen without
@@ -143,6 +144,23 @@ async function adminRoute(what, request, env) {
     const B = env.PUZZLES.get(env.PUZZLES.idFromName('book'));
     if (body.op) return json(await (await B.fetch('https://book/admin', { method: 'POST', body: JSON.stringify(Object.assign({}, body, { by })) })).json());
     return json(await (await B.fetch('https://book/' + (body.stats ? 'stats' : 'export'), { method: 'POST', body: JSON.stringify({ after: body.after, limit: body.limit }) })).json());
+  }
+  /* 페어플레이 (owner 11-25; core.js fpSummary, adminSanction): { op } - list (every account's numbers and the flags the
+     config raises), cfg (the config: { set } to change it - kept on the server, never in the code), view (one account's
+     numbers now), sanction (core.js adminSanction; then ⑤ - each beaten opponent's lost rating given back, once a room) */
+  if (what === 'fairplay') {
+    const dir = (p, b) => env.LOBBY.get(env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/' + p, { method: 'POST', body: JSON.stringify(b || {}) }).then(r => r.json());
+    if (body.op === 'list') return json(await dir('fp-list', { limit: body.limit, min: body.min }));
+    if (body.op === 'cfg') return json(await dir('fp-cfg', { set: body.set && typeof body.set === 'object' ? body.set : undefined }));
+    const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
+    const V = a => env.VAULT.get(env.VAULT.idFromName(a)), call = (a, p, b) => V(a).fetch('https://vault/admin/' + p, { method: 'POST', headers: { 'X-Acct': a }, body: JSON.stringify(Object.assign({}, b, { by })) }).then(r => r.json());
+    if (body.op === 'view') return json(await call(acct, 'fp', {}));
+    if (body.op === 'sanction') {
+      const r = await call(acct, 'sanction', { why: body.why, days: body.days, ban: !!body.ban, pzBlock: !!body.pzBlock, reset: !!body.reset, rooms: body.rooms, confiscate: !!body.confiscate, refund: !!body.refund, lift: !!body.lift });
+      if (r.ok && Array.isArray(r.refund)) r.refunded = await Promise.all(r.refund.map(q => call(q.acct, 'refund', q).then(x => ({ acct: q.acct, room: q.room, ok: !!x.ok, dama: x.dama })).catch(() => ({ acct: q.acct, room: q.room, ok: false }))));
+      return json(r);
+    }
+    return json({ ok: false, why: 'no such op' }, 400);
   }
   const acct = String(body.acct || ''); if (!/^[0-9a-f]{32}$/.test(acct)) return json({ ok: false, why: 'no such account' }, 400);
   const vault = env.VAULT.get(env.VAULT.idFromName(acct));
@@ -224,7 +242,7 @@ async function frontDoor(request, env) {
     }
     const m = /^Bearer ([0-9a-f]{32})\.([0-9a-f]{64})$/.exec(request.headers.get('Authorization') || '');
     // linking devices to one account (link.js): before the key is required - the device being linked may have none
-    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset|puzzles|games)$/.exec(url.pathname);
+    const adm = /^\/v1\/admin\/(find|view|grant|catalog|dataset|puzzles|games|fairplay)$/.exec(url.pathname);
     if (adm) return adminRoute(adm[1], request, env);
     const link = /^\/v1\/link\/(google|google-config)$/.exec(url.pathname);
     if (link) return linkRoute(link[1], request, env, m);
@@ -252,6 +270,8 @@ async function frontDoor(request, env) {
       if (!url.pathname.endsWith('leave') && !samePhysics(body)) return json({ ok: false, why: 'update', phys: PHYS_V });
       const t = await (await vault.fetch('https://vault/v1/ticket', { headers: { 'X-Key': m[2], 'X-Mode': body.mode, 'X-Gear': JSON.stringify(body.gear || {}).slice(0, 400) } })).json();
       if (!t.ok) return json(t, 401);
+      // (fair play's sanction ①: no ranked matchmaking till t.ban - games with a friend stay open)
+      if (!url.pathname.endsWith('leave') && t.ban) return json({ ok: false, why: 'banned', until: t.ban }, 403);
       // (a game not open yet - economy.js SOON_MODES: only an account in debug mode waits for it)
       if (!url.pathname.endsWith('leave') && E.soonFor(body.mode, t.debug)) return json({ ok: false, why: 'soon' }, 403);
       const name = t.nick || String(body.name || '').trim().slice(0, 12) || '플레이어', icon = Math.max(0, Math.min(63, body.icon | 0));

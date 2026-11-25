@@ -25,12 +25,19 @@ export class Vault extends DurableObject {
     const me = this.core.me(), body = { acct, nick: me.nick || null, joined: !!me.joined, dama: me.dama, coin: me.coin, dia: me.dia };
     this.ctx.waitUntil(this.env.LOBBY.get(this.env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/put', { method: 'POST', body: JSON.stringify(body) }).catch(() => null));
   }
+  // the account's fair-play numbers in the directory (core.js fpSummary) after each ranked game and counted puzzle - not waited for
+  fpListed() {
+    const acct = this.acct; if (!acct || !this.core.get('secret')) return;
+    let fp; try { fp = this.core.fpSummary(); } catch (e) { return; }
+    const body = Object.assign({ acct, nick: this.core.me().nick || null }, fp);
+    this.ctx.waitUntil(this.env.LOBBY.get(this.env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/fp', { method: 'POST', body: JSON.stringify(body) }).catch(() => null));
+  }
   async fetch(request) {
     const path = new URL(request.url).pathname, body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
     if (!this.acct && /^[0-9a-f]{32}$/.test(request.headers.get('X-Acct') || '')) this.acct = request.headers.get('X-Acct');   // (the front door says which)
     if (path === '/init') return this.core.init(await hashOf(body.key)) ? json({ ok: true }) : json({ ok: false }, 409);
     // from a ranked game's room (never from outside: the front door passes on only /v1/ paths)
-    if (path === '/room/result') return json(this.core.ranked(body));
+    if (path === '/room/result') { const r = this.core.ranked(body); this.fpListed(); return json(r); }
     // from the front door only (it passes on only /v1/ paths): a device linked to this account (link.js)
     if (path === '/link/add') return json(this.core.addDevice(body.hash));
     if (path === '/link/joined') return json(this.core.joinPrize());
@@ -38,6 +45,10 @@ export class Vault extends DurableObject {
     if (path === '/admin/view') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json(this.core.adminView()); }
     if (path === '/admin/games') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json(this.core.adminGames(body)); }
     if (path === '/admin/grant') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.adminGrant(body); if (r.ok) this.listed(true); return json(r); }
+    // fair play (core.js adminSanction, refundOf): the sanction on this account; a refund to it from another's
+    if (path === '/admin/sanction') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.adminSanction(body); if (r.ok) { this.listed(true); this.fpListed(); } return json(r); }
+    if (path === '/admin/refund') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); const r = this.core.refundOf(body); if (r.ok) this.listed(true); return json(r); }
+    if (path === '/admin/fp') { if (!this.core.get('secret')) return json({ ok: false, why: 'no such account' }); return json({ ok: true, fp: this.core.fpSummary() }); }
     if (!this.core.authed(await hashOf(request.headers.get('X-Key') || ''))) return json({ ok: false, why: 'who are you' }, 401);
     // (from here on nothing waits, so each request runs whole before the next one starts)
     if (path === '/v1/me') { const me = this.core.me(); if (me.checking) await this.wake(); this.listed(); return json({ ok: true, me, now: Date.now() }); }   // (now: the client counts its days by this clock - web/app/58-streak.js)
@@ -53,7 +64,9 @@ export class Vault extends DurableObject {
       const me = this.core.me(), mode = request.headers.get('X-Mode'), f = mode ? E.familyOf(mode) : null;
       // (in a 승급전, the tier played for: its rules, and opponents from it - economy.js PROMO_*)
       const p = f && me.promo[f], dama = f ? (p ? Math.max(me.damas[f], E.ECONOMY.TIER_AT[p.to]) : me.damas[f]) : me.dama;
-      return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null, debug: me.debug });
+      // (fair play's sanction ①: no ranked matchmaking till then - the front door refuses the queue, core.js adminSanction)
+      const ban = this.core.sanctioned('ban') ? this.core.get('ban').until : null;
+      return json({ ok: true, dama, rd: f ? me.rds[f] : me.rd, gear, nick: me.joined ? me.nick : null, debug: me.debug, ban });
     }
     if (path === '/v1/puzzle') return json(this.core.puzzle(body));
     // a puzzle's hint or answer (core.js puzzleHelp: the answers are not in the app)
@@ -63,7 +76,7 @@ export class Vault extends DurableObject {
       // (a first attempt starts from the book's starting rating - the admin's knob; the app's word is not taken for it)
       delete body.start;
       if (this.env.PUZZLES && this.core.pzNew(body.id)) body.start = await this.env.PUZZLES.get(this.env.PUZZLES.idFromName('book')).fetch('https://book/cfg').then(r => r.json()).then(j => j && j.cfg && j.cfg.start).catch(() => undefined);
-      const r = this.core.puzzleTry(body), book = r.book; delete r.book;
+      const r = this.core.puzzleTry(body), book = r.book; delete r.book; if (r.ok && !r.again) this.fpListed();
       if (book && this.env.PUZZLES) this.ctx.waitUntil(this.env.PUZZLES.get(this.env.PUZZLES.idFromName('book')).fetch('https://book/try', { method: 'POST', body: JSON.stringify(book) }).catch(() => null));
       return json(r);
     }

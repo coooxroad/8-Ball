@@ -91,6 +91,6 @@ cp legal/privacy.html legal/terms.html legal/delete.html "$A/"
 # Google Search Console's proof that the site is the owner's (asked for by the Google sign-in consent screen)
 cp legal/google*.html "$A/"
 # the admin console (/admin; the server lets only the owner's Google account use it - server/src/index.js adminRoute)
-cp admin.html admin.js admin-puzzles.js "$A/"
+cp admin.html admin.js admin-puzzles.js admin-fairplay.js "$A/"
 grep -q 'src="three.min.js"' "$A/index.html" || { echo "three.js path was not rewritten" >&2; exit 1; }
 wc -c "$A/index.html"

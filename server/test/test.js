@@ -845,6 +845,36 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   ok(D.find('CDCD·CDCD').people[0].acct === B && D.find('').people.length === 2, 'directory: found by the id as the settings show it; all of them');
   ok(D.find('%').people.length === 0, 'directory: no wildcards from outside');
   ok(D.fails(false, 1000).n === 0 && D.fails(true, 1000).n === 1 && D.fails(true, 2000).n === 2 && D.fails(false, 1000 + 15 * 60000 + 1).n === 1, 'directory: wrong admin passwords counted for 15 minutes');
+  // 페어플레이 (owner 11-25): an account's numbers from its ranked games and puzzles; the flags only by the server's config;
+  // a sanction ①~⑤ - matchmaking and puzzle coins off for its days, the rating back to the start, the listed games'
+  // coins taken back once, the beaten opponents' rating given back once
+  {
+    const f = vault(); f.init('fp'); f.pay('test', 1000, 0);
+    const rec = (dd, opp, bh) => ({ v: 1, mode: 'four', shots: [[0, 0.1, 2, 0, 0, 0, 0, 0]], bh, dd, opp: 1000, oppAcct: opp, me: 1000 });
+    f.keepGame('1'.repeat(32), 'four', true, 300, rec([12, -12], B, [{ n: 3, fine: 2, big: 0, think: 4000, settle: 900, hid: 0 }]));
+    f.keepGame('2'.repeat(32), 'four', true, 200, rec([10, -10], B, [{ n: 9, fine: 3, big: 2, think: 9000, settle: 3000, hid: 1 }]));
+    f.keepGame('3'.repeat(32), 'four', false, 0, rec([-11, 11], B, [null]));
+    const s0 = f.fpSummary();
+    ok(s0.games === 3 && s0.won === 2 && s0.dd === 11 && s0.shots === 3 && s0.oneAim === 0.5 && s0.hid === 0.5 && s0.think === 9000 && s0.ban == null, `fair play: the account's numbers ${JSON.stringify(s0)}`);
+    D.fpPut(Object.assign({ acct: A, nick: '큐대장' }, s0)); D.fpPut(Object.assign({ acct: B }, s0, { games: 40, oneAim: 0.9 }));
+    ok(D.fpList({}).rows.every(r => !r.flags.length), 'fair play: no flags without the server\'s config');
+    D.fpCfg({ oneAim: { min: 0.8, n: 20 } });
+    const L = D.fpList({}).rows; ok(L[0].acct === B && L[0].flags.includes('oneAim') && !L[1].flags.length, `fair play: a flag by the config, only with games enough ${JSON.stringify(L.map(r => r.flags))}`);
+    ok(!f.adminSanction({ by: 'admin', ban: true }).ok, 'fair play: a ban needs its days');
+    const c0 = f.me().coin, r = f.adminSanction({ by: 'admin', why: 't', days: 7, ban: true, pzBlock: true, reset: true, rooms: ['1'.repeat(32), '2'.repeat(32), '3'.repeat(32)], confiscate: true, refund: true });
+    ok(r.ok && f.sanctioned('ban') && f.sanctioned('pzBlock') && f.me().coin === c0 - 500 && f.me().dama === E.ECONOMY.DAMA_START, `fair play: banned, puzzle coins off, coins taken back, the rating reset ${JSON.stringify(r.did)}`);
+    ok(r.refund.length === 2 && r.refund.every(q => q.acct === B && q.dama > 0), `fair play: the beaten opponent's lost rating to give back, the games won only ${JSON.stringify(r.refund)}`);
+    const again = f.adminSanction({ by: 'admin', rooms: ['1'.repeat(32)], confiscate: true, refund: true });
+    ok(!again.ok && f.me().coin === c0 - 500, 'fair play: a game\'s coins taken back and its opponent refunded once');
+    const o = vault(); o.init('opp'); const d0 = o.me().damas.carom || o.damaOf(E.familyOf('four'));
+    ok(o.refundOf(r.refund[0]).ok && !o.refundOf(r.refund[0]).ok && o.damaOf(E.familyOf('four')) === d0 + 12, 'fair play: the refund paid once a room');
+    const Z = E.createPuzzles(), one = Z.list.find(z => Z.turnsOf(z) === 1 && z.game && z.sol);
+    if (one) { const pr = f.puzzle({ req: req(), id: one.id, shot: { aim: one.sol[0], V: one.sol[1], a: one.sol[2], b: one.sol[3], el: one.sol[4] } }); ok(pr.ok && pr.paid === 0 && pr.blocked, 'fair play: no puzzle coins while sanctioned'); }
+    ok(f.adminSanction({ by: 'admin', lift: true }).ok && !f.sanctioned('ban') && !f.sanctioned('pzBlock'), 'fair play: a sanction lifted');
+    // (a puzzle solved with the stored answer itself is counted)
+    const two = Z.list.filter(z => Z.turnsOf(z) === 1 && z.game && z.sol)[1];
+    if (two) { const g2 = vault(); g2.init('pz'); g2.puzzleTry({ req: req(), id: two.id, res: 1, st: 3, shots: [{ aim: two.sol[0], V: two.sol[1], a: two.sol[2], b: two.sol[3], el: two.sol[4] }] }); ok(g2.fpSummary().pzExact === 1 && g2.fpSummary().pzFirst === 1, `fair play: a puzzle solved with the answer itself counted ${JSON.stringify(g2.fpSummary())}`); }
+  }
   console.log('admin: checked');
 { // (owner 11-21) a stand-in never wears a debug item (a debug account's own things - content/: debug: true)
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, debugIds = new Set();

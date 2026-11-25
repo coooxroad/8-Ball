@@ -116,6 +116,8 @@ export class VaultCore {
       this.sql.exec(`INSERT INTO solved (id, at) VALUES (?, ?)`, id, Date.now());
       // (a stage's 챌린지 - its tenth: puzzles.js challenge - pays diamonds as well)
       const Z = E.createPuzzles(), dia = Z.challenge(Z.byId(id)) ? E.ECONOMY.PUZZLE_CHALLENGE_DIA : 0;
+      // (fair play's sanction ②: no puzzle coins while it lasts - solved all the same)
+      if (this.sanctioned('pzBlock')) return { ok: true, paid: 0, dia: 0, blocked: true, me: this.me() };
       this.pay(`puzzle ${id}`, E.ECONOMY.PUZZLE, dia);
       return { ok: true, paid: E.ECONOMY.PUZZLE, dia, me: this.me() };
     });
@@ -146,6 +148,10 @@ export class VaultCore {
       const k = Z.gameOf(z), key = 'pz:' + k, s0 = Number.isFinite(start) && start >= 100 && start <= 3000 ? { r: start, rd: Z.RATE.RD0, n: 0 } : null, before = this.get(key, null) || s0;
       if (this.sql.exec(`SELECT 1 FROM pztry WHERE id = ?`, id).toArray().length) return { ok: true, again: true, pzr: this.pzr() };
       let got = sc; if (got !== 'h' && got > 0 && !playPuzzle(id, null, shots).ok) got = 0;
+      // (fair play: a solve with the stored answer itself - aim to a ten-thousandth of a radian, pace and tip as written:
+      // the answer read off somewhere, not found - counted, never acted on here)
+      if (got !== 'h' && got > 0 && Array.isArray(shots) && z.sol) { const sol = Z.turnsOf(z) > 1 ? z.sol : [z.sol];
+        if (shots.length && sol.every((q, t) => { const x = shots[t]; return x && Math.abs(Math.atan2(Math.sin(x.aim - q[0]), Math.cos(x.aim - q[0]))) < 1e-4 && Math.abs(x.V / q[1] - 1) < 2e-3 && Math.abs((x.a || 0) - q[2]) < 0.01 && Math.abs((x.b || 0) - q[3]) < 0.01; })) this.set('pzExact', this.get('pzExact', 0) + 1); }
       // (a hint taken from the server while it counted: one star at most, whatever the app says - puzzleHelp)
       if (got !== 'h' && got > 0.5 && this.sql.exec(`SELECT 1 FROM pzhelp WHERE id = ? AND after = 0`, id).toArray().length) { got = 0.5; st = 1; }
       const after = Z.tryAfter(before, z, got === 'h' ? 'h' : got);
@@ -206,6 +212,63 @@ export class VaultCore {
     const n = Math.max(1, Math.min(500, limit | 0 || 200)), rows = this.sql.exec(`SELECT room, at, mode, won, coins, rec FROM rgames WHERE at < ? ORDER BY at DESC LIMIT ?`, +before || 9e15, n).toArray();
     return { ok: true, games: rows.map(r => { const x = r.rec ? JSON.parse(r.rec) : null; return { room: r.room, at: r.at, mode: r.mode, won: !!r.won, coins: r.coins, me: x && x.me, opp: x && x.opp, oppPerson: x && x.oppPerson, shots: x ? x.shots.length : 0, rec: undefined }; }) };
   }
+  /* ---- 페어플레이 (owner 11-25; plan claude/cue-ai-upgrade-plan.md 4절, 8절): what the account's ranked games and puzzle
+     tries say, for the admin console to look over - never acted on here. The thresholds and weights that would make a
+     number a flag are the server's (the directory's fp config, set from the console), not the code's: the code is public. */
+  sanctioned(k) { const v = this.get(k, null); return !!v && v.until > Date.now(); }
+  fpSummary() {
+    const t = Date.now(), rows = this.sql.exec(`SELECT at, mode, won, coins, rec FROM rgames WHERE at >= ? ORDER BY at`, t - RGAME_KEEP).toArray();
+    let shots = 0, won = 0, dd = 0, opp = 0, wk = 0; const think = [], settle = [], one = [], hid = [];
+    for (const r of rows) {
+      const x = r.rec ? JSON.parse(r.rec) : null; won += r.won ? 1 : 0; if (r.at > t - 7 * 86400000) wk++;
+      if (!x) continue; shots += x.shots.length; if (x.dd) dd += x.dd[0] || 0; if (x.opp != null) opp += x.opp;
+      for (const b of x.bh || []) { if (!b) continue; if (Number.isFinite(b.think)) think.push(b.think); if (Number.isFinite(b.settle)) settle.push(b.settle); one.push(b.big ? 0 : 1); hid.push(b.hid > 0 ? 1 : 0); }
+    }
+    const med = a => { if (!a.length) return null; const q = a.slice().sort((x, y) => x - y); return q[q.length >> 1]; };
+    const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+    const cv = a => { const m = mean(a); if (!m || a.length < 5) return null; return Math.sqrt(mean(a.map(v => (v - m) ** 2))) / m; };
+    const pz = this.sql.exec(`SELECT res FROM pztry`).toArray(), pf = pz.filter(r => r.res !== 'h'), r3 = v => Math.round(v * 1000) / 1000;
+    const me = this.me();
+    return { games: rows.length, week: wk, shots, won, dd, oppAvg: rows.length ? Math.round(opp / rows.length) : null, dama: me.dama, since: this.get('since', 0),
+      think: med(think), thinkCv: cv(think) != null ? r3(cv(think)) : null, settle: med(settle), oneAim: one.length ? r3(mean(one)) : null, hid: hid.length ? r3(mean(hid)) : null,
+      pzN: pf.length, pzFirst: pf.length ? r3(pf.filter(r => +r.res >= 1).length / pf.length) : null, pzExact: this.get('pzExact', 0),
+      ban: this.sanctioned('ban') ? this.get('ban').until : null, pzBlock: this.sanctioned('pzBlock') ? this.get('pzBlock').until : null };
+  }
+  /* The admin's sanction (owner 11-25 19:03): ① no ranked matchmaking for `days` (ban), ② no puzzle coins for as long
+     (pzBlock), ③ the rating back to the start (reset), ④ the coins the listed games (rooms) paid taken back (confiscate -
+     each once, never below nothing), ⑤ the rating the beaten opponents of the listed games lost given back (refund - returned for
+     the front door to pay, each room once: refundOf). lift: ① and ② ended now. */
+  adminSanction({ by, why, days, ban, pzBlock, reset, rooms, confiscate, refund, lift }) {
+    const note = `${String(by || 'admin').slice(0, 40)}${why ? ' · ' + String(why).slice(0, 80) : ''}`, did = [], back = [], t = Date.now();
+    const d = Math.max(0, Math.min(3650, +days || 0)), list = Array.isArray(rooms) ? rooms.filter(r => typeof r === 'string' && /^[0-9a-f]{32}$/.test(r)).slice(0, 500) : [];
+    if ((ban || pzBlock) && !d) return { ok: false, why: 'days' };
+    return this.tx(() => {
+      if (lift) { for (const k of ['ban', 'pzBlock']) if (this.get(k, null)) { this.set(k, null); did.push(`lifted ${k}`); } }
+      if (ban) { this.set('ban', { until: t + d * 86400000, at: t, by: note }); did.push(`ranked ban ${d}d`); }
+      if (pzBlock) { this.set('pzBlock', { until: t + d * 86400000, at: t, by: note }); did.push(`puzzle coins off ${d}d`); }
+      if (reset) { did.push(`dama ${JSON.stringify(this.damas())} -> ${E.ECONOMY.DAMA_START}`); this.set('dama', E.ECONOMY.DAMA_START); for (const f of E.FAMILIES) { this.set('dama:' + f, E.ECONOMY.DAMA_START); this.set('rd:' + f, E.ECONOMY.RD_START); this.set('promo:' + f, null); } }
+      let take = 0;
+      for (const room of list) {
+        const r = this.sql.exec(`SELECT coins, rec FROM rgames WHERE room = ?`, room).toArray()[0]; if (!r) continue;
+        if (confiscate && !this.get('taken:' + room) && r.coins > 0) { take += r.coins; this.set('taken:' + room, t); }
+        const x = r.rec ? JSON.parse(r.rec) : null;
+        if (refund && x && x.oppAcct && x.dd && x.dd[1] < 0 && !this.get('refunded:' + room)) { this.set('refunded:' + room, t); back.push({ acct: x.oppAcct, room, mode: x.mode, dama: -x.dd[1] }); }
+      }
+      if (take) { const c = Math.min(take, this.get('coin', 0)); if (c > 0) this.pay(note + ' · fair play', -c, 0); did.push(`took ${c} of ${take} coins (${list.length} games)`); }
+      if (back.length) did.push(`refund ${back.length} opponents`);
+      if (!did.length) return { ok: false, why: 'nothing to do' };
+      const log = this.get('adminLog', []); log.unshift({ at: t, by: String(by || ''), why: String(why || ''), did: did.join(', ') }); this.set('adminLog', log.slice(0, 50));
+      return { ok: true, did, refund: back, fp: this.fpSummary() };
+    });
+  }
+  // ⑤ on the beaten side: the rating lost in that game given back to its family, once a room
+  refundOf({ room, mode, dama, by }) {
+    if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room) || !(dama > 0) || this.get('refund:' + room)) return { ok: false };
+    const f = E.familyOf(mode), v = Math.max(E.ECONOMY.DAMA_FLOOR, this.damaOf(f) + Math.min(E.ECONOMY.DAMA_STEP_MAX, Math.round(dama)));
+    this.set('refund:' + room, Date.now()); this.set('dama:' + f, v);
+    const log = this.get('adminLog', []); log.unshift({ at: Date.now(), by: String(by || ''), why: 'fair play refund', did: `${f} +${Math.round(dama)} (room ${room.slice(0, 8)})` }); this.set('adminLog', log.slice(0, 50));
+    return { ok: true, dama: v };
+  }
   ranked({ room, mode, won, draw, coins, dama, kind, rd, rec }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
@@ -239,7 +302,7 @@ export class VaultCore {
     const bought = this.sql.exec(`SELECT kind, id, at FROM owned ORDER BY at DESC`).toArray();
     // (the puzzles: the ratings are in me.pzr; the last counted attempts - id, score, the rating after)
     const pztries = this.sql.exec(`SELECT id, res, r, at FROM pztry ORDER BY at DESC LIMIT 30`).toArray();
-    return { ok: true, me: Object.assign({}, me, { save: undefined }), since: this.get('since', 0), ledger: led, games, bought, pztries, admin: this.get('adminLog', []) };
+    return { ok: true, me: Object.assign({}, me, { save: undefined }), since: this.get('since', 0), ledger: led, games, bought, pztries, admin: this.get('adminLog', []), fp: this.fpSummary() };
   }
   adminGrant({ by, why, coin, dia, kind, id, dama, take, debug, pzr }) {
     const note = `${String(by || 'admin').slice(0, 40)}${why ? ' · ' + String(why).slice(0, 80) : ''}`, did = [];
