@@ -366,7 +366,7 @@
   const holeMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
   const needMat = new THREE.MeshBasicMaterial({ color: 0xffd34d, toneMapped: false, side: THREE.DoubleSide });   // (a cushion that must be met)
   const seamMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false });   // (a mitre's joint)
-  const SH_CW = CW, SH_STEP = 0.01, SH_FINE = 0.0025, NOSE = 0.0355, SH_BEV = 0.011, SH_RR = 0.1, SH_APRON = 0.035;
+  const SH_CW = CW, SH_JAW = 0.4 * CW, SH_STEP = 0.01, SH_FINE = 0.0025, NOSE = 0.0355, SH_BEV = 0.011, SH_RR = 0.1, SH_APRON = 0.035;
   const SH_RT = SH_CW + RW;                                                          // (the rail's outer edge, out from the nose)
   /* The cross-section, from the nose out: [out, height, piece] - the rubber; the rail's top to its rounded outer edge
      (a quarter round of SH_BEV, as the ordinary rail's bevel), its side down to its rounded foot; the apron, set in */
@@ -379,20 +379,13 @@
     return p;
   })();
   const SH_APRON_PROF = (() => { const zb = RAIL_Z - 0.12 - 2 * SH_BEV, d = SH_RT - SH_APRON; return [[SH_RT - SH_BEV, zb, 'body'], [d + 0.012, zb, 'body'], [d, zb - 0.012, 'body'], [d, -0.27, 'body'], [d - 0.012, -0.282, 'body']]; })();
-  // the rails' wood: the ordinary rails' lacquer, its grain by texture coordinates; no coat and a duller face where a rail
-  // reaches in under the lamps (an island, a notch: uIn, the cloth's middle) - there it would mirror the lamps white
+  /* the rails' wood: the ordinary rails' lacquer, its grain by texture coordinates. One finish for the whole table (owner
+     11-25: the matte patch where a rail reached in under the lamps showed as a dark block at the cross's joints) - the
+     rectangle's the ordinary rails' own; any other outline, whose rails run in under the lamp, oiled wood without a coat
+     (SH_COAT): any coat there mirrors the lamp over the table - a sharp one as white blocks at the inner corners, a soft
+     one as a white wash along the rails (tried 11-25) */
   const shapeWoodMat = new THREE.MeshPhysicalMaterial({ map: woodTex, roughness: 0.36, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
-  const shapeWoodU = { uIn: { value: new THREE.Vector2(1, 0.5) } };
-  shapeWoodMat.onBeforeCompile = sh => {
-    sh.uniforms.uIn = shapeWoodU.uIn;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vSh;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvSh = position.xy;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vSh;\nuniform vec2 uIn;').replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
-      float kIn = smoothstep(0.0, 0.12, -max(abs(vSh.x) - uIn.x, abs(vSh.y) - uIn.y));
-      material.specularRoughness = mix(material.specularRoughness, 0.75, kIn);
-      #ifdef CLEARCOAT
-        material.clearcoat = mix(material.clearcoat, 0.0, kIn);
-      #endif`);
-  };
+  const SH_COAT = { roughness: 0.7, clearcoatRoughness: 0.3, clearcoat: 0, reflectivity: 0.15 };
   const shapePitMat = new THREE.MeshStandardMaterial({ color: col(0x1a1613), roughness: 0.75, metalness: 0, envMapIntensity: 0.25, side: THREE.BackSide });
   let shapeNow = null;
   /* A ring of the outline (or an island) walked in small steps, each { x, y on the nose line, mx, my the way out (an
@@ -414,9 +407,17 @@
       const t0 = T(i0), turn = Math.acos(Math.max(-1, Math.min(1, dot)));
       // (opening: the next edge's offset starts ahead of where this one's ends - an outer corner of the rail)
       const open = (n1[0] - n0[0]) * t0[0] + (n1[1] - n0[1]) * t0[1] > 1e-6;
-      return { m: [mx, my], curve: false, open: open && turn > 0.3, sharp: turn > 0.3, n0, n1, turn };
+      // (closing: an inner corner of the rail - the boards meet on the mitre, and every point of either board d out must
+      // stop at it: k, how far back along the edge the mitre is for each unit out)
+      return { m: [mx, my], curve: false, open: open && turn > 0.3, sharp: turn > 0.3, n0, n1, turn, k: !open && turn > 1e-3 ? Math.tan(turn / 2) : null };
     });
     const out = []; let s = 0;
+    /* (a straight edge's points carry the edge - its start, way along, way out, length - and the mitres closing its ends
+       (k0, k1), so a point u along it, taken d out, slides back along the edge to stay on its own side of a mitre: an
+       inner corner's boards meet on the mitre at every depth, instead of each running on over the other's cushion) */
+    const along = (i, u) => { const a = pts[i], t = T(i), nn = N(i), c0 = corner[i], c1 = corner[(i + 1) % n];
+      if (c0.curve || c1.curve) return {};
+      return { ax: a[0], ay: a[1], tx: t[0], ty: t[1], nx: nn[0], ny: nn[1], u, L: L(i), k0: c0.k, k1: c1.k }; };
     for (let i = 0; i < n; i++) {
       const a = pts[i], b = pts[(i + 1) % n], n1 = N(i), c0 = corner[i], c1 = corner[(i + 1) % n], curve = short(i) && c0.curve && c1.curve, len = L(i);
       // the corner: rounded from d0 (its middle the board's joint), or a single mitred point
@@ -430,8 +431,9 @@
           s += ds;
         }
       } else {
-        if (c0.sharp) { out.push({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: (i - 1 + n) % n, s }); s = 0; out.push({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: i, s: 0, seam: true }); }
-        else out.push({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: i, s });
+        const ip = (i - 1 + n) % n;
+        if (c0.sharp) { out.push(Object.assign({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: ip, s }, along(ip, L(ip)))); s = 0; out.push(Object.assign({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: i, s: 0, seam: true }, along(i, 0))); }
+        else out.push(Object.assign({ x: a[0], y: a[1], mx: c0.m[0], my: c0.m[1], e: i, s }, along(i, 0)));
       }
       // the edge, in steps (finer by a pocket)
       let t = 0;
@@ -440,7 +442,7 @@
         t += near && near(px, py) ? SH_FINE : SH_STEP; if (t >= len - 1e-6) break;
         const f = t / len; let mx = n1[0], my = n1[1];
         if (curve) { mx = c0.m[0] + (c1.m[0] - c0.m[0]) * f; my = c0.m[1] + (c1.m[1] - c0.m[1]) * f; const l = Math.hypot(mx, my) || 1; mx /= l; my /= l; }
-        out.push({ x: a[0] + (b[0] - a[0]) * f, y: a[1] + (b[1] - a[1]) * f, mx, my, e: i, s: s + t });
+        out.push(Object.assign({ x: a[0] + (b[0] - a[0]) * f, y: a[1] + (b[1] - a[1]) * f, mx, my, e: i, s: s + t }, curve ? {} : along(i, t)));
       }
       s += len;
     }
@@ -449,7 +451,16 @@
   // (a ring of the walk d out, as a shape's points - a point the same as the last left out)
   const shapeRing = (walk, d) => { const out = []; for (const q of walk) { const p = shapeAt(q, d), l = out[out.length - 1]; if (!l || Math.hypot(l.x - p[0], l.y - p[1]) > 1e-6) out.push(new THREE.Vector2(p[0], p[1])); } return out; };
   // (a point of the walk d out from the nose: along its mitre, or past d0 round its corner)
-  const shapeAt = (q, d) => q.d0 != null && d > q.d0 ? [q.x + q.mx * q.d0 + q.ux * (d - q.d0), q.y + q.my * q.d0 + q.uy * (d - q.d0)] : [q.x + q.mx * d, q.y + q.my * d];
+  const shapeAt = (q, d) => {
+    if (q.d0 != null && d > q.d0) return [q.x + q.mx * q.d0 + q.ux * (d - q.d0), q.y + q.my * q.d0 + q.uy * (d - q.d0)];
+    if (q.L != null && (q.k0 != null || q.k1 != null)) {
+      // (kept between the mitres d out; where they cross - an edge shorter than the rail is deep - at their crossing)
+      const lo = q.k0 != null ? d * q.k0 : -Infinity, hi = q.k1 != null ? q.L - d * q.k1 : Infinity;
+      const u = lo > hi ? q.L * q.k0 / (q.k0 + q.k1) : Math.min(hi, Math.max(lo, q.u));
+      return [q.ax + q.tx * u + q.nx * d, q.ay + q.ty * u + q.ny * d];
+    }
+    return [q.x + q.mx * d, q.y + q.my * d];
+  };
   function setShape(sh) {
     shapeNow = sh || null;
     while (shapeGrp.children.length) { const m = shapeGrp.children.pop(); m.geometry.dispose(); if (m.material && m.material.map && m.material.map.isCanvasTexture) { m.material.map.dispose(); m.material.dispose(); } }
@@ -457,9 +468,36 @@
     if (sh && cur) {
       shapeWoodMat.map = woodMat.map; shapeWoodMat.color.copy(woodMat.color); shapeWoodMat.needsUpdate = true;
       const P = cur, cuts = sh.holes.filter(h => h.cut), V = { cush: [], wood: [], body: [], chrome: [] }, UV = { cush: [], wood: [], body: [], chrome: [] };
-      shapeWoodU.uIn.value.set(P.HL - 0.12, P.HW - 0.08);
       const cutAt = (x, y, pad) => cuts.some(h => (x - h.x) ** 2 + (y - h.y) ** 2 < (h.r + pad) ** 2);
       const near = (x, y) => cuts.some(h => (x - h.x) ** 2 + (y - h.y) ** 2 < (h.r + 0.06) ** 2);
+      // (a piece against the pockets: null when one circle covers it, else the circles that run across it)
+      const CUT_R = 0.0004, cutsOn = poly => {
+        const on = [];
+        for (const h of cuts) {
+          const R = h.r + CUT_R; let n = 0, near = false, inside = false;
+          for (let i = 0; i < poly.length; i++) {
+            const p = poly[i], q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l2 = dx * dx + dy * dy || 1e-12;
+            if ((p[0] - h.x) ** 2 + (p[1] - h.y) ** 2 < R * R) n++;
+            const t = Math.max(0, Math.min(1, ((h.x - p[0]) * dx + (h.y - p[1]) * dy) / l2)); if ((p[0] + dx * t - h.x) ** 2 + (p[1] + dy * t - h.y) ** 2 < R * R) near = true;
+            if ((p[1] > h.y) !== (q[1] > h.y) && h.x < p[0] + (h.y - p[1]) / (q[1] - p[1]) * dx) inside = !inside;
+          }
+          if (n === poly.length) return null; if (n || near || inside) on.push(h);
+        }
+        return on;
+      };
+      // (what of a small piece is outside a circle - its corners inside put on the circle where its sides cross it)
+      const clipOut = (poly, h) => {
+        const R = h.r + CUT_R, out = v => (v[0] - h.x) ** 2 + (v[1] - h.y) ** 2 >= R * R, res = [];
+        for (let i = 0; i < poly.length; i++) {
+          const p = poly[i], q = poly[(i + 1) % poly.length], po = out(p), qo = out(q); if (po) res.push(p);
+          if (po !== qo) {
+            const dx = q[0] - p[0], dy = q[1] - p[1], fx = p[0] - h.x, fy = p[1] - h.y, A = dx * dx + dy * dy, B = 2 * (fx * dx + fy * dy), Cq = fx * fx + fy * fy - R * R, D = Math.sqrt(Math.max(0, B * B - 4 * A * Cq));
+            let t = (-B - D) / (2 * A); if (t < 0 || t > 1) t = (-B + D) / (2 * A); t = Math.max(0, Math.min(1, t));
+            res.push(p.map((c, k) => c + (q[k] - c) * t));
+          }
+        }
+        return res;
+      };
       // round one ring: the cross-section swept from step to step; a piece of a step inside a pocket's circle left out.
       // Its texture coordinates: along the board (s), out from the nose and on down the side (as woodMat's rule)
       const sweep = (walk, prof) => {
@@ -468,17 +506,29 @@
         let i1 = 1; while (i1 < walk.length - 1 && Math.hypot(walk[i1].x - walk[0].x, walk[i1].y - walk[0].y) < 1e-6) i1++;
         const t0 = walk[i1], f0 = walk[i1 - 1], flip = (t0.x - f0.x) * t0.my - (t0.y - f0.y) * t0.mx < 0;
         const uvAt = (q, d, z) => [q.s * 0.62, (d + (RAIL_Z - z) * 0.9) * 2.3];
+        // (a corner: where the step's piece of a band is (s along the step, t across the band) - with its texture place)
+        const at = (q0, q1, d0, z0, d1, z1, m, s, t) => {
+          const d = d0 + (d1 - d0) * t, z = z0 + (z1 - z0) * t, a = shapeAt(q0, d), b = shapeAt(q1, d), x = a[0] + (b[0] - a[0]) * s, y = a[1] + (b[1] - a[1]) * s;
+          if (m === 'cush') return [x, y, z, x, y];
+          const ua = uvAt(q0, d, z), ub = uvAt(q1, d, z); return [x, y, z, ua[0] + (ub[0] - ua[0]) * s, ua[1] + (ub[1] - ua[1]) * s];
+        };
+        const emit = (m, poly) => {
+          if (flip) poly = poly.slice().reverse();
+          for (let i = 1; i + 1 < poly.length; i++) for (const v of [poly[0], poly[i], poly[i + 1]]) { V[m].push(v[0], v[1], v[2]); UV[m].push(v[3], v[4]); }
+        };
         for (let k = 0; k < walk.length; k++) {
           const q0 = walk[k], q1 = walk[(k + 1) % walk.length]; if (q1.seam && q1.x === q0.x && q1.y === q0.y) continue;   // (a joint: the next board starts)
           for (let j = 0; j + 1 < prof.length; j++) {
-            const [d0, z0] = prof[j], [d1, z1, m] = prof[j + 1], dm = (d0 + d1) / 2, p = shapeAt(q0, dm), r = shapeAt(q1, dm);
-            if (cutAt((p[0] + r[0]) / 2, (p[1] + r[1]) / 2, 0.001)) continue;
-            const a = shapeAt(q0, d0), b = shapeAt(q1, d0), c = shapeAt(q1, d1), d = shapeAt(q0, d1);
-            const A = [a[0], a[1], z0], B = [b[0], b[1], z0], C = [c[0], c[1], z1], D = [d[0], d[1], z1];
-            // (the rubber's cloth: laid flat, as the ordinary cushions' - metres)
-            const ua = m === 'cush' ? [A[0], A[1]] : uvAt(q0, d0, z0), ub = m === 'cush' ? [B[0], B[1]] : uvAt(q1, d0, z0), uc = m === 'cush' ? [C[0], C[1]] : uvAt(q1, d1, z1), ud = m === 'cush' ? [D[0], D[1]] : uvAt(q0, d1, z1);
-            if (flip) { V[m].push(...A, ...D, ...C, ...A, ...C, ...B); UV[m].push(...ua, ...ud, ...uc, ...ua, ...uc, ...ub); }
-            else { V[m].push(...A, ...B, ...C, ...A, ...C, ...D); UV[m].push(...ua, ...ub, ...uc, ...ua, ...uc, ...ud); }
+            const [d0, z0] = prof[j], [d1, z1, m] = prof[j + 1], C = (s, t) => at(q0, q1, d0, z0, d1, z1, m, s, t);
+            const quad = [C(0, 0), C(1, 0), C(1, 1), C(0, 1)], cut = cutsOn(quad);
+            if (cut === null) continue; if (!cut.length) { emit(m, quad); continue; }
+            // a piece a pocket's circle runs across: in pieces of 3 mm, each one crossed cut along the circle
+            const len = Math.max(Math.hypot(quad[1][0] - quad[0][0], quad[1][1] - quad[0][1]), Math.hypot(quad[2][0] - quad[3][0], quad[2][1] - quad[3][1]));
+            const K = Math.max(1, Math.ceil(len / 0.003)), M = Math.max(1, Math.ceil(Math.abs(d1 - d0) / 0.003));
+            for (let i = 0; i < K; i++) for (let l = 0; l < M; l++) {
+              let cell = [C(i / K, l / M), C((i + 1) / K, l / M), C((i + 1) / K, (l + 1) / M), C(i / K, (l + 1) / M)]; const cc = cutsOn(cell);
+              if (cc === null) continue; for (const h of cc) cell = clipOut(cell, h); if (cell.length > 2) emit(m, cell);
+            }
           }
         }
       };
@@ -493,6 +543,8 @@
       // a rectangle's outline (every corner of its box there): the ordinary table's cabinet under it; else the apron swept
       let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; for (const p of sh.poly) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
       const boxy = sh.poly.length === 4 && [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].every(c => sh.poly.some(p => Math.hypot(p[0] - c[0], p[1] - c[1]) < 1e-3));
+      const fin = boxy && !(sh.islands || []).length ? { roughness: 0.36, clearcoatRoughness: 0.08, clearcoat: 1, reflectivity: 0.5 } : SH_COAT;
+      shapeWoodMat.roughness = fin.roughness; shapeWoodMat.clearcoatRoughness = fin.clearcoatRoughness; shapeWoodMat.clearcoat = fin.clearcoat; shapeWoodMat.reflectivity = fin.reflectivity;
       sweep(outer, boxy ? SH_PROF : SH_PROF.concat(SH_APRON_PROF));
       // the joints: a dark line across the rail's top where two boards meet
       const seams = [];
@@ -507,26 +559,60 @@
         const uv = tg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, tg.attributes.position.getX(i) * 0.62, tg.attributes.position.getY(i) * 2.3);
         const tm = new THREE.Mesh(tg, shapeWoodMat); tm.castShadow = tm.receiveShadow = true; tm.layers.enable(OCCL); shapeGrp.add(tm);
       }
-      // the pockets in the outline: round the back of each (where it is past the nose) the leather liner, the rubber lip
-      // on its top and the brass plate let into the rail - as the ordinary pockets' (railCut); the pit down through the cloth
+      /* the pockets in the outline, finished as the ordinary pockets: the circle (the physics' own) cut down through the
+         rubber and the rail. Its jaws - from the nose back to SH_JAW - the rubber's cloth; behind them, round the back of
+         the circle, the leather liner down the cut, the black rubber lip along its top and the brass plate round it, on
+         the rubber's top or the rail's, whichever the back runs through. */
+      const rings = [sh.poly, ...(sh.islands || [])];
+      // (how far a point is out past the cushion's nose: below 0 on the cloth, 0 to SH_CW the rubber, past that the rail)
+      const depth = (x, y) => { let best = Infinity; for (const ring of rings) for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)); best = Math.min(best, Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t)); } return physIn(sh, x, y) ? -best : best; };
+      const topAt = e => e <= 0 ? 0 : e < SH_CW ? NOSE + e / SH_CW * (RAIL_Z - NOSE) : RAIL_Z;       // (the top there)
+      const cv = [], cn = [], cu = [], lv = [], ln = [];
       for (const h of cuts) {
-        const n = 96, runs = []; let run = null;
-        for (let i = 0; i < n; i++) { const t = Math.PI * 2 * (i + 0.5) / n, o = !physIn(sh, h.x + Math.cos(t) * h.r, h.y + Math.sin(t) * h.r); if (o) { if (!run) runs.push(run = [i, i]); else run[1] = i; } else run = null; }
+        const n = 240, R = h.r + CUT_R, E = [];
+        for (let i = 0; i <= n; i++) { const t = Math.PI * 2 * i / n; E.push(depth(h.x + Math.cos(t) * R, h.y + Math.sin(t) * R)); }
+        const back = i => (E[i] + E[i + 1]) / 2 >= SH_JAW;
+        // the cut's face, round the circle: the cloth on the jaws (from the bed up), the liner behind them (down into the pit)
+        for (let i = 0; i < n; i++) {
+          const e0 = E[i], e1 = E[i + 1]; if (e0 <= 0 && e1 <= 0) continue;
+          const t0 = Math.PI * 2 * i / n, t1 = Math.PI * 2 * (i + 1) / n, P0 = [h.x + Math.cos(t0) * R, h.y + Math.sin(t0) * R], P1 = [h.x + Math.cos(t1) * R, h.y + Math.sin(t1) * R];
+          const lin = back(i), zb = lin ? -0.02 : 0, z0 = topAt(e0), z1 = topAt(e1), A = [P0[0], P0[1], zb], B = [P1[0], P1[1], zb], C = [P1[0], P1[1], z1], D = [P0[0], P0[1], z0];
+          const vs = lin ? lv : cv, ns = lin ? ln : cn; vs.push(...A, ...C, ...B, ...A, ...D, ...C);
+          for (const t of [t0, t1, t1, t0, t0, t1]) ns.push(-Math.cos(t), -Math.sin(t), 0);
+          if (!lin) cu.push(A[0], A[1], C[0], C[1] + z1, B[0], B[1], A[0], A[1], D[0], D[1] + z0, C[0], C[1] + z1);
+        }
+        // the back's runs (the steps behind the jaws, joined round past the start)
+        const runs = []; let run = null;
+        for (let i = 0; i < n; i++) if (back(i)) { if (!run) runs.push(run = [i, i]); else run[1] = i; } else run = null;
         if (runs.length > 1 && runs[0][0] === 0 && runs[runs.length - 1][1] === n - 1) { runs[0][0] = runs[runs.length - 1][0] - n; runs.pop(); }
         for (const [i0, i1] of runs) {
-          const a1 = Math.PI * 2 * i0 / n, len = Math.PI * 2 * (i1 - i0 + 1) / n, lv = [], ln = [], seg = Math.max(4, i1 - i0 + 1), r = h.r - 0.0012;
-          for (let k = 0; k < seg; k++) {
-            const t0 = a1 + len * k / seg, t1 = a1 + len * (k + 1) / seg, q = (t, z) => { lv.push(h.x + Math.cos(t) * r, h.y + Math.sin(t) * r, z); ln.push(-Math.cos(t), -Math.sin(t), 0); };
-            q(t0, RAIL_Z); q(t0, -0.02); q(t1, RAIL_Z); q(t1, RAIL_Z); q(t0, -0.02); q(t1, -0.02);
+          const a1 = Math.PI * 2 * i0 / n, len = Math.PI * 2 * (i1 - i0 + 1) / n, seg = i1 - i0 + 1, eAt = t => depth(h.x + Math.cos(t) * R, h.y + Math.sin(t) * R);
+          // the lip: a round rubber bead along the cut's top edge, rising and falling with it, drawn thin at its two ends
+          const pos = [], nor = [], idx = [], S = 10;
+          for (let k = 0; k <= seg; k++) {
+            const t = a1 + len * k / seg, c = Math.cos(t), sn = Math.sin(t), cz = topAt(eAt(t)) - 0.001, end = Math.min(k, seg - k), w = 0.006 * Math.min(1, 0.35 + end * 0.22), rr = h.r + 0.0035;
+            for (let j = 0; j <= S; j++) { const f = Math.PI * 2 * j / S, nx = Math.cos(f) * c, ny = Math.cos(f) * sn, nz = Math.sin(f); pos.push(h.x + c * rr + nx * w, h.y + sn * rr + ny * w, cz + nz * w); nor.push(nx, ny, nz); }
           }
-          const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(lv, 3)); lg.setAttribute('normal', new THREE.Float32BufferAttribute(ln, 3));
-          const liner = new THREE.Mesh(lg, linerMat); liner.receiveShadow = true; liner.layers.enable(OCCL); shapeGrp.add(liner);
-          const lip = new THREE.Mesh(new THREE.TorusGeometry(h.r + 0.0035, 0.006, 10, Math.max(8, seg), len), lipMat);
-          lip.rotation.z = a1; lip.position.set(h.x, h.y, RAIL_Z - 0.001); lip.castShadow = true; lip.layers.enable(OCCL); shapeGrp.add(lip);
-          const plate = new THREE.Mesh(new THREE.RingGeometry(h.r + SH_BEV - 0.002, h.r + SH_BEV + 0.012, Math.max(8, seg), 1, a1, len), metalMat);
-          plate.position.set(h.x, h.y, RAIL_Z + 0.0006); plate.layers.enable(OCCL); shapeGrp.add(plate);
+          for (let k = 0; k < seg; k++) for (let j = 0; j < S; j++) { const a = k * (S + 1) + j, b = a + S + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+          const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); lg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); lg.setIndex(idx);
+          const lip = new THREE.Mesh(lg, lipMat); lip.castShadow = true; lip.layers.enable(OCCL); shapeGrp.add(lip);
+          // the plate: a band round the hole behind the lip, on the top (as far as the rail's flat top goes)
+          const out = t => { const c = Math.cos(t), s = Math.sin(t); let lo = h.r, hi = h.r + 0.06; for (let j = 0; j < 22; j++) { const m = (lo + hi) / 2; if (depth(h.x + c * m, h.y + s * m) < SH_RT - SH_BEV - 0.002) lo = m; else hi = m; }
+            return [h.r + SH_BEV - 0.002, Math.min(h.r + SH_BEV + 0.012, lo), c, s]; };
+          const pv = [], ps = seg * 2, RS = 4;
+          for (let k = 0; k < ps; k++) {
+            const [p0, p1, c0, s0] = out(a1 + len * k / ps), [q0, q1, c1, s1] = out(a1 + len * (k + 1) / ps); if (p1 <= p0 || q1 <= q0) continue;
+            const V = (c, s, r) => { const x = h.x + c * r, y = h.y + s * r; return [x, y, topAt(depth(x, y)) + 0.0006]; };
+            for (let j = 0; j < RS; j++) {
+              const A = V(c0, s0, p0 + (p1 - p0) * j / RS), B = V(c0, s0, p0 + (p1 - p0) * (j + 1) / RS), C = V(c1, s1, q0 + (q1 - q0) * (j + 1) / RS), D = V(c1, s1, q0 + (q1 - q0) * j / RS);
+              pv.push(...A, ...B, ...C, ...A, ...C, ...D);
+            }
+          }
+          if (pv.length) { const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pv, 3)); pg.computeVertexNormals(); const plate = new THREE.Mesh(pg, metalMat); plate.receiveShadow = true; plate.layers.enable(OCCL); shapeGrp.add(plate); }
         }
       }
+      if (cv.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(cv, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(cn, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(cu, 2)); const m = new THREE.Mesh(g, cushMat); m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); }
+      if (lv.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(lv, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(ln, 3)); const m = new THREE.Mesh(g, linerMat); m.receiveShadow = true; m.layers.enable(OCCL); shapeGrp.add(m); }
       // the need's yellow bands (puzzles.js need): along the rubber's top, numbered on the rail when there is more than one
       const need = (sh.spec && sh.spec.need) || [];
       need.forEach((e, ni) => {
@@ -535,7 +621,7 @@
         for (let k = 0; k + 1 < seg.length; k++) {
           const q0 = seg[k], q1 = seg[k + 1];
           const a = shapeAt(q0, 0.008), b = shapeAt(q1, 0.008), c = shapeAt(q1, 0.04), d = shapeAt(q0, 0.04);
-          if (cutAt((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, 0.002)) continue;
+          if (cutAt((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, SH_BEV + 0.014)) continue;
           band.push(a[0], a[1], zAt(0.008), b[0], b[1], zAt(0.008), c[0], c[1], zAt(0.04), a[0], a[1], zAt(0.008), c[0], c[1], zAt(0.04), d[0], d[1], zAt(0.04));
         }
         if (band.length) { const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(band, 3)); shapeGrp.add(new THREE.Mesh(bg, needMat)); }
