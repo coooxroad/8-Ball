@@ -110,20 +110,18 @@ function frRow(f, end, tap) {
     ...[].concat(end || [])];
   return tap ? el('button', { class: 'fr-row' + (s ? ' ' + s[0] : ''), onclick: onTap(tap) }, kids) : el('div', { class: 'fr-row' + (s ? ' ' + s[0] : '') }, kids);
 }
-/* a friend in the list as their own 선수증, laid on its side (owner 11-27: the card to stand out): the tier's rim, paper and
-   head band, the face they chose (bg-), their ball, name#tag, their title, where they are, the games between the two - and,
-   cut in the rim's foot as on the glass case, CUE and their tag. The tier's look is 84-menu.css .mn-pc.t-*; the shape here. */
+/* a friend in the list as their own 선수증, laid on its side (owner 11-27: the card to stand out; then: no rim, no head band -
+   too tall): the tier's paper or the face they chose (bg-), their ball, name#tag, their title, where they are, the games
+   between the two. The tier's look is 84-menu.css .mn-pc.t-*; the shape here. */
 function frPc(f, tap) {
   const s = frState(f), t = tierAt(f.face && f.face.dama != null ? f.face.dama : ECONOMY.DAMA_START), bg = f.face && f.face.card && f.face.card !== 'tier' && CARD_BGS.some(q => q.id === f.face.card) ? f.face.card : null;
   const ttl = f.face && f.face.title && f.face.title !== 'none' ? TITLES.find(q => q.id === f.face.title) : null, n = (f.w || 0) + (f.l || 0) + (f.d || 0);
   return el('button', { class: `fr-pc mn-pc t-${t.id}` + (bg ? ` bg-${bg}` : '') + ' ' + s[0], 'aria-label': `${f.nick}#${f.tag}, ${t.name}, ${s[1]}`, onclick: onTap(tap) }, [
     el('span', { class: 'mn-face', 'aria-hidden': 'true' }),
-    el('span', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` }), el('i', { class: 'dot ' + s[0] })]),
     el('span', { class: 'fr-pb' }, [el('span', { class: 'em' }, el('b', { text: t.name })),
-      el('span', { class: 'fr-pw' }, [el('b', { class: 'nm', text: f.nick }), el('small', { class: 'ttl', text: ttl ? ttl.name : `${t.name} · ${t.dama}` }),
+      el('span', { class: 'fr-pw' }, [el('b', { class: 'nm' }, [document.createTextNode(f.nick), el('i', { text: '#' + f.tag })]), el('small', { class: 'ttl', text: ttl ? `${ttl.name} · ${t.name} ${t.dama}` : `${t.name} · ${t.dama}` }),
         el('small', { class: 'fr-ps ' + s[0], text: s[1] })]),
-      el('span', { class: 'fr-pr' }, [el('b', { text: n ? `${f.w || 0} : ${f.l || 0}` : '-' }), document.createTextNode('나와의 전적')])]),
-    el('span', { class: 'fr-pf', 'aria-hidden': 'true' }, [el('b', { text: 'C U E' }), el('small', { text: '#' + f.tag })])]);
+      el('span', { class: 'fr-pr' }, [el('b', { text: n ? `${f.w || 0} : ${f.l || 0}` : '-' }), document.createTextNode('나와의 전적')])])]);
 }
 const frBtn = (t, fn, cls) => el('button', { class: 'dk-chip fr-b' + (cls ? ' ' + cls : ''), text: t, onclick: onTap(fn) });
 const frSec = t => el('div', { class: 'dk-tier fr-sec' }, el('span', { text: t }));
