@@ -389,6 +389,14 @@ export class RoomCore {
   others(seat, msg) { const n = this.get('seats', []).length; for (let s = 0; s < n; s++) if (s !== seat) this.send(s, msg); this.send('w', msg); }
   seatOf(token) { const s = this.get('seats', []); return s.findIndex(q => q.token === token); }
   // a watcher's key (a listed friend's game: InviteCore.watch) - never a seat's
+  /* 친구 추가 from a game's result (friends-core.js add): the other player in a game of two, for one who sat in it - an
+     account, or a stand-in (ghost: never told apart on the screen, ranked.js standIn) */
+  who(acct) {
+    const seats = this.get('seats', []), r = this.get('room') || {}, i = seats.findIndex(q => q.acct && q.acct === acct);
+    if (i < 0 || seats.length !== 2) return { ok: false };
+    const o = seats[1 - i], ghost = !o.acct || !!o.bot || (!!r.standIn && 1 - i === 1);
+    return ghost ? { ok: true, ghost: true, name: o.name || '' } : { ok: true, acct: o.acct, name: o.name || '' };
+  }
   watches(key) { const r = this.get('room'); return !!(r && r.watch && key && key === r.watch); }
   // what a watcher needs: the game, both players, every shot so far (seat 2: neither)
   watchState() {
@@ -686,7 +694,9 @@ export class RoomCore {
     if (!res) return [];
     return seats.map((q, s) => s).filter(s => seats[s].acct && !paid[s]).map(s => ({ seat: s, acct: seats[s].acct,
       body: { room: r.room, mode: r.mode, kind: r.kind || 'ranked', won: res.winner === sideOf(s), draw: res.winner == null, coins: res.coins[s], dama: res.dama[s] - seats[s].dama, rd: res.rd ? res.rd[s] : undefined,
-        rec: (this.get('recs', null) || [])[s] || undefined } }));
+        rec: (this.get('recs', null) || [])[s] || undefined,
+        // (a game with a friend between two: the other one, for the two's record - friends-core.js record)
+        opp: r.kind === 'invite' && seats.length === 2 && seats[1 - s].acct && !seats[1 - s].bot ? [seats[1 - s].acct] : undefined } }));
   }
   paid(seat) { const p = this.get('paid', this.get('seats').map(() => false)); p[seat] = true; this.set('paid', p); }
 }

@@ -6,6 +6,7 @@
    `sql` is the Durable Object's SQLite (ctx.storage.sql) - or, in the tests, node's. */
 import { E, playPuzzle, playMatch, playLesson, Replay, DRILLS } from './check.js';
 import { logError, matchKey } from './match-log.js';
+import { FriendsCore } from './friends-core.js';
 
 const KINDS = { cue: E.CUES, ball: E.BALLSKINS, table: E.CLOTHS, trail: E.TRAILS, card: E.CARD_BGS, title: E.TITLES };   // (card, title: the player card's look - content/50-cards.js)
 const day = () => new Date().toISOString().slice(0, 10);
@@ -28,6 +29,8 @@ export class VaultCore {
     sql.exec(`CREATE TABLE IF NOT EXISTS ledger (n INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, what TEXT, coin INTEGER, dia INTEGER)`);
     // (the ranked games' shots, kept with the account 90 days for fair play - ranked.js recordOf, owner 11-25)
     sql.exec(`CREATE TABLE IF NOT EXISTS rgames (room TEXT PRIMARY KEY, at INTEGER, mode TEXT, won INTEGER, coins INTEGER, rec TEXT)`);
+    // (친구: friends-core.js - the friends, requests, invitations; the handle's tag is kv 'tag')
+    this.fr = new FriendsCore(sql);
   }
   get(k, d) { const r = this.sql.exec(`SELECT v FROM kv WHERE k = ?`, k).toArray(); return r.length ? JSON.parse(r[0].v) : d; }
   set(k, v) { this.sql.exec(`INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v`, k, JSON.stringify(v)); }
@@ -70,7 +73,7 @@ export class VaultCore {
       prizes: Object.keys(E.ECONOMY.LESSON_PRIZE).filter(v => this.get('prize:' + v)),
       // a member (signed up with Google: link.js) and their nickname; the tutorial's prize taken; the progress kept here
       // for the account's other devices (the app's own: lessons, puzzles - save())
-      joined: !!this.get('joined'), nick: this.get('nick', null), tut: !!this.get('tut'), save: this.get('save', null),
+      joined: !!this.get('joined'), nick: this.get('nick', null), tag: this.get('tag', null), tut: !!this.get('tut'), save: this.get('save', null),
       // debug mode, turned on for this account in the admin console (adminGrant debug): the app's 디버그 settings
       debug: !!this.get('debug'),
       checking: this.sql.exec(`SELECT COUNT(*) AS c FROM matches WHERE status = 'checking'`).toArray()[0].c,
@@ -269,7 +272,7 @@ export class VaultCore {
     const log = this.get('adminLog', []); log.unshift({ at: Date.now(), by: String(by || ''), why: 'fair play refund', did: `${f} +${Math.round(dama)} (room ${room.slice(0, 8)})` }); this.set('adminLog', log.slice(0, 50));
     return { ok: true, dama: v };
   }
-  ranked({ room, mode, won, draw, coins, dama, kind, rd, rec }) {
+  ranked({ room, mode, won, draw, coins, dama, kind, rd, rec, opp }) {
     if (typeof room !== 'string' || !/^[0-9a-f]{32}$/.test(room)) return { ok: false, why: 'no room' };
     return this.once('room-' + room, () => {
       // (증강 당구 - kind 'arcade' - moves no rating either, and is kept as its own kind)
@@ -281,6 +284,8 @@ export class VaultCore {
       this.sql.exec(`INSERT INTO matches (at, kind, mode, log, paid, checked, status) VALUES (?, ?, ?, NULL, ?, 1, ?)`, Date.now(), kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked', mode, c, draw ? 'draw' : won ? 'won' : 'lost');
       if (c) this.pay(`${kind === 'arcade' ? 'arcade' : inv ? 'invite' : 'ranked'} ${mode}`, c, 0);
       if (!inv) this.keepGame(room, mode, !!won, c, rec);
+      // (a game with a friend: the two's record - friends-core.js; ranked.js payouts gives the other side)
+      if (kind === 'invite' && Array.isArray(opp)) this.fr.record(opp, !!won, !!draw);
       return { ok: true };
     });
   }
@@ -340,7 +345,7 @@ export class VaultCore {
   }
   // the name the others see: 2 to 10 characters, no control characters, spaces closed up
   nick({ nick }) {
-    const n = String(nick || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim(), len = [...n].length;
+    const n = String(nick || '').replace(/[\u0000-\u001f\u007f#]/g, '').replace(/\s+/g, ' ').trim(), len = [...n].length;
     if (len < 2 || len > 10) return { ok: false, why: 'nick length' };
     this.set('nick', n); return { ok: true, me: this.me() };
   }
@@ -360,7 +365,7 @@ export class VaultCore {
      (vault.js). What the app asks to be sure: { sure: '삭제' }. */
   erase(body) {
     if (!body || body.sure !== '삭제') return { ok: false, why: 'not sure' };
-    this.tx(() => { for (const t of ['kv', 'owned', 'solved', 'reqs', 'match_claims', 'daily', 'matches', 'ledger', 'rgames']) this.sql.exec(`DELETE FROM ${t}`); });
+    this.tx(() => { for (const t of ['kv', 'owned', 'solved', 'reqs', 'match_claims', 'daily', 'matches', 'ledger', 'rgames']) this.sql.exec(`DELETE FROM ${t}`); this.fr.erase(); });
     return { ok: true };
   }
   // the app's progress, kept for the account's other devices: a small object, as the app gives it

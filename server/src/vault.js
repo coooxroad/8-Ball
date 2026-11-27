@@ -4,6 +4,7 @@ import { VaultCore } from './core.js';
 import { E } from './check.js';
 import { datasetRow, toDataset } from './dataset-core.js';
 import { matchKey } from './match-log.js';
+import { friendsRoute } from './friends-core.js';
 
 const hashOf = async key => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key)))].map(b => b.toString(16).padStart(2, '0')).join('');
 const json = (body, status) => new Response(JSON.stringify(body), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
@@ -32,11 +33,21 @@ export class Vault extends DurableObject {
     const body = Object.assign({ acct, nick: this.core.me().nick || null }, fp);
     this.ctx.waitUntil(this.env.LOBBY.get(this.env.LOBBY.idFromName('directory')).fetch('https://lobby/dir/fp', { method: 'POST', body: JSON.stringify(body) }).catch(() => null));
   }
+  // the ways out for 친구: the directory, another account's vault, a game's room (friends-core.js friendsRoute)
+  friendHooks() {
+    const env = this.env, post = (stub, url, body, headers) => stub.fetch(url, { method: 'POST', headers: headers || {}, body: JSON.stringify(body || {}) }).then(r => r.json());
+    return { acct: this.acct, cache: this.frCache || (this.frCache = {}),
+      dir: (p, b) => post(env.LOBBY.get(env.LOBBY.idFromName('directory')), 'https://lobby' + p, b),
+      vault: (a, p, b) => post(env.VAULT.get(env.VAULT.idFromName(a)), 'https://vault' + p, b, { 'X-Acct': a }),
+      room: (id, p, b) => post(env.ROOM.get(env.ROOM.idFromName(id)), 'https://room' + p, b) };
+  }
   async fetch(request) {
     const path = new URL(request.url).pathname, body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
     if (!this.acct && /^[0-9a-f]{32}$/.test(request.headers.get('X-Acct') || '')) this.acct = request.headers.get('X-Acct');   // (the front door says which)
     if (path === '/init') return this.core.init(await hashOf(body.key)) ? json({ ok: true }) : json({ ok: false }, 409);
     // from a ranked game's room (never from outside: the front door passes on only /v1/ paths)
+    // from another account's vault (friends-core.js FriendsFlow.tell): a request, an answer, an invitation
+    if (path === '/fr/hear') return json(this.core.get('secret') ? this.core.fr.hear(body) : { st: 'quiet' });
     if (path === '/room/result') { const r = this.core.ranked(body); this.fpListed(); return json(r); }
     // from the front door only (it passes on only /v1/ paths): a device linked to this account (link.js)
     if (path === '/link/add') return json(this.core.addDevice(body.hash));
@@ -81,7 +92,14 @@ export class Vault extends DurableObject {
       return json(r);
     }
     if (path === '/v1/lessons') return json(this.core.lessons(body));
-    if (path === '/v1/nick') { const r = this.core.nick(body); if (r.ok) this.listed(true); return json(r); }
+    if (path === '/v1/nick') {
+      const r = this.core.nick(body);
+      // (친구: the handle follows the nickname - the tag kept if no one has it under the new name)
+      if (r.ok && this.acct) { const c = await this.friendHooks().dir('/dir/handle', { acct: this.acct, nick: r.me.nick, tag: this.core.get('tag', null) }).catch(() => null); if (c && c.ok) { this.core.set('tag', c.tag); r.me.tag = c.tag; } }
+      if (r.ok) this.listed(true); return json(r);
+    }
+    // 친구 (friends-core.js): the list (and this one's face for theirs), and each thing done with it
+    if (path === '/v1/friends' || path.startsWith('/v1/friend/')) { if (!this.acct) return json({ ok: false, why: 'who are you' }, 401); return json(await friendsRoute(this.core, path.slice(4), body, this.friendHooks())); }
     if (path === '/v1/tutorial') return json(this.core.tutorial(body));
     if (path === '/v1/save') return json(this.core.save(body));
     if (path === '/v1/match') {

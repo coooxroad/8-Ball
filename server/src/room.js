@@ -17,6 +17,8 @@ export class Room extends DurableObject {
     const url = new URL(request.url);
     // (opened: the room looks again once a seat has had its time to come in - RoomCore.timers)
     if (url.pathname === '/init') { if (!this.core.init(await request.json())) return Response.json({ ok: false }, { status: 409 }); await this.soon(JOIN_WITHIN + 500); return Response.json({ ok: true }); }
+    // (from a vault only - the front door passes on only the WebSocket path: who sat across, for 친구 추가)
+    if (url.pathname === '/who') { const b = await request.json().catch(() => ({})); return Response.json(this.core.get('room') ? this.core.who(String(b.acct || '')) : { ok: false }); }
     // /v1/room/<id>?token=...: a seat's device, by WebSocket
     if (request.headers.get('Upgrade') !== 'websocket') return Response.json({ ok: false, why: 'websocket only' }, { status: 426 });
     if (!this.core.get('room')) return Response.json({ ok: false, why: 'no such room' }, { status: 404 });

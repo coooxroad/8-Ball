@@ -3,6 +3,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { LobbyCore, InviteCore } from './ranked.js';
 import { LinkCore } from './link.js';
 import { Directory } from './directory.js';
+import { HandleBook } from './friends-core.js';
 // a new room is made near the player whose ask made the pair (index.js nearOf); a hint Cloudflare does not know is left out
 const NEAR = ['wnam', 'enam', 'sam', 'weur', 'eeur', 'apac', 'oc', 'afr', 'me'];
 const roomNear = body => (body && NEAR.includes(body.near) ? { locationHint: body.near } : undefined);
@@ -24,7 +25,13 @@ export class Lobby extends DurableObject {
       if (what === 'put') return Response.json(D.put(body));
       if (what === 'find') return Response.json(D.find(body.q));
       if (what === 'fails') return Response.json(D.fails(!!body.add));
-      if (what === 'forget') return Response.json(D.forget(String(body.acct || '')));
+      // (친구: who is 닉네임#1234, and each account's face for its friends' lists - friends-core.js HandleBook)
+      const H = this.handles || (this.handles = new HandleBook(this.ctx.storage.sql));
+      if (what === 'handle') return Response.json(H.claim(body));
+      if (what === 'handle-find') return Response.json(H.find(body));
+      if (what === 'face') return Response.json(H.put(body));
+      if (what === 'faces') return Response.json(H.faces(body));
+      if (what === 'forget') { H.forget(String(body.acct || '')); return Response.json(D.forget(String(body.acct || ''))); }
       if (what === 'fp') return Response.json(D.fpPut(body));
       if (what === 'fp-list') return Response.json(D.fpList(body));
       if (what === 'fp-cfg') return Response.json(D.fpCfg(body.set));

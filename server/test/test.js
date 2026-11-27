@@ -11,6 +11,7 @@ import { datasetRow, DatasetCore, monthOf, dayOf, partsOf } from '../src/dataset
 import { PuzzleBookCore } from '../src/puzzlebook-core.js';
 import { googleWho, forgetGoogleKeys, googleWhoAccess, googleWhoAny } from '../src/google.js';
 import { MAX_DEVICES } from '../src/core.js';
+import { HandleBook, FriendsCore, friendsRoute, parseHandle, FR_KEEP, FR_DAY, FR_SENT_MAX, INVITE_KEEP } from '../src/friends-core.js';
 import { LobbyCore, RoomCore, InviteCore, STAND_IN_AFTER, RETURN_WITHIN, RANKED_RULES, standInGear, standInMayResign, standInDelay, ROOM_TABLE, JOIN_WITHIN, IDLE_AFTER } from '../src/ranked.js';
 
 let failed = 0; const fail = m => { failed++; console.log('FAIL', m); }, ok = (c, m) => { if (!c) fail(m); };
@@ -899,6 +900,78 @@ for (const [mode, opts] of [['four', { target: 3, targets: [3, 3], tens: true }]
   const ex = D.export(0, 1); ok(ex.rows.length === 1 && ex.more && D.export(ex.next, 5).rows.length === 1 && !D.export(ex.next, 5).more, 'dataset: read out after n, a page at a time');
   ok(!D.put({ v: 1, mode: 'three', kind: 'cpu' }).ok, 'dataset: a row with no shots refused');
   console.log('dataset: checked');
+}
+
+// 친구 (friends-core.js, owner 11-27): 닉네임#태그, requests both ways, 7 days, the blocked never heard, invitations, a
+// stand-in asked like anyone and gone in its 7 days, the two's record, a gone account off the list
+{
+  const H = new HandleBook(sqlOf().sql), V = {}, rooms = {};
+  let seq = 0; const id = () => (++seq).toString(16).padStart(32, '0');
+  const dir = async (p, b) => { const w = p.slice(5); return w === 'handle' ? H.claim(b) : w === 'handle-find' ? H.find(b) : w === 'face' ? H.put(b) : w === 'faces' ? H.faces(b) : null; };
+  const vaultOf = async (a, p, b) => (V[a] && V[a].get('secret') ? V[a].fr.hear(b) : { st: 'quiet' });
+  const room = async (rid, p, b) => { const r = rooms[rid]; return r ? r.who(b.acct) : { ok: false }; };
+  const caches = {}, mk = (name, joined) => { const a = id(), v = vault(); v.init('k' + a); if (joined) { v.set('joined', 1); v.set('nick', name); } V[a] = v; return a; };
+  const go = (a, what, body) => friendsRoute(V[a], what, Object.assign({ name: undefined }, body), { acct: a, dir, vault: vaultOf, room, cache: caches[a] || (caches[a] = {}) });
+  const A = mk('철수', true), B = mk(null), C = mk(null), D = mk(null);
+  const la = await go(A, 'friends', {}), lb = await go(B, 'friends', { name: '영희' }), lc = await go(C, 'friends', { name: '영희' });
+  ok(la.ok && la.me.nick === '철수' && /^\d{4}$/.test(la.me.tag), `friends: a member's handle is its nickname and a tag (${JSON.stringify(la.me)})`);
+  ok(lb.me.nick === '영희' && lc.me.nick === '영희' && lb.me.tag !== lc.me.tag, 'friends: a guest takes the name it plays under; two of one name get two tags');
+  ok(parseHandle('영희 # 12').tag === '0012' && parseHandle('nope') === null, 'friends: 닉네임#태그 read');
+  ok(!(await go(A, 'friend/add', { handle: '영희#' + (lb.me.tag === '9999' ? '0001' : String(+lb.me.tag + 1).padStart(4, '0')) })).ok || lc.me.tag === String(+lb.me.tag + 1).padStart(4, '0'), 'friends: no one under a wrong tag');
+  const r1 = await go(A, 'friend/add', { handle: '영희#' + lb.me.tag });
+  ok(r1.ok && r1.st === 'sent', 'friends: a request sent');
+  let b1 = await go(B, 'friends', { name: '영희' });
+  ok(b1.recv.length === 1 && b1.recv[0].acct === A && b1.recv[0].nick === '철수', 'friends: the request arrives with the sender\'s name');
+  ok((await go(A, 'friend/add', { handle: '철수#' + la.me.tag })).why === 'self', 'friends: not oneself');
+  ok((await go(B, 'friend/accept', { acct: A })).st === 'friend', 'friends: taken');
+  const a2 = await go(A, 'friends', { look: { streak: 4, card: 'nope' }, doing: 'four' });
+  ok(a2.friends.length === 1 && a2.friends[0].acct === B && a2.sent.length === 0, 'friends: friends on both lists');
+  const b2 = await go(B, 'friends', { name: '영희' });
+  ok(b2.friends[0].face.streak === 4 && b2.friends[0].face.card === null && b2.friends[0].doing === 'four' && b2.friends[0].seen > 0, 'friends: the face seen by friends (an unknown card left out), what one is playing');
+  // both asking at once is a friendship
+  await go(C, 'friend/add', { handle: '철수#' + la.me.tag }); const r3 = await go(A, 'friend/add', { handle: '영희#' + lc.me.tag });
+  ok(r3.st === 'friend' && (await go(C, 'friends', { name: '영희' })).friends.length === 1, 'friends: asking one who asked is taking it');
+  // turned down: gone from the one asked, kept on the sender's till its 7 days
+  const dn = mk(null); await go(dn, 'friends', { name: '민수' });
+  await go(D, 'friends', { name: '지수' }); await go(D, 'friend/add', { handle: '민수#' + (await go(dn, 'friends', { name: '민수' })).me.tag });
+  await go(dn, 'friend/decline', { acct: D });
+  ok((await go(dn, 'friends', { name: '민수' })).recv.length === 0 && (await go(D, 'friends', { name: '지수' })).sent.length === 1, 'friends: turned down - gone there, still waiting here');
+  V[D].fr.now = () => Date.now() + FR_KEEP + 1000; ok((await go(D, 'friends', { name: '지수' })).sent.length === 0, 'friends: a request not taken is gone in 7 days'); V[D].fr.now = Date.now;
+  // the blocked: their request never arrives, and they are not told
+  const E1 = mk(null), E2 = mk(null); await go(E1, 'friends', { name: '가나' }); const t2 = (await go(E2, 'friends', { name: '다라' })).me.tag;
+  await go(E1, 'friend/add', { handle: '다라#' + t2 }); await go(E2, 'friend/block', { acct: E1 });
+  ok((await go(E2, 'friends', { name: '다라' })).blocked.length === 1 && (await go(E1, 'friends', { name: '가나' })).sent.length === 1, 'friends: blocked - the sender still sees it waiting');
+  await go(E1, 'friend/remove', { acct: E2 }); const again = await go(E1, 'friend/add', { handle: '다라#' + t2 });
+  ok(again.st === 'sent' && (await go(E2, 'friends', { name: '다라' })).recv.length === 0, 'friends: a blocked one\'s request never arrives');
+  // invitations: only between friends, two minutes
+  ok((await go(A, 'friend/invite', { acct: B, code: 'AB12CD', mode: 'four', rules: { target: 5 } })).ok, 'friends: an invitation sent');
+  let bi = await go(B, 'friends', { name: '영희' }); ok(bi.inbox.length === 1 && bi.inbox[0].code === 'AB12CD' && bi.inbox[0].rules.target === 5, 'friends: the invitation on the friend\'s list');
+  ok(!(await go(E1, 'friend/invite', { acct: B, code: 'AB12CD', mode: 'four' })).ok, 'friends: no invitation from one who is not a friend');
+  V[B].fr.now = () => Date.now() + INVITE_KEEP + 1000; ok((await go(B, 'friends', { name: '영희' })).inbox.length === 0, 'friends: an invitation gone in two minutes'); V[B].fr.now = Date.now;
+  // a game's opponent: a person is asked; a stand-in is asked like anyone and its request goes in 7 days
+  const rp = new RoomCore(sqlOf().sql, () => {}, fn => fn()), rg = new RoomCore(sqlOf().sql, () => {}, fn => fn());
+  rp.set('room', { room: 'r1', kind: 'ranked' }); rp.set('seats', [{ acct: D, name: '지수' }, { acct: E1, name: '가나' }]);
+  rg.set('room', { room: 'r2', kind: 'ranked', standIn: true }); rg.set('seats', [{ acct: D, name: '지수' }, { acct: null, name: '도윤' }]);
+  rooms['a'.repeat(32)] = rp; rooms['b'.repeat(32)] = rg;
+  const pr = await go(D, 'friend/add', { room: 'a'.repeat(32) }), gr = await go(D, 'friend/add', { room: 'b'.repeat(32) });
+  ok(pr.st === 'sent' && (await go(E1, 'friends', { name: '가나' })).recv.some(x => x.acct === D), 'friends: the opponent of a game asked');
+  ok(gr.ok && gr.st === 'sent' && gr.nick === '도윤' && /^\d{4}$/.test(gr.tag), 'friends: a stand-in asked as anyone (a name and a tag)');
+  ok((await go(D, 'friend/add', { room: 'c'.repeat(32) })).why === 'no room' && (await go(B, 'friend/add', { room: 'a'.repeat(32) })).why === 'no room', 'friends: only one who sat in the game');
+  V[D].fr.now = () => Date.now() + FR_KEEP + 1000; ok(!(await go(D, 'friends', { name: '지수' })).sent.some(x => x.nick === '도윤'), 'friends: the stand-in\'s request gone in 7 days, as one not taken'); V[D].fr.now = Date.now;
+  // the record of games between two friends (core.js ranked, kind 'invite')
+  V[A].ranked({ room: 'c'.repeat(32), mode: 'four', kind: 'invite', won: true, coins: 0, opp: [B] });
+  V[A].ranked({ room: 'c'.repeat(32), mode: 'four', kind: 'invite', won: true, coins: 0, opp: [B] });
+  V[A].ranked({ room: 'd'.repeat(32), mode: 'four', kind: 'invite', won: false, coins: 0, opp: [B] });
+  const rec = (await go(A, 'friends', {})).friends.find(x => x.acct === B); ok(rec.w === 1 && rec.l === 1, 'friends: the two\'s record, once a game');
+  // a day's requests at most; removed both ways; a gone account leaves the list
+  const S = mk(null); await go(S, 'friends', { name: '스팸' }); const many = []; for (let i = 0; i < FR_DAY + 2; i++) { const t = mk(null); many.push((await go(t, 'friends', { name: '받는이' + i })).me); }
+  let sent = 0, why = null; for (const m of many) { const r = await go(S, 'friend/add', { handle: m.nick + '#' + m.tag }); if (r.ok) sent++; else why = r.why; }
+  ok(sent === Math.min(FR_DAY, FR_SENT_MAX) && /too many/.test(why), `friends: requests a day / waiting at most (${sent}, ${why})`);
+  await go(B, 'friend/remove', { acct: A }); ok(!(await go(A, 'friends', {})).friends.some(x => x.acct === B), 'friends: removed from both lists');
+  H.forget(C); ok(!(await go(A, 'friends', {})).friends.some(x => x.acct === C), 'friends: a deleted account leaves its friends\' lists');
+  // a new nickname keeps its tag when it can
+  const k1 = H.claim({ acct: A, nick: '철수', tag: la.me.tag }), k2 = H.claim({ acct: A, nick: '철수2', tag: la.me.tag }); ok(k1.tag === la.me.tag && k2.tag === la.me.tag && !H.find({ nick: '철수', tag: la.me.tag }).ok && H.find({ nick: '철수2', tag: la.me.tag }).acct === A, 'friends: a new nickname keeps the tag');
+  console.log('friends: checked');
 }
 console.log(failed ? `${failed} server check(s) failed` : 'server checks passed');
 process.exit(failed ? 1 : 0);
