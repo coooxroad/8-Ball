@@ -384,6 +384,15 @@ sound: { file: 'glass-break' }                  // web/sound/glass-break.mp3(.og
 - 계정 연동(`server/src/link.js`, 로비 DO 'links'의 SQLite): 기기마다 키가 있고 한 계정을 여러 키가 연다(`core.js` devices, 최대 8).
   설정 → 계정 → 다른 기기 연결(8자 코드, 10분, 한 번) / 코드로 연결. 구글 로그인은 서버만 준비(`google.js`, `GOOGLE_CLIENT_ID`가 있어야 켜짐,
   `docs/google-signin.md`). 기기의 옛 계정 키는 절대 지우지 않고 `acctOld`에 보관한다(`07-net.js`).
+- 친구(11-27, `server/src/friends-core.js`, 계획: 프로젝트 문서 `claude/cue-friends-plan.md`): 이름은 **닉네임#태그**(4자리, 디렉터리 로비 `HandleBook` —
+  같은 닉네임 안에서만 겹치지 않음, 닉네임을 바꾸면 태그는 되도록 그대로; 회원은 자기 닉네임, 게스트는 앱이 쓰는 이름 `body.name`. 닉네임에 '#' 금지).
+  금고마다 `FriendsCore`(friends 표: friend/sent/recv/blocked, 둘의 전적 w·l·d, 초대함 2분), 일의 순서는 `FriendsFlow`(금고 → 디렉터리 → 상대 금고
+  내부 경로 `/fr/hear` — 앞문은 `/v1/`만 넘기므로 밖에서 못 부름). 규칙: 요청은 7일 뒤 사라짐(거절해도 보낸 쪽엔 7일까지 '대기'), 차단하면 상대에게 안 알림,
+  친구 100·대기 30·하루 30. 결과 화면의 친구 추가는 `{ room }` → 방 `/who`(`RoomCore.who`) — **대역이면 보통 요청처럼 '보냄'으로 남고 7일 뒤 사라짐**(소유자 (다)).
+  둘의 전적은 친구 방(kind invite) 결과에 방이 `opp`를 실어 줌(`ranked.js payouts`). 얼굴(레이팅·선수증 배경·칭호·출석)과 접속(seen·doing)은 디렉터리 `faces`
+  — 앱이 메뉴에서 묻는 `/v1/friends`가 30초에 한 번까지 씀. 앱 `app/58-friends.js`(+ `style/88-friends.css`): 위쪽 바 `#dkFriends`, 책상 자리 `friends`
+  (`DESK_PLACES`), 같이 치기 = 방 만들기 화면을 열고 코드가 열리면 `/v1/friend/invite`(`invite.want` → `friends.hosted`), 초대 알림 `#frCall`,
+  결과 `#rFriend`, 링크 `?friend=닉네임%23태그`.
 - 3단계(아직): 투어(판돈 보관), 구글 로그인 앱 쪽, 다이아 결제(구글 플레이 결제를 서버가 확인).
 - 아이템 `id`는 바꾸지 않는다. 서버의 보유 목록이 `id`로 찾는다.
 
