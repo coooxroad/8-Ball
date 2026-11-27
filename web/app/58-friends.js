@@ -110,6 +110,21 @@ function frRow(f, end, tap) {
     ...[].concat(end || [])];
   return tap ? el('button', { class: 'fr-row' + (s ? ' ' + s[0] : ''), onclick: onTap(tap) }, kids) : el('div', { class: 'fr-row' + (s ? ' ' + s[0] : '') }, kids);
 }
+/* a friend in the list as their own 선수증, laid on its side (owner 11-27: the card to stand out): the tier's rim, paper and
+   head band, the face they chose (bg-), their ball, name#tag, their title, where they are, the games between the two - and,
+   cut in the rim's foot as on the glass case, CUE and their tag. The tier's look is 84-menu.css .mn-pc.t-*; the shape here. */
+function frPc(f, tap) {
+  const s = frState(f), t = tierAt(f.face && f.face.dama != null ? f.face.dama : ECONOMY.DAMA_START), bg = f.face && f.face.card && f.face.card !== 'tier' && CARD_BGS.some(q => q.id === f.face.card) ? f.face.card : null;
+  const ttl = f.face && f.face.title && f.face.title !== 'none' ? TITLES.find(q => q.id === f.face.title) : null, n = (f.w || 0) + (f.l || 0) + (f.d || 0);
+  return el('button', { class: `fr-pc mn-pc t-${t.id}` + (bg ? ` bg-${bg}` : '') + ' ' + s[0], 'aria-label': `${f.nick}#${f.tag}, ${t.name}, ${s[1]}`, onclick: onTap(tap) }, [
+    el('span', { class: 'mn-face', 'aria-hidden': 'true' }),
+    el('span', { class: 'hd' }, [el('span', { text: `선수증 · ${t.name}` }), el('i', { class: 'dot ' + s[0] })]),
+    el('span', { class: 'fr-pb' }, [el('span', { class: 'em' }, el('b', { text: t.name })),
+      el('span', { class: 'fr-pw' }, [el('b', { class: 'nm', text: f.nick }), el('small', { class: 'ttl', text: ttl ? ttl.name : `${t.name} · ${t.dama}` }),
+        el('small', { class: 'fr-ps ' + s[0], text: s[1] })]),
+      el('span', { class: 'fr-pr' }, [el('b', { text: n ? `${f.w || 0} : ${f.l || 0}` : '-' }), document.createTextNode('나와의 전적')])]),
+    el('span', { class: 'fr-pf', 'aria-hidden': 'true' }, [el('b', { text: 'C U E' }), el('small', { text: '#' + f.tag })])]);
+}
 const frBtn = (t, fn, cls) => el('button', { class: 'dk-chip fr-b' + (cls ? ' ' + cls : ''), text: t, onclick: onTap(fn) });
 const frSec = t => el('div', { class: 'dk-tier fr-sec' }, el('span', { text: t }));
 
@@ -132,7 +147,7 @@ function frList(d, D) {
   const list = D.friends.slice().sort((a, b) => frRank(frState(a)[0]) - frRank(frState(b)[0]) || (b.seen || 0) - (a.seen || 0));
   const on = list.filter(x => frState(x)[0] !== 'off').length;
   dkPut(d.head, dkTitle('친구', `${list.length}명${on ? ` · 접속 ${on}명` : ''}`));
-  dkPut(d.stage, el('div', { class: 'fr-list' }, list.length ? list.map(x => frRow(x, el('i', { class: 'fr-go', 'aria-hidden': 'true' }), () => { friends.open = x.acct; paintHome(); }))
+  dkPut(d.stage, el('div', { class: 'fr-list' + (list.length ? ' fr-cards' : '') }, list.length ? list.map(x => frPc(x, () => { friends.open = x.acct; paintHome(); }))
     : [el('p', { class: 'fr-none', text: '아직 친구가 없습니다' }), frBtn('친구 추가', () => { friends.tab = 'add'; paintHome(); }, 'hi')]));
   dkPut(d.slate, [...dkH1(D.me.nick || '친구', D.me.tag ? `#${D.me.tag} · 내 이름` : null)]);
   if (!D.me.tag) dkPut(d.slate, [dkHr(), dkTxt('이름을 2~10자로 정하면 친구를 맺을 수 있습니다.')]);
