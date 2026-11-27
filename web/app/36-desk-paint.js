@@ -65,7 +65,7 @@ function boardSides() {
     ly.forEach((o, j) => o.style.setProperty('--k', (1 - (1 - k) * (SIDE_STEPS - j) / SIDE_STEPS).toFixed(5)));   // (j 0: the foot)
   }
 }
-const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop };
+const DESK_PLACES = { play: deskPlay, train: deskTrain, gear: deskGear, shop: deskShop, friends: deskFriends };   // (friends: 58-friends.js, from the top bar)
 // is the live table showing through the desk now? (when it is not, the table behind plays nothing - 90-loop.js)
 const deskTableShown = () => $('#dkStage').dataset.win === '1';
 /* the window's light over the desk: four soft beams from the upper right falling to the lower left (each: from the right

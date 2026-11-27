@@ -1,0 +1,60 @@
+/* ---------- 친구 (owner 11-27, app/58-friends.js): the top bar's button, the place on the desk, an invitation come in,
+   the result's 친구 추가. The rows are the rail's ivory keys laid flat on the felt (the same leather, ink and lip); the
+   friend opened is their 선수증 (84-menu.css .mn-pc), --u set to the tray by frFit. ---------- */
+#dkFriends{position:relative}
+#dkFriends .nb{position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;box-sizing:border-box;
+  background:#e2483d;color:#fff;font:800 11px Outfit,var(--ui-font);box-shadow:0 0 0 2px #1b1b1e}
+#dkFriends .nb[hidden]{display:none}
+
+#app.desk .fr-list{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:16px 18px 24px;box-sizing:border-box;scrollbar-width:none}
+#app.desk .fr-list::-webkit-scrollbar{display:none}
+#app.desk .fr-list .dk-tier{flex:none;margin:6px 2px 0}
+#app.desk .fr-row{flex:none;display:flex;align-items:center;gap:14px;min-height:72px;padding:10px 14px 10px 12px;border:0;border-radius:14px;box-sizing:border-box;text-align:left;
+  background:url(ui/leather-ivory.webp) center/420px;color:#2b241c;box-shadow:0 5px 0 #b3a688,0 10px 14px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.7);font:inherit}
+#app.desk button.fr-row{cursor:pointer}
+#app.desk button.fr-row:active{transform:translateY(3px);box-shadow:0 2px 0 #b3a688,0 5px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7)}
+#app.desk .fr-ball{flex:none;width:46px;height:46px;object-fit:contain}
+#app.desk .fr-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+#app.desk .fr-who b{font:900 18px var(--ui-font);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app.desk .fr-who b i,#app.desk .fr-me b i{font-style:normal;font-weight:700;color:#8a7c66;margin-left:2px}
+#app.desk .fr-who small{display:flex;align-items:center;gap:6px;font:700 13px var(--ui-font);color:#6f6352}
+.fr-row .dot,.fr-st .dot{flex:none;width:9px;height:9px;border-radius:50%;background:#9a958c}
+.fr-row .dot.on,.fr-st .dot.on{background:#2fbf63;box-shadow:0 0 0 3px rgba(47,191,99,.2)}
+.fr-row .dot.play,.fr-st .dot.play{background:#3f86e6;box-shadow:0 0 0 3px rgba(63,134,230,.2)}
+#app.desk .fr-go{flex:none;width:10px;height:10px;margin-right:6px;border:solid #8a7c66;border-width:3px 3px 0 0;transform:rotate(45deg)}
+#app.desk .fr-wait{flex:none;font:700 13px var(--ui-font);color:#8a7c66}
+#app.desk .fr-b{height:40px;padding:0 16px}
+#app.desk .fr-b.hi{color:#fff;border-image:none;border-width:0;border-radius:10px;background:linear-gradient(#35a862,#1f7a43);box-shadow:0 4px 0 #0f4a27,inset 0 1px 0 rgba(255,255,255,.25)}
+#app.desk .fr-none{margin:28px 0 6px;text-align:center;color:rgba(244,236,216,.8);font:700 15px var(--ui-font)}
+#app.desk .fr-list>.fr-b{align-self:center}
+/* 친구 추가: this one's name, large, to read out or copy */
+#app.desk .fr-add{justify-content:center;align-items:center;gap:18px}
+#app.desk .fr-me{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 30px 20px;border-radius:16px;min-width:min(380px,90%);box-sizing:border-box;
+  background:url(ui/leather-ivory.webp) center/420px;color:#2b241c;box-shadow:0 6px 0 #b3a688,0 12px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.7)}
+#app.desk .fr-me>span{font:800 13px var(--ui-font);color:#8a7c66;letter-spacing:.04em}
+#app.desk .fr-me b{font:900 32px var(--ui-font);letter-spacing:-.02em}
+#app.desk .fr-me .cp{display:grid;place-items:center;width:42px;height:42px;border:0;border-radius:10px;background:rgba(60,45,25,.1);color:#5a4c38;cursor:pointer}
+#app.desk .fr-me .cp:disabled{opacity:.4}
+/* a friend opened: their card standing in the tray */
+#app.desk .fr-big{position:absolute;inset:0;display:grid;place-items:center;--u:.6}
+#app.desk .fr-more{display:flex;gap:10px;margin-top:14px}
+#app.desk .fr-more .fr-b{flex:1}
+#app.desk .fr-st{display:flex;align-items:center;gap:8px;margin-top:4px;font:700 14px var(--ui-font);color:#c9ccd2}
+#app.desk.compact .fr-row{min-height:60px;gap:10px;padding:8px 10px}
+#app.desk.compact .fr-ball{width:38px;height:38px}
+#app.desk.compact .fr-who b{font-size:16px}
+#app.desk.compact .fr-me b{font-size:26px}
+
+/* an invitation come in, over the desk: who, the game, 참가 · 거절 (the slate's charcoal) */
+#frCall{position:fixed;left:50%;top:calc(var(--bar,62px) + 14px);transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;padding:12px 14px 12px 20px;border-radius:16px;
+  background:linear-gradient(#262b31,#171a1f);color:#fff;box-shadow:inset 0 0 0 1px rgba(214,221,230,.16),0 4px 0 #0b0d10,0 16px 30px rgba(0,0,0,.55);animation:frIn .32s cubic-bezier(.2,.9,.3,1.2) both;max-width:calc(100vw - 24px);box-sizing:border-box}
+#frCall .fr-c-t{display:flex;flex-direction:column;gap:2px;min-width:0;margin-right:6px}
+#frCall .fr-c-t b{font:900 17px var(--ui-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#frCall .fr-c-t small{font:700 13px var(--ui-font);color:#aeb5bf;white-space:nowrap}
+#frCall .btn{flex:none;min-width:72px}
+@keyframes frIn{from{opacity:0;transform:translate(-50%,-14px)}}
+#app:not(.desk) #frCall{display:none}
+
+/* the result's 친구 추가, under what the game paid */
+#result #rFriend{margin:10px 0 2px;align-self:flex-start}
+#result #rFriend[hidden]{display:none}

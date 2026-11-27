@@ -171,6 +171,7 @@ function paintResult(r, coins) {
   // (copy audit 07-07: online, the key looks for a new opponent)
   $('#againBtn').textContent = on ? (on.kind === 'invite' ? '다시 하기' : '다시 매칭') : '한 판 더'; $('#againBtn').disabled = false;
   if (on && on.kind === 'invite') ranked.againPaint();
+  friendsResult(on);   // (친구 추가 for the opponent of an online game of two: 58-friends.js)
   $('#rWhy').textContent = game.over.plain ? '' : game.over.why;
   // (컴퓨터 대전: the bot's last word, in its language with the Korean under it - copy audit 07-08: only an end the score
   // does not explain)

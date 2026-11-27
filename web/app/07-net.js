@@ -221,6 +221,12 @@ const net = (() => {
     inviteReady: (code, on) => call('/v1/invite/ready', { code, on: !!on }),
     inviteKick: (code, seat) => call('/v1/invite/kick', { code, seat }),
 
+    // ---- 친구 (server/src/friends-core.js): the list, asked every so often while the desk shows (58-friends.js), with this
+    // one's face for theirs (look) and where it is (doing: a game's mode, or nothing); each thing done with it
+    friends: (doing, look) => signed('/v1/friends', { name: prefs.names[0], doing: doing || null, look }, 8000),
+    friendHi: (doing, look) => signed('/v1/friend/hi', { name: prefs.names[0], doing: doing || null, look }, 8000),
+    friend: (what, body) => signed('/v1/friend/' + what, Object.assign({ name: prefs.names[0] }, body || {}), 8000),
+
     // ---- the shop: buying needs the server there and then
     async buy(kind, id) {
       if (!(await ensure())) return { ok: false, why: '서버에 연결할 수 없습니다.' };

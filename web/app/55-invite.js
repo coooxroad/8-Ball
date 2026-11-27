@@ -36,7 +36,7 @@ const invite = {
       if (!r || !r.ok) { invite.err = net.troubleText() || '서버 응답 없음'; invite.errKey = key; toast('방을 열지 못했습니다.', 'foul', 2200); if (st.screen === 'home') paintHome(); return; }
       invite.err = null;
       invite.host = { code: r.code, mode, key, timer: 0, guest: null, title: r.title || '', size: r.size || 2, seats: r.seats || null };
-      invite.poll(); if (st.screen === 'home') paintHome();
+      invite.poll(); friends.hosted(invite.host); if (st.screen === 'home') paintHome();
     });
     return null;
   },
@@ -53,7 +53,7 @@ const invite = {
       invite.poll();
     }, soon ? 0 : 2000);
   },
-  leave() { invite.stand(); const h = invite.host; invite.opening = null; if (!h) return; clearTimeout(h.timer); invite.host = null; net.inviteLeave(h.code); },
+  leave() { invite.stand(); const h = invite.host; invite.opening = null; if (!h) return; clearTimeout(h.timer); invite.host = null; net.inviteLeave(h.code); friends.unhosted(); },   // (a friend invited to it: told it is gone - 58-friends.js)
   // a friend's code: into their game
   async join(code) {
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -215,7 +215,7 @@ const invite = {
     dkPut(stage, el('div', { class: 'inv' }, [
       el('div', { class: 'inv-slots' }, [
         slot(prefs.names[0], '', [el('i', { class: 'ok', role: 'img', 'aria-label': '준비 완료' }), el('img', { class: 'cue', src: `ui/cue-${cue.id}.webp`, alt: '' }), ballPic(prefs.ballSkin, m === 'three' || m === 'four' ? 'carom' : 'pool', 0, { class: 'ball' })]),
-        slot(g ? g.name : '친구', g ? (g.ready === false ? '준비 전' : '준비 완료') : '친구 기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
+        slot(g ? g.name : friends.pending ? friends.pending.nick : '친구', g ? (g.ready === false ? '준비 전' : '준비 완료') : friends.pending ? '초대 보냄 · 기다리는 중' : '친구 기다리는 중', [el('i', { class: 'ghost-cue' }), el('i', { class: 'ghost-ball' })], g ? 'come' : 'wait')]),
       // (copy audit 02-06, 02-08: the code once, with a badge saying the room is in the list and a copy icon)
       el('div', { class: 'inv-code' }, [el('span', { text: '참가 코드' }), el('b', { text: h ? h.code : '······' }), h ? el('em', { class: 'pub', text: invite.pw ? '공개 · 비밀번호' : '공개' }) : null,
         (() => { const b = el('button', { class: 'cp', disabled: h ? null : '', 'aria-label': '참가 코드 복사', onclick: onTap(() => h && invite.copy(h.code, '참가 코드')) }); b.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'; return b; })()])]));
